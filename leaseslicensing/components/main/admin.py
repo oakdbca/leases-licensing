@@ -82,7 +82,7 @@ class SecurityGroupMembershipFormTemplate(ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance:
-            if self.fields['emailuser']:
+            if 'emailuser' in self.fields: # Check for `emailuser` in list
                 self.fields['emailuser'].widget = (
                     ForeignKeyRawIdWidget(
                         #self.fields['emailuser'].widget,

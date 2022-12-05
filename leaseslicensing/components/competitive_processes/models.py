@@ -62,6 +62,7 @@ class CompetitiveProcess(models.Model):
         app_label = "leaseslicensing"
         verbose_name = "Competitive Process"
         verbose_name_plural = "Competitive Processes"
+        ordering = ("modified_at", )
 
     def __str__(self):
         return self.lodgement_number

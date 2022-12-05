@@ -8,6 +8,7 @@ from leaseslicensing.settings import (
     template_group,
     template_title,
     BUILD_TAG,
+    DEV_APP_BUILD_URL,
 )
 
 
@@ -40,4 +41,5 @@ def leaseslicensing_url(request):
         "template_group": template_group,
         "template_title": template_title,
         "build_tag": BUILD_TAG,
+        "app_build_url": DEV_APP_BUILD_URL,
     }
