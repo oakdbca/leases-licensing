@@ -246,6 +246,7 @@ LOGGING["loggers"]["leaseslicensing"] = {
     "level": "INFO",
 }
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
+DEV_APP_BUILD_URL = env("DEV_APP_BUILD_URL")  # URL of the Dev app.js served by webpack & express
 LOV_CACHE_TIMEOUT = 10800
 
 PROPOSAL_TYPE_NEW = "new"
