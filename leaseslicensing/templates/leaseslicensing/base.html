@@ -39,6 +39,15 @@
             <script type="text/javascript" src="{% static 'leaseslicensing_vue/js/app.js' %}?v={{build_tag}}"></script>
 
         {% endblock %}
+
+        {% block menu_items2_right %}
+        {% if request.user.is_authenticated %}
+
+        {% else %}
+           <a href="/ssologin" class="btn btn-primary btn-sm">Login</a>
+        {% endif %}
+       {% endblock %}
+
         {% block menu_spacer %}
             <br>
         {% endblock %}
