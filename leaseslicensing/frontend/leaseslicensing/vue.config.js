@@ -14,6 +14,7 @@ module.exports = {
         //config.resolve.alias.set('easing','jquery.easing/jquery.easing.js');
     },
     configureWebpack: {
+        devtool: "source-map",
         plugins:[
             new webpack.ProvidePlugin({
                // use fetch api instead
