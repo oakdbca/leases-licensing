@@ -8,6 +8,9 @@ node_modules/
 .ropeproject/
 mooring/cache/*
 .ropeproject/
+.DAV
+.devcontainer
+nohup.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

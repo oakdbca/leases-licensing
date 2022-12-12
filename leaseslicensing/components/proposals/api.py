@@ -3,7 +3,7 @@ import os
 import base64
 import geojson
 import json
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse # FIXME Can this be `from urllib.parse import urlencode` in py3?
 from wsgiref.util import FileWrapper
 from django.db.models import Q, Min
 from django.db import transaction, connection

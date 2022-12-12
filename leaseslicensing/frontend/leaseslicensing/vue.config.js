@@ -1,5 +1,6 @@
 const path = require('path')
 const webpack = require('webpack');
+const port = process.env.PORT ? parseInt(process.env.PORT) : 9072;
 
 module.exports = {
     outputDir: path.resolve(__dirname, "../../static/leaseslicensing_vue"),
@@ -33,12 +34,15 @@ module.exports = {
            })
         ],
         devServer: {
-            host: 'localhost',
+            host: '0.0.0.0',
             allowedHosts: 'all',
             devMiddleware: {
                 //index: true,
                 writeToDisk: true,
-            }
+            },
+            client: {
+              webSocketURL: 'ws://0.0.0.0:'+port+'/ws',
+            },
         },
         module: {
             rules: [

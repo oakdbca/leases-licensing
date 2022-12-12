@@ -4,10 +4,12 @@ from django.db import connection, reset_queries
 import functools
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.handlers.wsgi import WSGIRequest
 from django.http import HttpRequest
 from rest_framework import serializers
 from rest_framework.request import Request
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 import logging
 
 logger = logging.getLogger("leaseslicensing")
@@ -31,6 +33,17 @@ def basic_exception_handler(func):
             print(traceback.print_exc())
             logger.error(traceback.print_exc())
             raise serializers.ValidationError(str(e))
+
+    return wrapper
+
+def user_notexists_exception_handler(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ObjectDoesNotExist:
+            logger.error(f"EmailUser {args[0]} does not exist.")
+            return EmailUser()
 
     return wrapper
 

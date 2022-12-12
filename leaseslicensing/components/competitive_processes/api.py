@@ -105,8 +105,9 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
 
     @basic_exception_handler
     def list(self, request, *args, **kwargs):
+        # TODO Can this be done shorter and in one line
         qs = self.get_queryset()
-        qs = self.filter_queryset(qs)
+        qs = self.filter_queryset(qs).order_by("lodgement_number")
 
         qs = qs.distinct()
         self.paginator.page_size = qs.count()
