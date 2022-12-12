@@ -46,6 +46,15 @@
 
 
         {% endblock %}
+
+        {% block menu_items2_right %}
+        {% if request.user.is_authenticated %}
+
+        {% else %}
+           <a href="/ssologin" class="btn btn-primary btn-sm">Login</a>
+        {% endif %}
+       {% endblock %}
+
         {% block menu_spacer %}
             <br>
         {% endblock %}
