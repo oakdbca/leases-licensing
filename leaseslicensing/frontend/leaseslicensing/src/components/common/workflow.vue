@@ -10,39 +10,42 @@
                         <strong>Status</strong><br/>
                         {{ proposal.processing_status }}
                     </div>
-                    <div class="col-sm-12">
-                        <div class="separator"></div>
-                    </div>
-                    <div v-if="!isFinalised" class="col-sm-12">
-                        <strong>Currently assigned to</strong><br/>
-                        <div class="form-group">
-                            <template v-if="proposal.processing_status_id == 'with_approver'">
-                                <select
-                                    ref="assigned_officer"
-                                    :disabled="!canAction"
-                                    class="form-control"
-                                    v-model="proposal.assigned_approver"
-                                    @change="assignTo()">
-                                    <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
-                                </select>
-                                <div class="text-end">
-                                    <a v-if="canAssess && proposal.assigned_approver != proposal.current_assessor.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
-                                </div>
-                            </template>
-                            <template v-else>
-                                <select
-                                    ref="assigned_officer"
-                                    :disabled="!canAction"
-                                    class="form-control"
-                                    v-model="proposal.assigned_officer"
-                                    @change="assignTo()"
-                                >
-                                    <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
-                                </select>
-                                <div class="text-end">
-                                    <a v-if="canAssess && proposal.assigned_officer != proposal.current_assessor.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
-                                </div>
-                            </template>
+                    <!-- Do not show assign to dialogs when still in draft status -->
+                    <div v-if="proposal.processing_status !== 'Draft'">
+                        <div class="col-sm-12">
+                            <div class="separator"></div>
+                        </div>
+                        <div v-if="!isFinalised" class="col-sm-12">
+                            <strong>Currently assigned to</strong><br/>
+                            <div class="form-group">
+                                <template v-if="proposal.processing_status_id == 'with_approver'">
+                                    <select
+                                        ref="assigned_officer"
+                                        :disabled="!canAction"
+                                        class="form-control"
+                                        v-model="proposal.assigned_approver"
+                                        @change="assignTo()">
+                                        <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
+                                    </select>
+                                    <div class="text-end">
+                                        <a v-if="canAssess && proposal.assigned_approver != proposal.current_assessor.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
+                                    </div>
+                                </template>
+                                <template v-else>
+                                    <select
+                                        ref="assigned_officer"
+                                        :disabled="!canAction"
+                                        class="form-control"
+                                        v-model="proposal.assigned_officer"
+                                        @change="assignTo()"
+                                    >
+                                        <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
+                                    </select>
+                                    <div class="text-end">
+                                        <a v-if="canAssess && proposal.assigned_officer != proposal.current_assessor.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
                     </div>
 
