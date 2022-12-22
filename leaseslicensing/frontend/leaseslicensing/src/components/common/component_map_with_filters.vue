@@ -49,22 +49,27 @@
                     <img id="basemap_osm" src="../../assets/map_icon.png" @click="setBaseLayer('osm')" />
                 </div>
                 <div class="optional-layers-wrapper">
-                    <div class="optional-layers-button">
-                        <template v-if="mode === 'layer'">
-                            <img src="../../assets/info-bubble.svg" @click="set_mode('measure')" />
-                        </template>
-                        <template v-else>
-                            <img src="../../assets/ruler.svg" @click="set_mode('layer')" />
-                        </template>
+                    <!-- Toggle measure tool between active and not active -->
+                    <div class="optional-layers-button-wrapper">
+                        <div
+                            :class="[
+                                    mode == 'measure' ? 'optional-layers-button-active': 'optional-layers-button'
+                                    ]"
+                                    @click="set_mode.bind(this)('measure')"
+                        >
+                            <img class="svg-icon" src="../../assets/ruler.svg" />
+                        </div>
                     </div>
                     <div style="position:relative">
                         <transition v-if="optionalLayers.length">
-                            <div class="optional-layers-button" @mouseover="hover=true">
-                                <img src="../../assets/layers.svg" />
+                            <div class="optional-layers-button-wrapper">
+                                <div class="optional-layers-button" @mouseover="hover=true">
+                                    <img src="../../assets/layers.svg" />
+                                </div>
                             </div>
                         </transition>
                         <transition v-if="optionalLayers.length">
-                            <div div class="layer_options" v-show="hover" @mouseleave="hover=false" >
+                            <div div class="layer_options layer_menu" v-show="hover" @mouseleave="hover=false" >
                                 <template v-for="layer in optionalLayers">
                                     <div class="row">
                                         <input
@@ -87,7 +92,15 @@
                 </div>
             </div>
         </div>
-
+        <div class="row">
+            <div class="col-sm-6"></div>
+            <div class="col-sm-6">
+                <div id="legend_title"></div>
+                <div id="legend">
+                    <img src="" />
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -127,6 +140,7 @@ import MeasureStyles, { formatLength } from '@/components/common/measure.js'
 require("select2/dist/css/select2.min.css");
 //require("select2-bootstrap-5-theme/dist/select2-bootstrap-5-theme.css");
 import RangeSlider from '@/components/forms/range_slider.vue'
+import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
 
 export default {
     name: 'MapComponentWithFilters',
@@ -357,7 +371,7 @@ export default {
             elem_id: uuid(),
             map_container_id: uuid(),
             map: null,
-            tileLayerOsm: null,
+            tileLayerMapbox: null,
             tileLayerSat: null,
             optionalLayers: [],
             hover: false,
@@ -375,7 +389,8 @@ export default {
 
             main_manager: (function(){
                 return new MainManager()
-            })()
+            })(),
+            set_mode: set_mode
 
         }
     },
@@ -421,8 +436,8 @@ export default {
     },
     methods: {
         valueChanged: function(value, tileLayer){
-            console.log(value)
-            console.log(tileLayer)
+            // console.log(value)
+            // console.log(tileLayer)
             //tileLayer.setOpacity((100 - value)/100)
             tileLayer.setOpacity(value/100)
         },
@@ -516,24 +531,15 @@ export default {
         setBaseLayer: function(selected_layer_name){
             let vm = this
             if (selected_layer_name == 'sat') {
-                vm.tileLayerOsm.setVisible(false)
+                vm.tileLayerMapbox.setVisible(false)
                 vm.tileLayerSat.setVisible(true)
                 $('#basemap_sat').hide()
                 $('#basemap_osm').show()
             } else {
-                vm.tileLayerOsm.setVisible(true)
+                vm.tileLayerMapbox.setVisible(true)
                 vm.tileLayerSat.setVisible(false)
                 $('#basemap_osm').hide()
                 $('#basemap_sat').show()
-            }
-        },
-        set_mode: function(mode){
-            this.mode = mode
-            if (this.mode === 'layer'){
-                this.clearMeasurementLayer()
-                this.drawForMeasure.setActive(false)
-            } else if (this.mode === 'measure') {
-                this.drawForMeasure.setActive(true)
             }
         },
         changeLayerVisibility: function(targetLayer){
@@ -615,43 +621,11 @@ export default {
 
             return styles
         },
-        addOptionalLayers: function(){
-            let vm = this
-            fetch('/api/map_layers/').then(response => {
-                let layers = response.body
-                for (var i = 0; i < layers.length; i++){
-                    console.log(layers[i])
-                    let l = new TileWMS({
-                        url: process.env['kmi_server_url'] + '/geoserver/' + layers[i].layer_group_name + '/wms',
-                        params: {
-                            'FORMAT': 'image/png',
-                            'VERSION': '1.1.1',
-                            tiled: true,
-                            STYLES: '',
-                            LAYERS: layers[i].layer_full_name
-                        }
-                    });
-
-                    let tileLayer= new TileLayer({
-                        title: layers[i].display_name.trim(),
-                        visible: false,
-                        source: l,
-                    })
-
-                    // Set additional attributes to the layer
-                    tileLayer.set('columns', layers[i].columns)
-                    tileLayer.set('display_all_columns', layers[i].display_all_columns)
-
-                    vm.optionalLayers.push(tileLayer)
-                    vm.map.addLayer(tileLayer)
-                }
-            })
-        },
         initMap: function(){
             let vm = this;
 
             let satelliteTileWms = new TileWMS({
-                url: process.env['kmi_server_url'] + '/geoserver/public/wms',
+                url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
                     'FORMAT': 'image/png',
                     'VERSION': '1.1.1',
@@ -661,12 +635,22 @@ export default {
                 }
             });
 
-            vm.tileLayerOsm = new TileLayer({
-                title: 'OpenStreetMap',
+            let streetsTileWMS = new TileWMS({
+                url: env['kmi_server_url'] + '/geoserver/public/wms',
+                params: {
+                    'FORMAT': 'image/png',
+                    'VERSION': '1.1.1',
+                    tiled: true,
+                    STYLES: '',
+                    LAYERS: `public:${baselayer_name}`
+                }
+            });
+            vm.tileLayerMapbox = new TileLayer({
+                title: 'StreetsMap',
                 type: 'base',
                 visible: true,
-                source: new OSM(),
-            });
+                source: streetsTileWMS,
+            })
 
             vm.tileLayerSat = new TileLayer({
                 title: 'Satellite',
@@ -677,7 +661,7 @@ export default {
 
             vm.map = new Map({
                 layers: [
-                    vm.tileLayerOsm,
+                    vm.tileLayerMapbox,
                     vm.tileLayerSat,
                 ],
                 //target: 'map',
@@ -797,8 +781,9 @@ export default {
         this.$nextTick(() => {
             vm.addEventListeners()
             vm.initMap()
+            set_mode.bind(this)("layer")
             vm.setBaseLayer('osm')
-            vm.addOptionalLayers()
+            addOptionalLayers(this)
             vm.updateVariablesFromSession()
             vm.main_manager.show_me()
         });
@@ -806,111 +791,8 @@ export default {
 }
 </script>
 <style scoped>
-    .map {
-        width: 100%;
-        height: 600px;
-    }
-    .basemap-button {
-        position: absolute;
-        bottom: 25px;
-        right: 10px;
-        z-index: 400;
-        -moz-box-shadow: 3px 3px 3px #777;
-        -webkit-box-shadow: 3px 3px 3px #777;
-        box-shadow: 3px 3px 3px #777;
-        -moz-filter: brightness(1.0);
-        -webkit-filter: brightness(1.0);
-        filter: brightness(1.0);
-        border: 2px white solid;
-    }
-    .basemap-button:hover,.optional-layers-button:hover{
-        cursor: pointer;
-        -moz-filter: brightness(0.9);
-        -webkit-filter: brightness(0.9);
-        filter: brightness(0.9);
-    }
-    .basemap-button:active {
-        bottom: 24px;
-        right: 9px;
-        -moz-box-shadow: 2px 2px 2px #555;
-        -webkit-box-shadow: 2px 2px 2px #555;
-        box-shadow: 2px 2px 2px #555;
-        -moz-filter: brightness(0.8);
-        -webkit-filter: brightness(0.8);
-        filter: brightness(0.8);
-    }
-    .optional-layers-wrapper {
-        position: absolute;
-        top: 70px;
-        left: 10px;
-    }
-    .optional-layers-button {
-        position: relative;
-        z-index: 400;
-        background: white;
-        border-radius: 2px;
-        border: 3px solid rgba(5, 5, 5, .1);
-        margin-bottom: 2px;
-        cursor: pointer;
-        display: block;
-        padding: 4px;
-    }
-    .layer_options {
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 410;
-        background: white;
-        border-radius: 2px;
-        cursor: auto;
-        min-width: max-content;
-        /*
-        box-shadow: 3px 3px 3px #777;
-        -moz-filter: brightness(1.0);
-        -webkit-filter: brightness(1.0);
-        */
-        padding: 0.5em;
-        border: 3px solid rgba(5, 5, 5, .1);
-    }
-    .ol-popup {
-        position: absolute;
-        min-width: 95px;
-        background-color: white;
-        -webkit-filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
-        filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
-        padding: 2px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        bottom: 12px;
-        left: -50px;
-    }
-    .ol-popup:after, .ol-popup:before {
-        top: 100%;
-        border: solid transparent;
-        content: " ";
-        height: 0;
-        width: 0;
-        position: absolute;
-        pointer-events: none;
-    }
-    .ol-popup:after {
-        border-top-color: white;
-        border-width: 10px;
-        left: 48px;
-        margin-left: -10px;
-    }
-    .ol-popup:before {
-        border-top-color: #cccccc;
-        border-width: 11px;
-        left: 48px;
-        margin-left: -11px;
-    }
-    .ol-popup-closer {
-        text-decoration: none;
-        position: absolute;
-        top: 2px;
-        right: 8px;
-    }
+    @import '../../../../../static/leaseslicensing/css/map.css';
+
     .close-icon:hover {
         filter: brightness(80%);
     }
@@ -932,9 +814,6 @@ export default {
     }
     .table_caption {
         color: green;
-    }
-    .layer_option:hover {
-        cursor: pointer;
     }
     .filter_search_wrapper {
         position: relative;

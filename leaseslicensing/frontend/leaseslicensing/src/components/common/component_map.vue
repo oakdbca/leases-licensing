@@ -10,39 +10,53 @@
                     <img v-if="!showSatIcon" id="basemap_osm" src="../../assets/map_icon.png" @click="setBaseLayer('osm')" />
                 </div>
                 <div class="optional-layers-wrapper">
-                    <div class="optional-layers-button">
-                        <template v-if="mode === 'layer'">
-                            <img src="../../assets/info-bubble.svg" @click="setMode('draw')" />
-                        </template>
-                        <template v-else-if="mode === 'draw'">
-                            <img src="../../assets/pen-icon.svg" @click="setMode('measure')" />
-                        </template>
-                        <template v-else>
-                            <img src="../../assets/ruler.svg" @click="setMode('layer')" />
-                        </template>
+                    <div class="optional-layers-button-wrapper">
+                        <div
+                            :class="[
+                                    mode == 'measure' ? 'optional-layers-button-active': 'optional-layers-button'
+                                    ]"
+                                    @click="set_mode.bind(this)('measure')"
+                            >
+                            <img class="svg-icon" src="../../assets/ruler.svg" />
+                        </div>
+                    </div>
+                    <div class="optional-layers-button-wrapper">
+                        <div
+                            :class="[
+                                    mode == 'draw' ? 'optional-layers-button-active': 'optional-layers-button'
+                                    ]"
+                                    @click="set_mode.bind(this)('draw')"
+                            >
+                            <img class="svg-icon" src="../../assets/pen-icon.svg" />
+                        </div>
+
                     </div>
                     <div style="position:relative">
                         <transition v-if="optionalLayers.length">
-                            <div class="optional-layers-button" @mouseover="hover=true">
-                                <img src="../../assets/layers.svg" />
+                            <div class="optional-layers-button-wrapper">
+                                <div class="optional-layers-button" @mouseover="hover=true">
+                                    <img src="../../assets/layers.svg" />
+                                </div>
                             </div>
                         </transition>
                         <transition v-if="optionalLayers.length">
-                            <div div class="layer_options" v-show="hover" @mouseleave="hover=false" >
-                                <div v-for="layer in optionalLayers">
-                                    <input
-                                        type="checkbox"
-                                        :id="layer.ol_uid"
-                                        :checked="layer.values_.visible"
-                                        @change="changeLayerVisibility(layer)"
-                                        class="layer_option"
-                                    />
-                                    <label :for="layer.ol_uid" class="layer_option">{{ layer.get('title') }}</label>
-                                    <RangeSlider
-                                        class="col-md-5"
-                                        @valueChanged='valueChanged($event, layer)'
-                                    />
-                                </div>
+                            <div div class="layer_options layer_menu" v-show="hover" @mouseleave="hover=false" >
+                                <template v-for="layer in optionalLayers">
+                                    <div class="row">
+                                        <input
+                                            type="checkbox"
+                                            :id="layer.ol_uid"
+                                            :checked="layer.values_.visible"
+                                            @change="changeLayerVisibility(layer)"
+                                            class="layer_option col-md-1"
+                                        />
+                                        <label :for="layer.ol_uid" class="layer_option col-md-6">{{ layer.get('title') }}</label>
+                                        <RangeSlider
+                                            class="col-md-5"
+                                            @valueChanged='valueChanged($event, layer)'
+                                        />
+                                    </div>
+                                </template>
                             </div>
                         </transition>
                     </div>
@@ -79,7 +93,7 @@
             <div class="col-sm-3">
                 <label for="shapefile_document">Upload shapefile</label>
             </div>
-            <div class="col-sm-9">
+            <div class="col-sm-3">
                 <FileField
                     :readonly="false"
                     ref="shapefile_document"
@@ -91,7 +105,13 @@
                     fileTypes=".dbf,.prj,.shp,.shx,"
                 />
             </div>
-        </div>
+            <div class="col-sm-6">
+                <div id="legend_title"></div>
+                <div id="legend">
+                    <img src="" />
+                </div>
+            </div>
+            </div>
         <VueAlert :show.sync="showError" type="danger" style="color: red"><strong>{{errorString}}</strong></VueAlert>
         <div>
             <div class="row">
@@ -106,7 +126,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
 </template>
@@ -136,6 +155,7 @@ import VueAlert from '@vue-utils/alert.vue'
 import { api_endpoints, helpers } from '@/utils/hooks'
 import RangeSlider from '@/components/forms/range_slider.vue'
 //import { getDisplayNameFromStatus, getDisplayNameOfCategory, getStatusForColour, getApiaryFeatureStyle } from '@/components/common/site_colours.js'
+import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
 
 export default {
     name: 'ComponentMap',
@@ -150,7 +170,7 @@ export default {
             overlay: null,
             content_element: null,
             modifyInProgressList: [],
-            tileLayerOsm: null,
+            tileLayerMapbox: null,
             tileLayerSat: null,
             optionalLayers: [],
             hover: false,
@@ -168,6 +188,7 @@ export default {
             newFeatureId: 1,
             errorString: '',
             showError:false,
+            set_mode: set_mode
         }
     },
     props: {
@@ -230,8 +251,6 @@ export default {
     },
     methods: {
         valueChanged: function(value, tileLayer){
-            console.log(value)
-            console.log(tileLayer)
             //tileLayer.setOpacity((100 - value)/100)
             tileLayer.setOpacity(value/100)
         },
@@ -255,15 +274,25 @@ export default {
             let vm = this;
             vm.showError=false;
             vm.errorString='';
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.proposals,vm.proposal.id+'/validate_map_files')).then(res=>{
-                //vm.proposal = res.body;
-                //vm.refreshFromResponse(res);
-                vm.$emit('refreshFromResponse',res);
-                },err=>{
-                console.log(err);
-                vm.showError=true;
-                vm.errorString=helpers.apiVueResourceError(err);
-                });
+            const options = {
+                method: 'POST',
+            };
+            fetch(helpers.add_endpoint_json(api_endpoints.proposals,vm.proposal.id+'/validate_map_files'), options).then((response) => response.json())
+            .then((data) => {
+                console.log(">>> data", data);
+            });
+
+
+            // vm.$http.post(helpers.add_endpoint_json(api_endpoints.proposals,vm.proposal.id+'/validate_map_files')).then(res=>{
+            //     // vm.proposal = res.body;
+            //     //vm.refreshFromResponse(res);
+            //     $
+            //     vm.$emit('refreshFromResponse',res);
+            //     },err=>{
+            //     console.log(err);
+            //     vm.showError=true;
+            //     vm.errorString=helpers.apiVueResourceError(err);
+            //     });
             vm.updateShape();
         },
 
@@ -358,11 +387,21 @@ export default {
                         }
                     });
 
-            vm.tileLayerOsm = new TileLayer({
-                title: 'OpenStreetMap',
+            let streetsTileWMS = new TileWMS({
+                url: env['kmi_server_url'] + '/geoserver/public/wms',
+                params: {
+                    'FORMAT': 'image/png',
+                    'VERSION': '1.1.1',
+                    tiled: true,
+                    STYLES: '',
+                    LAYERS: `public:${baselayer_name}`
+                }
+            });
+            vm.tileLayerMapbox = new TileLayer({
+                title: 'StreetsMap',
                 type: 'base',
                 visible: true,
-                source: new OSM(),
+                source: streetsTileWMS,
             });
             vm.tileLayerSat = new TileLayer({
                 title: 'Satellite',
@@ -383,7 +422,7 @@ export default {
                     */
                     ]),
                 layers: [
-                    vm.tileLayerOsm, 
+                    vm.tileLayerMapbox, 
                     vm.tileLayerSat,
                 ],
                 target: vm.elem_id,
@@ -664,23 +703,6 @@ export default {
                 }
             }
         },
-
-        setMode: function(mode){
-            console.log(mode)
-            this.mode = mode
-            if (this.mode === 'layer'){
-                this.clearMeasurementLayer()
-                this.drawForMeasure.setActive(false)
-                this.drawForLeaselicence.setActive(false)
-            } else if (this.mode === 'draw') {
-                this.clearMeasurementLayer()
-                this.drawForMeasure.setActive(false)
-                this.drawForLeaselicence.setActive(true)
-            } else if (this.mode === 'measure') {
-                this.drawForMeasure.setActive(true)
-                this.drawForLeaselicence.setActive(false)
-            }
-        },
         addJoint: function(point, styles){
             let s = new Style({
                 image: new CircleStyle({
@@ -749,17 +771,17 @@ export default {
             setTimeout(function(){
                 vm.map.updateSize();
             }, 700)
-            console.log(document.getElementById(this.elem_id))
+            // console.log(document.getElementById(this.elem_id))
         },
         setBaseLayer: function(selected_layer_name){
             console.log('in setBaseLayer')
             if (selected_layer_name == 'sat') {
                 this.toggleSatIcon('sat');
-                this.tileLayerOsm.setVisible(false)
+                this.tileLayerMapbox.setVisible(false)
                 this.tileLayerSat.setVisible(true)
             } else {
                 this.toggleSatIcon('osm');
-                this.tileLayerOsm.setVisible(true)
+                this.tileLayerMapbox.setVisible(true)
                 this.tileLayerSat.setVisible(false)
             }
         },
@@ -784,40 +806,6 @@ export default {
                 sessionStorage.removeItem('optionalLayer_'+targetLayer.getProperties().id);
             }
         },
-        addOptionalLayers: function(){
-            let vm = this
-            fetch('/api/map_layers/').then(response => {
-                let layers = response.body
-                for (var i = 0; i < layers.length; i++){
-                    let l = new TileWMS({
-                        url: env['kmi_server_url'] + '/geoserver/' + layers[i].layer_group_name + '/wms',
-                        params: {
-                            'FORMAT': 'image/png',
-                            'VERSION': '1.1.1',
-                            tiled: true,
-                            STYLES: '',
-                            LAYERS: layers[i].layer_full_name
-                        }
-                    });
-
-                    let tileLayer= new TileLayer({
-                        title: layers[i].display_name.trim(),
-                        //visible: false,
-                        visible: sessionStorage.getItem('optionalLayer_'+layers[i].id) ? true : false,
-                        source: l,
-                    })
-
-                    // Set additional attributes to the layer
-                    tileLayer.set('columns', layers[i].columns)
-                    tileLayer.set('display_all_columns', layers[i].display_all_columns)
-                    tileLayer.setProperties({"id": layers[i].id});
-
-                    vm.optionalLayers.push(tileLayer)
-                    vm.map.addLayer(tileLayer)
-                }
-            })
-        },
-
     },
     created() {
         /*
@@ -830,8 +818,8 @@ export default {
     mounted() {
         this.initMap();
         //vm.setBaseLayer('osm')
-        this.setMode('layer')
-        this.addOptionalLayers()
+        set_mode.bind(this)('layer')
+        addOptionalLayers(this)
         this.$nextTick(() => {
             this.loadLeaseLicenceGeometry();
         });
@@ -840,132 +828,8 @@ export default {
 </script>
 
 <style lang="css" scoped>
-    .ll-trash {
-        color: #53c2cf;
-        margin-left: 4px;
-    }
-    .pencil {
-        width: 10%;
-        height: 10%;
-    }
-    .ol-zoom-in {
-        top: 100px;
-        color: transparent;
-    }
-    .ol-zoom-out {
-        top: 100px;
-        color: transparent;
-    }
-    .map{
-        height: 800px;
-        width: 100%;
-        padding: 0;
-    }
-    .map-wrapper {
-        position: relative;
-        padding: 0;
-        margin: 0;
-    }
-    .basemap-button {
-        position: absolute;
-        bottom: 25px;
-        right: 10px;
-        z-index: 400;
-        -moz-box-shadow: 3px 3px 3px #777;
-        -webkit-box-shadow: 3px 3px 3px #777;
-        box-shadow: 3px 3px 3px #777;
-        -moz-filter: brightness(1.0);
-        -webkit-filter: brightness(1.0);
-        filter: brightness(1.0);
-        border: 2px white solid;
-    }
-    .basemap-button:hover,.optional-layers-button:hover{
-        cursor: pointer;
-        -moz-filter: brightness(0.9);
-        -webkit-filter: brightness(0.9);
-        filter: brightness(0.9);
-    }
-    .basemap-button:active {
-        bottom: 24px;
-        right: 9px;
-        -moz-box-shadow: 2px 2px 2px #555;
-        -webkit-box-shadow: 2px 2px 2px #555;
-        box-shadow: 2px 2px 2px #555;
-        -moz-filter: brightness(0.8);
-        -webkit-filter: brightness(0.8);
-        filter: brightness(0.8);
-    }
-    .optional-layers-wrapper {
-        position: absolute;
-        top: 70px;
-        left: 20px;
-    }
-    .optional-layers-button {
-        position: relative;
-        z-index: 400;
-        background: white;
-        border-radius: 2px;
-        border: 3px solid rgba(5, 5, 5, .1);
-        margin-bottom: 2px;
-        cursor: pointer;
-        display: block;
-    }
-    .layer_options {
-        position: absolute;
-        top: 0;
-        left: 0;
-        z-index: 410;
-        background: white;
-        border-radius: 2px;
-        cursor: auto;
-        min-width: max-content;
-        /*
-        box-shadow: 3px 3px 3px #777;
-        -moz-filter: brightness(1.0);
-        -webkit-filter: brightness(1.0);
-        */
-        padding: 0.5em;
-        border: 3px solid rgba(5, 5, 5, .1);
-    }
-    .ol-popup {
-        position: absolute;
-        min-width: 95px;
-        background-color: white;
-        -webkit-filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
-        filter: drop-shadow(0 1px 4px rgba(0,0,0,0.2));
-        padding: 2px;
-        border-radius: 4px;
-        border: 1px solid #ccc;
-        bottom: 12px;
-        left: -50px;
-    }
-    .ol-popup:after, .ol-popup:before {
-        top: 100%;
-        border: solid transparent;
-        content: " ";
-        height: 0;
-        width: 0;
-        position: absolute;
-        pointer-events: none;
-    }
-    .ol-popup:after {
-        border-top-color: white;
-        border-width: 10px;
-        left: 48px;
-        margin-left: -10px;
-    }
-    .ol-popup:before {
-        border-top-color: #cccccc;
-        border-width: 11px;
-        left: 48px;
-        margin-left: -11px;
-    }
-    .ol-popup-closer {
-        text-decoration: none;
-        position: absolute;
-        top: 2px;
-        right: 8px;
-    }
+    @import '../../../../../static/leaseslicensing/css/map.css';
+
     .close-icon:hover {
         filter: brightness(80%);
     }
@@ -987,9 +851,6 @@ export default {
     }
     .table_caption {
         color: green;
-    }
-    .layer_option:hover {
-        cursor: pointer;
     }
 
 </style>
