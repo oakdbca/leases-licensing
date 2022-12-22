@@ -53,8 +53,6 @@ WORKDIR /app
 ENV POETRY_VERSION=1.1.13
 RUN pip install "poetry==$POETRY_VERSION"
 RUN poetry config virtualenvs.create false
-RUN pip uninstall virtualenv
-RUN pip install virtualenv==20.0.23 
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-dev --no-interaction --no-ansi
 
