@@ -29,9 +29,10 @@ RUN mkdir /home/container
 RUN chown container.container /home/container
 RUN cp /root/.bashrc /home/container
 RUN cp /root/.profile /home/container
+RUN apt remove python3-virtualenv
 
-RUN pip uninstall virtualenv
-RUN pip install virtualenv==20.0.23
+#RUN pip uninstall virtualenv
+#RUN pip install virtualenv==20.0.23
 
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
