@@ -1656,8 +1656,8 @@ class Proposal(DirtyFieldsMixin, models.Model):
         import geopandas as gpd
 
         try:
-            shp_file_qs = self.map_documents.filter(name__endswith=".shp")
-            # TODO : validate shapefile and all the other related filese are present
+            shp_file_qs = self.shapefile_documents.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx"))
+            # TODO : validate shapefile and all the other related files are present
             if shp_file_qs:
                 shp_file_obj = shp_file_qs[0]
                 shp = gpd.read_file(shp_file_obj.path)
