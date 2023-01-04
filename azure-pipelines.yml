@@ -37,7 +37,8 @@ stages:
         command: buildAndPush
         dockerfile: '$(Build.SourcesDirectory)/dockerdev/Dockerfile'
         tags: | 
-              leaseslicensing_dev_latest   
+              leaseslicensing_dev_latest
+              leaseslicensing_dev_$(tagDate)              
         containerRegistry: DockerHub
         repository: dbcawa/docker_app_dev       
         
