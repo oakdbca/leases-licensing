@@ -27,3 +27,12 @@ stages:
         dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
         tags: $(Get-Date -Format yyyyMMddhhmmss) |
           $(tag)
+    - task: Docker@2
+      displayName: Push image
+      inputs:
+        containerRegistry: |
+           $(dockerHub)
+        repository: username/repo
+        command: push
+        tags: $(Get-Date -Format yyyyMMddhhmmss)
+        
