@@ -25,13 +25,17 @@ stages:
       inputs:
         command: build
         dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        tags: $(Get-Date -Format yyyyMMddhhmmss) |
+        tags:  |
+          $(Date:yyyyMMdd).$(Rev:.r)
           $(tag)
+          latest
     - task: Docker@2
       displayName: Push image
       inputs:
         containerRegistry: DockerHub
         repository: dbcawa/leaseslicensing
         command: push
-        tags: $(Date:yyyyMMdd).$(Rev:.r)
+        tags: | 
+                $(Date:yyyyMMdd).$(Rev:.r)
+                latest
         
