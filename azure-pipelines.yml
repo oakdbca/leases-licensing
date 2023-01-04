@@ -33,5 +33,5 @@ stages:
         containerRegistry: DockerHub
         repository: dbcawa/leaseslicensing
         command: push
-        tags: $(Get-Date -Format yyyyMMddhhmmss)
+        tags: $(Date:yyyyMMdd).$(Rev:.r)
         
