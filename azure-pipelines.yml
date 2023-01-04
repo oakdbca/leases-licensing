@@ -26,7 +26,8 @@ stages:
       inputs:
         command: build
         dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        tags: | latest
+        tags: |  
+          latest
           $(tag)
           
     - task: Docker@2
@@ -35,5 +36,7 @@ stages:
         containerRegistry: DockerHub
         repository: dbcawa/leaseslicensing
         command: push
-        tags: | latest
+        tags: | 
+           latest
+           $(tag)
         
