@@ -10,7 +10,7 @@ resources:
 
 variables:
   tag: '$(Build.BuildId)'
-  tagDate: '$(Date:yyyyMMdd)'
+  tagDate: $[ format('{0:yyyy}.{0:MM}.{0:dd}', pipeline.startTime) ]
 
 stages:
 - stage: Build
