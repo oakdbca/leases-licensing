@@ -31,7 +31,7 @@ stages:
       displayName: Push image
       inputs:
         containerRegistry: DockerHub
-        repository: username/repo
+        repository: dbcawa/leaseslicensing
         command: push
         tags: $(Get-Date -Format yyyyMMddhhmmss)
         
