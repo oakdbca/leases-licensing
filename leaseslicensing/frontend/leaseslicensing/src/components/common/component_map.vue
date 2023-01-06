@@ -258,42 +258,129 @@ export default {
             let vm = this
             vm.shapeVectorSource=null;
             vm.shapeVectorLayer=null;
-            if(vm.shapefile_json && Object.keys(vm.shapefile_json).lenght>0){
-                console.log(vm.shapefile_json);
-                vm.shapeVectorSource = new VectorSource({
-                    features: new GeoJSON().readFeatures(vm.shapefile_json),
-                });
-                vm.shapeVectorLayer= new VectorLayer({
-                    source: vm.shapeVectorSource,
+            // Polygon styling
+            let fill = new Fill({
+                color: 'rgba(255, 255, 255, 0.66)',
                 })
-                vm.map.addLayer(vm.shapeVectorLayer);
-                vm.displayAllFeaturesShape();
+            let style_valid = new Style({
+                    fill: fill,
+                    stroke: new Stroke({
+                        color: 'white',
+                    }),
+                })
+            let style_inv = new Style({
+                    fill: fill,
+                    stroke: new Stroke({
+                        color: 'red',
+                    }),
+                })
+
+            if(vm.shapefile_json && Object.keys(vm.shapefile_json).length>0){
+                // console.log(vm.shapefile_json);
+
+                let invalid_files = []
+                // Add polygons uploaded by the user that already have been added as layer to a list
+                let added_layer = []
+                vm.map.getLayers().getArray()
+                    .filter(layer => typeof(layer.get('source_')) !== 'undefined')
+                    .forEach(layer => added_layer.push(layer));
+
+                // Remove all layer where the respective previously uploaded file has been removed
+                if (added_layer.length > vm.shapefile_json["features"].length) {
+                    let shapefile_sources = []
+                    vm.shapefile_json["features"].forEach(json => {
+                        shapefile_sources.push(json["properties"]["source_"])
+                    });
+
+                    added_layer.forEach(layer => {
+                        if (! shapefile_sources.includes(layer.get('source_'))) {
+                            console.log(`Layer ${layer.get('source_')} seems to have been removed`)
+                            vm.map.removeLayer(layer)
+                        };
+                    });
+                }
+
+                // Iterate over every feature in the feature collection from the shapefiles
+                for (let i in vm.shapefile_json["features"]) {
+                    let feature = vm.shapefile_json["features"][i];
+
+                    // Check whether the feature has already been added to the map
+                    let _found = false;
+                    let source_ = feature["properties"]["source_"]
+                    added_layer.every(layer => {
+                        if (layer.get('source_') === source_) {
+                            _found = true;
+                            return false;
+                        }
+                        return true;
+                    });
+
+                    // Add feature as layer if not yet present
+                    if (!_found) {
+                        let shapeVectorSource = new VectorSource({
+                            features: new GeoJSON().readFeatures(feature),
+                        });
+                        let shapeVectorLayer = new VectorLayer({
+                            source: shapeVectorSource,
+                            style: function (feature, resolution) {
+                                const name = feature.get('valid');
+                                return name == true ? style_valid : style_inv;
+                            },
+                        })
+                        shapeVectorLayer.set('source_', source_);
+                        vm.map.addLayer(shapeVectorLayer);
+                    } else {
+                        console.log(`Layer ${source_} already exists`);
+                    }
+
+                    // Check whether there is an invalid feature polygon (e.g. does not intersect with DBCA geometries)
+                    if (feature["properties"]['valid'] == false) {
+                        invalid_files.push(source_)
+                    };
+                }
+                swal.fire({
+                    title: "Validation",
+                    text: invalid_files.length == 0 ? 'Polygons are valid' : `${invalid_files.join(', ')} are not valid`,
+                    icon: invalid_files.length == 0 ? 'success' : 'warning'
+                })
+
+                vm.displayAllFeatures() //.displayAllFeaturesShape();
             }
         },
         validate_map_docs: function(){
             let vm = this;
             vm.showError=false;
             vm.errorString='';
+            let endpoint = api_endpoints.proposals
             const options = {
-                method: 'POST',
+                'method': 'POST',
+                'content-type': 'application/json'
             };
-            fetch(helpers.add_endpoint_json(api_endpoints.proposals,vm.proposal.id+'/validate_map_files'), options).then((response) => response.json())
-            .then((data) => {
-                console.log(">>> data", data);
-            });
-
-
-            // vm.$http.post(helpers.add_endpoint_json(api_endpoints.proposals,vm.proposal.id+'/validate_map_files')).then(res=>{
-            //     // vm.proposal = res.body;
-            //     //vm.refreshFromResponse(res);
-            //     $
-            //     vm.$emit('refreshFromResponse',res);
-            //     },err=>{
-            //     console.log(err);
-            //     vm.showError=true;
-            //     vm.errorString=helpers.apiVueResourceError(err);
-            //     });
-            vm.updateShape();
+            // fetch(helpers.add_endpoint_json(endpoint,vm.proposal.id+'/validate_map_files'), options).then(response => response.json())
+            // .then(data => {
+            fetch(helpers.add_endpoint_json(api_endpoints.proposals, vm.proposal.id + '/validate_map_files'), options).then(async response => {
+                if (!response.ok) {
+                    const text = await response.json();
+                    throw new Error(text);
+                } else {
+                    return response.json();
+                }})
+                .then(data => {
+                    // vm.$emit('refreshFromResponse', data);
+                    // vm.proposal = data;
+                    vm.shapefile_json = data.shapefile_json;
+                    vm.updateShape();
+                })
+                .catch(error => {
+                    console.log(error);
+                    vm.showError=true;
+                    vm.errorString=helpers.apiVueResourceError(error);
+                    swal.fire({
+                        title: "Validation",
+                        text: error,
+                        icon: 'error'
+                    })
+                });
         },
 
         loadLeaseLicenceGeometry: function(){
