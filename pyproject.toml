@@ -15,7 +15,7 @@ django_cron = "0.5.1"
 django_reversion = "5.0.0"
 geojson = "2.5.0"
 python_dateutil = "2.8.2"
-pytz = "2019.3"
+pytz = "2020.1"
 reportlab = "3.5.55"
 requests = "2.22.0"
 setuptools = "45.2.0"
@@ -41,6 +41,8 @@ phonenumbers = "8.12.48"
 babel = "2.10.1"
 django-dirtyfields = "1.8.1"
 django_media_serv = {git = "https://github.com/dbca-wa/django-media-serv.git", rev="main"}
+pandas = "1.5.2"
+geopandas = "0.12.2"
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.3.0"
