@@ -99,7 +99,7 @@
     cursor: pointer;
 }
 .layer_menu {
-    height: 400px;
+    max-height: 400px;
     overflow-y: auto;
     overflow-x: hidden;
 }

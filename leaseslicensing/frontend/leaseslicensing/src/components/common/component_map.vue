@@ -254,6 +254,9 @@ export default {
             //tileLayer.setOpacity((100 - value)/100)
             tileLayer.setOpacity(value/100)
         },
+        /**
+         * Adds uploaded shapefiles as layers to the map
+         */
         updateShape: function() {
             let vm = this
             vm.shapeVectorSource=null;

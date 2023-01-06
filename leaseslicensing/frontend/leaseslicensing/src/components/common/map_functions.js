@@ -20,7 +20,7 @@ export function addOptionalLayers(map_component) {
         return response.text();
         }).then(function(text) {
             let result = parser.read(text);
-            let layers = result.Capability.Layer.Layer
+            let layers = result.Capability.Layer.Layer.filter(layer => {return layer['Name'] === 'dbca_legislated_lands_and_waters'});
 
             for (let j in layers) {
                 let layer = layers[j];
