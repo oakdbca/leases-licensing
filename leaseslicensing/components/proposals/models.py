@@ -69,6 +69,11 @@ from decimal import Decimal as D
 import csv
 import time
 from django.contrib.gis.db.models.fields import PointField, PolygonField
+from leaseslicensing.components.main.utils import get_dbca_lands_and_waters_geos
+from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.gdal import SpatialReference
+import geopandas as gpd
+import pandas as pd
 
 
 import logging
@@ -1190,12 +1195,13 @@ class Proposal(DirtyFieldsMixin, models.Model):
 
     # Append 'P' to Proposal id to generate Lodgement number. Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
-        super(Proposal, self).save(*args, **kwargs)
+        # super(Proposal, self).save(*args, **kwargs)
 
         if self.lodgement_number == "":
             new_lodgment_id = "A{0:06d}".format(self.pk)
             self.lodgement_number = new_lodgment_id
-            self.save()
+            # self.save()
+        super(Proposal, self).save(*args, **kwargs)
 
     @property
     def relevant_applicant(self):
@@ -1653,27 +1659,77 @@ class Proposal(DirtyFieldsMixin, models.Model):
 
     # From DAS
     def validate_map_files(self, request):
-        import geopandas as gpd
+        # Validates shapefiles uploaded with the proposal.
+        # Shapefiles are valid when the shp, shx, and dbf extensions are provided and when they intersect with DBCA legislated land or water polygons
 
         try:
-            shp_file_qs = self.map_documents.filter(name__endswith=".shp")
-            # TODO : validate shapefile and all the other related filese are present
+            # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
+            shp_file_qs = self.shapefile_documents.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx" ) | Q(name__endswith=".dbf") | Q(name__endswith=".prj"))
+            # Validate shapefile and all the other related files are present
             if shp_file_qs:
-                shp_file_obj = shp_file_qs[0]
-                shp = gpd.read_file(shp_file_obj.path)
-                shp_transform = shp.to_crs(crs=4326)
-                shp_json = shp_transform.to_json()
+                if not shp_file_qs.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx" ) | Q(name__endswith=".dbf")).count() % 3 == 0:
+                    raise ValidationError("Shapefile needs at least the shp, shx, and dbf extensions")
+
+                # A list of all uploaded shapefiles
+                shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
+                shp_gdfs = []
+
+                # List of DBCA legislated land and water geometries
+                lands_geos_data = get_dbca_lands_and_waters_geos()
+                # FIXME is there a better way to get the SRID of the layer?
+                srid_dbca = list(set([g._base_geom.srid for g in lands_geos_data]))[0]
+
+                for shp_file_obj in shp_file_objs:
+                    gdf = gpd.read_file(shp_file_obj.path) # Shapefile to GeoDataFrame
+                    geometries = gdf.geometry # GeoSeries
+                    # Only accept polygons
+                    geom_type = geometries.geom_type.values[0]
+                    if geom_type not in ("Polygon", "MultiPolygon"):
+                        raise ValidationError(f"Geometry of type {geom_type} not allowed")
+
+                    # If no prj file assume WGS-84 datum
+                    if not gdf.crs:
+                        gdf_transform = gdf.set_crs(crs=4326)
+                    else:
+                        gdf_transform = gdf.to_crs(crs=4326)
+
+                    # Check for intersection with DBCA geometries
+                    gdf_transform["valid"] = False
+                    for geom in geometries:
+                        srid = SpatialReference(geometries.crs.srs).srid # spatial reference identifier
+                        geos_repr = GEOSGeometry(geom.wkt, srid=srid)
+                        if srid != srid_dbca:
+                            # Transform the imported geometry to the SRID of the DBCA geometries
+                            geos_repr = geos_repr.transform(srid_dbca, clone=True)
+                        # Add the file name as identifier to the geojson for use in the frontend
+                        if "source_" not in gdf_transform:
+                            gdf_transform["source_"] = shp_file_obj.name
+                        # Imported geometry is valid if it intersects with any one of the DBCA geometries
+                        if any([lw_geom.intersects(geos_repr) for lw_geom in lands_geos_data]):
+                            gdf_transform["valid"] = True
+
+                    shp_gdfs.append(gdf_transform)
+
+                # Merge all GeoDataFrames into a single one
+                gdf_merged = gpd.GeoDataFrame(pd.concat(shp_gdfs).reset_index(drop=True))
+
+                # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
+                shp_json = gdf_merged.to_json()
                 import json
 
                 if type(shp_json) == str:
                     self.shapefile_json = json.loads(shp_json)
                 else:
                     self.shapefile_json = shp_json
-                self.save(version_comment="New Shapefile JSON saved.")
+
+                # self.save(version_comment="New Shapefile JSON saved.")
+                self.save()
                 # else:
                 #     raise ValidationError('Please upload a valid shapefile')
             else:
                 raise ValidationError("Please upload a valid shapefile")
+        except ValidationError:
+            raise
         except:
             raise ValidationError("Please upload a valid shapefile")
 

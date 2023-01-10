@@ -419,6 +419,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "risk_factors_text",
             "legislative_requirements_text",
             "lodgement_date_display",
+            "shapefile_json",
         )
         read_only_fields = ("supporting_documents",)
 
