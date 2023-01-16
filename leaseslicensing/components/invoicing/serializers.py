@@ -168,6 +168,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             # When "Complete Editing" clicked
             charge_method = attrs.get('charge_method')
 
+            if not charge_method:
+                raise serializers.ValidationError(["No charge method selected"])
+
             if charge_method.key == settings.CHARGE_METHOD_ONCE_OFF_CHARGE:
                 self.set_default_values(attrs, [
                     'charge_method',

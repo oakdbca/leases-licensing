@@ -139,17 +139,37 @@ export default {
           console.log(moment(data).format('DD/MM/YYYY'));
       },
   },
-  beforeRouteEnter: async function(to, from, next){
-      /*
-    const res = await fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`);
-    const resData = await res.json();
-      this.compliance = Object.assign({}, resData);
-    */
-      next(async (vm) => {
-          const url = helpers.add_endpoint_json(api_endpoints.compliances,to.params.compliance_id+'/internal_compliance');
-          vm.compliance = Object.assign({}, await helpers.fetchWrapper(url));
-          vm.members = vm.compliance.allowed_assessors;
-      });
+//   beforeRouteEnter: async function(to, from, next){
+    beforeRouteEnter: function(to, from, next){
+        /*
+        const res = await fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`);
+        const resData = await res.json();
+        this.compliance = Object.assign({}, resData);
+        */
+
+        const url = helpers.add_endpoint_json(api_endpoints.compliances,to.params.compliance_id+'/internal_compliance');
+        fetch(helpers.add_endpoint_json(api_endpoints.compliances,to.params.compliance_id+'/internal_compliance')).then(async response => {
+            if (!response.ok) {
+                return await response.text().then(text => { throw new Error(text); });
+            } else {
+                return await response.json();
+                }
+            })
+            .then (async data => {
+                next((vm) => {
+                    // const data = await response.json();
+                    vm.compliance = Object.assign({}, data);
+                    vm.members = vm.compliance.allowed_assessors;
+                });
+            })
+            .catch(error => {
+                console.log(error);
+                swal.fire({
+                    title: 'Proposal Error',
+                    text: error,
+                    icon: 'error'
+                })
+            });
   },
   components: {
     datatable,
@@ -213,11 +233,12 @@ export default {
         }
     },
     acceptCompliance: async function() {
-        await new swal({
+        let vm = this;
+        await swal.fire({
         //swal({
             title: "Accept Compliance with requirements",
             text: "Are you sure you want to accept this compliance with requirements?",
-            type: "question",
+            icon: "question",
             showCancelButton: true,
             confirmButtonText: 'Accept'
         });

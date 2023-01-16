@@ -7,7 +7,7 @@
                 ref="proposed_approval_form"
                 :processing_status="proposal.processing_status"
                 :proposal_id="proposal.id"
-                :proposal_type='proposal.proposal_type.code'
+                :proposal_type="proposal.proposal_type? proposal.proposal_type.code: null"
                 :submitter_email="submitter_email"
                 :applicant_email="applicant_email"
                 :key="proposedApprovalKey"
@@ -48,14 +48,14 @@ export default {
             type: String,
             required: true
         },
-        submitter_email: {
-            type: String,
-            required: true
-        },
-        applicant_email: {
-            type: String,
-            //default: ''
-        },
+        // submitter_email: {
+        //     type: String,
+        //     required: true
+        // },
+        // applicant_email: {
+        //     type: String,
+        //     //default: ''
+        // },
         proposedApprovalKey: {
             type: String,
             //default: ''

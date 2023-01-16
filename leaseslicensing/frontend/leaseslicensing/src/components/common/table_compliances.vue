@@ -292,6 +292,7 @@ export default {
                                 }
                             }
                             else{
+                                // FIXME If checked for `can_user_view` first an already submitted Compliance can potentially be submitted again and again
                                 if (full.can_user_view) {
                                     links +=  `<a href='/external/compliance/${full.id}'>View</a><br/>`;
 

@@ -347,7 +347,7 @@
         <div class="col-sm-12 inline-details-text">
             <div class="row question-row">
             <div class="col-sm-3">
-                <label for="legislative_requirements_text" class="control-label pull-left">If legislative or regulatory requirements apply to thie proposal, please provide details and upload any approvals already received</label>
+                <label for="legislative_requirements_text" class="control-label pull-left">If legislative or regulatory requirements apply to the proposal, please provide details and upload any approvals already received</label>
             </div>
             <div class="col-sm-8">
                 <RichText

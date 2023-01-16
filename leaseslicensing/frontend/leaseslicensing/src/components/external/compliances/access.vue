@@ -220,7 +220,12 @@ export default {
             this.compliance = {};
             this.errors = false;
             $('.has-error').removeClass('has-error');
-            this.validation_form.resetForm();
+            if (this.validation_form) {
+                // FIXME Why is `validation_form` null when closing a Compliance with Requirements
+                this.validation_form.resetForm();
+            } else {
+                console.error("validation_form is null")
+            }
             let file_length = vm.files.length;
             this.files = [];
             for (var i = 0; i < file_length;i++){
@@ -229,7 +234,7 @@ export default {
                 });
             }
             this.attachAnother();
-            vm.$router.push({ name: 'external-proposals-dash'}); //Navigate to dashboard
+            vm.$router.push({ name: 'external-dashboard'}); //Navigate to dashboard
         },
 /*
     addFormValidations: function() {
@@ -313,32 +318,36 @@ export default {
             }
             */
             this.addingComms = true;
-            fetch(helpers.add_endpoint_json(api_endpoints.compliances,this.compliance.id+'/submit'),{
+
+            fetch(helpers.add_endpoint_json(api_endpoints.compliances,this.compliance.id+'/submit'), {
                 method: 'POST',
-                //body: JSON.stringify(this.compliance),
-                //body: JSON.stringify(payload),
                 body: formData
-            }).then(async (response)=>{
-                const resData = await response.json()
+            }).then(async response => {
+            if (!response.ok) {
+                return await response.json().then(json => { throw new Error(json); });
+            } else {
+                return await response.json();
+                }
+            })
+            .then (data => {
                 this.addingCompliance = false;
-                this.refreshFromResponse(resData);
-                /*swal(
-                 'Submit',
-                 'Your Compliance with Requirement has been submitted',
-                 'success'
-                );*/
-                this.compliance = Object.assign({}, resData);
+                this.refreshFromResponse(data);
+                this.compliance = Object.assign({}, data);
                 this.$router.push({
                     name: 'submit_compliance',
-                    //query: this.compliance,
                     params: { compliance_id: this.compliance.id }
                 });
-
-            },(error)=>{
+            })
+            .catch(error => {
                 this.errors = true;
                 this.addingCompliance = false;
                 this.errorString = helpers.apiVueResourceError(error);
-            });
+                swal.fire({
+                    title: 'Proposal Error',
+                    text: error,
+                    icon: 'error'
+                });
+            })
         });
     },
     refreshFromResponse:async function(resData){

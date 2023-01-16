@@ -298,7 +298,7 @@ export default {
             //this.validation_form.resetForm();
         },
         fetchApprovalDetails: async function() {
-            const res = await this.$http.get(api_endpoints.lookupApprovalDetails(this.approvalId));
+            const res = await fetch(api_endpoints.lookupApprovalDetails(this.approvalId) );
             if (res.ok) {
                 this.approvalDetails = Object.assign({}, res.body);
             }
