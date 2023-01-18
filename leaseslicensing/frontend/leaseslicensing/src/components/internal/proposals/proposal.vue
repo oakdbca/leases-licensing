@@ -886,7 +886,7 @@ export default {
                 let errors = [];
                 await res.json().then(json => {
                     for (var key in json) {
-                        errors.push(`${key}: ${json[key].join(",")}`)
+                        errors.push(`${key}: ${typeof(json[key])=='string'? json[key]: json[key].join(",")}`)
                     }
                     swal.fire({
                         title: "Please fix following errors before saving",

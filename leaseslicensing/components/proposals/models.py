@@ -1195,13 +1195,12 @@ class Proposal(DirtyFieldsMixin, models.Model):
 
     # Append 'P' to Proposal id to generate Lodgement number. Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
-        # super(Proposal, self).save(*args, **kwargs)
+        super(Proposal, self).save(*args, **kwargs) # Call parent `save` to create a Proposal id
 
         if self.lodgement_number == "":
             new_lodgment_id = "A{0:06d}".format(self.pk)
             self.lodgement_number = new_lodgment_id
-            # self.save()
-        super(Proposal, self).save(*args, **kwargs)
+            self.save()
 
     @property
     def relevant_applicant(self):
