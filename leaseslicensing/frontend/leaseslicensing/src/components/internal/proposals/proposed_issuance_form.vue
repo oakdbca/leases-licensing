@@ -304,10 +304,10 @@ export default {
             type: String,
             required: true
         },
-        isApprovalLevelDocument: {
-            type: Boolean,
-            required: true
-        },
+        // isApprovalLevelDocument: {
+        //     type: Boolean,
+        //     required: true
+        // },
         readonly: {
             type: Boolean,
             required: false
@@ -332,10 +332,10 @@ export default {
             type: Object,
             required: true,
         },
-        assessment: {
-            type: Object,
-            required: true,
-        },
+        // assessment: {
+        //     type: Object,
+        //     required: true,
+        // },
     },
     data:function () {
         return {
@@ -344,7 +344,7 @@ export default {
             form:null,
             approval: {},
             approvalTypes: [],
-            //selectedApprovalType: {},
+            selectedApprovalType: {},
             selectedApprovalTypeId: null,
             // Document Types arrays rely on selectedApprovalTypeId
             availableDocumentTypes: [],
@@ -456,7 +456,7 @@ export default {
             this.updateSelectedApprovalType(id);
         },
         updateSelectedApprovalType(id) {
-            console.log(id);
+            // console.log(id);
             // clear existing doc arrays
             this.availableDocumentTypes = [];
             this.selectedDocumentTypes = [];

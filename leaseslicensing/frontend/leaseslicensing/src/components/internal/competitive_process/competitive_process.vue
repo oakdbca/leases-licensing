@@ -469,19 +469,29 @@ export default {
         assignRequestUser: async function(){
             let vm = this
             console.log('in assignRequestUser')
-            try {
-                const response = await fetch(helpers.add_endpoint_json(api_endpoints.competitive_process, (vm.competitive_process.id + '/assign_request_user')))
-                const resData = await response.json();
-                this.competitive_process = Object.assign({}, resData);
+
+            fetch(helpers.add_endpoint_json(api_endpoints.competitive_process, (vm.competitive_process.id + '/assign_request_user'))).then(async response => {
+            if (!response.ok) {
+                // const text = response.text();
+                // throw new Error(text);
+                return response.text().then(text => { throw new Error(text) });
+            } else {
+                return await response.json();
+                }
+            })
+            .then (data => {
+                vm.competitive_process = Object.assign({}, resData);
+                vm.updateAssignedOfficerSelect();
+            })
+            .catch(error => {
                 this.updateAssignedOfficerSelect();
-            } catch (error) {
-                this.updateAssignedOfficerSelect();
-                swal.fire(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            }
+                console.log(error);
+                swal.fire({
+                    title: 'Proposal Error',
+                    text: error,
+                    icon: 'error'
+                })
+            })
         },
         fetchCompetitiveProcess: async function(){
             let vm = this
@@ -496,7 +506,19 @@ export default {
             } finally {
 
             }
-        }
+        },
+        updateAssignedOfficerSelect:function(){
+            // FIXME not sure if adding this function here is the correct way of doing it
+            console.log('updateAssignedOfficerSelect')
+            let vm = this;
+            if (vm.competitive_process.status === 'in_progress'){
+                vm.$refs.workflow.updateAssignedOfficerSelect(vm.competitive_process.accessing_user.id)
+            }
+            else{
+                // ...
+                vm.$refs.workflow.updateAssignedOfficerSelect(vm.competitive_process.accessing_user.id)
+            }
+        },
     }
 }
 </script>

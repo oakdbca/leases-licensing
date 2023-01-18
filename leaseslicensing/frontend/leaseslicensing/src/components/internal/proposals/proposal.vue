@@ -2,7 +2,7 @@
     <div v-if="proposal" class="container" id="internalProposal">
         <div v-if="debug">internal/proposals/proposal.vue</div>
         <div class="row">
-            <h3>{{ proposal.lodgement_number }} - {{ proposal.application_type.name_display }} - {{ proposal.proposal_type.description }}</h3>
+            <h3>{{ proposal.lodgement_number }} - {{ proposal.application_type? proposal.application_type.name_display: null }} - {{ proposal.proposal_type? proposal.proposal_type.description: null }}</h3>
 
             <div class="col-md-3">
                 <CommsLogs
@@ -330,7 +330,7 @@
             ref="proposed_approval"
             :processing_status="proposal.processing_status"
             :proposal_id="proposal.id"
-            :proposal_type='proposal.proposal_type.code'
+            :proposal_type="proposal.proposal_type? proposal.proposal_type.code: null"
             :isApprovalLevelDocument="isApprovalLevelDocument"
             :submitter_email="submitter_email"
             :applicant_email="applicant_email"
@@ -391,13 +391,13 @@ export default {
     data: function() {
         let vm = this;
         return {
-            detailsBody: 'detailsBody'+vm._uid,
-            addressBody: 'addressBody'+vm._uid,
-            contactsBody: 'contactsBody'+vm._uid,
-            siteLocations: 'siteLocations'+vm._uid,
-            related_items_datatable_id: 'related_items_datatable' + vm._uid,
+            detailsBody: 'detailsBody'+vm._.uid,
+            addressBody: 'addressBody'+vm._.uid,
+            contactsBody: 'contactsBody'+vm._.uid,
+            siteLocations: 'siteLocations'+vm._.uid,
+            related_items_datatable_id: 'related_items_datatable' + vm._.uid,
             defaultKey: "aho",
-            "proposal": null,
+            proposal: null,
             assessment: {},
             "loading": [],
             //selected_referral: '',
@@ -413,7 +413,7 @@ export default {
             hasAmendmentRequest: false,
             //requirementsComplete:true,
             state_options: ['requirements','processing'],
-            contacts_table_id: vm._uid+'contacts-table',
+            contacts_table_id: vm._.uid+'contacts-table',
             contacts_options:{
                 language: {
                     processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
@@ -877,16 +877,22 @@ export default {
             const res = await fetch('/api/proposal/' + this.proposal.id + '/finance_complete_editing.json', { body: JSON.stringify(payload), method: 'POST' })
 
             if(res.ok){
-                await new swal({
+                await swal.fire({
                     title: 'Saved',
                     text: 'Your proposal has been saved',
-                    type: 'success',
+                    icon: 'success',
                 })
             } else {
-                await new swal({
-                    title: "Please fix following errors before saving",
-                    text: await res.json(),
-                    type:'error',
+                let errors = [];
+                await res.json().then(json => {
+                    for (var key in json) {
+                        errors.push(`${key}: ${typeof(json[key])=='string'? json[key]: json[key].join(",")}`)
+                    }
+                    swal.fire({
+                        title: "Please fix following errors before saving",
+                        text: errors.join(","),
+                        icon:'error',
+                    })
                 })
             }
         },
@@ -1189,19 +1195,27 @@ export default {
         assignRequestUser: async function(){
             let vm = this
             console.log('in assignRequestUser')
-            try {
-                const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (vm.proposal.id + '/assign_request_user')))
-                const resData = await response.json();
-                this.proposal = Object.assign({}, resData);
+
+            fetch(helpers.add_endpoint_json(api_endpoints.proposal, (vm.proposal.id + '/assign_request_user'))).then(async response => {
+            if (!response.ok) {
+                return await response.json().then(json => { throw new Error(json); });
+            } else {
+                return await response.json();
+                }
+            })
+            .then (data => {
+                vm.proposal = Object.assign({}, data);
+                vm.updateAssignedOfficerSelect();
+            })
+            .catch(error => {
                 this.updateAssignedOfficerSelect();
-            } catch (error) {
-                this.updateAssignedOfficerSelect();
-                swal.fire(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            }
+                console.log(error);
+                swal.fire({
+                    title: 'Proposal Error',
+                    text: error,
+                    icon: 'error'
+                })
+            })
         },
         /*
         refreshFromResponse:function(response){
@@ -1431,16 +1445,24 @@ export default {
             }
         });
     },
-    created: async function() {
+    created: function() {
+        let vm = this;
         console.log('in created')
-        try {
-            const res = await fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`);
-            const resData = await res.json();
-            this.proposal = Object.assign({}, resData);
-            this.hasAmendmentRequest=this.proposal.hasAmendmentRequest;
-        } catch (err) {
-          console.log(err);
-        }
+        fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`).then(async response => {
+            if (!response.ok) {
+                const text = await response.json();
+                throw new Error(text);
+            } else {
+                return await response.json();
+            }
+        })
+        .then (data => {
+            vm.proposal = Object.assign({}, data);
+            vm.hasAmendmentRequest=this.proposal.hasAmendmentRequest;
+        })
+        .catch(error => {
+            console.log(error);
+        })
     },
 }
 </script>

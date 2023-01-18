@@ -527,62 +527,68 @@ export default {
         this.submitting = true;
         this.paySubmitting=true;
 
-        try {
-            await swal.fire({
+        swal.fire({
                 title: this.submitText + " Application",
                 text: "Are you sure you want to " + this.submitText.toLowerCase()+ " this application?",
                 icon: "question",
                 showCancelButton: true,
                 confirmButtonText: this.submitText
-            })
-        } catch (cancel) {
-            this.submitting = false;
-            this.paySubmitting=false;
-            return;
-        }
-        try {
-            //const res = await this.save(false, this.proposal_submit_url);
-            await this.save(false, this.proposal_submit_url);
-            this.$nextTick(() => {
-                const lodgementDate = new Date(this.proposal.lodgement_date)
-                this.$router.push({
-                    name: 'submit-proposal',
+            }).then(async result => {
+                if (!result.isConfirmed) {
+                  // Cancel
+                  this.submitting = false;
+                  this.paySubmitting=false;
+                  return;
+                } else {
+                  // Accept
+                  try {
+                    //const res = await this.save(false, this.proposal_submit_url);
+                    await this.save(false, this.proposal_submit_url);
+                    this.$nextTick(() => {
+                        const lodgementDate = new Date(this.proposal.lodgement_date)
+                        this.$router.push({
+                            name: 'submit-proposal',
+                            /*
+                            params: {
+                                proposal_id: this.proposal,
+                            },
+                            */
+                            params: this.proposal,
+                            //query: this.proposal,
+                            /*
+                            meta: {
+                                proposal_id: this.proposal.id,
+                                lodgement_number: this.proposal.lodgement_number,
+                                lodgement_date: lodgementDate.toLocaleDateString("en-AU"),
+                                application_type_text: this.proposal.application_type.confirmation_text
+                            },
+                            */
+                        });
+                    })
                     /*
-                    params: {
-                        proposal_id: this.proposal,
-                    },
+                    if (res.ok) {
+                        // change this to confirmation page
+                        this.$router.push({
+                            name: 'submit-proposal',
+                            params: {proposal: this.proposal},
+                        });
+                    }
                     */
-                    params: this.proposal,
-                    //query: this.proposal,
-                    /*
-                    meta: {
-                        proposal_id: this.proposal.id,
-                        lodgement_number: this.proposal.lodgement_number,
-                        lodgement_date: lodgementDate.toLocaleDateString("en-AU"),
-                        application_type_text: this.proposal.application_type.confirmation_text
-                    },
-                    */
-                });
-            })
-            /*
-            if (res.ok) {
-                // change this to confirmation page
-                this.$router.push({
-                    name: 'submit-proposal',
-                    params: {proposal: this.proposal},
-                });
-            }
-            */
-        } catch(err) {
-            console.log(err)
-            await swal.fire({
-                title: 'Submit Error',
-                html: helpers.apiVueResourceError(err),
-                icon: 'error',
-            })
-            this.savingProposal = false;
-            this.paySubmitting = false;
-        }
+                  } catch(err) {
+                      console.log(err)
+                      await swal.fire({
+                          title: 'Submit Error',
+                          html: helpers.apiVueResourceError(err),
+                          icon: 'error',
+                      })
+                      this.savingProposal = false;
+                      this.paySubmitting = false;
+                  }
+                }
+          },(error) => {
+
+            });
+
         /*
         if (!this.proposal.fee_paid) {
             this.$nextTick(async () => {

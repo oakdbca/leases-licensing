@@ -14,7 +14,7 @@
 
                             <div class="col-sm-12 top-buffer-s">
                                 <strong>Issued on</strong><br/>
-                                {{ approval.issue_date | formatDate}}
+                                {{ formatDate(approval.issue_date) }}
                             </div>
                             <div class="col-sm-12 top-buffer-s">
                                 <table class="table small-table">
@@ -61,42 +61,38 @@
 
             <div class="row">
 
-                <div class="card card-default">
-                  <div class="card-header">
-                      <h3 class="card-title">{{ approvalLabel }}
-                        <a class="panelClicker" :href="'#'+oBody" data-toggle="collapse" expanded="true"  data-parent="#userInfo" :aria-controls="oBody">
-                            <span class="glyphicon glyphicon-chevron-down pull-right "></span>
-                        </a>
-                    </h3>
-                  </div>
-                  <div v-if="loading.length == 0" class="card-body collapse" :id="oBody">
+                <FormSection :formCollapse="false" label="License" Index="oBody">
+                    <!-- <CollapsibleFilters component_title="Assessor comments" ref="collapsible_filters" @created="collapsible_component_mounted" class="mb-2">
+                    </CollapsibleFilters> -->
+
+                    <div v-if="loading.length == 0" class="card-body" :id="oBody">
                       <form class="form-horizontal" action="index.html" method="post">
-                          <div v-if="mooringLicence" class="form-group">
+                          <div v-if="mooringLicence" class="row mb-3">
                             <label for="" class="col-sm-3 control-label">Mooring</label>
                             <div class="col-sm-6">
-                                <label for="" class="control-label pull-left">{{approval.mooring_licence_mooring}}</label>
+                                <textarea disabled class="form-control" name="mooring" rows="1" placeholder="" style="resize: none">{{approval.mooring_licence_mooring}}</textarea>
                             </div>
                           </div>
-                          <div class="form-group">
-                            <label for="" class="col-sm-3 control-label">Issue Date</label>
+                          <div class="row mb-3">
+                            <label for="issue_date" class="col-sm-3 control-label">Issue Date</label>
                             <div class="col-sm-6">
-                                <label for="" class="control-label pull-left">{{approval.issue_date | formatDate}}</label>
+                                <textarea disabled id="issue_date" class="form-control" name="issue_date" rows="1" placeholder="" style="resize: none">{{ formatDate(approval.issue_date) }}</textarea>
                             </div>
                           </div>
-                          <div class="form-group">
-                            <label for="" class="col-sm-3 control-label" >Start Date</label>
+                          <div class="row mb-3">
+                            <label for="start_date" class="col-sm-3 control-label" >Start Date</label>
                             <div class="col-sm-6">
-                                <label for="" class="control-label pull-left">{{approval.start_date | formatDate}}</label>
+                                <textarea disabled id="issue_date" class="form-control" name="start_date" rows="1" placeholder="" style="resize: none">{{ formatDate(approval.start_date) }}</textarea>
                             </div>
                           </div>
-                          <div class="form-group">
-                            <label for="" class="col-sm-3 control-label">Expiry Date</label>
-                            <div class="col-sm-3">
-                                <label for="" class="control-label pull-left">{{approval.expiry_date_str}}</label>
+                          <div class="row mb-3">
+                            <label for="expiry_date" class="col-sm-3 control-label">Expiry Date</label>
+                            <div class="col-sm-6">
+                                <textarea disabled id="issue_date" class="form-control" name="expiry_date" rows="1" placeholder="" style="resize: none">{{ formatDate(approval.expiry_date) }}</textarea>
                             </div>
 
                           </div>
-                          <div class="form-group">
+                          <div class="row mb-3">
                               <label for="" class="col-sm-3 control-label" >{{ approvalLabel }}</label>
                             <div class="col-sm-4">
                                 <!-- <p><a target="_blank" :href="approval.licence_document" class="control-label pull-left">Approval.pdf</a></p> -->
@@ -114,9 +110,9 @@
                           </div-->
                        </form>
                   </div>
-                </div>
-            </div>
+                </FormSection>
 
+            </div>
         </div>
     </div>
 </div>
@@ -133,9 +129,10 @@ import { api_endpoints, helpers } from '@/utils/hooks'
 //import ComponentSiteSelection from '@/components/common/apiary/component_site_selection.vue'
 //import SectionAnnualRentalFee from '@/components/common/apiary/section_annual_rental_fee.vue'
 export default {
-  name: 'ApprovalDetail',
-  data() {
+    name: 'ApprovalDetail',
+    data() {
     let vm = this;
+    vm._uid = vm._.uid; // Vue3
     return {
         showExpired: false,
         moorings_datatable_id: 'moorings-datatable-' + vm._uid,
@@ -272,11 +269,6 @@ export default {
           });
       },
   },
-  filters: {
-    formatDate: function(data){
-        return moment(data).format('DD/MM/YYYY');
-    }
-  },
     props: {
         approvalId: {
             type: Number,
@@ -289,7 +281,7 @@ export default {
       console.log({resData})
       //this.approval = Object.assign({}, response.body);
       this.approval = Object.assign({}, resData);
-      this.approval.applicant_id = response.body.applicant_id;
+      this.approval.applicant_id = resData.applicant_id;
       if (this.approval.submitter.postal_address == null){ this.approval.submitter.postal_address = {}; }
       await this.$nextTick(() => {
           if (this.approval && this.approval.id && this.authorisedUserPermit) {
@@ -315,6 +307,8 @@ export default {
         let description = '';
         if (this.approval && this.approval.approval_type_dict) {
             description = this.approval.approval_type_dict.description;
+        } else {
+            description = "License"
         }
         return description;
     },
@@ -342,6 +336,9 @@ export default {
 
   },
   methods: {
+    formatDate: function(data){
+        return data? moment(data).format(this.DATE_TIME_FORMAT): '';
+    },
     constructMooringsTable: function() {
         let vm = this;
         this.$refs.moorings_datatable.vmDataTable.clear().draw();

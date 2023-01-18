@@ -300,15 +300,16 @@ def send_compliance_accept_email_notification(compliance, request, is_test=False
 
     context = {"compliance": compliance}
     submitter = (
-        compliance.submitter.email
-        if compliance.submitter and compliance.submitter.email
-        else compliance.proposal.submitter.email
+        retrieve_email_user(compliance.submitter).email
+        if compliance.submitter and retrieve_email_user(compliance.submitter).email
+        else retrieve_email_user(compliance.proposal.submitter).email
     )
     all_ccs = []
     if compliance.proposal.org_applicant and compliance.proposal.org_applicant.email:
         cc_list = compliance.proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
+    # TODO `leaseslicensing/components/emails/templates/leaseslicensing/emails/base_email.txt` misses body text
     msg = email.send(submitter, cc=all_ccs, context=context)
     if is_test:
         return
@@ -320,9 +321,12 @@ def send_compliance_accept_email_notification(compliance, request, is_test=False
             msg, compliance.proposal.org_applicant, compliance.submitter, sender=sender
         )
     else:
-        _log_user_email(
-            msg, compliance.proposal.submitter, compliance.submitter, sender=sender
-        )
+        try:
+            _log_user_email(
+                msg, compliance.proposal.submitter, compliance.submitter, sender=sender
+            )
+        except:
+            pass
 
 
 def send_external_submit_email_notification(request, compliance, is_test=False):
@@ -583,7 +587,9 @@ def _log_org_email(email_message, organisation, customer, sender=None):
     return email_entry
 
 
-#def _log_user_email(email_message, emailuser, customer, sender=None):
+def _log_user_email(email_message, emailuser, customer, sender=None):
+    # TODO Function definition is commented out. Probably needs implementation of `EmailUserLogEntry` in `ledger_api_client.ledger_models`?
+    raise NotImplementedError("`_log_user_email` has been commented out. Needs implementation.")
 #    from ledger.accounts.models import EmailUserLogEntry
 #
 #    if isinstance(

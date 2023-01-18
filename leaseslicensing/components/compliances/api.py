@@ -38,6 +38,7 @@ from django.urls import reverse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import InMemoryUploadedFile
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.compliances.models import (
     Compliance,
@@ -283,8 +284,13 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                 serializer = SaveComplianceSerializer(instance, data=data)
                 serializer.is_valid(raise_exception=True)
                 instance = serializer.save()
+                # FIXME Is the right place to submit the request. Invoking submit will also send out email notifications,
+                # so it would be plausible to do this last after everything else, but submitting at the end of this function
+                # will cause any document attached to this Compliance to be uploaded twice and appear twice in the view.
+                instance.submit(request)
 
                 serializer = self.get_serializer(instance)
+
                 # Save the files
                 #for f in request.FILES:
                 # for f in request.data.get("files"):
@@ -294,6 +300,9 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                     #_file = f.get("file")
                     filename = request.data.get("name" + str(i))
                     _file = request.data.get("file" + str(i))
+
+                    if not isinstance(_file, InMemoryUploadedFile):
+                        raise serializers.ValidationError("No files attached")
 
                     document = instance.documents.get_or_create(name=filename)[0]
                     path = default_storage.save(
@@ -311,6 +320,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                 #    document._file = f.get("file")
                 #    document.save()
                 # End Save Documents
+
                 return Response(serializer.data)
         except serializers.ValidationError:
             print(traceback.print_exc())

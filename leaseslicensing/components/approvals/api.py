@@ -328,9 +328,9 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         elif is_customer(self.request):
             user_orgs = [
                 org.id for org in self.request.user.leaseslicensing_organisations.all()
-            ]
+            ] if hasattr(self.request.user, "leaseslicensing_organisations") else []
             queryset = Approval.objects.filter(
-                Q(org_applicant_id__in=user_orgs) | Q(submitter=self.request.user)
+                Q(org_applicant_id__in=user_orgs) | Q(submitter=self.request.user.id)
             )
             return queryset
         return Approval.objects.none()

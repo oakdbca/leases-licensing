@@ -54,8 +54,8 @@
                 :processing_status="proposal.processing_status"
                 :proposal_id="proposal.id"
                 :proposal_type='proposal.proposal_type.code'
-                :submitter_email="submitter_email"
-                :applicant_email="applicant_email"
+                :submitter_email="proposal.submitter.email"
+                :applicant_email="proposal.applicant"
                 :key="proposedApprovalKey"
                 :proposedApprovalKey="proposedApprovalKey"
                 :proposedApprovalState="proposedApprovalState"
@@ -88,13 +88,15 @@ import InvoicingDetails from "@/components/common/invoicing_details.vue"
 export default {
     name: 'InternalProposalApproval',
     props: {
-        proposal: Object
+        proposal: Object,
+        proposedApprovalState: "",
+        proposedApprovalKey: null
     },
     data: function() {
         let vm = this;
         return {
-            proposedDecision: "proposal-decision-"+vm._uid,
-            proposedLevel: "proposal-level-"+vm._uid,
+            proposedDecision: "proposal-decision-"+vm._.uid,
+            proposedLevel: "proposal-level-"+vm._.uid,
             uploadedFile: null,
             component_site_selection_key: '',
         }
