@@ -113,16 +113,19 @@
             </div>
             </div>
         <VueAlert :show.sync="showError" type="danger" style="color: red"><strong>{{errorString}}</strong></VueAlert>
-        <div>
+        <div class="container">
             <div class="row">
-                <div class="col-sm-2 pull-right">
-                    <input
-                        :disabled="valid_button_disabled"
-                        @click="validate_map_docs"
-                        type="button"
-                        value="Validate"
-                        class="btn btn-primary w-100"
-                    />
+                <div class="col-sm-3 pull-right">
+                    <button type="button" v-if="is_validating" disabled class="btn btn-primary w-100 mh-100">
+                        <div class="row">
+                            <div class="col-sm-12 text-nowrap text-truncate">Validate <i class="fa fa-spinner fa-spin"></i></div>
+                        </div>
+                    </button>
+                    <button type="button" v-else class="btn btn-primary w-100 mh-100 text-nowrap" @click="validate_map_docs">
+                        <div class="row">
+                            <div class="col-sm-12 text-nowrap text-truncate">Validate</div>
+                        </div>
+                    </button>
                 </div>
             </div>
         </div>
@@ -188,7 +191,8 @@ export default {
             newFeatureId: 1,
             errorString: '',
             showError:false,
-            set_mode: set_mode
+            set_mode: set_mode,
+            is_validating: false,
         }
     },
     props: {
@@ -352,6 +356,7 @@ export default {
         },
         validate_map_docs: function(){
             let vm = this;
+            vm.is_validating = true;
             vm.showError=false;
             vm.errorString='';
             let endpoint = api_endpoints.proposals
@@ -373,11 +378,13 @@ export default {
                     // vm.proposal = data;
                     vm.shapefile_json = data.shapefile_json;
                     vm.updateShape();
+                    vm.is_validating = false;
                 })
                 .catch(error => {
                     console.log(error);
                     vm.showError=true;
                     vm.errorString=helpers.apiVueResourceError(error);
+                    vm.is_validating = false;
                     swal.fire({
                         title: "Validation",
                         text: error,
