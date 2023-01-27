@@ -64,6 +64,7 @@
     cursor: pointer;
     display: block;
     padding: 4px;
+    text-align: center;
 }
 .optional-layers-button-active {
     position: relative;
@@ -73,6 +74,7 @@
     cursor: pointer;
     display: block;
     padding: 4px;
+    text-align: center;
 }
 .svg-icon {
     /* First make img black then invert to white */

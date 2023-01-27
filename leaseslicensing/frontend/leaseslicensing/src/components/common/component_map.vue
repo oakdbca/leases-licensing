@@ -60,8 +60,10 @@
                             </div>
                         </transition>
                     </div>
-                    <div v-if="selectedFeatureId" class="optional-layers-button">
-                        <i id="delete_feature" class="bi bi-trash3 ll-trash" @click="removeLeaselicenceFeature()" />
+                    <div v-if="selectedFeatureId" class="optional-layers-button-wrapper">
+                        <div class="optional-layers-button">
+                            <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash" @click="removeLeaselicenceFeature()" />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -672,6 +674,24 @@ export default {
                                 {'INFO_FORMAT': 'application/json'}
                             )
 
+                            fetch(url).then(async response => {
+                                if (!response.ok) {
+                                    return await response.json().then(json => { throw new Error(json); });
+                                } else {
+                                    return await response.json();
+                                    }
+                                })
+                                .then(data => {
+                                    if (data.features.length>0){
+                                        console.log(data);
+                                        vm.showPopupForLayersJson(data, evt.coordinate, column_names, display_all_columns, vm.optionalLayers[i]);
+                                    }
+                                })
+                                .catch(error => {
+                                    console.log(error);
+                                })
+
+                            /*
                             // Query 
                             let p = fetch(url, {
                                 credentials: 'include'
@@ -682,6 +702,7 @@ export default {
                                 //vm.showPopupForLayersHTML(data, evt.coordinate, column_names, display_all_columns)
                                 vm.showPopupForLayersJson(data, evt.coordinate, column_names, display_all_columns, vm.optionalLayers[i])
                             })
+                            */
                         }
                     }
                 }
@@ -732,6 +753,7 @@ export default {
             let caption = $('<div style="text-align:center; font-weight: bold;">').text(target_layer.get('title'))
             let table = $('<table style="margin-bottom: 1em;">') //.addClass('table')
             let tbody = $('<tbody>')
+            let outer = $('<div style="overflow-y:scroll; overflow-x:auto; max-height:300px; max-width:600px;">')
             wrapper.append(caption)
             wrapper.append(table.append(tbody))
 
@@ -746,9 +768,10 @@ export default {
                         tbody.append(tr)
                     }
                 }
-                this.content_element.innerHTML += wrapper.html()  // Export contents as HTML string
-                this.overlay.setPosition(coord);
             }
+            outer = $('<div>').wrapInner(outer.wrapInner(wrapper.html()))
+            this.content_element.innerHTML += outer.html() //wrapper.html()  // Export contents as HTML string
+            this.overlay.setPosition(coord);
         },
         showPopupForLayersHTML: function(html_str, coord, column_names, display_all_columns){
             // Generate jquery object from html_str
