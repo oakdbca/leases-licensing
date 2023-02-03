@@ -1,11 +1,12 @@
 <template id="more-referrals">
     <div>
-        <a v-if="!isFinalised" ref="showRef"  @click.prevent="" class="actionBtn top-buffer-s">Show Referrals</a>
+        <a v-if="!isFinalised" ref="showRef"  @click.prevent="" class="actionBtn top-buffer-s small text-xsmall">Show Referrals</a>
     </div>
 </template>
 
 <script>
 import { api_endpoints, helpers } from '@/utils/hooks'
+import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
 
 export default {
     name: 'MoreReferrals',
@@ -120,81 +121,15 @@ export default {
                     }
                 ]
             },
+            remindReferral: remindReferral,
+            recallReferral: recallReferral,
+            resendReferral: resendReferral,
         }
     },
     computed: {
 
     },
     methods: {
-        remindReferral:function(_id,user){
-            let vm = this;
-
-            vm.$http.get(helpers.add_endpoint_json(api_endpoints.referrals,_id+'/remind')).then(response => {
-                vm.$emit('refreshFromResponse',response);
-                vm.table.ajax.reload();
-                swal(
-                    'Referral Reminder',
-                    'A reminder has been sent to '+user,
-                    'success'
-                )
-            },
-            error => {
-                swal(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            });
-        },
-        resendReferral:function(_id,user){
-            let vm = this;
-            vm.$http.get(helpers.add_endpoint_json(api_endpoints.referrals,_id+'/resend')).then(response => {
-                vm.$emit('refreshFromResponse',response);
-                vm.table.ajax.reload();
-                swal(
-                    'Referral Resent',
-                    'The referral has been resent to '+user,
-                    'success'
-                )
-            },
-            error => {
-                swal(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            });
-        },
-        recallReferral:function(_id,user){
-            let vm = this;
-            swal({
-                    title: "Loading...",
-                    //text: "Loading...",
-                    allowOutsideClick: false,
-                    allowEscapeKey:false,
-                    onOpen: () =>{
-                        swal.showLoading()
-                    }
-            })
-            vm.$http.get(helpers.add_endpoint_json(api_endpoints.referrals,_id+'/recall')).then(response => {
-                swal.hideLoading();
-                swal.close();
-                vm.$emit('refreshFromResponse',response);
-                vm.table.ajax.reload();
-                swal(
-                    'Referral Recall',
-                    'The referall has been recalled from '+user,
-                    'success'
-                )
-            },
-            error => {
-                swal(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            });
-        },
         initialiseTable: function(){
 
             // To allow table elements (ref: https://getbootstrap.com/docs/5.1/getting-started/javascript/#sanitizer)
@@ -271,6 +206,9 @@ export default {
                 var x = diff + 5;
                 $('.'+popover_name).children('.arrow').css('top', x + 'px');
             })
+        },
+        switchStatus: function(value){
+            this.$emit('switchStatus', value);
         },
     },
     created(){

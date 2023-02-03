@@ -101,30 +101,30 @@
                                             </span>
                                         </template>
                                     </div>
-                                    <table class="table small-table">
+                                    <table class="table small w-auto table-sm text-xsmall">
                                         <tr>
                                             <th>Referral</th>
                                             <th>Status/Action</th>
                                         </tr>
                                         <tr v-for="r in proposal.latest_referrals">
                                             <td>
-                                                <small><strong>{{r.referral_obj.first_name}} {{ r.referral_obj.last_name }}</strong></small><br/>
-                                                <small><strong>{{r.lodged_on | formatDate}}</strong></small>
+                                                <small>{{r.referral_obj.first_name}} {{ r.referral_obj.last_name }}</small><br/>
+                                                <small>{{formatDate(r.lodged_on)}}</small>
                                             </td>
                                             <td>
-                                                <small><strong>{{r.processing_status}}</strong></small><br/>
+                                                <small>{{r.processing_status}}</small><br/>
                                                 <template v-if="r.processing_status == 'Awaiting'">
-                                                    <small v-if="canLimitedAction"><a @click.prevent="remindReferral(r)" href="#">Remind</a> / <a @click.prevent="recallReferral(r)" href="#">Recall</a></small>
+                                                    <small v-if="canLimitedAction"><a @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])" href="#">Remind</a>/<a @click.prevent="recallReferral.bind(this)(r.id, r.referral_obj['fullname'])" href="#">Recall</a></small>
                                                 </template>
                                                 <template v-else>
-                                                    <small v-if="canLimitedAction"><a @click.prevent="resendReferral(r)" href="#">Resend</a></small>
+                                                    <small v-if="canLimitedAction"><a @click.prevent="resendReferral.bind(this)(r.id, r.referral_obj['fullname'])" href="#">Resend</a></small>
                                                 </template>
                                             </td>
                                         </tr>
                                     </table>
 
                                     <MoreReferrals
-                                        @refreshFromResponse="refreshFromResponse"
+                                        @switchStatus="switchStatus"
                                         :proposal="proposal"
                                         :canAction="canLimitedAction"
                                         :isFinalised="isFinalised"
@@ -159,6 +159,7 @@
 <script>
 import { api_endpoints, helpers, constants } from '@/utils/hooks'
 import MoreReferrals from '@common-utils/more_referrals.vue'
+import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
 
 export default {
     name: 'Workflow',
@@ -378,7 +379,10 @@ export default {
                         return show
                     }
                 },
-            ]
+            ],
+            remindReferral: remindReferral,
+            recallReferral: recallReferral,
+            resendReferral: resendReferral,
         }
     },
     props: {
@@ -447,12 +451,10 @@ export default {
             return !this.isFinalised && this.canAction
         },
     },
-    filters: {
-        formatDate: function(data){
-            return data ? moment(data).format('DD/MM/YYYY HH:mm:ss'): '';
-        }
-    },
     methods: {
+        formatDate: function(data){
+            return data? moment(data).format('DD/MM/YYYY HH:mm:ss'): '';
+        },
         check_role_conditions: function(condition_to_display){
             if (this.debug)
                 return true
@@ -616,6 +618,9 @@ export default {
             //    $(vm.$refs.assigned_officer).trigger('change');
             //}
         },
+        // The event call to `@refreshFromResponse="refreshFromResponse"` shouldn't be needed anymore, as it seems to be dropped in favor of `switchStatus`
+        // See components `proposal::Workflow` and `workflow::MoreReferrals` now listen for `@switchStatus="switchStatus"`
+        /*
         refreshFromResponse:function(response){
             let vm = this;
             vm.proposal = helpers.copyObject(response.body);
@@ -625,6 +630,7 @@ export default {
                 vm.updateAssignedOfficerSelect();
             });
         },
+        */
         /*
         fetchDeparmentUsers: async function(){
             this.loading.push('Loading Department Users');
@@ -643,38 +649,51 @@ export default {
             let vm = this
             let my_headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
 
-            try {
-                vm.sendingReferral = true;
-
-                // Save proposal
-                let res = await fetch(vm.proposal_form_url, {
+            vm.sendingReferral = true;
+            await fetch(vm.proposal_form_url, {
                     method: 'POST',
                     headers: my_headers,
                     body: JSON.stringify({ 'proposal': vm.proposal }),
-                })
-                if (!res.ok)
-                    throw new Error(res.statusText)  // 400s or 500s error
-
-                // Send to referral
-                res = await fetch(helpers.add_endpoint_json(api_endpoints.proposals, (vm.proposal.id + '/assesor_send_referral')), {
-                    method: 'POST',
-                    headers: my_headers,
-                    body: JSON.stringify({ 'email':vm.selected_referral, 'text': vm.referral_text }),
-                })
-                if (!res.ok)
-                    throw new Error(res.statusText)  // 400s or 500s error
-            } catch(err){
-                swal.fire({
-                    title: err,
-                    text: "Failed to send referral.  Please contact your administrator.",
-                    type: "warning",
-                })
-            } finally {
-                vm.sendingReferral = false;
-                vm.selected_referral = ''
-                vm.referral_text = ''
-                $(vm.$refs.department_users).val(null).trigger('change')
-            }
+                }).then(async response => {
+                    if (!response.ok) {
+                        return await response.json().then(json => { throw new Error(json); });
+                    } else {
+                        return await response.json();
+                    }
+                }).then(async () => {
+                    return fetch(helpers.add_endpoint_json(api_endpoints.proposals, (vm.proposal.id + '/assesor_send_referral')), {
+                        method: 'POST',
+                        headers: my_headers,
+                        body: JSON.stringify({ 'email':vm.selected_referral, 'text': vm.referral_text }),
+                    });
+                }).then(async response => {
+                    if (!response.ok) {
+                        return await response.json().then(json => {
+                            if (Array.isArray(json)) {
+                                throw new Error(json);
+                            } else {
+                                throw new Error(json["non_field_errors"]);
+                            }
+                        });
+                    } else {
+                        return await response.json();
+                    }
+                }).then(async response => {
+                    // console.log(`Data ${response}`);
+                    vm.switchStatus(response.processing_status_id); // 'with_referral'
+                }).catch(error => {
+                    console.log(`Error sending referral. ${error}`);
+                    swal.fire({
+                        title: `${error}`,
+                        text: "Failed to send referral. Please contact your administrator.",
+                        icon: "warning",
+                    })
+                }).finally(() => {
+                    vm.sendingReferral = false;
+                    vm.selected_referral = '';
+                    vm.referral_text = '';
+                    $(vm.$refs.department_users).val(null).trigger('change');
+                });
         },
         sendReferral: async function(){
             let vm = this
@@ -682,7 +701,7 @@ export default {
             swal.fire({
                 title: "Send to referral",
                 text: "Are you sure you want to send to referral?",
-                type: "warning",
+                icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Send to referral',
                 //confirmButtonColor:'#dc3545'
@@ -704,73 +723,6 @@ export default {
                 vm.sendingReferral = false;
             }
             */
-        },
-        remindReferral: async function(r){
-            try {
-                fetch(helpers.add_endpoint_json(api_endpoints.referrals,r.id+'/remind'))
-                //this.proposal = response.body;
-                //vm.proposal.applicant.address = vm.proposal.applicant.address != null ? vm.proposal.applicant.address : {};
-                swal.fire(
-                    'Referral Reminder',
-                    'A reminder has been sent to '+r.referral,
-                    'success'
-                )
-            } catch (error) {
-                swal.fire(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            }
-        },
-        resendReferral:async function(r){
-            try {
-                await fetch(helpers.add_endpoint_json(api_endpoints.referrals,r.id+'/resend'))
-                //vm.proposal = response.body;
-                //vm.proposal.applicant.address = vm.proposal.applicant.address != null ? vm.proposal.applicant.address : {};
-                swal.fire(
-                    'Referral Resent',
-                    'The referral has been resent to '+r.referral,
-                    'success'
-                )
-            } catch (error) {
-                swal.fire(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            }
-        },
-        recallReferral:async function(r){
-            swal.fire({
-                    title: "Loading...",
-                    //text: "Loading...",
-                    allowOutsideClick: false,
-                    allowEscapeKey:false,
-                    onOpen: () =>{
-                        swal.showLoading()
-                    }
-            })
-            try {
-                await fetch(helpers.add_endpoint_json(api_endpoints.referrals,r.id+'/recall'))
-                swal.hideLoading();
-                swal.close();
-                /*
-                vm.proposal = response.body;
-                vm.proposal.applicant.address = vm.proposal.applicant.address != null ? vm.proposal.applicant.address : {};
-                */
-                await swal.fire(
-                    'Referral Recall',
-                    'The referall has been recalled from '+r.referral,
-                    'success'
-                )
-            } catch (error) {
-                swal.fire(
-                    'Proposal Error',
-                    helpers.apiVueResourceError(error),
-                    'error'
-                )
-            }
         },
         assignRequestUser: function(){
             this.$emit('assignRequestUser')
@@ -821,7 +773,7 @@ export default {
 }
 </script>
 
-<style scoped>
+ <style scoped>
 .actionBtn {
     cursor: pointer;
 }
