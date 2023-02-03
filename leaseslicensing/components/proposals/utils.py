@@ -514,6 +514,7 @@ def save_referral_data(proposal, request, referral_completed=False):
                                     answer_obj = _save_answer_dict(answer_dict)
                         if referral_completed:
                             # Make this assessment completed
+                            # TODO Why is `assessment` reassigned here? There is already a `ProposalAssessment` object to work with.
                             assessment = ProposalAssessment.objects.get(
                                 id=int(assessment["id"])
                             )

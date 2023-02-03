@@ -2021,6 +2021,13 @@ class Proposal(DirtyFieldsMixin, models.Model):
                         ProposalUserAction.ACTION_ENTER_REQUIREMENTS.format(self.id),
                         request,
                     )
+        elif status in [self.PROCESSING_STATUS_WITH_REFERRAL,
+                        self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS
+                        ]:
+            # TODO What logic to With Referral status needs to apply here?
+            # For now this if condition is only there to not hit the previous one.
+            # That would trigger an exception
+            pass
         else:
             raise ValidationError("The provided status cannot be found.")
 
@@ -3823,6 +3830,13 @@ class Referral(RevisionedMixin):
                 raise exceptions.ProposalNotAuthorized()
             self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
             self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
+
+            # Set referral assessment incomplete again, so the referrer can Complete Referral
+            for assessment in self.proposal.referral_assessments:
+                if assessment.referral.referral == self.referral_as_email_user.id:
+                    assessment.completed = False
+                    assessment.save()
+
             self.proposal.save()
             self.sent_from = 1
             self.save()

@@ -1676,6 +1676,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
                     "with_assessor",
                     "with_assessor_conditions",
                     "with_approver",
+                    "with_referral",
+                    "with_referral_conditions"
                 ]:
                     raise serializers.ValidationError(
                         "The status provided is not allowed"
