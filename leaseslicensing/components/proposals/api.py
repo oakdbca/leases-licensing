@@ -394,9 +394,13 @@ class ProposalFilterBackend(DatatablesFilterBackend):
         if len(ordering):
             queryset = queryset.order_by(*ordering)
 
-        queryset = super(ProposalFilterBackend, self).filter_queryset(
-            request, queryset, view
-        )
+        import traceback
+        try:
+            queryset = super(ProposalFilterBackend, self).filter_queryset(
+                request, queryset, view
+            )
+        except Exception as e:
+            tb = traceback.format_exc()
         setattr(view, "_datatables_total_count", total_count)
         return queryset
 

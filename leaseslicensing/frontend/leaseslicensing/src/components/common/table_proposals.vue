@@ -305,7 +305,7 @@ export default {
                 // 6. Lodged
                 data: "id",
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     if (full.lodgement_date){
