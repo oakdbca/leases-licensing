@@ -385,6 +385,9 @@ import CollapsibleQuestions from '@/components/forms/collapsible_component.vue'
 import ChecklistQuestion from '@/components/common/component_checklist_question.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
 require("select2/dist/css/select2.min.css");
+// CSS definitions to make sure workflow swal2 popovers are placed above any open bootstrap popover
+// See: `swal.fire` `customClass` property
+require("../../../../../../static/leaseslicensing/css/workflow.css")
 
 export default {
     name: 'InternalProposal',
@@ -999,7 +1002,10 @@ export default {
                 text: "Are you sure you want to complete this referral?",
                 icon: "question",
                 showCancelButton: true,
-                confirmButtonText: 'Submit'
+                confirmButtonText: 'Submit',
+                customClass: {
+                    container: 'swal2-popover'
+                }
             }).then(async (result) => {
                 if (result.isConfirmed){
                     const res_save_data = await fetch(
@@ -1019,7 +1025,10 @@ export default {
                 swal.fire({
                     title: 'Referral Error',
                     text: err["message"],
-                    icon: 'error'
+                    icon: 'error',
+                    customClass: {
+                        container: 'swal2-popover'
+                    }
                 })
             });
         },
