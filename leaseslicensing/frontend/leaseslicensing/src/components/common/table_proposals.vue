@@ -243,19 +243,19 @@ export default {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     return full.application_type.name_display
                 },
-                name: 'application_type',
+                name: 'application_type__name_display',
             }
         },
         column_submitter: function(){
             return {
                 data: "id",
-                orderable: false,
-                searchable: false,
+                orderable: true,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     if (full.submitter){
@@ -263,14 +263,15 @@ export default {
                     } else {
                         return ''
                     }
-                }
+                },
+                name: 'submitter__first_name, submitter__last_name'
             }
         },
         column_applicant: function(){
             return {
                 data: "id",
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     /*
@@ -281,7 +282,7 @@ export default {
                     */
                     return full.applicant_name
                 },
-                //name: 'submitter__first_name, submitter__last_name',
+                name: 'applicant_name'
             }
         },
         column_status: function(){
@@ -290,14 +291,15 @@ export default {
                 // 5. Status
                 data: "id",
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     if (vm.is_internal){
                         return full.processing_status
                     }
                     return full.customer_status
-                }
+                },
+                name: 'processing_status'
             }
         },
         column_lodged_on: function(){
@@ -305,7 +307,7 @@ export default {
                 // 6. Lodged
                 data: "id",
                 orderable: true,
-                searchable: true,
+                searchable: false,
                 visible: true,
                 'render': function(row, type, full){
                     if (full.lodgement_date){

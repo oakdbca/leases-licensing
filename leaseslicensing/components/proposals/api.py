@@ -1,11 +1,12 @@
 import traceback
+import functools
 import os
 import base64
 import geojson
 import json
 from six.moves.urllib.parse import urlparse # FIXME Can this be `from urllib.parse import urlencode` in py3?
 from wsgiref.util import FileWrapper
-from django.db.models import Q, Min
+from django.db.models import Q
 from django.db import transaction, connection
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.core.files.base import ContentFile
@@ -124,7 +125,7 @@ from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.compliances.serializers import ComplianceSerializer
 from ledger_api_client.ledger_models import Invoice
 
-from leaseslicensing.helpers import is_customer, is_internal, is_assessor, is_approver
+from leaseslicensing.helpers import is_customer, is_internal, is_assessor, is_approver, TableSearchOrderHelper
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
@@ -387,20 +388,18 @@ class ProposalFilterBackend(DatatablesFilterBackend):
         #getter = request.query_params.get
         #import ipdb; ipdb.set_trace()
         #fields = self.get_fields(getter)
-        fields = self.get_fields(request)
         #ordering = self.get_ordering(getter, fields)
-        ordering = self.get_ordering(request, view, fields)
-        queryset = queryset.order_by(*ordering)
-        if len(ordering):
-            queryset = queryset.order_by(*ordering)
 
-        import traceback
         try:
-            queryset = super(ProposalFilterBackend, self).filter_queryset(
-                request, queryset, view
-            )
+            table_so_helper = TableSearchOrderHelper(Proposal,
+                                                     ledger_lookup_fields=["submitter"],
+                                                     special_ordering_fields=["applicant_name", "submitter"])
+            queryset = table_so_helper.search_order_queryset(request, queryset, view)
+
+
         except Exception as e:
-            tb = traceback.format_exc()
+            traceback.print_exc()
+
         setattr(view, "_datatables_total_count", total_count)
         return queryset
 
