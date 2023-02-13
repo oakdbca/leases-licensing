@@ -7,7 +7,6 @@ from django.core.cache import cache
 import logging
 
 from leaseslicensing.settings import GROUP_NAME_ASSESSOR, GROUP_NAME_APPROVER
-from leaseslicensing.components.main.decorators import basic_exception_handler
 
 logger = logging.getLogger(__name__)
 
