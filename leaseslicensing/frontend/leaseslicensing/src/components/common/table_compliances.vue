@@ -99,7 +99,7 @@ export default {
     data() {
         let vm = this;
         return {
-            datatable_id: 'compliances-datatable-' + vm._uid,
+            datatable_id: 'compliances-datatable-' + vm._.uid,
 
             // selected values for filtering
             filterComplianceType: sessionStorage.getItem('filterComplianceType') ? sessionStorage.getItem('filterComplianceType') : 'all',
@@ -169,7 +169,7 @@ export default {
             return this.level == 'internal'
         },
         compliancesHeaders: function() {
-            let headers = ['Number', 'Licence/Permit', 'Condition', 'Due Date', 'Status', 'Action'];
+            let headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
             if (this.level === 'internal') {
                 headers = ['Number', 'Type',  'Holder', 'Approval Number','Status', 'Due Date', 'Action'];
             }
@@ -184,7 +184,8 @@ export default {
                         'render': function(row, type, full){
                             //return full.approval_submitter;
                             return full.holder;
-                        }
+                        },
+                        name: "holder"
                     }
         },
         applicationTypeColumn: function() {
@@ -196,7 +197,8 @@ export default {
                         'render': function(row, type, full){
                             return full.application_type;
                             //return full.id;
-                        }
+                        },
+                        name: 'application_type',
                     }
         },
         lodgementNumberColumn: function() {
@@ -208,7 +210,8 @@ export default {
                         visible: true,
                         'render': function(row, type, full){
                             return full.lodgement_number;
-                        }
+                        },
+                        name: 'lodgement_number',
                     }
         },
         licenceNumberColumn: function() {
@@ -221,7 +224,8 @@ export default {
                         'render': function(row, type, full){
                             return full.approval_lodgement_number
                             //return full.id;
-                        }
+                        },
+                        name: "approval__lodgement_number",
                     }
         },
         conditionColumn: function() {
@@ -255,7 +259,8 @@ export default {
                             }
                             //return dueDate;
                             return full.due_date;
-                        }
+                        },
+                        name: "due_date",
                     }
         },
         statusColumn: function() {
@@ -268,7 +273,8 @@ export default {
                         'render': function(row, type, full){
                             return full.processing_status
                             //return full.id;
-                        }
+                        },
+                        name: "processing_status"
                     }
         },
         actionColumn: function() {
@@ -276,8 +282,8 @@ export default {
             return {
                         // 7. Action
                         data: "id",
-                        orderable: true,
-                        searchable: true,
+                        orderable: false,
+                        searchable: false,
                         visible: true,
                         'render': function(row, type, full){
                             let links = '';
@@ -321,12 +327,13 @@ export default {
 
         applicableColumns: function() {
             let columns = [
-                this.lodgementNumberColumn,
-                this.licenceNumberColumn,
-                this.conditionColumn,
-                this.dueDateColumn,
-                this.statusColumn,
-                this.actionColumn,
+                this.lodgementNumberColumn, // Number
+                this.applicationTypeColumn, // Type
+                this.holderColumn, // Holder
+                this.licenceNumberColumn, // Approval
+                this.statusColumn, // Status
+                this.dueDateColumn, // Due Date
+                this.actionColumn, //Action
                 ]
             if (this.level === 'internal') {
                 columns = [

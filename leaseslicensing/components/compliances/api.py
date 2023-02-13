@@ -45,6 +45,7 @@ from leaseslicensing.components.compliances.models import (
     ComplianceAmendmentRequest,
     ComplianceAmendmentReason,
 )
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.compliances.serializers import (
     ComplianceSerializer,
@@ -77,7 +78,7 @@ class GetComplianceStatusesDict(views.APIView):
         return Response(data)
 
 
-class ComplianceFilterBackend(DatatablesFilterBackend):
+class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
     """
@@ -102,15 +103,11 @@ class ComplianceFilterBackend(DatatablesFilterBackend):
         if filter_compliance_status:
             queryset = queryset.filter(processing_status=filter_compliance_status)
 
-        fields = self.get_fields(request)
-        ordering = self.get_ordering(request, view, fields)
-        queryset = queryset.order_by(*ordering)
-        if len(ordering):
-            queryset = queryset.order_by(*ordering)
+        queryset = self.apply_request(request, queryset, view,
+                                            model=Compliance,
+                                            ledger_lookup_fields=["submitter"], # Foreign key to ledger
+                                            special_ordering_fields=["application_type", "holder", "submitter"])
 
-        queryset = super(ComplianceFilterBackend, self).filter_queryset(
-            request, queryset, view
-        )
         setattr(view, "_datatables_total_count", total_count)
         return queryset
 

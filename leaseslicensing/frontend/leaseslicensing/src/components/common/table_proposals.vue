@@ -321,8 +321,8 @@ export default {
         column_assigned_officer: function(){
             return {
                 data: "id",
-                orderable: false,
-                searchable: false,
+                orderable: true,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     if (full.assigned_officer){

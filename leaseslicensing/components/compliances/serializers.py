@@ -17,7 +17,7 @@ class ComplianceSerializer(serializers.ModelSerializer):
     #regions = serializers.CharField(source="proposal.region")
     #activity = serializers.CharField(source="proposal.activity")
     title = serializers.CharField(source="proposal.title")
-    holder = serializers.CharField(source="proposal.applicant")
+    holder = serializers.CharField(read_only=True)
     processing_status = serializers.CharField(source="get_processing_status_display")
     customer_status = serializers.CharField(source="get_customer_status_display")
     submitter = serializers.SerializerMethodField(read_only=True)
@@ -130,7 +130,7 @@ class ComplianceSerializer(serializers.ModelSerializer):
 
     def get_application_type(self, obj):
         if obj.proposal.application_type:
-            return obj.proposal.application_type.name
+            return obj.proposal.application_type.name_display
         return None
 
     def get_lodgement_date_display(self, obj):

@@ -37,6 +37,7 @@ from django.core.cache import cache
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser, Address
 from ledger_api_client.country_models import Country
 from datetime import datetime, timedelta, date
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.proposals.utils import (
@@ -124,8 +125,7 @@ from leaseslicensing.components.approvals.serializers import ApprovalSerializer
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.compliances.serializers import ComplianceSerializer
 from ledger_api_client.ledger_models import Invoice
-
-from leaseslicensing.helpers import is_customer, is_internal, is_assessor, is_approver, TableSearchOrderHelper
+from leaseslicensing.helpers import is_customer, is_internal, is_assessor, is_approver
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
@@ -335,7 +335,7 @@ class GetEmptyList(views.APIView):
 """
 
 
-class ProposalFilterBackend(DatatablesFilterBackend):
+class ProposalFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
     """
@@ -390,15 +390,11 @@ class ProposalFilterBackend(DatatablesFilterBackend):
         #fields = self.get_fields(getter)
         #ordering = self.get_ordering(getter, fields)
 
-        try:
-            table_so_helper = TableSearchOrderHelper(Proposal,
-                                                     ledger_lookup_fields=["submitter"],
-                                                     special_ordering_fields=["applicant_name", "submitter"])
-            queryset = table_so_helper.search_order_queryset(request, queryset, view)
-
-
-        except Exception as e:
-            traceback.print_exc()
+        queryset = self.apply_request(request, queryset, view,
+                        model=Proposal,
+                        ledger_lookup_fields=["submitter", "assigned_officer", "assigned_approver"], # Foreign key to ledger
+                        special_ordering_fields=["applicant_name", "application_type", 
+                                                 "submitter", "assigned_officer", "assigned_approver"])
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
