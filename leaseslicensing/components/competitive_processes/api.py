@@ -40,10 +40,7 @@ class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(created_at__lte=filter_competitive_process_created_to)
 
         queryset = self.apply_request(request, queryset, view,
-                                            model=CompetitiveProcess,
-                                            ledger_lookup_fields=["assigned_officer_id"], # Foreign key to ledger
-                                            special_ordering_fields=["assigned_officer_id"]
-                                            )
+                                            model=CompetitiveProcess,)
 
         # setattr(view, "_datatables_total_count", total_count)
         return queryset

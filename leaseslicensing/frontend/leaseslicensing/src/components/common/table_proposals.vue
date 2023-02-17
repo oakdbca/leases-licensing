@@ -248,7 +248,7 @@ export default {
                 'render': function(row, type, full){
                     return full.application_type.name_display
                 },
-                name: 'application_type__name_display',
+                name: 'application_type_id__name',
             }
         },
         column_submitter: function(){
@@ -282,7 +282,7 @@ export default {
                     */
                     return full.applicant_name
                 },
-                name: 'applicant_name'
+                name: "ind_applicant__first_name, ind_applicant__last_name"
             }
         },
         column_status: function(){

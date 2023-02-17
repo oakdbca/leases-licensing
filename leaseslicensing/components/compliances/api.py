@@ -104,9 +104,7 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(processing_status=filter_compliance_status)
 
         queryset = self.apply_request(request, queryset, view,
-                                            model=Compliance,
-                                            ledger_lookup_fields=["submitter"], # Foreign key to ledger
-                                            special_ordering_fields=["application_type", "holder", "submitter"])
+                                            model=Compliance,)
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset

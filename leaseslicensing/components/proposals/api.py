@@ -391,10 +391,7 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
         #ordering = self.get_ordering(getter, fields)
 
         queryset = self.apply_request(request, queryset, view,
-                        model=Proposal,
-                        ledger_lookup_fields=["submitter", "assigned_officer", "assigned_approver"], # Foreign key to ledger
-                        special_ordering_fields=["applicant_name", "application_type", 
-                                                 "submitter", "assigned_officer", "assigned_approver"])
+                        model=Proposal,)
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset

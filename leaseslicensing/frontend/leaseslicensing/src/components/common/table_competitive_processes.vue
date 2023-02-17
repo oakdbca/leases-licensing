@@ -224,7 +224,7 @@ export default {
                 data: "registration_of_interest",
                 name: 'originating_proposal__lodgement_number',
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     if (full.registration_of_interest){
@@ -241,7 +241,7 @@ export default {
                 data: 'status',
                 name: 'status',
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
             }
         },
@@ -260,9 +260,9 @@ export default {
         column_assigned_to: function(){
             return {
                 data: "assigned_officer",
-                name: 'assigned_officer_id__first_name, assigned_officer_id__last_name',  // This functionality does not simply work due to the separation of EmailUser information.
+                name: 'assigned_officer_id__first_name, assigned_officer_id__last_name',  // This functionality works with `LedgerDatatablesFilterBackend` as filter backaned
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     if (full.assigned_officer){
@@ -279,7 +279,7 @@ export default {
                 // 8. Action
                 // data: "action",
                 data: null,
-                orderable: true,
+                orderable: false,
                 searchable: false,
                 visible: true,
                 'render': function(row, type, full){

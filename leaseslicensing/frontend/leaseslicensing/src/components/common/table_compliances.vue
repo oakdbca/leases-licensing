@@ -185,7 +185,7 @@ export default {
                             //return full.approval_submitter;
                             return full.holder;
                         },
-                        name: "holder"
+                        name: 'proposal__ind_applicant__first_name, proposal__ind_applicant__last_name'
                     }
         },
         applicationTypeColumn: function() {
@@ -198,7 +198,8 @@ export default {
                             return full.application_type;
                             //return full.id;
                         },
-                        name: 'application_type',
+                        // Searches for `registration_of_interest` or `lease_licence`, but should suffice
+                        name: 'proposal__application_type__name'
                     }
         },
         lodgementNumberColumn: function() {
@@ -250,7 +251,7 @@ export default {
                         // 5. Due Date
                         data: "id",
                         orderable: true,
-                        searchable: true,
+                        searchable: false,
                         visible: true,
                         'render': function(row, type, full){
                             let dueDate = '';
