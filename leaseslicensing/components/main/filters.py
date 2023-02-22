@@ -1,5 +1,6 @@
 from django.db.models import Case, When, Q
 from django.core.cache import cache
+from django.core.exceptions import FieldError
 from django.conf import settings
 
 from rest_framework_datatables.filters import DatatablesFilterBackend
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
     """
-    Class extending `DatatablesFilterBackend` to allow search in and ordering of querysets 
+    Class extending `DatatablesFilterBackend` to allow search in and ordering of querysets
     with Ledger not-constrained foreign keys. Connects a model's ledger foreign key integer
     value to primary keys in ledger and maps search results and ordering back to the model.
     """
@@ -24,30 +25,33 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
     LEDGER_LOOKUP_FIELDS = []
 
     def __init__(self, **kwargs):
-        """Constructor
+        """
+        Constructor
 
-            Args:
-                model (models.Model, optional): 
-                    The table's model class
-                ledger_lookup_fields (list, optional): 
-                    The fields in the model that functions as the foreign key to ledger
+        Args:
+            ledger_lookup_fields (list, optional):
+                The fields in the model that functions as the foreign key to ledger
+            cache_prefix (str, optional):
+                String prefix for ledger emailuser cache key
+            search_threshold (int, optional):
+                Minimum amount of character to initiate search in queryset,
+                defaults to 2
 
-            Usage:
-                class MyModelFilterBackend(LedgerDatatablesFilterBackend):
-                    def filter_queryset(self, request, queryset, view):
-                        # Some code here ...
-                        
-                        # Apply searching and ordering here
-                        queryset = self.apply_request(request, queryset, view,
-                                    model=MyModel,
-                                    ledger_lookup_fields=["submitter"] # Foreign key to ledger
-                                    )
+        Usage:
+            class MyModelFilterBackend(LedgerDatatablesFilterBackend):
+                def filter_queryset(self, request, queryset, view):
+                    # Some code here ...
 
-                        # Some more code here ...
-                        return queryset
+                    # Apply searching and ordering here
+                    queryset = self.apply_request(request, queryset, view,
+                                ledger_lookup_fields=["submitter"] # Foreign key to ledger
+                                )
+
+                    # Some more code here ...
+                    return queryset
+
         """
 
-        self.model = kwargs.get("model", None)
         # Int foreign keys in the model that are PKs in segregated ledger
         # E.g. `ind_applicant` can also be `proposal.ind_applicant`
         self.LEDGER_LOOKUP_FIELDS = kwargs.get("ledger_lookup_fields", ["ind_applicant",
@@ -55,9 +59,9 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                                                                         "assigned_officer",
                                                                         "assigned_approver",
                                                                         "assigned_officer_id"])
-        self.CACHE_PREFIX = "ledger_api_acounts_filtered_emailuser_"
+        self.CACHE_PREFIX = kwargs.get("cache_prefix", "ledger_api_accounts_filtered_emailuser_")
         # Minimum amount of characters required to initiate searching the queryset
-        self.SEARCH_THRESHOLD = 2
+        self.SEARCH_THRESHOLD = kwargs.get("search_threshold", 2)
 
 
     @basic_exception_handler
@@ -112,10 +116,10 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
             )
         self.append_additional_ordering(ordering, view)
         return ordering
-        
-    
+
+
     @basic_exception_handler
-    def ledger_cache(self, queryset, ledger_keys=[]):
+    def ledger_cache(self, queryset, filter_keys=[], **kwargs):
         """
         Retrieves ledger accounts emailuser from cache. Creates a new cache if
         no cache exists
@@ -123,23 +127,39 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         Args:
             queryset (QuerySet):
                 The database model's queryset
-            ledger_keys (list<integer>, keyword argument):
-                A list of fields in the model that function as foreign keys to ledger
+            filter_keys (list<str>, keyword argument):
+                A list of fields in the model that function as foreign keys to ledger,
+                can be different from model_keys when ordering for a particular column,
+                e.g. `["submitter"]`
+            model_keys (list<str>, keyword argument):
+                A list of all fields in the model that function as foreign keys to ledger,
+                e.g. `["submitter", "assigned_approver", ...]`
+            cache_prefix (str, optional):
+                String prefix for ledger emailuser cache key
 
         Returns:
             A ledger emailuser accounts queryset from cache
         """
 
-        name = "leases"
-        cache_key = f"{self.CACHE_PREFIX}{name}"
-        
-        # Query the ledger cache
+        model = kwargs.get("model", queryset.model)
+        model_keys = kwargs.get("model_keys", self.LEDGER_LOOKUP_FIELDS)
+        cache_prefix = kwargs.get("cache_prefix", self.CACHE_PREFIX)
+
+        name = model.__name__ if hasattr(model, "__name__") \
+            else model.__class__.__name__ if hasattr(model, "__class__") \
+            else "default"
+        cache_key = f"{cache_prefix}{name}"
+
+        # Get the ledger cache
         _ledger_cache = cache.get(cache_key)
 
         if _ledger_cache is None:
             logger.info(f"Setting new ledger user account cache for `{name}`")
-            # Query ledger
-            _ledger_cache = EmailUser.objects.all()
+            # All ledger foreign keys for this model
+            _lfks = queryset.values_list(*model_keys)
+            _lfks = list(set(itertools.chain(*_lfks)))
+            # Query ledger for all user accounts referenced in this model
+            _ledger_cache = EmailUser.objects.filter(pk__in=_lfks)
             # Cache
             cache.set(
                 cache_key,
@@ -149,8 +169,9 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         else:
             logger.info(f"Returning ledger user accounts for `{name}` from cache")
 
-        # All ledger foreign keys for this model
-        lfks = queryset.values_list(*ledger_keys)
+
+        # Only the filtered ledger foreign keys for this model
+        lfks = queryset.values_list(*filter_keys)
         lfks = list(set(itertools.chain(*lfks)))
         # Filter by this model's ledger foreign keys
         ledger = _ledger_cache.filter(pk__in=lfks)
@@ -171,20 +192,25 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                 The database model's queryset
             view (ModelViewSet):
                 The view to query for
-            model (models.Model, keyword argument): 
-                The table's model class
-            ledger_lookup_fields (list, keyword argument): 
+            ledger_lookup_fields (list, keyword argument):
                 The field in the model that functions as the foreign key to ledger
+            cache_prefix (str, optional):
+                String prefix for ledger emailuser cache key
+            search_threshold (int, optional):
+                Minimum amount of character to initiate search in queryset,
+                defaults to 2
 
         Returns:
             A searched in and ordered queryset
         """
 
-        model = kwargs.get("model", self.model)
+        model = queryset.model
         if model is None:
             return serializers.ValidationError("No model provided or provided model is None.")
-        
+
         ledger_lookup_fields = kwargs.get("ledger_lookup_fields", self.LEDGER_LOOKUP_FIELDS)
+        cache_prefix = kwargs.get("cache_prefix", self.CACHE_PREFIX)
+        search_threshold = kwargs.get("search_threshold", self.SEARCH_THRESHOLD)
 
         query_model_list = []
         datatables_query = self.parse_datatables_query(request, view)
@@ -195,65 +221,41 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         datatables_search_query = [q for q in datatables_query["fields"] if q["searchable"]==True]
         # Fields to search / order for
         datatables_search_attributes = [a for s in datatables_search_query for a in s["name"]]
+        # Ledger and model attributes in segregated architecture
+        ledger_attrs, model_attrs = self.segregate_attributes(datatables_search_attributes, ledger_lookup_fields)
 
         # Require at least two characters before searching
-        if len(search_value) >= self.SEARCH_THRESHOLD:
-            # queryset_cp = queryset.all() # A queryset copy
-
-            # A dictionary of ledger foreign keys and search values
-            ledger_attrs = {}
-            # A list of search values that directly can be searched for in the model
-            model_attrs = []
+        if len(search_value) >= search_threshold:
             # The resulting (searched for and ordered) queryset as a list
             query_model_list = []
 
-            for attribute in datatables_search_attributes:
-                _attr_parts = attribute.split("__")
-                # Handle the top-level attribute being a "foreign key" to ledger
-                # TODO put code in ledger back reference function
-                if any( [attr in ledger_lookup_fields for attr in _attr_parts] ):
-                    # The model attributes that are integer "foreign keys" to ledger
-                    _fk_attrs = [attr for attr in _attr_parts if attr in ledger_lookup_fields]
-                    # Add ledger attribute fields to a dict, as searching for them is more
-                    # complicated (segregated database)
-                    for attr in _fk_attrs:
-                        if attr not in ledger_attrs:
-                            # Create ledger attribute if not exists
-                            ledger_attrs[attr] = {}
-
-                        # Find the position of the ledger fk attribute,
-                        # to handle e.g. `proposal__ind_applicant__name`
-                        attr_idx = _attr_parts.index(attr) + 1
-                        # Populate the dictionary of attributes in segregated architecture
-                        _model_part, _ledger_part = "__".join(_attr_parts[:attr_idx]), ".".join(_attr_parts[attr_idx:])
-                        if not _model_part in ledger_attrs[attr]:
-                            ledger_attrs[attr][_model_part] = []
-                        ledger_attrs[attr][_model_part].append(_ledger_part)
-
-                else:
-                    # Retrieve the attribute value from this model
-                    model_attrs += [attribute]
-
             # Filter for model database fields first
             model_filter_dict = {f"{attr}__icontains": search_value for attr in model_attrs}
-            model_qs_filtered = queryset.filter(Q(**model_filter_dict, _connector=Q.OR))
+            try:
+                model_qs_filtered = queryset.filter(Q(**model_filter_dict, _connector=Q.OR))
+            except FieldError:
+                raise FieldError(f"Error filtering queryset. Consider adding any of {model_attrs} to `ledger_lookup_fields`: {ledger_lookup_fields}")
+
             # Add filtered model results to list
             query_model_list += [m for m in list(model_qs_filtered) if m not in query_model_list]
 
             # Ledger lookup fields for this model in double underscore-notation
-            _ledger_fields_undscr = list(itertools.chain(*[list(ledger_attrs[k].keys())
-                                                            for k in ledger_attrs.keys()]))
+            _ledger_fields_undscr = self._ledger_attrs_to_list(ledger_attrs)
             # Get the cached ledger user
             ledger_cache = None
             if len(_ledger_fields_undscr) > 0:
-                ledger_cache = self.ledger_cache(queryset, _ledger_fields_undscr)
+                ledger_cache = self.ledger_cache(queryset,
+                                                 filter_keys=_ledger_fields_undscr,
+                                                 model_keys=self._ledger_attrs_to_list(ledger_attrs),
+                                                 cache_prefix=cache_prefix,
+                                                 model=model)
 
             for attribute in ledger_attrs:
                 # Ledger foreign keys
                 _fks = list(set([self.rgetattr(m, k.replace("__", "."))
                                     for m in list(queryset)
                                     for k in _ledger_fields_undscr]))
-                
+
                 # A dictionary of search fields and values
                 ledger_filter_dict = {f"{val}__icontains": search_value for key in ledger_attrs[attribute]
                                         for val in ledger_attrs[attribute][key]}
@@ -297,7 +299,11 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                 ord_dict = self.split_list_to_dict(orderings_dotnot, ledger_keys=ledger_lookup_fields)
                 # Get ledger accounts from cache
                 _ledger_keys = [f.replace("-", "").replace(".", "__") for f in list(ord_dict.keys())]
-                ledger_cache = self.ledger_cache(queryset, ledger_keys=_ledger_keys)
+                ledger_cache = self.ledger_cache(queryset,
+                                                 filter_keys=_ledger_keys,
+                                                 model_keys=self._ledger_attrs_to_list(ledger_attrs),
+                                                 cache_prefix=cache_prefix,
+                                                 model=model)
                 # Order queryset list according to foreign key lookups in ledger entries
                 model_fpks_sort = self.order_ledger_fks(ledger_cache, query_model_list, ord_dict)
 
@@ -325,13 +331,13 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                 queryset = queryset.order_by(*orderings)
 
         return queryset
-    
+
 
     @basic_exception_handler
     def order_ledger_fks(self, ledger, query_model_list, ord_dict):
         """
         Orders a list of querysets for a model according to ordering values in ledger,
-        connecting integer "foreign keys" in the model to primary keys in the 
+        connecting integer "foreign keys" in the model to primary keys in the
         segregated ledger database.
 
         Args:
@@ -376,7 +382,63 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         # `model_fpks` grows with the amount of Ledger foreign keys, so have to divide here
         # to correctly compare with the size of the view's queryset
         if not len(model_fpks_sort)/len(ord_dict.keys()) == len(query_model_list):
-            # TODO Try to delete cache
             raise serializers.ValidationError("`model_attr_sort` does not match length of QuerySet")
 
         return model_fpks_sort
+
+    def segregate_attributes(self, datatables_search_attributes, ledger_lookup_fields):
+        """
+        With respect to the segregated architecture, divides table search attributes into
+        atributes that belong to this model and attributes that need to be looked up in ledger
+        account emailuser.
+
+        Args:
+            datatables_search_attributes (list):
+                List of search fields in double-underscore notation, e.g. as provided by vue frontend
+                datatable
+            ledger_lookup_fields (list):
+                List of fields in this model that are non-constrained foreign keys to ledger, i.e. that
+                require special treatment in Django filtering
+        Returns:
+            A tuple of a segregated dictionary of ledger attributes and a list of model attributes
+        """
+
+        # A dictionary of ledger foreign keys and search values
+        ledger_attrs = {}
+        # A list of search values that directly can be searched for in the model
+        model_attrs = []
+
+        for attribute in datatables_search_attributes:
+            _attr_parts = attribute.split("__")
+            # Handle the top-level attribute being a "foreign key" to ledger
+            if any( [attr in ledger_lookup_fields for attr in _attr_parts] ):
+                # The model attributes that are integer "foreign keys" to ledger
+                _fk_attrs = [attr for attr in _attr_parts if attr in ledger_lookup_fields]
+                # Add ledger attribute fields to a dict, as searching for them is more
+                # complicated (segregated database)
+                for attr in _fk_attrs:
+                    if attr not in ledger_attrs:
+                        # Create ledger attribute if not exists
+                        ledger_attrs[attr] = {}
+
+                    # Find the position of the ledger fk attribute,
+                    # to handle e.g. `proposal__ind_applicant__name`
+                    attr_idx = _attr_parts.index(attr) + 1
+                    # Populate the dictionary of attributes in segregated architecture
+                    _model_part, _ledger_part = "__".join(_attr_parts[:attr_idx]), ".".join(_attr_parts[attr_idx:])
+                    if not _model_part in ledger_attrs[attr]:
+                        ledger_attrs[attr][_model_part] = []
+                    ledger_attrs[attr][_model_part].append(_ledger_part)
+
+            else:
+                # Retrieve the attribute value from this model
+                model_attrs += [attribute]
+
+        return ledger_attrs, model_attrs
+
+    def _ledger_attrs_to_list(self, ledger_attrs):
+        """
+        Returns the keys from dictionary of ledger attributes as a list
+        """
+        return list(itertools.chain(*[list(ledger_attrs[k].keys())
+                                    for k in ledger_attrs.keys()]))

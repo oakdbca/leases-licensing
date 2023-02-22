@@ -224,6 +224,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
         # fields listed here should be listed 'fields' above, otherwise not returned
         datatables_always_serialize = (
             "registration_of_interest",
+            'created_at',
             'group',
             'site',
             'can_accessing_user_view',
@@ -285,6 +286,7 @@ class ListCompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             "id",
             "lodgement_number",
             "registration_of_interest",
+            'created_at',
             'group',
             'site',
             'can_accessing_user_view',

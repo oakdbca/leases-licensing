@@ -24,7 +24,7 @@
                         <div class="form-group">
                             <label for="">Due Date From</label>
                             <div class="input-group date" ref="complianceDateFromPicker">
-                                <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateFrom">
+                                <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateFrom">
                                 <span class="input-group-addon">
                                     <span class="glyphicon glyphicon-calendar"></span>
                                 </span>
@@ -35,7 +35,7 @@
                         <div class="form-group">
                             <label for="">Due Date To</label>
                             <div class="input-group date" ref="complianceDateToPicker">
-                                <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateTo">
+                                <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateTo">
                                 <span class="input-group-addon">
                                     <span class="glyphicon glyphicon-calendar"></span>
                                 </span>
@@ -392,9 +392,10 @@ export default {
                     // adding extra GET params for Custom filtering
                     "data": function ( d ) {
                         // Add filters selected
+                        d.filter_application_type = vm.filterComplianceType;
                         d.filter_compliance_status = vm.filterComplianceStatus;
-                        d.filter_lodged_from = vm.filterProposalLodgedFrom;
-                        d.filter_lodged_to = vm.filterProposalLodgedTo;
+                        d.filter_due_date_from = vm.filterComplianceDueDateFrom;
+                        d.filter_due_date_to = vm.filterComplianceDueDateTo;
                     }
                 },
                 //dom: 'lBfrtip',

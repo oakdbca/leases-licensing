@@ -42,6 +42,7 @@ from leaseslicensing.components.approvals.email import (
     send_approval_reinstate_email_notification,
     send_approval_surrender_email_notification,
 )
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
 from leaseslicensing.utils import search_keys, search_multiple_keys
 from leaseslicensing.helpers import is_customer
@@ -174,7 +175,7 @@ class Approval(RevisionedMixin):
         Proposal, related_name="approvals", null=True, on_delete=models.SET_NULL
     )
     #    activity = models.CharField(max_length=255)
-    #    region = models.CharField(max_length=255)
+    #    region = models.CharField(max_length=255) # type: ignore
     #    tenure = models.CharField(max_length=255,null=True)
     #    title = models.CharField(max_length=255)
     renewal_document = models.ForeignKey(
@@ -269,13 +270,17 @@ class Approval(RevisionedMixin):
                 self.proxy_applicant.first_name, self.proxy_applicant.last_name
             )
         else:
-            # return None
             try:
-                return "{} {}".format(
-                    self.submitter.first_name, self.submitter.last_name
-                )
+                user = retrieve_email_user(self.submitter)
             except:
                 return "Applicant Not Set"
+            else:
+                return f"{user.first_name} {user.last_name}"
+
+    @property
+    def holder(self):
+        # TODO Is it correct to return the applicant as the approval/license holder?
+        return self.current_proposal.applicant_name
 
     @property
     def linked_applications(self):
