@@ -1850,6 +1850,28 @@ class ProposalViewSet(viewsets.ModelViewSet):
         ],
         detail=True,
     )
+    def test_create_approval_pdf(self, request, **kwargs):
+        """
+        API endpoint to test the creation of this Proposal's approval PDF
+        """
+
+        try:
+            instance = self.get_object()
+            instance.test_create_approval_pdf(request)
+        except:
+            logger.error("Error in `test_create_approval_pdf`")
+            raise
+
+        serializer_class = self.internal_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     def final_approval(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
