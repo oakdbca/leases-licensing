@@ -639,12 +639,17 @@ def proposal_submit(proposal, request):
             proposal.submitter = request.user.id
             proposal.lodgement_date = timezone.now()
             proposal.training_completed = True
+            reasons = []
             if proposal.amendment_requests:
                 qs = proposal.amendment_requests.filter(status="requested")
                 if qs:
                     for q in qs:
+                        if q.reason is not None:
+                            reasons.append(q.reason)
                         q.status = "amended"
                         q.save()
+                # FIXME Do we need to increment the `lodgement_sequence` here?
+                proposal.lodgement_sequence += 1
 
             # Create a log entry for the proposal
             proposal.log_user_action(
@@ -665,7 +670,9 @@ def proposal_submit(proposal, request):
                 # TODO: do we need the following 2?
                 # proposal.documents.all().update(can_delete=False)
                 # proposal.required_documents.all().update(can_delete=False)
-                proposal.save()
+
+                reason = ",".join(reasons)
+                proposal.save(version_comment=f"Requested proposal amendments done {reason}")
             else:
                 raise ValidationError(
                     "An error occurred while submitting proposal (Submit email notifications failed)"

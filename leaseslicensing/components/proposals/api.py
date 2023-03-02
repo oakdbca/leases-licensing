@@ -1315,6 +1315,27 @@ class ProposalViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
+
+    @detail_route(methods=["POST"], detail=True,)
+    @basic_exception_handler
+    def revision_version(self, request, *args, **kwargs):
+        """"""
+
+        instance = self.get_object()
+        revision_id = request.data.get("revision_id", None)
+
+        version = instance.revision_version(revision_id)
+
+        model_class = instance.__class__
+        instance = model_class(**version.field_dict)
+
+        # serializer = self.get_serializer(version)
+        serializer_class = self.internal_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+
+        return Response(serializer.data)
+
+
     @detail_route(
         methods=[
             "GET",

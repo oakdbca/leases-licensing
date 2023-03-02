@@ -51,7 +51,8 @@ STATIC_URL = "/static/"
 
 
 INSTALLED_APPS += [
-    #'reversion_compare',
+    "reversion",
+    'reversion_compare',
     #'bootstrap3',
     "webtemplate_dbca",
     "leaseslicensing",

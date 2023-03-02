@@ -359,6 +359,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "assigned_officer",
             "previous_application",
             "get_history",
+            "reversion_revisions",
             "lodgement_date",
             "supporting_documents",
             "requirements",
@@ -509,6 +510,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "assigned_officer",
             "previous_application",
             "get_history",
+            "reversion_revisions",
             "lodgement_date",
             "readonly",
             "can_user_edit",
@@ -889,6 +891,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "assigned_approver",
             "previous_application",
             "get_history",
+            "reversion_revisions",
             "lodgement_date",
             "requirements",
             "readonly",
@@ -976,6 +979,10 @@ class InternalProposalSerializer(BaseProposalSerializer):
             #"assessor_comment_proposal_details",
             #"deficiency_comment_proposal_details",
         )
+
+        datatables_always_serialize = {
+            "current_assessor",
+        }
         read_only_fields = ("requirements",)
 
     def get_accessing_user_roles(self, proposal):

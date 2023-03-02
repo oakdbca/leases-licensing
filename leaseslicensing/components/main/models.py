@@ -492,3 +492,84 @@ class TemporaryDocument(Document):
 # reversion.register(CommunicationsLogEntry)
 # reversion.register(Document)
 # reversion.register(SystemMaintenance)
+
+# Everything `django-reversion` related below
+import reversion
+
+# main
+reversion.register(ApplicationType, follow=[])
+
+# approval
+from leaseslicensing.components.approvals.models import (Approval, ApprovalSubType,
+                                                         ApprovalType, ApprovalTypeDocumentType,
+                                                         ApprovalTypeDocumentTypeOnApprovalType,
+                                                         ApprovalDocument
+                                                         )
+reversion.register(Approval, follow=["licence_document",
+                                     "cover_letter_document",
+                                     "replaced_by",
+                                     "current_proposal",
+                                     "renewal_document",
+                                     "org_applicant"
+                                     ])
+reversion.register(ApprovalSubType)
+reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])
+reversion.register(ApprovalTypeDocumentType)
+reversion.register(ApprovalTypeDocumentTypeOnApprovalType)
+reversion.register(ApprovalDocument)
+
+# bookings
+from leaseslicensing.components.bookings.models import (Payment, BookingInvoice,
+                                                        Booking,
+                                                        ApplicationFee, ApplicationFeeInvoice,
+                                                        ComplianceFeeInvoice, ComplianceFee
+                                                        )
+
+reversion.register(Payment)
+reversion.register(BookingInvoice, follow=["booking"])
+reversion.register(Booking)
+reversion.register(ApplicationFee)
+reversion.register(ApplicationFeeInvoice, follow=["application_fee"])
+reversion.register(ComplianceFeeInvoice, follow=["compliance_fee"])
+reversion.register(ComplianceFee)
+
+# proposal
+from leaseslicensing.components.proposals.models import (Proposal, ProposalType, Organisation,
+                                                         ProposalDocument, CompetitiveProcess,
+                                                         ShapefileDocument, AdditionalDocumentType,
+                                                         ApplicationFeeDiscount, ProposalStandardRequirement,
+                                                         Referral, ReferralDocument, ProposalRequirement,
+                                                         ProposalStandardRequirement, ReferralRecipientGroup,
+                                                         SectionChecklist, ChecklistQuestion,
+                                                         ProposalAssessment, ProposalAssessmentAnswer
+                                                         )
+reversion.register(ProposalType)
+reversion.register(Organisation)
+reversion.register(ProposalDocument)
+reversion.register(CompetitiveProcess)
+reversion.register(ShapefileDocument, follow=["proposal"])
+reversion.register(AdditionalDocumentType)
+reversion.register(ApplicationFeeDiscount, follow=["proposal"])
+reversion.register(ProposalStandardRequirement, follow=["application_type"])
+reversion.register(Referral, follow=["proposal", "document"])
+reversion.register(ReferralDocument, follow=["referral"])
+reversion.register(ProposalRequirement, follow=["proposal",
+                                                "standard_requirement",
+                                                "copied_from",
+                                                "referral_group"])
+reversion.register(ReferralRecipientGroup)
+reversion.register(SectionChecklist, follow=["application_type"])
+reversion.register(ChecklistQuestion, follow=["section_checklist"])
+reversion.register(ProposalAssessment, follow=["proposal",
+                                               "referral"])
+reversion.register(ProposalAssessmentAnswer, follow=["checklist_question",
+                                                     "proposal_assessment"])
+reversion.register(Proposal, follow=["application_type",
+                                     "proposal_type",
+                                     "org_applicant",
+                                     "approval",
+                                     "previous_application",
+                                     "approval_level_document",
+                                     "generated_proposal",
+                                     "originating_competitive_process"
+                                     ])

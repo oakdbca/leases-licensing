@@ -13,9 +13,13 @@
                 />
 
                 <Submission v-if="canSeeSubmission"
+                    v-bind:canSeeSubmission="canSeeSubmission"
+                    v-bind:showingProposal="showingProposal"
+                    :proposal="proposal"
                     :submitter_first_name="submitter_first_name"
                     :submitter_last_name="submitter_last_name"
                     :lodgement_date="proposal.lodgement_date"
+                    @revision-to-display="revisionToDisplay"
                     class="mt-2"
                 />
 
@@ -58,6 +62,8 @@
                 </template>
 
                 <template v-if="canSeeSubmission || (!canSeeSubmission && showingProposal)">
+                <!-- <template v-if="showingProposal"> -->
+                    <FormSection :formCollapse="false" label="Application" Index="application">
                     <ApplicationForm
                         v-if="proposal"
                         :proposal="proposal"
@@ -319,6 +325,7 @@
                         </template>
 
                     </ApplicationForm>
+                </FormSection>
                 </template>
 
             </div>
@@ -330,7 +337,7 @@
             ref="proposed_approval"
             :processing_status="proposal.processing_status"
             :proposal_id="proposal.id"
-            :proposal_type="proposal.proposal_type? proposal.proposal_type.code: null"
+            :proposal_type="proposal.proposal_type? proposal.proposal_type.code: ''"
             :isApprovalLevelDocument="isApprovalLevelDocument"
             :submitter_email="submitter_email"
             :applicant_email="applicant_email"
@@ -1424,6 +1431,47 @@ export default {
             const resData = await response.json()
             this.applySelect2ToAdditionalDocumentTypes(resData)
         },
+        revisionToDisplay: async function(revision) {
+            console.log("Displaying", revision);
+            let vm = this;
+            let payload = {"revision_id": revision.revision_id}
+
+            await fetch(helpers.add_endpoint_json(api_endpoints.proposal, vm.proposal.id + '/revision_version'),
+                { body: JSON.stringify(payload), method: 'POST' }).then(async response => {
+                    if (!response.ok) {
+                        return await response.json().then(json => { throw new Error(json); });
+                    } else {
+                        return response.json();
+                    }
+            }).then(response => {
+                console.log(response.reference);
+                this.proposal = Object.assign({}, response);
+
+                // vm.switchStatus(response.processing_status_id); // 'with_referral'
+                // if (typeof(vm["table"]) !== 'undefined') {
+                //     // Reload the Show Referrals popover table if exists
+                //     vm.table.ajax.reload();
+                // }
+                // swal.fire({
+                //     title: 'Referral Resent',
+                //     text: 'The referral has been resent to ' + user,
+                //     icon: 'success',
+                //     customClass: {
+                //         container: 'swal2-popover'
+                //     }
+                // });
+            }).catch(error => {
+                console.error(error);
+                // swal.fire({
+                //     title: 'Proposal Error',
+                //     text: error["message"],
+                //     icon: 'error',
+                //     customClass: {
+                //         container: 'swal2-popover'
+                //     }
+                // });
+            });
+        }
     },
     mounted: function() {
         console.log('in mounted')

@@ -426,7 +426,10 @@ export default {
             return true
         },
         show_toggle_proposal: function(){
-            if(this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID || this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID || this.isFinalised){
+            if(this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
+                // this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID ||
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
+                this.isFinalised){
                 return true
             } else {
                 return false
