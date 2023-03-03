@@ -54,7 +54,7 @@
                 :processing_status="proposal.processing_status"
                 :proposal_id="proposal.id"
                 :proposal_type="proposal.proposal_type? proposal.proposal_type.code: ''"
-                :submitter_email="proposal.submitter.email"
+                :submitter_email="proposal.submitter? proposal.submitter.email: ''"
                 :applicant_email="proposal.applicant"
                 :key="proposedApprovalKey"
                 :proposedApprovalKey="proposedApprovalKey"

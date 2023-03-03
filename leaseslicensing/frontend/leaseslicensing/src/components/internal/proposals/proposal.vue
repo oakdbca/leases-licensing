@@ -61,8 +61,10 @@
                     />
                 </template>
 
-                <template v-if="canSeeSubmission || (!canSeeSubmission && showingProposal)">
-                <!-- <template v-if="showingProposal"> -->
+                <template v-if="(showingProposal && proposal.processing_status_id === 'with_approver') ||
+                                (canSeeSubmission && proposal.processing_status_id !== 'with_approver') ||
+                                (!canSeeSubmission && showingProposal)"
+                >
                     <FormSection :formCollapse="false" label="Application" Index="application">
                     <ApplicationForm
                         v-if="proposal"
@@ -765,7 +767,8 @@ export default {
         },
         computedProposalId: function(){
             if (this.proposal) {
-                return this.proposal.id;
+                // Create a new key to make vue reload the component
+                return `${this.proposal.id}-${this.uuid}`;
             }
         },
         debug: function(){
@@ -870,7 +873,7 @@ export default {
         //},
         canSeeSubmission: function(){
             //return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)' && this.proposal.processing_status != 'With Approver' && !this.isFinalised)
-            return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)')
+            return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)');
         },
         isApprovalLevelDocument: function(){
             return this.proposal && this.proposal.processing_status == 'With Approver' && this.proposal.approval_level != null && this.proposal.approval_level_document == null ? true : false;
@@ -1432,7 +1435,7 @@ export default {
             this.applySelect2ToAdditionalDocumentTypes(resData)
         },
         revisionToDisplay: async function(revision) {
-            console.log("Displaying", revision);
+            // console.log("Displaying", revision);
             let vm = this;
             let payload = {"revision_id": revision.revision_id}
 
@@ -1446,6 +1449,7 @@ export default {
             }).then(response => {
                 console.log(response.reference);
                 this.proposal = Object.assign({}, response);
+                this.uuid++;
 
                 // vm.switchStatus(response.processing_status_id); // 'with_referral'
                 // if (typeof(vm["table"]) !== 'undefined') {
@@ -1514,6 +1518,10 @@ export default {
         .then (data => {
             vm.proposal = Object.assign({}, data);
             vm.hasAmendmentRequest=this.proposal.hasAmendmentRequest;
+            if (vm.debug == true) {
+                this.canSeeSubmission = true;
+                this.showingProposal = true;
+            }
         })
         .catch(error => {
             console.log(error);

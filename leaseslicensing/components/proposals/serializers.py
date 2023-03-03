@@ -62,6 +62,20 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
         )
         read_only_fields = ("id",)
 
+    def save(self, **kwargs):
+        from reversion import revisions
+
+        if kwargs.pop("no_revision", False):
+            super(ProposalGeometrySaveSerializer, self).save(**kwargs)
+        else:
+            with revisions.create_revision():
+                if "version_user" in kwargs:
+                    revisions.set_user(kwargs.pop("version_user", None))
+                if "version_comment" in kwargs:
+                    revisions.set_comment(kwargs.pop("version_comment", ""))
+                super(ProposalGeometrySaveSerializer, self).save(**kwargs)
+
+
 
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
     proposal_id = serializers.IntegerField(write_only=True, required=False)

@@ -15,7 +15,8 @@
                         <strong>Lodged on</strong><br/>
                         {{ formatDate(lodgement_date) }}
                     </div>
-                    <div v-if="showingProposal || canSeeSubmission" class="col-sm-12 top-buffer-s">
+                    <!-- <div v-if="showingProposal || canSeeSubmission" class="col-sm-12 top-buffer-s"> -->
+                    <div v-if="showingProposal" class="col-sm-12 top-buffer-s">
                         {{ current_lodgement_version.revision_id }} {{ lodgementVersion.revision_id }}
                         <table class="table small w-auto table-sm text-xsmall">
                             <tr>
@@ -81,8 +82,6 @@ export default {
             return data ? moment(data).format(format): '';
         },
         compareRevision: function(revision) {
-            console.log(`clicked, lodgement version ${revision.lodgement_number}-${revision.lodgement_sequence}`,
-                revision);
             this.lodgementVersion = revision;
         },
         versionKey: function(revision_id) {

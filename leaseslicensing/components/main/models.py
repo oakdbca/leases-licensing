@@ -541,7 +541,8 @@ from leaseslicensing.components.proposals.models import (Proposal, ProposalType,
                                                          Referral, ReferralDocument, ProposalRequirement,
                                                          ProposalStandardRequirement, ReferralRecipientGroup,
                                                          SectionChecklist, ChecklistQuestion,
-                                                         ProposalAssessment, ProposalAssessmentAnswer
+                                                         ProposalAssessment, ProposalAssessmentAnswer,
+                                                         ProposalGeometry
                                                          )
 reversion.register(ProposalType)
 reversion.register(Organisation)
@@ -571,5 +572,7 @@ reversion.register(Proposal, follow=["application_type",
                                      "previous_application",
                                      "approval_level_document",
                                      "generated_proposal",
-                                     "originating_competitive_process"
+                                     "originating_competitive_process",
+                                    #  "proposalgeometry"
                                      ])
+reversion.register(ProposalGeometry, follow=["proposal"])

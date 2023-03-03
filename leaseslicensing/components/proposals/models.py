@@ -1447,10 +1447,56 @@ class Proposal(RevisionedMixin, models.Model):
         return rr
 
     def revision_version(self, revision_id):
-        """"""
+        """
+        Returns the version state of this model for version `revision_id`
+        """
 
-        # return Version.objects.get_for_object(self).filter(revision_id=revision_id)[0].object
-        return Version.objects.get_for_object(self).select_related('revision').filter(revision_id=revision_id)[0]
+        return Version.objects.get_for_object(self).select_related('revision').filter(
+            revision_id=revision_id)[0]
+
+    def proposalgeometries_versions(self, revision_id, **kwargs):
+        """
+        Returns a list of geometries of this model for version `revision_id`
+
+        Args:
+            revision_id (int):
+                The reversion revision id to query for
+            lookup (str, optional):
+                The filter condition to apply, e.g. `__lte`,
+                Defaults to `""`, i.e. a filter for `revision_id__exact=value`.
+                does not apply when `lookup_filter=` is used
+            lookup_filter (Q-expression, optional):
+                A Q-expression to filter the geometries,
+
+        Examples:
+            - geometry_versions = model_instance.proposalgeometries_versions(
+                revision_id, lookup="__lte")
+            - geometry_versions = model_instance.proposalgeometries_versions(
+                revision_id, lookup_filter=Q(revision_id__lte=revision_id)), i.e. can
+                add negation and more complex conditions
+        """
+
+        # How to filter the reversion table, e.g. `__lte`, or `Q(revision_id__lte=revision_id)`
+        lookup = kwargs.get("lookup", "")
+        lookup_filter = kwargs.get("lookup_filter", None)
+        if not lookup_filter:
+            # The lookup filter to apply
+            lookup_filter = Q(**{f"revision_id{lookup}": revision_id})
+
+        # All proposal geometries accociated with this Proposal
+        proposalgeometries = self.proposalgeometry.all()
+        # A list of geometry version up to and including `revision_id`
+        pg_versions = []
+        # Check reversion version by less than or equal because of reverse one-to-many
+        # relation between Proposal -> 1:N -> ProposalGeometry
+        for proposalgeometry in proposalgeometries:
+            pg_version = [p for p in Version.objects.get_for_object(
+                proposalgeometry).select_related(
+                'revision').filter(lookup_filter)
+                ]
+            pg_versions += (pg_version)
+
+        return list(set(pg_versions))
 
 
     @property
