@@ -1437,7 +1437,10 @@ export default {
         revisionToDisplay: async function(revision) {
             // console.log("Displaying", revision);
             let vm = this;
-            let payload = {"revision_id": revision.revision_id}
+            let payload = {
+                "revision_id": revision.revision_id,
+                "debug": this.debug
+            }
 
             await fetch(helpers.add_endpoint_json(api_endpoints.proposal, vm.proposal.id + '/revision_version'),
                 { body: JSON.stringify(payload), method: 'POST' }).then(async response => {
@@ -1507,19 +1510,20 @@ export default {
     created: function() {
         let vm = this;
         console.log('in created')
-        fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`).then(async response => {
-            if (!response.ok) {
-                const text = await response.json();
-                throw new Error(text);
-            } else {
-                return await response.json();
-            }
-        })
+        let payload = {'debug': this.debug};
+        fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`,
+            { body: JSON.stringify(payload), method: 'POST' }).then(async response => {
+                if (!response.ok) {
+                    const text = await response.json();
+                    throw new Error(text);
+                } else {
+                    return await response.json();
+                }
+            })
         .then (data => {
             vm.proposal = Object.assign({}, data);
             vm.hasAmendmentRequest=this.proposal.hasAmendmentRequest;
             if (vm.debug == true) {
-                this.canSeeSubmission = true;
                 this.showingProposal = true;
             }
         })

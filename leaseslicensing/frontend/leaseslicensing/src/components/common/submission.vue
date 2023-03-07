@@ -17,14 +17,13 @@
                     </div>
                     <!-- <div v-if="showingProposal || canSeeSubmission" class="col-sm-12 top-buffer-s"> -->
                     <div v-if="showingProposal" class="col-sm-12 top-buffer-s">
-                        {{ current_lodgement_version.revision_id }} {{ lodgementVersion.revision_id }}
                         <table class="table small w-auto table-sm text-xsmall">
                             <tr>
                                 <th>Lodgement</th>
                                 <th>Date</th>
                                 <th>Action</th>
                             </tr>
-                            <tr v-for="p in proposal.reversion_revisions" :key="versionKey(p.revision_id)">
+                            <tr v-for="p in lodgement_versions()" :key="versionKey(p.revision_id)">
                                 <td>{{ p.lodgement_number }}-{{ p.lodgement_sequence }}</td>
                                 <td>{{ formatDate(p.lodgement_date, format='DD/MM') }}</td>
                                 <td><a v-if="p.revision_id!=current_lodgement_version.revision_id"
@@ -33,11 +32,6 @@
                                     </a>
                                     <div v-else>Viewing</div>
                                 </td>
-                                <!-- <td><a
-                                    @click.prevent="compareRevision(p)" class="actionBtn pull-right">
-                                    Compare
-                                    </a>
-                                </td> -->
                             </tr>
                         </table>
                     </div>
@@ -91,13 +85,22 @@ export default {
             let key = `${revision_id}-${revision_id==this.current_lodgement_version.revision_id? 0: 1}`;
             // console.log(key);
             return key;
+        },
+        debug: function(){
+            if (this.$route.query.debug){
+                return this.$route.query.debug === 'true'
+            }
+            return false
+        },
+        lodgement_versions: function() {
+            return this.debug()? this.proposal.all_lodgement_versions: this.proposal.lodgement_versions;
         }
     },
     computed: {
         /** Writable computed lodgement version revision object */
         lodgementVersion: {
             get() {
-                return this. current_lodgement_version;
+                return this.current_lodgement_version;
             },
             set(version) {
                 console.log("Setting new version", version);
@@ -108,7 +111,7 @@ export default {
     },
     created: function() {
         let vm = this;
-        this.current_lodgement_version = this.proposal.reversion_revisions[0];
+        this.current_lodgement_version = this.proposal.lodgement_versions[0];
         this.proposal
         this.showingProposal
         this.canSeeSubmission

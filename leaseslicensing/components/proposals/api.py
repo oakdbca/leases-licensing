@@ -1343,14 +1343,17 @@ class ProposalViewSet(viewsets.ModelViewSet):
         instance = model_class(**version.field_dict)
         # Serialize the instance
         serializer = serializer_class(instance, context={"request": request})
+
         # Get associated geometries where the revision id is less than or equal `revision_id`
-        proposalgeometries_versions = self.get_object().proposalgeometries_versions(
-            revision_id, lookup_filter=Q(revision_id__lte=revision_id))
+        proposalgeometries_versions = instance.reverse_fk_versions(
+            "proposalgeometry",
+            lookup_filter=Q(revision_id__lte=revision_id))
+
         # Build geometry data structure containing only the geometry versions at `revision_id`
         geometry_data = {"type": "FeatureCollection",
                         "features": []}
-        for version in proposalgeometries_versions:
-            proposalgeometry = ProposalGeometry(**version.field_dict)
+        for pg_version in proposalgeometries_versions:
+            proposalgeometry = ProposalGeometry(**pg_version.field_dict)
             pg_serializer = ProposalGeometrySerializer(proposalgeometry)
             geometry_data["features"].append(pg_serializer.data)
 
@@ -1569,7 +1572,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
     @detail_route(
         methods=[
-            "GET",
+            "GET", "POST"
         ],
         detail=True,
     )

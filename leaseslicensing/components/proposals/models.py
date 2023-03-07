@@ -942,8 +942,7 @@ class ProposalType(models.Model):
         app_label = "leaseslicensing"
 
 
-# class Proposal(DirtyFieldsMixin, models.Model):
-class Proposal(RevisionedMixin, models.Model):
+class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     APPLICANT_TYPE_ORGANISATION = "ORG"
     APPLICANT_TYPE_INDIVIDUAL = "IND"
     APPLICANT_TYPE_PROXY = "PRX"
@@ -1400,104 +1399,48 @@ class Proposal(RevisionedMixin, models.Model):
 
 
     @property
-    def reversion_revisions(self):
-        """"""
+    def lodgement_versions(self):
+        """
+        Returns lodgement data for all commented versions of this model,
+        as well as the the most recent data set.
+        """
 
-        # return list(Version.objects.get_for_object(self))
-        # return [v.field_dict for v in Version.objects.get_for_object(self)]
+        current_revision_id = Version.objects.get_for_object(self).first().revision_id
+        versions = self.revision_versions().filter(
+            ~Q(revision__comment='') |
+            Q(revision_id=current_revision_id))
 
-        # self.request
+        return self.versions_to_lodgement_dict(versions)
 
-        # request = self.context["request"]
-        # user = (
-        #     request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
-        # )
-
-        # serializer = InternalProposalSerializer
-        # for obj in Version.objects.get_for_object(self):
-        #     instance = obj.object
-        #     serializer = InternalProposalSerializer(instance)
-        #     print(serializer.data)
-
-        # json.loads(obj.serialized_data)[0]["fields"]["applicant"]
-
-        # current_revision_id = Version.objects.get_for_object(self).first().revision_id
-        # versions = (
-        #     Version.objects.get_for_object(self)
-        #     .select_related("revision__user")
-        #     .filter(
-        #         Q(revision__comment__icontains="status")
-        #         | Q(revision_id=current_revision_id)
-        #     )
-        # )
-
-        # Version.objects.get_for_object(self).filter(revision_id=1735)
+    def versions_to_lodgement_dict(self, versions_qs):
+        """
+        """
 
         rr = []
-        for obj in Version.objects.get_for_object(self):
-            rr.append(dict(
-                revision_id=obj.revision_id,
-                lodgement_number=obj.field_dict.get("lodgement_number", None),
-                lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
-                lodgement_date=obj.field_dict.get("lodgement_date", None)
-            ))
+        for obj in versions_qs:
+                rr.append(dict(
+                    revision_id=obj.revision_id,
+                    lodgement_number=obj.field_dict.get("lodgement_number", None),
+                    lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
+                    lodgement_date=obj.field_dict.get("lodgement_date", None)
+                ))
 
-        # return [v.field_dict for v in Version.objects.get_for_object(self)]
-        # return [v.object for v in Version.objects.get_for_object(self)]
         return rr
+
+
+    def revision_versions(self):
+        """
+        Returns all versions of this model
+        """
+
+        return Version.objects.get_for_object(self).select_related('revision')
 
     def revision_version(self, revision_id):
         """
         Returns the version state of this model for version `revision_id`
         """
 
-        return Version.objects.get_for_object(self).select_related('revision').filter(
-            revision_id=revision_id)[0]
-
-    def proposalgeometries_versions(self, revision_id, **kwargs):
-        """
-        Returns a list of geometries of this model for version `revision_id`
-
-        Args:
-            revision_id (int):
-                The reversion revision id to query for
-            lookup (str, optional):
-                The filter condition to apply, e.g. `__lte`,
-                Defaults to `""`, i.e. a filter for `revision_id__exact=value`.
-                does not apply when `lookup_filter=` is used
-            lookup_filter (Q-expression, optional):
-                A Q-expression to filter the geometries,
-
-        Examples:
-            - geometry_versions = model_instance.proposalgeometries_versions(
-                revision_id, lookup="__lte")
-            - geometry_versions = model_instance.proposalgeometries_versions(
-                revision_id, lookup_filter=Q(revision_id__lte=revision_id)), i.e. can
-                add negation and more complex conditions
-        """
-
-        # How to filter the reversion table, e.g. `__lte`, or `Q(revision_id__lte=revision_id)`
-        lookup = kwargs.get("lookup", "")
-        lookup_filter = kwargs.get("lookup_filter", None)
-        if not lookup_filter:
-            # The lookup filter to apply
-            lookup_filter = Q(**{f"revision_id{lookup}": revision_id})
-
-        # All proposal geometries accociated with this Proposal
-        proposalgeometries = self.proposalgeometry.all()
-        # A list of geometry version up to and including `revision_id`
-        pg_versions = []
-        # Check reversion version by less than or equal because of reverse one-to-many
-        # relation between Proposal -> 1:N -> ProposalGeometry
-        for proposalgeometry in proposalgeometries:
-            pg_version = [p for p in Version.objects.get_for_object(
-                proposalgeometry).select_related(
-                'revision').filter(lookup_filter)
-                ]
-            pg_versions += (pg_version)
-
-        return list(set(pg_versions))
-
+        return self.revision_versions().filter(revision_id=revision_id)[0]
 
     @property
     def is_assigned(self):

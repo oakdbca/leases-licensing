@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
+from reversion.models import Version
 import os
 
 from django.db import models
+from django.db.models import Q
 from django.dispatch import receiver
 from django.db.models.signals import pre_delete
 
@@ -124,16 +126,63 @@ class RevisionedMixin(models.Model):
                     revisions.set_comment(kwargs.pop("version_comment", ""))
                 super(RevisionedMixin, self).save(**kwargs)
 
+    def reverse_fk_versions(self, reverse_attr, **kwargs):
+        """
+        Returns a list of a model's 1-to-many foreign key relation versions
+        selected by filter expression. E.g. Proposal -> 1:N -> ProposalGeometry.
+
+        Args:
+            reverse_attr (str):
+                The attribute in the model to query for
+            lookup (dict, optional):
+                The filter condition to apply, e.g. `{'__lte':1234}`,
+                Defaults to empty dict `{}`, i.e. no filter applies.
+                Does not get used when `lookup_filter=` is used
+            lookup_filter (Q-expression, optional):
+                A Q-expression to filter `reverse_attr` queryset
+
+        Examples:
+            - geometry_versions = model_instance.reverse_fk_versions(
+                "proposalgeometry",
+                lookup={"__lte": 1234})
+            - geometry_versions = model_instance.reverse_fk_versions(
+                "proposalgeometry",
+                lookup_filter=Q(revision_id__lte=1234)), i.e. can
+                add negation and more complex conditions
+        """
+
+        # How to filter the revision table
+        lookup = kwargs.get("lookup", {})
+        lookup_filter = kwargs.get("lookup_filter", None)
+        if not lookup_filter:
+            # The lookup filter to apply
+            lookup_filter = Q(**{f"revision_id{k}":f"{v}" for k,v in iter(lookup.items())})
+
+        # Reverse foreign key queryset
+        if hasattr(self, reverse_attr):
+            reverse_fk_qs = getattr(self, reverse_attr).all()
+        else:
+            raise ValidationError(f"{self.__class__.__name__} has no attribute {reverse_attr}")
+
+        # A list of filtered attribute versions
+        rfk_versions = []
+        for obj in reverse_fk_qs:
+            version = [p for p in Version.objects.get_for_object(
+                obj).select_related(
+                'revision').filter(lookup_filter)
+                ]
+            rfk_versions += version
+
+        return list(set(rfk_versions))
+
     @property
     def created_date(self):
-        from reversion.models import Version
 
         # return revisions.get_for_object(self).last().revision.date_created
         return Version.objects.get_for_object(self).last().revision.date_created
 
     @property
     def modified_date(self):
-        from reversion.models import Version
 
         # return revisions.get_for_object(self).first().revision.date_created
         return Version.objects.get_for_object(self).first().revision.date_created
