@@ -184,10 +184,10 @@ EMAIL_FROM = DEFAULT_FROM_EMAIL
 OTHER_PAYMENT_ALLOWED = env("OTHER_PAYMENT_ALLOWED", False)  # Cash/Cheque
 
 OSCAR_BASKET_COOKIE_OPEN = "cols_basket"
-PAYMENT_SYSTEM_ID = env("PAYMENT_SYSTEM_ID", "S557")
+PAYMENT_SYSTEM_ID = env("PAYMENT_SYSTEM_ID", "S675")
 PAYMENT_SYSTEM_PREFIX = env(
     "PAYMENT_SYSTEM_PREFIX", PAYMENT_SYSTEM_ID.replace("S", "0")
-)  # '0557'
+)  # '0675'
 os.environ[
     "LEDGER_PRODUCT_CUSTOM_FIELDS"
 ] = "('ledger_description','quantity','price_incl_tax','price_excl_tax','oracle_code')"
