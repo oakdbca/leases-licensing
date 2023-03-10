@@ -10,8 +10,7 @@
                         <strong>Status</strong><br/>
                         {{ proposal.processing_status }}
                     </div>
-                    <!-- Do not show assign to dialogs when still in draft status -->
-                    <div v-if="proposal.processing_status !== 'Draft'">
+                    <div>
                         <div class="col-sm-12">
                             <div class="separator"></div>
                         </div>
@@ -390,11 +389,19 @@ export default {
             type: Object,
             default: null,
         },
+        on_current_revision: {
+            type: Boolean,
+            default: true,
+        },
         isFinalised: {
             type: Boolean,
             default: false,
         },
         canAction: {
+            type: Boolean,
+            default: false,
+        },
+        canLimitedAction: {
             type: Boolean,
             default: false,
         },
@@ -420,10 +427,6 @@ export default {
         },
         referralListURL: function(){
             return this.proposal!= null ? helpers.add_endpoint_json(api_endpoints.referrals,'datatable_list')+'?proposal='+this.proposal.id : '';
-        },
-        canLimitedAction:function(){
-            // TOOD: refer to proposal_apiary.vue
-            return true
         },
         show_toggle_proposal: function(){
             if(this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||

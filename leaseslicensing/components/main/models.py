@@ -123,7 +123,10 @@ class RevisionedMixin(models.Model):
                 if "version_user" in kwargs:
                     revisions.set_user(kwargs.pop("version_user", None))
                 if "version_comment" in kwargs:
-                    # Increment the lodgement sequence here, if the model is saved with a comment
+                    # Increment the lodgement sequence on every save with a version comment.
+                    # Versions are only commented on concluding saves (e.g. on submit),
+                    # typically when the status changes, i.e. the incremented lodgement sequence
+                    # becomes the first save using the new status.
                     if hasattr(self, "lodgement_sequence"):
                         self.lodgement_sequence += 1
                     revisions.set_comment(kwargs.pop("version_comment", ""))

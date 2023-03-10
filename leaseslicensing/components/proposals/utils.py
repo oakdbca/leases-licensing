@@ -648,8 +648,6 @@ def proposal_submit(proposal, request):
                             reasons.append(q.reason)
                         q.status = "amended"
                         q.save()
-                # FIXME Do we need to increment the `lodgement_sequence` here?
-                proposal.lodgement_sequence += 1
 
             # Create a log entry for the proposal
             proposal.log_user_action(

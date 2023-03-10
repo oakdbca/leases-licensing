@@ -1420,9 +1420,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         for obj in versions_qs:
                 rr.append(dict(
                     revision_id=obj.revision_id,
+                    revision_comment=obj.revision.comment.strip(),
                     lodgement_number=obj.field_dict.get("lodgement_number", None),
                     lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
-                    lodgement_date=obj.field_dict.get("lodgement_date", None)
+                    lodgement_date=obj.field_dict.get("lodgement_date", None),
                 ))
 
         return rr
@@ -1765,9 +1766,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     self.shapefile_json = json.loads(shp_json)
                 else:
                     self.shapefile_json = shp_json
-                Version
-                self.save(version_comment="New Shapefile JSON saved.")
-                # self.save()
+
+                # self.save(version_comment="New Shapefile JSON saved.") # No new sequence on shapefile upload
+                self.save()
                 # else:
                 #     raise ValidationError('Please upload a valid shapefile')
             else:

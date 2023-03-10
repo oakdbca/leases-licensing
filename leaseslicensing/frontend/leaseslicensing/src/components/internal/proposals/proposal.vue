@@ -26,8 +26,10 @@
                 <Workflow
                     ref='workflow'
                     :proposal="proposal"
+                    :on_current_revision="on_current_revision"
                     :isFinalised="isFinalised"
                     :canAction="canAction"
+                    :canLimitedAction="canLimitedAction"
                     :canAssess="canAssess"
                     :can_user_edit="proposal.can_user_edit"
                     @toggleProposal="toggleProposal"
@@ -410,6 +412,8 @@ export default {
             related_items_datatable_id: 'related_items_datatable' + vm._.uid,
             defaultKey: "aho",
             proposal: null,
+            latest_revision: {},
+            current_revision_id: null,
             assessment: {},
             "loading": [],
             //selected_referral: '',
@@ -830,7 +834,8 @@ export default {
         },
         canAction: function(){
 
-            return true  // TODO: implement this.  This is just temporary solution
+            // For now returning true when viewing the current version of the Proposal
+            return this.on_current_revision;  // TODO: implement this.  This is just temporary solution
 
             //if (this.proposal.processing_status == 'With Approver'){
             //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_approver || this.proposal.assigned_approver == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
@@ -839,9 +844,10 @@ export default {
             //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_officer || this.proposal.assigned_officer == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
             //}
         },
-        //canLimitedAction: function(){
+        canLimitedAction: function(){
 
-        //    //return false  // TODO: implement this.  This is just temporary solution
+            // For now returning true when viewing the current version of the Proposal
+            return this.on_current_revision;  // TODO: implement this.  This is just temporary solution
 
         //    if (this.proposal.processing_status == 'With Approver'){
         //        return
@@ -870,10 +876,14 @@ export default {
         //                this.proposal.assigned_officer == null
         //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
         //    }
-        //},
+        },
         canSeeSubmission: function(){
             //return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)' && this.proposal.processing_status != 'With Approver' && !this.isFinalised)
             return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)');
+        },
+        on_current_revision: function() {
+            // Returns whether the currently displayed version is the latest one
+            return this.latest_revision.revision_id === this.current_revision_id;
         },
         isApprovalLevelDocument: function(){
             return this.proposal && this.proposal.processing_status == 'With Approver' && this.proposal.approval_level != null && this.proposal.approval_level_document == null ? true : false;
@@ -1435,7 +1445,7 @@ export default {
             this.applySelect2ToAdditionalDocumentTypes(resData)
         },
         revisionToDisplay: async function(revision) {
-            // console.log("Displaying", revision);
+            console.log("Displaying", revision);
             let vm = this;
             let payload = {
                 "revision_id": revision.revision_id,
@@ -1452,31 +1462,10 @@ export default {
             }).then(response => {
                 console.log(response.reference);
                 this.proposal = Object.assign({}, response);
+                this.current_revision_id = revision.revision_id;
                 this.uuid++;
-
-                // vm.switchStatus(response.processing_status_id); // 'with_referral'
-                // if (typeof(vm["table"]) !== 'undefined') {
-                //     // Reload the Show Referrals popover table if exists
-                //     vm.table.ajax.reload();
-                // }
-                // swal.fire({
-                //     title: 'Referral Resent',
-                //     text: 'The referral has been resent to ' + user,
-                //     icon: 'success',
-                //     customClass: {
-                //         container: 'swal2-popover'
-                //     }
-                // });
             }).catch(error => {
                 console.error(error);
-                // swal.fire({
-                //     title: 'Proposal Error',
-                //     text: error["message"],
-                //     icon: 'error',
-                //     customClass: {
-                //         container: 'swal2-popover'
-                //     }
-                // });
             });
         }
     },
@@ -1522,6 +1511,10 @@ export default {
             })
         .then (data => {
             vm.proposal = Object.assign({}, data);
+            // Dict of the latest revision's parameters
+            vm.latest_revision = Object.assign({}, data.lodgement_versions[0]);
+            // Set current reivsion id to the latest one on creation
+            vm.current_revision_id = vm.latest_revision.revision_id
             vm.hasAmendmentRequest=this.proposal.hasAmendmentRequest;
             if (vm.debug == true) {
                 this.showingProposal = true;
