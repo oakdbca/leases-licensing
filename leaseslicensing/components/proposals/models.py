@@ -1414,6 +1414,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def versions_to_lodgement_dict(self, versions_qs):
         """
+        Returns a dictionary of revision id, comment, lodgement number, lodgement sequence,
+        lodgement date for versions queryset of this model to be used in the fronend.
         """
 
         rr = []
@@ -1438,7 +1440,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def revision_version(self, revision_id):
         """
-        Returns the version state of this model for version `revision_id`
+        Returns the version of this model for revision id `revision_id`
         """
 
         return self.revision_versions().filter(revision_id=revision_id)[0]

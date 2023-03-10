@@ -1094,7 +1094,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
 
     def get_all_lodgement_versions(self, obj):
         """
-        Returns all lodgement version of a proposal, when browsing in debug mode
+        Returns all lodgement versions of a proposal, when browsing in debug mode
         """
 
         data = self.context.get('request').data

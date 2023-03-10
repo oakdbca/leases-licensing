@@ -125,8 +125,8 @@ class RevisionedMixin(models.Model):
                 if "version_comment" in kwargs:
                     # Increment the lodgement sequence on every save with a version comment.
                     # Versions are only commented on concluding saves (e.g. on submit),
-                    # typically when the status changes, i.e. the incremented lodgement sequence
-                    # becomes the first save using the new status.
+                    # typically when the status changes, i.e. the first save of a new status
+                    # is also the first version to use the incremented sequence.
                     if hasattr(self, "lodgement_sequence"):
                         self.lodgement_sequence += 1
                     revisions.set_comment(kwargs.pop("version_comment", ""))
@@ -134,14 +134,20 @@ class RevisionedMixin(models.Model):
 
     def reverse_fk_versions(self, reverse_attr, **kwargs):
         """
-        Returns a list of a model's 1-to-many foreign key relation versions
-        selected by filter expression. E.g. Proposal -> 1:N -> ProposalGeometry.
+        Returns a list of a model's one-to-many foreign key relation versions
+        selected by filter expression. E.g. because Proposal is a property of
+        ProposalGeometry, there is a 1:N relation Proposal -> ProposalGeometry
+        and a reverse foreign key lookup of proposal geometries would always
+        return all geometries belonging to a proposal id even though some did
+        not exist at a specific version of the proposal.
+        This function returns only those versions that existed a certain revision
+        id.
 
         Args:
             reverse_attr (str):
                 The attribute in the model to query for
             lookup (dict, optional):
-                The filter condition to apply, e.g. `{'__lte':1234}`,
+                The filter expression to apply, e.g. `{'__lte':1234}`,
                 Defaults to empty dict `{}`, i.e. no filter applies.
                 Does not get used when `lookup_filter=` is used
             lookup_filter (Q-expression, optional):
@@ -154,7 +160,7 @@ class RevisionedMixin(models.Model):
             - geometry_versions = model_instance.reverse_fk_versions(
                 "proposalgeometry",
                 lookup_filter=Q(revision_id__lte=1234)), i.e. can
-                add negation and more complex conditions
+                add negation and more complex expressions
         """
 
         # How to filter the revision table
