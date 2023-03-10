@@ -3,17 +3,18 @@
 
         <SearchPerson />
 
-        <FormSection :formCollapse="false" label="Search Reference Number" Index="search_reference_number">
-        </FormSection>
+        <SearchOrganisation />
 
-        <FormSection :formCollapse="false" label="Search Keyword" Index="search_keyword">
-        </FormSection>
+        <SearchReferenceNumber />
+
     </div>
 </template>
 
 <script>
 import FormSection from "@/components/forms/section_toggle.vue"
 import SearchPerson from "./search_person.vue"
+import SearchOrganisation from "./search_organisation.vue"
+import SearchReferenceNumber from "./search_reference_number.vue"
 
 export default {
     name: 'InternalSearch',
@@ -26,10 +27,11 @@ export default {
     components:{
         FormSection,
         SearchPerson,
+        SearchOrganisation,
+        SearchReferenceNumber,
     },
     methods: {
 
     },
 }
 </script>
-
