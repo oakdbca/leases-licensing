@@ -7,6 +7,7 @@ import Organisation from '@/components/internal/organisations/manage.vue'
 import Proposal from '@/components/internal/proposals/proposal.vue'
 import ApprovalDash from '@/components/internal/approvals/dashboard.vue'
 import ComplianceDash from '@/components/internal/compliances/dashboard.vue'
+import InvoicesDash from '@/components/internal/invoices/dashboard.vue'
 import Search from '@/components/internal/search/dashboard.vue'
 import PersonDetail from '@/components/internal/person/person_detail.vue'
 import Compliance from '../compliances/access.vue'
@@ -43,6 +44,11 @@ export default
             path: 'compliance/:compliance_id',
             component: Compliance,
 
+        },
+        {
+            path: 'invoices',
+            component: InvoicesDash,
+            name: "internal-invoices-dash"
         },
         {
             path: 'search',
