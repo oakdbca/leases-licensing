@@ -1,23 +1,19 @@
 <template lang="html">
     <FormSection label="Search Person" Index="search_person">
         <div class="row form-group">
-                <label for="person_lookup" class="col-sm-3 control-label">Person</label>
-                <div class="col-sm-6">
-                    <select 
-                        id="person_lookup"  
-                        name="person_lookup"  
-                        ref="person_lookup" 
-                        class="form-control" 
-                    />
-                </div>
-                <div class="col-sm-3">
-                    <input 
-                    type="button" 
-                    @click.prevent="openDetailsApprovalsVessels" 
-                    class="btn btn-primary" 
-                    value="View Details"
-                    />
-                </div>
+            <div class="col-md-3">
+                <label for="person_lookup" class="ms-3">
+                    <strong>Search Person:</strong>
+                </label>
+            </div>
+            <div class="col-md-5">
+                <select
+                id="person_lookup"
+                name="person_lookup"
+                ref="person_lookup"
+                class="form-control"
+            />
+            </div>
         </div>
 
     </FormSection>
@@ -25,13 +21,8 @@
 
 <script>
 import FormSection from '@/components/forms/section_toggle.vue'
-var select2 = require('select2');
-require("select2/dist/css/select2.min.css");
-//require("select2-bootstrap-5-theme/dist/select2-bootstrap-5-theme.css");
-import {
-  api_endpoints,
-  helpers
-}
+import {api_endpoints, helpers}
+
 from '@/utils/hooks'
     export default {
         name:'SearchPerson',
@@ -43,27 +34,16 @@ from '@/utils/hooks'
                 email_user: null,
              }
         },
-        computed: {
-        },
         methods:{
-            openDetailsApprovalsVessels: function() {
-                this.$nextTick(() => {
-                    if (this.email_user) {
-                        window.location.replace("/internal/person/" + this.email_user.id);
-                    }
-                });
-
-            },
             initialisePersonLookup: function(){
                 let vm = this;
                 $(vm.$refs.person_lookup).select2({
                     minimumInputLength: 2,
-                    "theme": "bootstrap",
+                    "theme": "bootstrap-5",
                     allowClear: true,
                     placeholder:"Select Person",
                     ajax: {
                         url: api_endpoints.person_lookup,
-                        //url: api_endpoints.vessel_rego_nos,
                         dataType: 'json',
                         data: function(params) {
                             console.log(params)
@@ -75,19 +55,14 @@ from '@/utils/hooks'
                         },
                     },
                 }).
+                on("select2:open", function (e) {
+                    const searchField = $('[aria-controls="select2-person_lookup-results"]')
+                    searchField[0].focus();
+                }).
                 on("select2:select", function (e) {
                     var selected = $(e.currentTarget);
-                    vm.email_user = e.params.data
-                }).
-                on("select2:unselect",function (e) {
-                    var selected = $(e.currentTarget);
-                    vm.approval_id = null;
-                }).
-                on("select2:open",function (e) {
-                    //const searchField = $(".select2-search__field")
-                    const searchField = $('[aria-controls="select2-person_lookup-results"]')
-                    // move focus to select2 field
-                    searchField[0].focus();
+                    window.location = '/internal/search/person/' + selected.val() + '/';
+                    alert(JSON.stringify(e.params.data));
                 });
             },
         },
@@ -96,11 +71,5 @@ from '@/utils/hooks'
                 this.initialisePersonLookup();
             });
         },
-        created: async function() {
-        },
     }
 </script>
-
-<style lang="css" scoped>
-</style>
-

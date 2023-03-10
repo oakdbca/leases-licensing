@@ -5,7 +5,7 @@ module.exports = {
     application_statuses_dict:'/api/application_statuses_dict',
     competitive_process_statuses_dict: '/api/competitive_process_statuses_dict',
     applicants_dict: '/api/applicants_dict',
-    person_lookup:'/api/person_lookup',
+    person_lookup:'/api/users/person_lookup/',
     company_names:'/api/company_names',
     fee_configurations: '/api/fee_configurations',
     approval_types_dict:'/api/approval_types_dict',
