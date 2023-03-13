@@ -78,11 +78,11 @@ WORKDIR /app
 USER oim
 ENV PATH=/app/.local/bin:$PATH
 
-#ENV POETRY_VERSION=1.1.13
-#RUN pip install "poetry==$POETRY_VERSION"
-#RUN poetry config virtualenvs.create false
-#COPY pyproject.toml poetry.lock ./
-#RUN poetry install --no-dev --no-interaction --no-ansi
+ENV POETRY_VERSION=1.1.13
+RUN pip install "poetry==$POETRY_VERSION"
+RUN poetry config virtualenvs.create false
+COPY pyproject.toml poetry.lock ./
+RUN poetry install --no-dev --no-interaction --no-ansi
 COPY  --chown=oim:oim  leaseslicensing ./leaseslicensing
 COPY  --chown=oim:oim  gunicorn.ini manage.py ./
 
