@@ -83,6 +83,7 @@ RUN pip install "poetry==$POETRY_VERSION"
 COPY --chown=oim:oim pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-interaction --no-ansi
 RUN ls -al /app/.cache/pypoetry/virtualenvs
+RUN poetry shell
 
 COPY --chown=oim:oim leaseslicensing ./leaseslicensing
 COPY --chown=oim:oim gunicorn.ini manage.py startup.sh ./
