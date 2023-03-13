@@ -115,7 +115,7 @@ class Compliance(models.Model):
 
     @property
     def holder(self):
-        return self.proposal.applicant
+        return f"{self.proposal.applicant.first_name} {self.proposal.applicant.last_name}"
 
     @property
     def reference(self):
@@ -169,6 +169,12 @@ class Compliance(models.Model):
             else None
         )
 
+    @property
+    def application_type(self):
+        if self.proposal.application_type:
+            return self.proposal.application_type.name_display
+        return None
+
     def save(self, *args, **kwargs):
         super(Compliance, self).save(*args, **kwargs)
         if self.lodgement_number == "":
@@ -202,11 +208,12 @@ class Compliance(models.Model):
 
                 # self.lodgement_date = datetime.datetime.strptime(timezone.now().strftime('%Y-%m-%d'),'%Y-%m-%d').date()
                 self.lodgement_date = timezone.now()
+
                 self.save(
-                        #version_comment="Compliance Submitted: {}".format(self.id)
+                        version_comment=f"Compliance Submitted: {self.id}"
                         )
                 self.proposal.save(
-                    #version_comment="Compliance Submitted: {}".format(self.id)
+                    version_comment=f"Compliance Submitted: {self.id}"
                 )
                 self.log_user_action(
                     ComplianceUserAction.ACTION_SUBMIT_REQUEST.format(self.id), request

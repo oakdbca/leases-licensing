@@ -63,7 +63,7 @@ import copy
 import subprocess
 from django.db.models import Q
 
-# from reversion.models import Version
+from reversion.models import Version
 from dirtyfields import DirtyFieldsMixin
 from decimal import Decimal as D
 import csv
@@ -942,7 +942,7 @@ class ProposalType(models.Model):
         app_label = "leaseslicensing"
 
 
-class Proposal(DirtyFieldsMixin, models.Model):
+class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     APPLICANT_TYPE_ORGANISATION = "ORG"
     APPLICANT_TYPE_INDIVIDUAL = "IND"
     APPLICANT_TYPE_PROXY = "PRX"
@@ -1397,6 +1397,54 @@ class Proposal(DirtyFieldsMixin, models.Model):
     #            p = p.previous_application
     #        return l
 
+
+    @property
+    def lodgement_versions(self):
+        """
+        Returns lodgement data for all commented versions of this model,
+        as well as the the most recent data set.
+        """
+
+        current_revision_id = Version.objects.get_for_object(self).first().revision_id
+        versions = self.revision_versions().filter(
+            ~Q(revision__comment='') |
+            Q(revision_id=current_revision_id))
+
+        return self.versions_to_lodgement_dict(versions)
+
+    def versions_to_lodgement_dict(self, versions_qs):
+        """
+        Returns a dictionary of revision id, comment, lodgement number, lodgement sequence,
+        lodgement date for versions queryset of this model to be used in the fronend.
+        """
+
+        rr = []
+        for obj in versions_qs:
+                rr.append(dict(
+                    revision_id=obj.revision_id,
+                    revision_comment=obj.revision.comment.strip(),
+                    lodgement_number=obj.field_dict.get("lodgement_number", None),
+                    lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
+                    lodgement_date=obj.field_dict.get("lodgement_date", None),
+                ))
+
+        return rr
+
+
+    def revision_versions(self):
+        """
+        Returns all versions of this model
+        """
+
+        return Version.objects.get_for_object(self).select_related('revision')
+
+    def revision_version(self, revision_id):
+        """
+        Returns the version of this model for revision id `revision_id`
+        """
+
+        return self.revision_versions().filter(revision_id=revision_id)[0]
+
     @property
     def is_assigned(self):
         return self.assigned_officer is not None
@@ -1721,7 +1769,7 @@ class Proposal(DirtyFieldsMixin, models.Model):
                 else:
                     self.shapefile_json = shp_json
 
-                # self.save(version_comment="New Shapefile JSON saved.")
+                # self.save(version_comment="New Shapefile JSON saved.") # No new sequence on shapefile upload
                 self.save()
                 # else:
                 #     raise ValidationError('Please upload a valid shapefile')
@@ -2438,6 +2486,21 @@ class Proposal(DirtyFieldsMixin, models.Model):
                 return licence_buffer
             except:
                 raise
+
+    def test_create_approval_pdf(self, request):
+        """
+        Callback function to test this Proposal's approval PDF creation
+        """
+
+        try:
+            # Get a user
+            user = self.relevant_applicant
+            # Generate the Approval document
+            self.approval.generate_doc(user)
+
+        except Exception as e:
+            logger.exception("Error in `test_create_approval_pdf`")
+            raise serializers.ValidationError(e.args[0])
 
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
@@ -3279,7 +3342,7 @@ class AmendmentRequest(ProposalRequest):
                     if proposal.processing_status != "draft":
                         proposal.processing_status = "draft"
                         proposal.customer_status = "draft"
-                        proposal.save()
+                        proposal.save(version_comment=f"Proposal amendment requested {request.data.get('reason', '')}")
                         #proposal.documents.all().update(can_hide=True)
                         #proposal.required_documents.all().update(can_hide=True)
                     # Create a log entry for the proposal
