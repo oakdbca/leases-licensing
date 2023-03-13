@@ -79,8 +79,8 @@ RUN chown -R oim.oim /container-config/
 WORKDIR /app
 USER oim
 ENV PATH=/app/.local/bin:$PATH
-ENV PIP_TARGET=.local/lib/python3.8/site-packages
-ENV PYTHONPATH=.local/lib/python3.8/site-packages
+ENV PIP_TARGET=/app/.local/lib/python3.8/site-packages
+ENV PYTHONPATH=/app/.local/lib/python3.8/site-packages
 
 ENV POETRY_VERSION=1.1.13
 RUN pip install "poetry==$POETRY_VERSION"
