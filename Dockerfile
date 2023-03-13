@@ -81,6 +81,7 @@ ENV PATH=/app/.local/bin:$PATH
 ENV POETRY_VERSION=1.1.13
 RUN pip install "poetry==$POETRY_VERSION"
 RUN poetry config virtualenvs.create false
+RUN poetry config install.user true
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-dev --no-interaction --no-ansi
 COPY  --chown=oim:oim  leaseslicensing ./leaseslicensing
