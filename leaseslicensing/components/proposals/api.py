@@ -1,11 +1,12 @@
 import traceback
+import functools
 import os
 import base64
 import geojson
 import json
 from six.moves.urllib.parse import urlparse # FIXME Can this be `from urllib.parse import urlencode` in py3?
 from wsgiref.util import FileWrapper
-from django.db.models import Q, Min
+from django.db.models import Q
 from django.db import transaction, connection
 from django.http import HttpResponse, HttpResponseRedirect, HttpResponseBadRequest
 from django.core.files.base import ContentFile
@@ -36,6 +37,7 @@ from django.core.cache import cache
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser, Address
 from ledger_api_client.country_models import Country
 from datetime import datetime, timedelta, date
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.proposals.utils import (
@@ -125,7 +127,6 @@ from leaseslicensing.components.approvals.serializers import ApprovalSerializer
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.compliances.serializers import ComplianceSerializer
 from ledger_api_client.ledger_models import Invoice
-
 from leaseslicensing.helpers import is_customer, is_internal, is_assessor, is_approver
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -336,7 +337,7 @@ class GetEmptyList(views.APIView):
 """
 
 
-class ProposalFilterBackend(DatatablesFilterBackend):
+class ProposalFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
     """
@@ -389,16 +390,14 @@ class ProposalFilterBackend(DatatablesFilterBackend):
         #getter = request.query_params.get
         #import ipdb; ipdb.set_trace()
         #fields = self.get_fields(getter)
-        fields = self.get_fields(request)
         #ordering = self.get_ordering(getter, fields)
-        ordering = self.get_ordering(request, view, fields)
-        queryset = queryset.order_by(*ordering)
-        if len(ordering):
-            queryset = queryset.order_by(*ordering)
 
-        queryset = super(ProposalFilterBackend, self).filter_queryset(
-            request, queryset, view
-        )
+        queryset = self.apply_request(request, queryset, view,
+                        ledger_lookup_fields=["submitter",
+                                              "ind_applicant",
+                                              "assigned_officer",
+                                              "assigned_approver"])
+
         setattr(view, "_datatables_total_count", total_count)
         return queryset
 
@@ -1891,6 +1890,28 @@ class ProposalViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    def test_create_approval_pdf(self, request, **kwargs):
+        """
+        API endpoint to test the creation of this Proposal's approval PDF
+        """
+
+        try:
+            instance = self.get_object()
+            instance.test_create_approval_pdf(request)
+        except:
+            logger.error("Error in `test_create_approval_pdf`")
+            raise
+
+        serializer_class = self.internal_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[

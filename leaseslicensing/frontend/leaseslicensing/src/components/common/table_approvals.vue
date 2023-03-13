@@ -1,43 +1,45 @@
 <template>
     <div>
         <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted" class="mb-2">
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="">Type</label>
-                    <select class="form-control" v-model="filterApprovalType">
-                        <option value="all">All</option>
-                        <option v-for="type in approval_types" :value="type.code">{{ type.description }}</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="">Status</label>
-                    <select class="form-control" v-model="filterApprovalStatus">
-                        <option value="all">All</option>
-                        <option v-for="status in approval_statuses" :value="status.code">{{ status.description }}</option>
-                    </select>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="">Expiry Date From</label>
-                    <div class="input-group date" ref="approvalDateFromPicker">
-                        <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterApprovalExpiryDateFrom">
-                        <span class="input-group-addon">
-                            <span class="glyphicon glyphicon-calendar"></span>
-                        </span>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Type</label>
+                        <select class="form-control" v-model="filterApprovalType">
+                            <option value="all">All</option>
+                            <option v-for="type in approval_types" :value="type.code">{{ type.description }}</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3">
-                <div class="form-group">
-                    <label for="">Expiry Date To</label>
-                    <div class="input-group date" ref="approvalDateToPicker">
-                        <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterApprovalExpiryDateTo">
-                        <span class="input-group-addon">
-                            <span class="glyphicon glyphicon-calendar"></span>
-                        </span>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Status</label>
+                        <select class="form-control" v-model="filterApprovalStatus">
+                            <option value="all">All</option>
+                            <option v-for="status in approval_statuses" :value="status.code">{{ status.description }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Expiry Date From</label>
+                        <div class="input-group date" ref="approvalDateFromPicker">
+                            <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterApprovalExpiryDateFrom">
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Expiry Date To</label>
+                        <div class="input-group date" ref="approvalDateToPicker">
+                            <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterApprovalExpiryDateTo">
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -245,7 +247,7 @@ export default {
         columnLodgementNumber: function() {
             return {
                         // 2. Lodgement Number
-                        data: "id",
+                        data: "lodgement_number",
                         orderable: true,
                         searchable: true,
                         visible: true,
@@ -265,8 +267,9 @@ export default {
                 searchable: true,
                 visible: true,
                 'render': function(row, type, full){
-                    return '(todo)'
-                }
+                    return full.application_type;
+                },
+                name: 'proposal__application_type__name'
             }
         },
         columnSite: function() {
@@ -276,6 +279,7 @@ export default {
                 searchable: true,
                 visible: true,
                 'render': function(row, type, full){
+                    // TODO Site
                     return '(todo)'
                 }
             }
@@ -287,15 +291,16 @@ export default {
                         searchable: true,
                         visible: true,
                         'render': function(row, type, full){
-                            //return full.holder;
-                            return 'holder?';
-                        }
+                            return full.holder;
+                        },
+                        // TODO Is it correct to fetch the applicant as the holder?
+                        name: "current_proposal__ind_applicant__first_name, current_proposal__ind_applicant__last_name"
                     }
         },
         columnStatus: function() {
             return {
                         // 5. Status
-                        data: "id",
+                        data: "status",
                         orderable: true,
                         searchable: true,
                         visible: true,
@@ -309,10 +314,13 @@ export default {
                         // 9. Expiry Date
                         data: "id",
                         orderable: true,
-                        searchable: true,
+                        searchable: false,
                         visible: true,
                         'render': function(row, type, full){
-                            return full.expiry_date;
+                            if (full.expiry_date){
+                                return moment(full.expiry_date).format('DD/MM/YYYY')
+                            }
+                            return ''
                         }
                     }
         },
@@ -323,7 +331,8 @@ export default {
                 searchable: true,
                 visible: true,
                 'render': function(row, type, full){
-                    return '(todo)'
+                    let _file_name = "Approval.PDF"
+                    return `<a href="${full.licence_document}" target="_blank"><i class="fa fa-file-pdf" style='color: red'></i> ${_file_name}</a>`
                 }
             }
         },
@@ -332,8 +341,8 @@ export default {
             return {
                         // 10. Action
                         data: "id",
-                        orderable: true,
-                        searchable: true,
+                        orderable: false,
+                        searchable: false,
                         visible: true,
                         'render': function(row, type, full){
                             let links = '';

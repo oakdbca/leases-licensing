@@ -562,7 +562,7 @@ jedi = ">=0.16"
 matplotlib-inline = "*"
 pexpect = {version = ">4.3", markers = "sys_platform != \"win32\""}
 pickleshare = "*"
-prompt-toolkit = ">=3.0.30,<3.0.37 || >3.0.37,<3.1.0"
+prompt-toolkit = ">=3.0.30,<3.1.0"
 pygments = ">=2.4.0"
 stack-data = "*"
 traitlets = ">=5"
@@ -632,6 +632,21 @@ type = "git"
 url = "https://github.com/dbca-wa/ledger_api_client.git"
 reference = "master"
 resolved_reference = "5fadbfe226915fad21aec0e1b1a69e07ff619c94"
+
+[[package]]
+name = "lxml"
+version = "4.9.2"
+description = "Powerful and Pythonic XML processing library combining libxml2/libxslt with the ElementTree API."
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, != 3.4.*"
+
+[package.extras]
+cssselect = ["cssselect (>=0.7)"]
+html5 = ["html5lib"]
+htmlsoup = ["beautifulsoup4"]
+source = ["Cython (>=0.29.7)"]
+
 
 [[package]]
 name = "matplotlib-inline"
@@ -791,7 +806,7 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.2.2)", "pytest-cov (>=4)", "pytes
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.38"
+version = "3.0.37"
 description = "Library for building powerful interactive command lines in Python"
 category = "dev"
 optional = false
@@ -896,6 +911,17 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 
 [package.dependencies]
 six = ">=1.5"
+
+[[package]]
+name = "python-docx"
+version = "0.8.11"
+description = "Create and update Microsoft Word .docx files."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+lxml = ">=2.3.2"
 
 [[package]]
 name = "pytz"
@@ -1078,7 +1104,8 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "3.8.*"
-content-hash = "0ba49b627d78fb635096aaadb821c566cc2ddced7ab699c5c25399eed0e96828"
+content-hash = "bb3a50258a95c79e18aad6a4c69d0671eaf684419a09411382155ded9ee796df"
+
 
 [metadata.files]
 appnope = []
@@ -1132,6 +1159,7 @@ isort = []
 jedi = []
 lazy-object-proxy = []
 ledger-api-client = []
+lxml = []
 matplotlib-inline = []
 mccabe = []
 munch = []
@@ -1157,6 +1185,7 @@ pygments = []
 pylint = []
 pyproj = []
 python-dateutil = []
+python-docx = []
 pytz = []
 reportlab = []
 requests = []

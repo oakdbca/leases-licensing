@@ -2487,6 +2487,21 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             except:
                 raise
 
+    def test_create_approval_pdf(self, request):
+        """
+        Callback function to test this Proposal's approval PDF creation
+        """
+
+        try:
+            # Get a user
+            user = self.relevant_applicant
+            # Generate the Approval document
+            self.approval.generate_doc(user)
+
+        except Exception as e:
+            logger.exception("Error in `test_create_approval_pdf`")
+            raise serializers.ValidationError(e.args[0])
+
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
         from leaseslicensing.helpers import is_departmentUser
