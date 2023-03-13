@@ -1,13 +1,15 @@
+import hashlib
+import os
+
+import confy
 from django.core.exceptions import ImproperlyConfigured
 
-import os, hashlib
-import confy
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 confy.read_environment_file(BASE_DIR + "/.env")
 os.environ.setdefault("BASE_DIR", BASE_DIR)
 
-from ledger_api_client.settings_base import *
+from ledger_api_client.settings_base import *  # noqa: F403
+
 ROOT_URLCONF = "leaseslicensing.urls"
 SITE_ID = 1
 DEPT_DOMAINS = env("DEPT_DOMAINS", ["dpaw.wa.gov.au", "dbca.wa.gov.au"])
@@ -19,6 +21,11 @@ BUILD_TAG = env(
     "BUILD_TAG", hashlib.md5(os.urandom(32)).hexdigest()
 )  # URL of the Dev app.js served by webpack & express
 TIME_ZONE = "Australia/Perth"
+
+SILENCE_SYSTEM_CHECKS = env("SILENCE_SYSTEM_CHECKS", False)
+if SILENCE_SYSTEM_CHECKS:
+    SILENCED_SYSTEM_CHECKS = ["fields.W903", "fields.W904", "debug_toolbar.W004"]
+
 
 if SHOW_DEBUG_TOOLBAR:
     #    def get_ip():
@@ -52,8 +59,8 @@ STATIC_URL = "/static/"
 
 INSTALLED_APPS += [
     "reversion",
-    'reversion_compare',
-    #'bootstrap3',
+    "reversion_compare",
+    # 'bootstrap3',
     "webtemplate_dbca",
     "leaseslicensing",
     "leaseslicensing.components.main",
@@ -94,18 +101,18 @@ REST_FRAMEWORK = {
         "rest_framework.renderers.BrowsableAPIRenderer",
         "rest_framework_datatables.renderers.DatatablesRenderer",
     ),
-    'DEFAULT_FILTER_BACKENDS': (
-        'rest_framework_datatables.filters.DatatablesFilterBackend',
+    "DEFAULT_FILTER_BACKENDS": (
+        "rest_framework_datatables.filters.DatatablesFilterBackend",
     ),
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework_datatables.pagination.DatatablesPageNumberPagination',
-    'PAGE_SIZE': 20,
+    "DEFAULT_PAGINATION_CLASS": "rest_framework_datatables.pagination.DatatablesPageNumberPagination",
+    "PAGE_SIZE": 20,
 }
 
 
 MIDDLEWARE_CLASSES += [
-    #'leaseslicensing.middleware.BookingTimerMiddleware',
-    #'leaseslicensing.middleware.FirstTimeNagScreenMiddleware',
-    #'leaseslicensing.middleware.RevisionOverrideMiddleware',
+    # 'leaseslicensing.middleware.BookingTimerMiddleware',
+    # 'leaseslicensing.middleware.FirstTimeNagScreenMiddleware',
+    # 'leaseslicensing.middleware.RevisionOverrideMiddleware',
     "leaseslicensing.middleware.CacheControlMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
@@ -125,7 +132,7 @@ TEMPLATES[0]["OPTIONS"]["context_processors"].append(
     "leaseslicensing.context_processors.leaseslicensing_url"
 )
 
-#del BOOTSTRAP3["css_url"]
+# del BOOTSTRAP3["css_url"]
 
 # BOOTSTRAP3 = {
 #    'jquery_url': '//static.dpaw.wa.gov.au/static/libs/jquery/2.2.1/jquery.min.js',
@@ -145,9 +152,11 @@ CACHES = {
     }
 }
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_ll")
-STATICFILES_DIRS.extend([
-    os.path.join(os.path.join(BASE_DIR, "leaseslicensing", "static")),
-    ])
+STATICFILES_DIRS.extend(
+    [
+        os.path.join(os.path.join(BASE_DIR, "leaseslicensing", "static")),
+    ]
+)
 DEV_STATIC = env("DEV_STATIC", False)
 DEV_STATIC_URL = env("DEV_STATIC_URL")
 if DEV_STATIC and not DEV_STATIC_URL:
@@ -208,7 +217,7 @@ CKEDITOR_CONFIGS = {
     "default": {
         "toolbar": "full",
         "height": 300,
-        #'width': 300,
+        # 'width': 300,
         "width": "100%",
     },
     "awesome_ckeditor": {
@@ -247,7 +256,9 @@ LOGGING["loggers"]["leaseslicensing"] = {
     "level": "INFO",
 }
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
-DEV_APP_BUILD_URL = env("DEV_APP_BUILD_URL")  # URL of the Dev app.js served by webpack & express
+DEV_APP_BUILD_URL = env(
+    "DEV_APP_BUILD_URL"
+)  # URL of the Dev app.js served by webpack & express
 LOV_CACHE_TIMEOUT = 10800
 
 PROPOSAL_TYPE_NEW = "new"
@@ -273,14 +284,14 @@ GROUP_NAME_APPROVER = "ProposalApproverGroup"
 template_title = "Leases and Licensing"
 template_group = "parkswildlife"
 
-LEDGER_TEMPLATE = 'bootstrap5'
-#LEDGER_UI_ACCOUNTS_MANAGEMENT = [
+LEDGER_TEMPLATE = "bootstrap5"
+# LEDGER_UI_ACCOUNTS_MANAGEMENT = [
 #    {'first_name': {'options': {'view': True, 'edit': True}}},
 #    {'last_name': {'options': {'view': True, 'edit': True}}},
 #    {'residential_address': {'options': {'view': True, 'edit': True}}},
 #    {'phone_number': {'options': {'view': True, 'edit': True}}},
 #    {'mobile_number': {'options': {'view': True, 'edit': True}}},
-#]
+# ]
 
 GROUP_REGISTRATION_OF_INTEREST_ASSESSOR = "registration_of_interest_assessor"
 GROUP_REGISTRATION_OF_INTEREST_APPROVER = "registration_of_interest_approver"
@@ -296,25 +307,35 @@ GROUP_NAME_CHOICES = (
     (GROUP_COMPETITIVE_PROCESS_EDITOR, "Competitive Process Editor"),
     (GROUP_FINANCE, "Finance"),
 )
-CHARGE_METHOD_ONCE_OFF_CHARGE = 'once_off_charge'
-CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT = 'base_fee_plus_fixed_annual_increment'
-CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE = 'base_fee_plus_fixed_annual_percentage'
-CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI = 'base_fee_plus_annual_cpi'
-CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER = 'percentage_of_gross_turnover'
-CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE = 'no_rent_or_licence_charge'
-CHARGE_METHODS = (
-    (CHARGE_METHOD_ONCE_OFF_CHARGE, 'Once-off charge'),
-    (CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT, 'Base fee plus fixed annual increment'),
-    (CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE, 'Base fee plus fixed annual percentage'),
-    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, 'Base fee plus annual CPI'),
-    (CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER, 'Percentage of gross turnover'),
-    (CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE, 'No rent or licence charge'),
+CHARGE_METHOD_ONCE_OFF_CHARGE = "once_off_charge"
+CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT = (
+    "base_fee_plus_fixed_annual_increment"
 )
-REPETITION_TYPE_ANNUALLY = 'annually'
-REPETITION_TYPE_QUARTERLY = 'quarterly'
-REPETITION_TYPE_MONTHLY = 'monthly'
+CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE = (
+    "base_fee_plus_fixed_annual_percentage"
+)
+CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI = "base_fee_plus_annual_cpi"
+CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER = "percentage_of_gross_turnover"
+CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE = "no_rent_or_licence_charge"
+CHARGE_METHODS = (
+    (CHARGE_METHOD_ONCE_OFF_CHARGE, "Once-off charge"),
+    (
+        CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT,
+        "Base fee plus fixed annual increment",
+    ),
+    (
+        CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE,
+        "Base fee plus fixed annual percentage",
+    ),
+    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base fee plus annual CPI"),
+    (CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER, "Percentage of gross turnover"),
+    (CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE, "No rent or licence charge"),
+)
+REPETITION_TYPE_ANNUALLY = "annually"
+REPETITION_TYPE_QUARTERLY = "quarterly"
+REPETITION_TYPE_MONTHLY = "monthly"
 REPETITION_TYPES = (
-    (REPETITION_TYPE_ANNUALLY, 'Annually'),
-    (REPETITION_TYPE_QUARTERLY, 'Quarterly'),
-    (REPETITION_TYPE_MONTHLY, 'Monthly'),
+    (REPETITION_TYPE_ANNUALLY, "Annually"),
+    (REPETITION_TYPE_QUARTERLY, "Quarterly"),
+    (REPETITION_TYPE_MONTHLY, "Monthly"),
 )

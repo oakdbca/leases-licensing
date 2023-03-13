@@ -22,7 +22,7 @@ module.exports = {
     organisation_requests: '/api/organisation_requests.json',
     organisation_contacts: '/api/organisation_contacts.json',
     organisation_access_group_members: '/api/organisation_access_group_members',
-    users_api: '/api/users',
+    users_api: '/api/users/',
     users: '/api/users.json',
     filtered_users: '/api/filtered_users',
     countries: '/api/countries',

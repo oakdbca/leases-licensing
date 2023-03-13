@@ -22,11 +22,11 @@
                         <div class="col-sm-12" style="margin-left:20px">
                             <div class="form-group">
                                 <div v-for="(application_type, index) in application_types">
-                                    <input 
-                                    type="radio" 
-                                    name="applicationType" 
-                                    :id="application_type.code + '_' + index" 
-                                    :value="application_type" 
+                                    <input
+                                    type="radio"
+                                    name="applicationType"
+                                    :id="application_type.code + '_' + index"
+                                    :value="application_type"
                                     v-model="selectedApplication"
                                     />
                                     <label :for="application_type.code + '_' + index" style="font-weight:normal">{{ application_type.description }}</label>
@@ -202,12 +202,12 @@ export default {
             vm.loading.splice('fetching profile', 1)
         })
     })
-    
+
   }
 }
 </script>
 
-<style lang="css">
+<style scoped lang="css">
 input[type=text], select{
     width:40%;
     box-sizing:border-box;

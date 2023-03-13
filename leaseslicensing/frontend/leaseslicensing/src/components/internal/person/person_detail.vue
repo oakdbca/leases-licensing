@@ -1,6 +1,6 @@
 <template>
     <div class="container" id="personDash">
-        <h4>{{ email_user_header }}</h4>
+        <h4>{{ userHeader }}</h4>
         <div class="row">
             <div class="col-md-3">
                 <CommsLogs
@@ -15,7 +15,7 @@
             </div>
 
             <div class="col-md-8">
-                <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                <ul class="nav nav-pills" id="pills-tab" role="tablist">
                     <li class="nav-item">
                         <a class="nav-link active" id="pills-details-tab" data-toggle="pill" href="#pills-details" role="tab" aria-controls="pills-details" aria-selected="true">
                             Details
@@ -28,28 +28,36 @@
                     </li>
                 </ul>
                 <div class="tab-content" id="pills-tabContent">
-                    <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab">
-                        <Applicant v-if="email_user"
-                            :email_user="email_user" 
-                            applicantType="SUB" 
+                    <div class="tab-pane show active" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab">
+                        <Applicant v-if="user"
+                            :email_user="user"
+                            applicantType="SUB"
                             id="proposalStartApplicant"
                             :readonly="readonly"
                         />
                     </div>
                     <div class="tab-pane fade" id="pills-approvals" role="tabpanel" aria-labelledby="pills-approvals-tab">
-                        <FormSection :formCollapse="false" label="Applications" subtitle="" Index="applications" >
-                            <ApplicationsTable 
-                                v-if="email_user"
+                        <FormSection :formCollapse="true" label="Applications" subtitle="" Index="applications" >
+                            <ApplicationsTable
+                                v-if="user"
                                 level="internal"
-                                :target_email_user_id="email_user.id"
+                                :target_id="user.id"
                             />
                         </FormSection>
 
-                        <FormSection :formCollapse="false" label="Compliances" subtitle="" Index="compliances" >
-                            <CompliancesTable
-                                v-if="email_user"
+                        <FormSection :formCollapse="true" label="Approvals" subtitle="" Index="approvals" >
+                            <AppprovalsTable
+                                v-if="user"
                                 level="internal"
-                                :target_email_user_id="email_user.id"
+                                :target_id="user.id"
+                            />
+                        </FormSection>
+
+                        <FormSection :formCollapse="true" label="Compliances with Requirements" subtitle="" Index="compliances" >
+                            <CompliancesTable
+                                v-if="user"
+                                level="internal"
+                                :target_id="user.id"
                             />
                         </FormSection>
                     </div>
@@ -63,6 +71,7 @@
 import FormSection from "@/components/forms/section_toggle.vue"
 import Applicant from '@/components/common/applicant.vue'
 import ApplicationsTable from "@/components/common/table_proposals"
+import AppprovalsTable from "@/components/common/table_approvals"
 import CompliancesTable from "@/components/common/table_compliances"
 import { api_endpoints, helpers, constants } from '@/utils/hooks'
 import CommsLogs from '@common-utils/comms_logs.vue'
@@ -72,19 +81,21 @@ export default {
     data() {
         let vm = this
         return {
-            email_user: null,
+            user: null,
+            errorMessage: null,
             allApprovalTypeFilter: ['ml', 'aap', 'aup'],
             wlaApprovalTypeFilter: ['wla',],
 
-            comms_url: helpers.add_endpoint_json(api_endpoints.users, vm.$route.params.email_user_id + '/comms_log'),
-            comms_add_url: helpers.add_endpoint_json(api_endpoints.users, vm.$route.params.email_user_id + '/add_comms_log'),
-            logs_url: helpers.add_endpoint_json(api_endpoints.users, vm.$route.params.email_user_id + '/action_log'),
+            comms_url: helpers.add_endpoint_json(api_endpoints.users, vm.$route.params.id + '/comms_log'),
+            comms_add_url: helpers.add_endpoint_json(api_endpoints.users, vm.$route.params.id + '/add_comms_log'),
+            logs_url: helpers.add_endpoint_json(api_endpoints.users, vm.$route.params.id + '/action_log'),
         }
     },
     components: {
         FormSection,
         Applicant,
         ApplicationsTable,
+        AppprovalsTable,
         CompliancesTable,
         CommsLogs,
     },
@@ -92,31 +103,50 @@ export default {
         readonly: function(){
             return true
         },
-        email_user_header: function(){
-            if (this.email_user) {
-                if (this.email_user.dob){
-                    return this.email_user.first_name + ' ' + this.email_user.last_name + '(DOB: ' + this.email_user.dob + ')'
+        userHeader: function(){
+            if (this.user) {
+                if (this.user.dob){
+                    return this.user.first_name + ' ' + this.user.last_name + '(DOB: ' + this.user.dob + ')'
                 } else {
-                    return this.email_user.first_name + ' ' + this.email_user.last_name
+                    return this.user.first_name + ' ' + this.user.last_name
                 }
             }
             return ''
         }
     },
     methods: {
-
+        fetchUser: function (id) {
+            let vm = this;
+            fetch(api_endpoints.users_api + id + '/')
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    const error = (data && data.message) || response.statusText;
+                    console.log(error)
+                    return Promise.reject(error);
+                }
+                vm.user = data
+                console.log(vm.user)
+            })
+            .catch(error => {
+                this.errorMessage = constants.ERRORS.API_ERROR;
+                console.error("There was an error!", error);
+            });
+        },
     },
     created: async function(){
-        console.log(this.$route.params.email_user_id)
-        const res = await this.$http.get('/api/users/' + this.$route.params.email_user_id)
-
-        if (res.ok) {
-            this.email_user = res.body
-        }
+        console.log(this.$route.params.id)
+        this.fetchUser(this.$route.params.id);
     },
     mounted: function(){
-        /* set Details tab Active */
-        $('#pills-tab a[href="#pills-details"]').tab('show');
+        var triggerTabList = [].slice.call(document.querySelectorAll('#pills-tab a'));
+        triggerTabList.forEach(function (triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl)
+            triggerEl.addEventListener('click', function (event) {
+                event.preventDefault();
+                tabTrigger.show();
+            });
+        });
     },
 }
 </script>
