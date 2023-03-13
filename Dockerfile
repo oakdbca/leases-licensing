@@ -72,11 +72,13 @@ RUN chown -R oim.oim /app
 RUN mkdir /container-config/
 RUN chown -R oim.oim /container-config/
 
+ENV POETRY_VERSION=1.1.13
+RUN pip install "poetry==$POETRY_VERSION"
+
 WORKDIR /app
 USER oim
 
-ENV POETRY_VERSION=1.1.13
-RUN pip install "poetry==$POETRY_VERSION"
+
 RUN poetry config virtualenvs.create false
 COPY pyproject.toml poetry.lock ./
 RUN poetry install --no-dev --no-interaction --no-ansi
