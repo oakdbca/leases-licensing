@@ -76,7 +76,7 @@ RUN chown -R oim.oim /container-config/
 
 WORKDIR /app
 USER oim
-RUN export PATH=/app/.local/bin:$PATH
+ENV PATH=/app/.local/bin:$PATH
 
 ENV POETRY_VERSION=1.1.13
 RUN pip install "poetry==$POETRY_VERSION"
