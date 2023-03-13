@@ -36,7 +36,7 @@ RUN apt-get -y install ca-certificates
 RUN apt-get install --no-install-recommends -y sqlite3 vim postgresql-client ssh htop libspatialindex-dev
 RUN apt-get install --no-install-recommends -y python3-setuptools python3-dev python3-pip tzdata libreoffice cron rsyslog python3.8-venv gunicorn
 RUN apt-get install --no-install-recommends -y libpq-dev patch
-RUN apt-get install --no-install-recommends -y postgresql-client mtr
+RUN apt-get install --no-install-recommends -y postgresql-client mtr sudo
 
 RUN update-ca-certificates
 # install node 16
