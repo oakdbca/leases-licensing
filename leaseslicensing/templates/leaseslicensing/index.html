@@ -1,6 +1,8 @@
 {% extends 'leaseslicensing/base.html' %}
 
 {% load static %}
+{% load utils %}
+{% system_name as system_name %}
 
 {% block left_menu_items %}
     <li><a  href="{% url 'ds_contact' %}">Contact Us</a></li>
@@ -15,8 +17,27 @@
         <div class="row">
             <div class="col-md-8">
                 <h2>
-                    Welcome to the {{system_name}} System
+                    Welcome to the {% system_name %} System
                 </h2>
+                <p class="w-75">
+                    Login to the system to apply for a lease or licence, to comply with a lease or licence or condition or to view and update your details.
+                </p>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <strong>{% system_name %} Login</strong>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            When you click the login button you will be able to register or log in using your
+                            favourite provider (Microsoft, Facebook, Google, Apple) or you can use your email address
+                            if you prefer.
+                        </p>
+                        <a href="/ssologin" class="btn btn-primary">Login or Register</a>
+                    </div>
+                  </div>
+
             </div>
         </div>
     </div>
