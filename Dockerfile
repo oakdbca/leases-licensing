@@ -1,9 +1,9 @@
 # Prepare the base environment.
-FROM ubuntu:20.04 as builder_base_oim_licensing
-MAINTAINER asi@dbca.wa.gov.au
+FROM ubuntu:22.04 as builder_base_oim_leaseslicensing
+
+LABEL maintainer="asi@dbca.wa.gov.au"
 
 ENV DEBIAN_FRONTEND=noninteractive
-#ENV DEBUG=True
 ENV TZ=Australia/Perth
 ENV EMAIL_HOST="email.server"
 ENV DEFAULT_FROM_EMAIL='no-reply@dbca.wa.gov.au'
@@ -22,6 +22,7 @@ ARG REPO_NO_DASH_ARG
 ENV BRANCH=$BRANCH_ARG
 ENV REPO=$REPO_ARG
 ENV REPO_NO_DASH=$REPO_NO_DASH_ARG
+ENV POETRY_VERSION=1.2.1
 
 # Use Australian Mirrors
 RUN sed 's/archive.ubuntu.com/au.archive.ubuntu.com/g' /etc/apt/sources.list > /etc/apt/sourcesau.list
@@ -34,11 +35,12 @@ RUN apt-get upgrade -y
 RUN apt-get install --no-install-recommends -y curl wget git libmagic-dev gcc binutils libproj-dev gdal-bin
 RUN apt-get -y install ca-certificates
 RUN apt-get install --no-install-recommends -y sqlite3 vim postgresql-client ssh htop libspatialindex-dev
-RUN apt-get install --no-install-recommends -y python3-setuptools python3-dev python3-pip tzdata libreoffice cron rsyslog python3.8-venv gunicorn
+RUN apt-get install --no-install-recommends -y python3-setuptools python3-dev python3-pip tzdata libreoffice cron rsyslog gunicorn
 RUN apt-get install --no-install-recommends -y libpq-dev patch
 RUN apt-get install --no-install-recommends -y postgresql-client mtr
 
 RUN update-ca-certificates
+
 # install node 16
 RUN touch install_node.sh
 RUN curl -fsSL https://deb.nodesource.com/setup_16.x -o install_node.sh
@@ -48,30 +50,21 @@ RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install --upgrade pip
 
 WORKDIR /app
-#RUN git clone -v -b $BRANCH https://github.com/dbca-wa/$REPO.git .
 
-ENV POETRY_VERSION=1.1.13
 RUN pip install "poetry==$POETRY_VERSION"
 RUN poetry config virtualenvs.create false
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-dev --no-interaction --no-ansi
+RUN poetry install --only main --no-interaction --no-ansi
 
-#WORKDIR /app/frontend/leaseslicensing/
-#RUN npm install --production
-#RUN npm install --omit=dev
 COPY leaseslicensing ./leaseslicensing
-COPY gunicorn.ini manage.py ./
-COPY startup.sh /
+COPY gunicorn.ini manage.py startup.sh ./
 
-RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm install
+RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm run build
 
 RUN touch /app/.env
 RUN python manage.py collectstatic --no-input
-#RUN rm -rf node_modules/
-#RUN git log --pretty=medium -30 > ./git_history_recent
 COPY .git ./.git
-# Install the project (ensure that frontend projects have been built prior to this step).
 COPY ./timezone /etc/timezone
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
@@ -79,18 +72,14 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 # (in local) patch /home/<username>/park-passes/.venv/lib/python3.8/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
 #RUN patch /usr/local/lib/python3.8/dist-packages/django/contrib/admin/migrations/0001_initial.py /app/admin.patch.additional
 
-
-
 RUN touch /app/rand_hash
 COPY ./cron /etc/cron.d/dockercron
-RUN service rsyslog start
 RUN chmod 0644 /etc/cron.d/dockercron
 RUN crontab /etc/cron.d/dockercron
 RUN touch /var/log/cron.log
 RUN service cron start
 COPY ./startup.sh /
 RUN chmod 755 /startup.sh
-#RUN chmod 755 startup.sh
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
 CMD ["/startup.sh"]
