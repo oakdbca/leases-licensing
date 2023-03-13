@@ -125,7 +125,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     applicant = serializers.SerializerMethodField(read_only=True)
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
-    # licence_document = serializers.CharField(source='licence_document._file.url')
+    licence_document = serializers.CharField(source='licence_document._file.url')
     # renewal_document = serializers.SerializerMethodField(read_only=True)
     status = serializers.CharField(source="get_status_display")
     # allowed_assessors = EmailUserSerializer(many=True)
@@ -145,7 +145,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "id",
             "lodgement_number",
             "linked_applications",
-            # 'licence_document',
+            'licence_document',
             "replaced_by",
             "current_proposal",
             "tenure",
@@ -161,6 +161,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "applicant",
             "applicant_type",
             "applicant_id",
+            "holder",
             "extracted_fields",
             "status",
             "reference",
@@ -192,10 +193,11 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "reference",
             "lodgement_number",
             "linked_applications",
-            # 'licence_document',
+            'licence_document',
             "start_date",
             "expiry_date",
             "applicant",
+            "holder",
             "can_reissue",
             "can_action",
             "can_reinstate",
@@ -232,7 +234,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     def get_application_type(self, obj):
         if obj.current_proposal:
             if obj.current_proposal.application_type:
-                return obj.current_proposal.application_type.name
+                return obj.current_proposal.application_type.name_display
         return None
 
     def get_applicant(self, obj):

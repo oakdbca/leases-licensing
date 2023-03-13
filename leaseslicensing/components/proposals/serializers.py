@@ -62,6 +62,20 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
         )
         read_only_fields = ("id",)
 
+    def save(self, **kwargs):
+        from reversion import revisions
+
+        if kwargs.pop("no_revision", False):
+            super(ProposalGeometrySaveSerializer, self).save(**kwargs)
+        else:
+            with revisions.create_revision():
+                if "version_user" in kwargs:
+                    revisions.set_user(kwargs.pop("version_user", None))
+                if "version_comment" in kwargs:
+                    revisions.set_comment(kwargs.pop("version_comment", ""))
+                super(ProposalGeometrySaveSerializer, self).save(**kwargs)
+
+
 
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
     proposal_id = serializers.IntegerField(write_only=True, required=False)
@@ -868,6 +882,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
         serializers.SerializerMethodField()
     )  # Accessing user's roles for this proposal.
     invoicing_details = InvoicingDetailsSerializer()
+    all_lodgement_versions = serializers.SerializerMethodField()
+
 
     class Meta:
         model = Proposal
@@ -889,6 +905,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "assigned_approver",
             "previous_application",
             "get_history",
+            "lodgement_versions",
             "lodgement_date",
             "requirements",
             "readonly",
@@ -961,6 +978,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "accessing_user_roles",
             "approval_issue_date",
             "invoicing_details",
+            "all_lodgement_versions",
             #"assessor_comment_map",
             #"deficiency_comment_map",
             #"assessor_comment_proposal_details",
@@ -976,6 +994,10 @@ class InternalProposalSerializer(BaseProposalSerializer):
             #"assessor_comment_proposal_details",
             #"deficiency_comment_proposal_details",
         )
+
+        datatables_always_serialize = {
+            "current_assessor",
+        }
         read_only_fields = ("requirements",)
 
     def get_accessing_user_roles(self, proposal):
@@ -1069,6 +1091,17 @@ class InternalProposalSerializer(BaseProposalSerializer):
     def get_approval_issue_date(self, obj):
         if obj.approval:
             return obj.approval.issue_date.strftime("%d/%m/%Y")
+
+    def get_all_lodgement_versions(self, obj):
+        """
+        Returns all lodgement versions of a proposal, when browsing in debug mode
+        """
+
+        data = self.context.get('request').data
+        if data.get("debug", False):
+            return obj.versions_to_lodgement_dict(obj.revision_versions())
+        else:
+            return []
 
     # def get_fee_invoice_url(self,obj):
     #     return '/cols/payments/invoice-pdf/{}'.format(obj.fee_invoice_reference) if obj.fee_paid else None

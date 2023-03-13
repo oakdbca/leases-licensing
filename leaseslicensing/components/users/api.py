@@ -161,22 +161,18 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     @basic_exception_handler
     def get_department_users(self, request, *args, **kwargs):
-        search_term = request.GET.get("term", "")
-        data = (
-            EmailUser.objects.filter(is_staff=True)
-            .filter(
-                Q(first_name__icontains=search_term)
-                | Q(last_name__icontains=search_term)
-            )
-            .values("email", "first_name", "last_name")[:10]
-        )
-        data_transform = [
-            {
-                "id": person["email"],
-                "text": person["first_name"] + " " + person["last_name"],
-            }
-            for person in data
-        ]
+        search_term = request.GET.get('term', '')
+
+        # Allow for search of first name, last name and concatenation of both
+        data = EmailUser.objects. \
+            annotate(full_name=Concat("first_name", Value(" "), "last_name")). \
+            filter(is_staff=True). \
+            filter(Q(first_name__icontains=search_term) |
+                   Q(last_name__icontains=search_term) |
+                   Q(full_name__icontains=search_term)). \
+            values('email', 'first_name', 'last_name')[:10]
+        data_transform = [{'id': person['email'], 'text': f"{person['first_name']} {person['last_name']}"} for person in data]
+
         return Response({"results": data_transform})
 
     @detail_route(

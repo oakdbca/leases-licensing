@@ -5,7 +5,8 @@
         </div>
         <div class="col-sm-9">
             <div v-for="charge_method in charge_methods" class="form-check" :id="charge_method.id">
-                <input 
+                <input
+                    v-if="invoicing_details"
                     type="radio" 
                     class="form-check-input"
                     name="charge_method"
@@ -22,7 +23,7 @@
             <label for="once_off_charge_amount" class="control-label">Once-off charge [AU$]</label>
         </div>
         <div class="col-sm-2">
-            <input type="number" min="0" step="100" id="once_off_charge_amount" class="form-control" v-model="invoicing_details.once_off_charge_amount">
+            <input v-if="invoicing_details" type="number" min="0" step="100" id="once_off_charge_amount" class="form-control" v-model="invoicing_details.once_off_charge_amount">
         </div>
     </div>
     <div v-show="show_base_fee" class="row mb-4">
@@ -30,23 +31,26 @@
             <label for="base_fee_amount" class="control-label">Base fee [AU$]</label>
         </div>
         <div class="col-sm-2">
-            <input type="number" min="0" step="100" id="base_fee_amount" class="form-control" v-model="invoicing_details.base_fee_amount">
+            <input v-if="invoicing_details" type="number" min="0" step="100" id="base_fee_amount" class="form-control" v-model="invoicing_details.base_fee_amount">
         </div>
     </div>
     <div v-show="show_fixed_annual_increment">
         <AnnualIncrement
+            v-if="invoicing_details"
             increment_type="annual_increment_amount"
             :years_array="invoicing_details.annual_increment_amounts"
         />
     </div>
     <div v-show="show_fixed_annual_percentage">
         <AnnualIncrement
+            v-if="invoicing_details"
             increment_type="annual_increment_percentage"
             :years_array="invoicing_details.annual_increment_percentages"
         />
     </div>
     <div v-show="show_percentage_of_gross_turnover">
         <AnnualIncrement
+            v-if="invoicing_details"
             increment_type="gross_turnover_percentage"
             :years_array="invoicing_details.gross_turnover_percentages"
         />
@@ -64,11 +68,12 @@
             <label for="review_once_every" class="control-label">Once every</label>
         </div>
         <div class="col-sm-2">
-            <input type="number" min="0" max="5" step="1" id="review_once_every" class="form-control" v-model="invoicing_details.review_once_every">
+            <input v-if="invoicing_details" type="number" min="0" max="5" step="1" id="review_once_every" class="form-control" v-model="invoicing_details.review_once_every">
         </div>
         <div class="col-sm-2">
             <div v-for="repetition_type in repetition_types" class="form-check" :id="repetition_type.id">
-                <input 
+                <input
+                    v-if="invoicing_details"
                     type="radio" 
                     name="repetition_type_review"
                     class="form-check-input"
@@ -82,6 +87,7 @@
     </div>
     <div v-show="show_crown_land_rent_review_date">
         <CrownLandRentReviewDate
+            v-if="invoicing_details"
             :review_dates="invoicing_details.crown_land_rent_review_dates" 
         />
     </div>
@@ -93,11 +99,12 @@
             <label for="invoicing_once_every" class="control-label">Once every</label>
         </div>
         <div class="col-sm-2">
-            <input type="number" min="0" max="5" step="1" id="invoicing_once_every" class="form-control" v-model="invoicing_details.invoicing_once_every">
+            <input v-if="invoicing_details" type="number" min="0" max="5" step="1" id="invoicing_once_every" class="form-control" v-model="invoicing_details.invoicing_once_every">
         </div>
         <div class="col-sm-2">
             <div v-for="repetition_type in repetition_types" class="form-check" :id="repetition_type.id">
-                <input 
+                <input
+                    v-if="invoicing_details"
                     type="radio" 
                     name="repetition_type_invoicing"
                     class="form-check-input"

@@ -45,6 +45,7 @@ from leaseslicensing.components.compliances.models import (
     ComplianceAmendmentRequest,
     ComplianceAmendmentReason,
 )
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.compliances.serializers import (
     ComplianceSerializer,
@@ -77,7 +78,7 @@ class GetComplianceStatusesDict(views.APIView):
         return Response(data)
 
 
-class ComplianceFilterBackend(DatatablesFilterBackend):
+class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
     """
@@ -85,32 +86,26 @@ class ComplianceFilterBackend(DatatablesFilterBackend):
     def filter_queryset(self, request, queryset, view):
         total_count = queryset.count()
 
-        filter_lodged_from = request.GET.get("filter_lodged_from")
-        filter_lodged_to = request.GET.get("filter_lodged_to")
+        filter_due_date_from = request.GET.get("filter_due_date_from")
+        filter_due_date_to = request.GET.get("filter_due_date_to")
         filter_compliance_status = (
             request.GET.get("filter_compliance_status")
             if request.GET.get("filter_compliance_status") != "all"
             else ""
         )
 
-        if filter_lodged_from:
-            filter_lodged_from = datetime.strptime(filter_lodged_from, "%Y-%m-%d")
-            queryset = queryset.filter(lodgement_date__gte=filter_lodged_from)
-        if filter_lodged_to:
-            filter_lodged_to = datetime.strptime(filter_lodged_to, "%Y-%m-%d")
-            queryset = queryset.filter(lodgement_date__lte=filter_lodged_to)
+        if filter_due_date_from:
+            filter_due_date_from = datetime.strptime(filter_due_date_from, "%Y-%m-%d")
+            queryset = queryset.filter(due_date__gte=filter_due_date_from)
+        if filter_due_date_to:
+            filter_due_date_to = datetime.strptime(filter_due_date_to, "%Y-%m-%d")
+            queryset = queryset.filter(due_date__lte=filter_due_date_to)
         if filter_compliance_status:
             queryset = queryset.filter(processing_status=filter_compliance_status)
 
-        fields = self.get_fields(request)
-        ordering = self.get_ordering(request, view, fields)
-        queryset = queryset.order_by(*ordering)
-        if len(ordering):
-            queryset = queryset.order_by(*ordering)
+        queryset = self.apply_request(request, queryset, view,
+                                        ledger_lookup_fields=["ind_applicant"])
 
-        queryset = super(ComplianceFilterBackend, self).filter_queryset(
-            request, queryset, view
-        )
         setattr(view, "_datatables_total_count", total_count)
         return queryset
 
@@ -157,8 +152,8 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             result_page, context={"request": request}, many=True
         )
         result = self.paginator.get_paginated_response(serializer.data)
-        print("result")
-        print(result.__dict__)
+        # print("result")
+        # print(result.__dict__)
         return result
 
     @list_route(

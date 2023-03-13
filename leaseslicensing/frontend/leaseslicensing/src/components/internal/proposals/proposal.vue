@@ -13,17 +13,23 @@
                 />
 
                 <Submission v-if="canSeeSubmission"
+                    v-bind:canSeeSubmission="canSeeSubmission"
+                    v-bind:showingProposal="showingProposal"
+                    :proposal="proposal"
                     :submitter_first_name="submitter_first_name"
                     :submitter_last_name="submitter_last_name"
                     :lodgement_date="proposal.lodgement_date"
+                    @revision-to-display="revisionToDisplay"
                     class="mt-2"
                 />
 
                 <Workflow
                     ref='workflow'
                     :proposal="proposal"
+                    :on_current_revision="on_current_revision"
                     :isFinalised="isFinalised"
                     :canAction="canAction"
+                    :canLimitedAction="canLimitedAction"
                     :canAssess="canAssess"
                     :can_user_edit="proposal.can_user_edit"
                     @toggleProposal="toggleProposal"
@@ -57,7 +63,11 @@
                     />
                 </template>
 
-                <template v-if="canSeeSubmission || (!canSeeSubmission && showingProposal)">
+                <template v-if="(showingProposal && proposal.processing_status_id === 'with_approver') ||
+                                (canSeeSubmission && proposal.processing_status_id !== 'with_approver') ||
+                                (!canSeeSubmission && showingProposal)"
+                >
+                    <FormSection :formCollapse="false" label="Application" Index="application">
                     <ApplicationForm
                         v-if="proposal"
                         :proposal="proposal"
@@ -319,6 +329,7 @@
                         </template>
 
                     </ApplicationForm>
+                </FormSection>
                 </template>
 
             </div>
@@ -330,7 +341,7 @@
             ref="proposed_approval"
             :processing_status="proposal.processing_status"
             :proposal_id="proposal.id"
-            :proposal_type="proposal.proposal_type? proposal.proposal_type.code: null"
+            :proposal_type="proposal.proposal_type? proposal.proposal_type.code: ''"
             :isApprovalLevelDocument="isApprovalLevelDocument"
             :submitter_email="submitter_email"
             :applicant_email="applicant_email"
@@ -401,6 +412,8 @@ export default {
             related_items_datatable_id: 'related_items_datatable' + vm._.uid,
             defaultKey: "aho",
             proposal: null,
+            latest_revision: {},
+            current_revision_id: null,
             assessment: {},
             "loading": [],
             //selected_referral: '',
@@ -758,7 +771,8 @@ export default {
         },
         computedProposalId: function(){
             if (this.proposal) {
-                return this.proposal.id;
+                // Create a new key to make vue reload the component
+                return `${this.proposal.id}-${this.uuid}`;
             }
         },
         debug: function(){
@@ -820,7 +834,8 @@ export default {
         },
         canAction: function(){
 
-            return true  // TODO: implement this.  This is just temporary solution
+            // For now returning true when viewing the current version of the Proposal
+            return this.on_current_revision;  // TODO: implement this.  This is just temporary solution
 
             //if (this.proposal.processing_status == 'With Approver'){
             //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_approver || this.proposal.assigned_approver == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
@@ -829,9 +844,10 @@ export default {
             //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_officer || this.proposal.assigned_officer == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
             //}
         },
-        //canLimitedAction: function(){
+        canLimitedAction: function(){
 
-        //    //return false  // TODO: implement this.  This is just temporary solution
+            // For now returning true when viewing the current version of the Proposal
+            return this.on_current_revision;  // TODO: implement this.  This is just temporary solution
 
         //    if (this.proposal.processing_status == 'With Approver'){
         //        return
@@ -860,10 +876,14 @@ export default {
         //                this.proposal.assigned_officer == null
         //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
         //    }
-        //},
+        },
         canSeeSubmission: function(){
             //return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)' && this.proposal.processing_status != 'With Approver' && !this.isFinalised)
-            return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)')
+            return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)');
+        },
+        on_current_revision: function() {
+            // Returns whether the currently displayed version is the latest one
+            return this.latest_revision.revision_id === this.current_revision_id;
         },
         isApprovalLevelDocument: function(){
             return this.proposal && this.proposal.processing_status == 'With Approver' && this.proposal.approval_level != null && this.proposal.approval_level_document == null ? true : false;
@@ -1424,6 +1444,30 @@ export default {
             const resData = await response.json()
             this.applySelect2ToAdditionalDocumentTypes(resData)
         },
+        revisionToDisplay: async function(revision) {
+            console.log("Displaying", revision);
+            let vm = this;
+            let payload = {
+                "revision_id": revision.revision_id,
+                "debug": this.debug
+            }
+
+            await fetch(helpers.add_endpoint_json(api_endpoints.proposal, vm.proposal.id + '/revision_version'),
+                { body: JSON.stringify(payload), method: 'POST' }).then(async response => {
+                    if (!response.ok) {
+                        return await response.json().then(json => { throw new Error(json); });
+                    } else {
+                        return response.json();
+                    }
+            }).then(response => {
+                console.log(response.reference);
+                this.proposal = Object.assign({}, response);
+                this.current_revision_id = revision.revision_id;
+                this.uuid++;
+            }).catch(error => {
+                console.error(error);
+            });
+        }
     },
     mounted: function() {
         console.log('in mounted')
@@ -1455,17 +1499,26 @@ export default {
     created: function() {
         let vm = this;
         console.log('in created')
-        fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`).then(async response => {
-            if (!response.ok) {
-                const text = await response.json();
-                throw new Error(text);
-            } else {
-                return await response.json();
-            }
-        })
+        let payload = {'debug': this.debug};
+        fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`,
+            { body: JSON.stringify(payload), method: 'POST' }).then(async response => {
+                if (!response.ok) {
+                    const text = await response.json();
+                    throw new Error(text);
+                } else {
+                    return await response.json();
+                }
+            })
         .then (data => {
             vm.proposal = Object.assign({}, data);
+            // Dict of the latest revision's parameters
+            vm.latest_revision = Object.assign({}, data.lodgement_versions[0]);
+            // Set current reivsion id to the latest one on creation
+            vm.current_revision_id = vm.latest_revision.revision_id
             vm.hasAmendmentRequest=this.proposal.hasAmendmentRequest;
+            if (vm.debug == true) {
+                this.showingProposal = true;
+            }
         })
         .catch(error => {
             console.log(error);
