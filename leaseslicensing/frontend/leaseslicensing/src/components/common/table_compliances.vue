@@ -24,7 +24,7 @@
                         <div class="form-group">
                             <label for="">Due Date From</label>
                             <div class="input-group date" ref="complianceDateFromPicker">
-                                <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateFrom">
+                                <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateFrom">
                                 <span class="input-group-addon">
                                     <span class="glyphicon glyphicon-calendar"></span>
                                 </span>
@@ -35,7 +35,7 @@
                         <div class="form-group">
                             <label for="">Due Date To</label>
                             <div class="input-group date" ref="complianceDateToPicker">
-                                <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateTo">
+                                <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterComplianceDueDateTo">
                                 <span class="input-group-addon">
                                     <span class="glyphicon glyphicon-calendar"></span>
                                 </span>
@@ -99,7 +99,7 @@ export default {
     data() {
         let vm = this;
         return {
-            datatable_id: 'compliances-datatable-' + vm._uid,
+            datatable_id: 'compliances-datatable-' + vm._.uid,
 
             // selected values for filtering
             filterComplianceType: sessionStorage.getItem('filterComplianceType') ? sessionStorage.getItem('filterComplianceType') : 'all',
@@ -169,7 +169,7 @@ export default {
             return this.level == 'internal'
         },
         compliancesHeaders: function() {
-            let headers = ['Number', 'Licence/Permit', 'Condition', 'Due Date', 'Status', 'Action'];
+            let headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
             if (this.level === 'internal') {
                 headers = ['Number', 'Type',  'Holder', 'Approval Number','Status', 'Due Date', 'Action'];
             }
@@ -184,7 +184,8 @@ export default {
                         'render': function(row, type, full){
                             //return full.approval_submitter;
                             return full.holder;
-                        }
+                        },
+                        name: 'proposal__ind_applicant__first_name, proposal__ind_applicant__last_name'
                     }
         },
         applicationTypeColumn: function() {
@@ -196,7 +197,9 @@ export default {
                         'render': function(row, type, full){
                             return full.application_type;
                             //return full.id;
-                        }
+                        },
+                        // Searches for `registration_of_interest` or `lease_licence`, but should suffice
+                        name: 'proposal__application_type__name'
                     }
         },
         lodgementNumberColumn: function() {
@@ -208,7 +211,8 @@ export default {
                         visible: true,
                         'render': function(row, type, full){
                             return full.lodgement_number;
-                        }
+                        },
+                        name: 'lodgement_number',
                     }
         },
         licenceNumberColumn: function() {
@@ -221,7 +225,8 @@ export default {
                         'render': function(row, type, full){
                             return full.approval_lodgement_number
                             //return full.id;
-                        }
+                        },
+                        name: "approval__lodgement_number",
                     }
         },
         conditionColumn: function() {
@@ -246,7 +251,7 @@ export default {
                         // 5. Due Date
                         data: "id",
                         orderable: true,
-                        searchable: true,
+                        searchable: false,
                         visible: true,
                         'render': function(row, type, full){
                             let dueDate = '';
@@ -255,7 +260,8 @@ export default {
                             }
                             //return dueDate;
                             return full.due_date;
-                        }
+                        },
+                        name: "due_date",
                     }
         },
         statusColumn: function() {
@@ -268,7 +274,8 @@ export default {
                         'render': function(row, type, full){
                             return full.processing_status
                             //return full.id;
-                        }
+                        },
+                        name: "processing_status"
                     }
         },
         actionColumn: function() {
@@ -276,8 +283,8 @@ export default {
             return {
                         // 7. Action
                         data: "id",
-                        orderable: true,
-                        searchable: true,
+                        orderable: false,
+                        searchable: false,
                         visible: true,
                         'render': function(row, type, full){
                             let links = '';
@@ -321,12 +328,13 @@ export default {
 
         applicableColumns: function() {
             let columns = [
-                this.lodgementNumberColumn,
-                this.licenceNumberColumn,
-                this.conditionColumn,
-                this.dueDateColumn,
-                this.statusColumn,
-                this.actionColumn,
+                this.lodgementNumberColumn, // Number
+                this.applicationTypeColumn, // Type
+                this.holderColumn, // Holder
+                this.licenceNumberColumn, // Approval
+                this.statusColumn, // Status
+                this.dueDateColumn, // Due Date
+                this.actionColumn, //Action
                 ]
             if (this.level === 'internal') {
                 columns = [
@@ -384,9 +392,10 @@ export default {
                     // adding extra GET params for Custom filtering
                     "data": function ( d ) {
                         // Add filters selected
+                        d.filter_application_type = vm.filterComplianceType;
                         d.filter_compliance_status = vm.filterComplianceStatus;
-                        d.filter_lodged_from = vm.filterProposalLodgedFrom;
-                        d.filter_lodged_to = vm.filterProposalLodgedTo;
+                        d.filter_due_date_from = vm.filterComplianceDueDateFrom;
+                        d.filter_due_date_to = vm.filterComplianceDueDateTo;
                     }
                 },
                 //dom: 'lBfrtip',

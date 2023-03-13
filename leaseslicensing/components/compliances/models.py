@@ -115,7 +115,7 @@ class Compliance(models.Model):
 
     @property
     def holder(self):
-        return self.proposal.applicant
+        return f"{self.proposal.applicant.first_name} {self.proposal.applicant.last_name}"
 
     @property
     def reference(self):
@@ -168,6 +168,12 @@ class Compliance(models.Model):
             if self.fee_paid
             else None
         )
+
+    @property
+    def application_type(self):
+        if self.proposal.application_type:
+            return self.proposal.application_type.name_display
+        return None
 
     def save(self, *args, **kwargs):
         super(Compliance, self).save(*args, **kwargs)

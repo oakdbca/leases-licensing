@@ -10,6 +10,7 @@ from leaseslicensing.components.competitive_processes.models import CompetitiveP
 from leaseslicensing.components.competitive_processes.serializers import CompetitiveProcessLogEntrySerializer, \
     CompetitiveProcessUserActionSerializer, ListCompetitiveProcessSerializer, \
     CompetitiveProcessSerializer
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.competitive_processes.utils import save_geometry
@@ -22,7 +23,7 @@ from rest_framework.decorators import (
 from leaseslicensing.components.main.decorators import basic_exception_handler
 
 
-class CompetitiveProcessFilterBackend(DatatablesFilterBackend):
+class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         filter_status = request.GET.get("filter_status") if request.GET.get("filter_status") != "all" else ""
@@ -38,15 +39,9 @@ class CompetitiveProcessFilterBackend(DatatablesFilterBackend):
             filter_competitive_process_created_to = datetime.strptime(filter_competitive_process_created_to, "%Y-%m-%d")
             queryset = queryset.filter(created_at__lte=filter_competitive_process_created_to)
 
-        fields = self.get_fields(request)
-        ordering = self.get_ordering(request, view, fields)
-        queryset = queryset.order_by(*ordering)
-        if len(ordering):
-            queryset = queryset.order_by(*ordering)
+        queryset = self.apply_request(request, queryset, view,
+                                        ledger_lookup_fields=["assigned_officer_id"])
 
-        queryset = super(CompetitiveProcessFilterBackend, self).filter_queryset(
-            request, queryset, view
-        )
         # setattr(view, "_datatables_total_count", total_count)
         return queryset
 
@@ -107,7 +102,7 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         # TODO Can this be done shorter and in one line
         qs = self.get_queryset()
-        qs = self.filter_queryset(qs).order_by("lodgement_number")
+        qs = self.filter_queryset(qs)
 
         qs = qs.distinct()
         self.paginator.page_size = qs.count()

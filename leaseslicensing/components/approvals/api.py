@@ -37,6 +37,7 @@ from ledger_api_client.country_models import Country
 from datetime import datetime, timedelta, date
 from django.urls import reverse
 from django.shortcuts import render, redirect, get_object_or_404
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.proposals.models import Proposal, ApplicationType
 from leaseslicensing.components.approvals.models import Approval, ApprovalDocument, ApprovalType, ApprovalSubType
 from leaseslicensing.components.approvals.serializers import (
@@ -150,7 +151,7 @@ class GetApprovalStatusesDict(views.APIView):
         return Response(data)
 
 
-class ApprovalFilterBackend(DatatablesFilterBackend):
+class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
     """
@@ -164,28 +165,32 @@ class ApprovalFilterBackend(DatatablesFilterBackend):
                     return i[0]
             return None
 
-        date_from = request.GET.get("date_from")
-        date_to = request.GET.get("date_to")
+        filter_approval_type = (request.GET.get("filter_approval_type")
+                    if request.GET.get("filter_approval_type") != "all"
+                    else "")
+        filter_approval_status = (request.GET.get("filter_approval_status")
+                                  if request.GET.get("filter_approval_status") != "all"
+                                  else "")
+        filter_approval_expiry_date_from = request.GET.get("filter_approval_expiry_date_from")
+        filter_approval_expiry_date_to = request.GET.get("filter_approval_expiry_date_to")
 
-        if queryset.model is Approval:
-            if date_from:
-                queryset = queryset.filter(start_date__gte=date_from)
+        if filter_approval_type:
+            queryset = queryset.filter(current_proposal__application_type__name=filter_approval_type)
+        if filter_approval_status:
+            queryset = queryset.filter(status=filter_approval_status)
+        if filter_approval_expiry_date_from:
+            filter_approval_expiry_date_from = datetime.strptime(filter_approval_expiry_date_from, "%Y-%m-%d")
+            queryset = queryset.filter(expiry_date__gte=filter_approval_expiry_date_from)
+        if filter_approval_expiry_date_to:
+            filter_approval_expiry_date_to = datetime.strptime(filter_approval_expiry_date_to, "%Y-%m-%d")
+            queryset = queryset.filter(expiry_date__lte=filter_approval_expiry_date_to)
 
-            if date_to:
-                queryset = queryset.filter(expiry_date__lte=date_to)
 
         #getter = request.query_params.get
         #fields = self.get_fields(getter)
         #ordering = self.get_ordering(getter, fields)
-        fields = self.get_fields(request)
-        ordering = self.get_ordering(request, view, fields)
-        queryset = queryset.order_by(*ordering)
-        if len(ordering):
-            queryset = queryset.order_by(*ordering)
-
-        queryset = super(ApprovalFilterBackend, self).filter_queryset(
-            request, queryset, view
-        )
+        queryset = self.apply_request(request, queryset, view,
+                                        ledger_lookup_fields=["ind_applicant"])
         setattr(view, "_datatables_total_count", total_count)
         return queryset
 

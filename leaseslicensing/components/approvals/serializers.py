@@ -161,6 +161,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "applicant",
             "applicant_type",
             "applicant_id",
+            "holder",
             "extracted_fields",
             "status",
             "reference",
@@ -196,6 +197,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "start_date",
             "expiry_date",
             "applicant",
+            "holder",
             "can_reissue",
             "can_action",
             "can_reinstate",
@@ -232,7 +234,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     def get_application_type(self, obj):
         if obj.current_proposal:
             if obj.current_proposal.application_type:
-                return obj.current_proposal.application_type.name
+                return obj.current_proposal.application_type.name_display
         return None
 
     def get_applicant(self, obj):

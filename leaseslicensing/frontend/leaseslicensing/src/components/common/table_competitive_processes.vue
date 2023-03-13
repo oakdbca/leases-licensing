@@ -103,7 +103,7 @@ export default {
     data() {
         let vm = this;
         return {
-            datatable_id: uuid(),
+            datatable_id: "competitive-process-datatable-" + uuid(),
             datatable_key: uuid(),
 
             // selected values for filtering
@@ -187,16 +187,19 @@ export default {
                 return []
             }
             if (this.is_internal){
-                return ['id', 'Lodgement Number', 'Registration of Interest', 'Status', 'Created On', 'Assigned Officer', 'Action']
+                return ['Id', 'Lodgement Number', 'Registration of Interest', 'Status', 'Created On', 'Assigned Officer', 'Action']
             }
         },
         column_id: function(){
             return {
                 data: "id",
-                name: 'id',
+                // name: 'id',
                 orderable: false,
                 searchable: false,
                 visible: false,
+                'render': function(row, type, full){
+                    return full.id
+                }
             }
         },
         column_lodgement_number: function(){
@@ -206,12 +209,20 @@ export default {
                 orderable: true,
                 searchable: true,
                 visible: true,
+                'render': function(row, type, full){
+                    if (full.migrated){
+                        return full.lodgement_number + ' (M)'
+                    } else {
+                        return full.lodgement_number
+                    }
+                },
+                name: "lodgement_number",
             }
         },
         column_registration_of_interest: function(){
             return {
                 data: "registration_of_interest",
-                name: 'generating_proposal__lodgement_number',
+                name: 'originating_proposal__lodgement_number',
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -230,13 +241,13 @@ export default {
                 data: 'status',
                 name: 'status',
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
             }
         },
         column_created_on: function(){
             return {
-                data: "created_at",
+                data: "id",
                 name: 'created_at',
                 orderable: true,
                 searchable: false,
@@ -249,9 +260,9 @@ export default {
         column_assigned_to: function(){
             return {
                 data: "assigned_officer",
-                // name: 'assigned_officer__first_name, assigned_officer__last_name',  // This functionality does not simply work due to the separation of EmailUser information.
+                name: 'assigned_officer_id__first_name, assigned_officer_id__last_name',  // This functionality works with `LedgerDatatablesFilterBackend` as filter backaned
                 orderable: true,
-                searchable: false,
+                searchable: true,
                 visible: true,
                 'render': function(row, type, full){
                     if (full.assigned_officer){
@@ -268,7 +279,7 @@ export default {
                 // 8. Action
                 // data: "action",
                 data: null,
-                orderable: true,
+                orderable: false,
                 searchable: false,
                 visible: true,
                 'render': function(row, type, full){
@@ -336,6 +347,7 @@ export default {
                 },
                 rowCallback: function (row, competitive_process){
                     let row_jq = $(row)
+                    row_jq.attr('id', 'competitive_process_id_' + competitive_process.id)
                     row_jq.children().first().addClass(vm.td_expand_class_name)
                 },
                 responsive: true,
@@ -359,7 +371,7 @@ export default {
                      "<'d-flex align-items-center'<'me-auto'i>p>",
                 //buttons:[ ],
                 buttons: buttons,
-
+                order: [[1, 'desc']],
                 columns: columns,
                 processing: true,
                 initComplete: function() {
