@@ -83,8 +83,8 @@ ENV PATH=/app/.local/bin:$PATH
 #RUN poetry config virtualenvs.create false
 #COPY pyproject.toml poetry.lock ./
 #RUN poetry install --no-dev --no-interaction --no-ansi
-COPY leaseslicensing ./leaseslicensing
-COPY gunicorn.ini manage.py ./
+COPY  --chown=oim:oim  leaseslicensing ./leaseslicensing
+COPY  --chown=oim:oim  gunicorn.ini manage.py ./
 
 
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm install
@@ -94,7 +94,7 @@ RUN touch /app/.env
 RUN python manage.py collectstatic --no-input
 #RUN rm -rf node_modules/
 #RUN git log --pretty=medium -30 > ./git_history_recent
-COPY .git ./.git
+COPY  --chown=oim:oim  .git ./.git
 # Install the project (ensure that frontend projects have been built prior to this step).
 
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
