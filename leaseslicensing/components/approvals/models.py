@@ -485,27 +485,29 @@ class Approval(RevisionedMixin):
             create_approval_pdf_bytes,
         )
 
-        copied_to_permit = self.copiedToPermit_fields(
-            self.current_proposal
-        )  # Get data related to isCopiedToPermit tag
+        # Seems this functionality is not needed in leases
+        # copied_to_permit = self.copiedToPermit_fields(
+        #     self.current_proposal
+        # )  # Get data related to isCopiedToPermit tag
+        copied_to_permit = "not_needed_in_leases"
 
         if preview:
             return create_approval_pdf_bytes(
                 self, self.current_proposal, copied_to_permit, user
             )
 
-        self.licence_document = create_approval_doc(
-            self, self.current_proposal, copied_to_permit, user
-        )
+        self.licence_document = create_approval_doc(self)
         self.save(
             version_comment="Created Approval PDF: {}".format(
                 self.licence_document.name
             )
         )
+        # TODO Do we need versioning? Commented `version_comment` out for now.
+        # Needs `Proposal` to inherit from `RevisionedMixin`?
         self.current_proposal.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.licence_document.name
-            )
+            # version_comment="Created Approval PDF: {}".format(
+            #     self.licence_document.name
+            # )
         )
 
     #    def generate_preview_doc(self, user):
