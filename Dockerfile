@@ -80,18 +80,18 @@ USER oim
 ENV PATH=/app/.local/bin:$PATH
 RUN pip install "poetry==$POETRY_VERSION"
 #RUN poetry config virtualenvs.create false
-COPY pyproject.toml poetry.lock ./
+COPY --chown=oim:oim pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-interaction --no-ansi
 
-COPY leaseslicensing ./leaseslicensing
-COPY gunicorn.ini manage.py startup.sh ./
+COPY --chown=oim:oim leaseslicensing ./leaseslicensing
+COPY --chown=oim:oim gunicorn.ini manage.py startup.sh ./
 
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm run build
 
 RUN touch /app/.env
 RUN python manage.py collectstatic --no-input
-COPY .git ./.git
+COPY --chown=oim:oim .git ./.git
 
 
 # Patch also required on local environments after a venv rebuild
