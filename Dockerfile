@@ -22,6 +22,8 @@ ARG REPO_NO_DASH_ARG
 ENV BRANCH=$BRANCH_ARG
 ENV REPO=$REPO_ARG
 ENV REPO_NO_DASH=$REPO_NO_DASH_ARG
+ENV PIP_TARGET=/container-config/site-packages/ 
+ENV PYTHONPATH=/container-config/site-packages/
 
 # Use Australian Mirrors
 RUN sed 's/archive.ubuntu.com/au.archive.ubuntu.com/g' /etc/apt/sources.list > /etc/apt/sourcesau.list
