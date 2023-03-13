@@ -69,4 +69,10 @@ module.exports = {
         EXTENDED_BASE_FEE_REVIEW: {ID: 'extended_base_fee_review', TEXT: 'Extended (base fee review)'},
         EXPIRED_LICENCE: {ID: 'expired_licence', TEXT: 'Expired (licence)'},
     },
+
+    ERRORS: {
+        API_ERROR: 'API ERROR: An error has occured accessing the Leases and Licenses System API. Please try again \
+            in an hour and if the problem persists contact us at: ?.?@dbca.wa.gov.au',
+    }
+
 };
