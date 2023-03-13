@@ -22,8 +22,8 @@ ARG REPO_NO_DASH_ARG
 ENV BRANCH=$BRANCH_ARG
 ENV REPO=$REPO_ARG
 ENV REPO_NO_DASH=$REPO_NO_DASH_ARG
-ENV PIP_TARGET=/container-site-packages/ 
-ENV PYTHONPATH=/container-site-packages/
+#ENV PIP_TARGET=/container-site-packages/ 
+#ENV PYTHONPATH=/container-site-packages/
 
 # Use Australian Mirrors
 RUN sed 's/archive.ubuntu.com/au.archive.ubuntu.com/g' /etc/apt/sources.list > /etc/apt/sourcesau.list
@@ -73,12 +73,14 @@ RUN mkdir /app
 RUN chown -R oim.oim /app
 RUN mkdir /container-config/
 RUN chown -R oim.oim /container-config/
-RUN chown -R oim.oim /container-site-packages/
+#RUN chown -R oim.oim /container-site-packages/
 
 
 WORKDIR /app
 USER oim
 ENV PATH=/app/.local/bin:$PATH
+ENV PIP_TARGET=.local/lib/python3.8/site-packages
+ENV PYTHONPATH=.local/lib/python3.8/site-packages
 
 ENV POETRY_VERSION=1.1.13
 RUN pip install "poetry==$POETRY_VERSION"
