@@ -47,6 +47,7 @@ from leaseslicensing.components.proposals.utils import (
     save_referral_data
 )
 from leaseslicensing.components.proposals.models import (
+    ProposalGeometry,
     searchKeyWords,
     search_reference,
     ProposalUserAction,
@@ -84,6 +85,7 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
 )
 from leaseslicensing.components.proposals.serializers import (
+    ProposalGeometrySerializer,
     SendReferralSerializer,
     ProposalTypeSerializer,
     ProposalSerializer,
@@ -1314,6 +1316,52 @@ class ProposalViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
+
+    @detail_route(methods=["POST"], detail=True,)
+    @basic_exception_handler
+    def revision_version(self, request, *args, **kwargs):
+        """
+        Returns the version of this model at `revision_id`
+        """
+
+        # The django reversion revision id to return the model for
+        revision_id = request.data.get("revision_id", None)
+        # This model's class
+        model_class = self.get_object().__class__
+        # The serializer to apply
+        serializer_class = self.internal_serializer_class()
+        if not revision_id:
+            logger.warning(f"Request does not contain revision_id. Returning {model_class.__name__}")
+            instance = self.get_object()
+            serializer = serializer_class(instance, context={"request": request})
+            return Response(serializer.data)
+
+        # This model's version for `revision_id`
+        version = self.get_object().revision_version(revision_id)
+        # An instance of the model version
+        instance = model_class(**version.field_dict)
+        # Serialize the instance
+        serializer = serializer_class(instance, context={"request": request})
+
+        # Get associated geometries where the revision id is less than or equal `revision_id`
+        proposalgeometries_versions = instance.reverse_fk_versions(
+            "proposalgeometry",
+            lookup_filter=Q(revision_id__lte=revision_id))
+
+        # Build geometry data structure containing only the geometry versions at `revision_id`
+        geometry_data = {"type": "FeatureCollection",
+                        "features": []}
+        for pg_version in proposalgeometries_versions:
+            proposalgeometry = ProposalGeometry(**pg_version.field_dict)
+            pg_serializer = ProposalGeometrySerializer(proposalgeometry)
+            geometry_data["features"].append(pg_serializer.data)
+
+        revision_data = serializer.data.copy()
+        revision_data["proposalgeometry"] = OrderedDict(geometry_data)
+
+        return Response(revision_data)
+
+
     @detail_route(
         methods=[
             "GET",
@@ -1523,7 +1571,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
     @detail_route(
         methods=[
-            "GET",
+            "GET", "POST"
         ],
         detail=True,
     )

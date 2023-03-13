@@ -1,7 +1,9 @@
 from __future__ import unicode_literals
+from reversion.models import Version
 import os
 
 from django.db import models
+from django.db.models import Q
 from django.dispatch import receiver
 from django.db.models.signals import pre_delete
 
@@ -121,19 +123,78 @@ class RevisionedMixin(models.Model):
                 if "version_user" in kwargs:
                     revisions.set_user(kwargs.pop("version_user", None))
                 if "version_comment" in kwargs:
+                    # Increment the lodgement sequence on every save with a version comment.
+                    # Versions are only commented on concluding saves (e.g. on submit),
+                    # typically when the status changes, i.e. the first save of a new status
+                    # is also the first version to use the incremented sequence.
+                    if hasattr(self, "lodgement_sequence"):
+                        self.lodgement_sequence += 1
                     revisions.set_comment(kwargs.pop("version_comment", ""))
                 super(RevisionedMixin, self).save(**kwargs)
 
+    def reverse_fk_versions(self, reverse_attr, **kwargs):
+        """
+        Returns a list of a model's one-to-many foreign key relation versions
+        selected by filter expression. E.g. because Proposal is a property of
+        ProposalGeometry, there is a 1:N relation Proposal -> ProposalGeometry
+        and a reverse foreign key lookup of proposal geometries would always
+        return all geometries belonging to a proposal id even though some did
+        not exist at a specific version of the proposal.
+        This function returns only those versions that existed a certain revision
+        id.
+
+        Args:
+            reverse_attr (str):
+                The attribute in the model to query for
+            lookup (dict, optional):
+                The filter expression to apply, e.g. `{'__lte':1234}`,
+                Defaults to empty dict `{}`, i.e. no filter applies.
+                Does not get used when `lookup_filter=` is used
+            lookup_filter (Q-expression, optional):
+                A Q-expression to filter `reverse_attr` queryset
+
+        Examples:
+            - geometry_versions = model_instance.reverse_fk_versions(
+                "proposalgeometry",
+                lookup={"__lte": 1234})
+            - geometry_versions = model_instance.reverse_fk_versions(
+                "proposalgeometry",
+                lookup_filter=Q(revision_id__lte=1234)), i.e. can
+                add negation and more complex expressions
+        """
+
+        # How to filter the revision table
+        lookup = kwargs.get("lookup", {})
+        lookup_filter = kwargs.get("lookup_filter", None)
+        if not lookup_filter:
+            # The lookup filter to apply
+            lookup_filter = Q(**{f"revision_id{k}":f"{v}" for k,v in iter(lookup.items())})
+
+        # Reverse foreign key queryset
+        if hasattr(self, reverse_attr):
+            reverse_fk_qs = getattr(self, reverse_attr).all()
+        else:
+            raise ValidationError(f"{self.__class__.__name__} has no attribute {reverse_attr}")
+
+        # A list of filtered attribute versions
+        rfk_versions = []
+        for obj in reverse_fk_qs:
+            version = [p for p in Version.objects.get_for_object(
+                obj).select_related(
+                'revision').filter(lookup_filter)
+                ]
+            rfk_versions += version
+
+        return list(set(rfk_versions))
+
     @property
     def created_date(self):
-        from reversion.models import Version
 
         # return revisions.get_for_object(self).last().revision.date_created
         return Version.objects.get_for_object(self).last().revision.date_created
 
     @property
     def modified_date(self):
-        from reversion.models import Version
 
         # return revisions.get_for_object(self).first().revision.date_created
         return Version.objects.get_for_object(self).first().revision.date_created
@@ -492,3 +553,87 @@ class TemporaryDocument(Document):
 # reversion.register(CommunicationsLogEntry)
 # reversion.register(Document)
 # reversion.register(SystemMaintenance)
+
+# Everything `django-reversion` related below
+import reversion
+
+# main
+reversion.register(ApplicationType, follow=[])
+
+# approval
+from leaseslicensing.components.approvals.models import (Approval, ApprovalSubType,
+                                                         ApprovalType, ApprovalTypeDocumentType,
+                                                         ApprovalTypeDocumentTypeOnApprovalType,
+                                                         ApprovalDocument
+                                                         )
+reversion.register(Approval, follow=["licence_document",
+                                     "cover_letter_document",
+                                     "replaced_by",
+                                     "current_proposal",
+                                     "renewal_document",
+                                     "org_applicant"
+                                     ])
+reversion.register(ApprovalSubType)
+reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])
+reversion.register(ApprovalTypeDocumentType)
+reversion.register(ApprovalTypeDocumentTypeOnApprovalType)
+reversion.register(ApprovalDocument)
+
+# bookings
+from leaseslicensing.components.bookings.models import (Payment, BookingInvoice,
+                                                        Booking,
+                                                        ApplicationFee, ApplicationFeeInvoice,
+                                                        ComplianceFeeInvoice, ComplianceFee
+                                                        )
+
+reversion.register(Payment)
+reversion.register(BookingInvoice, follow=["booking"])
+reversion.register(Booking)
+reversion.register(ApplicationFee)
+reversion.register(ApplicationFeeInvoice, follow=["application_fee"])
+reversion.register(ComplianceFeeInvoice, follow=["compliance_fee"])
+reversion.register(ComplianceFee)
+
+# proposal
+from leaseslicensing.components.proposals.models import (Proposal, ProposalType, Organisation,
+                                                         ProposalDocument, CompetitiveProcess,
+                                                         ShapefileDocument, AdditionalDocumentType,
+                                                         ApplicationFeeDiscount, ProposalStandardRequirement,
+                                                         Referral, ReferralDocument, ProposalRequirement,
+                                                         ProposalStandardRequirement, ReferralRecipientGroup,
+                                                         SectionChecklist, ChecklistQuestion,
+                                                         ProposalAssessment, ProposalAssessmentAnswer,
+                                                         ProposalGeometry
+                                                         )
+reversion.register(ProposalType)
+reversion.register(Organisation)
+reversion.register(ProposalDocument)
+reversion.register(CompetitiveProcess)
+reversion.register(ShapefileDocument, follow=["proposal"])
+reversion.register(AdditionalDocumentType)
+reversion.register(ApplicationFeeDiscount, follow=["proposal"])
+reversion.register(ProposalStandardRequirement, follow=["application_type"])
+reversion.register(Referral, follow=["proposal", "document"])
+reversion.register(ReferralDocument, follow=["referral"])
+reversion.register(ProposalRequirement, follow=["proposal",
+                                                "standard_requirement",
+                                                "copied_from",
+                                                "referral_group"])
+reversion.register(ReferralRecipientGroup)
+reversion.register(SectionChecklist, follow=["application_type"])
+reversion.register(ChecklistQuestion, follow=["section_checklist"])
+reversion.register(ProposalAssessment, follow=["proposal",
+                                               "referral"])
+reversion.register(ProposalAssessmentAnswer, follow=["checklist_question",
+                                                     "proposal_assessment"])
+reversion.register(Proposal, follow=["application_type",
+                                     "proposal_type",
+                                     "org_applicant",
+                                     "approval",
+                                     "previous_application",
+                                     "approval_level_document",
+                                     "generated_proposal",
+                                     "originating_competitive_process",
+                                    #  "proposalgeometry"
+                                     ])
+reversion.register(ProposalGeometry, follow=["proposal"])

@@ -152,8 +152,8 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             result_page, context={"request": request}, many=True
         )
         result = self.paginator.get_paginated_response(serializer.data)
-        print("result")
-        print(result.__dict__)
+        # print("result")
+        # print(result.__dict__)
         return result
 
     @list_route(

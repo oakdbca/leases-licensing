@@ -204,6 +204,14 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "diff-match-patch"
+version = "20200713"
+description = "Repackaging of Google's Diff Match and Patch libraries. Offers robust algorithms to perform the operations required for synchronizing plain text."
+category = "main"
+optional = false
+python-versions = ">=2.7"
+
+[[package]]
 name = "dill"
 version = "0.3.6"
 description = "serialize all of python"
@@ -377,6 +385,18 @@ python-versions = ">=3.7"
 django = ">=2.0"
 
 [[package]]
+name = "django-reversion-compare"
+version = "0.15.0"
+description = "history compare for django-reversion"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0.0"
+
+[package.dependencies]
+diff-match-patch = "*"
+django-reversion = "*"
+
+[[package]]
 name = "django-utils-six"
 version = "2.0"
 description = "Forward compatibility django.utils.six for Django 3"
@@ -527,7 +547,7 @@ tomli = {version = "*", markers = "python_version > \"3.6\" and python_version <
 
 [[package]]
 name = "ipython"
-version = "8.10.0"
+version = "8.11.0"
 description = "IPython: Productive Interactive Computing"
 category = "dev"
 optional = false
@@ -626,6 +646,7 @@ cssselect = ["cssselect (>=0.7)"]
 html5 = ["html5lib"]
 htmlsoup = ["beautifulsoup4"]
 source = ["Cython (>=0.29.7)"]
+
 
 [[package]]
 name = "matplotlib-inline"
@@ -1074,7 +1095,7 @@ brotli = ["brotli"]
 
 [[package]]
 name = "wrapt"
-version = "1.14.1"
+version = "1.15.0"
 description = "Module for decorators, wrappers and monkey patching."
 category = "dev"
 optional = false
@@ -1084,6 +1105,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 lock-version = "1.1"
 python-versions = "3.8.*"
 content-hash = "bb3a50258a95c79e18aad6a4c69d0671eaf684419a09411382155ded9ee796df"
+
 
 [metadata.files]
 appnope = []
@@ -1103,6 +1125,7 @@ cligj = []
 colorama = []
 dbca-utils = []
 decorator = []
+diff-match-patch = []
 dill = []
 dj-database-url = []
 django = []
@@ -1117,6 +1140,7 @@ django-js-asset = []
 django-media-serv = []
 django-phonenumber-field = []
 django-reversion = []
+django-reversion-compare = []
 django-utils-six = []
 django-widget-tweaks = []
 djangorestframework = []

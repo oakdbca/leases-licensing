@@ -208,11 +208,12 @@ class Compliance(models.Model):
 
                 # self.lodgement_date = datetime.datetime.strptime(timezone.now().strftime('%Y-%m-%d'),'%Y-%m-%d').date()
                 self.lodgement_date = timezone.now()
+
                 self.save(
-                        #version_comment="Compliance Submitted: {}".format(self.id)
+                        version_comment=f"Compliance Submitted: {self.id}"
                         )
                 self.proposal.save(
-                    #version_comment="Compliance Submitted: {}".format(self.id)
+                    version_comment=f"Compliance Submitted: {self.id}"
                 )
                 self.log_user_action(
                     ComplianceUserAction.ACTION_SUBMIT_REQUEST.format(self.id), request
