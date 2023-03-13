@@ -83,7 +83,7 @@ RUN pip install "poetry==$POETRY_VERSION"
 COPY --chown=oim:oim pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-interaction --no-ansi
 RUN ls -al /app/.cache/pypoetry/virtualenvs
-RUN poetry shell
+RUN poetry run python manage.py collectstatic --no-input
 
 COPY --chown=oim:oim leaseslicensing ./leaseslicensing
 COPY --chown=oim:oim gunicorn.ini manage.py startup.sh ./
@@ -92,7 +92,7 @@ RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm run build
 
 RUN touch /app/.env
-RUN python manage.py collectstatic --no-input
+RUN poetry run python manage.py collectstatic --no-input
 COPY --chown=oim:oim .git ./.git
 
 
