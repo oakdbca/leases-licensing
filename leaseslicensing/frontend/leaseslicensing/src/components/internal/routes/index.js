@@ -56,6 +56,11 @@ export default
             name:"internal-search"
         },
         {
+            path: 'person/details/:id',
+            component: PersonDetail,
+            name: 'internal-person-detail'
+        },
+        {
             path:'reports',
             name:'reports',
             component:Reports

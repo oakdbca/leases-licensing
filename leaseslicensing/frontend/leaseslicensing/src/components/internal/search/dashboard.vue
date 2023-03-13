@@ -1,37 +1,40 @@
 <template>
     <div class="container" id="SearchDash">
 
-        <SearchPerson />
+        <Select2Search
+            label="Person"
+            :lookupApiEndpoint="api_endpoints.person_lookup"
+            redirectPath="/internal/person/details/"
+        />
 
-        <SearchOrganisation />
+        <Select2Search
+            label="Organisation"
+            :lookupApiEndpoint="api_endpoints.organisations"
+            redirectPath=""
+        />
 
-        <SearchReferenceNumber />
+        <Select2Search
+            label="Reference Number"
+            :lookupApiEndpoint="api_endpoints.organisations"
+            redirectPath=""
+        />
 
     </div>
 </template>
 
 <script>
-import FormSection from "@/components/forms/section_toggle.vue"
-import SearchPerson from "./search_person.vue"
-import SearchOrganisation from "./search_organisation.vue"
-import SearchReferenceNumber from "./search_reference_number.vue"
+import Select2Search from "./Select2Search.vue";
+import { api_endpoints } from "@/utils/hooks.js"
 
 export default {
     name: 'InternalSearch',
     data() {
-        let vm = this;
         return {
-
+            api_endpoints: api_endpoints,
         }
     },
     components:{
-        FormSection,
-        SearchPerson,
-        SearchOrganisation,
-        SearchReferenceNumber,
-    },
-    methods: {
-
+        Select2Search,
     },
 }
 </script>
