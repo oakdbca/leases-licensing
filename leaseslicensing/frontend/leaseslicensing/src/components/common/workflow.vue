@@ -81,8 +81,8 @@
                                             ref="department_users"
                                             class="form-control"
                                         >
-                                            <option value="null"></option>
-                                            <option v-for="user in department_users" :value="user.email" :key="user.id">{{user.name}}</option>
+                                            <!-- <option value="null"></option> -->
+                                            <!-- <option v-for="user in department_users" :value="user.email" :key="user.id">{{user.full_name}}</option> -->
                                         </select>
                                         <template v-if='!sendingReferral'>
                                             <template v-if="selected_referral">
