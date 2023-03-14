@@ -82,7 +82,7 @@ RUN pip install "poetry==$POETRY_VERSION"
 #RUN poetry config virtualenvs.create false
 COPY --chown=oim:oim pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-interaction --no-ansi
-RUN pip install --user pipenv
+#RUN pip install --user pipenv
 
 RUN ls -al /app/.cache/pypoetry/virtualenvs
 
