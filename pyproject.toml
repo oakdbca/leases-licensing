@@ -45,6 +45,7 @@ django_media_serv = {git = "https://github.com/dbca-wa/django-media-serv.git", r
 pandas = "1.5.2"
 geopandas = "0.12.2"
 python-docx = "0.8.11"
+gunicorn = "19.10.0"
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.3.0"

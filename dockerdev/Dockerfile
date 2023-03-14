@@ -1,6 +1,6 @@
 # Prepare the base environment.
 FROM dbcawa/leaseslicensing:latest as builder_base_leaseslicensingdev
-
+USER root
 RUN apt-get update
 #RUN apt-get install --no-install-recommends -y npm patch
 RUN apt-get install --no-install-recommends -y libpq-dev git ssh sudo 

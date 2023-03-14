@@ -18,9 +18,6 @@ ENV DEBIAN_FRONTEND=noninteractive \
 	SITE_DOMAIN='dbca.wa.gov.au' \
 	OSCAR_SHOP_NAME='Parks & Wildlife' \
 	BPAY_ALLOWED=False \
-	BRANCH=$BRANCH_ARG \
-	REPO=$REPO_ARG \
-	REPO_NO_DASH=$REPO_NO_DASH_ARG \
 	POETRY_VERSION=1.2.1
 
 # Use Australian Mirrors
@@ -54,6 +51,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     rsyslog \
     sqlite3 \
     ssh \
+    sudo \
     tzdata \
     vim \
     wget && \
@@ -68,42 +66,54 @@ RUN touch install_node.sh && \
 	ln -s /usr/bin/python3 /usr/bin/python && \
 	pip install --upgrade pip
 
+COPY cron /etc/cron.d/dockercron
+COPY startup.sh pre_startup.sh /
+COPY ./timezone /etc/timezone
+RUN chmod 0644 /etc/cron.d/dockercron && \
+	crontab /etc/cron.d/dockercron && \
+	touch /var/log/cron.log && \
+	service cron start && \
+	chmod 755 /startup.sh && \
+	chmod +s /startup.sh && \
+	chmod 755 /pre_startup.sh && \
+	chmod +s /pre_startup.sh && \
+    groupadd -g 5000 oim && \
+    useradd -g 5000 -u 5000 oim -s /bin/bash -d /app && \
+    usermod -a -G sudo oim && \
+    echo "oim  ALL=(ALL)  NOPASSWD: /startup.sh" > /etc/sudoers.d/oim && \
+	mkdir /app && \
+	chown -R oim.oim /app && \
+	mkdir /container-config/ && \
+	chown -R oim.oim /container-config/ && \
+	ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    touch /app/rand_hash
+
 FROM builder_base_oim_leaseslicensing as python_dependencies_leaseslicensing
 WORKDIR /app
-
-COPY gunicorn.ini manage.py pyproject.toml poetry.lock ./
+USER oim
+ENV PATH=/app/.local/bin:$PATH
+COPY --chown=oim:oim gunicorn.ini manage.py startup.sh pyproject.toml poetry.lock ./
 RUN pip install "poetry==$POETRY_VERSION" && \
-    poetry config virtualenvs.create false && \
-    poetry install --only main --no-interaction --no-ansi
+    poetry install --only main --no-interaction --no-ansi && \
+    ls -al /app/.cache/pypoetry/virtualenvs
+
+COPY --chown=oim:oim leaseslicensing ./leaseslicensing
+COPY --chown=oim:oim .git ./.git
 
 # Patch also required on local environments after a venv rebuild
 # (in local) patch /home/<username>/park-passes/.venv/lib/python3.8/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
 #RUN patch /usr/local/lib/python3.8/dist-packages/django/contrib/admin/migrations/0001_initial.py /app/admin.patch.additional
 
 FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
-COPY leaseslicensing ./leaseslicensing
 RUN touch /app/.env && \
-    python manage.py collectstatic --no-input
+    poetry run python manage.py collectstatic --no-input
 
 FROM collect_static_leaseslicensing as install_build_vue3_leaseslicensing
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev && \
     cd /app/leaseslicensing/frontend/leaseslicensing ; npm run build
 
+FROM install_build_vue3_leaseslicensing as launch_leaseslicensing
 
-FROM install_build_vue3_leaseslicensing as configure_and_launch_leaseslicensing
-COPY .git ./.git
-COPY ./timezone /etc/timezone
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
-    touch /app/rand_hash
-COPY ./cron /etc/cron.d/dockercron
-
-RUN chmod 0644 /etc/cron.d/dockercron && \
-    crontab /etc/cron.d/dockercron && \
-    touch /var/log/cron.log && \
-    service cron start
-
-COPY ./startup.sh /
-RUN chmod 755 /startup.sh
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
-CMD ["/startup.sh"]
+CMD ["/pre_startup.sh"]
