@@ -35,9 +35,9 @@ RUN apt-get upgrade -y
 RUN apt-get install --no-install-recommends -y curl wget git libmagic-dev gcc binutils libproj-dev gdal-bin
 RUN apt-get -y install ca-certificates
 RUN apt-get install --no-install-recommends -y sqlite3 vim postgresql-client ssh htop libspatialindex-dev
-RUN apt-get install --no-install-recommends -y python3-setuptools python3-dev python3-pip tzdata libreoffice cron rsyslog gunicorn
+RUN apt-get install --no-install-recommends -y python3-setuptools python3-dev python3-pip tzdata libreoffice cron rsyslog
 RUN apt-get install --no-install-recommends -y libpq-dev patch
-RUN apt-get install --no-install-recommends -y postgresql-client mtr
+RUN apt-get install --no-install-recommends -y postgresql-client mtr sudo
 
 RUN update-ca-certificates
 
@@ -49,37 +49,60 @@ RUN apt-get install -y nodejs
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install --upgrade pip
 
+COPY cron /etc/cron.d/dockercron
+COPY startup.sh /
+COPY pre_startup.sh /
+COPY ./timezone /etc/timezone
+RUN chmod 0644 /etc/cron.d/dockercron
+RUN crontab /etc/cron.d/dockercron
+RUN touch /var/log/cron.log
+RUN service cron start
+RUN chmod 755 /startup.sh
+RUN chmod +s /startup.sh
+RUN chmod 755 /pre_startup.sh
+RUN chmod +s /pre_startup.sh
+
+RUN groupadd -g 5000 oim
+RUN useradd -g 5000 -u 5000 oim -s /bin/bash -d /app
+RUN usermod -a -G sudo oim
+
+RUN echo "oim  ALL=(ALL)  NOPASSWD: /startup.sh" > /etc/sudoers.d/oim
+
+RUN mkdir /app
+RUN chown -R oim.oim /app
+RUN mkdir /container-config/
+RUN chown -R oim.oim /container-config/
+COPY ./timezone /etc/timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 WORKDIR /app
-
+USER oim
+ENV PATH=/app/.local/bin:$PATH
 RUN pip install "poetry==$POETRY_VERSION"
-RUN poetry config virtualenvs.create false
-COPY pyproject.toml poetry.lock ./
+#RUN poetry config virtualenvs.create false
+COPY --chown=oim:oim pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-interaction --no-ansi
+#RUN pip install --user pipenv
 
-COPY leaseslicensing ./leaseslicensing
-COPY gunicorn.ini manage.py startup.sh ./
+RUN ls -al /app/.cache/pypoetry/virtualenvs
+
+COPY --chown=oim:oim leaseslicensing ./leaseslicensing
+COPY --chown=oim:oim gunicorn.ini manage.py startup.sh ./
 
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm run build
 
 RUN touch /app/.env
-RUN python manage.py collectstatic --no-input
-COPY .git ./.git
-COPY ./timezone /etc/timezone
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN poetry run python manage.py collectstatic --no-input
+COPY --chown=oim:oim .git ./.git
+
 
 # Patch also required on local environments after a venv rebuild
 # (in local) patch /home/<username>/park-passes/.venv/lib/python3.8/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
 #RUN patch /usr/local/lib/python3.8/dist-packages/django/contrib/admin/migrations/0001_initial.py /app/admin.patch.additional
 
 RUN touch /app/rand_hash
-COPY ./cron /etc/cron.d/dockercron
-RUN chmod 0644 /etc/cron.d/dockercron
-RUN crontab /etc/cron.d/dockercron
-RUN touch /var/log/cron.log
-RUN service cron start
-COPY ./startup.sh /
-RUN chmod 755 /startup.sh
+
 EXPOSE 8080
 HEALTHCHECK --interval=1m --timeout=5s --start-period=10s --retries=3 CMD ["wget", "-q", "-O", "-", "http://localhost:8080/"]
-CMD ["/startup.sh"]
+CMD ["/pre_startup.sh"]
