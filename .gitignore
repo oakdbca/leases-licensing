@@ -6,7 +6,7 @@ venv2/
 node_modules/
 #cronjobs
 .ropeproject/
-mooring/cache/*
+leaseslicensing/cache/*
 .ropeproject/
 .DAV
 .devcontainer
@@ -54,6 +54,7 @@ htmlcov/
 .coverage
 .coverage*
 .cache
+.dccache
 nosetests.xml
 coverage.xml
 *,cover
