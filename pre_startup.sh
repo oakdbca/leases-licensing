@@ -7,7 +7,7 @@ cat /dev/urandom | tr -dc 'a-f0-9' | fold -w 32 | head -n 1 > /app/git_hash
 # elevation permissions required
 sudo /startup.sh
 poetry shell
-gunicorn leaseslicensing.wsgi --bind :8080 --config /app/gunicorn.ini
+pipenv run gunicorn leaseslicensing.wsgi --bind :8080 --config /app/gunicorn.ini
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start gunicorn: $status"
