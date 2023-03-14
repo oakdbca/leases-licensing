@@ -79,6 +79,7 @@ WORKDIR /app
 USER oim
 ENV PATH=/app/.local/bin:$PATH
 RUN pip install "poetry==$POETRY_VERSION"
+RUN pip install --user pipenv
 #RUN poetry config virtualenvs.create false
 COPY --chown=oim:oim pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-interaction --no-ansi
