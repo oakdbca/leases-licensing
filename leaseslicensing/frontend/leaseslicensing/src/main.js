@@ -9,6 +9,9 @@ import helpers from '@/utils/helpers';
 import CKEditor from '@ckeditor/ckeditor5-vue';
 import { extendMoment } from 'moment-range';
 
+import govVue3Components from '@dbca/gov-vue3-components';
+import '@dbca/gov-vue3-components/dist/library.css';
+
 import 'datatables.net-bs5';
 import 'datatables.net-buttons-bs5';
 import 'datatables.net-responsive-bs5';
@@ -55,4 +58,5 @@ const app = createApp(App);
 
 app.use(CKEditor);
 app.use(router);
+app.use(govVue3Components);
 router.isReady().then(() => app.mount('#app'));
