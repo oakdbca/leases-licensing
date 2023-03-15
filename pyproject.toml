@@ -46,6 +46,7 @@ pandas = "1.5.2"
 geopandas = "0.12.2"
 python-docx = "0.8.11"
 gunicorn = "19.10.0"
+djlint = "^1.19.16"
 
 [tool.poetry.dev-dependencies]
 ipython = "^8.3.0"
