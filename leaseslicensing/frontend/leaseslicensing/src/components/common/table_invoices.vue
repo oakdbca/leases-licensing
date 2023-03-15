@@ -1,50 +1,87 @@
 <template>
     <div>
-        <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted" class="mb-2">
-                <div class="row">
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="">Organisation</label>
-                            <select class="form-control" v-model="filterOrganisation">
-                                <option value="all">All</option>
-                                <option v-for="organisation in organisations" :value="organisation.id">{{ organisation.name }}</option>
-                            </select>
-                        </div>
+        <CollapsibleComponent
+            component_title="Filters"
+            ref="collapsible_filters"
+            @created="collapsible_component_mounted"
+            class="mb-2"
+        >
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Organisation</label>
+                        <select
+                            class="form-control"
+                            v-model="filterOrganisation"
+                        >
+                            <option value="all">All</option>
+                            <option
+                                v-for="organisation in organisations"
+                                :value="organisation.id"
+                            >
+                                {{ organisation.name }}
+                            </option>
+                        </select>
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="">Payment Status</label>
-                            <select class="form-control" v-model="filterInvoiceStatus">
-                                <option value="all">All</option>
-                                <option v-for="payment_status in invoice_payment_statuses" :value="status.code">{{ status.description }}</option>
-                            </select>
-                        </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Payment Status</label>
+                        <select
+                            class="form-control"
+                            v-model="filterInvoiceStatus"
+                        >
+                            <option value="all">All</option>
+                            <option
+                                v-for="payment_status in invoice_payment_statuses"
+                                :value="status.code"
+                            >
+                                {{ status.description }}
+                            </option>
+                        </select>
                     </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="">Invoice Date From</label>
-                            <div class="input-group date" ref="invoiceDateFromPicker">
-                                <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterInvoiceDueDateFrom">
-                                <span class="input-group-addon">
-                                    <span class="glyphicon glyphicon-calendar"></span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="form-group">
-                            <label for="">Invoice Date To</label>
-                            <div class="input-group date" ref="invoiceDateToPicker">
-                                <input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterInvoiceDueDateTo">
-                                <span class="input-group-addon">
-                                    <span class="glyphicon glyphicon-calendar"></span>
-                                </span>
-                            </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Invoice Date From</label>
+                        <div
+                            class="input-group date"
+                            ref="invoiceDateFromPicker"
+                        >
+                            <input
+                                type="text"
+                                class="form-control"
+                                placeholder="DD/MM/YYYY"
+                                v-model="filterInvoiceDueDateFrom"
+                            />
+                            <span class="input-group-addon">
+                                <span
+                                    class="glyphicon glyphicon-calendar"
+                                ></span>
+                            </span>
                         </div>
                     </div>
                 </div>
-
-        </CollapsibleFilters>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="">Invoice Date To</label>
+                        <div class="input-group date" ref="invoiceDateToPicker">
+                            <input
+                                type="text"
+                                class="form-control"
+                                placeholder="DD/MM/YYYY"
+                                v-model="filterInvoiceDueDateTo"
+                            />
+                            <span class="input-group-addon">
+                                <span
+                                    class="glyphicon glyphicon-calendar"
+                                ></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </CollapsibleComponent>
 
         <div class="row">
             <div class="col-lg-12">
@@ -61,19 +98,18 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
-import { api_endpoints, helpers }from '@/utils/hooks'
-import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
+import { api_endpoints, helpers } from '@/utils/hooks'
 
 export default {
     name: 'TableInvoices',
     props: {
-        level:{
+        level: {
             type: String,
             required: true,
-            validator: function(val) {
-                let options = ['internal', 'referral', 'external'];
-                return options.indexOf(val) != -1 ? true: false;
-            }
+            validator: function (val) {
+                let options = ['internal', 'referral', 'external']
+                return options.indexOf(val) != -1 ? true : false
+            },
         },
         target_email_user_id: {
             type: Number,
@@ -82,15 +118,27 @@ export default {
         },
     },
     data() {
-        let vm = this;
+        let vm = this
         return {
             datatable_id: 'invoices-datatable-' + vm._uid,
 
             // selected values for filtering
-            filterOrganisation: sessionStorage.getItem('filterOrganisation') ? sessionStorage.getItem('filterOrganisation') : 'all',
-            filterInvoiceStatus: sessionStorage.getItem('filterInvoiceStatus') ? sessionStorage.getItem('filterInvoiceStatus') : 'all',
-            filterInvoiceDueDateFrom: sessionStorage.getItem('filterInvoiceDueDateFrom') ? sessionStorage.getItem('filterInvoiceDueDateFrom') : '',
-            filterInvoiceDueDateTo: sessionStorage.getItem('filterInvoiceDueDateTo') ? sessionStorage.getItem('filterInvoiceDueDateTo') : '',
+            filterOrganisation: sessionStorage.getItem('filterOrganisation')
+                ? sessionStorage.getItem('filterOrganisation')
+                : 'all',
+            filterInvoiceStatus: sessionStorage.getItem('filterInvoiceStatus')
+                ? sessionStorage.getItem('filterInvoiceStatus')
+                : 'all',
+            filterInvoiceDueDateFrom: sessionStorage.getItem(
+                'filterInvoiceDueDateFrom'
+            )
+                ? sessionStorage.getItem('filterInvoiceDueDateFrom')
+                : '',
+            filterInvoiceDueDateTo: sessionStorage.getItem(
+                'filterInvoiceDueDateTo'
+            )
+                ? sessionStorage.getItem('filterInvoiceDueDateTo')
+                : '',
 
             // filtering options
             invoice_types: [],
@@ -100,60 +148,76 @@ export default {
             filters_expanded: false,
 
             dateFormat: 'DD/MM/YYYY',
-            datepickerOptions:{
+            datepickerOptions: {
                 format: 'DD/MM/YYYY',
-                showClear:true,
-                useCurrent:false,
-                keepInvalid:true,
-                allowInputToggle:true
+                showClear: true,
+                useCurrent: false,
+                keepInvalid: true,
+                allowInputToggle: true,
             },
-
         }
     },
-    components:{
+    components: {
         datatable,
-        CollapsibleFilters,
     },
     watch: {
-        filterInvoiceStatus: function() {
-            this.$refs.invoices_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterInvoiceStatus', this.filterInvoiceStatus);
+        filterInvoiceStatus: function () {
+            this.$refs.invoices_datatable.vmDataTable.draw()
+            sessionStorage.setItem(
+                'filterInvoiceStatus',
+                this.filterInvoiceStatus
+            )
         },
-        filterOrganisation: function() {
-            this.$refs.invoices_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterOrganisation', this.filterOrganisation);
+        filterOrganisation: function () {
+            this.$refs.invoices_datatable.vmDataTable.draw()
+            sessionStorage.setItem(
+                'filterOrganisation',
+                this.filterOrganisation
+            )
         },
-        filterInvoiceDueDateFrom: function() {
-            this.$refs.invoices_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterInvoiceDueDateFrom', this.filterInvoiceDueDateFrom);
+        filterInvoiceDueDateFrom: function () {
+            this.$refs.invoices_datatable.vmDataTable.draw()
+            sessionStorage.setItem(
+                'filterInvoiceDueDateFrom',
+                this.filterInvoiceDueDateFrom
+            )
         },
-        filterInvoiceDueDateTo: function() {
-            this.$refs.invoices_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterInvoiceDueDateTo', this.filterInvoiceDueDateTo);
+        filterInvoiceDueDateTo: function () {
+            this.$refs.invoices_datatable.vmDataTable.draw()
+            sessionStorage.setItem(
+                'filterInvoiceDueDateTo',
+                this.filterInvoiceDueDateTo
+            )
         },
-        filterApplied: function(){
-            if (this.$refs.collapsible_filters){
+        filterApplied: function () {
+            if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
-                this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+                this.$refs.collapsible_filters.show_warning_icon(
+                    this.filterApplied
+                )
             }
-        }
+        },
     },
     computed: {
-        filterApplied: function(){
-            if(this.filterInvoiceStatus.toLowerCase() === 'all' && this.filterOrganisation.toLowerCase() === 'all' &&
-                this.filterInvoiceDueDateFrom.toLowerCase() === '' && this.filterInvoiceDueDateTo.toLowerCase() === ''){
+        filterApplied: function () {
+            if (
+                this.filterInvoiceStatus.toLowerCase() === 'all' &&
+                this.filterOrganisation.toLowerCase() === 'all' &&
+                this.filterInvoiceDueDateFrom.toLowerCase() === '' &&
+                this.filterInvoiceDueDateTo.toLowerCase() === ''
+            ) {
                 return false
             } else {
                 return true
             }
         },
-        is_external: function() {
+        is_external: function () {
             return this.level == 'external'
         },
-        is_internal: function() {
+        is_internal: function () {
             return this.level == 'internal'
         },
-        invoicesHeaders: function() {
+        invoicesHeaders: function () {
             return [
                 'Number',
                 'Approval',
@@ -164,149 +228,147 @@ export default {
                 'Amount',
                 'GST',
                 'Invoice Date',
-            ];
+            ]
         },
-        idColumn: function() {
+        idColumn: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    return full.holder;
-                }
-            }
-        },
-        invoiceNumberColumn: function() {
-            return {
-                data: "invoice_number",
-                orderable: true,
-                searchable: true,
-                visible: true,
-                'render': function(row, type, full){
-                    return full.invoice_number;
-                }
-            }
-        },
-        approvalNumberColumn: function() {
-            return {
-                data: "approval_number",
-                orderable: true,
-                searchable: true,
-                visible: true,
-                'render': function(row, type, full){
-                    return full.approval_number
-                }
-            }
-        },
-        typeColumn: function() {
-            return {
-                data: "type",
-                orderable: true,
-                searchable: true,
-                visible: true,
-                'render': function(row, type, full){
-                    return full.type
-                }
-            }
-        },
-        holderColumn: function() {
-            return {
-                data: "holder",
-                orderable: true,
-                searchable: true,
-                visible: true,
-                'render': function(row, type, full){
+                render: function (row, type, full) {
                     return full.holder
-                }
+                },
             }
         },
-        statusColumn: function() {
+        invoiceNumberColumn: function () {
             return {
-                data: "processing_status",
+                data: 'invoice_number',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                render: function (row, type, full) {
+                    return full.invoice_number
+                },
+            }
+        },
+        approvalNumberColumn: function () {
+            return {
+                data: 'approval_number',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return full.approval_number
+                },
+            }
+        },
+        typeColumn: function () {
+            return {
+                data: 'type',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return full.type
+                },
+            }
+        },
+        holderColumn: function () {
+            return {
+                data: 'holder',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return full.holder
+                },
+            }
+        },
+        statusColumn: function () {
+            return {
+                data: 'processing_status',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
                     return full.processing_status
-                }
+                },
             }
         },
 
-        invoiceColumn: function() {
+        invoiceColumn: function () {
             return {
-                data: "invoice",
+                data: 'invoice',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                render: function (row, type, full) {
                     return full.invoice
-                }
+                },
             }
         },
-        amountColumn: function() {
+        amountColumn: function () {
             return {
-                data: "amount",
+                data: 'amount',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                render: function (row, type, full) {
                     return full.amount
-                }
+                },
             }
         },
-        gstColumn: function() {
+        gstColumn: function () {
             return {
-                data: "gst",
+                data: 'gst',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                render: function (row, type, full) {
                     return full.gst
-                }
+                },
             }
         },
-        invoiceDateColumn: function() {
+        invoiceDateColumn: function () {
             return {
-                data: "invoice_date",
+                data: 'invoice_date',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                render: function (row, type, full) {
                     return full.invoice_date
-                }
+                },
             }
         },
-        actionColumn: function() {
-            let vm = this;
+        actionColumn: function () {
+            let vm = this
             return {
-                        // 7. Action
-                        data: "id",
-                        orderable: true,
-                        searchable: true,
-                        visible: true,
-                        'render': function(row, type, full){
-                        let links = '';
-                            links +=  `<a href='${full.id}'>Record Payment</a><br/><a href='${full.id}'>Edit Oracle</a><br /><a href='${full.id}'>Invoice Number</a>`;
-                            return links;
-                        }
-                    }
+                data: 'id',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    let links = ''
+                    links += `<a href='${full.id}'>Record Payment</a><br/><a href='${full.id}'>Edit Oracle</a><br /><a href='${full.id}'>Invoice Number</a>`
+                    return links
+                },
+            }
         },
-        assignedToNameColumn: function() {
+        assignedToNameColumn: function () {
             return {
-                        // 7. Action
-                        data: "id",
-                        orderable: true,
-                        searchable: true,
-                        visible: true,
-                        'render': function(row, type, full){
-                            //return full.assigned_to_name;
-                            return full.id;
-                        }
-                    }
+                // 7. Action
+                data: 'id',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return full.id
+                },
+            }
         },
 
-        applicableColumns: function() {
+        applicableColumns: function () {
             let columns = [
                 this.lodgementNumberColumn,
                 this.licenceNumberColumn,
@@ -314,42 +376,39 @@ export default {
                 this.dueDateColumn,
                 this.statusColumn,
                 this.actionColumn,
-                ]
+            ]
             if (this.level === 'internal') {
                 columns = [
                     this.lodgementNumberColumn,
                     this.applicationTypeColumn,
                     this.idColumn,
-                    this.licenceNumberColumn,
-                    //this.conditionColumn,
-                    this.statusColumn,
+                    this.licenceNumberColumn,                    this.statusColumn,
                     this.dueDateColumn,
-                    //this.assignedToNameColumn,
                     this.actionColumn,
-                    ]
+                ]
             }
-            return columns;
+            return columns
         },
-        invoicesOptions: function() {
-            let vm = this;
+        invoicesOptions: function () {
+            let vm = this
             let buttons = []
-            if (this.level === 'internal'){
+            if (this.level === 'internal') {
                 buttons = [
                     {
                         extend: 'excel',
                         text: '<i class="fa-solid fa-download"></i> Excel',
                         className: 'btn btn-primary ml-2',
                         exportOptions: {
-                            columns: ':visible'
-                        }
+                            columns: ':visible',
+                        },
                     },
                     {
                         extend: 'csv',
                         text: '<i class="fa-solid fa-download"></i> CSV',
                         className: 'btn btn-primary',
                         exportOptions: {
-                            columns: ':visible'
-                        }
+                            columns: ':visible',
+                        },
                     },
                 ]
             }
@@ -358,68 +417,72 @@ export default {
                 searching: false,
                 autoWidth: false,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>",
                 },
                 responsive: true,
                 serverSide: true,
                 searching: true,
 
                 ajax: {
-                    "url": api_endpoints.invoices_paginated_internal + '?format=datatables',
-                    "dataSrc": 'data',
+                    url:
+                        api_endpoints.invoices_paginated_internal +
+                        '?format=datatables',
+                    dataSrc: 'data',
 
                     // adding extra GET params for Custom filtering
-                    "data": function ( d ) {
+                    data: function (d) {
                         // Add filters selected
-                        d.filter_invoice_status = vm.filterInvoiceStatus;
-                        d.filter_lodged_from = vm.filterProposalLodgedFrom;
-                        d.filter_lodged_to = vm.filterProposalLodgedTo;
-                    }
+                        d.filter_invoice_status = vm.filterInvoiceStatus
+                        d.filter_lodged_from = vm.filterProposalLodgedFrom
+                        d.filter_lodged_to = vm.filterProposalLodgedTo
+                    },
                 },
-                dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
-                     "<'row'<'col-sm-12'tr>>" +
-                     "<'d-flex align-items-center'<'me-auto'i>p>",
+                dom:
+                    "<'d-flex align-items-center'<'me-auto'l>fB>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'d-flex align-items-center'<'me-auto'i>p>",
                 buttons: buttons,
                 columns: vm.applicableColumns,
                 processing: true,
-                initComplete: function() {
+                initComplete: function () {
                     console.log('in initComplete')
                 },
             }
         },
-
     },
     methods: {
-        collapsible_component_mounted: function(){
+        collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
         },
-        expandCollapseFilters: function(){
+        expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded
         },
-        fetchFilterLists: function(){
-            let vm = this;
+        fetchFilterLists: function () {
+            let vm = this
 
             // Statuses
-            fetch(api_endpoints.invoice_statuses_dict).then(async(response) => {
-                vm.invoice_statuses = await response.json();
-            },(error) => {
-                console.log(error);
-            })
+            fetch(api_endpoints.invoice_statuses_dict).then(
+                async (response) => {
+                    vm.invoice_statuses = await response.json()
+                },
+                (error) => {
+                    console.log(error)
+                }
+            )
         },
-        addEventListeners: function(){
-            let vm = this;
-        }
+        addEventListeners: function () {
+            let vm = this
+        },
     },
-    created: function(){
+    created: function () {
         this.fetchFilterLists()
     },
-    mounted: function(){
+    mounted: function () {
         this.$nextTick(() => {
-            this.addEventListeners();
-        });
-    }
+            this.addEventListeners()
+        })
+    },
 }
 </script>
 
-<style scoped>
-</style>
+<style scoped></style>
