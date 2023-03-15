@@ -94,19 +94,26 @@ USER oim
 ENV PATH=/app/.local/bin:$PATH
 COPY --chown=oim:oim gunicorn.ini manage.py startup.sh pyproject.toml poetry.lock ./
 RUN pip install "poetry==$POETRY_VERSION" && \
-    poetry install --only main --no-interaction --no-ansi && \
-    ls -al /app/.cache/pypoetry/virtualenvs
+    poetry install --only main --no-interaction --no-ansi
 
 COPY --chown=oim:oim leaseslicensing ./leaseslicensing
 COPY --chown=oim:oim .git ./.git
 
-# Patch also required on local environments after a venv rebuild
-# (in local) patch /home/<username>/park-passes/.venv/lib/python3.8/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
-#RUN patch /usr/local/lib/python3.8/dist-packages/django/contrib/admin/migrations/0001_initial.py /app/admin.patch.additional
-
 FROM python_dependencies_leaseslicensing as collect_static_leaseslicensing
 RUN touch /app/.env && \
     poetry run python manage.py collectstatic --no-input
+
+# The following patches must be applied for seggregated systems when setting up a new environment (i.e. local, dev, uat, prod)
+#
+# (local) patch <path of leaseslicensing project>/.venv/lib/<python version>/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
+# RUN export virtual_env_path=$(poetry env info -p); \
+#     export python_version=$(python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'); \
+#     patch $virtual_env_path/lib/python$python_version/dist-packages/django/contrib/admin/migrations/0001_initial.py /app/admin.patch.additional
+
+# (local) patch <path of leaseslicensing project>/.venv/lib/<python version>/site-packages/reversion/migrations/0001_initial.py 0001_squashed_0004_auto_20160611_1202.patch
+# RUN export virtual_env_path=$(poetry env info -p); \
+#     export python_version=$(python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'); \
+#     patch $virtual_env_path/lib/python$python_version/dist-packages/reversion/migrations/0001_initial.py /app/0001_squashed_0004_auto_20160611_1202.patch
 
 FROM collect_static_leaseslicensing as install_build_vue3_leaseslicensing
 RUN cd /app/leaseslicensing/frontend/leaseslicensing ; npm ci --omit=dev && \
