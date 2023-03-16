@@ -259,7 +259,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 DEV_APP_BUILD_URL = env(
     "DEV_APP_BUILD_URL"
 )  # URL of the Dev app.js served by webpack & express
-LOV_CACHE_TIMEOUT = 10800
 
 PROPOSAL_TYPE_NEW = "new"
 PROPOSAL_TYPE_RENEWAL = "renewal"
@@ -339,3 +338,13 @@ REPETITION_TYPES = (
     (REPETITION_TYPE_QUARTERLY, "Quarterly"),
     (REPETITION_TYPE_MONTHLY, "Monthly"),
 )
+
+# ---------- Cache Timeouts ----------
+
+LOV_CACHE_TIMEOUT = 10800
+
+CACHE_TIMEOUT_2_HOURS = 60 * 60 * 2
+
+# ---------- Cache Keys ----------
+
+CACHE_KEY_ORGANISATIONS = "cache_organisations"
