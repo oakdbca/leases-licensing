@@ -3,9 +3,10 @@ import logging
 import re
 
 from django.conf import settings
-from django.core.exceptions import ProtectedError, ValidationError
+from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import JSONField, Q
+from django.db.models.deletion import ProtectedError
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
