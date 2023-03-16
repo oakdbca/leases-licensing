@@ -347,4 +347,5 @@ CACHE_TIMEOUT_2_HOURS = 60 * 60 * 2
 
 # ---------- Cache Keys ----------
 
-CACHE_KEY_ORGANISATIONS = "cache_organisations"
+CACHE_KEY_ORGANISATION_IDS = "cache_organisation_ids"
+CACHE_KEY_USER_IDS = "cache_user_ids"
