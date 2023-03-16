@@ -337,7 +337,16 @@ export default {
                 visible: true,
                 'render': function(row, type, full){
                     let _file_name = "Approval.PDF"
-                    return `<a href="${full.licence_document}" target="_blank"><i class="fa fa-file-pdf" style='color: red'></i> ${_file_name}</a>`
+                    if (full.licence_document) {
+                        return `<a href="${full.licence_document}" target="_blank">
+                            <i class="fa fa-file-pdf" style='color: red'></i>
+                            ${_file_name}</a>`
+                    } else {
+                        // Should not happen that there is no license document, but better not show one being
+                        // there when that is not the case
+                        console.warn(`No license document for license ${full.lodgement_number}`)
+                        return "";
+                    }
                 }
             }
         },
