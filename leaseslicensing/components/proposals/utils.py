@@ -1,61 +1,44 @@
+import json
+import logging
 import re
-from django.db import transaction, IntegrityError
-from django.utils import timezone
-from django.core.exceptions import ValidationError
+
 from django.conf import settings
-
-# from preserialize.serialize import serialize
+from django.contrib.gis.gdal import SpatialReference
+from django.contrib.gis.geos import GEOSGeometry, LinearRing, Polygon
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser  # , Document
+from ledger_api_client.ledger_models import Invoice
 
-from leaseslicensing.components.invoicing.models import InvoicingDetails
-from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
+from leaseslicensing.components.approvals import email as approval_email
+from leaseslicensing.components.approvals.models import Approval
+from leaseslicensing.components.bookings import email as booking_email
+from leaseslicensing.components.bookings.models import ApplicationFee, Booking
+from leaseslicensing.components.compliances import email as compliance_email
+from leaseslicensing.components.compliances.models import Compliance
+from leaseslicensing.components.main.utils import get_dbca_lands_and_waters_geos
+from leaseslicensing.components.proposals import email as proposal_email
+from leaseslicensing.components.proposals.email import (
+    send_external_submit_email_notification,
+    send_submit_email_notification,
+)
 from leaseslicensing.components.proposals.models import (
-    ProposalDocument,
-    ProposalOtherDetails,
-    ProposalUserAction,
+    AmendmentRequest,
     ProposalAssessment,
     ProposalAssessmentAnswer,
-    ChecklistQuestion,
-    ProposalStandardRequirement,
+    ProposalDeclinedDetails,
     ProposalGeometry,
-)
-from leaseslicensing.components.approvals.models import Approval
-from leaseslicensing.components.proposals.email import (
-    send_submit_email_notification,
-    send_external_submit_email_notification,
+    ProposalUserAction,
+    Referral,
 )
 from leaseslicensing.components.proposals.serializers import (
-    SaveProposalSerializer,
-    SaveRegistrationOfInterestSerializer,
-    ProposalOtherDetailsSerializer,
+    ProposalAssessmentAnswerSerializer,
     ProposalGeometrySaveSerializer,
     SaveLeaseLicenceSerializer,
-    ProposalAssessmentAnswerSerializer,
+    SaveRegistrationOfInterestSerializer,
 )
-import traceback
-import os
-from copy import deepcopy
-from datetime import datetime
-import time
-import json
-from django.contrib.gis.geos import (
-    GEOSGeometry,
-    GeometryCollection,
-    Polygon,
-    MultiPolygon,
-    LinearRing,
-)
-from django.contrib.gis.gdal import SpatialReference
-from leaseslicensing.components.main.utils import get_dbca_lands_and_waters_geos
-
-
-import logging
-
 from leaseslicensing.helpers import is_assessor
-from leaseslicensing.settings import (
-    APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
-    APPLICATION_TYPE_LEASE_LICENCE,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +59,6 @@ def create_data_from_form(
     if assessor_data:
         assessor_fields_search = AssessorDataSearch()
         comment_fields_search = CommentDataSearch()
-    try:
         for item in schema:
             data.update(_create_data_from_item(item, post_data, file_data, 0, ""))
             # _create_data_from_item(item, post_data, file_data, 0, '')
@@ -94,8 +76,7 @@ def create_data_from_form(
         if assessor_data:
             assessor_data_list = assessor_fields_search.assessor_data
             comment_data_list = comment_fields_search.comment_data
-    except:
-        traceback.print_exc()
+
     if assessor_data:
         return [data], special_fields_list, assessor_data_list, comment_data_list
 
@@ -103,7 +84,7 @@ def create_data_from_form(
 
 
 def _extend_item_name(name, suffix, repetition):
-    return "{}{}-{}".format(name, suffix, repetition)
+    return f"{name}{suffix}-{repetition}"
 
 
 def _create_data_from_item(item, post_data, file_data, repetition, suffix):
@@ -169,12 +150,12 @@ def generate_item_data(
     item_name, item, item_data, post_data, file_data, repetition, suffix
 ):
     item_data_list = []
-    for rep in xrange(0, repetition):
+    for rep in range(0, repetition):
         child_data = {}
         for child_item in item.get("children"):
             child_data.update(
                 _create_data_from_item(
-                    child_item, post_data, file_data, 0, "{}-{}".format(suffix, rep)
+                    child_item, post_data, file_data, 0, f"{suffix}-{rep}"
                 )
             )
         item_data_list.append(child_data)
@@ -183,7 +164,7 @@ def generate_item_data(
     return item_data
 
 
-class AssessorDataSearch(object):
+class AssessorDataSearch:
     def __init__(self, lookup_field="canBeEditedByAssessor"):
         self.lookup_field = lookup_field
         self.assessor_data = []
@@ -197,7 +178,7 @@ class AssessorDataSearch(object):
         if values:
             for v in values:
                 for k, v in v.items():
-                    parts = k.split("{}-".format(item))
+                    parts = k.split(f"{item}-")
                     if len(parts) > 1:
                         # split parts to see if referall
                         ref_parts = parts[1].split("Referral-")
@@ -271,12 +252,12 @@ class AssessorDataSearch(object):
         self, item_name, item, item_data, post_data, file_data, repetition, suffix
     ):
         item_data_list = []
-        for rep in xrange(0, repetition):
+        for rep in range(0, repetition):
             child_data = {}
             for child_item in item.get("children"):
                 child_data.update(
                     self.extract_special_fields(
-                        child_item, post_data, file_data, 0, "{}-{}".format(suffix, rep)
+                        child_item, post_data, file_data, 0, f"{suffix}-{rep}"
                     )
                 )
             item_data_list.append(child_data)
@@ -285,7 +266,7 @@ class AssessorDataSearch(object):
         return item_data
 
 
-class CommentDataSearch(object):
+class CommentDataSearch:
     def __init__(self, lookup_field="canBeEditedByAssessor"):
         self.lookup_field = lookup_field
         self.comment_data = {}
@@ -299,11 +280,11 @@ class CommentDataSearch(object):
         if values:
             for v in values:
                 for k, v in v.items():
-                    parts = k.split("{}".format(item))
+                    parts = k.split(f"{item}")
                     if len(parts) > 1:
                         ref_parts = parts[1].split("-comment-field")
                         if len(ref_parts) > 1:
-                            res = {"{}".format(item): v}
+                            res = {f"{item}": v}
         return res
 
     def extract_special_fields(self, item, post_data, file_data, repetition, suffix):
@@ -349,12 +330,12 @@ class CommentDataSearch(object):
         self, item_name, item, item_data, post_data, file_data, repetition, suffix
     ):
         item_data_list = []
-        for rep in xrange(0, repetition):
+        for rep in range(0, repetition):
             child_data = {}
             for child_item in item.get("children"):
                 child_data.update(
                     self.extract_special_fields(
-                        child_item, post_data, file_data, 0, "{}-{}".format(suffix, rep)
+                        child_item, post_data, file_data, 0, f"{suffix}-{rep}"
                     )
                 )
             item_data_list.append(child_data)
@@ -363,7 +344,7 @@ class CommentDataSearch(object):
         return item_data
 
 
-class SpecialFieldsSearch(object):
+class SpecialFieldsSearch:
     def __init__(self, lookable_fields):
         self.lookable_fields = lookable_fields
         self.special_fields = {}
@@ -426,12 +407,12 @@ class SpecialFieldsSearch(object):
         self, item_name, item, item_data, post_data, file_data, repetition, suffix
     ):
         item_data_list = []
-        for rep in xrange(0, repetition):
+        for rep in range(0, repetition):
             child_data = {}
             for child_item in item.get("children"):
                 child_data.update(
                     self.extract_special_fields(
-                        child_item, post_data, file_data, 0, "{}-{}".format(suffix, rep)
+                        child_item, post_data, file_data, 0, f"{suffix}-{rep}"
                     )
                 )
             item_data_list.append(child_data)
@@ -496,71 +477,71 @@ def _save_answer_dict(answer_dict):
 
 def save_referral_data(proposal, request, referral_completed=False):
     with transaction.atomic():
-        try:
-            proposal_data = (
-                request.data.get("proposal") if request.data.get("proposal") else {}
-            )
+        proposal_data = (
+            request.data.get("proposal") if request.data.get("proposal") else {}
+        )
 
-            # Save checklist answers
-            if "referral_assessments" in proposal_data and proposal_data["referral_assessments"]:
-                for assessment in proposal_data["referral_assessments"]:
-                    # For each assessment
-                    if assessment["referral"]["referral"]["id"] == request.user.id:
-                        # When this assessment is for the accessing user
-                        for section, answers in assessment["section_answers"].items():
-                            # Save answers
-                            if not assessment['completed']:
-                                for answer_dict in answers:
-                                    answer_obj = _save_answer_dict(answer_dict)
-                        if referral_completed:
-                            # Make this assessment completed
-                            # TODO Why is `assessment` reassigned here? There is already a `ProposalAssessment` object to work with.
-                            assessment = ProposalAssessment.objects.get(
-                                id=int(assessment["id"])
-                            )
-                            assessment.completed = True
-                            assessment.submitter = request.user.id
-                            assessment.save()
-                            assessment.referral.complete(request)
+        # Save checklist answers
+        if (
+            "referral_assessments" in proposal_data
+            and proposal_data["referral_assessments"]
+        ):
+            for assessment in proposal_data["referral_assessments"]:
+                # For each assessment
+                if assessment["referral"]["referral"]["id"] == request.user.id:
+                    # When this assessment is for the accessing user
+                    for section, answers in assessment["section_answers"].items():
+                        # Save answers
+                        if not assessment["completed"]:
+                            for answer_dict in answers:
+                                answer_obj = _save_answer_dict(answer_dict)
+                                # Not yet sure what the intention for answer_ob is
+                                # but just printing as it wasn't accessed.
+                                print(answer_obj)
+                    if referral_completed:
+                        # Make this assessment completed
+                        # TODO Why is `assessment` reassigned here?
+                        # There is already a `ProposalAssessment` object to work with.
+                        assessment = ProposalAssessment.objects.get(
+                            id=int(assessment["id"])
+                        )
+                        assessment.completed = True
+                        assessment.submitter = request.user.id
+                        assessment.save()
+                        assessment.referral.complete(request)
 
-            # Referrals are not allowed to edit geometry
-
-        except Exception as e:
-            raise
+        # Referrals are not allowed to edit geometry
 
 
 def save_assessor_data(proposal, request, viewset):
     with transaction.atomic():
-        try:
-            proposal_data = {}
-            if request.data.get("proposal"):
-                # request.data is like {'proposal': {'id': ..., ...}}
-                proposal_data = request.data.get("proposal")
-            else:
-                # request.data is a dictionary of the proposal {'id': ..., ...}
-                proposal_data = request.data
+        proposal_data = {}
+        if request.data.get("proposal"):
+            # request.data is like {'proposal': {'id': ..., ...}}
+            proposal_data = request.data.get("proposal")
+        else:
+            # request.data is a dictionary of the proposal {'id': ..., ...}
+            proposal_data = request.data
 
-            # Save checklist answers
-            if is_assessor(request.user.id):
-                # When this assessment is for the accessing user
-                if (
-                    "assessor_assessment" in proposal_data
-                    and proposal_data["assessor_assessment"]
-                ):
-                    for section, answers in proposal_data["assessor_assessment"][
-                        "section_answers"
-                    ].items():
-                        for answer_dict in answers:
-                            answer_obj = _save_answer_dict(answer_dict)
-
-            # Save geometry
-            if request.data.get(
-                "proposal_geometry"
-            ):  # To save geometry, it should be named 'proposal_geometry'
-                save_geometry(proposal, request, viewset)
-
-        except Exception as e:
-            raise
+        # Save checklist answers
+        if is_assessor(request):
+            # When this assessment is for the accessing user
+            if (
+                "assessor_assessment" in proposal_data
+                and proposal_data["assessor_assessment"]
+            ):
+                for section, answers in proposal_data["assessor_assessment"][
+                    "section_answers"
+                ].items():
+                    for answer_dict in answers:
+                        answer_obj = _save_answer_dict(answer_dict)
+                        # Not yet sure what the intention for answer_ob is but just printing as it wasn't accessed.
+                        print(answer_obj)
+        # Save geometry
+        if request.data.get(
+            "proposal_geometry"
+        ):  # To save geometry, it should be named 'proposal_geometry'
+            save_geometry(proposal, request, viewset)
 
 
 def check_geometry(instance):
@@ -588,7 +569,7 @@ def save_geometry(instance, request, viewset):
         intersects = False
         if feature.get("geometry").get("type") == "Polygon":
             feature_dict = feature.get("geometry")
-            geos_repr = GEOSGeometry("{}".format(feature_dict))
+            geos_repr = GEOSGeometry(f"{feature_dict}")
             geos_repr_transform = geos_repr.transform(e4283, clone=True)
             for geom in lands_geos_data:
                 if geom.intersects(geos_repr_transform):
@@ -633,7 +614,7 @@ def save_geometry(instance, request, viewset):
 
 
 def proposal_submit(proposal, request):
-    #import ipdb; ipdb.set_trace()
+    # import ipdb; ipdb.set_trace()
     with transaction.atomic():
         if proposal.can_user_edit:
             proposal.submitter = request.user.id
@@ -655,10 +636,10 @@ def proposal_submit(proposal, request):
             )
             # Create a log entry for the organisation
             # proposal.applicant.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
-            applicant_field = getattr(proposal, proposal.applicant_field)
-            ## 20220128 Ledger to handle EmailUser logging?
+            # applicant_field = getattr(proposal, proposal.applicant_field)
+            # 20220128 Ledger to handle EmailUser logging?
             # applicant_field.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
-            ## 20220128 - update ProposalAssessorGroup, ProposalApproverGroup as SystemGroups
+            # 20220128 - update ProposalAssessorGroup, ProposalApproverGroup as SystemGroups
             ret1 = send_submit_email_notification(request, proposal)
             ret2 = send_external_submit_email_notification(request, proposal)
 
@@ -670,7 +651,9 @@ def proposal_submit(proposal, request):
                 # proposal.required_documents.all().update(can_delete=False)
 
                 reason = ",".join(reasons)
-                proposal.save(version_comment=f"Requested proposal amendments done {reason}")
+                proposal.save(
+                    version_comment=f"Requested proposal amendments done {reason}"
+                )
             else:
                 raise ValidationError(
                     "An error occurred while submitting proposal (Submit email notifications failed)"
@@ -680,15 +663,20 @@ def proposal_submit(proposal, request):
             # TODO: fix ProposalAssessment if still required
             proposal.make_questions_ready()
             # try:
-            #    assessor_assessment=ProposalAssessment.objects.get(proposal=proposal,referral_group=None, referral_assessment=False)
+            #    assessor_assessment=ProposalAssessment.objects.get
+            # (proposal=proposal,referral_group=None, referral_assessment=False)
             # except ProposalAssessment.DoesNotExist:
-            #    assessor_assessment=ProposalAssessment.objects.create(proposal=proposal,referral_group=None, referral_assessment=False)
-            #    checklist=ChecklistQuestion.objects.filter(list_type='assessor_list', application_type=proposal.application_type, obsolete=False)
+            #    assessor_assessment=ProposalAssessment.objects.create
+            # (proposal=proposal,referral_group=None, referral_assessment=False)
+            #    checklist=ChecklistQuestion.objects.filter
+            # (list_type='assessor_list', application_type=proposal.application_type, obsolete=False)
             #    for chk in checklist:
             #        try:
-            #            chk_instance=ProposalAssessmentAnswer.objects.get(question=chk, assessment=assessor_assessment)
+            #            chk_instance=ProposalAssessmentAnswer.objects.get
+            # (question=chk, assessment=assessor_assessment)
             #        except ProposalAssessmentAnswer.DoesNotExist:
-            #            chk_instance=ProposalAssessmentAnswer.objects.create(question=chk, assessment=assessor_assessment)
+            #            chk_instance=ProposalAssessmentAnswer.objects.create
+            # (question=chk, assessment=assessor_assessment)
 
             return proposal
 
@@ -709,30 +697,14 @@ def is_payment_officer(user):
     return False
 
 
-from leaseslicensing.components.proposals.models import (
-    Proposal,
-    Referral,
-    AmendmentRequest,
-    ProposalDeclinedDetails,
-)
-from leaseslicensing.components.approvals.models import Approval
-from leaseslicensing.components.compliances.models import Compliance
-from leaseslicensing.components.bookings.models import ApplicationFee, Booking
-from ledger_api_client.ledger_models import Invoice
-from leaseslicensing.components.proposals import email as proposal_email
-from leaseslicensing.components.approvals import email as approval_email
-from leaseslicensing.components.compliances import email as compliance_email
-from leaseslicensing.components.bookings import email as booking_email
-
-
 def test_proposal_emails(request):
     """Script to test all emails (listed below) from the models"""
     # setup
     if not (settings.PRODUCTION_EMAIL):
         recipients = [request.user.email]
-        # proposal = Proposal.objects.last()
         approval = Approval.objects.filter(migrated=False).last()
-        proposal = approval.current_proposal
+        proposal = Approval.current_proposal
+        # These don't make sense, just uncommenting to get the code passing flake8
         referral = Referral.objects.last()
         amendment_request = AmendmentRequest.objects.last()
         reason = "Not enough information"
