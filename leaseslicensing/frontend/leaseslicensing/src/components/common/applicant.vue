@@ -388,7 +388,6 @@
 </template>
 
 <script>
-import FormSection from '@dbca/gov-vue3-components'
 import { api_endpoints, helpers } from '@/utils/hooks'
 
 export default {
@@ -425,9 +424,6 @@ export default {
             electoralRollBody: 'electoralRollBody' + vm._uid,
             panelClickersInitialised: false,
         }
-    },
-    components: {
-        FormSection,
     },
     computed: {
         electoralRollDocumentUrl: function () {
