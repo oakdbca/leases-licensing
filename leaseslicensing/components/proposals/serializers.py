@@ -1,53 +1,45 @@
 from django.conf import settings
-from ledger_api_client.ledger_models import (
-    EmailUserRO as EmailUser,
-)
+from django.db.models import Q
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from ledger_api_client.managed_models import SystemGroup
+from rest_framework import serializers
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
 from leaseslicensing.components.main.models import ApplicationType
+from leaseslicensing.components.main.serializers import (
+    ApplicationTypeSerializer,
+    CommunicationLogEntrySerializer,
+    EmailUserSerializer,
+)
 from leaseslicensing.components.organisations.models import Organisation
+from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.proposals.models import (
-    ProposalType,
+    AdditionalDocumentType,
+    AmendmentRequest,
+    ChecklistQuestion,
     Proposal,
-    ProposalUserAction,
+    ProposalApplicantDetails,
+    ProposalAssessment,
+    ProposalAssessmentAnswer,
+    ProposalDeclinedDetails,
+    ProposalGeometry,
     ProposalLogEntry,
-    Referral,
+    ProposalOtherDetails,
     ProposalRequirement,
     ProposalStandardRequirement,
-    ProposalDeclinedDetails,
-    AmendmentRequest,
-    ProposalApplicantDetails,
-    ProposalOtherDetails,
-    ChecklistQuestion,
-    ProposalAssessmentAnswer,
-    ProposalAssessment,
+    ProposalType,
+    ProposalUserAction,
+    Referral,
     RequirementDocument,
-    ProposalGeometry,
     SectionChecklist,
-    AdditionalDocumentType,
 )
-from leaseslicensing.components.main.serializers import (
-    CommunicationLogEntrySerializer,
-    ApplicationTypeSerializer, EmailUserSerializer,
-)
-from leaseslicensing.components.organisations.serializers import OrganisationSerializer
-from leaseslicensing.components.users.serializers import (
-    UserAddressSerializer,
-)
-from rest_framework import serializers
-from django.db.models import Q
-
+from leaseslicensing.components.users.serializers import UserAddressSerializer
 from leaseslicensing.helpers import is_assessor
 from leaseslicensing.ledger_api_utils import retrieve_email_user
-from rest_framework_gis.serializers import GeoFeatureModelSerializer
-
 from leaseslicensing.settings import GROUP_NAME_CHOICES
-from ledger_api_client.managed_models import SystemGroup
 
 
-# from reversion.models import Version
-
-# still required
 class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
     proposal_id = serializers.IntegerField(write_only=True, required=False)
 
@@ -66,15 +58,14 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
         from reversion import revisions
 
         if kwargs.pop("no_revision", False):
-            super(ProposalGeometrySaveSerializer, self).save(**kwargs)
+            super().save(**kwargs)
         else:
             with revisions.create_revision():
                 if "version_user" in kwargs:
                     revisions.set_user(kwargs.pop("version_user", None))
                 if "version_comment" in kwargs:
                     revisions.set_comment(kwargs.pop("version_comment", ""))
-                super(ProposalGeometrySaveSerializer, self).save(**kwargs)
-
+                super().save(**kwargs)
 
 
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
@@ -120,7 +111,6 @@ class EmailUserAppViewSerializer(serializers.ModelSerializer):
             "title",
             "organisation",
             "residential_address",
-            #'identification',
             "email",
             "phone_number",
             "mobile_number",
@@ -136,7 +126,8 @@ class ProposalApplicantDetailsSerializer(serializers.ModelSerializer):
 class ProposalOtherDetailsSerializer(serializers.ModelSerializer):
     # park=ParkSerializer()
     # accreditation_type= serializers.SerializerMethodField()
-    # accreditation_expiry = serializers.DateField(format="%d/%m/%Y",input_formats=['%d/%m/%Y'],required=False,allow_null=True)
+    # accreditation_expiry = serializers.DateField
+    # (format="%d/%m/%Y",input_formats=['%d/%m/%Y'],required=False,allow_null=True)
     nominated_start_date = serializers.DateField(
         format="%d/%m/%Y", input_formats=["%d/%m/%Y"], required=False, allow_null=True
     )
@@ -148,10 +139,7 @@ class ProposalOtherDetailsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProposalOtherDetails
-        # fields = '__all__'
         fields = (
-            #'accreditation_type',
-            #'accreditation_expiry',
             "id",
             "preferred_licence_period",
             "nominated_start_date",
@@ -166,13 +154,9 @@ class ProposalOtherDetailsSerializer(serializers.ModelSerializer):
 
 
 class SaveProposalOtherDetailsSerializer(serializers.ModelSerializer):
-    # park=ParkSerializer()
     class Meta:
         model = ProposalOtherDetails
-        # fields = '__all__'
         fields = (
-            # 'accreditation_type',
-            # 'accreditation_expiry',
             "preferred_licence_period",
             "nominated_start_date",
             "insurance_expiry",
@@ -285,18 +269,29 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
     def get_answerable_by_accessing_user(self, proposal_assessment):
         request = self.context.get("request")
         answerable_by_accessing_user = False
-        belongs_to_accessing_user = self.get_belongs_to_accessing_user(proposal_assessment)
+        belongs_to_accessing_user = self.get_belongs_to_accessing_user(
+            proposal_assessment
+        )
         if not belongs_to_accessing_user:
             return False
 
         if proposal_assessment.referral:
-            if request.user.is_authenticated and proposal_assessment.referral.referral == request.user.id:
-                if proposal_assessment.proposal.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL:
+            if (
+                request.user.is_authenticated
+                and proposal_assessment.referral.referral == request.user.id
+            ):
+                if (
+                    proposal_assessment.proposal.processing_status
+                    == Proposal.PROCESSING_STATUS_WITH_REFERRAL
+                ):
                     if not proposal_assessment.completed:
                         answerable_by_accessing_user = True
         else:
-            if request.user.is_authenticated and is_assessor(request.user.id):
-                if proposal_assessment.proposal.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR:
+            if request.user.is_authenticated and is_assessor(request):
+                if (
+                    proposal_assessment.proposal.processing_status
+                    == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                ):
                     if not proposal_assessment.completed:
                         answerable_by_accessing_user = True
 
@@ -308,22 +303,28 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         assessment_belongs_to_accessing_user = False
         if proposal_assessment.referral:
             # This assessment is for referrals
-            if request.user.is_authenticated and proposal_assessment.referral.referral == request.user.id:
+            if (
+                request.user.is_authenticated
+                and proposal_assessment.referral.referral == request.user.id
+            ):
                 # This assessment is for the accessing user
                 assessment_belongs_to_accessing_user = True
         else:
             # This assessment is for assessors
-            if request.user.is_authenticated and is_assessor(request.user.id):
+            if request.user.is_authenticated and is_assessor(request):
                 assessment_belongs_to_accessing_user = True
 
         return assessment_belongs_to_accessing_user
 
     def get_section_answers(self, proposal_assessment):
         ret_dict = {}
-        request = self.context.get("request")
 
-        assessment_belongs_to_accessing_user = self.get_belongs_to_accessing_user(proposal_assessment)
-        assessment_answerable_by_accessing_user_now = self.get_answerable_by_accessing_user(proposal_assessment)
+        assessment_belongs_to_accessing_user = self.get_belongs_to_accessing_user(
+            proposal_assessment
+        )
+        assessment_answerable_by_accessing_user_now = (
+            self.get_answerable_by_accessing_user(proposal_assessment)
+        )
 
         # Retrieve all the SectionChecklist objects used for this ProposalAssessment
         section_checklists_used = SectionChecklist.objects.filter(
@@ -442,7 +443,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             return obj.lodgement_date.strftime("%d/%m/%Y %I:%M %p")
 
     def get_applicant(self, obj):
-        if isinstance(obj, Organisation):
+        if isinstance(obj.applicant, Organisation):
             return obj.applicant.name
         else:
             return " ".join(
@@ -494,9 +495,7 @@ class ListProposalMinimalSerializer(BaseProposalSerializer):
 
 
 class ListProposalSerializer(BaseProposalSerializer):
-    # submitter = EmailUserSerializer()
     submitter = serializers.SerializerMethodField(read_only=True)
-    # applicant = serializers.CharField(read_only=True)
     applicant_name = serializers.CharField(read_only=True)
     processing_status = serializers.SerializerMethodField(read_only=True)
     review_status = serializers.SerializerMethodField(read_only=True)
@@ -533,13 +532,10 @@ class ListProposalSerializer(BaseProposalSerializer):
             "can_officer_process",
             "allowed_assessors",
             "proposal_type",
-            # 'is_qa_officer',
-            #'fee_invoice_url',
-            #'fee_invoice_reference',
-            #'fee_paid',
             "accessing_user_can_process",
         )
-        # the serverSide functionality of datatables is such that only columns that have field 'data' defined are requested from the serializer. We
+        # the serverSide functionality of datatables is such that only columns that have
+        # field 'data' defined are requested from the serializer. We
         # also require the following additional fields for some of the mRender functions
         datatables_always_serialize = (
             "id",
@@ -558,10 +554,6 @@ class ListProposalSerializer(BaseProposalSerializer):
             "reference",
             "lodgement_number",
             "can_officer_process",
-            # 'allowed_assessors',
-            #'fee_invoice_url',
-            #'fee_invoice_reference',
-            #'fee_paid',
             "accessing_user_can_process",
         )
 
@@ -720,7 +712,7 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
         read_only_fields = ("id",)
 
 
-#class InternalSaveProposalSerializer(BaseProposalSerializer):
+# class InternalSaveProposalSerializer(BaseProposalSerializer):
 #
 #    class Meta:
 #        model = Proposal
@@ -753,7 +745,6 @@ class SaveProposalSerializer(BaseProposalSerializer):
             "id",
             "application_type",
             "title",
-            # 'customer_status',
             "processing_status",
             "applicant_type",
             "applicant",
@@ -763,41 +754,32 @@ class SaveProposalSerializer(BaseProposalSerializer):
             "assigned_officer",
             "previous_application",
             "lodgement_date",
-            #'documents',
             "requirements",
             "readonly",
             "can_user_edit",
             "can_user_view",
             "reference",
             "lodgement_number",
-            #'lodgement_sequence',
             "can_officer_process",
             "applicant_details",
             "details_text",
-            #"assessor_comment_proposal_details",
-            #"deficiency_comment_proposal_details",
         )
         read_only_fields = ("requirements",)
 
 
 class ApplicantSerializer(serializers.ModelSerializer):
-    # from leaseslicensing.components.organisations.serializers import OrganisationAddressSerializer
-    # address = OrganisationAddressSerializer(read_only=True)
     class Meta:
         model = Organisation
         fields = (
             "id",
             "name",
             "abn",
-            #'address',
             "email",
             "phone_number",
         )
 
 
 class ProposalReferralSerializer(serializers.ModelSerializer):
-    # referral = serializers.CharField(source='referral.get_full_name')
-    # referral = serializers.CharField(source='referral_group.name')
     processing_status = serializers.CharField(source="get_processing_status_display")
     referral_obj = serializers.SerializerMethodField()
 
@@ -883,7 +865,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
     )  # Accessing user's roles for this proposal.
     invoicing_details = InvoicingDetailsSerializer()
     all_lodgement_versions = serializers.SerializerMethodField()
-
 
     class Meta:
         model = Proposal
@@ -979,20 +960,20 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "approval_issue_date",
             "invoicing_details",
             "all_lodgement_versions",
-            #"assessor_comment_map",
-            #"deficiency_comment_map",
-            #"assessor_comment_proposal_details",
-            #"deficiency_comment_proposal_details",
-            #"assessor_comment_proposal_impact",
-            #"deficiency_comment_proposal_impact",
-            #"assessor_comment_other",
-            #"deficiency_comment_other",
-            #"assessor_comment_deed_poll",
-            #"deficiency_comment_deed_poll",
-            #"assessor_comment_additional_documents",
-            #"deficiency_comment_additional_documents",
-            #"assessor_comment_proposal_details",
-            #"deficiency_comment_proposal_details",
+            # "assessor_comment_map",
+            # "deficiency_comment_map",
+            # "assessor_comment_proposal_details",
+            # "deficiency_comment_proposal_details",
+            # "assessor_comment_proposal_impact",
+            # "deficiency_comment_proposal_impact",
+            # "assessor_comment_other",
+            # "deficiency_comment_other",
+            # "assessor_comment_deed_poll",
+            # "deficiency_comment_deed_poll",
+            # "assessor_comment_additional_documents",
+            # "deficiency_comment_additional_documents",
+            # "assessor_comment_proposal_details",
+            # "deficiency_comment_proposal_details",
         )
 
         datatables_always_serialize = {
@@ -1027,10 +1008,9 @@ class InternalProposalSerializer(BaseProposalSerializer):
         return roles
 
     def get_applicant_obj(self, obj):
-        try:
-            return EmailUserSerializer(obj.applicant).data
-        except:
+        if isinstance(self.applicant, Organisation):
             return OrganisationSerializer(obj.applicant).data
+        return EmailUserSerializer(obj.applicant).data
 
     def get_processing_status_id(self, obj):
         return obj.processing_status
@@ -1097,7 +1077,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
         Returns all lodgement versions of a proposal, when browsing in debug mode
         """
 
-        data = self.context.get('request').data
+        data = self.context.get("request").data
         if data.get("debug", False):
             return obj.versions_to_lodgement_dict(obj.revision_versions())
         else:
@@ -1188,10 +1168,7 @@ class DTReferralSerializer(serializers.ModelSerializer):
         model = Referral
         fields = (
             "id",
-            #'region',
-            #'activity',
             "title",
-            # 'applicant',
             "submitter",
             "processing_status",
             "application_type",
@@ -1358,10 +1335,8 @@ class ReferralProposalSerializer(InternalProposalSerializer):
         user = (
             request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
         )
-        try:
-            referral = Referral.objects.get(proposal=obj, referral=user)
-        except:
-            referral = None
+        referral = Referral.objects.filter(proposal=obj, referral=user).first()
+
         return {
             "assessor_mode": True,
             "assessor_can_assess": referral.can_assess_referral(user)
@@ -1403,19 +1378,10 @@ class ReferralSerializer(serializers.ModelSerializer):
         }
 
     def __init__(self, *args, **kwargs):
-        super(ReferralSerializer, self).__init__(*args, **kwargs)
-        try:
-            self.fields["proposal"] = ReferralProposalSerializer(
-                context={"request": self.context["request"]}
-            )
-            # if kwargs.get('context')['view'].get_object().proposal.application_type.name == ApplicationType.TCLASS:
-            #     self.fields['proposal'] = ReferralProposalSerializer(context={'request':self.context['request']})
-            # elif kwargs.get('context')['view'].get_object().proposal.application_type.name == ApplicationType.FILMING:
-            #     self.fields['proposal'] = FilmingReferralProposalSerializer(context={'request':self.context['request']})
-            # elif kwargs.get('context')['view'].get_object().proposal.application_type.name == ApplicationType.EVENT:
-            #     self.fields['proposal'] = EventReferralProposalSerializer(context={'request':self.context['request']})
-        except:
-            raise
+        super().__init__(*args, **kwargs)
+        self.fields["proposal"] = ReferralProposalSerializer(
+            context={"request": self.context["request"]}
+        )
 
     def get_can_process(self, obj):
         request = self.context["request"]
