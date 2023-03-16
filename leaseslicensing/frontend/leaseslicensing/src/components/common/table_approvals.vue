@@ -139,6 +139,11 @@ export default {
                 keepInvalid:true,
                 allowInputToggle:true
             },
+
+            // For Expandable row
+            td_expand_class_name: 'expand-icon',
+            td_collapse_class_name: 'collapse-icon',
+            expandable_row_class_name: 'expandable_row_class_name',
         }
     },
     components:{
@@ -456,6 +461,11 @@ export default {
                 language: {
                     processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
                 },
+                rowCallback: function (row, proposal){
+                    let row_jq = $(row)
+                    row_jq.attr('id', 'proposal_id_' + proposal.id)
+                    row_jq.children().first().addClass(vm.td_expand_class_name)
+                },
                 responsive: true,
                 serverSide: true,
                 //searching: false,
@@ -654,6 +664,49 @@ export default {
                 var id = $(this).attr('data-history-approval');
                 vm.approvalHistory(id);
             });
+
+            // Listener for thr row
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'td', function(e) {
+                let td_link = $(this)
+
+                if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))){
+                    // This row is not configured as expandable row (at the rowCallback)
+                    return
+                }
+
+                // Get <tr> element as jQuery object
+                let tr = td_link.closest('tr')
+
+                // Retrieve id from the id of the <tr>
+                let tr_id = tr.attr('id')
+                let proposal_id = tr_id.replace('proposal_id_', '')
+
+                let first_td = tr.children().first()
+                if(first_td.hasClass(vm.td_expand_class_name)){
+                    // Expand
+
+                    // If we don't need to retrieve the data from the server, follow the code below
+                    let contents = '<div><strong>Site:</strong> (site name here)</div><div><strong>Group:</strong> (group name here)</div>'
+                    let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
+                    details_elem.hide()
+                    details_elem.insertAfter(tr)
+                    details_elem.fadeIn(1000)
+
+                    // Change icon class name to vm.td_collapse_class_name
+                    first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
+                } else {
+                    let nextElem = tr.next()
+                    // Collapse
+                    if(nextElem.is('tr') & nextElem.hasClass(vm.expandable_row_class_name)){
+                        // Sticker details row is already shown.  Remove it.
+                        nextElem.fadeOut(500, function(){
+                            nextElem.remove()
+                        })
+                    }
+                    // Change icon class name to vm.td_expand_class_name
+                    first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
+                }
+            })
 
         },
         fetchFilterLists: async function(){
