@@ -4,7 +4,7 @@ import os
 import base64
 import geojson
 import json
-from six.moves.urllib.parse import urlparse # FIXME Can this be `from urllib.parse import urlencode` in py3?
+from six.moves.urllib.parse import urlparse  # FIXME Can this be `from urllib.parse import urlencode` in py3?
 from wsgiref.util import FileWrapper
 from django.db.models import Q
 from django.db import transaction, connection
@@ -13,6 +13,7 @@ from django.core.files.base import ContentFile
 from django.core.exceptions import ValidationError
 from django.conf import settings
 from django.contrib import messages
+from django.urls import reverse
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -237,6 +238,7 @@ class GetApplicationTypeDescriptions(views.APIView):
             data = cache.get("application_type_descriptions")
         return Response(data)
 
+
 class GetApplicationStatusesDict(views.APIView):
     renderer_classes = [
         JSONRenderer,
@@ -393,10 +395,10 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
         #ordering = self.get_ordering(getter, fields)
 
         queryset = self.apply_request(request, queryset, view,
-                        ledger_lookup_fields=["submitter",
-                                              "ind_applicant",
-                                              "assigned_officer",
-                                              "assigned_approver"])
+                                      ledger_lookup_fields=["submitter",
+                                                            "ind_applicant",
+                                                            "assigned_officer",
+                                                            "assigned_approver"])
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -1316,7 +1318,6 @@ class ProposalViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-
     @detail_route(methods=["POST"], detail=True,)
     @basic_exception_handler
     def revision_version(self, request, *args, **kwargs):
@@ -1350,7 +1351,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
         # Build geometry data structure containing only the geometry versions at `revision_id`
         geometry_data = {"type": "FeatureCollection",
-                        "features": []}
+                         "features": []}
         for pg_version in proposalgeometries_versions:
             proposalgeometry = ProposalGeometry(**pg_version.field_dict)
             pg_serializer = ProposalGeometrySerializer(proposalgeometry)
@@ -1360,7 +1361,6 @@ class ProposalViewSet(viewsets.ModelViewSet):
         revision_data["proposalgeometry"] = OrderedDict(geometry_data)
 
         return Response(revision_data)
-
 
     @detail_route(
         methods=[
@@ -2063,7 +2063,6 @@ class ProposalViewSet(viewsets.ModelViewSet):
         ],
         detail=True,
     )
-
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
     def draft(self, request, *args, **kwargs):
@@ -2122,7 +2121,6 @@ class ProposalViewSet(viewsets.ModelViewSet):
         instance.save_invoicing_details(request, self.action)
         return Response({})
 
-
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
@@ -2130,7 +2128,6 @@ class ProposalViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         instance.finance_complete_editing(request, self.action)
         return Response({})
-
 
     @detail_route(methods=["post"], detail=True)
     @basic_exception_handler
@@ -2702,8 +2699,8 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
     def application_type_standard_requirements(self, request, *args, **kwargs):
         application_type_id = request.data.get("application_type_id")
         queryset = ProposalStandardRequirement.objects.filter(
-                application_type__id=application_type_id
-                )
+            application_type__id=application_type_id
+        )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -2795,28 +2792,38 @@ class SearchReferenceView(views.APIView):
         JSONRenderer,
     ]
 
-    def post(self, request, format=None):
-        try:
-            qs = []
-            reference_number = request.data.get("reference_number")
-            if reference_number:
-                qs = search_reference(reference_number)
-            # queryset = list(set(qs))
-            serializer = SearchReferenceSerializer(qs)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                print(e)
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+    def get(self, request, format=None):
+        search_term = request.GET.get('term', '')
+        proposals = Proposal.objects.filter(lodgement_number__icontains=search_term)[:4]
+        proposal_results = [{
+            "id": proposal.id,
+            "text":
+                f"{ proposal.lodgement_number }"
+                + f" - { proposal.application_type.name_display }"
+                + f" - { proposal.proposal_type.description } [Proposal]",
+            "redirect_url": reverse('internal-proposal-detail', kwargs={"proposal_pk":proposal.id})
+        }
+            for proposal in proposals
+        ]
+        approvals = Approval.objects.filter(lodgement_number__icontains=search_term)[:4]
+        approval_results = [{
+            "id": approval.id,
+            "text": f"{ approval.lodgement_number } [Approval]",
+            "redirect_url": reverse('internal-approval-detail', kwargs={"approval_pk":approval.id})
+        }
+            for approval in approvals
+        ]
+        compliances = Compliance.objects.filter(lodgement_number__icontains=search_term)[:4]
+        compliance_results = [{
+            "id": compliance.id,
+            "text": f"{ compliance.lodgement_number } [Compliance]",
+            "redirect_url": reverse('internal-compliance-detail', kwargs={"compliance_pk":compliance.id})
+        }
+            for compliance in compliances
+        ]
+        data_transform = proposal_results + approval_results + compliance_results
+
+        return Response({"results": data_transform})
 
 
 class AssessorChecklistViewSet(viewsets.ReadOnlyModelViewSet):
@@ -2835,7 +2842,7 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
     queryset = ProposalAssessment.objects.all()
     serializer_class = ProposalAssessmentSerializer
 
-    @detail_route(methods=["post"], detail=True)
+    @ detail_route(methods=["post"], detail=True)
     def update_assessment(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
