@@ -226,7 +226,7 @@ urlpatterns = (
             name="internal-proposal-detail",
         ),
         url(
-            r"^internal/approval/(?P<proposal_pk>\d+)/$",
+            r"^internal/approval/(?P<approval_pk>\d+)/$",
             views.InternalApprovalView.as_view(),
             name="internal-approval-detail",
         ),
