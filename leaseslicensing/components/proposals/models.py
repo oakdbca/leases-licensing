@@ -1,4 +1,5 @@
 from __future__ import unicode_literals
+from ckeditor.fields import RichTextField
 from dataclasses import field
 
 import json
@@ -1195,7 +1196,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     # Append 'P' to Proposal id to generate Lodgement number. Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
-        super(Proposal, self).save(*args, **kwargs) # Call parent `save` to create a Proposal id
+        super(Proposal, self).save(*args, **kwargs)  # Call parent `save` to create a Proposal id
 
         if self.lodgement_number == "":
             new_lodgment_id = "A{0:06d}".format(self.pk)
@@ -1222,7 +1223,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         else:
             # Organisation
             return relevant_applicant.name
-
 
     @property
     def can_create_final_approval(self):
@@ -1397,7 +1397,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     #            p = p.previous_application
     #        return l
 
-
     @property
     def lodgement_versions(self):
         """
@@ -1407,8 +1406,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         current_revision_id = Version.objects.get_for_object(self).first().revision_id
         versions = self.revision_versions().filter(
-            ~Q(revision__comment='') |
-            Q(revision_id=current_revision_id))
+            ~Q(revision__comment='')
+            | Q(revision_id=current_revision_id))
 
         return self.versions_to_lodgement_dict(versions)
 
@@ -1420,16 +1419,15 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         rr = []
         for obj in versions_qs:
-                rr.append(dict(
-                    revision_id=obj.revision_id,
-                    revision_comment=obj.revision.comment.strip(),
-                    lodgement_number=obj.field_dict.get("lodgement_number", None),
-                    lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
-                    lodgement_date=obj.field_dict.get("lodgement_date", None),
-                ))
+            rr.append(dict(
+                revision_id=obj.revision_id,
+                revision_comment=obj.revision.comment.strip(),
+                lodgement_number=obj.field_dict.get("lodgement_number", None),
+                lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
+                lodgement_date=obj.field_dict.get("lodgement_date", None),
+            ))
 
         return rr
-
 
     def revision_versions(self):
         """
@@ -1711,10 +1709,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         try:
             # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
-            shp_file_qs = self.shapefile_documents.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx" ) | Q(name__endswith=".dbf") | Q(name__endswith=".prj"))
+            shp_file_qs = self.shapefile_documents.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx") | Q(name__endswith=".dbf") | Q(name__endswith=".prj"))
             # Validate shapefile and all the other related files are present
             if shp_file_qs:
-                if not shp_file_qs.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx" ) | Q(name__endswith=".dbf")).count() % 3 == 0:
+                if not shp_file_qs.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx") | Q(name__endswith=".dbf")).count() % 3 == 0:
                     raise ValidationError("Shapefile needs at least the shp, shx, and dbf extensions")
 
                 # A list of all uploaded shapefiles
@@ -1727,8 +1725,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 srid_dbca = list(set([g._base_geom.srid for g in lands_geos_data]))[0]
 
                 for shp_file_obj in shp_file_objs:
-                    gdf = gpd.read_file(shp_file_obj.path) # Shapefile to GeoDataFrame
-                    geometries = gdf.geometry # GeoSeries
+                    gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
+                    geometries = gdf.geometry  # GeoSeries
                     # Only accept polygons
                     geom_type = geometries.geom_type.values[0]
                     if geom_type not in ("Polygon", "MultiPolygon"):
@@ -1743,7 +1741,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # Check for intersection with DBCA geometries
                     gdf_transform["valid"] = False
                     for geom in geometries:
-                        srid = SpatialReference(geometries.crs.srs).srid # spatial reference identifier
+                        srid = SpatialReference(geometries.crs.srs).srid  # spatial reference identifier
                         geos_repr = GEOSGeometry(geom.wkt, srid=srid)
                         if srid != srid_dbca:
                             # Transform the imported geometry to the SRID of the DBCA geometries
@@ -2334,8 +2332,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         non_field_errors = []
         if not details.get("details"):
             non_field_errors.append("You must add details text")
-        if (self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST and 
-                not details.get("decision")):
+        if (self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
+                and not details.get("decision")):
             non_field_errors.append("You must choose a decision radio button")
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             if not details.get("approval_type"):
@@ -2364,8 +2362,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 #"approval_type_document_type": details.get("approval_type_document_type"),
                 "cc_email": details.get("cc_email"),
                 "details": details.get("details"),
-                'start_date' : details.get("start_date"),
-                'expiry_date' : details.get("expiry_date"),
+                'start_date': details.get("start_date"),
+                'expiry_date': details.get("expiry_date"),
             }
             # Check mandatory docs
             mandatory_doc_errors = []
@@ -2374,15 +2372,15 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             for approval_type_document_type_on_approval_type in ApprovalTypeDocumentTypeOnApprovalType.objects.filter(
                     approval_type_id=approval_type,
                     mandatory=True
-                    ):
+            ):
                 if not self.lease_licence_approval_documents.filter(
-                        approval_type=approval_type_document_type_on_approval_type.approval_type, 
+                        approval_type=approval_type_document_type_on_approval_type.approval_type,
                         approval_type_document_type=approval_type_document_type_on_approval_type.approval_type_document_type,
-                        ):
+                ):
                     mandatory_doc_errors.append("Missing mandatory document/s: Approval Type {}, Document Type {}".format(
                         approval_type_document_type_on_approval_type.approval_type,
                         approval_type_document_type_on_approval_type.approval_type_document_type,
-                        )
+                    )
                     )
             if mandatory_doc_errors:
                 raise serializers.ValidationError(mandatory_doc_errors)
@@ -2504,7 +2502,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
-        from leaseslicensing.helpers import is_departmentUser
 
         with transaction.atomic():
             try:
@@ -2606,14 +2603,14 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         approval, created = Approval.objects.update_or_create(
                             current_proposal=checking_proposal,
                             defaults={
-                                  "issue_date": timezone.now(),
-                                  "expiry_date": timezone.now().date()
-                                  + relativedelta(years=1),
-                                  "start_date": timezone.now().date(),
-                                  "submitter": self.submitter,
-                                  "org_applicant": self.org_applicant,
-                                  "proxy_applicant": self.proxy_applicant,
-                                     },
+                                "issue_date": timezone.now(),
+                                "expiry_date": timezone.now().date()
+                                + relativedelta(years=1),
+                                "start_date": timezone.now().date(),
+                                "submitter": self.submitter,
+                                "org_applicant": self.org_applicant,
+                                "proxy_applicant": self.proxy_applicant,
+                            },
                         )
 
                         # Lease Licence (New)
@@ -3272,7 +3269,6 @@ class ProposalRequest(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
-
 
 
 class ComplianceRequest(ProposalRequest):
@@ -4418,11 +4414,11 @@ class ProposalAssessment(RevisionedMixin):
     completed = models.BooleanField(default=False)
     submitter = models.IntegerField(blank=True, null=True)  # EmailUserRO
     referral = models.ForeignKey(
-       Referral,
-       related_name="assessment",
-       blank=True,
-       null=True,
-       on_delete=models.SET_NULL,
+        Referral,
+        related_name="assessment",
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL,
     )  # When referral is none, this ProposalAssessment is for assessor.
     # comments and deficiencies
     assessor_comment_map = models.TextField(blank=True)
@@ -4456,8 +4452,8 @@ class ProposalAssessment(RevisionedMixin):
 
     @property
     def referral_assessment(self):
-       # When self.referral != null, this assessment is for referral, otherwise this assessment is for assessor.
-       return True if self.referral else False
+        # When self.referral != null, this assessment is for referral, otherwise this assessment is for assessor.
+        return True if self.referral else False
 
 
 class ProposalAssessmentAnswer(RevisionedMixin):
@@ -4828,9 +4824,6 @@ def search_reference(reference_number):
         return record
     else:
         raise ValidationError("Record with provided reference number does not exist")
-
-
-from ckeditor.fields import RichTextField
 
 
 class HelpPage(models.Model):
