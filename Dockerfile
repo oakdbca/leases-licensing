@@ -1,31 +1,29 @@
-# syntax = docker/dockerfile:1.2
-
 # Prepare the base environment.
 FROM ubuntu:22.04 as builder_base_oim_leaseslicensing
 
 LABEL maintainer="asi@dbca.wa.gov.au"
 
 ENV DEBIAN_FRONTEND=noninteractive \
-	TZ=Australia/Perth \
-	EMAIL_HOST="email.server" \
-	DEFAULT_FROM_EMAIL='no-reply@dbca.wa.gov.au' \
-	NOTIFICATION_EMAIL='none@none.com' \
-	NON_PROD_EMAIL='none@none.com' \
-	PRODUCTION_EMAIL=False \
-	EMAIL_INSTANCE='DEV' \
-	SECRET_KEY="ThisisNotRealKey" \
-	SITE_PREFIX='lals-dev' \
-	SITE_DOMAIN='dbca.wa.gov.au' \
-	OSCAR_SHOP_NAME='Parks & Wildlife' \
-	BPAY_ALLOWED=False \
-	POETRY_VERSION=1.2.1
+    TZ=Australia/Perth \
+    EMAIL_HOST="email.server" \
+    DEFAULT_FROM_EMAIL='no-reply@dbca.wa.gov.au' \
+    NOTIFICATION_EMAIL='none@none.com' \
+    NON_PROD_EMAIL='none@none.com' \
+    PRODUCTION_EMAIL=False \
+    EMAIL_INSTANCE='DEV' \
+    SECRET_KEY="ThisisNotRealKey" \
+    SITE_PREFIX='lals-dev' \
+    SITE_DOMAIN='dbca.wa.gov.au' \
+    OSCAR_SHOP_NAME='Parks & Wildlife' \
+    BPAY_ALLOWED=False \
+    POETRY_VERSION=1.2.1
 
 # Use Australian Mirrors
 RUN sed 's/archive.ubuntu.com/au.archive.ubuntu.com/g' /etc/apt/sources.list > /etc/apt/sourcesau.list && \
     mv /etc/apt/sourcesau.list /etc/apt/sources.list
 # Use Australian Mirrors
 
-RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
+RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install --no-install-recommends -y \
     binutils \
@@ -60,32 +58,32 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
 
 # install node 16
 RUN touch install_node.sh && \
-	curl -fsSL https://deb.nodesource.com/setup_16.x -o install_node.sh && \
-	chmod +x install_node.sh && ./install_node.sh && \
-	apt-get install -y nodejs && \
-	ln -s /usr/bin/python3 /usr/bin/python && \
-	pip install --upgrade pip
+    curl -fsSL https://deb.nodesource.com/setup_16.x -o install_node.sh && \
+    chmod +x install_node.sh && ./install_node.sh && \
+    apt-get install -y nodejs && \
+    ln -s /usr/bin/python3 /usr/bin/python && \
+    pip install --upgrade pip
 
 COPY cron /etc/cron.d/dockercron
 COPY startup.sh pre_startup.sh /
 COPY ./timezone /etc/timezone
 RUN chmod 0644 /etc/cron.d/dockercron && \
-	crontab /etc/cron.d/dockercron && \
-	touch /var/log/cron.log && \
-	service cron start && \
-	chmod 755 /startup.sh && \
-	chmod +s /startup.sh && \
-	chmod 755 /pre_startup.sh && \
-	chmod +s /pre_startup.sh && \
+    crontab /etc/cron.d/dockercron && \
+    touch /var/log/cron.log && \
+    service cron start && \
+    chmod 755 /startup.sh && \
+    chmod +s /startup.sh && \
+    chmod 755 /pre_startup.sh && \
+    chmod +s /pre_startup.sh && \
     groupadd -g 5000 oim && \
     useradd -g 5000 -u 5000 oim -s /bin/bash -d /app && \
     usermod -a -G sudo oim && \
     echo "oim  ALL=(ALL)  NOPASSWD: /startup.sh" > /etc/sudoers.d/oim && \
-	mkdir /app && \
-	chown -R oim.oim /app && \
-	mkdir /container-config/ && \
-	chown -R oim.oim /container-config/ && \
-	ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
+    mkdir /app && \
+    chown -R oim.oim /app && \
+    mkdir /container-config/ && \
+    chown -R oim.oim /container-config/ && \
+    ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone && \
     touch /app/rand_hash
 
 FROM builder_base_oim_leaseslicensing as python_dependencies_leaseslicensing
