@@ -32,7 +32,7 @@ def is_assessor(request):
 
 
 def is_approver(request):
-    return belongs_to(request.user, settings.GROUP_NAME_APPROVER)
+    return belongs_to(request, settings.GROUP_NAME_APPROVER)
 
 
 def in_dbca_domain(request):
