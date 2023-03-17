@@ -74,8 +74,9 @@
 
 import datatable from '@/utils/vue/datatable.vue'
 import { v4 as uuid } from 'uuid';
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
+import { expandToggle } from '@/components/common/table_functions.js'
 
 export default {
     name: 'TableApplications',
@@ -590,47 +591,9 @@ export default {
             */
 
             // Listener for thr row
-            vm.$refs.application_datatable.vmDataTable.on('click', 'td', function(e) {
-                let td_link = $(this)
-
-                if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))){
-                    // This row is not configured as expandable row (at the rowCallback)
-                    return
-                }
-
-                // Get <tr> element as jQuery object
-                let tr = td_link.closest('tr')
-
-                // Retrieve id from the id of the <tr>
-                let tr_id = tr.attr('id')
-                let proposal_id = tr_id.replace('proposal_id_', '')
-
-                let first_td = tr.children().first()
-                if(first_td.hasClass(vm.td_expand_class_name)){
-                    // Expand
-
-                    // If we don't need to retrieve the data from the server, follow the code below
-                    let contents = '<div><strong>Site:</strong> (site name here)</div><div><strong>Group:</strong> (group name here)</div>'
-                    let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
-                    details_elem.hide()
-                    details_elem.insertAfter(tr)
-                    details_elem.fadeIn(1000)
-
-                    // Change icon class name to vm.td_collapse_class_name
-                    first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
-                } else {
-                    let nextElem = tr.next()
-                    // Collapse
-                    if(nextElem.is('tr') & nextElem.hasClass(vm.expandable_row_class_name)){
-                        // Sticker details row is already shown.  Remove it.
-                        nextElem.fadeOut(500, function(){
-                            nextElem.remove()
-                        })
-                    }
-                    // Change icon class name to vm.td_expand_class_name
-                    first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
-                }
-            })
+            vm.$refs.application_datatable.vmDataTable.on('click', 'td', function() {
+                expandToggle(vm, this);
+            });
         },
     },
     created: function(){
