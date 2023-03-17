@@ -1008,7 +1008,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
         return roles
 
     def get_applicant_obj(self, obj):
-        if isinstance(self.applicant, Organisation):
+        if isinstance(obj.applicant, Organisation):
             return OrganisationSerializer(obj.applicant).data
         return EmailUserSerializer(obj.applicant).data
 
