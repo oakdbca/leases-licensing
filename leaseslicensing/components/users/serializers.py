@@ -1,26 +1,24 @@
+from datetime import timedelta
+
 from django.conf import settings
+from django.utils import timezone
+from ledger_api_client.ledger_models import Address  # Profile,
 from ledger_api_client.ledger_models import (
-    EmailUserRO as EmailUser,
-    Address,  # Profile,
-    EmailIdentity,
-    # EmailUserAction, EmailUserLogEntry
+    EmailUserRO as EmailUser,  # EmailUserAction, EmailUserLogEntry
 )
-from leaseslicensing.components.organisations.models import Organisation
-from leaseslicensing.components.main.models import (
-    UserSystemSettings,
-    Document,
-    ApplicationType,
-    CommunicationsLogEntry,
-)
-from leaseslicensing.components.proposals.models import Proposal
-from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
-from leaseslicensing.helpers import is_leaseslicensing_admin, in_dbca_domain
 from rest_framework import serializers
 
-# from ledger.payments.helpers import is_payment_admin
-from django.utils import timezone
-from datetime import date, timedelta
 from leaseslicensing.components.approvals.models import Approval
+from leaseslicensing.components.main.models import (
+    ApplicationType,
+    CommunicationsLogEntry,
+    Document,
+    UserSystemSettings,
+)
+from leaseslicensing.components.organisations.models import Organisation
+from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
+from leaseslicensing.components.proposals.models import Proposal
+from leaseslicensing.helpers import in_dbca_domain, is_leaseslicensing_admin
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -131,28 +129,20 @@ class UserSerializerSimple(serializers.ModelSerializer):
 
     class Meta:
         model = EmailUser
-        fields = (
-            "id",
-            "last_name",
-            "first_name",
-            "email",
-            "full_name"
-        )
+        fields = ("id", "last_name", "first_name", "email", "full_name")
 
     def get_full_name(self, obj):
         return obj.get_full_name()
 
 
 class UserSerializer(serializers.ModelSerializer):
-    # leaseslicensing_organisations = serializers.SerializerMethodField()
     residential_address = UserAddressSerializer()
+    postal_address = UserAddressSerializer()
     personal_details = serializers.SerializerMethodField()
     address_details = serializers.SerializerMethodField()
     contact_details = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
     is_department_user = serializers.SerializerMethodField()
-    system_settings = serializers.SerializerMethodField()
-    # is_payment_admin = serializers.SerializerMethodField()
     is_leaseslicensing_admin = serializers.SerializerMethodField()
 
     class Meta:
@@ -162,19 +152,16 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "first_name",
             "email",
-            #'identification',
             "residential_address",
+            "postal_address",
             "phone_number",
             "mobile_number",
-            #'leaseslicensing_organisations',
             "personal_details",
             "address_details",
             "contact_details",
             "full_name",
             "is_department_user",
-            #'is_payment_admin',
             "is_staff",
-            "system_settings",
             "is_leaseslicensing_admin",
         )
 
@@ -182,7 +169,7 @@ class UserSerializer(serializers.ModelSerializer):
         return True if obj.last_name and obj.first_name else False
 
     def get_address_details(self, obj):
-        return True if obj.residential_address else False
+        return True if obj.residential_address or obj.postal_address else False
 
     def get_contact_details(self, obj):
         if obj.mobile_number and obj.email:
@@ -203,26 +190,6 @@ class UserSerializer(serializers.ModelSerializer):
             if request:
                 return in_dbca_domain(request)
         return False
-
-    # def get_is_payment_admin(self, obj):
-    #   return is_payment_admin(obj)
-
-    # def get_leaseslicensing_organisations(self, obj):
-    #    leaseslicensing_organisations = obj.leaseslicensing_organisations
-    #    serialized_orgs = UserOrganisationSerializer(
-    #        leaseslicensing_organisations, many=True, context={
-    #            'user_id': obj.id}).data
-    #    return serialized_orgs
-
-    def get_system_settings(self, obj):
-        try:
-            user_system_settings = obj.system_settings.first()
-            serialized_settings = UserSystemSettingsSerializer(
-                user_system_settings
-            ).data
-            return serialized_settings
-        except:
-            return None
 
     def get_is_leaseslicensing_admin(self, obj):
         request = self.context["request"] if self.context else None
@@ -252,7 +219,8 @@ class ContactSerializer(serializers.ModelSerializer):
         )
 
     def validate(self, obj):
-        # Mobile and phone number for dbca user are updated from active directory so need to skip these users from validation.
+        # Mobile and phone number for dbca user are updated from active directory
+        # so need to skip these users from validation.
         domain = None
         if obj["email"]:
             domain = obj["email"].split("@")[1]

@@ -1,120 +1,107 @@
-from __future__ import unicode_literals
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser, EmailUserRO
-from ledger_api_client.managed_models import SystemGroup
-from django.conf import settings
-from django.core.cache import cache
-
 import logging
 
-from leaseslicensing.settings import GROUP_NAME_ASSESSOR, GROUP_NAME_APPROVER
+from django.conf import settings
+from django.core.cache import cache
+from ledger_api_client.managed_models import SystemGroup
+
+from leaseslicensing.components.organisations.models import Organisation
 
 logger = logging.getLogger(__name__)
 
 
-def belongs_to(user, group_name):
-    """
-    Check if the user belongs to the given group.
-    :param user:
-    :param group_name:
-    :return:
-    """
-    # import ipdb; ipdb.set_trace()
-    belongs_to_value = cache.get(
-        "User-belongs_to" + str(user.id) + "group_name:" + group_name
-    )
-    if belongs_to_value:
-        print(
-            "From Cache - User-belongs_to" + str(user.id) + "group_name:" + group_name
-        )
-    if belongs_to_value is None:
-        belongs_to_value = user.groups().filter(name=group_name).exists()
-        cache.set(
-            "User-belongs_to" + str(user.id) + "group_name:" + group_name,
-            belongs_to_value,
-            3600,
-        )
-    return belongs_to_value
-
-    # return user.groups.filter(name=group_name).exists()
+def belongs_to_by_user_id(user_id, group_name):
+    system_group = SystemGroup.objects.filter(name=group_name).first()
+    return system_group and user_id in system_group.get_system_group_member_ids()
 
 
-# def is_model_backend(request):
-#    # Return True if user logged in via single sign-on (i.e. an internal)
-#    return 'ModelBackend' in request.session.get('_auth_user_backend')
-#
-# def is_email_auth_backend(request):
-#    # Return True if user logged in via social_auth (i.e. an external user signing in with a login-token)
-#    return 'EmailAuth' in request.session.get('_auth_user_backend')
+def belongs_to(request, group_name):
+    if not request.user.is_authenticated:
+        return False
+    if request.user.is_superuser:
+        return True
+
+    return belongs_to_by_user_id(request.user.id, group_name)
 
 
 def is_leaseslicensing_admin(request):
-    # logger.info('settings.ADMIN_GROUP: {}'.format(settings.ADMIN_GROUP))
-    return request.user.is_authenticated and (
-        request.user.is_superuser or belongs_to(request.user, settings.ADMIN_GROUP)
-    )
+    return belongs_to(request, settings.ADMIN_GROUP)
 
 
-def is_assessor(user_id):
-    if isinstance(user_id, EmailUser) or isinstance(user_id, EmailUserRO):
-        user_id = user_id.id
-    assessor_group = SystemGroup.objects.get(name=GROUP_NAME_ASSESSOR)
-    return True if user_id in assessor_group.get_system_group_member_ids() else False
+def is_assessor(request):
+    return belongs_to(request, settings.GROUP_NAME_ASSESSOR)
 
 
-def is_approver(user_id):
-    if isinstance(user_id, EmailUser) or isinstance(user_id, EmailUserRO):
-        user_id = user_id.id
-    assessor_group = SystemGroup.objects.get(name=GROUP_NAME_APPROVER)
-    return True if user_id in assessor_group.get_system_group_member_ids() else False
+def is_approver(request):
+    return belongs_to(request.user, settings.GROUP_NAME_APPROVER)
 
 
 def in_dbca_domain(request):
     return request.user.is_staff
 
 
-#    #import ipdb; ipdb.set_trace()
-#    user = request.user
-#    domain = user.email.split('@')[1]
-#    if domain in settings.DEPT_DOMAINS:
-#        if not user.is_staff:
-#            # hack to reset department user to is_staff==True, if the user logged in externally (external departmentUser login defaults to is_staff=False)
-#            user.is_staff = True
-#            user.save()
-#        return True
-#    return False
-
-
 def is_in_organisation_contacts(request, organisation):
+    """Todo: Convert this to segregated"""
     return request.user.email in organisation.contacts.all().values_list(
         "email", flat=True
     )
 
 
-def is_departmentUser(user):
-    # return request.user.is_authenticated and is_model_backend(request) and in_dbca_domain(request)
-    try:
-        return user.is_authenticated and user.is_staff
-    except AttributeError as e:
-        #  user is probably Request type
-        return user.user.is_authenticated and user.user.is_staff
-    except Exception as e:
-        raise
+def is_department_user(request):
+    return request.user.is_authenticated and request.user.is_staff
 
 
-def is_customer(user):
-    # return request.user.is_authenticated and is_email_auth_backend(request)
-    try:
-        return user.is_authenticated and not user.is_staff
-    except AttributeError as e:
-        # user is probably Request type
-        return user.user.is_authenticated and not user.user.is_staff
-    except Exception as e:
-        raise
+def is_customer(request):
+    return request.user.is_authenticated and not request.user.is_staff
 
 
 def is_internal(request):
-    return is_departmentUser(request)
+    return is_department_user(request)
 
 
-def get_all_officers():
-    return EmailUser.objects.filter(groups__name="Commercial Operator Admin")
+def get_leaseslicensing_organisation_ids():
+    """Since the organisations of leases and licensing are a small subset of those in ledger
+    we can cache the list of organisations to improve performance.
+
+    Todo: Must delete the cache whenever a new organisation is added to the system."""
+    cache_key = settings.CACHE_KEY_ORGANISATION_IDS
+    organisation_ids = cache.get(cache_key)
+    if organisation_ids is None:
+        organisation_ids = organisation_ids = (
+            Organisation.objects.all().values_list("organisation", flat=True).distinct()
+        )
+        cache.set(cache_key, organisation_ids, settings.CACHE_TIMEOUT_2_HOURS)
+    logger.debug(f"{cache_key}:{organisation_ids}")
+    return organisation_ids
+
+
+def get_leaseslicensing_external_emailuser_ids():
+    """Since the users of leases and licensing are a small subset of those in ledger
+    we can cache the list of users to improve performance.
+
+    Todo:   Must delete the cache whenever a new user is added to the system.
+            Must add all possible user ids that can appear in the search results.
+    """
+    # Avoid circular imports
+    from leaseslicensing.components.approvals.models import Approval
+    from leaseslicensing.components.compliances.models import Compliance
+    from leaseslicensing.components.proposals.models import Proposal
+
+    cache_key = settings.CACHE_KEY_USER_IDS
+    user_ids = cache.get(cache_key)
+    if user_ids is None:
+        submitters = list(
+            Proposal.objects.all().values_list("submitter", flat=True).distinct()
+        )
+        approval_submitters = list(
+            Approval.objects.all().values_list("submitter", flat=True).distinct()
+        )
+        compliance_submitters = list(
+            Compliance.objects.all().values_list("submitter", flat=True).distinct()
+        )
+        # There are almost certainly other users that should be included here.
+
+        # combine lists and remove duplicates
+        user_ids = list(set(submitters + approval_submitters + compliance_submitters))
+        cache.set(cache_key, user_ids, settings.CACHE_TIMEOUT_2_HOURS)
+    logger.debug(f"{cache_key}:{user_ids}")
+    return user_ids

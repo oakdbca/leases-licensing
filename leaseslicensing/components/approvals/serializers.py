@@ -1,20 +1,18 @@
 from django.conf import settings
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser, Address, EmailUserRO
-from leaseslicensing.components.proposals.serializers import (
-    ProposalSerializer,
-    InternalProposalSerializer,
-    ProposalParkSerializer,
-)
-from leaseslicensing.components.main.serializers import ApplicationTypeSerializer, EmailUserROSerializerForReferral, EmailUserSerializer
+from ledger_api_client.ledger_models import EmailUserRO
+from rest_framework import serializers
+
 from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalLogEntry,
     ApprovalUserAction,
 )
+from leaseslicensing.components.main.serializers import (
+    CommunicationLogEntrySerializer,
+    EmailUserSerializer,
+)
 from leaseslicensing.components.organisations.models import Organisation
-from leaseslicensing.components.main.serializers import CommunicationLogEntrySerializer
-from leaseslicensing.components.proposals.serializers import ProposalSerializer
-from rest_framework import serializers
+from leaseslicensing.helpers import is_approver, is_assessor
 
 
 class ApprovalPaymentSerializer(serializers.ModelSerializer):
@@ -125,11 +123,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
     applicant = serializers.SerializerMethodField(read_only=True)
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
-    licence_document = serializers.CharField(source='licence_document._file.url')
-    # renewal_document = serializers.SerializerMethodField(read_only=True)
+    licence_document = serializers.CharField(source="licence_document._file.url")
     status = serializers.CharField(source="get_status_display")
-    # allowed_assessors = EmailUserSerializer(many=True)
-    # title = serializers.CharField(source='current_proposal.title')
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
     can_renew = serializers.SerializerMethodField()
@@ -145,12 +140,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "id",
             "lodgement_number",
             "linked_applications",
-            'licence_document',
+            "licence_document",
             "replaced_by",
             "current_proposal",
             "tenure",
-            # 'title',
-            # 'renewal_document',
             "renewal_sent",
             "issue_date",
             "original_issue_date",
@@ -166,7 +159,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "status",
             "reference",
             "can_reissue",
-            # 'allowed_assessors',
             "cancellation_date",
             "cancellation_details",
             "can_action",
@@ -184,16 +176,16 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "requirement_docs",
             "submitter",
         )
-        # the serverSide functionality of datatables is such that only columns that have field 'data' defined are requested from the serializer. We
+        # the serverSide functionality of datatables is such that only columns that have
+        # field 'data' defined are requested from the serializer. We
         # also require the following additional fields for some of the mRender functions
         datatables_always_serialize = (
             "id",
-            # 'title',
             "status",
             "reference",
             "lodgement_number",
             "linked_applications",
-            'licence_document',
+            "licence_document",
             "start_date",
             "expiry_date",
             "applicant",
@@ -208,9 +200,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "set_to_suspend",
             "set_to_surrender",
             "current_proposal",
-            # 'renewal_document',
             "renewal_sent",
-            # 'allowed_assessors',
             "application_type",
             "migrated",
             "is_assessor",
@@ -238,26 +228,13 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return None
 
     def get_applicant(self, obj):
-        try:
-            return (
-                obj.applicant.name
-                if isinstance(obj.applicant, Organisation)
-                else obj.applicant
-            )
-        except:
-            return None
+        return obj.applicant
 
     def get_applicant_type(self, obj):
-        try:
-            return obj.applicant_type
-        except:
-            return None
+        return obj.applicant_type
 
     def get_applicant_id(self, obj):
-        try:
-            return obj.applicant_id
-        except:
-            return None
+        return obj.applicant_id
 
     def get_can_renew(self, obj):
         return obj.can_renew
@@ -267,13 +244,11 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     def get_is_assessor(self, obj):
         request = self.context["request"]
-        user = request.user
-        return obj.is_assessor(user)
+        return is_assessor(request)
 
     def get_is_approver(self, obj):
         request = self.context["request"]
-        user = request.user
-        return obj.is_approver(user)
+        return is_approver(request)
 
     def get_requirement_docs(self, obj):
         if obj.requirement_docs:

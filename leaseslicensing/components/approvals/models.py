@@ -1,51 +1,41 @@
-from __future__ import unicode_literals
-
+import datetime
 import logging
 import re
 
-import json
-import datetime
-from django.db import models, transaction
-from django.dispatch import receiver
-from django.db.models.signals import pre_delete
-from django.core.exceptions import ValidationError
-
-# from django.contrib.postgres.fields.jsonb import JSONField
-from django.db.models import JSONField
-from django.utils import timezone
-from django.contrib.sites.models import Site
 from django.conf import settings
-from django.db.models import Q
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.db.models import JSONField, Q
+from django.db.models.deletion import ProtectedError
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+from django.utils import timezone
 
-# from ledger.accounts.models import Organisation as ledger_organisation
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from leaseslicensing.components.main.models import RevisionedMixin
-from leaseslicensing import exceptions
+from leaseslicensing.components.approvals.email import (
+    send_approval_cancel_email_notification,
+    send_approval_expire_email_notification,
+    send_approval_reinstate_email_notification,
+    send_approval_surrender_email_notification,
+    send_approval_suspend_email_notification,
+)
+from leaseslicensing.components.main.models import (
+    CommunicationsLogEntry,
+    Document,
+    RevisionedMixin,
+    UserAction,
+)
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.proposals.models import (
     Proposal,
+    ProposalType,
     ProposalUserAction,
     RequirementDocument,
-    ProposalType,
 )
-from leaseslicensing.components.main.models import (
-    CommunicationsLogEntry,
-    UserAction,
-    Document,
-    ApplicationType,
-)
-from leaseslicensing.components.approvals.email import (
-    send_approval_expire_email_notification,
-    send_approval_cancel_email_notification,
-    send_approval_suspend_email_notification,
-    send_approval_reinstate_email_notification,
-    send_approval_surrender_email_notification,
-)
+from leaseslicensing.helpers import is_customer
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
 from leaseslicensing.utils import search_keys, search_multiple_keys
-from leaseslicensing.helpers import is_customer
 
 # from leaseslicensing.components.approvals.email import send_referral_email_notification
 
@@ -77,11 +67,10 @@ class ApprovalDocument(Document):
 
     def delete(self):
         if self.can_delete:
-            return super(ApprovalDocument, self).delete()
+            return super().delete()
         logger.info(
-            "Cannot delete existing document object after Application has been submitted (including document submitted before Application pushback to status Draft): {}".format(
-                self.name
-            )
+            "Cannot delete existing document object after Application has been submitted "
+            f"(including document submitted before Application pushback to status Draft): {self.name}"
         )
 
     class Meta:
@@ -101,8 +90,10 @@ class ApprovalSubType(RevisionedMixin):
 class ApprovalType(RevisionedMixin):
     name = models.CharField(max_length=200, unique=True)
     details_placeholder = models.CharField(max_length=200, blank=True)
-    #approval_type_document_types = models.ManyToManyField("ApprovalTypeDocumentType", through='ApprovalTypeDocumentTypeOnApprovalType')
-    approvaltypedocumenttypes = models.ManyToManyField("ApprovalTypeDocumentType", through='ApprovalTypeDocumentTypeOnApprovalType')
+    approvaltypedocumenttypes = models.ManyToManyField(
+        "ApprovalTypeDocumentType", through="ApprovalTypeDocumentTypeOnApprovalType"
+    )
+
     class Meta:
         app_label = "leaseslicensing"
 
@@ -122,7 +113,9 @@ class ApprovalTypeDocumentType(RevisionedMixin):
 
 class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
     approval_type = models.ForeignKey(ApprovalType, on_delete=models.CASCADE)
-    approval_type_document_type = models.ForeignKey(ApprovalTypeDocumentType, on_delete=models.CASCADE)
+    approval_type_document_type = models.ForeignKey(
+        ApprovalTypeDocumentType, on_delete=models.CASCADE
+    )
     mandatory = models.BooleanField(default=False)
 
     class Meta:
@@ -192,7 +185,6 @@ class Approval(RevisionedMixin):
     expiry_date = models.DateField()
     surrender_details = JSONField(blank=True, null=True)
     suspension_details = JSONField(blank=True, null=True)
-    # submitter = models.ForeignKey(EmailUser, on_delete=models.PROTECT, blank=True, null=True, related_name='leaseslicensing_approvals')
     submitter = models.IntegerField()  # EmailUserRo
     org_applicant = models.ForeignKey(
         Organisation,
@@ -201,7 +193,6 @@ class Approval(RevisionedMixin):
         null=True,
         related_name="org_approvals",
     )
-    # proxy_applicant = models.ForeignKey(EmailUser,on_delete=models.PROTECT, blank=True, null=True, related_name='proxy_approvals')
     proxy_applicant = models.IntegerField(null=True)  # EmailUserRO
     extracted_fields = JSONField(blank=True, null=True)
     cancellation_details = models.TextField(blank=True)
@@ -270,12 +261,11 @@ class Approval(RevisionedMixin):
                 self.proxy_applicant.first_name, self.proxy_applicant.last_name
             )
         else:
-            try:
-                user = retrieve_email_user(self.submitter)
-            except:
-                return "Applicant Not Set"
-            else:
+            user = retrieve_email_user(self.submitter)
+            if user:
                 return f"{user.first_name} {user.last_name}"
+            logger.warning(f"Approval {self} has no applicant set.")
+            return "Applicant Not Set"
 
     @property
     def holder(self):
@@ -352,23 +342,18 @@ class Approval(RevisionedMixin):
         ids = list(ids)
         return max(ids) + 1 if ids else 1
 
-    # @property
-    # def next_id(self):
-    #    ids = map(int,[i.split('L')[1] for i in Approval.objects.all().values_list('lodgement_number', flat=True) if i])
-    #    return max(list(ids)) + 1 if len(list(ids)) else 1
-
     def save(self, *args, **kwargs):
         if self.lodgement_number in ["", None]:
-            self.lodgement_number = "L{0:06d}".format(self.next_id)
+            self.lodgement_number = f"L{self.next_id:06d}"
             # self.save()
-        super(Approval, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.lodgement_number
 
     @property
     def reference(self):
-        return "L{}".format(self.id)
+        return f"L{self.id}"
 
     @property
     def can_reissue(self):
@@ -385,20 +370,6 @@ class Approval(RevisionedMixin):
     @property
     def allowed_assessors(self):
         return self.current_proposal.allowed_assessors
-
-    def is_assessor(self, user):
-        if self.current_proposal:
-            return self.current_proposal.is_assessor(user)
-        else:
-            logger.warning('Approval {} does not have current_proposal'.format(self.lodgement_number))
-            return False
-
-    def is_approver(self, user):
-        if self.current_proposal:
-            return self.current_proposal.is_approver(user)
-        else:
-            logger.warning('Approval {} does not have current_proposal'.format(self.lodgement_number))
-            return False
 
     @property
     def is_issued(self):
@@ -434,7 +405,7 @@ class Approval(RevisionedMixin):
         except Proposal.DoesNotExist:
             return True
 
-    ## copy amend_renew() from ML?
+    # copy amend_renew() from ML?
     @property
     def can_amend(self):
         # try:
@@ -449,7 +420,9 @@ class Approval(RevisionedMixin):
             proposals = Proposal.objects.filter(**amend_conditions)
             if proposals:
                 if proposals.count() > 1:
-                    logging.error('Approval: {} has more than one current amendment proposals'.format(self.lodgement_number))
+                    logging.error(
+                        f"Approval: {self.lodgement_number} has more than one current amendment proposals"
+                    )
                 return False
         return True
 
@@ -471,7 +444,9 @@ class Approval(RevisionedMixin):
                 )
                 return req_doc
         else:
-            logger.warning('Approval {} does not have current_proposal'.format(self.lodgement_number))
+            logger.warning(
+                f"Approval {self.lodgement_number} does not have current_proposal"
+            )
         return None
 
     #    @property
@@ -515,10 +490,6 @@ class Approval(RevisionedMixin):
             # )
         )
 
-    #    def generate_preview_doc(self, user):
-    #        from leaseslicensing.components.approvals.pdf import create_approval_pdf_bytes
-    #        copied_to_permit = self.copiedToPermit_fields(self.current_proposal) #Get data related to isCopiedToPermit tag
-
     def generate_renewal_doc(self):
         from leaseslicensing.components.approvals.pdf import create_renewal_doc
 
@@ -554,7 +525,7 @@ class Approval(RevisionedMixin):
                                 if d["assessor"]:
                                     # copied_data.append({c['label'], d['assessor']})
                                     copied_data.append({c["label"]: d["assessor"]})
-                except:
+                except KeyError:
                     raise
         return copied_data
 
@@ -563,246 +534,220 @@ class Approval(RevisionedMixin):
 
     def expire_approval(self, user):
         with transaction.atomic():
-            try:
-                today = timezone.localtime(timezone.now()).date()
-                if self.status == "current" and self.expiry_date < today:
-                    self.status = "expired"
-                    self.save()
-                    send_approval_expire_email_notification(self)
-                    proposal = self.current_proposal
-                    ApprovalUserAction.log_action(
-                        self,
-                        ApprovalUserAction.ACTION_EXPIRE_APPROVAL.format(self.id),
-                        user,
-                    )
-                    ProposalUserAction.log_action(
-                        proposal,
-                        ProposalUserAction.ACTION_EXPIRED_APPROVAL_.format(proposal.id),
-                        user,
-                    )
-            except:
-                raise
+            today = timezone.localtime(timezone.now()).date()
+            if self.status == "current" and self.expiry_date < today:
+                self.status = "expired"
+                self.save()
+                send_approval_expire_email_notification(self)
+                proposal = self.current_proposal
+                ApprovalUserAction.log_action(
+                    self,
+                    ApprovalUserAction.ACTION_EXPIRE_APPROVAL.format(self.id),
+                    user,
+                )
+                ProposalUserAction.log_action(
+                    proposal,
+                    ProposalUserAction.ACTION_EXPIRED_APPROVAL_.format(proposal.id),
+                    user,
+                )
 
     def approval_extend(self, request, details):
         with transaction.atomic():
-            try:
-                if not request.user in self.allowed_assessors:
-                    raise ValidationError(
-                        "You do not have access to extend this approval"
-                    )
-                if not self.can_extend and self.can_action:
-                    raise ValidationError("You cannot extend approval any further")
-                self.renewal_count += 1
-                self.extend_details = details.get("extend_details")
-                self.expiry_date = datetime.date(
-                    self.expiry_date.year
-                    + self.current_proposal.application_type.max_renewal_period,
-                    self.expiry_date.month,
-                    self.expiry_date.day,
-                )
-                today = timezone.now().date()
-                if self.expiry_date <= today:
-                    if not self.status == "extended":
-                        self.status = "extended"
-                        # send_approval_extend_email_notification(self)
-                self.extended = True
-                self.save()
-                # Log proposal action
-                self.log_user_action(
-                    ApprovalUserAction.ACTION_EXTEND_APPROVAL.format(self.id), request
-                )
-                # Log entry for organisation
-                self.current_proposal.log_user_action(
-                    ProposalUserAction.ACTION_EXTEND_APPROVAL.format(
-                        self.current_proposal.id
-                    ),
-                    request,
-                )
-            except:
-                raise
+            if request.user not in self.allowed_assessors:
+                raise ValidationError("You do not have access to extend this approval")
+            if not self.can_extend and self.can_action:
+                raise ValidationError("You cannot extend approval any further")
+            self.renewal_count += 1
+            self.extend_details = details.get("extend_details")
+            self.expiry_date = datetime.date(
+                self.expiry_date.year
+                + self.current_proposal.application_type.max_renewal_period,
+                self.expiry_date.month,
+                self.expiry_date.day,
+            )
+            today = timezone.now().date()
+            if self.expiry_date <= today:
+                if not self.status == "extended":
+                    self.status = "extended"
+                    # send_approval_extend_email_notification(self)
+            self.extended = True
+            self.save()
+            # Log proposal action
+            self.log_user_action(
+                ApprovalUserAction.ACTION_EXTEND_APPROVAL.format(self.id), request
+            )
+            # Log entry for organisation
+            self.current_proposal.log_user_action(
+                ProposalUserAction.ACTION_EXTEND_APPROVAL.format(
+                    self.current_proposal.id
+                ),
+                request,
+            )
 
     def approval_cancellation(self, request, details):
         with transaction.atomic():
-            try:
-                if not request.user in self.allowed_assessors:
-                    raise ValidationError(
-                        "You do not have access to cancel this approval"
-                    )
-                if not self.can_reissue and self.can_action:
-                    raise ValidationError(
-                        "You cannot cancel approval if it is not current or suspended"
-                    )
-                self.cancellation_date = details.get("cancellation_date").strftime(
-                    "%Y-%m-%d"
+            if request.user not in self.allowed_assessors:
+                raise ValidationError("You do not have access to cancel this approval")
+            if not self.can_reissue and self.can_action:
+                raise ValidationError(
+                    "You cannot cancel approval if it is not current or suspended"
                 )
-                self.cancellation_details = details.get("cancellation_details")
-                cancellation_date = datetime.datetime.strptime(
-                    self.cancellation_date, "%Y-%m-%d"
-                )
-                cancellation_date = cancellation_date.date()
-                self.cancellation_date = cancellation_date  # test hack
-                today = timezone.now().date()
-                if cancellation_date <= today:
-                    if not self.status == "cancelled":
-                        self.status = "cancelled"
-                        self.set_to_cancel = False
-                        send_approval_cancel_email_notification(self)
-                else:
-                    self.set_to_cancel = True
-                self.save()
-                # Log proposal action
-                self.log_user_action(
-                    ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id), request
-                )
-                # Log entry for organisation
-                self.current_proposal.log_user_action(
-                    ProposalUserAction.ACTION_CANCEL_APPROVAL.format(
-                        self.current_proposal.id
-                    ),
-                    request,
-                )
-            except:
-                raise
+            self.cancellation_date = details.get("cancellation_date").strftime(
+                "%Y-%m-%d"
+            )
+            self.cancellation_details = details.get("cancellation_details")
+            cancellation_date = datetime.datetime.strptime(
+                self.cancellation_date, "%Y-%m-%d"
+            )
+            cancellation_date = cancellation_date.date()
+            self.cancellation_date = cancellation_date  # test hack
+            today = timezone.now().date()
+            if cancellation_date <= today:
+                if not self.status == "cancelled":
+                    self.status = "cancelled"
+                    self.set_to_cancel = False
+                    send_approval_cancel_email_notification(self)
+            else:
+                self.set_to_cancel = True
+            self.save()
+            # Log proposal action
+            self.log_user_action(
+                ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id), request
+            )
+            # Log entry for organisation
+            self.current_proposal.log_user_action(
+                ProposalUserAction.ACTION_CANCEL_APPROVAL.format(
+                    self.current_proposal.id
+                ),
+                request,
+            )
 
     def approval_suspension(self, request, details):
         with transaction.atomic():
-            try:
-                if not request.user in self.allowed_assessors:
-                    raise ValidationError(
-                        "You do not have access to suspend this approval"
-                    )
-                if not self.can_reissue and self.can_action:
-                    raise ValidationError(
-                        "You cannot suspend approval if it is not current or suspended"
-                    )
-                if details.get("to_date"):
-                    to_date = details.get("to_date").strftime("%d/%m/%Y")
-                else:
-                    to_date = ""
-                self.suspension_details = {
-                    "from_date": details.get("from_date").strftime("%d/%m/%Y"),
-                    "to_date": to_date,
-                    "details": details.get("suspension_details"),
-                }
-                today = timezone.now().date()
-                from_date = datetime.datetime.strptime(
-                    self.suspension_details["from_date"], "%d/%m/%Y"
+            if request.user not in self.allowed_assessors:
+                raise ValidationError("You do not have access to suspend this approval")
+            if not self.can_reissue and self.can_action:
+                raise ValidationError(
+                    "You cannot suspend approval if it is not current or suspended"
                 )
-                from_date = from_date.date()
-                if from_date <= today:
-                    if not self.status == "suspended":
-                        self.status = "suspended"
-                        self.set_to_suspend = False
-                        self.save()
-                        send_approval_suspend_email_notification(self)
-                else:
-                    self.set_to_suspend = True
-                self.save()
-                # Log approval action
-                self.log_user_action(
-                    ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id), request
-                )
-                # Log entry for proposal
-                self.current_proposal.log_user_action(
-                    ProposalUserAction.ACTION_SUSPEND_APPROVAL.format(
-                        self.current_proposal.id
-                    ),
-                    request,
-                )
-            except:
-                raise
+            if details.get("to_date"):
+                to_date = details.get("to_date").strftime("%d/%m/%Y")
+            else:
+                to_date = ""
+            self.suspension_details = {
+                "from_date": details.get("from_date").strftime("%d/%m/%Y"),
+                "to_date": to_date,
+                "details": details.get("suspension_details"),
+            }
+            today = timezone.now().date()
+            from_date = datetime.datetime.strptime(
+                self.suspension_details["from_date"], "%d/%m/%Y"
+            )
+            from_date = from_date.date()
+            if from_date <= today:
+                if not self.status == "suspended":
+                    self.status = "suspended"
+                    self.set_to_suspend = False
+                    self.save()
+                    send_approval_suspend_email_notification(self)
+            else:
+                self.set_to_suspend = True
+            self.save()
+            # Log approval action
+            self.log_user_action(
+                ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id), request
+            )
+            # Log entry for proposal
+            self.current_proposal.log_user_action(
+                ProposalUserAction.ACTION_SUSPEND_APPROVAL.format(
+                    self.current_proposal.id
+                ),
+                request,
+            )
 
     def reinstate_approval(self, request):
         with transaction.atomic():
-            try:
-                if not request.user in self.allowed_assessors:
-                    raise ValidationError(
-                        "You do not have access to reinstate this approval"
-                    )
-                if not self.can_reinstate:
-                    # if not self.status == 'suspended':
-                    raise ValidationError("You cannot reinstate approval at this stage")
-                today = timezone.now().date()
-                if not self.can_reinstate and self.expiry_date >= today:
-                    # if not self.status == 'suspended' and self.expiry_date >= today:
-                    raise ValidationError("You cannot reinstate approval at this stage")
-                if self.status == "cancelled":
-                    self.cancellation_details = ""
-                    self.cancellation_date = None
-                if self.status == "surrendered":
-                    self.surrender_details = {}
-                if self.status == "suspended":
-                    self.suspension_details = {}
+            if request.user not in self.allowed_assessors:
+                raise ValidationError(
+                    "You do not have access to reinstate this approval"
+                )
+            if not self.can_reinstate:
+                # if not self.status == 'suspended':
+                raise ValidationError("You cannot reinstate approval at this stage")
+            today = timezone.now().date()
+            if not self.can_reinstate and self.expiry_date >= today:
+                # if not self.status == 'suspended' and self.expiry_date >= today:
+                raise ValidationError("You cannot reinstate approval at this stage")
+            if self.status == "cancelled":
+                self.cancellation_details = ""
+                self.cancellation_date = None
+            if self.status == "surrendered":
+                self.surrender_details = {}
+            if self.status == "suspended":
+                self.suspension_details = {}
 
-                self.status = "current"
-                # self.suspension_details = {}
-                self.save()
-                send_approval_reinstate_email_notification(self, request)
-                # Log approval action
-                self.log_user_action(
-                    ApprovalUserAction.ACTION_REINSTATE_APPROVAL.format(self.id),
-                    request,
-                )
-                # Log entry for proposal
-                self.current_proposal.log_user_action(
-                    ProposalUserAction.ACTION_REINSTATE_APPROVAL.format(
-                        self.current_proposal.id
-                    ),
-                    request,
-                )
-            except:
-                raise
+            self.status = "current"
+            # self.suspension_details = {}
+            self.save()
+            send_approval_reinstate_email_notification(self, request)
+            # Log approval action
+            self.log_user_action(
+                ApprovalUserAction.ACTION_REINSTATE_APPROVAL.format(self.id),
+                request,
+            )
+            # Log entry for proposal
+            self.current_proposal.log_user_action(
+                ProposalUserAction.ACTION_REINSTATE_APPROVAL.format(
+                    self.current_proposal.id
+                ),
+                request,
+            )
 
     def approval_surrender(self, request, details):
         with transaction.atomic():
-            try:
-                if not request.user.leaseslicensing_organisations.filter(
-                    organisation_id=self.applicant_id
+            if not request.user.leaseslicensing_organisations.filter(
+                organisation_id=self.applicant_id
+            ):
+                if request.user not in self.allowed_assessors and not is_customer(
+                    request
                 ):
-                    if request.user not in self.allowed_assessors and not is_customer(
-                        request
-                    ):
-                        raise ValidationError(
-                            "You do not have access to surrender this approval"
-                        )
-                if not self.can_reissue and self.can_action:
                     raise ValidationError(
-                        "You cannot surrender approval if it is not current or suspended"
+                        "You do not have access to surrender this approval"
                     )
-                self.surrender_details = {
-                    "surrender_date": details.get("surrender_date").strftime(
-                        "%d/%m/%Y"
-                    ),
-                    "details": details.get("surrender_details"),
-                }
-                today = timezone.now().date()
-                surrender_date = datetime.datetime.strptime(
-                    self.surrender_details["surrender_date"], "%d/%m/%Y"
+            if not self.can_reissue and self.can_action:
+                raise ValidationError(
+                    "You cannot surrender approval if it is not current or suspended"
                 )
-                surrender_date = surrender_date.date()
-                if surrender_date <= today:
-                    if not self.status == "surrendered":
-                        self.status = "surrendered"
-                        self.set_to_surrender = False
-                        self.save()
-                        send_approval_surrender_email_notification(self)
-                else:
-                    self.set_to_surrender = True
-                self.save()
-                # Log approval action
-                self.log_user_action(
-                    ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(self.id),
-                    request,
-                )
-                # Log entry for proposal
-                self.current_proposal.log_user_action(
-                    ProposalUserAction.ACTION_SURRENDER_APPROVAL.format(
-                        self.current_proposal.id
-                    ),
-                    request,
-                )
-            except:
-                raise
+            self.surrender_details = {
+                "surrender_date": details.get("surrender_date").strftime("%d/%m/%Y"),
+                "details": details.get("surrender_details"),
+            }
+            today = timezone.now().date()
+            surrender_date = datetime.datetime.strptime(
+                self.surrender_details["surrender_date"], "%d/%m/%Y"
+            )
+            surrender_date = surrender_date.date()
+            if surrender_date <= today:
+                if not self.status == "surrendered":
+                    self.status = "surrendered"
+                    self.set_to_surrender = False
+                    self.save()
+                    send_approval_surrender_email_notification(self)
+            else:
+                self.set_to_surrender = True
+            self.save()
+            # Log approval action
+            self.log_user_action(
+                ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(self.id),
+                request,
+            )
+            # Log entry for proposal
+            self.current_proposal.log_user_action(
+                ProposalUserAction.ACTION_SURRENDER_APPROVAL.format(
+                    self.current_proposal.id
+                ),
+                request,
+            )
 
     @property
     def as_related_item(self):
@@ -810,7 +755,7 @@ class Approval(RevisionedMixin):
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
-            action_url='<a href=/internal/approval/{} target="_blank">Open</a>'.format(self.id)
+            action_url=f'<a href=/internal/approval/{self.id} target="_blank">Open</a>',
         )
         return related_item
 
@@ -820,7 +765,7 @@ class Approval(RevisionedMixin):
 
     @property
     def related_item_descriptor(self):
-        return '(return descriptor)'
+        return "(return descriptor)"
 
 
 class PreviewTempApproval(Approval):
@@ -841,7 +786,7 @@ class ApprovalLogEntry(CommunicationsLogEntry):
         # save the application reference if the reference not provided
         if not self.reference:
             self.reference = self.approval.id
-        super(ApprovalLogEntry, self).save(**kwargs)
+        super().save(**kwargs)
 
 
 class ApprovalLogDocument(Document):
@@ -889,5 +834,5 @@ def delete_documents(sender, instance, *args, **kwargs):
     for document in instance.documents.all():
         try:
             document.delete()
-        except:
-            pass
+        except ProtectedError:
+            logger.info(f"Document: {document} is protected. Unable to delete.")

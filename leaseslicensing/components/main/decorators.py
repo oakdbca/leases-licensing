@@ -1,16 +1,11 @@
+import functools
+import logging
 import time
 import traceback
+
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import connection, reset_queries
-import functools
-from django.conf import settings
-from django.core.exceptions import ValidationError
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.handlers.wsgi import WSGIRequest
-from django.http import HttpRequest
 from rest_framework import serializers
-from rest_framework.request import Request
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-import logging
 
 logger = logging.getLogger("leaseslicensing")
 
@@ -36,6 +31,7 @@ def basic_exception_handler(func):
 
     return wrapper
 
+
 def user_notexists_exception_handler(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -43,7 +39,7 @@ def user_notexists_exception_handler(func):
             return func(*args, **kwargs)
         except ObjectDoesNotExist:
             logger.error(f"EmailUser {args[0]} does not exist.")
-            return EmailUser()
+            return None
 
     return wrapper
 
@@ -57,7 +53,7 @@ def timeit(method):
             name = kw.get("log_name", method.__name__.upper())
             kw["log_time"][name] = int((te - ts) * 1000)
         else:
-            print("%r  %2.2f ms" % (method.__name__, (te - ts) * 1000))
+            print(f"{method.__name__!r}  {(te - ts) * 1000:2.2f} ms")
             # logger.error('%r  %2.2f ms' % (method.__name__, (te - ts) * 1000))
         return result
 
@@ -76,9 +72,9 @@ def query_debugger(func):
         print(f"Function : {func.__name__}")
         print(f"Number of Queries : {end_queries - start_queries}")
         print(f"Finished in : {(end - start):.2f}s")
-        function_name = "Function : {}".format(func.__name__)
-        number_of_queries = "Number of Queries : {}".format(end_queries - start_queries)
-        time_taken = "Finished in : {0:.2f}s".format((end - start))
+        function_name = f"Function : {func.__name__}"
+        number_of_queries = f"Number of Queries : {end_queries - start_queries}"
+        time_taken = f"Finished in : {(end - start):.2f}s"
         logger.error(function_name)
         logger.error(number_of_queries)
         logger.error(time_taken)
