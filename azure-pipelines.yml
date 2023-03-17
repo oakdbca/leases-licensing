@@ -12,7 +12,7 @@ variables:
   tag: '$(Build.BuildId)'
   tagDate: $[ format('{0:yyyy}.{0:MM}.{0:dd}.{0:HH}.{0:mm}{0:ss}', pipeline.startTime) ]
   isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
-  
+
 stages:
 - stage: Build
   condition: and(succeeded(), eq(variables.isMain, 'true'))
@@ -28,22 +28,21 @@ stages:
       inputs:
         command: buildAndPush
         dockerfile: '$(Build.SourcesDirectory)/Dockerfile'
-        tags: | 
+        tags: |
               latest
               $(tagDate)
         containerRegistry: DockerHub
         repository: dbcawa/leaseslicensing
+      env:
+        DOCKER_BUILDKIT: 1
+
     - task: Docker@2
       displayName: Dev Build image and Push
       inputs:
         command: buildAndPush
         dockerfile: '$(Build.SourcesDirectory)/dockerdev/Dockerfile'
-        tags: | 
+        tags: |
               leaseslicensing_dev_latest
-              leaseslicensing_dev_$(tagDate)              
+              leaseslicensing_dev_$(tagDate)
         containerRegistry: DockerHub
-        repository: dbcawa/docker_app_dev       
-        
-         
-           
-        
+        repository: dbcawa/docker_app_dev
