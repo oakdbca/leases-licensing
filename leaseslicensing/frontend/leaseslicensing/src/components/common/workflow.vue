@@ -554,7 +554,7 @@ export default {
                 allowClear: true,
                 placeholder:"Select Referrer",
                 ajax: {
-                    url: api_endpoints.users_api + '/get_department_users/',
+                    url: api_endpoints.users_api + 'get_department_users/',
                     dataType: 'json',
                     data: function(params) {
                         var query = {
