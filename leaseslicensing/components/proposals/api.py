@@ -442,7 +442,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         # import ipdb; ipdb.set_trace()
         user = self.request.user
         if is_internal(self.request):
-            if is_assessor(user.id) or is_approver(user.id):
+            if is_assessor(self.request) or is_approver(self.request):
                 return Proposal.objects.all()
             else:
                 # accessing user might be referral
