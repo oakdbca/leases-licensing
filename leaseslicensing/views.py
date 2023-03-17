@@ -1,37 +1,18 @@
-from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse
-from django.urls import reverse
+import logging
+
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404, redirect
-from django.template.response import TemplateResponse
-from django.views.generic import (
-    ListView,
-    DetailView,
-    CreateView,
-    UpdateView,
-    DeleteView,
-    FormView,
-)
-from django.views.generic.base import View, TemplateView
-from django.conf import settings
-from django.contrib.auth.mixins import UserPassesTestMixin, LoginRequiredMixin
-from django.views.decorators.csrf import csrf_protect
-from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.core.management import call_command
+from django.shortcuts import redirect, render
+from django.views.generic import DetailView
+from django.views.generic.base import TemplateView
 
-from datetime import datetime, timedelta
-
-from leaseslicensing.helpers import is_internal
-from leaseslicensing.forms import *
-from leaseslicensing.components.proposals.models import Referral, Proposal, HelpPage
+from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.proposals.mixins import ReferralOwnerMixin
-
-# from ledger.checkout.utils import create_basket_session, create_checkout_session, place_order_submission, get_cookie_basket
-from django.core.management import call_command
-import json
-from decimal import Decimal
-
-import logging
+from leaseslicensing.components.proposals.models import HelpPage, Proposal, Referral
+from leaseslicensing.forms import FirstTimeForm, LoginForm
+from leaseslicensing.helpers import is_internal
 
 logger = logging.getLogger("payment_checkout")
 
@@ -76,7 +57,7 @@ class LeasesLicensingRoutingView(TemplateView):
                 return redirect("internal")
             return redirect("external")
         kwargs["form"] = LoginForm
-        return super(LeasesLicensingRoutingView, self).get(*args, **kwargs)
+        return super().get(*args, **kwargs)
 
 
 class LeasesLicensingContactView(TemplateView):
@@ -96,10 +77,23 @@ class InternalProposalView(DetailView):
         if self.request.user.is_authenticated:
             if is_internal(self.request):
                 # return redirect('internal-proposal-detail')
-                return super(InternalProposalView, self).get(*args, **kwargs)
+                return super().get(*args, **kwargs)
             return redirect("external-proposal-detail")
         kwargs["form"] = LoginForm
-        return super(LeasesLicensingRoutingDetailView, self).get(*args, **kwargs)
+        return super(LeasesLicensingRoutingView, self).get(*args, **kwargs)
+
+
+class InternalApprovalView(DetailView):
+    model = Approval
+    template_name = "leaseslicensing/dash/index.html"
+
+    def get(self, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            if is_internal(self.request):
+                return super().get(*args, **kwargs)
+            return redirect("external-proposal-detail")
+        kwargs["form"] = LoginForm
+        return super(LeasesLicensingRoutingView, self).get(*args, **kwargs)
 
 
 @login_required(login_url="ds_home")
@@ -133,7 +127,7 @@ class HelpView(LoginRequiredMixin, TemplateView):
     template_name = "leaseslicensing/help.html"
 
     def get_context_data(self, **kwargs):
-        context = super(HelpView, self).get_context_data(**kwargs)
+        context = super().get_context_data(**kwargs)
 
         if self.request.user.is_authenticated:
             application_type = kwargs.get("application_type", None)
@@ -163,7 +157,7 @@ class ManagementCommandsView(LoginRequiredMixin, TemplateView):
         data = {}
         command_script = request.POST.get("script", None)
         if command_script:
-            print("running {}".format(command_script))
+            print(f"running {command_script}")
             call_command(command_script)
             data.update({command_script: "true"})
 
