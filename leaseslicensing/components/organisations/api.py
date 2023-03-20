@@ -1,93 +1,45 @@
 import traceback
-import base64
-import geojson
-from six.moves.urllib.parse import urlparse
-from wsgiref.util import FileWrapper
-from django.db.models import Q, Min
-from django.db import transaction
-from django.http import HttpResponse
-from django.core.files.base import ContentFile
-from django.core.exceptions import ValidationError
-from django.conf import settings
-from django.contrib import messages
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from rest_framework import viewsets, serializers, status, generics, views
-from rest_framework.decorators import action as detail_route, renderer_classes
-from rest_framework.decorators import action as list_route
-from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer
-from rest_framework.permissions import (
-    IsAuthenticated,
-    AllowAny,
-    IsAdminUser,
-    BasePermission,
-)
-from rest_framework.pagination import PageNumberPagination
-from datetime import datetime, timedelta
-from collections import OrderedDict
-from django.core.cache import cache
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
-# from leaseslicensing.components.main.models import OrganisationAddress
-from ledger_api_client.country_models import Country
-from datetime import datetime, timedelta, date
+from django.core.exceptions import ValidationError
+from django.db import transaction
+from django.db.models import Q
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from rest_framework import serializers, status, views, viewsets
+from rest_framework.decorators import action as detail_route
+from rest_framework.decorators import action as list_route
+from rest_framework.decorators import renderer_classes
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
 from leaseslicensing.components.main.decorators import basic_exception_handler
-from leaseslicensing.helpers import is_customer, is_internal
-from leaseslicensing.components.organisations.models import (
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
+from leaseslicensing.components.organisations.models import (  # ledger_organisation,
     Organisation,
+    OrganisationAccessGroup,
     OrganisationContact,
     OrganisationRequest,
     OrganisationRequestUserAction,
-    OrganisationContact,
-    OrganisationAccessGroup,
-    OrganisationRequestLogEntry,
-    OrganisationAction,
-    # ledger_organisation,
 )
-
 from leaseslicensing.components.organisations.serializers import (
-    OrganisationSerializer,
-    # OrganisationAddressSerializer,
-    # DetailsSerializer,
-    SaveDiscountSerializer,
-    OrganisationRequestSerializer,
-    OrganisationRequestDTSerializer,
-    OrganisationContactSerializer,
+    MyOrganisationsSerializer,
+    OrganisationActionSerializer,
+    OrganisationCheckExistSerializer,
     OrganisationCheckSerializer,
+    OrganisationCommsSerializer,
+    OrganisationContactSerializer,
+    OrganisationLogEntrySerializer,
     OrganisationPinCheckSerializer,
     OrganisationRequestActionSerializer,
-    OrganisationActionSerializer,
     OrganisationRequestCommsSerializer,
-    OrganisationCommsSerializer,
-    OrganisationUnlinkUserSerializer,
-    OrgUserAcceptSerializer,
-    MyOrganisationsSerializer,
-    OrganisationCheckExistSerializer,
-    # LedgerOrganisationFilterSerializer,
-    OrganisationLogEntrySerializer,
+    OrganisationRequestDTSerializer,
     OrganisationRequestLogEntrySerializer,
+    OrganisationRequestSerializer,
+    OrganisationSerializer,
+    OrgUserAcceptSerializer,
 )
-
-# from leaseslicensing.components.applications.serializers import (
-#                                        BaseApplicationSerializer,
-#                                    )
-
-from leaseslicensing.components.organisations.emails import (
-    send_organisation_address_updated_email_notification,
-    send_organisation_id_upload_email_notification,
-    send_organisation_request_email_notification,
-)
-
-
-# from wildlifecompliance.components.applications.models import (
-#                                        Application,
-#                                        Assessment,
-#                                        ApplicationRequest,
-#                                        ApplicationGroupType
-#                                    )
+from leaseslicensing.components.proposals.api import ProposalRenderer
+from leaseslicensing.helpers import is_customer, is_internal
 
 
 class OrganisationViewSet(viewsets.ModelViewSet):
@@ -104,18 +56,49 @@ class OrganisationViewSet(viewsets.ModelViewSet):
 
     @basic_exception_handler
     def list(self, request, *args, **kwargs):
-        search_term = request.GET.get('term', '')
+        # search_term = request.GET.get("term", "")
         # data = self.queryset. \
         #            filter(Q(first_name__icontains=search_term) | Q(last_name__icontains=search_term)). \
         #            values('email', 'first_name', 'last_name')[:10]
-        # data_transform = [{'id': person['email'], 'text': person['first_name'] + ' ' + person['last_name']} for person in data]
+        # data_transform = [{'id': person['email'], 'text': person['first_name'] +
+        # ' ' + person['last_name']} for person in data]
         # return Response({"results": data_transform})
 
         # TODO: search organisations with search term
         serializer = OrganisationSerializer(self.queryset, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["GET",], detail=True,)
+    @list_route(
+        methods=[
+            "GET",
+        ],
+        detail=False,
+    )
+    @basic_exception_handler
+    def get_department_users(self, request, *args, **kwargs):
+        search_term = request.GET.get("term", "")
+
+        data = Organisation.objects.filter(
+            Q(first_name__icontains=search_term)
+            | Q(last_name__icontains=search_term)
+            | Q(full_name__icontains=search_term)
+        ).values("email", "first_name", "last_name")[:10]
+        data_transform = [
+            {
+                "id": person["email"],
+                "text": f"{person['first_name']} {person['last_name']}",
+            }
+            for person in data
+        ]
+
+        return Response({"results": data_transform})
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def contacts(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -124,14 +107,24 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(methods=["GET",], detail=True,)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def contacts_linked(self, request, *args, **kwargs):
         qs = self.get_queryset()
         serializer = OrganisationContactSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["GET",], detail=True,)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def contacts_exclude(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -139,7 +132,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = OrganisationContactSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def validate_pins(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -151,7 +149,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
             request,
         )
 
-        if ret == None:
+        if ret is None:
             # user has already been to this organisation - don't add again
             data = {"valid": ret}
             return Response({"valid": "User already exists"})
@@ -162,7 +160,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
             instance.send_organisation_request_link_notification(request)
         return Response(data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def accept_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -175,7 +178,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def accept_declined_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -188,7 +196,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def decline_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -201,7 +214,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST", ], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def unlink_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -213,9 +231,13 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         instance.unlink_user(user_obj, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
-        raise serializers.ValidationError(str(e))
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def make_admin_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -228,7 +250,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def make_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -241,7 +268,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def make_consultant(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -254,7 +286,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def suspend_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -267,7 +304,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def reinstate_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -280,7 +322,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def relink_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -293,7 +340,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(methods=["GET",], detail=True,)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def action_log(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -318,7 +370,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
     #            print(traceback.print_exc())
     #            raise serializers.ValidationError(str(e))
 
-    @detail_route(methods=["GET",], detail=True,)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -326,7 +383,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = OrganisationCommsSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
@@ -334,8 +396,8 @@ class OrganisationViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             mutable = request.data._mutable
             request.data._mutable = True
-            request.data["organisation"] = "{}".format(instance.id)
-            request.data["staff"] = "{}".format(request.user.id)
+            request.data["organisation"] = f"{instance.id}"
+            request.data["staff"] = f"{request.user.id}"
             request.data._mutable = mutable
             serializer = OrganisationLogEntrySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -350,7 +412,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
 
             return Response(serializer.data)
 
-    @list_route(methods=["POST",], detail=False,)
+    @list_route(
+        methods=[
+            "POST",
+        ],
+        detail=False,
+    )
     @basic_exception_handler
     def existance(self, request, *args, **kwargs):
         serializer = OrganisationCheckSerializer(data=request.data)
@@ -363,49 +430,55 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
-    @basic_exception_handler
-    def update_details(self, request, *args, **kwargs):
-        org = self.get_object()
-        instance = org.organisation
-        data = request.data
-        serializer = DetailsSerializer(
-            instance, data=data, context={"request": request}
-        )
-        serializer.is_valid(raise_exception=True)
-        instance = serializer.save()
-        # serializer = self.get_serializer(org)
+    # Todo: Implement for segregatted system
+    # @detail_route(
+    #     methods=[
+    #         "POST",
+    #     ],
+    #     detail=True,
+    # )
+    # @basic_exception_handler
+    # def update_details(self, request, *args, **kwargs):
+    #     org = self.get_object()
+    #     instance = org.organisation
+    #     data = request.data
+    #     serializer = DetailsSerializer(
+    #         instance, data=data, context={"request": request}
+    #     )
+    #     serializer.is_valid(raise_exception=True)
+    #     instance = serializer.save()
+    #     # serializer = self.get_serializer(org)
 
-        if is_internal(request) and "apply_application_discount" in request.data:
-            data = request.data
-            if not data["apply_application_discount"]:
-                data["application_discount"] = 0
-            if not data["apply_licence_discount"]:
-                data["licence_discount"] = 0
+    #     if is_internal(request) and "apply_application_discount" in request.data:
+    #         data = request.data
+    #         if not data["apply_application_discount"]:
+    #             data["application_discount"] = 0
+    #         if not data["apply_licence_discount"]:
+    #             data["licence_discount"] = 0
 
-            if data["application_discount"] == 0:
-                data["apply_application_discount"] = False
-            if data["licence_discount"] == 0:
-                data["apply_licence_discount"] = False
+    #         if data["application_discount"] == 0:
+    #             data["apply_application_discount"] = False
+    #         if data["licence_discount"] == 0:
+    #             data["apply_licence_discount"] = False
 
-            if (
-                is_internal(request)
-                and "charge_once_per_year" in request.data
-                and request.data.get("charge_once_per_year")
-            ):
-                DD = int(request.data.get("charge_once_per_year").split("/")[0])
-                MM = int(request.data.get("charge_once_per_year").split("/")[1])
-                YYYY = timezone.now().year  # set to current year
-                data["charge_once_per_year"] = "{}-{}-{}".format(YYYY, MM, DD)
-            else:
-                data["charge_once_per_year"] = None
+    #         if (
+    #             is_internal(request)
+    #             and "charge_once_per_year" in request.data
+    #             and request.data.get("charge_once_per_year")
+    #         ):
+    #             DD = int(request.data.get("charge_once_per_year").split("/")[0])
+    #             MM = int(request.data.get("charge_once_per_year").split("/")[1])
+    #             YYYY = timezone.now().year  # set to current year
+    #             data["charge_once_per_year"] = f"{YYYY}-{MM}-{DD}"
+    #         else:
+    #             data["charge_once_per_year"] = None
 
-            serializer = SaveDiscountSerializer(org, data=data)
-            serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
+    #         serializer = SaveDiscountSerializer(org, data=data)
+    #         serializer.is_valid(raise_exception=True)
+    #         instance = serializer.save()
 
-        serializer = self.get_serializer(org)
-        return Response(serializer.data)
+    #     serializer = self.get_serializer(org)
+    #     return Response(serializer.data)
 
     # @detail_route(methods=['POST',], detail=True)
     # def update_address(self, request, *args, **kwargs):
@@ -437,7 +510,12 @@ class OrganisationViewSet(viewsets.ModelViewSet):
     #                print(traceback.print_exc())
     #                raise serializers.ValidationError(str(e))
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def upload_id(self, request, *args, **kwargs):
         pass
@@ -456,6 +534,45 @@ class OrganisationViewSet(viewsets.ModelViewSet):
 #        def get_queryset(self):
 #                org_list = Organisation.objects.all().values_list('organisation_id', flat=True)
 #                return ledger_organisation.objects.filter(id__in=org_list)
+
+
+class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
+    """
+    Custom filters
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        total_count = queryset.count()
+
+        filter_organisation = request.GET.get("filter_organisation", None)
+        filter_role = request.GET.get("filter_role", None)
+        filter_status = request.GET.get("filter_status", None)
+
+        if filter_organisation:
+            filter_organisation = int(filter_organisation)
+            queryset = queryset.filter(organisation__organisation=filter_organisation)
+
+        if filter_role:
+            queryset = queryset.filter(role=filter_role)
+
+        if filter_status:
+            queryset = queryset.filter(status=filter_status)
+
+        queryset = self.apply_request(
+            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+        )
+
+        setattr(view, "_datatables_total_count", total_count)
+        return queryset
+
+
+class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
+    filter_backends = (OrganisationRequestFilterBackend,)
+    pagination_class = DatatablesPageNumberPagination
+    renderer_classes = (ProposalRenderer,)
+    page_size = 10
+    queryset = OrganisationRequest.objects.all()
+    serializer_class = OrganisationRequestSerializer
 
 
 class OrganisationRequestsViewSet(viewsets.ModelViewSet):
@@ -782,9 +899,9 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
                 instance = self.get_object()
                 mutable = request.data._mutable
                 request.data._mutable = True
-                request.data["organisation"] = "{}".format(instance.id)
-                request.data["request"] = "{}".format(instance.id)
-                request.data["staff"] = "{}".format(request.user.id)
+                request.data["organisation"] = f"{instance.id}"
+                request.data["request"] = f"{instance.id}"
+                request.data["staff"] = f"{request.user.id}"
                 request.data._mutable = mutable
                 serializer = OrganisationRequestLogEntrySerializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
@@ -885,7 +1002,7 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
             raise serializers.ValidationError(
                 "Cannot delete the last Organisation Admin"
             )
-        return super(OrganisationContactViewSet, self).destroy(request, *args, **kwargs)
+        return super().destroy(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

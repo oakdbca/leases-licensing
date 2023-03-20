@@ -7,12 +7,7 @@
                 </label>
             </div>
             <div class="col-md-5">
-                <select
-                :id="index"
-                :name="index"
-                :ref="index"
-                class="form-control"
-            />
+                <select :id="index" :name="index" :ref="index" class="form-control" />
             </div>
         </div>
 
@@ -34,10 +29,6 @@ export default {
             type: String,
             required: true,
         },
-        redirectPath: {
-            type: String,
-            required: true,
-        },
         theme: {
             type: String,
             default: 'bootstrap-5',
@@ -46,7 +37,7 @@ export default {
     components: {
         FormSection,
     },
-    data:function () {
+    data: function () {
         return {
             email_user: null,
             uuid: uuid(),
@@ -54,17 +45,17 @@ export default {
         }
     },
     methods: {
-        initialiseLookup: function(){
+        initialiseLookup: function () {
             let vm = this;
             $(`#${vm.index}`).select2({
                 minimumInputLength: 2,
                 'theme': vm.theme,
                 allowClear: true,
-                placeholder:'Select ' + vm.label,
+                placeholder: 'Select ' + vm.label,
                 ajax: {
                     url: vm.lookupApiEndpoint,
                     dataType: 'json',
-                    data: function(params) {
+                    data: function (params) {
                         console.log(params)
                         var query = {
                             term: params.term,
@@ -74,14 +65,18 @@ export default {
                     },
                 },
             }).
-            on('select2:open', function (e) {
-                const searchField = $(`[aria-controls='select2-${vm.index}-results']`)
-                searchField[0].focus();
-            }).
-            on('select2:select', function (e) {
-                var selected = $(e.currentTarget);
-                window.location = vm.redirectPath + selected.val();
-            });
+                on('select2:open', function (e) {
+                    const searchField = $(`[aria-controls='select2-${vm.index}-results']`)
+                    searchField[0].focus();
+                }).
+                on('select2:select', function (e) {
+                    var data = e.params.data;
+                    console.log(data);
+                    window.location = data['redirect_url'];
+                    // var selected = $(e.currentTarget);
+                    // alert(JSON.stringify(selected));
+                    //window.location = vm.redirectPath + selected.val();
+                });
         },
     },
     mounted: function () {

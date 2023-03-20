@@ -344,8 +344,10 @@ REPETITION_TYPES = (
 LOV_CACHE_TIMEOUT = 10800
 
 CACHE_TIMEOUT_2_HOURS = 60 * 60 * 2
+CACHE_TIMEOUT_24_HOURS = 60 * 60 * 24
 
 # ---------- Cache Keys ----------
 
+CACHE_KEY_LEDGER_ORGANISATION = "ledger-organisation-{}"
 CACHE_KEY_ORGANISATION_IDS = "cache_organisation_ids"
 CACHE_KEY_USER_IDS = "cache_user_ids"

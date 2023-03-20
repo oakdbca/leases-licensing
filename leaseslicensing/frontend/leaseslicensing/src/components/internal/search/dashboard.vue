@@ -1,29 +1,18 @@
 <template>
     <div class="container" id="SearchDash">
 
-        <Select2Search
-            label="Person"
-            :lookupApiEndpoint="api_endpoints.person_lookup"
-            redirectPath="/internal/person/details/"
-        />
+        <Select2Search label="Person" :lookupApiEndpoint="api_endpoints.person_lookup"
+            redirectPath="/internal/person/details/" />
 
-        <Select2Search
-            label="Organisation"
-            :lookupApiEndpoint="api_endpoints.organisations"
-            redirectPath=""
-        />
+        <Select2Search label="Organisation" :lookupApiEndpoint="api_endpoints.organisations" redirectPath="" />
 
-        <Select2Search
-            label="Reference Number"
-            :lookupApiEndpoint="api_endpoints.organisations"
-            redirectPath=""
-        />
+        <Select2SearchReferenceNumber label="Reference Number" :lookupApiEndpoint="api_endpoints.search_reference" />
 
     </div>
 </template>
 
 <script>
-import Select2Search from "./Select2Search.vue";
+import Select2SearchReferenceNumber from "./Select2SearchReferenceNumber.vue";
 import { api_endpoints } from "@/utils/hooks.js"
 
 export default {
@@ -33,8 +22,8 @@ export default {
             api_endpoints: api_endpoints,
         }
     },
-    components:{
-        Select2Search,
+    components: {
+        Select2SearchReferenceNumber,
     },
 }
 </script>
