@@ -80,7 +80,7 @@ import datatable from '@/utils/vue/datatable.vue'
 import { api_endpoints, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid'
-import { expandToggle } from '@/components/common/table_functions.js'
+import { expandToggleCP } from '@/components/common/table_functions.js'
 
 export default {
     name: 'TableCompetitiveProcesses',
@@ -527,7 +527,7 @@ export default {
 
             // Listener for thr row
             vm.$refs.competitive_process_datatable.vmDataTable.on('click', 'td', function(e) {
-                expandToggle(vm, this);
+                expandToggleCP(vm, this);
             })
         },
     },

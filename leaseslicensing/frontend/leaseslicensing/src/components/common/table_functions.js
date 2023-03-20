@@ -21,6 +21,19 @@ function tr_first_td(vm, obj) {
     return [tr, first_td]
 }
 
+function collapse_row(vm, tr, first_td) {
+    let nextElem = tr.next()
+    // Collapse
+    if(nextElem.is('tr') & nextElem.hasClass(vm.expandable_row_class_name)){
+        // Sticker details row is already shown.  Remove it.
+        nextElem.fadeOut(500, function(){
+            nextElem.remove()
+        })
+    }
+    // Change icon class name to vm.td_expand_class_name
+    first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
+}
+
 
 export function expandToggle(vm, obj) {
     let [tr, first_td] = tr_first_td(vm, obj);
@@ -41,16 +54,38 @@ export function expandToggle(vm, obj) {
         // Change icon class name to vm.td_collapse_class_name
         first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
     } else {
-        let nextElem = tr.next()
-        // Collapse
-        if(nextElem.is('tr') & nextElem.hasClass(vm.expandable_row_class_name)){
-            // Sticker details row is already shown.  Remove it.
-            nextElem.fadeOut(500, function(){
-                nextElem.remove()
-            })
+        collapse_row(vm, tr, first_td);
+    }
+}
+
+// used by competitive process
+export function expandToggleCP(vm, obj) {
+    let [tr, first_td] = tr_first_td(vm, obj);
+    if (typeof(tr) === 'undefined' || typeof(first_td) === 'undefined') {
+        return;
+    }
+
+    let $row = vm.$refs.competitive_process_datatable.vmDataTable.row(tr)
+    let full_data = $row.data()
+    if(first_td.hasClass(vm.td_expand_class_name)){
+        // Expand
+        // If we don't need to retrieve the data from the server, follow the code below
+        let elem_group = '<div>Group: ' + full_data.group + '</div>'
+        let elem_site = '<div>Site: ' + full_data.site + '</div>'
+        let elem_applicant = ''
+        if (full_data.registration_of_interest){
+            elem_applicant = '<div>Applicant: ' + full_data.registration_of_interest.relevant_applicant_name + '</div>'
         }
-        // Change icon class name to vm.td_expand_class_name
-        first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
+        let contents = elem_group + elem_site + elem_applicant
+        let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
+        details_elem.hide()
+        details_elem.insertAfter(tr)
+        details_elem.fadeIn(1000)
+
+        // Change icon class name to vm.td_collapse_class_name
+        first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
+    } else {
+        collapse_row(vm, tr, first_td);
     }
 }
 
