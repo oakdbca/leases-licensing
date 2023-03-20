@@ -877,8 +877,8 @@ class OrganisationRequest(models.Model):
         Organisation,
         related_name="organisation_requests",
         on_delete=models.PROTECT,
+        null=True,
         blank=False,
-        default=Organisation.objects.all().first().id,
     )
     abn = models.CharField(max_length=50, null=True, blank=True, verbose_name="ABN")
     requester = models.IntegerField()  # EmailUserRO
