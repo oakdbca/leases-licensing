@@ -140,6 +140,7 @@ export function expandToggleParties(vm, obj) {
         const comp = h(CustomRow, {
             onAho: e => console.log('onAho: ', e),  // 'aho' is the event name configured in CustomRow component.
         })
+
         let custom_row_app = createApp(comp, {
             // props
             party_full_data: full_data,
