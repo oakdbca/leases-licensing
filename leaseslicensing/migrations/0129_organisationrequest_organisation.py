@@ -3,8 +3,6 @@
 from django.db import migrations, models
 import django.db.models.deletion
 
-from leaseslicensing.components.organisations.models import Organisation
-
 
 class Migration(migrations.Migration):
 
@@ -12,12 +10,12 @@ class Migration(migrations.Migration):
         ('leaseslicensing', '0128_organisation_lodgement_number'),
     ]
 
-    # I want organisation field on organisation request to be non nullable so we must have a default values
+    # I want organisation field on organisation request to be non nullable so we must have a default value
     # (even if there are not yet any records in the database)
     operations = [
         migrations.AddField(
             model_name='organisationrequest',
             name='organisation',
-            field=models.ForeignKey(default=Organisation.objects.all().first().id, on_delete=django.db.models.deletion.PROTECT, related_name='organisation_requests', to='leaseslicensing.organisation'),
+            field=models.ForeignKey(default=1, on_delete=django.db.models.deletion.PROTECT, related_name='organisation_requests', to='leaseslicensing.organisation'),
         ),
     ]
