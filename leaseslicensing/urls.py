@@ -43,6 +43,11 @@ router.register(r"proposal_requirements", proposal_api.ProposalRequirementViewSe
 router.register(
     r"proposal_standard_requirements", proposal_api.ProposalStandardRequirementViewSet
 )
+router.register(
+    r"organisation_requests_paginated",
+    org_api.OrganisationRequestPaginatedViewSet,
+    basename="organisation_requests_paginated",
+)
 router.register(r"organisation_requests", org_api.OrganisationRequestsViewSet)
 router.register(r"organisation_contacts", org_api.OrganisationContactViewSet)
 router.register(r"my_organisations", org_api.MyOrganisationsViewSet)
