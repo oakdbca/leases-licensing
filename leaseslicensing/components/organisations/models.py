@@ -1,52 +1,48 @@
-from __future__ import unicode_literals
+import logging
 
-from django.db import models, transaction
-from django.contrib.sites.models import Site
-from django.dispatch import receiver
-from django.db.models.signals import pre_delete
-
-# from django.utils.encoding import python_2_unicode_compatible
-from django.core.exceptions import ValidationError
-
-# from django.contrib.postgres.fields.jsonb import JSONField
+from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
-from django.db.models import JSONField
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
+from django.db import models, transaction
+from ledger_api_client.utils import get_organisation
+from rest_framework import status
 
-# from leaseslicensing.components.main.models import Organisation as ledger_organisation, RevisionedMixin
-from leaseslicensing.components.main.models import RevisionedMixin
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from leaseslicensing.components.main.models import (
-    UserAction,
     CommunicationsLogEntry,
     Document,
+    UserAction,
 )
-from leaseslicensing.components.organisations.utils import (
-    random_generator,
-    can_admin_org,
-    has_atleast_one_admin,
-)
-from leaseslicensing.components.organisations.emails import (
-    send_organisation_request_accept_email_notification,
-    send_organisation_request_decline_email_notification,
-    send_organisation_link_email_notification,
-    send_organisation_unlink_email_notification,
+from leaseslicensing.components.organisations.emails import (  # send_organisation_request_accept_email_notification,
     send_org_access_group_request_accept_email_notification,
     send_organisation_contact_adminuser_email_notification,
-    send_organisation_contact_user_email_notification,
-    send_organisation_contact_suspend_email_notification,
-    send_organisation_reinstate_email_notification,
     send_organisation_contact_decline_email_notification,
+    send_organisation_contact_suspend_email_notification,
+    send_organisation_contact_user_email_notification,
+    send_organisation_link_email_notification,
+    send_organisation_reinstate_email_notification,
+    send_organisation_request_decline_email_notification,
     send_organisation_request_email_notification,
     send_organisation_request_link_email_notification,
+    send_organisation_unlink_email_notification,
+)
+from leaseslicensing.components.organisations.exceptions import (
+    UnableToRetrieveLedgerOrganisation,
+)
+from leaseslicensing.components.organisations.utils import (
+    can_admin_org,
+    random_generator,
 )
 
 # @python_2_unicode_compatible
+
+logger = logging.getLogger(__name__)
+
+
 class Organisation(models.Model):
-    # organisation = models.ForeignKey(ledger_organisation, on_delete=models.CASCADE)
     organisation = models.IntegerField()  # Ledger Organisation
     # TODO: business logic related to delegate changes.
-    # delegates = models.ManyToManyField(EmailUser, blank=True, through='UserDelegation', related_name='leaseslicensing_organisations')
     delegates = ArrayField(models.IntegerField(), blank=True)  # EmailUserRO
     admin_pin_one = models.CharField(max_length=50, blank=True)
     admin_pin_two = models.CharField(max_length=50, blank=True)
@@ -94,6 +90,28 @@ class Organisation(models.Model):
 
     def __str__(self):
         return str(self.organisation)
+
+    @property
+    def ledger_organisation(self):
+        if self.organisation:
+            cache_key = settings.CACHE_KEY_LEDGER_ORGANISATION.format(self.organisation)
+            organisation = cache.get(cache_key)
+            if organisation is None:
+                organisation_response = get_organisation(self.organisation)
+                if status.HTTP_200_OK == organisation_response["status"]:
+                    organisation = organisation_response["data"]
+                    cache.set(cache_key, organisation, settings.CACHE_TIMEOUT_24_HOURS)
+                else:
+                    error_message = f"CRITICAL: Unable to retrieve organisation {self.organisation} from ledger."
+                    logger.error(error_message)
+                    raise UnableToRetrieveLedgerOrganisation(error_message)
+            return organisation
+
+        critical_message = (
+            f"CRITICAL: Retailer Group: {self.id} has no ledger organisation attached."
+        )
+        logger.critical(critical_message)
+        return None
 
     def log_user_action(self, action, request):
         return OrganisationAction.log_action(self, action, request.user)
@@ -168,13 +186,14 @@ class Organisation(models.Model):
             # log linking
             self.log_user_action(
                 OrganisationAction.ACTION_CONTACT_ADDED.format(
-                    "{} {}({})".format(user.first_name, user.last_name, user.email)
+                    f"{user.first_name} {user.last_name}({user.email})"
                 ),
                 request,
             )
 
     def update_organisation(self, request):
-        # log organisation details updated (eg ../internal/organisations/access/2) - incorrect - this is for OrganisationRequesti not Organisation
+        # log organisation details updated
+        # (eg ../internal/organisations/access/2) - incorrect - this is for OrganisationRequesti not Organisation
         # should be ../internal/organisations/1
         with transaction.atomic():
             self.log_user_action(OrganisationAction.ACTION_UPDATE_ORGANISATION, request)
@@ -183,18 +202,13 @@ class Organisation(models.Model):
         self.log_user_action(OrganisationAction.ACTION_UPDATE_ADDRESS, request)
 
     def update_contacts(self, request):
-        try:
-            contact = self.contact.last()
-            self.log_user_action(
-                OrganisationAction.ACTION_UPDATE_CONTACTS.format(
-                    "{} {}({})".format(
-                        contact.first_name, contact.last_name, contact.email
-                    )
-                ),
-                request,
-            )
-        except:
-            pass
+        contact = self.contact.last()
+        self.log_user_action(
+            OrganisationAction.ACTION_UPDATE_CONTACTS.format(
+                f"{contact.first_name} {contact.last_name}({contact.email})"
+            ),
+            request,
+        )
 
     def generate_pins(self):
         # self.pin_one = self._generate_pin()
@@ -221,32 +235,30 @@ class Organisation(models.Model):
 
     @staticmethod
     def existance(abn):
-        exists = True
-        org = None
-        l_org = None
-        try:
-            try:
-                l_org = ledger_organisation.objects.get(abn=abn)
-            except ledger_organisation.DoesNotExist:
-                exists = False
-            if l_org:
-                try:
-                    org = Organisation.objects.get(organisation=l_org)
-                except Organisation.DoesNotExist:
-                    exists = False
-            if exists:
-                if has_atleast_one_admin(org):
-                    return {
-                        "exists": exists,
-                        "id": org.id,
-                        "first_five": org.first_five,
-                    }
-                else:
-                    return {"exists": has_atleast_one_admin(org)}
-            return {"exists": exists}
-
-        except:
-            raise
+        # Todo: implement for segregation of ledger and organisation
+        # exists = True
+        # org = None
+        # l_org = None
+        # try:
+        #     l_org = ledger_organisation.objects.get(abn=abn)
+        # except ledger_organisation.DoesNotExist:
+        #     exists = False
+        # if l_org:
+        #     try:
+        #         org = Organisation.objects.get(organisation=l_org)
+        #     except Organisation.DoesNotExist:
+        #         exists = False
+        # if exists:
+        #     if has_atleast_one_admin(org):
+        #         return {
+        #             "exists": exists,
+        #             "id": org.id,
+        #             "first_five": org.first_five,
+        #         }
+        #     else:
+        #         return {"exists": has_atleast_one_admin(org)}
+        # return {"exists": exists}
+        return {"exists": False}
 
     def accept_user(self, user, request):
         with transaction.atomic():
@@ -294,7 +306,7 @@ class Organisation(models.Model):
         # log linking
         self.log_user_action(
             OrganisationAction.ACTION_CONTACT_DECLINED.format(
-                "{} {}({})".format(user.first_name, user.last_name, user.email)
+                f"{user.first_name} {user.last_name}({user.email})"
             ),
             request,
         )
@@ -324,21 +336,18 @@ class Organisation(models.Model):
                 is_admin = False
 
             # Create contact person
-            try:
-                OrganisationContact.objects.create(
-                    organisation=self,
-                    first_name=user.first_name,
-                    last_name=user.last_name,
-                    mobile_number=user.mobile_number,
-                    phone_number=user.phone_number,
-                    fax_number=user.fax_number,
-                    email=user.email,
-                    user_role=role,
-                    user_status="pending",
-                    is_admin=is_admin,
-                )
-            except:
-                pass  # user already exists
+            OrganisationContact.objects.get_or_create(
+                organisation=self,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                mobile_number=user.mobile_number,
+                phone_number=user.phone_number,
+                fax_number=user.fax_number,
+                email=user.email,
+                user_role=role,
+                user_status="pending",
+                is_admin=is_admin,
+            )
 
             # log linking
             self.log_user_action(
@@ -354,7 +363,7 @@ class Organisation(models.Model):
             # send email
             send_organisation_link_email_notification(user, request.user, self, request)
 
-    def accept_declined_user(self, user, request):
+    def accept_declined_user(self, user, request, admin_flag):
         with transaction.atomic():
             try:
                 UserDelegation.objects.get(organisation=self, user=user)
@@ -376,6 +385,8 @@ class Organisation(models.Model):
                 is_admin = False
 
             try:
+                logger.info(f"role: {role}")
+                logger.info(f"is_admin: {is_admin}")
                 org_contact = OrganisationContact.objects.get(
                     organisation=self, email=delegate.user.email
                 )
@@ -439,7 +450,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    "This user is not a member of {}".format(str(self.organisation))
+                    f"This user is not a member of {str(self.organisation)}"
                 )
             # delete contact person
             try:
@@ -494,7 +505,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    "This user is not a member of {}".format(str(self.organisation))
+                    f"This user is not a member of {str(self.organisation)}"
                 )
             # delete contact person
             try:
@@ -528,7 +539,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    "This user is not a member of {}".format(str(self.organisation))
+                    f"This user is not a member of {str(self.organisation)}"
                 )
             # delete contact person
             try:
@@ -580,7 +591,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    "This user is not a member of {}".format(str(self.organisation))
+                    f"This user is not a member of {str(self.organisation)}"
                 )
             # delete contact person
             try:
@@ -613,7 +624,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    "This user is not a member of {}".format(str(self.organisation))
+                    f"This user is not a member of {str(self.organisation)}"
                 )
             # delete contact person
             try:
@@ -683,7 +694,8 @@ class OrganisationContact(models.Model):
         (
             "contact_form",
             "ContactForm",
-        ),  # status 'contact_form' if org contact was added via 'Contact Details' section in manage.vue (allows Org Contact to be distinguished from Org Delegate)
+        ),  # status 'contact_form' if org contact was added via 'Contact Details'
+        # section in manage.vue (allows Org Contact to be distinguished from Org Delegate)
     )
     USER_ROLE_CHOICES = (
         ("organisation_admin", "Organisation Admin"),
@@ -723,7 +735,7 @@ class OrganisationContact(models.Model):
         unique_together = (("organisation", "email"),)
 
     def __str__(self):
-        return "{} {}".format(self.last_name, self.first_name)
+        return f"{self.last_name} {self.first_name}"
 
     @property
     def can_edit(self):
@@ -763,7 +775,7 @@ class UserDelegation(models.Model):
         app_label = "leaseslicensing"
 
     def __str__(self):
-        return "Org: {}, User: {}".format(self.organisation, self.user)
+        return f"Org: {self.organisation}, User: {self.user}"
 
 
 class OrganisationAction(UserAction):
@@ -845,7 +857,7 @@ class OrganisationLogEntry(CommunicationsLogEntry):
         # save the request id if the reference not provided
         if not self.reference:
             self.reference = self.organisation.id
-        super(OrganisationLogEntry, self).save(**kwargs)
+        super().save(**kwargs)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -858,11 +870,18 @@ class OrganisationRequest(models.Model):
         ("declined", "Declined"),
     )
     ROLE_CHOICES = (("employee", "Employee"), ("consultant", "Consultant"))
+    lodgement_number = models.CharField(max_length=9, blank=True, default="")
     name = models.CharField(max_length=128)
+    # Django forces us to have a default for non nullable fields, so we use the first organisation
+    organisation = models.ForeignKey(
+        Organisation,
+        related_name="organisation_requests",
+        on_delete=models.PROTECT,
+        blank=False,
+        default=Organisation.objects.all().first().id,
+    )
     abn = models.CharField(max_length=50, null=True, blank=True, verbose_name="ABN")
-    # requester = models.ForeignKey(EmailUser, on_delete=models.CASCADE)
     requester = models.IntegerField()  # EmailUserRO
-    # assigned_officer = models.ForeignKey(EmailUser, blank=True, null=True, related_name='org_request_assignee', on_delete=models.SET_NULL)
     assigned_officer = models.IntegerField()  # EmailUserRO
     identification = models.FileField(
         upload_to="organisation/requests/%Y/%m/%d",
@@ -879,73 +898,82 @@ class OrganisationRequest(models.Model):
     class Meta:
         app_label = "leaseslicensing"
 
-    def accept(self, request):
-        with transaction.atomic():
-            self.status = "approved"
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.lodgement_number == "":
+            new_lodgment_id = f"OAR{self.pk:06d}"
+            self.lodgement_number = new_lodgment_id
             self.save()
-            self.log_user_action(
-                OrganisationRequestUserAction.ACTION_CONCLUDE_REQUEST.format(self.id),
-                request,
-            )
-            # Continue with remaining logic
-            self.__accept(request)
 
-    def __accept(self, request):
-        # Check if orgsanisation exists in ledger
-        ledger_org = None
-        try:
-            ledger_org = ledger_organisation.objects.get(abn=self.abn)
-        except ledger_organisation.DoesNotExist:
-            try:
-                check_name = ledger_organisation.objects.get(name=self.name)
-                if check_name:
-                    raise ValidationError(
-                        "Organisation with the same name already exists"
-                    )
-            except ledger_organisation.DoesNotExist:
-                ledger_org = ledger_organisation.objects.create(
-                    name=self.name, abn=self.abn
-                )
-        # Create Organisation in leaseslicensing
-        org, created = Organisation.objects.get_or_create(organisation=ledger_org)
-        # Link requester to organisation
-        delegate = UserDelegation.objects.create(user=self.requester, organisation=org)
-        # log who approved the request
-        org.log_user_action(
-            OrganisationAction.ACTION_REQUEST_APPROVED.format(self.id), request
-        )
-        # log who created the link
-        org.log_user_action(
-            OrganisationAction.ACTION_LINK.format(
-                "{} {}({})".format(
-                    delegate.user.first_name,
-                    delegate.user.last_name,
-                    delegate.user.email,
-                )
-            ),
-            request,
-        )
-        # Create contact person
-        if self.role == "consultant":
-            role = "consultant"
-        else:
-            role = "organisation_admin"
-        # Create contact person
+    def accept(self, request):
+        # Todo: imlmenent for segregation system
+        #     with transaction.atomic():
+        #         self.status = "approved"
+        #         self.save()
+        #         self.log_user_action(
+        #             OrganisationRequestUserAction.ACTION_CONCLUDE_REQUEST.format(self.id),
+        #             request,
+        #         )
+        #         # Continue with remaining logic
+        #         self.__accept(request)
 
-        OrganisationContact.objects.create(
-            organisation=org,
-            first_name=self.requester.first_name,
-            last_name=self.requester.last_name,
-            mobile_number=self.requester.mobile_number,
-            phone_number=self.requester.phone_number,
-            fax_number=self.requester.fax_number,
-            email=self.requester.email,
-            user_role=role,
-            user_status="active",
-            is_admin=True,
-        )
-        # send email to requester
-        send_organisation_request_accept_email_notification(self, org, request)
+        # def __accept(self, request):
+        #     # Check if orgsanisation exists in ledger
+        #     ledger_org = None
+        #     try:
+        #         ledger_org = ledger_organisation.objects.get(abn=self.abn)
+        #     except ledger_organisation.DoesNotExist:
+        #         try:
+        #             check_name = ledger_organisation.objects.get(name=self.name)
+        #             if check_name:
+        #                 raise ValidationError(
+        #                     "Organisation with the same name already exists"
+        #                 )
+        #         except ledger_organisation.DoesNotExist:
+        #             ledger_org = ledger_organisation.objects.create(
+        #                 name=self.name, abn=self.abn
+        #             )
+        #     # Create Organisation in leaseslicensing
+        #     org, created = Organisation.objects.get_or_create(organisation=ledger_org)
+        #     # Link requester to organisation
+        #     delegate = UserDelegation.objects.create(user=self.requester, organisation=org)
+        #     # log who approved the request
+        #     org.log_user_action(
+        #         OrganisationAction.ACTION_REQUEST_APPROVED.format(self.id), request
+        #     )
+        #     # log who created the link
+        #     org.log_user_action(
+        #         OrganisationAction.ACTION_LINK.format(
+        #             "{} {}({})".format(
+        #                 delegate.user.first_name,
+        #                 delegate.user.last_name,
+        #                 delegate.user.email,
+        #             )
+        #         ),
+        #         request,
+        #     )
+        #     # Create contact person
+        #     if self.role == "consultant":
+        #         role = "consultant"
+        #     else:
+        #         role = "organisation_admin"
+        #     # Create contact person
+
+        # OrganisationContact.objects.create(
+        #     organisation=org,
+        #     first_name=self.requester.first_name,
+        #     last_name=self.requester.last_name,
+        #     mobile_number=self.requester.mobile_number,
+        #     phone_number=self.requester.phone_number,
+        #     fax_number=self.requester.fax_number,
+        #     email=self.requester.email,
+        #     user_role=role,
+        #     user_status="active",
+        #     is_admin=True,
+        # )
+        # # send email to requester
+        # send_organisation_request_accept_email_notification(self, org, request)
+        pass
 
     def send_org_access_group_request_notification(self, request):
         # user submits a new organisation request
@@ -1012,7 +1040,7 @@ class OrganisationAccessGroup(models.Model):
     def all_members(self):
         all_members = []
         all_members.extend(self.members.all())
-        member_ids = [m.id for m in self.members.all()]
+        # member_ids = [m.id for m in self.members.all()]
         # all_members.extend(EmailUser.objects.filter(is_superuser=True,is_staff=True,is_active=True).exclude(id__in=member_ids))
         return all_members
 
@@ -1085,7 +1113,7 @@ class OrganisationRequestLogEntry(CommunicationsLogEntry):
         # save the request id if the reference not provided
         if not self.reference:
             self.reference = self.request.id
-        super(OrganisationRequestLogEntry, self).save(**kwargs)
+        super().save(**kwargs)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1093,12 +1121,14 @@ class OrganisationRequestLogEntry(CommunicationsLogEntry):
 
 # import reversion
 # reversion.register(ledger_organisation, follow=['organisation_set'])
-# reversion.register(Organisation, follow=['org_approvals', 'contacts', 'userdelegation_set', 'action_logs', 'comms_logs'])
+# reversion.register(Organisation, follow=['org_approvals',
+# 'contacts', 'userdelegation_set', 'action_logs', 'comms_logs'])
 # reversion.register(OrganisationContact)
 # reversion.register(OrganisationAction)
 # reversion.register(OrganisationLogEntry, follow=['documents'])
 # reversion.register(OrganisationLogDocument)
-# reversion.register(OrganisationRequest, follow=['action_logs', 'organisationrequestdeclineddetails_set', 'comms_logs'])
+# reversion.register(OrganisationRequest, follow=['action_logs',
+# 'organisationrequestdeclineddetails_set', 'comms_logs'])
 # reversion.register(OrganisationAccessGroup)
 # reversion.register(OrganisationRequestUserAction)
 # reversion.register(OrganisationRequestDeclinedDetails)
