@@ -21,6 +21,12 @@ function tr_first_td(vm, obj) {
     return [tr, first_td]
 }
 
+/**
+ * Collapses an expanded table row
+ * @param {Proxy} vm
+ * @param {Object} tr Table row
+ * @param {Object} first_td First cell in row
+ */
 function collapse_row(vm, tr, first_td) {
     let nextElem = tr.next()
     // Collapse
