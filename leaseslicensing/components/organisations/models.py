@@ -34,6 +34,7 @@ from leaseslicensing.components.organisations.utils import (
     can_admin_org,
     random_generator,
 )
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 # @python_2_unicode_compatible
 
@@ -882,7 +883,7 @@ class OrganisationRequest(models.Model):
     )
     abn = models.CharField(max_length=50, null=True, blank=True, verbose_name="ABN")
     requester = models.IntegerField()  # EmailUserRO
-    assigned_officer = models.IntegerField()  # EmailUserRO
+    assigned_officer = models.IntegerField(null=True, blank=True)  # EmailUserRO
     identification = models.FileField(
         upload_to="organisation/requests/%Y/%m/%d",
         max_length=512,
@@ -907,13 +908,16 @@ class OrganisationRequest(models.Model):
 
     def accept(self, request):
         # Todo: imlmenent for segregation system
-        #     with transaction.atomic():
-        #         self.status = "approved"
-        #         self.save()
-        #         self.log_user_action(
-        #             OrganisationRequestUserAction.ACTION_CONCLUDE_REQUEST.format(self.id),
-        #             request,
-        #         )
+        with transaction.atomic():
+            self.status = "approved"
+            self.assigned_officer = None
+            self.save()
+            self.log_user_action(
+                OrganisationRequestUserAction.ACTION_ACCEPT_REQUEST.format(
+                    self.lodgement_number
+                ),
+                request,
+            )
         #         # Continue with remaining logic
         #         self.__accept(request)
 
@@ -973,7 +977,6 @@ class OrganisationRequest(models.Model):
         # )
         # # send email to requester
         # send_organisation_request_accept_email_notification(self, org, request)
-        pass
 
     def send_org_access_group_request_notification(self, request):
         # user submits a new organisation request
@@ -985,13 +988,14 @@ class OrganisationRequest(models.Model):
             self, request, org_access_recipients
         )
 
-    def assign_to(self, user, request):
+    def assign_to(self, user_id, request):
         with transaction.atomic():
-            self.assigned_officer = user
+            self.assigned_officer = user_id
             self.save()
+            email_user = retrieve_email_user(user_id)
             self.log_user_action(
                 OrganisationRequestUserAction.ACTION_ASSIGN_TO.format(
-                    user.get_full_name()
+                    email_user.get_full_name()
                 ),
                 request,
             )
@@ -1005,12 +1009,16 @@ class OrganisationRequest(models.Model):
     def decline(self, reason, request):
         with transaction.atomic():
             self.status = "declined"
+            self.assigned_officer = None
             self.save()
             OrganisationRequestDeclinedDetails.objects.create(
-                officer=request.user, reason=reason, request=self
+                officer=request.user.id, reason=reason, organisation_request=self
             )
             self.log_user_action(
-                OrganisationRequestUserAction.ACTION_DECLINE_REQUEST, request
+                OrganisationRequestUserAction.ACTION_DECLINE_REQUEST.format(
+                    self.lodgement_number
+                ),
+                request,
             )
             send_organisation_request_decline_email_notification(self, request)
 
@@ -1025,7 +1033,7 @@ class OrganisationRequest(models.Model):
             )
 
     def log_user_action(self, action, request):
-        return OrganisationRequestUserAction.log_action(self, action, request.user)
+        return OrganisationRequestUserAction.log_action(self, action, request.user.id)
 
 
 class OrganisationAccessGroup(models.Model):
@@ -1057,10 +1065,10 @@ class OrganisationRequestUserAction(UserAction):
     ACTION_LODGE_REQUEST = "Lodge request {}"
     ACTION_ASSIGN_TO = "Assign to {}"
     ACTION_UNASSIGN = "Unassign"
-    ACTION_DECLINE_REQUEST = "Decline request"
+    ACTION_DECLINE_REQUEST = "Decline request {}"
     # Assessors
 
-    ACTION_CONCLUDE_REQUEST = "Conclude request {}"
+    ACTION_ACCEPT_REQUEST = "Accept request {}"
 
     @classmethod
     def log_action(cls, request, action, user):
@@ -1075,8 +1083,9 @@ class OrganisationRequestUserAction(UserAction):
 
 
 class OrganisationRequestDeclinedDetails(models.Model):
-    request = models.ForeignKey(OrganisationRequest, on_delete=models.CASCADE)
-    # officer = models.ForeignKey(EmailUser, null=False, on_delete=models.CASCADE)
+    organisation_request = models.ForeignKey(
+        OrganisationRequest, on_delete=models.CASCADE
+    )
     officer = models.IntegerField()  # EmailUserRO
     reason = models.TextField(blank=True)
 

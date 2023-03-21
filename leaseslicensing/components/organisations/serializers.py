@@ -19,6 +19,8 @@ from leaseslicensing.components.organisations.utils import (
     can_relink,
     is_consultant,
 )
+from leaseslicensing.components.users.serializers import ContactSerializer
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 # class LedgerOrganisationSerializer(serializers.ModelSerializer):
 #    class Meta:
@@ -331,10 +333,11 @@ class OrganisationRequestSerializer(serializers.ModelSerializer):
 
     identification = serializers.FileField()
     requester_name = serializers.SerializerMethodField(read_only=True)
+    lodgement_date = serializers.DateTimeField(format="%d/%m/%Y")
     status = serializers.SerializerMethodField()
     ledger_organisation_name = serializers.SerializerMethodField()
     assigned_officer_name = serializers.SerializerMethodField()
-    # role = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = OrganisationRequest
@@ -345,6 +348,9 @@ class OrganisationRequestSerializer(serializers.ModelSerializer):
             "lodgement_date",
             "assigned_officer",
         )
+
+    def get_role(self, obj):
+        return obj.get_role_display()
 
     def get_requester_name(self, obj):
         email_user = EmailUser.objects.filter(id=obj.requester).first()
@@ -366,11 +372,13 @@ class OrganisationRequestSerializer(serializers.ModelSerializer):
 
 
 class OrganisationRequestDTSerializer(OrganisationRequestSerializer):
-    assigned_officer = serializers.CharField(source="assigned_officer.get_full_name")
     requester = serializers.SerializerMethodField()
 
     def get_requester(self, obj):
-        return obj.requester.get_full_name()
+        email_user = retrieve_email_user(obj.requester)
+        if email_user:
+            return ContactSerializer(email_user).data
+        return None
 
 
 class UserOrganisationSerializer(serializers.ModelSerializer):
@@ -383,11 +391,17 @@ class UserOrganisationSerializer(serializers.ModelSerializer):
 
 
 class OrganisationRequestActionSerializer(serializers.ModelSerializer):
-    who = serializers.CharField(source="who.get_full_name")
+    who = serializers.SerializerMethodField()
 
     class Meta:
         model = OrganisationRequestUserAction
         fields = "__all__"
+
+    def get_who(self, obj):
+        email_user = EmailUser.objects.filter(id=obj.who).first()
+        if email_user:
+            return email_user.get_full_name()
+        return None
 
 
 class OrganisationActionSerializer(serializers.ModelSerializer):

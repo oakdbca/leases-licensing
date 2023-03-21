@@ -1,12 +1,12 @@
 import logging
 
-from django.core.mail import EmailMultiAlternatives, EmailMessage
-from django.utils.encoding import smart_text
-
 # from django.core.urlresolvers import reverse
 from django.conf import settings
+from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.utils.encoding import smart_text
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class OrganisationRequestDeclineNotificationEmail(TemplateEmailBase):
 
 
 class OrganisationLinkNotificationEmail(TemplateEmailBase):
-    subject = "{} - Confirmation - Account linked.".format(settings.DEP_NAME)
+    subject = f"{settings.DEP_NAME} - Confirmation - Account linked."
     html_template = "leaseslicensing/emails/organisation_link_notification.html"
     txt_template = "leaseslicensing/emails/organisation_link_notification.txt"
 
@@ -140,9 +140,7 @@ def send_organisation_id_upload_email_notification(
 def send_organisation_request_link_email_notification(org_request, request, contact):
     email = OrganisationRequestLinkNotificationEmail()
 
-    url = request.build_absolute_uri(
-        "/external/organisations/manage/{}".format(org_request.id)
-    )
+    url = request.build_absolute_uri(f"/external/organisations/manage/{org_request.id}")
 
     context = {
         "request": org_request,
@@ -279,11 +277,9 @@ def send_organisation_link_email_notification(
 def send_organisation_request_email_notification(org_request, request, contact):
     email = OrganisationRequestNotificationEmail()
 
-    url = request.build_absolute_uri(
-        "/internal/organisations/access/{}".format(org_request.id)
-    )
+    url = request.build_absolute_uri(f"/internal/organisations/access/{org_request.id}")
     if "-internal" not in url:
-        url = "{0}://{1}{2}.{3}{4}".format(
+        url = "{}://{}{}.{}{}".format(
             request.scheme,
             settings.SITE_PREFIX,
             "-internal",
@@ -339,11 +335,9 @@ def send_org_access_group_request_accept_email_notification(
 ):
     email = OrganisationAccessGroupRequestAcceptNotificationEmail()
 
-    url = request.build_absolute_uri(
-        "/internal/organisations/access/{}".format(org_request.id)
-    )
+    url = request.build_absolute_uri(f"/internal/organisations/access/{org_request.id}")
     if "-internal" not in url:
-        url = "-internal.{}".format(settings.SITE_DOMAIN).join(
+        url = f"-internal.{settings.SITE_DOMAIN}".join(
             url.split("." + settings.SITE_DOMAIN)
         )
 
@@ -365,8 +359,8 @@ def send_organisation_request_decline_email_notification(org_request, request):
     email = OrganisationRequestDeclineNotificationEmail()
 
     context = {"request": org_request}
-
-    msg = email.send(org_request.requester.email, context=context)
+    requester_email_user = retrieve_email_user(org_request.requester)
+    msg = email.send(requester_email_user.email, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_org_request_email(msg, org_request, sender=sender)
     # _log_org_email(msg, organisation, org_request.requester, sender=sender)
@@ -389,9 +383,12 @@ def send_organisation_address_updated_email_notification(
     ):
         msg = email.send(org_contact.email, context=context)
         sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+        # Log customer as None for now since OrganisationContact does not have a
+        # ledger email user integer field yet
+        _log_org_email(msg, wc_organisation, customer=None, sender=sender)
 
 
-def _log_org_request_email(email_message, request, sender=None):
+def _log_org_request_email(email_message, organisation_request, sender=None):
     from leaseslicensing.components.organisations.models import (
         OrganisationRequestLogEntry,
     )
@@ -421,20 +418,21 @@ def _log_org_request_email(email_message, request, sender=None):
         all_ccs = ",".join(all_ccs)
 
     else:
+        requester_email_user = retrieve_email_user(organisation_request.requester)
         text = smart_text(email_message)
         subject = ""
-        to = request.requester.email
+        to = requester_email_user.email
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
-    customer = request.requester
+    customer = organisation_request.requester
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
         "text": text,
-        "request": request,
+        "request": organisation_request,
         "customer": customer,
         "staff": staff,
         "to": to,
@@ -475,13 +473,12 @@ def _log_org_email(email_message, organisation, customer, sender=None):
         all_ccs = ",".join(all_ccs)
 
     else:
+        email_user = retrieve_email_user(customer)
         text = smart_text(email_message)
         subject = ""
-        to = request.requester.email
+        to = email_user.email
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
-
-    customer = customer
 
     staff = sender
 
