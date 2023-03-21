@@ -48,6 +48,7 @@ python-docx = "0.8.11"
 gunicorn = "19.10.0"
 
 [tool.poetry.dev-dependencies]
+django-debug-toolbar = "^3.4.0"
 ipython = "^8.3.0"
 ipdb = "^0.13.9"
 pylint = "2.13.8"

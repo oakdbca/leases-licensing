@@ -1,3 +1,4 @@
+import logging
 import traceback
 
 from django.core.exceptions import ValidationError
@@ -40,6 +41,8 @@ from leaseslicensing.components.organisations.serializers import (
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
+
+logger = logging.getLogger(__name__)
 
 
 class OrganisationViewSet(viewsets.ModelViewSet):
@@ -574,6 +577,11 @@ class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
     queryset = OrganisationRequest.objects.all()
     serializer_class = OrganisationRequestSerializer
 
+    def get_serializer_class(self):
+        if "retrieve" == self.action:
+            return OrganisationRequestDTSerializer
+        return super().get_serializer_class()
+
 
 class OrganisationRequestsViewSet(viewsets.ModelViewSet):
     queryset = OrganisationRequest.objects.all()
@@ -681,8 +689,9 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
     )
     def assign_request_user(self, request, *args, **kwargs):
         try:
-            instance = self.get_object(requester=request.user)
-            serializer = OrganisationRequestSerializer(instance)
+            instance = self.get_object()
+            instance.assign_to(request.user.id, request)
+            serializer = OrganisationRequestDTSerializer(instance)
             return Response(serializer.data)
         except serializers.ValidationError:
             print(traceback.print_exc())
@@ -696,7 +705,31 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
 
     @detail_route(
         methods=[
-            "GET",
+            "PATCH",
+        ],
+        detail=True,
+    )
+    def assign_user(self, request, *args, **kwargs):
+        try:
+            instance = self.get_object()
+            user_id = request.data.get("user_id")
+            logger.info("user_id: %s", user_id)
+            instance.assign_to(user_id, request)
+            serializer = OrganisationRequestDTSerializer(instance)
+            return Response(serializer.data)
+        except serializers.ValidationError:
+            print(traceback.print_exc())
+            raise
+        except ValidationError as e:
+            print(traceback.print_exc())
+            raise serializers.ValidationError(repr(e.error_dict))
+        except Exception as e:
+            print(traceback.print_exc())
+            raise serializers.ValidationError(str(e))
+
+    @detail_route(
+        methods=[
+            "PATCH",
         ],
         detail=True,
     )
@@ -704,7 +737,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
         try:
             instance = self.get_object()
             instance.unassign(request)
-            serializer = OrganisationRequestSerializer(instance)
+            serializer = OrganisationRequestDTSerializer(instance)
             return Response(serializer.data)
         except serializers.ValidationError:
             print(traceback.print_exc())
@@ -718,7 +751,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
 
     @detail_route(
         methods=[
-            "GET",
+            "PATCH",
         ],
         detail=True,
     )
@@ -726,7 +759,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
         try:
             instance = self.get_object()
             instance.accept(request)
-            serializer = OrganisationRequestSerializer(instance)
+            serializer = OrganisationRequestDTSerializer(instance)
             return Response(serializer.data)
         except serializers.ValidationError:
             print(traceback.print_exc())
@@ -789,7 +822,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
 
     @detail_route(
         methods=[
-            "GET",
+            "PATCH",
         ],
         detail=True,
     )
@@ -798,7 +831,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             reason = ""
             instance.decline(reason, request)
-            serializer = OrganisationRequestSerializer(instance)
+            serializer = OrganisationRequestDTSerializer(instance)
             return Response(serializer.data)
         except serializers.ValidationError:
             print(traceback.print_exc())

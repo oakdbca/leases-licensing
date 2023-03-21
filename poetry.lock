@@ -308,6 +308,18 @@ Django = ">=1.8.0"
 django-common-helpers = ">=0.6.4"
 
 [[package]]
+name = "django-debug-toolbar"
+version = "3.8.1"
+description = "A configurable set of panels that display various debug information about the current request/response."
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+django = ">=3.2.4"
+sqlparse = ">=0.2"
+
+[[package]]
 name = "django-dirtyfields"
 version = "1.8.1"
 description = "Tracking dirty fields on a Django model instance."
@@ -468,7 +480,7 @@ tests = ["asttokens", "littleutils", "pytest", "rich"]
 
 [[package]]
 name = "fiona"
-version = "1.9.1"
+version = "1.9.2"
 description = "Fiona reads and writes spatial data files"
 category = "main"
 optional = false
@@ -480,8 +492,8 @@ certifi = "*"
 click = ">=8.0,<9.0"
 click-plugins = ">=1.0"
 cligj = ">=0.5"
+importlib-metadata = {version = "*", markers = "python_version < \"3.10\""}
 munch = ">=2.3.2"
-setuptools = "*"
 
 [package.extras]
 all = ["Fiona[calc,s3,test]"]
@@ -545,6 +557,22 @@ description = "Internationalized Domain Names in Applications (IDNA)"
 category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "importlib-metadata"
+version = "6.1.0"
+description = "Read metadata from Python packages"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+zipp = ">=0.5"
+
+[package.extras]
+docs = ["furo", "jaraco.packaging (>=9)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
+perf = ["ipython"]
+testing = ["flake8 (<5)", "flufl.flake8", "importlib-resources (>=1.3)", "packaging", "pyfakefs", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-flake8", "pytest-mypy (>=0.9.1)", "pytest-perf (>=0.9.2)"]
 
 [[package]]
 name = "ipdb"
@@ -764,7 +792,7 @@ testing = ["docopt", "pytest (<6.0.0)"]
 
 [[package]]
 name = "pathspec"
-version = "0.11.0"
+version = "0.11.1"
 description = "Utility library for gitignore style pattern matching of file paths."
 category = "dev"
 optional = false
@@ -1132,10 +1160,22 @@ category = "dev"
 optional = false
 python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 
+[[package]]
+name = "zipp"
+version = "3.15.0"
+description = "Backport of pathlib-compatible object wrapper for zip files"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+docs = ["furo", "jaraco.packaging (>=9)", "jaraco.tidelift (>=1.4)", "rst.linker (>=1.9)", "sphinx (>=3.5)", "sphinx-lint"]
+testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-flake8", "pytest-mypy (>=0.9.1)"]
+
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "ecfca8495d90677efbd32a5f862bb53322ab0f8b3cf8046d2889f5c06024539e"
+content-hash = "e53c67957b801aacf928c6ab0a48b2ed9efc2ea16c9b291d2ebee07084cebd79"
 
 [metadata.files]
 appnope = [
@@ -1258,6 +1298,10 @@ django-countries = [
 django-cron = [
     {file = "django-cron-0.5.1.tar.gz", hash = "sha256:08d22708c8b2ecab8cda989019a66c7e1e2424c59d822796fd45abf7731d261d"},
 ]
+django-debug-toolbar = [
+    {file = "django_debug_toolbar-3.8.1-py3-none-any.whl", hash = "sha256:879f8a4672d41621c06a4d322dcffa630fc4df056cada6e417ed01db0e5e0478"},
+    {file = "django_debug_toolbar-3.8.1.tar.gz", hash = "sha256:24ef1a7d44d25e60d7951e378454c6509bf536dce7e7d9d36e7c387db499bc27"},
+]
 django-dirtyfields = [
     {file = "django-dirtyfields-1.8.1.tar.gz", hash = "sha256:b763f1baaa0979c8451493c5f0e01f31a08dfca372abd489e15ecab0c38636e9"},
     {file = "django_dirtyfields-1.8.1-py3-none-any.whl", hash = "sha256:e85ea09133b6e9ca4937d3c77f9104c763a80680817385dbf19de43e76668018"},
@@ -1312,26 +1356,22 @@ executing = [
     {file = "executing-1.2.0.tar.gz", hash = "sha256:19da64c18d2d851112f09c287f8d3dbbdf725ab0e569077efb6cdcbd3497c107"},
 ]
 fiona = [
-    {file = "Fiona-1.9.1-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:902b67b2d012c5797b5d7d3cb3b46dcf9a342cf90a7f7e53fb12c83738d19926"},
-    {file = "Fiona-1.9.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:e2f4535ae2c8446e6b328745a44567478d5a077ed63c888b8c212dddb1e11925"},
-    {file = "Fiona-1.9.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c3d7f3286fb59b93cefefb89014b6fa8413126e180e15c576db859ba936cf334"},
-    {file = "Fiona-1.9.1-cp310-cp310-win_amd64.whl", hash = "sha256:692fe64c0f3a39742d6f7a8e420a8387f6aec3b6818b727d2dfc98a0c40e992d"},
-    {file = "Fiona-1.9.1-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:a017a39650df0cc541c57cf7de450bb4cee6fd9760eb716323b594c1074634a2"},
-    {file = "Fiona-1.9.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:c3b52d49bc379fdcfd1250b38e7e00ab24ee14eb765376c793bbe251ffd09d6a"},
-    {file = "Fiona-1.9.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5dbb0ae851cd4417104c469335a01f938251a8639317f93d422c5c808150bd27"},
-    {file = "Fiona-1.9.1-cp311-cp311-win_amd64.whl", hash = "sha256:4a6d8fcbbdafa8af8ac1904628b0267382ed9f9921933d061d7bfc5d3f3daf99"},
-    {file = "Fiona-1.9.1-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:74f056a84dc52a0b21a2cf024601a69105596f06f28d40b45049948be17b4df2"},
-    {file = "Fiona-1.9.1-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:5b9f3f6c782bb4ae2c924eefd373cabdeaaa99f86477b9c7c71eb20c052ee7c5"},
-    {file = "Fiona-1.9.1-cp37-cp37m-win_amd64.whl", hash = "sha256:5d6183189a7e05e2498d38a1df3ab07e1353fa48e977cbc3a31203927bd06bca"},
-    {file = "Fiona-1.9.1-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:5f2c14beec98a330aee1fd81fa0447a6aa1d5e0a75d000c0052dbe1f23dd6cfd"},
-    {file = "Fiona-1.9.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:585a47ec21f2d198abc112158eaf12a6587a272beb7f001162d8c3b262676666"},
-    {file = "Fiona-1.9.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dd4368b4054f21518a19dea54ce9ac445c40418c6331c0c99d1531c3ddff05da"},
-    {file = "Fiona-1.9.1-cp38-cp38-win_amd64.whl", hash = "sha256:839ed0db23198bb754f0d655d4eeaf5f9c141bef734557e77e95e4dc83e42e7f"},
-    {file = "Fiona-1.9.1-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:decca3956032ae2d2c19d2f7fa8a4553c43a6e66eb5abe9a05f6ddadcb1bfe5c"},
-    {file = "Fiona-1.9.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:cb827fa0030d03d8080723137c74b865ec18dbade87c02ed60215491a315c6be"},
-    {file = "Fiona-1.9.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d7e0f36484757baa8cd1c0602941e029ff992282776f9afae4c5b90f501ff005"},
-    {file = "Fiona-1.9.1-cp39-cp39-win_amd64.whl", hash = "sha256:f98933b552adf0506799097934a6950de412288e7a50466144d04874d6f63fbc"},
-    {file = "Fiona-1.9.1.tar.gz", hash = "sha256:3a3725e94840a387fef48726d60db6a6791563f366939d22378a4661f8941be7"},
+    {file = "Fiona-1.9.2-cp310-cp310-macosx_10_15_x86_64.whl", hash = "sha256:c14a39d6a57eaa50cbf6553e7e464960d9dc7773cf4058409a53cc26034ad947"},
+    {file = "Fiona-1.9.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:16576ca4f21f21c19c4306c2ebb503db408eae4e6690972b62acb897ceab0a8d"},
+    {file = "Fiona-1.9.2-cp310-cp310-win_amd64.whl", hash = "sha256:d2ba52ac172193d452cfcecd71fa69212056eb7e5747174d28838c9b95ba47c3"},
+    {file = "Fiona-1.9.2-cp311-cp311-macosx_10_15_x86_64.whl", hash = "sha256:6a7f8830659532b3900ea202b8bb82043c4305fc61f78ffc4ffccd86c079472f"},
+    {file = "Fiona-1.9.2-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2eb7ac43c4e6633d6262cd3d6b46db3fc925de872626b10e162bbefe7fa7157e"},
+    {file = "Fiona-1.9.2-cp311-cp311-win_amd64.whl", hash = "sha256:509b3bd7e38a041f5ad9dd25f4ecf2ea6d736879b8abb54d987a00138beeb7a1"},
+    {file = "Fiona-1.9.2-cp37-cp37m-macosx_10_15_x86_64.whl", hash = "sha256:72f332c394e63b70800a04b92e9eb6daafaee4f5f467f8f4b4780aa249da3c37"},
+    {file = "Fiona-1.9.2-cp37-cp37m-manylinux2014_x86_64.whl", hash = "sha256:5630e29cf25a4381f54a1060df0368d63da833d14fabc5ce4a3650138ba519a5"},
+    {file = "Fiona-1.9.2-cp37-cp37m-win_amd64.whl", hash = "sha256:8b80d739447e9408abb1abadf198decab01baf266e163705b93bd51f5172be8d"},
+    {file = "Fiona-1.9.2-cp38-cp38-macosx_10_15_x86_64.whl", hash = "sha256:07c9144c1056d38bfef6b071d9cb25b1ec1c3f40facc55738574ea3f704bbfec"},
+    {file = "Fiona-1.9.2-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:348e2241360863b2e9c476c1444ecc499a9f8a1d499f28568bd4f1e5fd533d1f"},
+    {file = "Fiona-1.9.2-cp38-cp38-win_amd64.whl", hash = "sha256:11174b13abce333929fb609e1f5c4872226398d4e4fb1bfc866ed6a11035a13d"},
+    {file = "Fiona-1.9.2-cp39-cp39-macosx_10_15_x86_64.whl", hash = "sha256:656373f74d10300f472321b0bd96bc0be553bf64bd409b420a2ca02e4fc616f8"},
+    {file = "Fiona-1.9.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:2effb6a21ad3ecc4d3c8e39208cf443f3fe42300492226057f2eaccf827bc3b2"},
+    {file = "Fiona-1.9.2-cp39-cp39-win_amd64.whl", hash = "sha256:6e4bae3ca74c225d5ab8c99e5c76b55def0132b62bf2447c67a14025de428115"},
+    {file = "Fiona-1.9.2.tar.gz", hash = "sha256:f9263c5f97206bf2eb2c010d52e8ffc54e96886b0e698badde25ff109b32952a"},
 ]
 flake8 = [
     {file = "flake8-4.0.1-py2.py3-none-any.whl", hash = "sha256:479b1304f72536a55948cb40a32dce8bb0ffe3501e26eaf292c7e60eb5e0428d"},
@@ -1352,6 +1392,10 @@ gunicorn = [
 idna = [
     {file = "idna-2.8-py2.py3-none-any.whl", hash = "sha256:ea8b7f6188e6fa117537c3df7da9fc686d485087abf6ac197f9c46432f7e4a3c"},
     {file = "idna-2.8.tar.gz", hash = "sha256:c357b3f628cf53ae2c4c05627ecc484553142ca23264e593d327bcde5e9c3407"},
+]
+importlib-metadata = [
+    {file = "importlib_metadata-6.1.0-py3-none-any.whl", hash = "sha256:ff80f3b5394912eb1b108fcfd444dc78b7f1f3e16b16188054bd01cb9cb86f09"},
+    {file = "importlib_metadata-6.1.0.tar.gz", hash = "sha256:43ce9281e097583d758c2c708c4376371261a02c34682491a8e98352365aad20"},
 ]
 ipdb = [
     {file = "ipdb-0.13.13-py3-none-any.whl", hash = "sha256:45529994741c4ab6d2388bfa5d7b725c2cf7fe9deffabdb8a6113aa5ed449ed4"},
@@ -1573,8 +1617,8 @@ parso = [
     {file = "parso-0.8.3.tar.gz", hash = "sha256:8c07be290bb59f03588915921e29e8a50002acaf2cdc5fa0e0114f91709fafa0"},
 ]
 pathspec = [
-    {file = "pathspec-0.11.0-py3-none-any.whl", hash = "sha256:3a66eb970cbac598f9e5ccb5b2cf58930cd8e3ed86d393d541eaf2d8b1705229"},
-    {file = "pathspec-0.11.0.tar.gz", hash = "sha256:64d338d4e0914e91c1792321e6907b5a593f1ab1851de7fc269557a21b30ebbc"},
+    {file = "pathspec-0.11.1-py3-none-any.whl", hash = "sha256:d8af70af76652554bd134c22b3e8a1cc46ed7d91edcdd721ef1a0c51a84a5293"},
+    {file = "pathspec-0.11.1.tar.gz", hash = "sha256:2798de800fa92780e33acca925945e9a19a133b715067cf165b8866c15a31687"},
 ]
 pexpect = [
     {file = "pexpect-4.8.0-py2.py3-none-any.whl", hash = "sha256:0b48a55dcb3c05f3329815901ea4fc1537514d6ba867a152b581d69ae3710937"},
@@ -1979,4 +2023,8 @@ wrapt = [
     {file = "wrapt-1.15.0-cp39-cp39-win_amd64.whl", hash = "sha256:eef4d64c650f33347c1f9266fa5ae001440b232ad9b98f1f43dfe7a79435c0a6"},
     {file = "wrapt-1.15.0-py3-none-any.whl", hash = "sha256:64b1df0f83706b4ef4cfb4fb0e4c2669100fd7ecacfb59e091fad300d4e04640"},
     {file = "wrapt-1.15.0.tar.gz", hash = "sha256:d06730c6aed78cee4126234cf2d071e01b44b915e725a6cb439a879ec9754a3a"},
+]
+zipp = [
+    {file = "zipp-3.15.0-py3-none-any.whl", hash = "sha256:48904fc76a60e542af151aded95726c1a5c34ed43ab4134b597665c86d7ad556"},
+    {file = "zipp-3.15.0.tar.gz", hash = "sha256:112929ad649da941c23de50f356a2b5570c954b65150642bccdd66bf194d224b"},
 ]

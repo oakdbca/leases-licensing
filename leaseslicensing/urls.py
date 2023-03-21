@@ -255,16 +255,14 @@ urlpatterns = (
     + media_serv_patterns
 )
 
-# if settings.EMAIL_INSTANCE != 'PROD':
-#   urlpatterns.append(path('accounts/', include('django.contrib.auth.urls')))
+if settings.DEBUG:  # Serve media locally in development.
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    if "debug_toolbar" in settings.INSTALLED_APPS and settings.SHOW_DEBUG_TOOLBAR:
+        urlpatterns += [
+            # ...
+            path("__debug__/", include("debug_toolbar.urls")),
+        ]
 
 if not are_migrations_running():
     DefaultDataManager()
-
-# if settings.SHOW_DEBUG_TOOLBAR:
-#    import debug_toolbar
-#    urlpatterns = [
-#        url('__debug__/', include(debug_toolbar.urls)),
-#    ] + urlpatterns

@@ -244,6 +244,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
+                    if (!full.assigned_officer) {
+                        return 'Unassigned'
+                    }
                     return full.assigned_officer_name
                 },
             }
@@ -265,7 +268,7 @@ export default {
                     } else {
                         label += 'View'
                     }
-                    return `<a href='/internal/organisation-request/detais/${full.id}'>${label}</a>`
+                    return `<a href='/internal/organisations/access/${full.id}'>${label}</a>`
                 },
             }
         },
