@@ -1,0 +1,38 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Django",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/manage.py",
+            "args": [
+                "runserver",
+                "0.0.0.0:9071"
+            ],
+            "django": true,
+            "env": {"PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT": "10"}
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "env": { "PORT": "9073" },
+            "name": "Node: Chrome",
+            "url": "http://localhost:9071",
+            "webRoot": "${workspaceFolder}/leaseslicensing/frontend/leaseslicensing/",
+            "skipFiles": [
+                "${workspaceFolder}/leaseslicensing/frontend/leaseslicensing/node_modules/**/",
+                "*/<node_internals>/**",
+                "*/<node_modules>/**"
+            ],
+            "sourceMaps": true,
+            "smartStep": true,
+            "outFiles": [
+                "${workspaceFolder}/leaseslicensing/frontend/leaseslicensing/src/**/*.js",
+                "${workspaceFolder}/leaseslicensing/frontend/leaseslicensing/src/**/*.vue",
+                "${workspaceFolder}/leaseslicensing/templates/leaseslicensing/**/*.html"
+            ],
+            "preLaunchTask": "node: serve",
+        }
+    ]
+  }

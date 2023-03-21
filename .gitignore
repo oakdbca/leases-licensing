@@ -9,7 +9,8 @@ node_modules/
 leaseslicensing/cache/*
 .ropeproject/
 .DAV
-.devcontainer
+.devcontainer/*
+!.devcontainer/devcontainer.json
 nohup.out
 
 # Byte-compiled / optimized / DLL files
@@ -80,7 +81,9 @@ target/
 .idea/
 
 # VSCode
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # Eclipse project files
 /.pydevproject
