@@ -3352,8 +3352,7 @@ class AmendmentRequest(ProposalRequest):
                     #)
 
                     # send email
-
-                    #send_amendment_email_notification(self, request, proposal)
+                    send_amendment_email_notification(self, request, proposal)
 
                 self.save()
             except:

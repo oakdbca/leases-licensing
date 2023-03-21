@@ -2719,13 +2719,13 @@ class AmendmentRequestViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            reason_id = request.data.get("reason")
+            reason_id = request.data.get("reason_id")
             data = {
                 #'schema': qs_proposal_type.order_by('-version').first().schema,
                 "text": request.data.get("text"),
                 "proposal": request.data.get("proposal_id"),
                 "officer": request.user.id,
-                "reason": AmendmentReason.objects.get(id=reason_id)
+                "reason": reason_id # AmendmentReason.objects.get(id=reason_id)
                 if reason_id
                 else None,
             }
