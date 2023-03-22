@@ -1,19 +1,21 @@
 import logging
 
-from django.core.mail import EmailMultiAlternatives, EmailMessage
-from django.utils.encoding import smart_text
-from django.urls import reverse
 from django.conf import settings
+from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.utils.encoding import smart_text
 
-from leaseslicensing.components.emails.emails import TemplateEmailBase
-from leaseslicensing.components.bookings.invoice_pdf import create_invoice_pdf_bytes
 from leaseslicensing.components.bookings.confirmation_pdf import (
     create_confirmation_pdf_bytes,
 )
+from leaseslicensing.components.bookings.invoice_compliance_pdf import (
+    create_invoice_compliance_pdf_bytes,
+)
+from leaseslicensing.components.bookings.invoice_pdf import create_invoice_pdf_bytes
+from leaseslicensing.components.bookings.models import Booking
 from leaseslicensing.components.bookings.monthly_confirmation_pdf import (
     create_monthly_confirmation_pdf_bytes,
 )
-from leaseslicensing.components.bookings.models import Booking
+from leaseslicensing.components.emails.emails import TemplateEmailBase
 
 logger = logging.getLogger(__name__)
 
@@ -21,112 +23,123 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
 class ComplianceFeeInvoiceEventsSendNotificationEmail(TemplateEmailBase):
-    subject = "Your compliance fee invoice."
-    html_template = (
-        "leaseslicensing/emails/bookings/events/send_compliance_fee_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/bookings/events/send_compliance_fee_notification.txt"
-    )
-
-
-# class ApplicationAwaitingPaymentInvoiceFilmingSendNotificationEmail(TemplateEmailBase):
-#    subject = 'Your filming fee awaiting payment invoice.'
-#    html_template = 'leaseslicensing/emails/bookings/filming/send_filming_fee_awaiting_payment_notification.html'
-#    txt_template = 'leaseslicensing/emails/bookings/filmig/send_filming_fee_awaiting_payment_notification.txt'
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your compliance fee invoice."
+        self.html_template = "leaseslicensing/emails/bookings/events/send_compliance_fee_notification.html"
+        self.txt_template = "leaseslicensing/emails/bookings/events/send_compliance_fee_notification.txt"
 
 
 class ApplicationInvoiceFilmingSendNotificationEmail(TemplateEmailBase):
-    subject = "Your filming fee invoice."
-    html_template = (
-        "leaseslicensing/emails/bookings/filming/send_filming_fee_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/bookings/filmig/send_filming_fee_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your filming fee invoice."
+        self.html_template = (
+            "leaseslicensing/emails/bookings/filming/send_filming_fee_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/bookings/filmig/send_filming_fee_notification.txt"
+        )
 
 
 class ApplicationFeeInvoiceTClassSendNotificationEmail(TemplateEmailBase):
-    subject = "Your application fee invoice."
-    html_template = (
-        "leaseslicensing/emails/bookings/tclass/send_application_fee_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/bookings/tclass/send_application_fee_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your application fee invoice."
+        self.html_template = "leaseslicensing/emails/bookings/tclass/send_application_fee_notification.html"
+        self.txt_template = "leaseslicensing/emails/bookings/tclass/send_application_fee_notification.txt"
 
 
 class ApplicationFeeConfirmationTClassSendNotificationEmail(TemplateEmailBase):
-    subject = "Your application fee confirmation."
-    html_template = "leaseslicensing/emails/bookings/tclass/send_application_fee_confirmation_notification.html"
-    txt_template = "leaseslicensing/emails/bookings/tclass/send_application_fee_confirmation_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your application fee confirmation."
+        self.html_template = (
+            "leaseslicensing/emails/bookings/tclass/"
+            + "send_application_fee_confirmation_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/bookings/tclass/"
+            + "send_application_fee_confirmation_notification.txt"
+        )
 
 
 class InvoiceTClassSendNotificationEmail(TemplateEmailBase):
-    subject = "Your booking invoice."
-    html_template = (
-        "leaseslicensing/emails/bookings/tclass/send_invoice_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/bookings/tclass/send_invoice_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your booking invoice."
+        self.html_template = (
+            "leaseslicensing/emails/bookings/tclass/send_invoice_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/bookings/tclass/send_invoice_notification.txt"
+        )
 
 
 class MonthlyInvoiceTClassSendNotificationEmail(TemplateEmailBase):
-    subject = "Your monthly booking invoice."
-    html_template = (
-        "leaseslicensing/emails/bookings/tclass/send_monthly_invoice_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/bookings/tclass/send_monthly_invoice_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your monthly booking invoice."
+        self.html_template = "leaseslicensing/emails/bookings/tclass/send_monthly_invoice_notification.html"
+        self.txt_template = "leaseslicensing/emails/bookings/tclass/send_monthly_invoice_notification.txt"
 
 
 class ConfirmationTClassSendNotificationEmail(TemplateEmailBase):
-    subject = "Your booking confirmation."
-    html_template = (
-        "leaseslicensing/emails/bookings/tclass/send_confirmation_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/bookings/tclass/send_confirmation_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your booking confirmation."
+        self.html_template = (
+            "leaseslicensing/emails/bookings/tclass/send_confirmation_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/bookings/tclass/send_confirmation_notification.txt"
+        )
 
 
 class MonthlyInvoicesFailedTClassEmail(TemplateEmailBase):
-    subject = "Failed: COLS Monthly Invoices."
-    html_template = "leaseslicensing/emails/bookings/tclass/send_monthly_invoices_failed_notification.html"
-    txt_template = "leaseslicensing/emails/bookings/tclass/send_monthly_invoices_failed_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "Failed: COLS Monthly Invoices."
+        self.html_template = "leaseslicensing/emails/bookings/tclass/send_monthly_invoices_failed_notification.html"
+        self.txt_template = "leaseslicensing/emails/bookings/tclass/send_monthly_invoices_failed_notification.txt"
 
 
 class SendPaymentDueNotificationTClassEmail(TemplateEmailBase):
-    subject = "COLS Monthly/BPAY Bookings Invoices Overdue."
-    html_template = (
-        "leaseslicensing/emails/bookings/tclass/send_payment_due_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/bookings/tclass/send_payment_due_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "COLS Monthly/BPAY Bookings Invoices Overdue."
+        self.html_template = (
+            "leaseslicensing/emails/bookings/tclass/send_payment_due_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/bookings/tclass/send_payment_due_notification.txt"
+        )
 
 
 class SendExternalPaymentDueNotificationTClassEmail(TemplateEmailBase):
-    subject = "Your booking invoice is overdue."
-    html_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification.html"
-    txt_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your booking invoice is overdue."
+        self.html_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification.html"
+        self.txt_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification.txt"
 
 
 class PaymentDueNotificationFailedTClassEmail(TemplateEmailBase):
-    subject = "Failed: COLS Payment Due Notifications"
-    html_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification_failed.html"
-    txt_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification_failed.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "Failed: COLS Payment Due Notifications"
+        self.html_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification_failed.html"
+        self.txt_template = "leaseslicensing/emails/bookings/tclass/send_external_payment_due_notification_failed.txt"
 
 
-# def send_application_awaiting_payment_invoice_filming_email_notification(request, proposal, recipients, is_test=False):
+# def send_application_awaiting_payment_invoice_filming_email_notification
+# (request, proposal, recipients, is_test=False):
 #    email = ApplicationAwaitingPaymentInvoiceFilmingSendNotificationEmail()
 #    #url = request.build_absolute_uri(reverse('external-proposal-detail',kwargs={'proposal_pk': proposal.id}))
 #
 #    context = {
 #        'proposal_lodgement_number': proposal.lodgement_number,
-#        #'url': url,
+#        # 'url': url,
 #    }
 #
 #    filename = 'awaiting_payment_invoice.pdf'
@@ -153,7 +166,7 @@ def send_application_invoice_filming_email_notification(
 
     context = {
         "proposal_lodgement_number": proposal.lodgement_number,
-        #'url': url,
+        # 'url': url,
     }
 
     filename = "invoice.pdf"
@@ -179,9 +192,9 @@ def send_compliance_fee_invoice_events_email_notification(
     # url = request.build_absolute_uri(reverse('external-proposal-detail',kwargs={'proposal_pk': proposal.id}))
 
     context = {
-        "proposal_lodgement_number": proposal.lodgement_number,
+        "proposal_lodgement_number": compliance.proposal.lodgement_number,
         "compliance_lodgement_number": compliance.lodgement_number,
-        #'url': url,
+        # 'url': url,
     }
 
     filename = "invoice.pdf"
@@ -193,7 +206,7 @@ def send_compliance_fee_invoice_events_email_notification(
         return
 
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_proposal_email(msg, proposal, sender=sender)
+    _log_proposal_email(msg, compliance.proposal, sender=sender)
     if compliance.proposal.org_applicant:
         _log_org_email(
             msg, compliance.proposal.org_applicant, compliance.submitter, sender=sender
@@ -212,7 +225,7 @@ def send_application_fee_invoice_tclass_email_notification(
 
     context = {
         "lodgement_number": proposal.lodgement_number,
-        #'url': url,
+        # 'url': url,
     }
 
     filename = "invoice.pdf"
@@ -244,7 +257,7 @@ def send_application_fee_confirmation_tclass_email_notification(
     proposal = application_fee.proposal
     context = {
         "lodgement_number": proposal.lodgement_number,
-        #'url': url,
+        # 'url': url,
     }
 
     filename = "confirmation.pdf"
@@ -271,7 +284,7 @@ def send_invoice_tclass_email_notification(
 
     context = {
         "booking_number": booking.booking_number,
-        #'url': url,
+        # 'url': url,
     }
 
     filename = "invoice.pdf"
@@ -329,41 +342,11 @@ def send_confirmation_tclass_email_notification(
         )
 
 
-def send_proposal_approval_email_notification(proposal, request):
-    email = ProposalApprovalSendNotificationEmail()
-
-    context = {
-        "proposal": proposal,
-    }
-    cc_list = proposal.proposed_issuance_approval["cc_email"]
-    all_ccs = []
-    if cc_list:
-        all_ccs = cc_list.split(",")
-
-    licence_document = proposal.approval.licence_document._file
-    if licence_document is not None:
-        file_name = proposal.approval.licence_document.name
-        attachment = (file_name, licence_document.file.read(), "application/pdf")
-        attachment = [attachment]
-    else:
-        attachment = []
-
-    msg = email.send(
-        proposal.submitter.email, bcc=all_ccs, attachments=attachment, context=context
-    )
-    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_proposal_email(msg, proposal, sender=sender)
-    # _log_org_email(msg, proposal.applicant, proposal.submitter, sender=sender)
-    if proposal.org_applicant:
-        _log_org_email(msg, proposal.org_applicant, proposal.submitter, sender=sender)
-    else:
-        _log_user_email(msg, proposal.submitter, proposal.submitter, sender=sender)
-
-
 def send_monthly_confirmation_tclass_email_notification(
     sender, booking, recipients, is_test=False
 ):
-    """Monthly confirmation has deferred invoicing, deferred to the following month. So invoice is created later by Cron"""
+    """Monthly confirmation has deferred invoicing, deferred to the following month.
+    So invoice is created later by Cron"""
     email = ConfirmationTClassSendNotificationEmail()
     # url = request.build_absolute_uri(reverse('external-proposal-detail',kwargs={'proposal_pk': proposal.id}))
 
@@ -437,7 +420,7 @@ def send_monthly_invoices_failed_tclass(booking_ids):
             "proposal__org_applicant__organisation__name",
         ),
     }
-    msg = email.send(settings.NOTIFICATION_EMAIL, context=context)
+    email.send(settings.NOTIFICATION_EMAIL, context=context)
 
 
 def send_payment_due_notification_failed_tclass(bookings):
@@ -445,7 +428,7 @@ def send_payment_due_notification_failed_tclass(bookings):
     email = PaymentDueNotificationFailedTClassEmail()
 
     context = {"bookings": bookings}
-    msg = email.send(settings.NOTIFICATION_EMAIL, context=context)
+    email.send(settings.NOTIFICATION_EMAIL, context=context)
 
 
 def send_invoice_payment_due_tclass_email_notification(
@@ -457,7 +440,7 @@ def send_invoice_payment_due_tclass_email_notification(
         "bookings": bookings,
     }
 
-    msg = email.send(booking.proposal.submitter.email, context=context)
+    email.send(bookings[0].proposal.submitter.email, context=context)
     # sender = sender if sender else settings.DEFAULT_FROM_EMAIL
     # _log_proposal_email(msg, booking.proposal, sender=sender)
     # if booking.proposal.org_applicant:
