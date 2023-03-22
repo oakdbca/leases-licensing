@@ -873,7 +873,6 @@ class OrganisationRequest(models.Model):
     ROLE_CHOICES = (("employee", "Employee"), ("consultant", "Consultant"))
     lodgement_number = models.CharField(max_length=9, blank=True, default="")
     name = models.CharField(max_length=128)
-    # Django forces us to have a default for non nullable fields, so we use the first organisation
     organisation = models.ForeignKey(
         Organisation,
         related_name="organisation_requests",
@@ -918,65 +917,55 @@ class OrganisationRequest(models.Model):
                 ),
                 request,
             )
-        #         # Continue with remaining logic
-        #         self.__accept(request)
 
-        # def __accept(self, request):
-        #     # Check if orgsanisation exists in ledger
-        #     ledger_org = None
-        #     try:
-        #         ledger_org = ledger_organisation.objects.get(abn=self.abn)
-        #     except ledger_organisation.DoesNotExist:
-        #         try:
-        #             check_name = ledger_organisation.objects.get(name=self.name)
-        #             if check_name:
-        #                 raise ValidationError(
-        #                     "Organisation with the same name already exists"
-        #                 )
-        #         except ledger_organisation.DoesNotExist:
-        #             ledger_org = ledger_organisation.objects.create(
-        #                 name=self.name, abn=self.abn
-        #             )
-        #     # Create Organisation in leaseslicensing
-        #     org, created = Organisation.objects.get_or_create(organisation=ledger_org)
-        #     # Link requester to organisation
-        #     delegate = UserDelegation.objects.create(user=self.requester, organisation=org)
-        #     # log who approved the request
-        #     org.log_user_action(
-        #         OrganisationAction.ACTION_REQUEST_APPROVED.format(self.id), request
-        #     )
-        #     # log who created the link
-        #     org.log_user_action(
-        #         OrganisationAction.ACTION_LINK.format(
-        #             "{} {}({})".format(
-        #                 delegate.user.first_name,
-        #                 delegate.user.last_name,
-        #                 delegate.user.email,
-        #             )
-        #         ),
-        #         request,
-        #     )
-        #     # Create contact person
-        #     if self.role == "consultant":
-        #         role = "consultant"
-        #     else:
-        #         role = "organisation_admin"
-        #     # Create contact person
+            # # Waiting on Jason to add new apis to ledger and ledger_api_client
+            # ledger_org = get_organisation(self.name, self.abn)
 
-        # OrganisationContact.objects.create(
-        #     organisation=org,
-        #     first_name=self.requester.first_name,
-        #     last_name=self.requester.last_name,
-        #     mobile_number=self.requester.mobile_number,
-        #     phone_number=self.requester.phone_number,
-        #     fax_number=self.requester.fax_number,
-        #     email=self.requester.email,
-        #     user_role=role,
-        #     user_status="active",
-        #     is_admin=True,
-        # )
-        # # send email to requester
-        # send_organisation_request_accept_email_notification(self, org, request)
+            # if not ledger_org:
+            #     ledger_org = create_organisation(self.name, self.abn)
+            # org, created = Organisation.objects.get_or_create(organisation=ledger_org["id"])
+
+            # delegate = UserDelegation.objects.create(user=self.requester, organisation=org)
+
+            # org.log_user_action(
+            #     OrganisationAction.ACTION_REQUEST_APPROVED.format(self.lodgement_number), request
+            # )
+
+            # delegate_email_user = retrieve_email_user(delegate.user)
+
+            # org.log_user_action(
+            #     OrganisationAction.ACTION_LINK.format(
+            #         "{} {}({})".format(
+            #             delegate_email_user.first_name,
+            #             delegate_email_user.last_name,
+            #             delegate_email_user.email,
+            #         )
+            #     ),
+            #     request,
+            # )
+
+            # # Create contact person
+            # if self.role == "consultant":
+            #     role = "consultant"
+            # else:
+            #     role = "organisation_admin"
+
+            # # Create contact person
+            # OrganisationContact.objects.create(
+            #     organisation=org,
+            #     first_name=delegate_email_user.first_name,
+            #     last_name=delegate_email_user.last_name,
+            #     mobile_number=delegate_email_user.mobile_number,
+            #     phone_number=delegate_email_user.phone_number,
+            #     fax_number=delegate_email_user.fax_number,
+            #     email=delegate_email_user.email,
+            #     user_role=role,
+            #     user_status="active",
+            #     is_admin=True,
+            # )
+
+            # # send email to requester
+            # send_organisation_request_accept_email_notification(self, org, request)
 
     def send_org_access_group_request_notification(self, request):
         # user submits a new organisation request

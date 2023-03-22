@@ -14,115 +14,169 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
 class OrganisationRequestAcceptNotificationEmail(TemplateEmailBase):
-    subject = "Your organisation request has been accepted."
-    html_template = (
-        "leaseslicensing/emails/organisation_request_accept_notification.html"
-    )
-    txt_template = "leaseslicensing/emails/organisation_request_accept_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your organisation request has been accepted."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_request_accept_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_request_accept_notification.txt"
+        )
 
 
 class OrganisationAccessGroupRequestAcceptNotificationEmail(TemplateEmailBase):
-    subject = "New organisation request has been submitted."
-    html_template = (
-        "leaseslicensing/emails/org_access_group_request_accept_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/org_access_group_request_accept_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "New organisation request has been submitted."
+        self.html_template = (
+            "leaseslicensing/emails/org_access_group_request_accept_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/org_access_group_request_accept_notification.txt"
+        )
 
 
 class OrganisationRequestNotificationEmail(TemplateEmailBase):
-    subject = "An organisation request has been submitted for approval"
-    html_template = "leaseslicensing/emails/organisation_request_notification.html"
-    txt_template = "leaseslicensing/emails/organisation_request_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "An organisation request has been submitted for approval"
+        self.html_template = (
+            "leaseslicensing/emails/organisation_request_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_request_notification.txt"
+        )
 
 
 class OrganisationRequestDeclineNotificationEmail(TemplateEmailBase):
-    subject = "Your organisation request has been declined."
-    html_template = (
-        "leaseslicensing/emails/organisation_request_decline_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/organisation_request_decline_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your organisation request has been declined."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_request_decline_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_request_decline_notification.txt"
+        )
 
 
 class OrganisationLinkNotificationEmail(TemplateEmailBase):
-    subject = f"{settings.DEP_NAME} - Confirmation - Account linked."
-    html_template = "leaseslicensing/emails/organisation_link_notification.html"
-    txt_template = "leaseslicensing/emails/organisation_link_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = f"{settings.DEP_NAME} - Confirmation - Account linked."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_link_notification.html"
+        )
+        self.txt_template = "leaseslicensing/emails/organisation_link_notification.txt"
 
 
 class OrganisationUnlinkNotificationEmail(TemplateEmailBase):
-    subject = "You have been unlinked from an organisation."
-    html_template = "leaseslicensing/emails/organisation_unlink_notification.html"
-    txt_template = "leaseslicensing/emails/organisation_unlink_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "You have been unlinked from an organisation."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_unlink_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_unlink_notification.txt"
+        )
 
 
 class OrganisationContactAdminUserNotificationEmail(TemplateEmailBase):
-    subject = "You have been linked as Company Admin Role."
-    html_template = (
-        "leaseslicensing/emails/organisation_contact_admin_notification.html"
-    )
-    txt_template = "leaseslicensing/emails/organisation_contact_admin_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "You have been linked as Company Admin Role."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_contact_admin_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_contact_admin_notification.txt"
+        )
 
 
 class OrganisationContactUserNotificationEmail(TemplateEmailBase):
-    subject = "You have been linked as Company User Role."
-    html_template = "leaseslicensing/emails/organisation_contact_user_notification.html"
-    txt_template = "leaseslicensing/emails/organisation_contact_user_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "You have been linked as Company User Role."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_contact_user_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_contact_user_notification.txt"
+        )
 
 
 class OrganisationContactSuspendNotificationEmail(TemplateEmailBase):
-    subject = "You have been suspended as Company User."
-    html_template = (
-        "leaseslicensing/emails/organisation_contact_suspend_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/organisation_contact_suspend_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "You have been suspended as Company User."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_contact_suspend_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_contact_suspend_notification.txt"
+        )
 
 
 class OrganisationContactReinstateNotificationEmail(TemplateEmailBase):
-    subject = "You have been Reinstated as Company User."
-    html_template = (
-        "leaseslicensing/emails/organisation_contact_reinstate_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/organisation_contact_reinstate_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "You have been Reinstated as Company User."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_contact_reinstate_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_contact_reinstate_notification.txt"
+        )
 
 
 class OrganisationContactDeclineNotificationEmail(TemplateEmailBase):
-    subject = "Your organisation link request has been declined."
-    html_template = (
-        "leaseslicensing/emails/organisation_contact_decline_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/organisation_contact_decline_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "Your organisation link request has been declined."
+        self.html_template = (
+            "leaseslicensing/emails/organisation_contact_decline_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_contact_decline_notification.txt"
+        )
 
 
 class OrganisationAddressUpdatedNotificationEmail(TemplateEmailBase):
-    subject = "An organisation" "s address has been updated"
-    html_template = (
-        "leaseslicensing/emails/organisation_address_updated_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/organisation_address_updated_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "An organisation" "s address has been updated"
+        self.html_template = (
+            "leaseslicensing/emails/organisation_address_updated_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_address_updated_notification.txt"
+        )
 
 
 class OrganisationIdUploadNotificationEmail(TemplateEmailBase):
-    subject = "An organisation" "s identification has been uploaded"
-    html_template = "leaseslicensing/emails/organisation_id_upload_notification.html"
-    txt_template = "leaseslicensing/emails/organisation_id_upload_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "An organisation" "s identification has been uploaded"
+        self.html_template = (
+            "leaseslicensing/emails/organisation_id_upload_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_id_upload_notification.txt"
+        )
 
 
 class OrganisationRequestLinkNotificationEmail(TemplateEmailBase):
-    subject = "An organisation request to be linked has been sent for approval"
-    html_template = "leaseslicensing/emails/organisation_request_link_notification.html"
-    txt_template = "leaseslicensing/emails/organisation_request_link_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "An organisation request to be linked has been sent for approval"
+        self.html_template = (
+            "leaseslicensing/emails/organisation_request_link_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/organisation_request_link_notification.txt"
+        )
 
 
 def send_organisation_id_upload_email_notification(

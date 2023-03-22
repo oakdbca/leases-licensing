@@ -1,68 +1,39 @@
 import traceback
-import os
-import datetime
-import base64
-import geojson
-from six.moves.urllib.parse import urlparse
-from wsgiref.util import FileWrapper
-from copy import deepcopy
-from django.db.models import Q, Min
-from django.db import transaction
-from django.http import HttpResponse
-from django.core.files.base import ContentFile
+from datetime import datetime
+
+import deepcopy
 from django.core.exceptions import ValidationError
-from django.conf import settings
-from django.contrib import messages
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from rest_framework import viewsets, serializers, status, generics, views
-from rest_framework.decorators import action as detail_route, renderer_classes
-from rest_framework.decorators import action as list_route
-from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer
-from rest_framework.permissions import (
-    IsAuthenticated,
-    AllowAny,
-    IsAdminUser,
-    BasePermission,
-)
-from rest_framework.pagination import PageNumberPagination
-from datetime import datetime, timedelta
-from collections import OrderedDict
-from django.core.cache import cache
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser, Address
-from ledger_api_client.country_models import Country
-from datetime import datetime, timedelta, date
-from django.urls import reverse
-from django.shortcuts import render, redirect, get_object_or_404
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from leaseslicensing.components.main.decorators import basic_exception_handler
+from django.db import transaction
+from django.db.models import Q
+from rest_framework import serializers, views, viewsets
+from rest_framework.decorators import action as detail_route
+from rest_framework.decorators import action as list_route
+from rest_framework.decorators import renderer_classes
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+from rest_framework_datatables.pagination import DatatablesPageNumberPagination
+
 from leaseslicensing.components.compliances.models import (
     Compliance,
-    ComplianceAmendmentRequest,
     ComplianceAmendmentReason,
+    ComplianceAmendmentRequest,
 )
-from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
-from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.compliances.serializers import (
+    CompAmendmentRequestDisplaySerializer,
+    ComplianceActionSerializer,
+    ComplianceAmendmentRequestSerializer,
+    ComplianceCommsSerializer,
     ComplianceSerializer,
     InternalComplianceSerializer,
     SaveComplianceSerializer,
-    ComplianceActionSerializer,
-    ComplianceCommsSerializer,
-    ComplianceAmendmentRequestSerializer,
-    CompAmendmentRequestDisplaySerializer,
 )
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
+from leaseslicensing.components.main.models import ApplicationType
+from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
-from rest_framework_datatables.pagination import DatatablesPageNumberPagination
-from rest_framework_datatables.filters import DatatablesFilterBackend
-from leaseslicensing.components.proposals.api import (
-    ProposalFilterBackend,
-    ProposalRenderer,
-)
 
 
 class GetComplianceStatusesDict(views.APIView):
@@ -93,6 +64,11 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             if request.GET.get("filter_compliance_status") != "all"
             else ""
         )
+        filter_application_type = (
+            request.GET.get("filter_application_type")
+            if request.GET.get("filter_application_type") != "all"
+            else ""
+        )
 
         if filter_due_date_from:
             filter_due_date_from = datetime.strptime(filter_due_date_from, "%Y-%m-%d")
@@ -102,9 +78,15 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(due_date__lte=filter_due_date_to)
         if filter_compliance_status:
             queryset = queryset.filter(processing_status=filter_compliance_status)
+        if filter_application_type:
+            filter_application_type = int(filter_application_type)
+            queryset = queryset.filter(
+                proposal__application_type=filter_application_type
+            )
 
-        queryset = self.apply_request(request, queryset, view,
-                                        ledger_lookup_fields=["ind_applicant"])
+        queryset = self.apply_request(
+            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+        )
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -125,7 +107,8 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
         elif is_customer(self.request):
             # TODO: fix EmailUserRO issue here
             # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
-            # queryset =  Compliance.objects.filter( Q(proposal__org_applicant_id__in = user_orgs) | Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
+            # queryset =  Compliance.objects.filter( Q(proposal__org_applicant_id__in = user_orgs) |
+            # Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
             queryset = Compliance.objects.filter(
                 Q(proposal__submitter=self.request.user.id)
             ).exclude(processing_status="discarded")
@@ -175,7 +158,8 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
         qs = self.filter_queryset(qs)
         # qs = qs.order_by('lodgement_number', '-issue_date').distinct('lodgement_number')
 
-        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables by applicant/organisation
+        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables
+        # by applicant/organisation
         applicant_id = request.GET.get("org_id")
         if applicant_id:
             qs = qs.filter(proposal__org_applicant_id=applicant_id)
@@ -201,7 +185,8 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         elif is_customer(self.request):
             # TODO: fix EmailUserRO issue here
             # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
-            # queryset =  Compliance.objects.filter( Q(proposal__org_applicant_id__in = user_orgs) | Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
+            # queryset =  Compliance.objects.filter( Q(proposal__org_applicant_id__in = user_orgs) |
+            # Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
             queryset = Compliance.objects.filter(
                 Q(proposal__submitter=self.request.user.id)
             ).exclude(processing_status="discarded")
@@ -216,7 +201,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(proposal__org_applicant_id=org_id)
         submitter_id = request.GET.get("submitter_id", None)
         if submitter_id:
-            qs = qs.filter(proposal__submitter_id=submitter_id)
+            queryset = queryset.filter(proposal__submitter_id=submitter_id)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -279,20 +264,23 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                 serializer = SaveComplianceSerializer(instance, data=data)
                 serializer.is_valid(raise_exception=True)
                 instance = serializer.save()
-                # FIXME Is the right place to submit the request. Invoking submit will also send out email notifications,
-                # so it would be plausible to do this last after everything else, but submitting at the end of this function
-                # will cause any document attached to this Compliance to be uploaded twice and appear twice in the view.
+                # FIXME Is the right place to submit the request. Invoking submit will also
+                # send out email notifications,
+                # so it would be plausible to do this last after everything else, but submitting
+                # at the end of this function
+                # will cause any document attached to this Compliance to be uploaded twice
+                # and appear twice in the view.
                 instance.submit(request)
 
                 serializer = self.get_serializer(instance)
 
                 # Save the files
-                #for f in request.FILES:
+                # for f in request.FILES:
                 # for f in request.data.get("files"):
                 num_files = request.data.get("num_files")
                 for i in range(int(num_files)):
-                    #filename = str(f.get("name"))
-                    #_file = f.get("file")
+                    # filename = str(f.get("name"))
+                    # _file = f.get("file")
                     filename = request.data.get("name" + str(i))
                     _file = request.data.get("file" + str(i))
 
@@ -384,12 +372,12 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         try:
             instance = self.get_object()
             user_id = request.data.get("user_id", None)
-            #user = None
+            # user = None
             if not user_id:
                 raise serializers.ValiationError("A user id is required")
-            #try:
+            # try:
             #    user = EmailUser.objects.get(id=user_id)
-            #except EmailUser.DoesNotExist:
+            # except EmailUser.DoesNotExist:
             #    raise serializers.ValidationError(
             #        "A user with the id passed in does not exist"
             #    )
@@ -530,8 +518,8 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                 instance = self.get_object()
                 mutable = request.data._mutable
                 request.data._mutable = True
-                request.data["compliance"] = "{}".format(instance.id)
-                request.data["staff"] = "{}".format(request.user.id)
+                request.data["compliance"] = f"{instance.id}"
+                request.data["staff"] = f"{request.user.id}"
                 request.data._mutable = mutable
                 serializer = ComplianceCommsSerializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
@@ -586,7 +574,6 @@ class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):
 
 
 class ComplianceAmendmentReasonChoicesView(views.APIView):
-
     renderer_classes = [
         JSONRenderer,
     ]
