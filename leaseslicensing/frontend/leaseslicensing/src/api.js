@@ -1,6 +1,6 @@
 
 module.exports = {
-    application_types: '/api/application_types',
+    application_types: '/api/application_types/',
     application_types_dict: '/api/application_types_dict',
     application_statuses_dict: '/api/application_statuses_dict',
     competitive_process_statuses_dict: '/api/competitive_process_statuses_dict',
@@ -32,7 +32,7 @@ module.exports = {
     proposals_paginated_list: '/api/proposal_paginated', // both for external and internal
     approvals_paginated_list: '/api/approval_paginated',
     competitive_process: '/api/competitive_process',
-    compliances_paginated_external: '/api/compliance_paginated/list_external',
+    compliances_paginated_external: '/api/compliance_paginated/list_external/',
     compliances: '/api/compliances.json',
     proposal: '/api/proposal/',
     approvals: '/api/approvals/',

@@ -1,16 +1,17 @@
+from ledger_api_client.ledger_models import EmailUserRO
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
-from django.db.models import Sum, Max
+
 from leaseslicensing.components.main.models import (
-    CommunicationsLogEntry,
-    RequiredDocument,
-    Question,
-    GlobalSettings,
     ApplicationType,
+    CommunicationsLogEntry,
+    GlobalSettings,
+    MapColumn,
     MapLayer,
-    MapColumn, TemporaryDocumentCollection,
+    Question,
+    RequiredDocument,
+    TemporaryDocumentCollection,
 )
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser, EmailUserRO
-from datetime import datetime, date
 
 # from leaseslicensing.components.proposals.serializers import ProposalTypeSerializer
 
@@ -43,24 +44,25 @@ class CommunicationLogEntrySerializer(serializers.ModelSerializer):
 
 
 class ApplicationTypeSerializer(serializers.ModelSerializer):
-    name_display = serializers.SerializerMethodField()
-    confirmation_text = serializers.SerializerMethodField()
-    # regions = RegionSerializer(many=True)
-    # activity_app_types = ActivitySerializer(many=True)
-    # tenure_app_types = TenureSerializer(many=True)
+    name_display = serializers.CharField()
+    confirmation_text = serializers.CharField()
 
     class Meta:
         model = ApplicationType
-        # fields = ('id', 'name', 'activity_app_types', 'tenure_app_types')
-        # fields = ('id', 'name', 'tenure_app_types')
         fields = "__all__"
-        extra_fields = ["name_display", "confirmation_text"]
+        readonly_fields = ["name_display", "confirmation_text"]
+
+
+class ApplicationTypeKeyValueSerializer(serializers.ModelSerializer):
+    name_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApplicationType
+        fields = ["id", "name_display"]
+        read_only_fields = ["id", "name_display"]
 
     def get_name_display(self, obj):
-        return obj.name_display
-
-    def get_confirmation_text(self, obj):
-        return obj.confirmation_text
+        return obj.get_name_display()
 
 
 class GlobalSettingsSerializer(serializers.ModelSerializer):
@@ -177,7 +179,7 @@ class EmailUserSerializer(serializers.ModelSerializer):
         )
 
     def get_fullname(self, obj):
-        return "{} {}".format(obj.first_name, obj.last_name)
+        return f"{obj.first_name} {obj.last_name}"
 
     def get_text(self, obj):
         return self.get_fullname(obj)
@@ -186,4 +188,4 @@ class EmailUserSerializer(serializers.ModelSerializer):
 class TemporaryDocumentCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TemporaryDocumentCollection
-        fields = ('id',)
+        fields = ("id",)
