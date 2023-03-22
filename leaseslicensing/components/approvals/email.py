@@ -1,12 +1,16 @@
 import logging
 
-from django.core.mail import EmailMultiAlternatives, EmailMessage
-from django.utils.encoding import smart_text
-from django.urls import reverse
 from django.conf import settings
+from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.urls import reverse
+from django.utils.encoding import smart_text
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from leaseslicensing.components.organisations.models import (
+    Organisation,
+    OrganisationLogEntry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -14,77 +18,115 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
 class ApprovalExpireNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations Licence expired.".format(settings.DEP_NAME)
-    html_template = "leaseslicensing/emails/approval_expire_notification.html"
-    txt_template = "leaseslicensing/emails/approval_expire_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = f"{settings.DEP_NAME} - Commercial Operations Licence expired."
+        self.html_template = "leaseslicensing/emails/approval_expire_notification.html"
+        self.txt_template = "leaseslicensing/emails/approval_expire_notification.txt"
 
 
 class FilmingLawfulAuthorityApprovalExpireNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Filming Lawful Authoriy expired.".format(
-        settings.DEP_NAME
-    )
-    html_template = (
-        "leaseslicensing/emails/approval_lawful_authority_expire_notification.html"
-    )
-    txt_template = (
-        "leaseslicensing/emails/approval_lawful_authority_expire_notification.txt"
-    )
+    def __init__(self):
+        super().__init__()
+        self.subject = "{} - Commercial Filming Lawful Authoriy expired.".format(
+            settings.DEP_NAME
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_lawful_authority_expire_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/approval_lawful_authority_expire_notification.txt"
+        )
 
 
 class FilmingLicenceApprovalExpireNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Filming Lawful Authoriy expired.".format(
-        settings.DEP_NAME
-    )
-    html_template = "leaseslicensing/emails/approval_filming_expire_notification.html"
-    txt_template = "leaseslicensing/emails/approval_filming_expire_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "{} - Commercial Filming Lawful Authoriy expired.".format(
+            settings.DEP_NAME
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_filming_expire_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/approval_filming_expire_notification.txt"
+        )
 
 
 class ApprovalCancelNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations Licence cancelled.".format(settings.DEP_NAME)
-    html_template = "leaseslicensing/emails/approval_cancel_notification.html"
-    txt_template = "leaseslicensing/emails/approval_cancel_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = f"{settings.DEP_NAME} - Commercial Operations Licence cancelled."
+        self.html_template = "leaseslicensing/emails/approval_cancel_notification.html"
+        self.txt_template = "leaseslicensing/emails/approval_cancel_notification.txt"
 
 
 class ApprovalSuspendNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations Licence suspended.".format(settings.DEP_NAME)
-    html_template = "leaseslicensing/emails/approval_suspend_notification.html"
-    txt_template = "leaseslicensing/emails/approval_suspend_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = f"{settings.DEP_NAME} - Commercial Operations Licence suspended."
+        self.html_template = "leaseslicensing/emails/approval_suspend_notification.html"
+        self.txt_template = "leaseslicensing/emails/approval_suspend_notification.txt"
 
 
 class ApprovalSurrenderNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations Licence surrendered.".format(
-        settings.DEP_NAME
-    )
-    html_template = "leaseslicensing/emails/approval_surrender_notification.html"
-    txt_template = "leaseslicensing/emails/approval_surrender_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "{} - Commercial Operations Licence surrendered.".format(
+            settings.DEP_NAME
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_surrender_notification.html"
+        )
+        self.txt_template = "leaseslicensing/emails/approval_surrender_notification.txt"
 
 
 class ApprovalReinstateNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations Licence reinstated.".format(settings.DEP_NAME)
-    html_template = "leaseslicensing/emails/approval_reinstate_notification.html"
-    txt_template = "leaseslicensing/emails/approval_reinstate_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = (
+            f"{settings.DEP_NAME} - Commercial Operations Licence reinstated."
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_reinstate_notification.html"
+        )
+        self.txt_template = "leaseslicensing/emails/approval_reinstate_notification.txt"
 
 
 class ApprovalRenewalNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations licence renewal.".format(settings.DEP_NAME)
-    html_template = "leaseslicensing/emails/approval_renewal_notification.html"
-    txt_template = "leaseslicensing/emails/approval_renewal_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = f"{settings.DEP_NAME} - Commercial Operations licence renewal."
+        self.html_template = "leaseslicensing/emails/approval_renewal_notification.html"
+        self.txt_template = "leaseslicensing/emails/approval_renewal_notification.txt"
 
 
 class ApprovalEclassRenewalNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations E class licence renewal.".format(
-        settings.DEP_NAME
-    )
-    html_template = "leaseslicensing/emails/approval_eclass_renewal_notification.html"
-    txt_template = "leaseslicensing/emails/approval_eclass_renewal_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "{} - Commercial Operations E class licence renewal.".format(
+            settings.DEP_NAME
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_eclass_renewal_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/approval_eclass_renewal_notification.txt"
+        )
 
 
 class ApprovalEclassExpiryNotificationEmail(TemplateEmailBase):
-    subject = "{} - Commercial Operations E class licence expiry.".format(
-        settings.DEP_NAME
-    )
-    html_template = "leaseslicensing/emails/approval_eclass_expiry_notification.html"
-    txt_template = "leaseslicensing/emails/approval_eclass_expiry_notification.txt"
+    def __init__(self):
+        super().__init__()
+        self.subject = "{} - Commercial Operations E class licence expiry.".format(
+            settings.DEP_NAME
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_eclass_expiry_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/approval_eclass_expiry_notification.txt"
+        )
 
 
 def send_approval_expire_email_notification(approval):
@@ -113,7 +155,7 @@ def send_approval_expire_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
-    except:
+    except EmailUser.DoesNotExist:
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
 
@@ -137,7 +179,7 @@ def send_approval_cancel_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
-    except:
+    except EmailUser.DoesNotExist:
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
@@ -179,7 +221,7 @@ def send_approval_suspend_email_notification(approval, request=None):
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
-    except:
+    except EmailUser.DoesNotExist:
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
@@ -218,7 +260,7 @@ def send_approval_surrender_email_notification(approval, request=None):
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
-    except:
+    except EmailUser.DoesNotExist:
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
@@ -256,7 +298,7 @@ def send_approval_renewal_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
-    except:
+    except EmailUser.DoesNotExist:
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     # attach renewal notice
@@ -298,7 +340,7 @@ def send_approval_eclass_renewal_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
-    except:
+    except EmailUser.DoesNotExist:
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
 
@@ -332,7 +374,7 @@ def send_approval_eclass_expiry_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
-    except:
+    except EmailUser.DoesNotExist:
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
 
@@ -428,12 +470,6 @@ def _log_approval_email(email_message, approval, sender=None):
     email_entry = ApprovalLogEntry.objects.create(**kwargs)
 
     return email_entry
-
-
-from leaseslicensing.components.organisations.models import (
-    OrganisationLogEntry,
-    Organisation,
-)
 
 
 def _log_org_email(email_message, organisation, customer, sender=None):
