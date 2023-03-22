@@ -61,6 +61,7 @@ class Compliance(models.Model):
         ("with_assessor", "Under Review"),
         ("approved", "Approved"),
         ("discarded", "Discarded"),
+        ("overdue", "Overdue"),
     )
 
     lodgement_number = models.CharField(max_length=9, blank=True, default="")
@@ -210,8 +211,8 @@ class Compliance(models.Model):
                 self.lodgement_date = timezone.now()
 
                 self.save(
-                        version_comment=f"Compliance Submitted: {self.id}"
-                        )
+                    version_comment=f"Compliance Submitted: {self.id}"
+                )
                 self.proposal.save(
                     version_comment=f"Compliance Submitted: {self.id}"
                 )
