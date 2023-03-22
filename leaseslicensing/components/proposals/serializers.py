@@ -1,3 +1,5 @@
+import datetime
+
 from django.conf import settings
 from django.db.models import Q
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
@@ -865,6 +867,12 @@ class InternalProposalSerializer(BaseProposalSerializer):
     )  # Accessing user's roles for this proposal.
     invoicing_details = InvoicingDetailsSerializer()
     all_lodgement_versions = serializers.SerializerMethodField()
+    approved_on = (
+        serializers.SerializerMethodField()
+    )
+    approved_by = (
+        serializers.SerializerMethodField()
+    )
 
     class Meta:
         model = Proposal
@@ -960,6 +968,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "approval_issue_date",
             "invoicing_details",
             "all_lodgement_versions",
+            "approved_on",
+            "approved_by",
             # "assessor_comment_map",
             # "deficiency_comment_map",
             # "assessor_comment_proposal_details",
@@ -1082,6 +1092,25 @@ class InternalProposalSerializer(BaseProposalSerializer):
             return obj.versions_to_lodgement_dict(obj.revision_versions())
         else:
             return []
+
+    def get_approved_on(self, obj):
+        ts = None
+        if obj.proposed_issuance_approval:
+            ts = obj.proposed_issuance_approval.get("approved_on", None)
+
+        if ts:
+            return datetime.datetime.fromtimestamp(ts).date()
+
+
+    def get_approved_by(self, obj):
+        user = None
+        if obj.proposed_issuance_approval:
+            user = obj.proposed_issuance_approval.get("approved_by", None)
+
+        if user:
+            email_user = retrieve_email_user(user)
+            return f"{email_user.first_name} {email_user.last_name}"
+
 
     # def get_fee_invoice_url(self,obj):
     #     return '/cols/payments/invoice-pdf/{}'.format(obj.fee_invoice_reference) if obj.fee_paid else None

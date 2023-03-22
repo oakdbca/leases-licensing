@@ -2,7 +2,7 @@
     <div>
         <div v-if="displayApprovedMsg" class="col-md-12 alert alert-success">
             <!--p>The {{ applicationTypeNameDisplay }} was approved to proceed to a full application on date by {{ proposal.assigned_approver.email }}</p-->
-            <p>The {{ applicationTypeNameDisplay }} was approved to proceed to a {{ fullApplicationText }} on {{ approvalIssueDate }} by { insert approver name here }</p>
+            <p>{{ applicationTypeNameDisplay }} {{ approveDecisionText }} on {{ proposalApprovedOn }} by {{ proposalApprovedBy }}.</p>
             <!--p>Expiry date: {{ approvalExpiryDate }}</p>
             <p>Permit: <a target="_blank" :href="proposal.permit">approval.pdf</a></p-->
         </div>
@@ -220,11 +220,19 @@ export default {
                 return this.proposal.approval_issue_date;
             }
         },
-        fullApplicationText: function() {
+        proposalApprovedOn: function() {
+            return this.proposal.approved_on;
+        },
+        proposalApprovedBy: function() {
+            return this.proposal.approved_by;
+        },
+        approveDecisionText: function() {
             if (this.proposal.proposed_issuance_approval.decision === 'approve_lease_licence') {
-                return 'full application';
+                return 'was approved to proceed to a full application';
             } else if (this.proposal.proposed_issuance_approval.decision === 'approve_competitive_process') {
-                return 'Competitive Process';
+                return 'was approved to proceed to a Competitive Process';
+            } else {
+                return "was approved";
             }
         },
         show_invoicing_details: function() {
@@ -242,7 +250,13 @@ export default {
         },
         applicationTypeNameDisplay: function() {
             if (this.proposal) {
-                return this.proposal.application_type.name_display;
+                if (this.proposal.proposed_issuance_approval.decision === "approve_lease_licence") {
+                    return `The ${this.proposal.application_type.name_display}`;
+                } else if (this.proposal.proposed_issuance_approval.decision === "approve_competitive_process") {
+                    return `The ${this.proposal.application_type.name_display}`;
+                } else {
+                    return `The application for a ${this.proposal.application_type.name_display}`;
+                }
             }
         },
         displayAwaitingPaymentMsg: function(){
@@ -255,7 +269,9 @@ export default {
         },
         displayApprovedMsg: function(){
             let display = false
-            if (this.proposal.processing_status_id === constants.PROPOSAL_STATUS.APPROVED.ID){
+            if (this.proposal.processing_status_id === constants.PROPOSAL_STATUS.APPROVED.ID ||
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID ){
                 display = true
             }
             return display

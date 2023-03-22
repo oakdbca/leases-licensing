@@ -2384,6 +2384,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     )
             if mandatory_doc_errors:
                 raise serializers.ValidationError(mandatory_doc_errors)
+
+        if self.processing_status == 'with_approver':
+            self.proposed_issuance_approval["approved_on"] = timezone.now().timestamp()
+            self.proposed_issuance_approval["approved_by"] = request.user.id
+
+
         self.save()
 
     def proposed_approval(self, request, details):
