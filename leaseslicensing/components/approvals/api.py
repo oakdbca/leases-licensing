@@ -1,66 +1,49 @@
+import logging
 import traceback
-import os
-import datetime
-import base64
-import geojson
-from six.moves.urllib.parse import urlparse
-from wsgiref.util import FileWrapper
-from django.db.models import Q, Min
-from django.db import transaction
-from django.http import HttpResponse
-from django.core.files.base import ContentFile
-from django.core.exceptions import ValidationError
-from django.conf import settings
-from django.contrib import messages
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from rest_framework import viewsets, serializers, status, generics, views
-from rest_framework.decorators import action as detail_route, renderer_classes
-from rest_framework.decorators import action as list_route
-from rest_framework.response import Response
-from rest_framework.renderers import JSONRenderer
-from rest_framework.permissions import (
-    IsAuthenticated,
-    AllowAny,
-    IsAdminUser,
-    BasePermission,
-)
-from rest_framework.pagination import PageNumberPagination
-from datetime import datetime, timedelta
-from collections import OrderedDict
-from django.core.cache import cache
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser, Address
+from datetime import datetime
 
-# from leaseslicensing.components.main.models import Organisation as ledger_org
-from ledger_api_client.country_models import Country
-from datetime import datetime, timedelta, date
-from django.urls import reverse
-from django.shortcuts import render, redirect, get_object_or_404
-from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
-from leaseslicensing.components.proposals.models import Proposal, ApplicationType
-from leaseslicensing.components.approvals.models import Approval, ApprovalDocument, ApprovalType, ApprovalSubType
+from django.conf import settings
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.db import transaction
+from django.db.models import Q
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from rest_framework import filters, generics, serializers, views, viewsets
+from rest_framework.decorators import action as detail_route
+from rest_framework.decorators import action as list_route
+from rest_framework.decorators import renderer_classes
+from rest_framework.renderers import JSONRenderer
+from rest_framework.response import Response
+from rest_framework_datatables.pagination import DatatablesPageNumberPagination
+
+from leaseslicensing.components.approvals.models import (
+    Approval,
+    ApprovalDocument,
+    ApprovalSubType,
+    ApprovalType,
+)
 from leaseslicensing.components.approvals.serializers import (
-    ApprovalSerializer,
     ApprovalCancellationSerializer,
     ApprovalExtendSerializer,
-    ApprovalSuspensionSerializer,
-    ApprovalSurrenderSerializer,
-    ApprovalUserActionSerializer,
     ApprovalLogEntrySerializer,
     ApprovalPaymentSerializer,
+    ApprovalSerializer,
+    ApprovalSurrenderSerializer,
+    ApprovalSuspensionSerializer,
+    ApprovalUserActionSerializer,
 )
+from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationContact,
 )
+from leaseslicensing.components.proposals.api import ProposalRenderer
+from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_customer, is_internal
-from rest_framework_datatables.pagination import DatatablesPageNumberPagination
-from leaseslicensing.components.proposals.api import (
-    ProposalFilterBackend,
-    ProposalRenderer,
-)
-from rest_framework_datatables.filters import DatatablesFilterBackend
+
+logger = logging.getLogger(__name__)
 
 
 # class GetApprovalTypeDict(views.APIView):
@@ -75,7 +58,8 @@ from rest_framework_datatables.filters import DatatablesFilterBackend
 #        data = cache.get(cache_title)
 #        if not data:
 #            #cache.set(cache_title, Approval.approval_types_dict(include_codes), settings.LOV_CACHE_TIMEOUT)
-#            cache.set(cache_title,[{'code': i[0], 'description': i[1]} for i in Approval.STATUS_CHOICES], settings.LOV_CACHE_TIMEOUT)
+#            cache.set(cache_title,
+#               [{'code': i[0], 'description': i[1]} for i in Approval.STATUS_CHOICES], settings.LOV_CACHE_TIMEOUT)
 #            data = cache.get(cache_title)
 #        return Response(data)
 
@@ -88,21 +72,23 @@ class GetApprovalTypesDict(views.APIView):
     def get(self, request, format=None):
         data = cache.get("approval_types_dict")
         if not data:
-            approval_types_dict = [{
-                "id": t.id, 
-                "name": t.name, 
-                "details_placeholder": t.details_placeholder,
-                "approval_type_document_types":
-                [
-                    {
-                        "id": doc_type_link.approval_type_document_type.id,
-                        "name": doc_type_link.approval_type_document_type.name,
-                        "mandatory": doc_type_link.mandatory,
-                    }
-                    #for doc_type in t.approvaltypedocumenttypes.all()
-                    for doc_type_link in t.approvaltypedocumenttypeonapprovaltype_set.all()
-                ]
-            } for t in ApprovalType.objects.all()]
+            approval_types_dict = [
+                {
+                    "id": t.id,
+                    "name": t.name,
+                    "details_placeholder": t.details_placeholder,
+                    "approval_type_document_types": [
+                        {
+                            "id": doc_type_link.approval_type_document_type.id,
+                            "name": doc_type_link.approval_type_document_type.name,
+                            "mandatory": doc_type_link.mandatory,
+                        }
+                        # for doc_type in t.approvaltypedocumenttypes.all()
+                        for doc_type_link in t.approvaltypedocumenttypeonapprovaltype_set.all()
+                    ],
+                }
+                for t in ApprovalType.objects.all()
+            ]
             cache.set(
                 "approval_types_dict",
                 approval_types_dict,
@@ -120,10 +106,9 @@ class GetApprovalSubTypesDict(views.APIView):
     def get(self, request, format=None):
         data = cache.get("approval_sub_types_dict")
         if not data:
-            approval_sub_types_dict = [{
-                "id": t.id, 
-                "name": t.name
-            } for t in ApprovalSubType.objects.all()]
+            approval_sub_types_dict = [
+                {"id": t.id, "name": t.name} for t in ApprovalSubType.objects.all()
+            ]
             cache.set(
                 "approval_sub_types_dict",
                 approval_sub_types_dict,
@@ -131,7 +116,6 @@ class GetApprovalSubTypesDict(views.APIView):
             )
             data = cache.get("approval_sub_types_dict")
         return Response(data)
-
 
 
 class GetApprovalStatusesDict(views.APIView):
@@ -165,32 +149,50 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
                     return i[0]
             return None
 
-        filter_approval_type = (request.GET.get("filter_approval_type")
-                    if request.GET.get("filter_approval_type") != "all"
-                    else "")
-        filter_approval_status = (request.GET.get("filter_approval_status")
-                                  if request.GET.get("filter_approval_status") != "all"
-                                  else "")
-        filter_approval_expiry_date_from = request.GET.get("filter_approval_expiry_date_from")
-        filter_approval_expiry_date_to = request.GET.get("filter_approval_expiry_date_to")
+        filter_approval_type = (
+            request.GET.get("filter_approval_type")
+            if request.GET.get("filter_approval_type") != "all"
+            else ""
+        )
+        filter_approval_status = (
+            request.GET.get("filter_approval_status")
+            if request.GET.get("filter_approval_status") != "all"
+            else ""
+        )
+        filter_approval_expiry_date_from = request.GET.get(
+            "filter_approval_expiry_date_from"
+        )
+        filter_approval_expiry_date_to = request.GET.get(
+            "filter_approval_expiry_date_to"
+        )
 
         if filter_approval_type:
-            queryset = queryset.filter(current_proposal__application_type__name=filter_approval_type)
+            filter_approval_type = int(filter_approval_type)
+            logger.debug(f"filter_approval_type: {filter_approval_type}")
+            queryset = queryset.filter(
+                current_proposal__application_type=filter_approval_type
+            )
         if filter_approval_status:
             queryset = queryset.filter(status=filter_approval_status)
         if filter_approval_expiry_date_from:
-            filter_approval_expiry_date_from = datetime.strptime(filter_approval_expiry_date_from, "%Y-%m-%d")
-            queryset = queryset.filter(expiry_date__gte=filter_approval_expiry_date_from)
+            filter_approval_expiry_date_from = datetime.strptime(
+                filter_approval_expiry_date_from, "%Y-%m-%d"
+            )
+            queryset = queryset.filter(
+                expiry_date__gte=filter_approval_expiry_date_from
+            )
         if filter_approval_expiry_date_to:
-            filter_approval_expiry_date_to = datetime.strptime(filter_approval_expiry_date_to, "%Y-%m-%d")
+            filter_approval_expiry_date_to = datetime.strptime(
+                filter_approval_expiry_date_to, "%Y-%m-%d"
+            )
             queryset = queryset.filter(expiry_date__lte=filter_approval_expiry_date_to)
 
-
-        #getter = request.query_params.get
-        #fields = self.get_fields(getter)
-        #ordering = self.get_ordering(getter, fields)
-        queryset = self.apply_request(request, queryset, view,
-                                        ledger_lookup_fields=["ind_applicant"])
+        # getter = request.query_params.get
+        # fields = self.get_fields(getter)
+        # ordering = self.get_ordering(getter, fields)
+        queryset = self.apply_request(
+            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+        )
         setattr(view, "_datatables_total_count", total_count)
         return queryset
 
@@ -210,7 +212,8 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         elif is_customer(self.request):
             # TODO: fix EmailUserRO issue here
             # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
-            # queryset =  Approval.objects.filter(Q(org_applicant_id__in = user_orgs) | Q(submitter = self.request.user))
+            # queryset =  Approval.objects.filter(Q(org_applicant_id__in = user_orgs)
+            # | Q(submitter = self.request.user))
             queryset = Approval.objects.filter(Q(submitter=self.request.user.id))
             return queryset
         return Approval.objects.none()
@@ -219,7 +222,8 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
     #        response = super(ProposalPaginatedViewSet, self).list(request, args, kwargs)
     #
     #        # Add extra data to response.data
-    #        #response.data['regions'] = self.get_queryset().filter(region__isnull=False).values_list('region__name', flat=True).distinct()
+    #        #response.data['regions'] = self.get_queryset().filter
+    # (region__isnull=False).values_list('region__name', flat=True).distinct()
     #        return response
 
     @list_route(
@@ -230,7 +234,8 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
     )
     def approvals_external(self, request, *args, **kwargs):
         """
-        Paginated serializer for datatables - used by the internal and external dashboard (filtered by the get_queryset method)
+        Paginated serializer for datatables - used by the internal and external dashboard
+        (filtered by the get_queryset method)
 
         To test:
             http://localhost:8000/api/approval_paginated/approvals_external/?format=datatables&draw=1&length=2
@@ -248,7 +253,8 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         qs = Approval.objects.filter(id__in=ids)
         qs = self.filter_queryset(qs)
 
-        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables by applicant/organisation
+        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables
+        # by applicant/organisation
         applicant_id = request.GET.get("org_id")
         if applicant_id:
             qs = qs.filter(org_applicant_id=applicant_id)
@@ -262,9 +268,6 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             result_page, context={"request": request}, many=True
         )
         return self.paginator.get_paginated_response(serializer.data)
-
-
-from rest_framework import filters
 
 
 class ApprovalPaymentFilterViewSet(generics.ListAPIView):
@@ -331,9 +334,14 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return Approval.objects.all()
         elif is_customer(self.request):
-            user_orgs = [
-                org.id for org in self.request.user.leaseslicensing_organisations.all()
-            ] if hasattr(self.request.user, "leaseslicensing_organisations") else []
+            user_orgs = (
+                [
+                    org.id
+                    for org in self.request.user.leaseslicensing_organisations.all()
+                ]
+                if hasattr(self.request.user, "leaseslicensing_organisations")
+                else []
+            )
             queryset = Approval.objects.filter(
                 Q(org_applicant_id__in=user_orgs) | Q(submitter=self.request.user.id)
             )
@@ -353,7 +361,7 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(org_applicant_id=org_id)
         submitter_id = request.GET.get("submitter_id", None)
         if submitter_id:
-            qs = qs.filter(submitter_id=submitter_id)
+            queryset = queryset.filter(submitter_id=submitter_id)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -365,8 +373,10 @@ class ApprovalViewSet(viewsets.ModelViewSet):
     )
     def filter_list(self, request, *args, **kwargs):
         """Used by the external dashboard filters"""
-        # region_qs =  self.get_queryset().filter(current_proposal__region__isnull=False).values_list('current_proposal__region__name', flat=True).distinct()
-        # activity_qs =  self.get_queryset().filter(current_proposal__activity__isnull=False).values_list('current_proposal__activity', flat=True).distinct()
+        # region_qs =  self.get_queryset().filter(current_proposal__region__isnull=False)
+        # .values_list('current_proposal__region__name', flat=True).distinct()
+        # activity_qs =  self.get_queryset().filter(current_proposal__activity__isnull=False)
+        # .values_list('current_proposal__activity', flat=True).distinct()
         application_types = ApplicationType.objects.all().values_list("name", flat=True)
         data = dict(
             approval_status_choices=[i[1] for i in Approval.STATUS_CHOICES],
@@ -390,7 +400,7 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             document.visible = False
             document.save()
             instance.save(
-                version_comment="Licence ({}): {}".format(section, document.name)
+                version_comment=f"Licence ({section}): {document.name}"
             )  # to allow revision to be added to reversion history
 
         elif (
@@ -417,9 +427,10 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             document._file = path
             document.save()
             instance.save(
-                version_comment="Licence ({}): {}".format(section, filename)
+                version_comment=f"Licence ({section}): {filename}"
             )  # to allow revision to be added to reversion history
-            # instance.current_proposal.save(version_comment='File Added: {}'.format(filename)) # to allow revision to be added to reversion history
+            # instance.current_proposal.save(version_comment='File Added: {}'.format(filename))
+            # # to allow revision to be added to reversion history
 
         return Response(
             [
@@ -460,18 +471,21 @@ class ApprovalViewSet(viewsets.ModelViewSet):
                     if request.data.get("file-upload-0")
                     else raiser("Licence File is required")
                 )
-                try:
-                    if request.data.get("applicant_type") == "org":
+                if request.data.get("applicant_type") == "org":
+                    no_license_holder_msg = "Licence holder is required"
+                    try:
                         org_applicant = Organisation.objects.get(
                             organisation_id=request.data.get("holder-selected")
                         )
-                        # org_applicant = ledger_org.objects.get(id=request.data.get('holder-selected'))
-                    else:
+                    except Organisation.DoesNotExist:
+                        raise serializers.ValidationError(no_license_holder_msg)
+                else:
+                    try:
                         proxy_applicant = EmailUser.objects.get(
                             id=request.data.get("holder-selected")
                         )
-                except:
-                    raise serializers.ValidationError("Licence holder is required")
+                    except EmailUser.DoesNotExist:
+                        raise serializers.ValidationError(no_license_holder_msg)
 
                 start_date = (
                     datetime.strptime(request.data.get("start_date"), "%d/%m/%Y")
@@ -731,8 +745,8 @@ class ApprovalViewSet(viewsets.ModelViewSet):
                 instance = self.get_object()
                 mutable = request.data._mutable
                 request.data._mutable = True
-                request.data["approval"] = "{}".format(instance.id)
-                request.data["staff"] = "{}".format(request.user.id)
+                request.data["approval"] = f"{instance.id}"
+                request.data["staff"] = f"{request.user.id}"
                 request.data._mutable = mutable
                 serializer = ApprovalLogEntrySerializer(data=request.data)
                 serializer.is_valid(raise_exception=True)

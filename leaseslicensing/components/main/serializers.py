@@ -50,7 +50,7 @@ class ApplicationTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApplicationType
         fields = "__all__"
-        readonly_fields = ["name_display", "confirmation_text"]
+        read_only_fields = ["name_display", "confirmation_text"]
 
 
 class ApplicationTypeKeyValueSerializer(serializers.ModelSerializer):

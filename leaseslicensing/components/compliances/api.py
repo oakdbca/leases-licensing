@@ -1,7 +1,7 @@
 import traceback
+from copy import deepcopy
 from datetime import datetime
 
-import deepcopy
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
