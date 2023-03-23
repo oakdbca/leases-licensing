@@ -672,7 +672,7 @@ export default {
                 .catch((error) => {
                     console.error('There was an error!', error)
                 })
-            // Types
+            // Statuses
             fetch(api_endpoints.approval_statuses_dict)
                 .then(async (response) => {
                     const data = await response.json()

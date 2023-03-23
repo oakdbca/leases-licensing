@@ -206,6 +206,13 @@ class OrganisationSerializer(serializers.ModelSerializer):
             return None
 
 
+class OrganisationKeyValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organisation
+        fields = ["id", "organisation_name"]
+        read_only_fields = ["id", "organisation_name"]
+
+
 class OrganisationCheckExistSerializer(serializers.Serializer):
     # Validation Serializer for existing Organisations
     exists = serializers.BooleanField(default=False)
@@ -330,7 +337,6 @@ class OrgRequestRequesterSerializer(serializers.ModelSerializer):
 
 
 class OrganisationRequestSerializer(serializers.ModelSerializer):
-
     identification = serializers.FileField()
     requester_name = serializers.SerializerMethodField(read_only=True)
     lodgement_date = serializers.DateTimeField(format="%d/%m/%Y")
@@ -474,7 +480,6 @@ class OrganisationUnlinkUserSerializer(serializers.Serializer):
 
 
 class OrgUserAcceptSerializer(serializers.Serializer):
-
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     email = serializers.EmailField()

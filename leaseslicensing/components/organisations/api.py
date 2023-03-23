@@ -29,6 +29,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationCheckSerializer,
     OrganisationCommsSerializer,
     OrganisationContactSerializer,
+    OrganisationKeyValueSerializer,
     OrganisationLogEntrySerializer,
     OrganisationPinCheckSerializer,
     OrganisationRequestActionSerializer,
@@ -71,29 +72,30 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = OrganisationSerializer(self.queryset, many=True)
         return Response(serializer.data)
 
+    @list_route(methods=["GET"], detail=False)
+    def key_value_list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().only("id", "organisation_name")
+        self.serializer_class = OrganisationKeyValueSerializer
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @list_route(
         methods=[
             "GET",
         ],
         detail=False,
     )
-    @basic_exception_handler
-    def get_department_users(self, request, *args, **kwargs):
+    def organisation_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
-
-        data = Organisation.objects.filter(
-            Q(first_name__icontains=search_term)
-            | Q(last_name__icontains=search_term)
-            | Q(full_name__icontains=search_term)
-        ).values("email", "first_name", "last_name")[:10]
+        organisations = (
+            self.get_queryset()
+            .filter(organisation_name__icontains=search_term)
+            .only("id", "organisation_name")[:10]
+        )
         data_transform = [
-            {
-                "id": person["email"],
-                "text": f"{person['first_name']} {person['last_name']}",
-            }
-            for person in data
+            {"id": organisation.id, "text": organisation.organisation_name}
+            for organisation in organisations
         ]
-
         return Response({"results": data_transform})
 
     @detail_route(
@@ -992,7 +994,6 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
 
 
 class OrganisationAccessGroupMembers(views.APIView):
-
     renderer_classes = [
         JSONRenderer,
     ]
