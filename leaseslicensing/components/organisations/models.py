@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 class Organisation(models.Model):
     organisation = models.IntegerField()  # Ledger Organisation
-    # TODO: business logic related to delegate changes.
+    organisation_name = models.CharField(max_length=255, editable=False, default="")
     delegates = ArrayField(models.IntegerField(), blank=True)  # EmailUserRO
     admin_pin_one = models.CharField(max_length=50, blank=True)
     admin_pin_two = models.CharField(max_length=50, blank=True)
@@ -92,6 +92,10 @@ class Organisation(models.Model):
     def __str__(self):
         return str(self.organisation)
 
+    def save(self, *args, **kwargs):
+        self.organisation_name = self.ledger_organisation["organisation_name"]
+        super().save(*args, **kwargs)
+
     @property
     def ledger_organisation(self):
         if self.organisation:
@@ -109,7 +113,7 @@ class Organisation(models.Model):
             return organisation
 
         critical_message = (
-            f"CRITICAL: Retailer Group: {self.id} has no ledger organisation attached."
+            f"CRITICAL: Organisation: {self.id} has no ledger organisation attached."
         )
         logger.critical(critical_message)
         return None
@@ -159,7 +163,6 @@ class Organisation(models.Model):
 
     def add_user_contact(self, user, request, admin_flag, role):
         with transaction.atomic():
-
             contact, created = OrganisationContact.objects.get_or_create(
                 organisation=self,
                 first_name=user.first_name,
