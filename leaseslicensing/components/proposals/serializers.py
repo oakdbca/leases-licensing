@@ -1094,6 +1094,10 @@ class InternalProposalSerializer(BaseProposalSerializer):
             return []
 
     def get_approved_on(self, obj):
+        """
+        Returns date of approval in DD/MM/YY format if the information is available
+        """
+
         ts = None
         if obj.proposed_issuance_approval:
             ts = obj.proposed_issuance_approval.get("approved_on", None)
@@ -1103,6 +1107,10 @@ class InternalProposalSerializer(BaseProposalSerializer):
 
 
     def get_approved_by(self, obj):
+        """
+        Returns the user who approved this proposal if available
+        """
+
         user = None
         if obj.proposed_issuance_approval:
             user = obj.proposed_issuance_approval.get("approved_by", None)

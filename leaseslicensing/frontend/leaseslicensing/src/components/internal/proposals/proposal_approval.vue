@@ -227,6 +227,8 @@ export default {
             return this.proposal.approved_by;
         },
         approveDecisionText: function() {
+            /** Returns approval decision text part to be used in the green bar */
+
             if (this.proposal.proposed_issuance_approval.decision === 'approve_lease_licence') {
                 return 'was approved to proceed to a full application';
             } else if (this.proposal.proposed_issuance_approval.decision === 'approve_competitive_process') {
@@ -249,6 +251,8 @@ export default {
             return display
         },
         applicationTypeNameDisplay: function() {
+            /** Returns approval application type text part to be used in the green bar */
+
             if (this.proposal) {
                 if (this.proposal.proposed_issuance_approval.decision === "approve_lease_licence") {
                     return `The ${this.proposal.application_type.name_display}`;
