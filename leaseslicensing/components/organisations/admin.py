@@ -1,7 +1,7 @@
 from django.contrib import admin
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+
 from leaseslicensing.components.organisations import models
-from django.contrib.admin import actions
 
 # Register your models here.
 
@@ -10,6 +10,7 @@ from django.contrib.admin import actions
 class OrganisationAdmin(admin.ModelAdmin):
     list_display = [
         "organisation",
+        "organisation_name",
         "admin_pin_one",
         "admin_pin_two",
         "user_pin_one",
@@ -39,9 +40,7 @@ class OrganisationAccessGroupAdmin(admin.ModelAdmin):
         if db_field.name == "members":
             # kwargs["queryset"] = EmailUser.objects.filter(email__icontains='@dbca.wa.gov.au')
             kwargs["queryset"] = EmailUser.objects.filter(is_staff=True)
-        return super(OrganisationAccessGroupAdmin, self).formfield_for_manytomany(
-            db_field, request, **kwargs
-        )
+        return super().formfield_for_manytomany(db_field, request, **kwargs)
 
     def has_add_permission(self, request):
         return True if models.OrganisationAccessGroup.objects.count() == 0 else False
