@@ -1099,7 +1099,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             ts = obj.proposed_issuance_approval.get("approved_on", None)
 
         if ts:
-            return datetime.datetime.fromtimestamp(ts).date()
+            return datetime.datetime.fromtimestamp(ts).date().strftime("%d/%m/%Y")
 
 
     def get_approved_by(self, obj):
