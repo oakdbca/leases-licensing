@@ -3008,7 +3008,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
-            action_url='<a href=/internal/proposal/{} target="_blank">Open</a>'.format(self.id)
+            action_url='<a href=/internal/proposal/{} target="_blank">Open</a>'.format(self.id),
+            type="application"
         )
         return related_item
 
@@ -3018,7 +3019,15 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def related_item_descriptor(self):
-        return '(return descriptor)'
+        """
+            Returns this application's status as item description:
+        """
+
+        if self.application_type.name in [APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
+                                          APPLICATION_TYPE_LEASE_LICENCE]:
+            return self.processing_status
+        else:
+            return '(return descriptor)'
 
     def generate_competitive_process(self):
         if self.generated_competitive_process:

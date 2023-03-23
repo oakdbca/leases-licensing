@@ -184,7 +184,8 @@ class CompetitiveProcess(models.Model):
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
-            action_url='<a href=/internal/competitive_process/{} target="_blank">Open</a>'.format(self.id)
+            action_url='<a href=/internal/competitive_process/{} target="_blank">Open</a>'.format(self.id),
+            type="competitive_process"
         )
         return related_item
 
@@ -194,7 +195,11 @@ class CompetitiveProcess(models.Model):
 
     @property
     def related_item_descriptor(self):
-        return '(return descriptor)'
+        """
+            Returns this competitive process' status as item description
+        """
+
+        return self.status
 
     def can_user_view(self, user):
         if is_internal(user):  # TODO: confirm this condition
