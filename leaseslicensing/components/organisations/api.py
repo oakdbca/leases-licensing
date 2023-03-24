@@ -50,7 +50,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
     queryset = Organisation.objects.all()
     serializer_class = OrganisationSerializer
 
-    def _get_queryset(self):
+    def get_queryset(self):
         user = self.request.user
         if is_internal(self.request):
             return Organisation.objects.all()
