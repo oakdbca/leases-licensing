@@ -48,76 +48,70 @@
                                             </div>
                                         </div>
                                         <div class="row mb-2">
-                                            <div class="row">
-                                                <div class="col-sm-5">
-                                                    <label class="control-label pull-right" for="Name">
-                                                        Apply waiver for T Class application fee
-                                                    </label>
+                                            <label for="" class="col-sm-3 control-label fw-bold">Waivers</label>
+                                        </div>
+                                        <div class="row row-waiver mb-3">
+                                            <div class="col-sm-4">
+                                                <label class="control-label pull-right" for="Name">
+                                                    T Class application fee
+                                                </label>
+                                            </div>
+                                            <div class="col-sm-1">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" :value="true"
+                                                        v-model="org.apply_application_discount"
+                                                        ref="application_discount_yes" />
                                                 </div>
-                                                <div class="col-sm-2">
-                                                    <div class="form-check form-switch">
-                                                        <input class="form-check-input" type="checkbox" :value="true"
-                                                            v-model="org.apply_application_discount"
-                                                            ref="application_discount_yes" /> Yes
-                                                    </div>
-                                                </div>
-                                                <div class="col-sm-5">
-                                                    <div v-show="org.apply_application_discount">
-                                                        <div class="col-sm-3">
-                                                            <label class="control-label pull-left" for="Name">Waiver</label>
-                                                        </div>
-                                                        <div class="col-sm-6 input-group">
-                                                            <label class="input-group-addon" for="number">$</label>
-                                                            <input type="number" class="form-control" min="0"
+                                            </div>
+                                            <div class="col-sm-7">
+                                                <div class="row" v-show="org.apply_application_discount">
+                                                    <div class="col-auto">
+                                                        <div class="input-group input-group-sm">
+                                                            <span class="input-group-text" id="dollars-addon">$</span>
+                                                            <input type="number" class="form-control discount" min="0"
                                                                 name="application_discount"
                                                                 v-model.number="org.application_discount"
-                                                                @input="handleApplicationCurrencyInput">
+                                                                @input="handleApplicationCurrencyInput"
+                                                                aria-label="application_discount"
+                                                                aria-describedby="dollars-addon">
                                                         </div>
-                                                        <div v-show="!validateApplicationDiscount()">
-                                                            <p style="color:red;"> Waiver amount must be
-                                                                between
-                                                                $0 - $10,000 </p>
-                                                        </div>
+                                                    </div>
+                                                    <div v-show="!validateLicenceDiscount()" class="col-auto">
+                                                        <div class="text-danger form-text">Must be
+                                                            between
+                                                            $0 - $10,000 </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="row mb-2">
-                                            <div class="row">
-                                                <div class="col-sm-5">
-                                                    <label class="control-label pull-right" for="Name">Apply
-                                                        waiver for T Class licence fee</label>
+                                        <div class="row row-waiver mb-3">
+                                            <div class="col-sm-4">
+                                                <label class="control-label pull-right" for="Name">T Class licence
+                                                    fee</label>
+                                            </div>
+                                            <div class="col-sm-1">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox"
+                                                        v-model="org.apply_licence_discount" ref="licence_discount_yes" />
                                                 </div>
-                                                <div class="col-sm-1">
-                                                    <label>
-                                                        <input type="radio" :value="true"
-                                                            v-model="org.apply_licence_discount"
-                                                            ref="licence_discount_yes" />Yes
-                                                    </label>
-                                                </div>
-                                                <div class="col-sm-1">
-                                                    <label>
-                                                        <input type="radio" :value="false"
-                                                            v-model="org.apply_licence_discount" />No
-                                                    </label>
-                                                </div>
-                                                <div class="col-sm-4">
-                                                    <div v-show="org.apply_licence_discount">
-                                                        <div class="col-sm-3">
-                                                            <label class="control-label pull-left" for="Name">Waiver</label>
-                                                        </div>
-                                                        <div class="col-sm-6 input-group">
-                                                            <label class="input-group-addon" for="number">$</label>
-                                                            <input type="number" class="form-control" min="0"
+                                            </div>
+                                            <div class="col-sm-7">
+                                                <div class="row" v-show="org.apply_licence_discount">
+                                                    <div class="col-auto">
+                                                        <div class="input-group input-group-sm mb-0">
+                                                            <span class="input-group-text" id="dollars-addon">$</span>
+                                                            <input type="number" class="form-control discount" min="0"
                                                                 name="licence_discount"
                                                                 v-model.number="org.licence_discount"
-                                                                @input="handleLicenceCurrencyInput">
+                                                                @input="handleLicenceCurrencyInput"
+                                                                aria-label="licence_discount"
+                                                                aria-describedby="dollars-addon">
                                                         </div>
-                                                        <div v-show="!validateLicenceDiscount()">
-                                                            <p style="color:red;"> Waiver amount must be
-                                                                between
-                                                                $0 - $10,000 </p>
-                                                        </div>
+                                                    </div>
+                                                    <div v-show="!validateLicenceDiscount()" class="col-auto">
+                                                        <div class="text-danger form-text">Must be
+                                                            between
+                                                            $0 - $10,000 </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -581,29 +575,12 @@ export default {
     display: none;
 }
 
-.input-group {
-    display: table;
-    white-space: nowrap;
-    vertical-align: top;
-    width: 75%;
+.discount {
+    width: 100px;
 }
 
-.input-group .form-control {
-    display: table-cell;
-    vertical-align: top;
-    width: 75%;
-}
-
-.input-group .input-group-addon {
-    display: table-cell;
-    width: 1%;
-    vertical-align: top;
-    background: #2f353e;
-    color: #fff;
-    font-size: 1.15rem;
-    line-height: 19px;
-    padding-left: 10px;
-    padding-right: 10px;
+.row-waiver {
+    height: 32px;
 }
 
 .badge {
