@@ -1,65 +1,34 @@
-import base64
-import functools
-import json
 import logging
 import os
 import traceback
 from collections import OrderedDict
-from datetime import date, datetime, timedelta
-from urllib.parse import (  # FIXME Can this be `from urllib.parse import urlencode` in py3?
-    urlparse,
-)
-from wsgiref.util import FileWrapper
+from datetime import datetime
 
-import geojson
 from django.conf import settings
-from django.contrib import messages
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
-from django.db import connection, transaction
+from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseRedirect
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404
 from django.urls import reverse
-from django.utils import timezone
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_http_methods
-from ledger_api_client.country_models import Country
-from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from ledger_api_client.ledger_models import Invoice
-from rest_framework import generics, serializers, status, views, viewsets
+from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
-from rest_framework.decorators import parser_classes, renderer_classes
-from rest_framework.filters import BaseFilterBackend
-from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
-from rest_framework.permissions import (
-    AllowAny,
-    BasePermission,
-    IsAdminUser,
-    IsAuthenticated,
-)
+from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework_datatables.filters import DatatablesFilterBackend
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 from rest_framework_datatables.renderers import DatatablesRenderer
+from reversion.models import Version
 
 from leaseslicensing.components.approvals.models import Approval
-from leaseslicensing.components.approvals.serializers import ApprovalSerializer
-from leaseslicensing.components.bookings.models import Booking, BookingInvoice
 from leaseslicensing.components.compliances.models import Compliance
-from leaseslicensing.components.compliances.serializers import ComplianceSerializer
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
-from leaseslicensing.components.main.models import (
-    ApplicationType,
-    Document,
-    RequiredDocument,
-)
+from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.utils import check_db_connection
@@ -71,17 +40,13 @@ from leaseslicensing.components.proposals.models import (
     Proposal,
     ProposalAssessment,
     ProposalAssessmentAnswer,
-    ProposalDocument,
     ProposalGeometry,
-    ProposalOtherDetails,
     ProposalRequirement,
     ProposalStandardRequirement,
     ProposalType,
-    ProposalUserAction,
     Referral,
     ReferralRecipientGroup,
     RequirementDocument,
-    search_reference,
     searchKeyWords,
 )
 from leaseslicensing.components.proposals.serializers import (  # InternalSaveProposalSerializer,
@@ -94,27 +59,19 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
     ListProposalSerializer,
-    OnHoldSerializer,
     PropedDeclineSerializer,
     ProposalAssessmentAnswerSerializer,
     ProposalAssessmentSerializer,
     ProposalGeometrySerializer,
     ProposalLogEntrySerializer,
-    ProposalOtherDetailsSerializer,
-    ProposalParkSerializer,
-    ProposalReferralSerializer,
     ProposalRequirementSerializer,
     ProposalSerializer,
     ProposalStandardRequirementSerializer,
     ProposalTypeSerializer,
     ProposalUserActionSerializer,
-    ProposedApprovalSerializer,
-    ReferralProposalSerializer,
     ReferralSerializer,
-    SaveProposalOtherDetailsSerializer,
     SaveProposalSerializer,
     SearchKeywordSerializer,
-    SearchReferenceSerializer,
     SendReferralSerializer,
 )
 from leaseslicensing.components.proposals.utils import (
@@ -130,32 +87,7 @@ from leaseslicensing.settings import (
     APPLICATION_TYPES,
 )
 
-# import reversion
-# from reversion.models import Version
-
-
 logger = logging.getLogger("leaseslicensing")
-
-
-# class GetApplicantsDict(views.APIView):
-#    renderer_classes = [JSONRenderer, ]
-#
-#    def get(self, request, format=None):
-#        applicants = EmailUser.objects.filter(mooringlicensing_proposals__in=Proposal.objects.all()).order_by('first_name', 'last_name').distinct()
-#        return Response(EmailUserSerializer(applicants, many=True).data)
-
-
-# class GetApplicationTypeDict(views.APIView):
-#    renderer_classes = [JSONRenderer, ]
-#
-#    def get(self, request, format=None):
-#        apply_page = request.GET.get('apply_page', 'false')
-#        apply_page = True if apply_page.lower() in ['true', 'yes', 'y', ] else False
-#        data = cache.get('application_type_dict')
-#        if not data:
-#            cache.set('application_type_dict',Proposal.application_types_dict(apply_page=apply_page), settings.LOV_CACHE_TIMEOUT)
-#            data = cache.get('application_type_dict')
-#        return Response(data)
 
 
 class GetAdditionalDocumentTypeDict(views.APIView):
@@ -184,34 +116,37 @@ class GetApplicationTypeDict(views.APIView):
         for_filter = request.query_params.get("for_filter", "")
         for_filter = True if for_filter == "true" else False
         cache_data_name = (
-            "application_type_dict_for_filter"
+            settings.CACHE_KEY_APPLICATION_TYPE_DICT_FOR_FILTER
             if for_filter
-            else "application_type_dict"
+            else settings.CACHE_KEY_APPLICATION_TYPE_DICT
         )
 
-        data = cache.get(cache_data_name)
-        if not data:
+        # I have made this work for when the cache is not working or we are using dummy cache for testing
+        # however I'm not sure what it's
+        application_types = cache.get(cache_data_name)
+        if application_types is None:
             if for_filter:
+                application_types = [
+                    {"id": app_type[0], "text": app_type[1]}
+                    for app_type in settings.APPLICATION_TYPES
+                ]
                 cache.set(
                     cache_data_name,
-                    [
-                        {"id": app_type[0], "text": app_type[1]}
-                        for app_type in settings.APPLICATION_TYPES
-                    ],
+                    application_types,
                     settings.LOV_CACHE_TIMEOUT,
                 )
             else:
+                application_types = [
+                    {"code": app_type[0], "description": app_type[1]}
+                    for app_type in settings.APPLICATION_TYPES
+                    if app_type[0] == settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST
+                ]
                 cache.set(
                     cache_data_name,
-                    [
-                        {"code": app_type[0], "description": app_type[1]}
-                        for app_type in settings.APPLICATION_TYPES
-                        if app_type[0] == "registration_of_interest"
-                    ],
+                    application_types,
                     settings.LOV_CACHE_TIMEOUT,
                 )
-            data = cache.get(cache_data_name)
-        return Response(data)
+        return Response(application_types)
 
 
 class GetApplicationTypeDescriptions(views.APIView):
@@ -433,7 +368,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
     def excluded_type(self):
         try:
             return ApplicationType.objects.get(name="E Class")
-        except:
+        except ApplicationType.DoesNotExist:
             return ApplicationType.objects.none()
 
     def get_queryset(self):
@@ -452,7 +387,8 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                 )
         if is_customer(self.request):
             # user_orgs = [org.id for org in user.leaseslicensing_organisations.all()]
-            # qs= Proposal.objects.filter( Q(org_applicant_id__in = user_orgs) | Q(submitter = user) ).exclude(application_type=self.excluded_type)
+            # qs= Proposal.objects.filter( Q(org_applicant_id__in = user_orgs) | Q(submitter = user) )
+            # .exclude(application_type=self.excluded_type)
             # return qs.exclude(migrated=True)
             # return Proposal.objects.all()
             qs = Proposal.objects.filter(
@@ -484,11 +420,14 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
     #        response = super(ProposalPaginatedViewSet, self).list(request, args, kwargs)
     #
     #        # Add extra data to response.data
-    #        #response.data['regions'] = self.get_queryset().filter(region__isnull=False).values_list('region__name', flat=True).distinct()
+    #        #response.data['regions'] = self.get_queryset().filter(region__isnull=False)
+    # .values_list('region__name', flat=True).distinct()
     #        return response
 
     def list(self, request, *args, **kwargs):
-        """serializer.data = {ReturnList: 10} [OrderedDict([('id', 4), ('application_type', OrderedDict([('id', 1), ('name_display', 'Registration of Interest'), ('confirmation_text', 'registration of interest'), ('name', 'registration_of_interest'), ('order', 0), ('visible', True), ('application_fee'… View
+        """serializer.data = {ReturnList: 10} [OrderedDict([('id', 4), ('application_type', OrderedDict([('id', 1),
+        ('name_display', 'Registration of Interest'), ('confirmation_text', 'registration of interest'),
+        ('name', 'registration_of_interest'), ('order', 0), ('visible', True), ('application_fee'… View
         User is accessing /external/ page
         """
         qs = self.get_queryset()
@@ -533,7 +472,8 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         # qs = self.filter_queryset(self.request, qs, self)
         qs = self.filter_queryset(qs)
 
-        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables by applicant/organisation
+        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables
+        # by applicant/organisation
         applicant_id = request.GET.get("org_id")
         if applicant_id:
             qs = qs.filter(org_applicant_id=applicant_id)
@@ -595,7 +535,8 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         # qs = self.filter_queryset(self.request, qs, self)
         qs = self.filter_queryset(qs)
 
-        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables by applicant/organisation
+        # on the internal organisations dashboard, filter the Proposal/Approval/Compliance
+        # datatables by applicant/organisation
         applicant_id = request.GET.get("org_id")
         if applicant_id:
             qs = qs.filter(org_applicant_id=applicant_id)
@@ -638,7 +579,7 @@ class ProposalSubmitViewSet(viewsets.ModelViewSet):
     def excluded_type(self):
         try:
             return ApplicationType.objects.get(name="E Class")
-        except:
+        except ApplicationType.DoesNotExist:
             return ApplicationType.objects.none()
 
     def get_queryset(self):
@@ -651,7 +592,8 @@ class ProposalSubmitViewSet(viewsets.ModelViewSet):
             queryset = Proposal.objects.filter(
                 Q(org_applicant_id__in=user_orgs) | Q(submitter=user)
             )
-            # queryset =  Proposal.objects.filter(region__isnull=False).filter( Q(applicant_id__in = user_orgs) | Q(submitter = user) )
+            # queryset =  Proposal.objects.filter(region__isnull=False)
+            # .filter( Q(applicant_id__in = user_orgs) | Q(submitter = user) )
             return queryset.exclude(application_type=self.excluded_type)
         logger.warn(
             "User is neither customer nor internal user: {} <{}>".format(
@@ -672,7 +614,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
     def excluded_type(self):
         try:
             return ApplicationType.objects.get(name="E Class")
-        except:
+        except ApplicationType.DoesNotExist:
             return ApplicationType.objects.none()
 
     def get_queryset(self):
@@ -688,7 +630,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
             queryset = Proposal.objects.filter(
                 Q(org_applicant_id__in=user_orgs) | Q(submitter=user.id)
             ).exclude(migrated=True)
-            # queryset =  Proposal.objects.filter(region__isnull=False).filter( Q(applicant_id__in = user_orgs) | Q(submitter = user) )
+            # queryset =  Proposal.objects.filter(region__isnull=False)
+            # .filter( Q(applicant_id__in = user_orgs) | Q(submitter = user) )
             return queryset.exclude(application_type=self.excluded_type)
         logger.warn(
             "User is neither customer nor internal user: {} <{}>".format(
@@ -703,6 +646,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             obj = super().get_object()
         except Exception as e:
             # because current queryset excludes migrated licences
+            logger.exception(e)
             obj = get_object_or_404(Proposal, id=self.kwargs["id"])
         return obj
 
@@ -1220,26 +1164,6 @@ class ProposalViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @list_route(
-        methods=[
-            "GET",
-        ],
-        detail=False,
-    )
-    def list_paginated(self, request, *args, **kwargs):
-        """
-        https://stackoverflow.com/questions/29128225/django-rest-framework-3-1-breaks-pagination-paginationserializer
-        """
-        proposals = self.get_queryset()
-        paginator = PageNumberPagination()
-        # paginator = LimitOffsetPagination()
-        paginator.page_size = 5
-        result_page = paginator.paginate_queryset(proposals, request)
-        serializer = ListProposalSerializer(
-            result_page, context={"request": request}, many=True
-        )
-        return paginator.get_paginated_response(serializer.data)
-
     @detail_route(
         methods=[
             "GET",
@@ -1507,7 +1431,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
                         document.name
                     )
                 )  # to allow revision to be added to reversion history
-                # instance.current_proposal.save(version_comment='File Deleted: {}'.format(document.name)) # to allow revision to be added to reversion history
+                # instance.current_proposal.save(version_comment='File Deleted:
+                # {}'.format(document.name)) # to allow revision to be added to reversion history
 
             elif action == "hide" and "document_id" in request.POST:
                 document_id = request.POST.get("document_id")
@@ -1549,7 +1474,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 instance.save(
                     version_comment=f"File Added: {filename}"
                 )  # to allow revision to be added to reversion history
-                # instance.current_proposal.save(version_comment='File Added: {}'.format(filename)) # to allow revision to be added to reversion history
+                # instance.current_proposal.save(version_comment='File Added: {}'
+                # .format(filename)) # to allow revision to be added to reversion history
 
             return Response(
                 [
@@ -1730,7 +1656,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             if not status:
                 raise serializers.ValidationError("Status is required")
             else:
-                if not status in [
+                if status not in [
                     "with_assessor",
                     "with_assessor_conditions",
                     "with_approver",
@@ -1777,10 +1703,11 @@ class ProposalViewSet(viewsets.ModelViewSet):
             if not status:
                 raise serializers.ValidationError("Status is required")
             else:
-                # if instance.application_type.name==ApplicationType.FILMING and instance.filming_approval_type=='lawful_authority':
+                # if instance.application_type.name==ApplicationType.FILMING
+                # and instance.filming_approval_type=='lawful_authority':
                 #   status='with_assessor'
                 # else:
-                if not status in ["with_approver"]:
+                if status not in ["with_approver"]:
                     raise serializers.ValidationError(
                         "The status provided is not allowed"
                     )
@@ -1846,7 +1773,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
     # store comments, deficiencies, etc
     def internal_save(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = InternalSaveProposalSerializer(instance, data=request.data)
+        # Was previously InternalSaveProposalSerializer however no such serializer exists
+        serializer = SaveProposalSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -1913,12 +1841,11 @@ class ProposalViewSet(viewsets.ModelViewSet):
         API endpoint to test the creation of this Proposal's approval PDF
         """
 
+        instance = self.get_object()
         try:
-            instance = self.get_object()
             instance.test_create_approval_pdf(request)
-        except:
-            logger.error("Error in `test_create_approval_pdf`")
-            raise
+        except ValidationError:
+            raise ValidationError
 
         serializer_class = self.internal_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
@@ -2093,8 +2020,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 if hasattr(e, "message"):
                     raise serializers.ValidationError(e.message)
         except Exception as e:
-            print(traceback.print_exc())
-        raise serializers.ValidationError(str(e))
+            raise serializers.ValidationError(str(e))
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
@@ -2163,9 +2089,6 @@ class ProposalViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         try:
             with transaction.atomic():
-                print("request.data")
-                print(request.data)
-                http_status = status.HTTP_200_OK
                 application_type_str = request.data.get("application_type", {}).get(
                     "code"
                 )
@@ -2183,11 +2106,8 @@ class ProposalViewSet(viewsets.ModelViewSet):
                     "application_type_id": application_type.id,
                     "proposal_type_id": proposal_type.id,
                 }
-                print(data)
-                print("before serializer")
                 serializer = CreateProposalSerializer(data=data)
                 serializer.is_valid(raise_exception=True)
-                # serializer.save()
                 instance = serializer.save()
 
                 serializer = SaveProposalSerializer(instance)
@@ -2198,18 +2118,19 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         try:
-            http_status = status.HTTP_200_OK
             instance = self.get_object()
-            if application_name == ApplicationType.TCLASS:
+            if instance.application_type.name == ApplicationType.TCLASS:
                 serializer = SaveProposalSerializer(instance, data=request.data)
-            elif application_name == ApplicationType.FILMING:
-                serializer = ProposalFilmingOtherDetailsSerializer(
-                    data=other_details_data
-                )
-            elif application_name == ApplicationType.EVENT:
-                serializer = ProposalEventOtherDetailsSerializer(
-                    data=other_details_data
-                )
+
+            # Commenting out as no such seralizer exists, maybe this isn't needed and was taken from apiary?
+            # elif instance.application_type.name == ApplicationType.FILMING:
+            #     serializer = ProposalFilmingOtherDetailsSerializer(
+            #         data=other_details_data
+            #     )
+            # elif instance.application_type.name == ApplicationType.EVENT:
+            #     serializer = ProposalEventOtherDetailsSerializer(
+            #         data=other_details_data
+            #     )
 
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
@@ -2732,7 +2653,7 @@ class AmendmentRequestViewSet(viewsets.ModelViewSet):
         try:
             reason_id = request.data.get("reason")
             data = {
-                #'schema': qs_proposal_type.order_by('-version').first().schema,
+                # 'schema': qs_proposal_type.order_by('-version').first().schema,
                 "text": request.data.get("text"),
                 "proposal": request.data.get("proposal_id"),
                 "officer": request.user.id,
@@ -2883,8 +2804,10 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
                         )
                         serializer_chk.is_valid(raise_exception=True)
                         serializer_chk.save()
-                    except:
-                        raise
+                    except ProposalAssessmentAnswer.DoesNotExist:
+                        logger.warning(
+                            f"ProposalAssessmentAnswer: {chk['id']} does not exist"
+                        )
             # instance.proposal.log_user_action(ProposalUserAction.ACTION_EDIT_VESSEL.format(instance.id),request)
             return Response(serializer.data)
         except serializers.ValidationError:
