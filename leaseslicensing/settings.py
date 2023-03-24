@@ -124,25 +124,21 @@ TEMPLATES[0]["OPTIONS"]["context_processors"].append(
     "leaseslicensing.context_processors.leaseslicensing_url"
 )
 
-# del BOOTSTRAP3["css_url"]
-
-# BOOTSTRAP3 = {
-#    'jquery_url': '//static.dpaw.wa.gov.au/static/libs/jquery/2.2.1/jquery.min.js',
-#    'base_url': '//static.dpaw.wa.gov.au/static/libs/twitter-bootstrap/3.3.6/',
-#    'css_url': None,
-#    'theme_url': None,
-#    'javascript_url': None,
-#    'javascript_in_head': False,
-#    'include_jquery': False,
-#    'required_css_class': 'required-form-field',
-#    'set_placeholder': False,
-# }
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
-        "LOCATION": os.path.join(BASE_DIR, "leaseslicensing", "cache"),
+USE_DUMMY_CACHE = env("USE_DUMMY_CACHE", False)
+if USE_DUMMY_CACHE:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        },
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": os.path.join(BASE_DIR, "leaseslicensing", "cache"),
+        }
+    }
+
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_ll")
 STATICFILES_DIRS.extend(
     [
@@ -343,3 +339,4 @@ CACHE_TIMEOUT_24_HOURS = 60 * 60 * 24
 CACHE_KEY_LEDGER_ORGANISATION = "ledger-organisation-{}"
 CACHE_KEY_ORGANISATION_IDS = "cache_organisation_ids"
 CACHE_KEY_USER_IDS = "cache_user_ids"
+CACHE_KEY_COUNTRY_LIST = "country_list"
