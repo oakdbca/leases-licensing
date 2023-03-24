@@ -206,11 +206,13 @@
                                                 <div class="mb-3">
                                                     <ul v-if="org.delegate_email_users && org.delegate_email_users.length"
                                                         class="ms-0 ps-0">
-                                                        <span v-for="d in org.delegate_email_users"
-                                                            class="badge bg-secondary me-1" data-bs-toggle="tooltip"
+                                                        <span @click="personRedirect(d.id)"
+                                                            v-for="d in org.delegate_email_users"
+                                                            class="badge bg-secondary me-1 fs-6" data-bs-toggle="tooltip"
                                                             data-bs-html="true"
                                                             data-bs-title="<em>Tooltip</em> <u>with</u> <b>HTML</b>">
-                                                            {{ d.first_name }} {{ d.last_name }}
+                                                            {{ d.first_name }}
+                                                            {{ d.last_name }}
                                                         </span>
 
                                                     </ul>
@@ -434,6 +436,9 @@ export default {
         },
         addContact: function () {
             this.$refs.add_contact.isModalOpen = true;
+        },
+        personRedirect: function (id) {
+            window.location.href = '/internal/person/details/' + id;
         },
         addOrgContactEventListeners: function () {
             let vm = this;
