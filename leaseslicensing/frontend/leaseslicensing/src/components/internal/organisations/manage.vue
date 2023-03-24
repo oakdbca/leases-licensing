@@ -11,10 +11,11 @@
                     <div class="col-md-9">
                         <ul class="nav nav-pills" id="pills-tab" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link" id="pills-details-tab" data-bs-toggle="pill" href="#pills-details"
-                                    role="tab" aria-controls="pills-details" aria-selected="true">Details</a>
+                                <a class="nav-link active" id="pills-details-tab" data-bs-toggle="pill"
+                                    href="#pills-details" role="tab" aria-controls="pills-details"
+                                    aria-selected="true">Details</a>
                             </li>
-                            <li class=" nav-item">
+                            <li class="nav-item">
                                 <a class="nav-link" id="pills-other-tab" data-bs-toggle="pill" href="#pills-other"
                                     role="tab" aria-controls="pills-other" aria-selected="false">Other</a>
                             </li>
@@ -22,7 +23,7 @@
                         <div class="tab-content">
                             <div class="tab-pane active" id="pills-details" role="tabpanel"
                                 aria-labelledby="pills-applications-tab">
-                                <FormSection :formCollapse="true" label="Details" index="details">
+                                <FormSection :formCollapse="false" label="Details" index="details">
                                     <form class="form-horizontal" name="personal_form" method="post">
                                         <div class="row mb-2">
                                             <label for="" class="col-sm-3 control-label">Trading
@@ -48,24 +49,19 @@
                                         </div>
                                         <div class="row mb-2">
                                             <div class="row">
-                                                <div class="col-sm-4">
-                                                    <label class="control-label pull-right" for="Name">Apply
-                                                        waiver for T Class application fee</label>
+                                                <div class="col-sm-5">
+                                                    <label class="control-label pull-right" for="Name">
+                                                        Apply waiver for T Class application fee
+                                                    </label>
                                                 </div>
-                                                <div class="col-sm-1">
-                                                    <label>
-                                                        <input type="radio" :value="true"
+                                                <div class="col-sm-2">
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" :value="true"
                                                             v-model="org.apply_application_discount"
-                                                            ref="application_discount_yes" />Yes
-                                                    </label>
+                                                            ref="application_discount_yes" /> Yes
+                                                    </div>
                                                 </div>
-                                                <div class="col-sm-1">
-                                                    <label>
-                                                        <input type="radio" :value="false"
-                                                            v-model="org.apply_application_discount" />No
-                                                    </label>
-                                                </div>
-                                                <div class="col-sm-4">
+                                                <div class="col-sm-5">
                                                     <div v-show="org.apply_application_discount">
                                                         <div class="col-sm-3">
                                                             <label class="control-label pull-left" for="Name">Waiver</label>
@@ -88,7 +84,7 @@
                                         </div>
                                         <div class="row mb-2">
                                             <div class="row">
-                                                <div class="col-sm-4">
+                                                <div class="col-sm-5">
                                                     <label class="control-label pull-right" for="Name">Apply
                                                         waiver for T Class licence fee</label>
                                                 </div>
@@ -196,7 +192,7 @@
                                             :dtHeaders="contacts_headers" />
                                     </form>
                                 </FormSection>
-                                <FormSection :formCollapse="false" label="Linked User Accounts" index="linkeduseraccounts">
+                                <FormSection :formCollapse="true" label="Linked User Accounts" index="linkeduseraccounts">
                                     <form class="form-horizontal">
                                         <div class="col-sm-12">
                                             <div class="row">
