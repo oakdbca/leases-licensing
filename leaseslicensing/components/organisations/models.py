@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.utils import get_organisation
 from rest_framework import status
 
@@ -135,6 +136,10 @@ class Organisation(models.Model):
         )
         logger.critical(critical_message)
         return None
+
+    @property
+    def delegate_email_users(self):
+        return EmailUser.objects.filter(id__in=self.delegates)
 
     def log_user_action(self, action, request):
         return OrganisationAction.log_action(self, action, request.user)
