@@ -91,7 +91,7 @@ export default {
             type: String,
             required: true,
             validator: function (val) {
-                let options = ['internal', 'referral', 'external'];
+                let options = ['internal', 'referral', 'external', 'organisation_view'];
                 return options.indexOf(val) != -1 ? true : false;
             }
         },
@@ -201,15 +201,29 @@ export default {
         is_internal: function () {
             return this.level == 'internal'
         },
+        is_organisation_view: function () {
+            return this.level == 'organisation_view'
+        },
         // Datatable settings
         datatable_headers: function () {
-            if (this.is_external) {
+            if (this.is_organisation_view) {
                 return [
                     'Id',
                     'Number',
                     'Type',
                     'Site',
                     'Holder',
+                    'Status',
+                    'Expiry Date',
+                    'Document',
+                    'Action',
+                ]
+            } else if (this.is_external) {
+                return [
+                    'Id',
+                    'Number',
+                    'Type',
+                    'Site',
                     'Status',
                     'Expiry Date',
                     'Document',
@@ -402,7 +416,17 @@ export default {
         datatable_options: function () {
             let vm = this;
             let selectedColumns = [];
-            if (this.is_external) {
+            if (this.is_organisation_view) {
+                selectedColumns = [
+                    vm.columnId,
+                    vm.columnLodgementNumber,
+                    vm.columnType,
+                    vm.columnStatus,
+                    vm.columnExpiryDate,
+                    vm.columnDocument,
+                    vm.columnAction,
+                ]
+            } else if (this.is_external) {
                 selectedColumns = [
                     vm.columnId,
                     vm.columnLodgementNumber,
