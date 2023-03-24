@@ -444,6 +444,7 @@ export default {
                         return Promise.reject(error)
                     }
                     vm.compliance_types = data
+                    console.log('Compliance Types: ')
                     console.log(vm.compliance_types)
                 })
                 .catch((error) => {
@@ -461,6 +462,7 @@ export default {
                         return Promise.reject(error)
                     }
                     vm.compliance_statuses = data
+                    console.log('Compliance Statuses: ')
                     console.log(vm.compliance_statuses)
                 })
                 .catch((error) => {
