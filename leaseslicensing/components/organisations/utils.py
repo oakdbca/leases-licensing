@@ -1,30 +1,32 @@
-import string
 import random
+import string
 
 
 def can_manage_org(organisation, user):
     from leaseslicensing.components.organisations.models import (
-        Organisation,
         OrganisationAccessGroup,
         UserDelegation,
     )
-    from ledger.accounts.models import EmailUser
 
-    try:
-        UserDelegation.objects.get(organisation=organisation, user=user)
-        return can_admin_org(organisation, user)
-    except UserDelegation.DoesNotExist:
-        pass
-    try:
-        group = OrganisationAccessGroup.objects.first()
-        if group:
-            group.members.get(id=user.id)
-        return True
-    except EmailUser.DoesNotExist:
-        pass
+    if user.is_anonymous:
+        return False
     if user.is_superuser:
         return True
-    return False
+
+    try:
+        # Not 100% sure what was intended here see git history for what was here before
+        user_delegation = UserDelegation.objects.get(
+            organisation=organisation, user=user.id
+        )
+        return can_admin_org(organisation, user_delegation.user)
+    except UserDelegation.DoesNotExist:
+        try:
+            group = OrganisationAccessGroup.objects.first()
+            if group:
+                group.members.get(id=user.id)
+            return True
+        except OrganisationAccessGroup.DoesNotExist:
+            return False
 
 
 def is_last_admin(organisation, user):
@@ -47,24 +49,15 @@ def is_last_admin(organisation, user):
 
 
 def can_admin_org(organisation, user):
-    from leaseslicensing.components.organisations.models import (
-        Organisation,
-        OrganisationAccessGroup,
-        UserDelegation,
-        OrganisationContact,
-    )
-    from ledger.accounts.models import EmailUser
+    from leaseslicensing.components.organisations.models import OrganisationContact
 
     try:
         org_contact = OrganisationContact.objects.get(
             organisation_id=organisation, email=user.email
         )
-        # if org_contact.can_edit
-
         return org_contact.can_edit
     except OrganisationContact.DoesNotExist:
-        pass
-    return False
+        return False
 
 
 def can_relink(organisation, user):
@@ -98,24 +91,15 @@ def can_approve(organisation, user):
 
 
 def is_consultant(organisation, user):
-    from leaseslicensing.components.organisations.models import (
-        Organisation,
-        OrganisationAccessGroup,
-        UserDelegation,
-        OrganisationContact,
-    )
-    from ledger.accounts.models import EmailUser
+    from leaseslicensing.components.organisations.models import OrganisationContact
 
     try:
         org_contact = OrganisationContact.objects.get(
             organisation_id=organisation, email=user.email
         )
-        # if org_contact.can_edit
-
         return org_contact.check_consultant
     except OrganisationContact.DoesNotExist:
-        pass
-    return False
+        return False
 
 
 def random_generator(size=12, chars=string.digits):
