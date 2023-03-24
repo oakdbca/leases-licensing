@@ -383,3 +383,8 @@ CACHE_KEY_COUNTRY_LIST = "country_list"
 CACHE_KEY_APPROVAL_STATUSES = "approval_statuses_dict"
 CACHE_KEY_APPLICATION_TYPE_DICT_FOR_FILTER = "application_type_dict_for_filter"
 CACHE_KEY_APPLICATION_TYPE_DICT = "application_type_dict"
+CACHE_KEY_APPLICATION_STATUSES_DICT_INTERNAL = "application_internal_statuses_dict"
+CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL = "application_external_statuses_dict"
+CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
+    "application_internal_statuses_dict_for_filter"
+)

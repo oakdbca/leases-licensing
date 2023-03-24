@@ -178,39 +178,45 @@ class GetApplicationStatusesDict(views.APIView):
         for_filter = True if for_filter == "true" else False
 
         if for_filter:
-            cache_name = ("application_internal_statuses_dict_for_filter",)
-            cache.set(
-                cache_name,
-                [
+            cache_name = settings.CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER
+            application_statuses = cache.get(cache_name)
+            if application_statuses is None:
+                application_statuses = [
                     {"id": i[0], "text": i[1]}
                     for i in Proposal.PROCESSING_STATUS_CHOICES
-                ],
-                settings.LOV_CACHE_TIMEOUT,
-            )
-            data = cache.get(cache_name)
-            return Response(data)
+                ]
+                cache.set(
+                    cache_name,
+                    application_statuses,
+                    settings.LOV_CACHE_TIMEOUT,
+                )
+            return Response(application_statuses)
         else:
-            if not cache.get("application_internal_statuses_dict") or not cache.get(
-                "application_external_statuses_dict"
-            ):
+            if not cache.get(
+                settings.CACHE_KEY_APPLICATION_STATUSES_DICT_INTERNAL
+            ) or not cache.get(settings.CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL):
+                # I know this code is repeated however maybe Brendan was going to seperate customer statuses
+                # from internal statuses so I'll leave it here for now
+                internal_application_statuses = [
+                    {"code": i[0], "description": i[1]}
+                    for i in Proposal.PROCESSING_STATUS_CHOICES
+                ]
                 cache.set(
-                    "application_internal_statuses_dict",
-                    [
-                        {"code": i[0], "description": i[1]}
-                        for i in Proposal.PROCESSING_STATUS_CHOICES
-                    ],
+                    settings.CACHE_KEY_APPLICATION_STATUSES_DICT_INTERNAL,
+                    internal_application_statuses,
                     settings.LOV_CACHE_TIMEOUT,
                 )
+                external_application_statuses = [
+                    {"code": i[0], "description": i[1]}
+                    for i in Proposal.PROCESSING_STATUS_CHOICES
+                ]
                 cache.set(
-                    "application_external_statuses_dict",
-                    [
-                        {"code": i[0], "description": i[1]}
-                        for i in Proposal.PROCESSING_STATUS_CHOICES
-                    ],
+                    settings.CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL,
+                    external_application_statuses,
                     settings.LOV_CACHE_TIMEOUT,
                 )
-            data["external_statuses"] = cache.get("application_external_statuses_dict")
-            data["internal_statuses"] = cache.get("application_internal_statuses_dict")
+            data["external_statuses"] = external_application_statuses
+            data["internal_statuses"] = internal_application_statuses
             return Response(data)
 
 
