@@ -1,3 +1,8 @@
+/* Bring app content inline with header logo and navbar */
+div#app .container {
+    padding: 0 36px 0 36px;
+}
+
 .topmast {
     height: 115px;
     padding-top: 0px;
