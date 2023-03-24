@@ -5,7 +5,7 @@
             redirectPath="/internal/person/details/" />
 
         <Select2Search label="Organisation" :lookupApiEndpoint="api_endpoints.organisation_lookup"
-            redirectPath="/internal/organisation/details/" />
+            redirectPath="/internal/organisations/" />
 
         <Select2SearchReferenceNumber label="Reference Number" :lookupApiEndpoint="api_endpoints.search_reference" />
 
