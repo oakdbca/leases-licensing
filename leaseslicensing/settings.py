@@ -218,31 +218,71 @@ CONSOLE_EMAIL_BACKEND = env("CONSOLE_EMAIL_BACKEND", False)
 if CONSOLE_EMAIL_BACKEND:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# Additional logging for leaseslicensing
-LOGGING["handlers"]["payment_checkout"] = {
-    "level": "INFO",
-    "class": "logging.handlers.RotatingFileHandler",
-    "filename": os.path.join(BASE_DIR, "logs", "cols_payment_checkout.log"),
-    "formatter": "verbose",
-    "maxBytes": 5242880,
-}
-LOGGING["loggers"]["payment_checkout"] = {
-    "handlers": ["payment_checkout"],
-    "level": "INFO",
-}
-# Add a handler
-LOGGING["handlers"]["file_leaseslicensing"] = {
-    "level": "INFO",
-    "class": "logging.handlers.RotatingFileHandler",
-    "filename": os.path.join(BASE_DIR, "logs", "leaseslicensing.log"),
-    "formatter": "verbose",
-    "maxBytes": 5242880,
-}
 
-LOGGING["loggers"]["leaseslicensing"] = {
-    "handlers": ["file_leaseslicensing"],
-    "level": "INFO",
-}
+# Add a debug level logger for development
+if DEBUG:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "formatters": {
+            "verbose": {
+                "format": "%(levelname)s %(asctime)s %(name)s [Line:%(lineno)s][%(funcName)s] %(message)s"
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "DEBUG",
+            },
+            "leaseslicensing_rotating_file": {
+                "level": "INFO",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": os.path.join(BASE_DIR, "logs", "leaseslicensing.log"),
+                "formatter": "verbose",
+                "maxBytes": 5242880,
+            },
+            "mail_admins": {
+                "level": "ERROR",
+                "class": "django.utils.log.AdminEmailHandler",
+                "include_html": True,
+            },
+        },
+        "loggers": {
+            "leaseslicensing": {
+                "handlers": ["console", "leaseslicensing_rotating_file", "mail_admins"],
+                "level": "DEBUG",
+                "propagate": False,
+            },
+        },
+    }
+else:
+    # Additional logging for leaseslicensing
+    LOGGING["handlers"]["payment_checkout"] = {
+        "level": "INFO",
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": os.path.join(
+            BASE_DIR, "logs", "leaseslicensing_payment_checkout.log"
+        ),
+        "formatter": "verbose",
+        "maxBytes": 5242880,
+    }
+    LOGGING["loggers"]["payment_checkout"] = {
+        "handlers": ["payment_checkout"],
+        "level": "INFO",
+    }
+    # Add a handler
+    LOGGING["handlers"]["file_leaseslicensing"] = {
+        "level": "INFO",
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": os.path.join(BASE_DIR, "logs", "leaseslicensing.log"),
+        "formatter": "verbose",
+        "maxBytes": 5242880,
+    }
+    LOGGING["loggers"]["leaseslicensing"] = {
+        "handlers": ["file_leaseslicensing"],
+        "level": "INFO",
+    }
+
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 DEV_APP_BUILD_URL = env(
     "DEV_APP_BUILD_URL"
