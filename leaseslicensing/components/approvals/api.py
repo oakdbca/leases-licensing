@@ -207,16 +207,33 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
     serializer_class = ApprovalSerializer
 
     def get_queryset(self):
+        if not is_internal(self.request) and not is_customer(self.request):
+            return super().get_queryset()
+
         if is_internal(self.request):
-            return Approval.objects.all()
+            qs = Approval.objects.all()
         elif is_customer(self.request):
             # TODO: fix EmailUserRO issue here
             # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
             # queryset =  Approval.objects.filter(Q(org_applicant_id__in = user_orgs)
             # | Q(submitter = self.request.user))
-            queryset = Approval.objects.filter(Q(submitter=self.request.user.id))
-            return queryset
-        return Approval.objects.none()
+            qs = Approval.objects.filter(Q(submitter=self.request.user.id))
+
+        target_organisation_id = self.request.query_params.get(
+            "target_organisation_id", None
+        )
+        if (
+            target_organisation_id
+            and target_organisation_id.isnumeric()
+            and int(target_organisation_id) > 0
+        ):
+            logger.debug(f"target_organisation_id: {target_organisation_id}")
+            target_organisation_id = int(target_organisation_id)
+            qs = qs.exclude(org_applicant__isnull=True).filter(
+                org_applicant__id=target_organisation_id
+            )
+
+        return qs
 
     #    def list(self, request, *args, **kwargs):
     #        response = super(ProposalPaginatedViewSet, self).list(request, args, kwargs)

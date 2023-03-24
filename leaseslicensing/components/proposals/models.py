@@ -1,89 +1,84 @@
-from __future__ import unicode_literals
-from ckeditor.fields import RichTextField
-from dataclasses import field
-
-import json
-import os
+import copy
+import csv
 import datetime
+import json
+import logging
+import os
 import string
+import subprocess
+import time
+from dataclasses import field
+from decimal import Decimal as D
+
+import geopandas as gpd
+import pandas as pd
+from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
-from django.db import models, transaction
-from django.dispatch import receiver
-from django.db.models.signals import pre_delete
-from django.core.exceptions import ValidationError, MultipleObjectsReturned
-from django.core.validators import MaxValueValidator, MinValueValidator
+from dirtyfields import DirtyFieldsMixin
+from django.conf import settings
+from django.contrib.gis.db.models.fields import PointField, PolygonField
+from django.contrib.gis.gdal import SpatialReference
+from django.contrib.gis.geos import GEOSGeometry
 
 # from django.contrib.postgres.fields.jsonb import JSONField
 from django.contrib.postgres.fields import ArrayField
-from django.db.models import JSONField, Max, Min
-from django.utils import timezone
 from django.contrib.sites.models import Site
-from django.conf import settings
-from rest_framework import serializers
+from django.core.exceptions import MultipleObjectsReturned, ValidationError
+from django.core.validators import MaxValueValidator, MinValueValidator
+from django.db import models, transaction
+from django.db.models import JSONField, Max, Min, Q
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+from django.utils import timezone
+from ledger_api_client.country_models import Country
 
 # from ledger.accounts.models import OrganisationAddress
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser, Invoice
-from ledger_api_client.country_models import Country
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from ledger_api_client.ledger_models import Invoice
 from ledger_api_client.managed_models import SystemGroup
+from rest_framework import serializers
+from reversion.models import Version
+
 from leaseslicensing import exceptions
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.invoicing.models import InvoicingDetails
+from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
+    ApplicationType,
+    CommunicationsLogEntry,
+    Document,
+    RequiredDocument,
+    RevisionedMixin,
+    UserAction,
+)
 from leaseslicensing.components.main.related_item import RelatedItem
-from leaseslicensing.components.main.utils import get_department_user
+from leaseslicensing.components.main.utils import (
+    get_dbca_lands_and_waters_geos,
+    get_department_user,
+)
 from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationContact,
     UserDelegation,
 )
-from leaseslicensing.components.main.models import (
-    # Organisation as ledger_organisation, OrganisationAddress,
-    CommunicationsLogEntry,
-    UserAction,
-    Document,
-    ApplicationType,
-    RequiredDocument,
-    RevisionedMixin,
-)
 from leaseslicensing.components.proposals.email import (
-    send_referral_email_notification,
-    send_proposal_decline_email_notification,
-    send_proposal_approval_email_notification,
-    send_proposal_awaiting_payment_approval_email_notification,
     send_amendment_email_notification,
+    send_approver_approve_email_notification,
+    send_approver_decline_email_notification,
+    send_external_submit_email_notification,
+    send_proposal_approval_email_notification,
+    send_proposal_approver_sendback_email_notification,
+    send_proposal_awaiting_payment_approval_email_notification,
+    send_proposal_decline_email_notification,
+    send_referral_complete_email_notification,
+    send_referral_email_notification,
+    send_submit_email_notification,
 )
 from leaseslicensing.ledger_api_utils import retrieve_email_user
-from leaseslicensing.components.proposals.email import (
-    send_submit_email_notification,
-    send_external_submit_email_notification,
-    send_approver_decline_email_notification,
-    send_approver_approve_email_notification,
-    send_referral_complete_email_notification,
-    send_proposal_approver_sendback_email_notification,
-)
-import copy
-import subprocess
-from django.db.models import Q
-
-from reversion.models import Version
-from dirtyfields import DirtyFieldsMixin
-from decimal import Decimal as D
-import csv
-import time
-from django.contrib.gis.db.models.fields import PointField, PolygonField
-from leaseslicensing.components.main.utils import get_dbca_lands_and_waters_geos
-from django.contrib.gis.geos import GEOSGeometry
-from django.contrib.gis.gdal import SpatialReference
-import geopandas as gpd
-import pandas as pd
-
-
-import logging
-
 from leaseslicensing.settings import (
-    APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
     APPLICATION_TYPE_LEASE_LICENCE,
-    GROUP_NAME_ASSESSOR,
+    APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
     GROUP_NAME_APPROVER,
+    GROUP_NAME_ASSESSOR,
 )
 
 logger = logging.getLogger("leaseslicensing")
@@ -181,7 +176,7 @@ class DefaultDocument(Document):
 
     def delete(self):
         if self.can_delete:
-            return super(DefaultDocument, self).delete()
+            return super().delete()
         logger.info(
             "Cannot delete existing document object after Application has been submitted (including document submitted before Application pushback to status Draft): {}".format(
                 self.name
@@ -207,7 +202,7 @@ class ShapefileDocument(Document):
 
     def delete(self):
         if self.can_delete:
-            return super(ShapefileDocument, self).delete()
+            return super().delete()
         logger.info(
             "Cannot delete existing document object after Proposal has been submitted (including document submitted before Proposal pushback to status Draft): {}".format(
                 self.name
@@ -887,24 +882,24 @@ class RequirementDocument(Document):
 
     def delete(self):
         if self.can_delete:
-            return super(RequirementDocument, self).delete()
+            return super().delete()
 
 
 class LeaseLicenceApprovalDocument(Document):
     proposal = models.ForeignKey(
         "Proposal",
         related_name="lease_licence_approval_documents",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     approval_type = models.ForeignKey(
         "leaseslicensing.ApprovalType",
         related_name="lease_licence_approval_documents",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     approval_type_document_type = models.ForeignKey(
         "leaseslicensing.ApprovalTypeDocumentType",
         related_name="lease_licence_approval_documents",
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
@@ -1123,7 +1118,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='originating_proposal'
+        related_name="originating_proposal",
     )
     # Competitive Process generates a Lease Licence
     originating_competitive_process = models.ForeignKey(
@@ -1131,7 +1126,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='generated_proposal'
+        related_name="generated_proposal",
     )
     invoicing_details = models.OneToOneField(
         InvoicingDetails,
@@ -1196,10 +1191,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     # Append 'P' to Proposal id to generate Lodgement number. Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
-        super(Proposal, self).save(*args, **kwargs)  # Call parent `save` to create a Proposal id
+        super().save(*args, **kwargs)  # Call parent `save` to create a Proposal id
 
         if self.lodgement_number == "":
-            new_lodgment_id = "A{0:06d}".format(self.pk)
+            new_lodgment_id = f"A{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
 
@@ -1233,7 +1228,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def reference(self):
-        return "{}-{}".format(self.lodgement_number, self.lodgement_sequence)
+        return f"{self.lodgement_number}-{self.lodgement_sequence}"
 
     @property
     def reversion_ids(self):
@@ -1259,14 +1254,14 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def applicant(self):
         if self.org_applicant:
-            return self.org_applicant.organisation
+            return self.org_applicant
         elif self.ind_applicant:
             email_user = retrieve_email_user(self.ind_applicant)
         elif self.proxy_applicant:
             email_user = retrieve_email_user(self.proxy_applicant)
         else:
             logger.warning(
-                "Applicant for the proposal {} not found".format(self.lodgement_number)
+                f"Applicant for the proposal {self.lodgement_number} not found"
             )
             email_user = retrieve_email_user(self.submitter)
 
@@ -1302,7 +1297,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def applicant_name(self):
         if isinstance(self.applicant, Organisation):
-            return "{}".format(self.org_applicant.organisation.name)
+            return f"{self.org_applicant.organisation.name}"
         else:
             names = " ".join(
                 [
@@ -1406,8 +1401,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         current_revision_id = Version.objects.get_for_object(self).first().revision_id
         versions = self.revision_versions().filter(
-            ~Q(revision__comment='')
-            | Q(revision_id=current_revision_id))
+            ~Q(revision__comment="") | Q(revision_id=current_revision_id)
+        )
 
         return self.versions_to_lodgement_dict(versions)
 
@@ -1419,13 +1414,15 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         rr = []
         for obj in versions_qs:
-            rr.append(dict(
-                revision_id=obj.revision_id,
-                revision_comment=obj.revision.comment.strip(),
-                lodgement_number=obj.field_dict.get("lodgement_number", None),
-                lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
-                lodgement_date=obj.field_dict.get("lodgement_date", None),
-            ))
+            rr.append(
+                dict(
+                    revision_id=obj.revision_id,
+                    revision_comment=obj.revision.comment.strip(),
+                    lodgement_number=obj.field_dict.get("lodgement_number", None),
+                    lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
+                    lodgement_date=obj.field_dict.get("lodgement_date", None),
+                )
+            )
 
         return rr
 
@@ -1434,7 +1431,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         Returns all versions of this model
         """
 
-        return Version.objects.get_for_object(self).select_related('revision')
+        return Version.objects.get_for_object(self).select_related("revision")
 
     def revision_version(self, revision_id):
         """
@@ -1538,8 +1535,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def compliance_assessors(self):
-        #group = self.get_assessor_group()
-        #return group.members if group else []
+        # group = self.get_assessor_group()
+        # return group.members if group else []
         return self.get_assessor_group().get_system_group_member_ids()
 
     @property
@@ -1649,7 +1646,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             return False
 
     def assessor_comments_view(self, user):
-
         if (
             self.processing_status == "with_assessor"
             or self.processing_status == "with_referral"
@@ -1709,11 +1705,26 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         try:
             # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
-            shp_file_qs = self.shapefile_documents.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx") | Q(name__endswith=".dbf") | Q(name__endswith=".prj"))
+            shp_file_qs = self.shapefile_documents.filter(
+                Q(name__endswith=".shp")
+                | Q(name__endswith=".shx")
+                | Q(name__endswith=".dbf")
+                | Q(name__endswith=".prj")
+            )
             # Validate shapefile and all the other related files are present
             if shp_file_qs:
-                if not shp_file_qs.filter(Q(name__endswith=".shp") | Q(name__endswith=".shx") | Q(name__endswith=".dbf")).count() % 3 == 0:
-                    raise ValidationError("Shapefile needs at least the shp, shx, and dbf extensions")
+                if (
+                    not shp_file_qs.filter(
+                        Q(name__endswith=".shp")
+                        | Q(name__endswith=".shx")
+                        | Q(name__endswith=".dbf")
+                    ).count()
+                    % 3
+                    == 0
+                ):
+                    raise ValidationError(
+                        "Shapefile needs at least the shp, shx, and dbf extensions"
+                    )
 
                 # A list of all uploaded shapefiles
                 shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
@@ -1722,7 +1733,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 # List of DBCA legislated land and water geometries
                 lands_geos_data = get_dbca_lands_and_waters_geos()
                 # FIXME is there a better way to get the SRID of the layer?
-                srid_dbca = list(set([g._base_geom.srid for g in lands_geos_data]))[0]
+                srid_dbca = list({g._base_geom.srid for g in lands_geos_data})[0]
 
                 for shp_file_obj in shp_file_objs:
                     gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
@@ -1730,7 +1741,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # Only accept polygons
                     geom_type = geometries.geom_type.values[0]
                     if geom_type not in ("Polygon", "MultiPolygon"):
-                        raise ValidationError(f"Geometry of type {geom_type} not allowed")
+                        raise ValidationError(
+                            f"Geometry of type {geom_type} not allowed"
+                        )
 
                     # If no prj file assume WGS-84 datum
                     if not gdf.crs:
@@ -1741,7 +1754,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # Check for intersection with DBCA geometries
                     gdf_transform["valid"] = False
                     for geom in geometries:
-                        srid = SpatialReference(geometries.crs.srs).srid  # spatial reference identifier
+                        srid = SpatialReference(
+                            geometries.crs.srs
+                        ).srid  # spatial reference identifier
                         geos_repr = GEOSGeometry(geom.wkt, srid=srid)
                         if srid != srid_dbca:
                             # Transform the imported geometry to the SRID of the DBCA geometries
@@ -1750,13 +1765,20 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         if "source_" not in gdf_transform:
                             gdf_transform["source_"] = shp_file_obj.name
                         # Imported geometry is valid if it intersects with any one of the DBCA geometries
-                        if any([lw_geom.intersects(geos_repr) for lw_geom in lands_geos_data]):
+                        if any(
+                            [
+                                lw_geom.intersects(geos_repr)
+                                for lw_geom in lands_geos_data
+                            ]
+                        ):
                             gdf_transform["valid"] = True
 
                     shp_gdfs.append(gdf_transform)
 
                 # Merge all GeoDataFrames into a single one
-                gdf_merged = gpd.GeoDataFrame(pd.concat(shp_gdfs).reset_index(drop=True))
+                gdf_merged = gpd.GeoDataFrame(
+                    pd.concat(shp_gdfs).reset_index(drop=True)
+                )
 
                 # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
                 shp_json = gdf_merged.to_json()
@@ -1784,7 +1806,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         Assessment instance already exits then skip.
         """
         proposal_assessment, created = ProposalAssessment.objects.get_or_create(
-            proposal=self, referral=referral
+            proposal=self,
+            referral=referral
             # proposal=self
         )
         if created:
@@ -1873,7 +1896,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
                             referral.id,
                             self.lodgement_number,
-                            "{}({})".format(user.get_full_name(), user.email),
+                            f"{user.get_full_name()}({user.email})",
                         ),
                         request,
                     )
@@ -1916,7 +1939,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         self.log_user_action(
                             ProposalUserAction.ACTION_ASSIGN_TO_APPROVER.format(
                                 self.id,
-                                "{}({})".format(officer.get_full_name(), officer.email),
+                                f"{officer.get_full_name()}({officer.email})",
                             ),
                             request,
                         )
@@ -1931,7 +1954,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         self.log_user_action(
                             ProposalUserAction.ACTION_ASSIGN_TO_ASSESSOR.format(
                                 self.id,
-                                "{}({})".format(officer.get_full_name(), officer.email),
+                                f"{officer.get_full_name()}({officer.email})",
                             ),
                             request,
                         )
@@ -1963,7 +1986,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     document.save()
                     d = ProposalDocument.objects.get(id=document.id)
                     self.approval_level_document = d
-                    comment = "Approval Level Document Added: {}".format(document.name)
+                    comment = f"Approval Level Document Added: {document.name}"
                 else:
                     self.approval_level_document = None
                     comment = "Approval Level Document Deleted: {}".format(
@@ -2067,9 +2090,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         ProposalUserAction.ACTION_ENTER_REQUIREMENTS.format(self.id),
                         request,
                     )
-        elif status in [self.PROCESSING_STATUS_WITH_REFERRAL,
-                        self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS
-                        ]:
+        elif status in [
+            self.PROCESSING_STATUS_WITH_REFERRAL,
+            self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
+        ]:
             # TODO What logic to With Referral status needs to apply here?
             # For now this if condition is only there to not hit the previous one.
             # That would trigger an exception
@@ -2332,8 +2356,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         non_field_errors = []
         if not details.get("details"):
             non_field_errors.append("You must add details text")
-        if (self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
-                and not details.get("decision")):
+        if (
+            self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
+            and not details.get("decision")
+        ):
             non_field_errors.append("You must choose a decision radio button")
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             if not details.get("approval_type"):
@@ -2353,34 +2379,40 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 "decision": details.get("decision"),
             }
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
-            #start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None
-            #expiry_date = details.get('expiry_date').strftime('%d/%m/%Y') if details.get('expiry_date') else None
+            # start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None
+            # expiry_date = details.get('expiry_date').strftime('%d/%m/%Y') if details.get('expiry_date') else None
             self.proposed_issuance_approval = {
                 "approval_type": details.get("approval_type"),
                 "approval_sub_type": details.get("approval_sub_type"),
                 "selected_document_types": details.get("selected_document_types"),
-                #"approval_type_document_type": details.get("approval_type_document_type"),
+                # "approval_type_document_type": details.get("approval_type_document_type"),
                 "cc_email": details.get("cc_email"),
                 "details": details.get("details"),
-                'start_date': details.get("start_date"),
-                'expiry_date': details.get("expiry_date"),
+                "start_date": details.get("start_date"),
+                "expiry_date": details.get("expiry_date"),
             }
             # Check mandatory docs
             mandatory_doc_errors = []
-            from leaseslicensing.components.approvals.models import ApprovalType, ApprovalTypeDocumentTypeOnApprovalType
+            from leaseslicensing.components.approvals.models import (
+                ApprovalType,
+                ApprovalTypeDocumentTypeOnApprovalType,
+            )
+
             approval_type = details.get("approval_type")
-            for approval_type_document_type_on_approval_type in ApprovalTypeDocumentTypeOnApprovalType.objects.filter(
-                    approval_type_id=approval_type,
-                    mandatory=True
+            for (
+                approval_type_document_type_on_approval_type
+            ) in ApprovalTypeDocumentTypeOnApprovalType.objects.filter(
+                approval_type_id=approval_type, mandatory=True
             ):
                 if not self.lease_licence_approval_documents.filter(
-                        approval_type=approval_type_document_type_on_approval_type.approval_type,
-                        approval_type_document_type=approval_type_document_type_on_approval_type.approval_type_document_type,
+                    approval_type=approval_type_document_type_on_approval_type.approval_type,
+                    approval_type_document_type=approval_type_document_type_on_approval_type.approval_type_document_type,
                 ):
-                    mandatory_doc_errors.append("Missing mandatory document/s: Approval Type {}, Document Type {}".format(
-                        approval_type_document_type_on_approval_type.approval_type,
-                        approval_type_document_type_on_approval_type.approval_type_document_type,
-                    )
+                    mandatory_doc_errors.append(
+                        "Missing mandatory document/s: Approval Type {}, Document Type {}".format(
+                            approval_type_document_type_on_approval_type.approval_type,
+                            approval_type_document_type_on_approval_type.approval_type_document_type,
+                        )
                     )
             if mandatory_doc_errors:
                 raise serializers.ValidationError(mandatory_doc_errors)
@@ -2422,7 +2454,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     ProposalUserAction.ACTION_PROPOSED_APPROVAL.format(self.id), request
                 )
                 # Log entry for organisation
-                #applicant_field = getattr(self, self.applicant_field)
+                # applicant_field = getattr(self, self.applicant_field)
                 # applicant_field.log_user_action(ProposalUserAction.ACTION_PROPOSED_APPROVAL.format(self.id),request)
 
                 send_approver_approve_email_notification(request, self)
@@ -2528,7 +2560,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 # self.processing_status = "approved"
 
                 # Log proposal action
-                self.log_user_action(ProposalUserAction.ACTION_ISSUE_APPROVAL_.format(self.id), request)
+                self.log_user_action(
+                    ProposalUserAction.ACTION_ISSUE_APPROVAL_.format(self.id), request
+                )
                 # Log entry for organisation
                 # applicant_field=getattr(self, self.applicant_field)
                 # applicant_field.log_user_action(ProposalUserAction.ACTION_ISSUE_APPROVAL_.format(self.id),request)
@@ -2536,7 +2570,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 # if self.processing_status == self.PROCESSING_STATUS_APPROVED:
                 # TODO if it is an ammendment proposal then check appropriately
                 checking_proposal = self
-                if self.proposal_type == "renewal" and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
+                if (
+                    self.proposal_type == "renewal"
+                    and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+                ):
                     if self.previous_application:
                         previous_approval = self.previous_application.approval
                         approval, created = Approval.objects.update_or_create(
@@ -2560,7 +2597,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
                         self.reset_licence_discount(request.user)
 
-                elif self.proposal_type == "amendment" and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
+                elif (
+                    self.proposal_type == "amendment"
+                    and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+                ):
                     if self.previous_application:
                         previous_approval = self.previous_application.approval
                         approval, created = Approval.objects.update_or_create(
@@ -2580,7 +2620,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                             previous_approval.replaced_by = approval
                             previous_approval.save()
                 else:
-
                     # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                     # When Registration_of_Interest
                     #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
@@ -2589,15 +2628,32 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # When Lease Licence
                     #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
 
-                    if self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST:
+                    if (
+                        self.application_type.name
+                        == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
+                    ):
                         # Registration of interest
-                        if self.proposed_issuance_approval.get("decision") == "approve_lease_licence" and not self.generated_proposal:
-                            lease_licence = self.create_lease_licence_from_registration_of_interest()
+                        if (
+                            self.proposed_issuance_approval.get("decision")
+                            == "approve_lease_licence"
+                            and not self.generated_proposal
+                        ):
+                            lease_licence = (
+                                self.create_lease_licence_from_registration_of_interest()
+                            )
                             self.generated_proposal = lease_licence
-                            self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
-                        elif self.proposed_issuance_approval.get("decision") == "approve_competitive_process" and not self.generated_proposal:
+                            self.processing_status = (
+                                Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
+                            )
+                        elif (
+                            self.proposed_issuance_approval.get("decision")
+                            == "approve_competitive_process"
+                            and not self.generated_proposal
+                        ):
                             self.generate_competitive_process()
-                            self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
+                            self.processing_status = (
+                                Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
+                            )
                     elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
                         # lease_licence (new)
                         approval, created = Approval.objects.update_or_create(
@@ -2618,7 +2674,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         self.save()
                         self.generate_compliances(approval, request)
                         self.generate_invoicing_details()
-                        self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                        self.processing_status = (
+                            Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                        )
 
                     # TODO: additional logic required for amendment, reissue, etc?
 
@@ -2804,7 +2862,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     )
                     proposal.other_details.save()
                 if proposal.application_type.name == ApplicationType.FILMING:
-
                     proposal.filming_other_details.insurance_expiry = None
                     proposal.filming_other_details.save()
                     proposal.filming_activity.commencement_date = None
@@ -2818,7 +2875,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     proposal.fee_invoice_reference = None
 
                 if proposal.application_type.name == ApplicationType.EVENT:
-
                     proposal.event_other_details.insurance_expiry = None
                     proposal.event_other_details.save()
                     proposal.event_activity.commencement_date = None
@@ -2978,7 +3034,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         return_list = []
         # count = 0
         # field_competitive_process = None
-        related_field_names = ['generated_proposal', 'originating_proposal', 'generated_competitive_process', 'approval',]
+        related_field_names = [
+            "generated_proposal",
+            "originating_proposal",
+            "generated_competitive_process",
+            "approval",
+        ]
         all_fields = self._meta.get_fields()
         for a_field in all_fields:
             if a_field.name in related_field_names:
@@ -2987,12 +3048,18 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     if a_field.many_to_many:
                         pass
                     elif a_field.many_to_one:  # foreign key
-                        field_objects = [getattr(self, a_field.name),]
+                        field_objects = [
+                            getattr(self, a_field.name),
+                        ]
                     elif a_field.one_to_many:  # reverse foreign key
-                        field_objects = a_field.related_model.objects.filter(**{a_field.remote_field.name: self})
+                        field_objects = a_field.related_model.objects.filter(
+                            **{a_field.remote_field.name: self}
+                        )
                     elif a_field.one_to_one:
                         if hasattr(self, a_field.name):
-                            field_objects = [getattr(self, a_field.name),]
+                            field_objects = [
+                                getattr(self, a_field.name),
+                            ]
                 for field_object in field_objects:
                     if field_object:
                         related_item = field_object.as_related_item
@@ -3008,7 +3075,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
-            action_url='<a href=/internal/proposal/{} target="_blank">Open</a>'.format(self.id)
+            action_url=f'<a href=/internal/proposal/{self.id} target="_blank">Open</a>',
         )
         return related_item
 
@@ -3018,11 +3085,13 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def related_item_descriptor(self):
-        return '(return descriptor)'
+        return "(return descriptor)"
 
     def generate_competitive_process(self):
         if self.generated_competitive_process:
-            raise ValidationError('Couldn\'t generate a competitive process.  Proposal {} has already generated a Competitive Process: {}'.format(self, self.generated_competitive_process))
+            raise ValidationError(
+                f"Couldn't generate a competitive process.  Proposal {self} has already generated a Competitive Process: {self.generated_competitive_process}"
+            )
 
         new_competitive_process = CompetitiveProcess.objects.create()
         self.generated_competitive_process = new_competitive_process
@@ -3030,24 +3099,36 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def generate_invoicing_details(self):
         if self.invoicing_details:
-            raise ValidationError('Couldn\'t generate an invoicing details.  Proposal {} has already generated a Invoicing Details: {}'.format(self, self.generated_competitive_process))
+            raise ValidationError(
+                f"Couldn't generate an invoicing details.  Proposal {self} has already generated a Invoicing Details: {self.generated_competitive_process}"
+            )
 
         new_invoicing_details = InvoicingDetails.objects.create()
         self.invoicing_details = new_invoicing_details
         self.save()
 
     def save_invoicing_details(self, request, action):
-        from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
+        from leaseslicensing.components.invoicing.serializers import (
+            InvoicingDetailsSerializer,
+        )
 
         with transaction.atomic():
             try:
                 # Retrieve invoicing_details data
-                proposal_data = request.data.get('proposal', {})
-                invoicing_details_data = proposal_data.get('invoicing_details', {}) if proposal_data else {}
+                proposal_data = request.data.get("proposal", {})
+                invoicing_details_data = (
+                    proposal_data.get("invoicing_details", {}) if proposal_data else {}
+                )
 
                 # Save invoicing details
-                invoicing_details = InvoicingDetails.objects.get(id=invoicing_details_data.get('id'))
-                serializer = InvoicingDetailsSerializer(invoicing_details, data=invoicing_details_data, context={'action': action})
+                invoicing_details = InvoicingDetails.objects.get(
+                    id=invoicing_details_data.get("id")
+                )
+                serializer = InvoicingDetailsSerializer(
+                    invoicing_details,
+                    data=invoicing_details_data,
+                    context={"action": action},
+                )
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
             except Exception as e:
@@ -3167,7 +3248,7 @@ class ProposalLogEntry(CommunicationsLogEntry):
     )
 
     def __str__(self):
-        return "{} - {}".format(self.reference, self.subject)
+        return f"{self.reference} - {self.subject}"
 
     class Meta:
         app_label = "leaseslicensing"
@@ -3176,7 +3257,7 @@ class ProposalLogEntry(CommunicationsLogEntry):
         # save the application reference if the reference not provided
         if not self.reference:
             self.reference = self.proposal.reference
-        super(ProposalLogEntry, self).save(**kwargs)
+        super().save(**kwargs)
 
 
 class ProposalOtherDetails(models.Model):
@@ -3265,7 +3346,7 @@ class ProposalRequest(models.Model):
     officer = models.IntegerField(null=True)  # EmailUserRO
 
     def __str__(self):
-        return "{} - {}".format(self.subject, self.text)
+        return f"{self.subject} - {self.text}"
 
     class Meta:
         app_label = "leaseslicensing"
@@ -3338,22 +3419,24 @@ class AmendmentRequest(ProposalRequest):
                     if proposal.processing_status != "draft":
                         proposal.processing_status = "draft"
                         proposal.customer_status = "draft"
-                        proposal.save(version_comment=f"Proposal amendment requested {request.data.get('reason', '')}")
-                        #proposal.documents.all().update(can_hide=True)
-                        #proposal.required_documents.all().update(can_hide=True)
+                        proposal.save(
+                            version_comment=f"Proposal amendment requested {request.data.get('reason', '')}"
+                        )
+                        # proposal.documents.all().update(can_hide=True)
+                        # proposal.required_documents.all().update(can_hide=True)
                     # Create a log entry for the proposal
                     proposal.log_user_action(
                         ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
                     )
                     # Create a log entry for the organisation
-                    #applicant_field = getattr(proposal, proposal.applicant_field)
-                    #applicant_field.log_user_action(
+                    # applicant_field = getattr(proposal, proposal.applicant_field)
+                    # applicant_field.log_user_action(
                     #    ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
-                    #)
+                    # )
 
                     # send email
 
-                    #send_amendment_email_notification(self, request, proposal)
+                    # send_amendment_email_notification(self, request, proposal)
 
                 self.save()
             except:
@@ -3720,7 +3803,7 @@ class Referral(RevisionedMixin):
         ordering = ("-lodged_on",)
 
     def __str__(self):
-        return "Application {} - Referral {}".format(self.proposal.id, self.id)
+        return f"Application {self.proposal.id} - Referral {self.id}"
 
     # Methods
     @property
@@ -3791,7 +3874,7 @@ class Referral(RevisionedMixin):
                         ProposalUserAction.ACTION_REFERRAL_ASSIGN_TO_ASSESSOR.format(
                             self.id,
                             self.proposal.id,
-                            "{}({})".format(officer.get_full_name(), officer.email),
+                            f"{officer.get_full_name()}({officer.email})",
                         ),
                         request,
                     )
@@ -3855,7 +3938,7 @@ class Referral(RevisionedMixin):
                 ProposalUserAction.ACTION_REMIND_REFERRAL.format(
                     self.id,
                     self.proposal.id,
-                    "{}".format(self.referral_as_email_user.get_full_name()),
+                    f"{self.referral_as_email_user.get_full_name()}",
                 ),
                 request,
             )
@@ -3906,7 +3989,7 @@ class Referral(RevisionedMixin):
                 ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
                     self.id,
                     self.proposal.id,
-                    "{}".format(self.referral_as_email_user.get_full_name()),
+                    f"{self.referral_as_email_user.get_full_name()}",
                 ),
                 request,
             )
@@ -3987,7 +4070,7 @@ class Referral(RevisionedMixin):
                         d = ReferralDocument.objects.get(id=document.id)
                         # self.referral_document = d
                         self.document = d
-                        comment = "Referral Document Added: {}".format(document.name)
+                        comment = f"Referral Document Added: {document.name}"
                     else:
                         # self.referral_document = None
                         self.document = None
@@ -4082,7 +4165,7 @@ class Referral(RevisionedMixin):
                         ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
                             referral.id,
                             self.proposal.id,
-                            "{}({})".format(user.get_full_name(), user.email),
+                            f"{user.get_full_name()}({user.email})",
                         ),
                         request,
                     )
@@ -4094,7 +4177,7 @@ class Referral(RevisionedMixin):
                         ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
                             referral.id,
                             self.proposal.id,
-                            "{}({})".format(user.get_full_name(), user.email),
+                            f"{user.get_full_name()}({user.email})",
                         ),
                         request,
                     )
@@ -4180,7 +4263,7 @@ class ProposalRequirement(RevisionedMixin):
                 self.req_order = 1
             else:
                 self.req_order = max_req_order + 1
-        super(ProposalRequirement, self).save(**kwargs)
+        super().save(**kwargs)
 
     def swap_obj(self, up):
         increment = -1
@@ -4352,7 +4435,7 @@ class SectionChecklist(RevisionedMixin):
         verbose_name_plural = "Section Questions"
 
     def __str__(self):
-        return "Questions for {}:".format(self.get_section_display())
+        return f"Questions for {self.get_section_display()}:"
 
     @property
     def number_of_questions(self):
@@ -4443,7 +4526,13 @@ class ProposalAssessment(RevisionedMixin):
     class Meta:
         app_label = "leaseslicensing"
         constraints = [
-            models.UniqueConstraint(fields=['proposal', 'referral',], name='unique_per_proposal_per_assessor_or_referral'),
+            models.UniqueConstraint(
+                fields=[
+                    "proposal",
+                    "referral",
+                ],
+                name="unique_per_proposal_per_assessor_or_referral",
+            ),
         ]
 
     @property
@@ -4564,7 +4653,7 @@ def clone_documents(proposal, original_proposal, media_prefix):
         log_entry_document.save()
 
     # copy documents on file system and reset can_delete flag
-    media_dir = "{}/{}".format(media_prefix, settings.MEDIA_APP_DIR)
+    media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
     subprocess.call(
         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
             media_dir, original_proposal.id, proposal.id
@@ -4599,7 +4688,7 @@ def _clone_documents(proposal, original_proposal, media_prefix):
         proposal_required_document.save()
 
     # copy documents on file system and reset can_delete flag
-    media_dir = "{}/{}".format(media_prefix, settings.MEDIA_APP_DIR)
+    media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
     subprocess.call(
         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
             media_dir, original_proposal.id, proposal.id
@@ -4623,7 +4712,7 @@ def _clone_requirement_documents(proposal, original_proposal, media_prefix):
         proposal_required_document.save()
 
     # copy documents on file system and reset can_delete flag
-    media_dir = "{}/{}".format(media_prefix, settings.MEDIA_APP_DIR)
+    media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
     subprocess.call(
         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
             media_dir, original_proposal.id, proposal.id
@@ -4654,7 +4743,7 @@ def duplicate_object(self):
             # One to many fields are backward relationships where many child objects are related to the
             # parent (i.e. SelectedPhrases). Enumerate them and save a list so we can copy them after
             # duplicating our parent object.
-            print("Found a one-to-many field: {}".format(field.name))
+            print(f"Found a one-to-many field: {field.name}")
 
             # 'field' is a ManyToOneRel which is not iterable, we need to get the object attribute itself
             related_object_manager = getattr(self, field.name)
@@ -4666,24 +4755,24 @@ def duplicate_object(self):
         elif field.many_to_one:
             # In testing so far, these relationships are preserved when the parent object is copied,
             # so they don't need to be copied separately.
-            print("Found a many-to-one field: {}".format(field.name))
+            print(f"Found a many-to-one field: {field.name}")
 
         elif field.many_to_many:
             # Many to many fields are relationships where many parent objects can be related to many
             # child objects. Because of this the child objects don't need to be copied when we copy
             # the parent, we just need to re-create the relationship to them on the copied parent.
-            print("Found a many-to-many field: {}".format(field.name))
+            print(f"Found a many-to-many field: {field.name}")
             related_object_manager = getattr(self, field.name)
             relations = list(related_object_manager.all())
             if relations:
-                print(" - {} relations to set".format(len(relations)))
+                print(f" - {len(relations)} relations to set")
                 relations_to_set[field.name] = relations
 
     # Duplicate the parent object
     self.pk = None
     self.lodgement_number = ""
     self.save()
-    print("Copied parent object {}".format(str(self)))
+    print(f"Copied parent object {str(self)}")
 
     # Copy the one-to-many child objects and relate them to the copied parent
     for related_object in related_objects_to_copy:
@@ -4709,7 +4798,7 @@ def duplicate_object(self):
 
                 text = str(related_object)
                 text = (text[:40] + "..") if len(text) > 40 else text
-                print("|- Copied child object {}".format(text))
+                print(f"|- Copied child object {text}")
 
     # Set the many-to-many relations on the copied parent
     for field_name, relations in relations_to_set.items():
@@ -4731,9 +4820,9 @@ def duplicate_object(self):
 def searchKeyWords(
     searchWords, searchProposal, searchApproval, searchCompliance, is_internal=True
 ):
-    from leaseslicensing.utils import search, search_approval, search_compliance
     from leaseslicensing.components.approvals.models import Approval
     from leaseslicensing.components.compliances.models import Compliance
+    from leaseslicensing.utils import search, search_approval, search_compliance
 
     qs = []
     application_types = [

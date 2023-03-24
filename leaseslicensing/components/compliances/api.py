@@ -1,3 +1,4 @@
+import logging
 import traceback
 from copy import deepcopy
 from datetime import datetime
@@ -34,6 +35,8 @@ from leaseslicensing.components.main.filters import LedgerDatatablesFilterBacken
 from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
+
+logger = logging.getLogger(__name__)
 
 
 class GetComplianceStatusesDict(views.APIView):
@@ -101,19 +104,36 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
     serializer_class = ComplianceSerializer
 
     def get_queryset(self):
+        if not is_internal(self.request) and not is_customer(self.request):
+            return Compliance.objects.none()
+
         if is_internal(self.request):
-            # return Compliance.objects.all()
-            return Compliance.objects.all().exclude(processing_status="discarded")
+            qs = Compliance.objects.all().exclude(processing_status="discarded")
+
         elif is_customer(self.request):
             # TODO: fix EmailUserRO issue here
             # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
             # queryset =  Compliance.objects.filter( Q(proposal__org_applicant_id__in = user_orgs) |
             # Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
-            queryset = Compliance.objects.filter(
+            qs = Compliance.objects.filter(
                 Q(proposal__submitter=self.request.user.id)
             ).exclude(processing_status="discarded")
-            return queryset
-        return Compliance.objects.none()
+
+        target_organisation_id = self.request.query_params.get(
+            "target_organisation_id", None
+        )
+        if (
+            target_organisation_id
+            and target_organisation_id.isnumeric()
+            and int(target_organisation_id) > 0
+        ):
+            logger.debug(f"target_organisation_id: {target_organisation_id}")
+            target_organisation_id = int(target_organisation_id)
+            qs = qs.exclude(approval__org_applicant__isnull=True).filter(
+                approval__org_applicant__id=target_organisation_id
+            )
+
+        return qs
 
     @list_route(
         methods=[
