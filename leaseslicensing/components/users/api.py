@@ -76,14 +76,18 @@ class GetCountries(views.APIView):
     ]
 
     def get(self, request, format=None):
-        data = cache.get("country_list")
-        if not data:
+        country_list = cache.get(settings.CACHE_KEY_COUNTRY_LIST)
+        if not country_list:
             country_list = []
             for country in list(countries):
                 country_list.append({"name": country.name, "code": country.code})
-            cache.set("country_list", country_list, settings.LOV_CACHE_TIMEOUT)
-            data = cache.get("country_list")
-        return Response(data)
+            cache.set(
+                settings.CACHE_KEY_COUNTRY_LIST,
+                country_list,
+                settings.LOV_CACHE_TIMEOUT,
+            )
+
+        return Response(country_list)
 
 
 class GetProfile(views.APIView):
@@ -161,17 +165,28 @@ class UserViewSet(viewsets.ModelViewSet):
     )
     @basic_exception_handler
     def get_department_users(self, request, *args, **kwargs):
-        search_term = request.GET.get('term', '')
+        search_term = request.GET.get("term", "")
 
         # Allow for search of first name, last name and concatenation of both
-        data = EmailUser.objects. \
-            annotate(full_name=Concat("first_name", Value(" "), "last_name")). \
-            filter(is_staff=True). \
-            filter(Q(first_name__icontains=search_term) |
-                   Q(last_name__icontains=search_term) |
-                   Q(full_name__icontains=search_term)). \
-            values('email', 'first_name', 'last_name')[:10]
-        data_transform = [{'id': person['email'], 'text': f"{person['first_name']} {person['last_name']}"} for person in data]
+        data = (
+            EmailUser.objects.annotate(
+                full_name=Concat("first_name", Value(" "), "last_name")
+            )
+            .filter(is_staff=True)
+            .filter(
+                Q(first_name__icontains=search_term)
+                | Q(last_name__icontains=search_term)
+                | Q(full_name__icontains=search_term)
+            )
+            .values("email", "first_name", "last_name")[:10]
+        )
+        data_transform = [
+            {
+                "id": person["email"],
+                "text": f"{person['first_name']} {person['last_name']}",
+            }
+            for person in data
+        ]
 
         return Response({"results": data_transform})
 
