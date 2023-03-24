@@ -1638,6 +1638,43 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         else:
             return False
 
+    def is_referrer(self, user):
+        """
+        Returns whether `user` is a referrer for this proposal
+        """
+
+        if self.processing_status in [Referral.PROCESSING_STATUS_WITH_REFERRAL,
+                                      Referral.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS]:
+            # Get this proposal's referral where the requesting user is the referrer
+            try:
+                Referral.objects.get(proposal=self, referral=user.id)
+            except Referral.DoesNotExist:
+                logger.debug("Referral does not exist")
+                return False
+
+            return True
+
+    def referrer_can_edit_referral(self, user):
+        """
+        Returns whether `user` is a referrer who can still edit this proposal's referral
+        """
+
+        if self.is_referrer(user):
+            # Get this proposal's referral where the requesting user is the referrer
+            try:
+                referral = Referral.objects.get(proposal=self, referral=user.id)
+            except Referral.DoesNotExist:
+                logger.debug("Referral does not exist")
+                return False
+
+            if referral.processing_status in [Referral.PROCESSING_STATUS_COMPLETED,
+                                              Referral.PROCESSING_STATUS_RECALLED]:
+                return False
+
+            return True
+
+        return False
+
     def can_edit_period(self, user):
         if (
             self.processing_status == "with_assessor"
@@ -2032,7 +2069,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 )
 
     def move_to_status(self, request, status, approver_comment):
-        if not self.can_assess(request.user):
+        if not self.can_assess(request.user) and not self.is_referrer(request.user):
             raise exceptions.ProposalNotAuthorized()
         if status in ["with_assessor", "with_assessor_conditions", "with_approver"]:
             if self.processing_status == "with_referral" or self.can_user_edit:
@@ -2070,10 +2107,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         elif status in [self.PROCESSING_STATUS_WITH_REFERRAL,
                         self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS
                         ]:
-            # TODO What logic to With Referral status needs to apply here?
-            # For now this if condition is only there to not hit the previous one.
-            # That would trigger an exception
-            pass
+            if self.processing_status == status:
+                return
+
+            self.processing_status = status
+            self.save()
         else:
             raise ValidationError("The provided status cannot be found.")
 
@@ -3695,6 +3733,7 @@ class QAOfficerGroup(models.Model):
 class Referral(RevisionedMixin):
     SENT_CHOICES = ((1, "Sent From Assessor"), (2, "Sent From Referral"))
     PROCESSING_STATUS_WITH_REFERRAL = "with_referral"
+    PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS = "with_referral_conditions"
     PROCESSING_STATUS_RECALLED = "recalled"
     PROCESSING_STATUS_COMPLETED = "completed"
     PROCESSING_STATUS_CHOICES = (
@@ -4169,6 +4208,10 @@ class ProposalRequirement(RevisionedMixin):
         related_name="requirement_referral_groups",
         on_delete=models.SET_NULL,
     )
+    referral = models.ForeignKey(Referral,
+        blank=True,
+        null=True,
+        on_delete=models.SET_NULL)
     notification_only = models.BooleanField(default=False)
     req_order = models.IntegerField(null=True, blank=True)
 
@@ -4195,6 +4238,7 @@ class ProposalRequirement(RevisionedMixin):
                 self.req_order = 1
             else:
                 self.req_order = max_req_order + 1
+
         super(ProposalRequirement, self).save(**kwargs)
 
     def swap_obj(self, up):
@@ -4271,11 +4315,18 @@ class ProposalRequirement(RevisionedMixin):
         )
 
     def can_referral_edit(self, user):
-        if self.proposal.processing_status == "with_referral":
+        if self.proposal.processing_status in ["with_referral", "with_referral_conditions"]:
             if self.referral_group:
                 group = ReferralRecipientGroup.objects.filter(id=self.referral_group.id)
                 # user=request.user
                 if group and group[0] in user.referralrecipientgroup_set.all():
+                    return True
+                else:
+                    return False
+            elif self.proposal.is_referrer(user):
+                # This users referrals
+                # Referral.objects.get(referral=user.id, proposal=self.proposal)
+                if hasattr(self.referral, "referral") and self.referral.referral == user.id:
                     return True
                 else:
                     return False

@@ -1053,6 +1053,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "assessor_can_assess": obj.can_assess(user),
             "assessor_level": "assessor",
             "assessor_box_view": obj.assessor_comments_view(user),
+            "user_is_referrer": obj.is_referrer(user),
+            "user_is_referrer_can_edit": obj.referrer_can_edit_referral(user),
         }
 
     def get_can_edit_period(self, obj):
@@ -1293,6 +1295,7 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             "require_due_date",
             "copied_for_renewal",
             "notification_only",
+            "referral",
         )
         read_only_fields = ("req_order", "requirement", "copied_from")
 

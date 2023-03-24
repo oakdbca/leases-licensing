@@ -4,7 +4,7 @@
             <form class="form-horizontal" action="index.html" method="post">
                 <div class="row">
                     <div class="col-sm-12">
-                        <button v-if="hasAssessorMode" @click.prevent="addRequirement()" style="margin-bottom:10px;" class="btn btn-primary float-end">Add Condition</button>
+                        <button v-if="hasAssessorMode || isReferrerCanEdit" @click.prevent="addRequirement()" style="margin-bottom:10px;" class="btn btn-primary float-end">Add Condition</button>
                     </div>
                 </div>
                 <div class="row">
@@ -125,13 +125,14 @@ export default {
                         data: "id",
                         mRender:function (data,type,full) {
                             let links = '';
-                            if (vm.proposal.assessor_mode.has_assessor_mode){
-                                if(full.copied_from==null)
-                                {
-                                    links +=  `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
-                                }
-                                //links +=  `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
-                                links +=  `<a href='#' class="deleteRequirement" data-id="${full.id}">Delete</a><br/>`;
+                            if (vm.hasAssessorMode || vm.isReferrer){
+                                let show = vm.hasAssessorMode || (vm.isReferrerCanEdit && full.can_referral_edit);
+                                if (show) {
+                                    if(full.copied_from==null) {
+                                            links +=  `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
+                                        }
+                                        links +=  `<a href='#' class="deleteRequirement" data-id="${full.id}">Delete</a><br/>`;
+                                    }
                             }
                             return links;
                         },
@@ -215,6 +216,12 @@ export default {
         },
         hasAssessorMode(){
             return this.proposal.assessor_mode.has_assessor_mode;
+        },
+        isReferrer() {
+            return this.proposal.assessor_mode.user_is_referrer;
+        },
+        isReferrerCanEdit() {
+            return this.proposal.assessor_mode.user_is_referrer_can_edit;
         }
     },
     methods:{
@@ -278,6 +285,10 @@ export default {
         },
         eventListeners(){
             let vm = this;
+            if (!vm.$refs.requirements_datatable) {
+                // Prevent uncaught error when clicking show/hide too fast (why would anyone even do this?)
+                return;
+            }
             vm.$refs.requirements_datatable.vmDataTable.on('click', '.deleteRequirement', function(e) {
                 e.preventDefault();
                 var id = $(this).attr('data-id');
@@ -291,6 +302,10 @@ export default {
         },
         addTableListeners: function() {
             let vm = this;
+            if (!vm.$refs.requirements_datatable) {
+                // Prevent uncaught error when clicking show/hide too fast (why would anyone even do this?)
+                return;
+            }
             $(vm.$refs.requirements_datatable.table).find('tr:last .dtMoveDown').remove();
             $(vm.$refs.requirements_datatable.table).children('tbody').find('tr:first .dtMoveUp').remove();
             // Remove previous binding before adding it
