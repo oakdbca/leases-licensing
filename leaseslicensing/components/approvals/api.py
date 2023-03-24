@@ -124,15 +124,17 @@ class GetApprovalStatusesDict(views.APIView):
     ]
 
     def get(self, request, format=None):
-        data = cache.get("approval_statuses_dict")
-        if not data:
+        approval_statuses = cache.get(settings.CACHE_KEY_APPROVAL_STATUSES)
+        if approval_statuses is None:
+            approval_statuses = [
+                {"code": i[0], "description": i[1]} for i in Approval.STATUS_CHOICES
+            ]
             cache.set(
-                "approval_statuses_dict",
-                [{"code": i[0], "description": i[1]} for i in Approval.STATUS_CHOICES],
+                settings.CACHE_KEY_APPROVAL_STATUSES,
+                approval_statuses,
                 settings.LOV_CACHE_TIMEOUT,
             )
-            data = cache.get("approval_statuses_dict")
-        return Response(data)
+        return Response(approval_statuses)
 
 
 class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
