@@ -99,6 +99,11 @@ export default {
             type: Number,
             required: false,
             default: 0,
+        },
+        target_organisation_id: {
+            type: Number,
+            required: false,
+            default: 0,
         }
     },
     data() {
@@ -212,7 +217,6 @@ export default {
                     'Number',
                     'Type',
                     'Site',
-                    'Holder',
                     'Status',
                     'Expiry Date',
                     'Document',
@@ -421,6 +425,7 @@ export default {
                     vm.columnId,
                     vm.columnLodgementNumber,
                     vm.columnType,
+                    vm.columnSite,
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
@@ -483,7 +488,8 @@ export default {
                 //searching: false,
                 searching: true,
                 ajax: {
-                    "url": api_endpoints.approvals_paginated_list + '?format=datatables&target_email_user_id=' + vm.target_email_user_id,
+                    "url": api_endpoints.approvals_paginated_list + '?format=datatables&target_email_user_id=' + vm.target_email_user_id +
+                        '&target_organisation_id=' + vm.target_organisation_id,
                     //"url": api_endpoints.approvals,
                     "dataSrc": 'data',
 

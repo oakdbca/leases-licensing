@@ -117,6 +117,7 @@ class Organisation(models.Model):
 
     @property
     def ledger_organisation(self):
+        logger.info(f"Retrieving organisation {self.organisation} from ledger.")
         if self.organisation:
             cache_key = settings.CACHE_KEY_LEDGER_ORGANISATION.format(self.organisation)
             organisation = cache.get(cache_key)
@@ -129,6 +130,7 @@ class Organisation(models.Model):
                     error_message = f"CRITICAL: Unable to retrieve organisation {self.organisation} from ledger."
                     logger.error(error_message)
                     raise UnableToRetrieveLedgerOrganisation(error_message)
+            logger.info(f"Retrieved organisation {organisation} from ledger.")
             return organisation
 
         critical_message = (

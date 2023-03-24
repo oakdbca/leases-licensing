@@ -94,6 +94,11 @@ export default {
             required: false,
             default: 0,
         },
+        target_organisation_id: {
+            type: Number,
+            required: false,
+            default: 0,
+        },
         filterApplicationType_cache_name: {
             type: String,
             required: false,
@@ -458,7 +463,8 @@ export default {
                 serverSide: true,
                 searching: true,
                 ajax: {
-                    "url": api_endpoints.proposals_paginated_list + '?format=datatables&email_user_id_assigned=' + vm.email_user_id_assigned,
+                    "url": api_endpoints.proposals_paginated_list + '?format=datatables&email_user_id_assigned=' + vm.email_user_id_assigned +
+                        '&target_organisation_id=' + vm.target_organisation_id,
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering

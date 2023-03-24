@@ -261,16 +261,18 @@
 
                             <div class="tab-pane" id="pills-other" role="tabpanel" aria-labelledby="pills-other-tab">
                                 <FormSection label="Applications" index="applications">
-                                    <ApplicationsTable ref="proposals_table" level='organisation_view'
-                                        :url='proposals_url' />
+                                    <ApplicationsTable ref="proposals_table" level="organisation_view"
+                                        :target_organisation_id="org.id" :url='proposals_url' />
                                 </FormSection>
 
                                 <FormSection label="Approvals" index="approvals">
-                                    <ApprovalsTable ref="approvals_table" level='internal' :url='approvals_url' />
+                                    <ApprovalsTable ref="approvals_table" level="organisation_view"
+                                        :target_organisation_id="org.id" :url='approvals_url' />
                                 </FormSection>
 
                                 <FormSection label="Compliances" index="compliances">
-                                    <CompliancesTable ref="compliances_table" level='internal' :url='compliances_url' />
+                                    <CompliancesTable ref="compliances_table" level='organisation_view'
+                                        :target_organisation_id="org.id" :url='compliances_url' />
                                 </FormSection>
                             </div>
                         </div>

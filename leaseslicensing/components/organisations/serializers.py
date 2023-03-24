@@ -111,6 +111,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
         child=EmailUserSerializer(), read_only=True
     )
     trading_name = serializers.CharField(source="organisation_name", read_only=True)
+    # email = serializers.SerializerMethodField(read_only=True)
     apply_application_discount = serializers.SerializerMethodField(read_only=True)
     application_discount = serializers.SerializerMethodField(read_only=True)
     apply_licence_discount = serializers.SerializerMethodField(read_only=True)
@@ -130,7 +131,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "organisation_abn",
             "trading_name",
             "abn",
-            "email",
+            # "email",
             "phone_number",
             "pins",
             "delegate_email_users",
@@ -190,6 +191,9 @@ class OrganisationSerializer(serializers.ModelSerializer):
                 )
 
         return delegates
+
+    # def get_email(self, obj):
+    #     return obj.ledger_organisation["email"]
 
     def get_trading_name(self, obj):
         return obj.ledger_organisation["organisation_name"]
