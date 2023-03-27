@@ -228,6 +228,7 @@ export default {
                     'Number',
                     'Type',
                     'Site',
+                    'Holder',
                     'Status',
                     'Expiry Date',
                     'Document',
