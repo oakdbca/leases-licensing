@@ -1,14 +1,8 @@
 import copy
-import csv
 import datetime
 import json
 import logging
-import os
-import string
 import subprocess
-import time
-from dataclasses import field
-from decimal import Decimal as D
 
 import geopandas as gpd
 import pandas as pd
@@ -16,23 +10,15 @@ from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
 from django.conf import settings
-from django.contrib.gis.db.models.fields import PointField, PolygonField
+from django.contrib.gis.db.models.fields import PolygonField
 from django.contrib.gis.gdal import SpatialReference
 from django.contrib.gis.geos import GEOSGeometry
-
-# from django.contrib.postgres.fields.jsonb import JSONField
 from django.contrib.postgres.fields import ArrayField
-from django.contrib.sites.models import Site
-from django.core.exceptions import MultipleObjectsReturned, ValidationError
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.db.models import JSONField, Max, Min, Q
-from django.db.models.signals import pre_delete
-from django.dispatch import receiver
 from django.utils import timezone
-from ledger_api_client.country_models import Country
-
-# from ledger.accounts.models import OrganisationAddress
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.ledger_models import Invoice
 from ledger_api_client.managed_models import SystemGroup
@@ -46,7 +32,6 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
     ApplicationType,
     CommunicationsLogEntry,
     Document,
-    RequiredDocument,
     RevisionedMixin,
     UserAction,
 )
@@ -55,23 +40,13 @@ from leaseslicensing.components.main.utils import (
     get_dbca_lands_and_waters_geos,
     get_department_user,
 )
-from leaseslicensing.components.organisations.models import (
-    Organisation,
-    OrganisationContact,
-    UserDelegation,
-)
+from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.proposals.email import (
-    send_amendment_email_notification,
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
-    send_external_submit_email_notification,
-    send_proposal_approval_email_notification,
     send_proposal_approver_sendback_email_notification,
-    send_proposal_awaiting_payment_approval_email_notification,
     send_proposal_decline_email_notification,
-    send_referral_complete_email_notification,
     send_referral_email_notification,
-    send_submit_email_notification,
 )
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
@@ -178,7 +153,8 @@ class DefaultDocument(Document):
         if self.can_delete:
             return super().delete()
         logger.info(
-            "Cannot delete existing document object after Application has been submitted (including document submitted before Application pushback to status Draft): {}".format(
+            "Cannot delete existing document object after Application has been submitted "
+            "(including document submitted before Application pushback to status Draft): {}".format(
                 self.name
             )
         )
@@ -204,7 +180,8 @@ class ShapefileDocument(Document):
         if self.can_delete:
             return super().delete()
         logger.info(
-            "Cannot delete existing document object after Proposal has been submitted (including document submitted before Proposal pushback to status Draft): {}".format(
+            "Cannot delete existing document object after Proposal has been submitted "
+            "(including document submitted before Proposal pushback to status Draft): {}".format(
                 self.name
             )
         )
@@ -856,7 +833,8 @@ class ReferralDocument(Document):
         if self.can_delete:
             return super(ProposalDocument, self).delete()
         logger.info(
-            "Cannot delete existing document object after Application has been submitted (including document submitted before Application pushback to status Draft): {}".format(
+            "Cannot delete existing document object after Application has been submitted "
+            "(including document submitted before Application pushback to status Draft): {}".format(
                 self.name
             )
         )
@@ -1165,7 +1143,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     native_title_consultation_text = models.TextField(blank=True)
     mining_tenement = models.BooleanField(null=True)
     mining_tenement_text = models.TextField(blank=True)
-    ## Lease Licence additional form fields
+    # Lease Licence additional form fields
     # proposal details
     profit_and_loss_text = models.TextField(blank=True)
     cash_flow_text = models.TextField(blank=True)
@@ -1189,7 +1167,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def __str__(self):
         return str(self.id)
 
-    # Append 'P' to Proposal id to generate Lodgement number. Lodgement number and lodgement sequence are used to generate Reference.
+    # Append 'P' to Proposal id to generate Lodgement number.
+    # Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)  # Call parent `save` to create a Proposal id
 
@@ -1263,8 +1242,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             logger.warning(
                 f"Applicant for the proposal {self.lodgement_number} not found"
             )
-            email_user = retrieve_email_user(self.submitter)
-
+            email_user = None
         return email_user
 
     @property
@@ -1371,26 +1349,17 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def get_history(self):
         """Return the prev proposal versions"""
-        l = []
+        history_list = []
         p = copy.deepcopy(self)
         while p.previous_application:
-            l.append(
+            history_list.append(
                 dict(
                     id=p.previous_application.id,
                     modified=p.previous_application.modified_date,
                 )
             )
             p = p.previous_application
-        return l
-
-    #    def _get_history(self):
-    #        """ Return the prev proposal versions """
-    #        l = []
-    #        p = copy.deepcopy(self)
-    #        while (p.previous_application):
-    #            l.append( [p.id, p.previous_application.id] )
-    #            p = p.previous_application
-    #        return l
+        return history_list
 
     @property
     def lodgement_versions(self):
@@ -1654,7 +1623,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         ):
             try:
                 referral = Referral.objects.get(proposal=self, referral=user)
-            except:
+            except Referral.DoesNotExist:
                 referral = None
             if referral:
                 return True
@@ -1701,7 +1670,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     # From DAS
     def validate_map_files(self, request):
         # Validates shapefiles uploaded with the proposal.
-        # Shapefiles are valid when the shp, shx, and dbf extensions are provided and when they intersect with DBCA legislated land or water polygons
+        # Shapefiles are valid when the shp, shx, and dbf extensions are provided
+        # and when they intersect with DBCA legislated land or water polygons
 
         try:
             # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
@@ -1797,7 +1767,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 raise ValidationError("Please upload a valid shapefile")
         except ValidationError:
             raise
-        except:
+        except Exception as e:
+            logger.exception(e)
             raise ValidationError("Please upload a valid shapefile")
 
     def make_questions_ready(self, referral=None):
@@ -1829,6 +1800,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         proposal_assessment=proposal_assessment,
                         checklist_question=checklist_question,
                     )
+                    # Not sure what this is for but logging answer for now
+                    logger.info(answer)
 
     def update(self, request, viewset):
         from leaseslicensing.components.proposals.utils import save_proponent_data
@@ -1919,8 +1892,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     )
                 else:
                     raise exceptions.ProposalReferralCannotBeSent()
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def assign_officer(self, request, officer):
         with transaction.atomic():
@@ -1945,7 +1919,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         )
                         # Create a log entry for the organisation
                         # applicant_field=getattr(self, self.applicant_field)
-                        # applicant_field.log_user_action(ProposalUserAction.ACTION_ASSIGN_TO_APPROVER.format(self.id,'{}({})'.format(officer.get_full_name(), officer.email)), request)
+                        # applicant_field.log_user_action(ProposalUserAction.ACTION_ASSIGN_TO_APPROVER.
+                        # format(self.id,'{}({})'.format(officer.get_full_name(), officer.email)), request)
                 else:
                     if officer.id != self.assigned_officer:
                         self.assigned_officer = officer.id
@@ -1960,9 +1935,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         )
                         # Create a log entry for the organisation
                         # applicant_field=getattr(self, self.applicant_field)
-                        # applicant_field.log_user_action(ProposalUserAction.ACTION_ASSIGN_TO_ASSESSOR.format(self.id,'{}({})'.format(officer.get_full_name(), officer.email)), request)
-            except:
-                raise
+                        # applicant_field.log_user_action(ProposalUserAction.ACTION_ASSIGN_TO_ASSESSOR
+                        # .format(self.id,'{}({})'.format(officer.get_full_name(), officer.email)), request)
+            except Exception as e:
+                logger.exception(e)
+                raise Exception(e)
 
     def assing_approval_level_document(self, request):
         with transaction.atomic():
@@ -2007,8 +1984,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     request,
                 )
                 return self
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise Exception(e)
 
     def unassign(self, request):
         with transaction.atomic():
@@ -2039,8 +2017,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         # Create a log entry for the organisation
                         # applicant_field=getattr(self, self.applicant_field)
                         # applicant_field.log_user_action(ProposalUserAction.ACTION_UNASSIGN_ASSESSOR.format(self.id),request)
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise Exception(e)
 
     def add_default_requirements(self):
         # Add default standard requirements to Proposal
@@ -2164,8 +2143,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 # applicant_field.log_user_action(ProposalUserAction.ACTION_PROPOSED_DECLINE.format(self.id),request)
 
                 send_approver_decline_email_notification(reason, request, self)
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def final_decline(self, request, details):
         with transaction.atomic():
@@ -2203,8 +2183,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 send_proposal_decline_email_notification(
                     self, request, proposal_decline
                 )
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def on_hold(self, request):
         with transaction.atomic():
@@ -2233,8 +2214,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 )
 
                 # send_approver_decline_email_notification(reason, request, self)
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def on_hold_remove(self, request):
         with transaction.atomic():
@@ -2260,8 +2242,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 )
 
                 # send_approver_decline_email_notification(reason, request, self)
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def with_qaofficer(self, request):
         with transaction.atomic():
@@ -2302,11 +2285,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 )
 
                 # send_approver_decline_email_notification(reason, request, self)
-                recipients = self.qa_officers()
-                send_qaofficer_email_notification(self, recipients, request)
+                # recipients = self.qa_officers()
+                # send_qaofficer_email_notification(self, recipients, request)
 
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def with_qaofficer_completed(self, request):
         with transaction.atomic():
@@ -2346,10 +2330,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 )
 
                 # send_approver_decline_email_notification(reason, request, self)
-                recipients = self.qa_officers()
-                send_qaofficer_complete_email_notification(self, recipients, request)
-            except:
-                raise
+                # recipients = self.qa_officers()
+                # send_qaofficer_complete_email_notification(self, recipients, request)
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def store_proposed_approval_data(self, request, details):
         # Input validation check
@@ -2394,24 +2379,23 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             # Check mandatory docs
             mandatory_doc_errors = []
             from leaseslicensing.components.approvals.models import (
-                ApprovalType,
                 ApprovalTypeDocumentTypeOnApprovalType,
             )
 
             approval_type = details.get("approval_type")
             for (
-                approval_type_document_type_on_approval_type
+                approval_type_document
             ) in ApprovalTypeDocumentTypeOnApprovalType.objects.filter(
                 approval_type_id=approval_type, mandatory=True
             ):
                 if not self.lease_licence_approval_documents.filter(
-                    approval_type=approval_type_document_type_on_approval_type.approval_type,
-                    approval_type_document_type=approval_type_document_type_on_approval_type.approval_type_document_type,
+                    approval_type=approval_type_document.approval_type,
+                    approval_type_document_type=approval_type_document.approval_type_document_type,
                 ):
                     mandatory_doc_errors.append(
                         "Missing mandatory document/s: Approval Type {}, Document Type {}".format(
-                            approval_type_document_type_on_approval_type.approval_type,
-                            approval_type_document_type_on_approval_type.approval_type_document_type,
+                            approval_type_document.approval_type,
+                            approval_type_document.approval_type_document_type,
                         )
                     )
             if mandatory_doc_errors:
@@ -2473,9 +2457,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     or self.processing_status == "with_approver"
                 ):
                     raise ValidationError(
-                        "Licence preview only available when processing status is with_approver. Current status {}".format(
-                            self.processing_status
-                        )
+                        "Licence preview only available when processing status is with_approver. "
+                        "Current status {}".format(self.processing_status)
                     )
                 if not self.can_assess(request.user):
                     raise exceptions.ProposalNotAuthorized()
@@ -2514,8 +2497,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 transaction.set_rollback(True)
 
                 return licence_buffer
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def test_create_approval_pdf(self, request):
         """
@@ -2539,9 +2523,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             try:
                 self.proposed_decline_status = False
 
-                # if (self.processing_status==Proposal.PROCESSING_STATUS_AWAITING_PAYMENT and self.fee_paid) or (self.proposal_type=='amendment'):
+                # if (self.processing_status==Proposal.PROCESSING_STATUS_AWAITING_PAYMENT
+                # and self.fee_paid) or (self.proposal_type=='amendment'):
                 if self.proposal_type == "amendment":
-                    #    # for 'Awaiting Payment' approval. External/Internal user fires this method after full payment via Make/Record Payment
+                    # for 'Awaiting Payment' approval.
+                    # External/Internal user fires this method after full payment via Make/Record Payment
                     pass
                 else:
                     if not self.can_assess(request.user):
@@ -2553,7 +2539,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # if not self.applicant.organisation.postal_address:
                     # TODO: add this check after ledger forms are available
                     # if not self.applicant_address:
-                    #   raise ValidationError('The applicant needs to have set their postal address before approving this proposal.')
+                    #   raise ValidationError('The applicant needs to have set their postal address
+                    # before approving this proposal.')
 
                 self.store_proposed_approval_data(request, details)
 
@@ -2580,8 +2567,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                             current_proposal=checking_proposal,
                             defaults={
                                 "issue_date": timezone.now(),
-                                #'expiry_date' : datetime.datetime.strptime(self.proposed_issuance_approval.get('expiry_date'), '%d/%m/%Y').date(),
-                                #'start_date' : datetime.datetime.strptime(self.proposed_issuance_approval.get('start_date'), '%d/%m/%Y').date(),
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
@@ -2620,7 +2605,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                             previous_approval.replaced_by = approval
                             previous_approval.save()
                 else:
-                    # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                    # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
+                    # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                     # When Registration_of_Interest
                     #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
                     #     or
@@ -2689,8 +2675,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     if self.approval and self.approval.documents:
                         self.approval.documents.all().update(can_delete=False)
 
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def create_lease_licence_from_registration_of_interest(self):
         lease_licence = Proposal.objects.create(
@@ -2732,21 +2719,23 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         processing_status="due",
                     )
                     if cs:
-                        if r.is_deleted == True:
+                        if r.is_deleted:
                             for c in cs:
                                 c.processing_status = "discarded"
                                 # c.customer_status = 'discarded'
                                 c.reminder_sent = True
                                 c.post_reminder_sent = True
                                 c.save()
-                        if r.is_deleted == False:
+                        if not r.is_deleted:
                             for c in cs:
                                 c.proposal = self
                                 c.approval = approval
                                 c.requirement = r
                                 c.save()
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
+
         # requirement_set= self.requirements.filter(copied_from__isnull=True).exclude(is_deleted=True)
         requirement_set = self.requirements.all().exclude(is_deleted=True)
 
@@ -2805,8 +2794,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                                         ),
                                         request,
                                     )
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def renew_approval(self, request):
         with transaction.atomic():
@@ -2842,9 +2832,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     proposal.other_details.insurance_expiry = None
                     proposal.other_details.preferred_licence_period = None
                     proposal.other_details.nominated_start_date = None
-                    ProposalAccreditation.objects.filter(
-                        proposal_other_details__proposal=proposal
-                    ).delete()
+
+                    # ProposalAccreditation.objects.filter(
+                    #     proposal_other_details__proposal=proposal
+                    # ).delete()
+
                     proposal.documents.filter(
                         input_name__in=["deed_poll", "currency_certificate"]
                     ).delete()
@@ -2892,16 +2884,16 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
                 if req:
                     for r in req:
-                        old_r = deepcopy(r)
-                        r.proposal = proposal
-                        r.copied_from = None
-                        r.copied_for_renewal = True
-                        if r.due_date:
-                            r.due_date = None
-                            r.require_due_date = True
-                        r.id = None
-                        r.district_proposal = None
-                        r.save()
+                        new_r = deepcopy(r)
+                        new_r.proposal = proposal
+                        new_r.copied_from = r
+                        new_r.copied_for_renewal = True
+                        if new_r.due_date:
+                            new_r.due_date = None
+                            new_r.require_due_date = True
+                        new_r.id = None
+                        new_r.district_proposal = None
+                        new_r.save()
                 # copy all the requirement documents from previous proposal
                 for requirement in proposal.requirements.all():
                     for requirement_document in RequirementDocument.objects.filter(
@@ -3090,7 +3082,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def generate_competitive_process(self):
         if self.generated_competitive_process:
             raise ValidationError(
-                f"Couldn't generate a competitive process.  Proposal {self} has already generated a Competitive Process: {self.generated_competitive_process}"
+                "Couldn't generate a competitive process. "
+                f"Proposal {self} has already generated a Competitive Process: {self.generated_competitive_process}"
             )
 
         new_competitive_process = CompetitiveProcess.objects.create()
@@ -3100,7 +3093,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def generate_invoicing_details(self):
         if self.invoicing_details:
             raise ValidationError(
-                f"Couldn't generate an invoicing details.  Proposal {self} has already generated a Invoicing Details: {self.generated_competitive_process}"
+                "Couldn't generate an invoicing details. "
+                f"Proposal {self} has already generated a Invoicing Details: {self.generated_competitive_process}"
             )
 
         new_invoicing_details = InvoicingDetails.objects.create()
@@ -3132,7 +3126,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
             except Exception as e:
-                raise
+                logger.exception(e)
+                raise ValidationError("Couldn't save invoicing details.")
 
     def finance_complete_editing(self, request, action):
         from leaseslicensing.components.approvals.models import Approval
@@ -3392,7 +3387,7 @@ class AmendmentRequest(ProposalRequest):
     #         REASON_CHOICES = ((0, 'The information provided was insufficient'),
     #                           (1, 'There was missing information'),
     #                           (2, 'Other'))
-    # except:
+    # except Exception as e:
     #     REASON_CHOICES = ((0, 'The information provided was insufficient'),
     #                       (1, 'There was missing information'),
     #                       (2, 'Other'))
@@ -3439,8 +3434,9 @@ class AmendmentRequest(ProposalRequest):
                     # send_amendment_email_notification(self, request, proposal)
 
                 self.save()
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
 
 class Assessment(ProposalRequest):
@@ -3516,7 +3512,8 @@ class ProposalStandardRequirement(RevisionedMixin):
     # def clean(self):
     #     if self.application_type:
     #         try:
-    #             default = ProposalStandardRequirement.objects.get(default=True, application_type=self.application_type)
+    #             default = ProposalStandardRequirement.objects
+    # .get(default=True, application_type=self.application_type)
     #         except ProposalStandardRequirement.DoesNotExist:
     #             default = None
 
@@ -3691,16 +3688,8 @@ class ReferralRecipientGroup(models.Model):
         return self.name
 
     @property
-    def all_members(self):
-        all_members = []
-        all_members.extend(self.members.all())
-        member_ids = [m.id for m in self.members.all()]
-        # all_members.extend(EmailUser.objects.filter(is_superuser=True,is_staff=True,is_active=True).exclude(id__in=member_ids))
-        return all_members
-
-    @property
     def filtered_members(self):
-        return self.members.all()
+        return self.members.all()  # ?? Doesn't look very filtered
 
     @property
     def members_list(self):
@@ -3723,16 +3712,8 @@ class QAOfficerGroup(models.Model):
         return "QA Officer Group"
 
     @property
-    def all_members(self):
-        all_members = []
-        all_members.extend(self.members.all())
-        member_ids = [m.id for m in self.members.all()]
-        # all_members.extend(EmailUser.objects.filter(is_superuser=True,is_staff=True,is_active=True).exclude(id__in=member_ids))
-        return all_members
-
-    @property
     def filtered_members(self):
-        return self.members.all()
+        return self.members.all()  # ?? Doesn't look very filtered
 
     @property
     def members_list(self):
@@ -3746,7 +3727,7 @@ class QAOfficerGroup(models.Model):
     def _clean(self):
         try:
             default = QAOfficerGroup.objects.get(default=True)
-        except ProposalAssessorGroup.DoesNotExist:
+        except QAOfficerGroup.DoesNotExist:
             default = None
 
         if default and self.default:
@@ -3841,22 +3822,10 @@ class Referral(RevisionedMixin):
 
     @property
     def allowed_assessors(self):
-        ## must be SystemGroup
-        # group = self.referral_group
-        # return group.members.all() if group else []
-        # return group.get_system_group_member_ids() if group else []
-        return []  # TODO: correct this
+        raise NotImplementedError("TODO: implement this")
 
     def can_process(self, user):
-        return True  # TODO: implement
-        # if self.processing_status == Referral.PROCESSING_STATUS_WITH_REFERRAL:
-        #    group =  ReferralRecipientGroup.objects.filter(id=self.referral_group.id)
-        #    #user=request.user
-        #    if group and group[0] in user.referralrecipientgroup_set.all():
-        #        return True
-        #    else:
-        #        return False
-        # return False
+        raise NotImplementedError("TODO: implement this")
 
     def assign_officer(self, request, officer):
         with transaction.atomic():
@@ -3878,8 +3847,9 @@ class Referral(RevisionedMixin):
                         ),
                         request,
                     )
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def unassign(self, request):
         with transaction.atomic():
@@ -3902,9 +3872,11 @@ class Referral(RevisionedMixin):
                     )
                     applicant_field = retrieve_email_user(applicant_field)
                     # TODO: implement logging
-                    # applicant_field.log_user_action(ProposalUserAction.ACTION_REFERRAL_UNASSIGN_ASSESSOR.format(self.id, self.proposal.id),request)
-            except:
-                raise
+                    # applicant_field.log_user_action(ProposalUserAction.ACTION_REFERRAL_UNASSIGN_ASSESSOR
+                    # .format(self.id, self.proposal.id),request)
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def recall(self, request):
         with transaction.atomic():
@@ -4025,7 +3997,8 @@ class Referral(RevisionedMixin):
                 self.save()
 
                 # TODO Log proposal action
-                # self.proposal.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
+                # self.proposal.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
+                # .format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
                 self.proposal.log_user_action(
                     ProposalUserAction.CONCLUDE_REFERRAL.format(
                         request.user.get_full_name(), self.id, self.proposal.id
@@ -4034,16 +4007,21 @@ class Referral(RevisionedMixin):
                 )
 
                 # TODO log organisation action
-                # self.proposal.applicant.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
+                # self.proposal.applicant.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
+                # .format(self.id,self.proposal.id,'{}({})'
+                # .format(self.referral.get_full_name(),self.referral.email)),request)
                 applicant_field = getattr(self.proposal, self.proposal.applicant_field)
                 applicant_field = retrieve_email_user(applicant_field)
 
                 # TODO: logging applicant_field
-                # applicant_field.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL.format(request.user.get_full_name(), self.id,self.proposal.id,'{}'.format(self.referral_group.name)),request)
+                # applicant_field.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
+                # .format(request.user.get_full_name(), self.id,self.proposal.id,'{}'
+                # .format(self.referral_group.name)),request)
 
-                send_referral_complete_email_notification(self, request)
-            except:
-                raise
+                # send_referral_complete_email_notification(self, request)
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def add_referral_document(self, request):
         with transaction.atomic():
@@ -4062,7 +4040,8 @@ class Referral(RevisionedMixin):
                                 name=str(referral_document),
                             )[0]
                         document.name = str(referral_document)
-                        # commenting out below tow lines - we want to retain all past attachments - reversion can use them
+                        # commenting out below tow lines - we want to retain all past attachments
+                        # - reversion can use them
                         # if document._file and os.path.isfile(document._file.path):
                         #    os.remove(document._file.path)
                         document._file = referral_document
@@ -4093,8 +4072,9 @@ class Referral(RevisionedMixin):
                         request,
                     )
                 return self
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     def send_referral(self, request, referral_email, referral_text):
         with transaction.atomic():
@@ -4151,15 +4131,21 @@ class Referral(RevisionedMixin):
                             text=referral_text,
                         )
                         # try:
-                        #     referral_assessment=ProposalAssessment.objects.get(proposal=self,referral_group=referral_group, referral_assessment=True, referral=referral)
+                        #     referral_assessment=ProposalAssessment.objects
+                        # .get(proposal=self,referral_group=referral_group,
+                        # referral_assessment=True, referral=referral)
                         # except ProposalAssessment.DoesNotExist:
-                        #     referral_assessment=ProposalAssessment.objects.create(proposal=self,referral_group=referral_group, referral_assessment=True, referral=referral)
+                        #     referral_assessment=ProposalAssessment.objects
+                        # .create(proposal=self,referral_group=referral_group,
+                        # referral_assessment=True, referral=referral)
                         #     checklist=ChecklistQuestion.objects.filter(list_type='referral_list', obsolete=False)
                         #     for chk in checklist:
                         #         try:
-                        #             chk_instance=ProposalAssessmentAnswer.objects.get(question=chk, assessment=referral_assessment)
+                        #             chk_instance=ProposalAssessmentAnswer.objects
+                        # .get(question=chk, assessment=referral_assessment)
                         #         except ProposalAssessmentAnswer.DoesNotExist:
-                        #             chk_instance=ProposalAssessmentAnswer.objects.create(question=chk, assessment=referral_assessment)
+                        #             chk_instance=ProposalAssessmentAnswer.objects
+                        # .create(question=chk, assessment=referral_assessment)
                     # Create a log entry for the proposal
                     self.proposal.log_user_action(
                         ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
@@ -4186,8 +4172,9 @@ class Referral(RevisionedMixin):
                     send_referral_email_notification(referral, recipients, request)
                 else:
                     raise exceptions.ProposalReferralCannotBeSent()
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
 
     @property
     def title(self):
@@ -4285,11 +4272,13 @@ class ProposalRequirement(RevisionedMixin):
 
     # def _next_req(self):
     #    increment = -1
-    #    for req in ProposalRequirement.objects.filter(proposal_id=self.proposal_id, is_deleted=False).order_by('-req_order'):
+    #    for req in ProposalRequirement.objects
+    # .filter(proposal_id=self.proposal_id, is_deleted=False).order_by('-req_order'):
     #        increment += 1
     #        if req.id == self.id:
     #            break
-    #    return ProposalRequirement.objects.filter(proposal_id=self.proposal_id, is_deleted=False).order_by('req_order')[increment]
+    #    return ProposalRequirement.objects.filter(proposal_id=self.proposal_id,
+    # is_deleted=False).order_by('req_order')[increment]
 
     def move_up(self):
         # ignore deleted reqs
@@ -4384,8 +4373,10 @@ class ProposalRequirement(RevisionedMixin):
                     document.save()
                 # end save documents
                 self.save()
-            except:
-                raise
+            except Exception as e:
+                logger.exception(e)
+                raise e
+
         return
 
 
@@ -4584,8 +4575,9 @@ def clone_proposal_with_status_reset(original_proposal):
             )
             # proposal.save(no_revision=True)
             return proposal
-        except:
-            raise
+        except Exception as e:
+            logger.exception(e)
+            raise e
 
 
 def clone_documents(proposal, original_proposal, media_prefix):
@@ -4596,16 +4588,16 @@ def clone_documents(proposal, original_proposal, media_prefix):
         proposal_document.can_delete = True
         proposal_document.save()
 
-    for proposal_required_document in ProposalRequiredDocument.objects.filter(
-        proposal_id=proposal.id
-    ):
-        proposal_required_document._file.name = (
-            "{}/proposals/{}/required_documents/{}".format(
-                settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-            )
-        )
-        proposal_required_document.can_delete = True
-        proposal_required_document.save()
+    # for proposal_required_document in ProposalRequiredDocument.objects.filter(
+    #     proposal_id=proposal.id
+    # ):
+    #     proposal_required_document._file.name = (
+    #         "{}/proposals/{}/required_documents/{}".format(
+    #             settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
+    #         )
+    #     )
+    #     proposal_required_document.can_delete = True
+    #     proposal_required_document.save()
 
     for referral in proposal.referrals.all():
         for referral_document in ReferralDocument.objects.filter(referral=referral):
@@ -4615,21 +4607,21 @@ def clone_documents(proposal, original_proposal, media_prefix):
             referral_document.can_delete = True
             referral_document.save()
 
-    for qa_officer_document in QAOfficerDocument.objects.filter(
-        proposal_id=proposal.id
-    ):
-        qa_officer_document._file.name = "{}/proposals/{}/qaofficer/{}".format(
-            settings.MEDIA_APP_DIR, proposal.id, qa_officer_document.name
-        )
-        qa_officer_document.can_delete = True
-        qa_officer_document.save()
+    # for qa_officer_document in QAOfficerDocument.objects.filter(
+    #     proposal_id=proposal.id
+    # ):
+    #     qa_officer_document._file.name = "{}/proposals/{}/qaofficer/{}".format(
+    #         settings.MEDIA_APP_DIR, proposal.id, qa_officer_document.name
+    #     )
+    #     qa_officer_document.can_delete = True
+    #     qa_officer_document.save()
 
-    for onhold_document in OnHoldDocument.objects.filter(proposal_id=proposal.id):
-        onhold_document._file.name = "{}/proposals/{}/on_hold/{}".format(
-            settings.MEDIA_APP_DIR, proposal.id, onhold_document.name
-        )
-        onhold_document.can_delete = True
-        onhold_document.save()
+    # for onhold_document in OnHoldDocument.objects.filter(proposal_id=proposal.id):
+    #     onhold_document._file.name = "{}/proposals/{}/on_hold/{}".format(
+    #         settings.MEDIA_APP_DIR, proposal.id, onhold_document.name
+    #     )
+    #     onhold_document.can_delete = True
+    #     onhold_document.save()
 
     for requirement in proposal.requirements.all():
         for requirement_document in RequirementDocument.objects.filter(
@@ -4674,18 +4666,18 @@ def _clone_documents(proposal, original_proposal, media_prefix):
         proposal_document.can_delete = True
         proposal_document.save()
 
-    for proposal_required_document in ProposalRequiredDocument.objects.filter(
-        proposal=original_proposal.id
-    ):
-        proposal_required_document.proposal = proposal
-        proposal_required_document.id = None
-        proposal_required_document._file.name = (
-            "{}/proposals/{}/required_documents/{}".format(
-                settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-            )
-        )
-        proposal_required_document.can_delete = True
-        proposal_required_document.save()
+    # for proposal_required_document in ProposalRequiredDocument.objects.filter(
+    #     proposal=original_proposal.id
+    # ):
+    #     proposal_required_document.proposal = proposal
+    #     proposal_required_document.id = None
+    #     proposal_required_document._file.name = (
+    #         "{}/proposals/{}/required_documents/{}".format(
+    #             settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
+    #         )
+    #     )
+    #     proposal_required_document.can_delete = True
+    #     proposal_required_document.save()
 
     # copy documents on file system and reset can_delete flag
     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
@@ -4697,28 +4689,28 @@ def _clone_documents(proposal, original_proposal, media_prefix):
     )
 
 
-def _clone_requirement_documents(proposal, original_proposal, media_prefix):
-    for proposal_required_document in ProposalRequiredDocument.objects.filter(
-        proposal=original_proposal.id
-    ):
-        proposal_required_document.proposal = proposal
-        proposal_required_document.id = None
-        proposal_required_document._file.name = (
-            "{}/proposals/{}/required_documents/{}".format(
-                settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-            )
-        )
-        proposal_required_document.can_delete = True
-        proposal_required_document.save()
+# def _clone_requirement_documents(proposal, original_proposal, media_prefix):
+#     for proposal_required_document in ProposalRequiredDocument.objects.filter(
+#         proposal=original_proposal.id
+#     ):
+#         proposal_required_document.proposal = proposal
+#         proposal_required_document.id = None
+#         proposal_required_document._file.name = (
+#             "{}/proposals/{}/required_documents/{}".format(
+#                 settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
+#             )
+#         )
+#         proposal_required_document.can_delete = True
+#         proposal_required_document.save()
 
-    # copy documents on file system and reset can_delete flag
-    media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
-    subprocess.call(
-        "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
-            media_dir, original_proposal.id, proposal.id
-        ),
-        shell=True,
-    )
+#     # copy documents on file system and reset can_delete flag
+#     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
+#     subprocess.call(
+#         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
+#             media_dir, original_proposal.id, proposal.id
+#         ),
+#         shell=True,
+#     )
 
 
 def duplicate_object(self):
@@ -4786,8 +4778,8 @@ def duplicate_object(self):
                 related_object.pk = None
                 # if related_object_field.name=='approvals':
                 #    related_object.lodgement_number = None
-                ##if isinstance(related_object, Approval):
-                ##    related_object.lodgement_number = ''
+                # if isinstance(related_object, Approval):
+                #    related_object.lodgement_number = ''
 
                 setattr(related_object, related_object_field.name, self)
                 print(related_object_field)
@@ -4831,7 +4823,6 @@ def searchKeyWords(
         ApplicationType.FILMING,
     ]
     if is_internal:
-        # proposal_list = Proposal.objects.filter(application_type__name='T Class').exclude(processing_status__in=['discarded','draft'])
         proposal_list = Proposal.objects.filter(
             application_type__name__in=application_types
         ).exclude(processing_status__in=["discarded", "draft"])
@@ -4862,22 +4853,28 @@ def searchKeyWords(
                                 "text": final_results,
                             }
                             qs.append(res)
-                    except:
-                        raise
+                    except Exception as e:
+                        logger.exception(e)
+                        raise e
+
         if searchApproval:
             for a in approval_list:
                 try:
                     results = search_approval(a, searchWords)
                     qs.extend(results)
-                except:
-                    raise
+                except Exception as e:
+                    logger.exception(e)
+                    raise e
+
         if searchCompliance:
             for c in compliance_list:
                 try:
                     results = search_compliance(c, searchWords)
                     qs.extend(results)
-                except:
-                    raise
+                except Exception as e:
+                    logger.exception(e)
+                    raise e
+
     return qs
 
 
@@ -4905,7 +4902,8 @@ def search_reference(reference_number):
                 for c in compliance_list:
                     if c.reference == reference_number:
                         record = {"id": c.id, "type": "compliance"}
-            except:
+            except Exception as e:
+                logger.exception(e)
                 raise ValidationError(
                     "Record with provided reference number does not exist"
                 )
