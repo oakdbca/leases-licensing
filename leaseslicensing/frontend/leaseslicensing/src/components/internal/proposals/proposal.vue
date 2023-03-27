@@ -63,10 +63,11 @@
                     />
                 </template>
 
-                <template v-if="(showingProposal && proposal.processing_status_id === 'with_approver') ||
-                                (canSeeSubmission && proposal.processing_status_id !== 'with_approver') ||
-                                (!canSeeSubmission && showingProposal)"
-                >
+                <template v-if="(showingProposal && ['with_approver', 'approved_application', 'approved', 'declined'].
+                                    includes(proposal.processing_status_id)) ||
+                                (canSeeSubmission && !['with_approver', 'approved_application', 'approved', 'declined'].
+                                    includes(proposal.processing_status_id)) ||
+                                (!canSeeSubmission && showingProposal)">
                     <FormSection :formCollapse="false" label="Application" Index="application">
                     <ApplicationForm
                         v-if="proposal"
@@ -797,6 +798,7 @@ export default {
             let ret_val =
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ||
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID ||
                 this.isFinalised
             return ret_val
         },
@@ -832,7 +834,10 @@ export default {
           return helpers.getCookie('csrftoken')
         },
         isFinalised: function(){
-            return this.proposal.processing_status == 'Declined' || this.proposal.processing_status == 'Approved';
+            return (this.proposal.processing_status == 'Declined' ||
+                    this.proposal.processing_status == 'Approved' ||
+                    this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID //approved_application
+                    );
         },
         canAssess: function(){
             return true  // TODO: Implement correctly.  May not be needed though
