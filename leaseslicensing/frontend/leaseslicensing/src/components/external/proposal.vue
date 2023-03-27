@@ -412,12 +412,13 @@ export default {
       let vm = this;
       this.submitting = true;
       this.saveExitProposal=true;
-      this.save();
-      this.saveExitProposal=false;
-      // redirect back to dashboard
-      vm.$router.push({
-        name: 'external-dashboard'
-      });
+      this.save().then(() => {
+        this.saveExitProposal=false;
+        // redirect back to dashboard
+        vm.$router.push({
+          name: 'external-dashboard'
+        });
+      })
     },
 
     save_wo_confirm: function() {
