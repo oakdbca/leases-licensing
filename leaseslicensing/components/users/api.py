@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
@@ -34,18 +36,7 @@ from leaseslicensing.components.users.serializers import (
     UserSystemSettingsSerializer,
 )
 
-# class DepartmentUserList(views.APIView):
-#    renderer_classes = [
-#        JSONRenderer,
-#    ]
-#
-#    def get(self, request, format=None):
-#        # data = cache.get('department_users')
-#        # if not data:
-#        #     retrieve_department_users()
-#        #     data = cache.get('department_users')
-#        data = retrieve_department_users()
-#        return Response(data)
+logger = logging.getLogger(__name__)
 
 
 class GetChargeMethods(views.APIView):
@@ -96,6 +87,7 @@ class GetProfile(views.APIView):
     ]
 
     def get(self, request, format=None):
+        logger.debug(request.user)
         serializer = UserSerializer(request.user, context={"request": request})
         return Response(serializer.data)
 
