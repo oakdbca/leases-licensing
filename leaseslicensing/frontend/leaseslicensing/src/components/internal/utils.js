@@ -90,8 +90,8 @@ export default {
                         console.log(error)
                         return Promise.reject(error)
                     }
-                    resolve(data)
                     console.log('profile: ', data)
+                    resolve(data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
