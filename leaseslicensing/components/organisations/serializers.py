@@ -2,10 +2,7 @@ from django.conf import settings
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
-from leaseslicensing.components.main.serializers import (
-    CommunicationLogEntrySerializer,
-    EmailUserSerializer,
-)
+from leaseslicensing.components.main.serializers import CommunicationLogEntrySerializer
 from leaseslicensing.components.organisations.models import (  # ledger_organisation,
     Organisation,
     OrganisationAction,
@@ -103,15 +100,29 @@ class DelegateSerializer(serializers.ModelSerializer):
         )
 
 
+class OrganisationContactSerializer(serializers.ModelSerializer):
+    user_status = serializers.SerializerMethodField()
+    user_role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrganisationContact
+        fields = "__all__"
+
+    def get_user_status(self, obj):
+        return obj.get_user_status_display()
+
+    def get_user_role(self, obj):
+        return obj.get_user_role_display()
+
+
 class OrganisationSerializer(serializers.ModelSerializer):
     # address = OrganisationAddressSerializer(read_only=True)
     pins = serializers.SerializerMethodField(read_only=True)
     # delegates = DelegateSerializer(many=True, read_only=True)
-    delegate_email_users = serializers.ListField(
-        child=EmailUserSerializer(), read_only=True
+    delegate_organisation_contacts = serializers.ListField(
+        child=OrganisationContactSerializer(), read_only=True
     )
     trading_name = serializers.CharField(source="organisation_name", read_only=True)
-    # email = serializers.SerializerMethodField(read_only=True)
     apply_application_discount = serializers.SerializerMethodField(read_only=True)
     application_discount = serializers.SerializerMethodField(read_only=True)
     apply_licence_discount = serializers.SerializerMethodField(read_only=True)
@@ -129,12 +140,12 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "id",
             "organisation",
             "organisation_abn",
+            "organisation_email",
             "trading_name",
             "abn",
-            # "email",
             "phone_number",
             "pins",
-            "delegate_email_users",
+            "delegate_organisation_contacts",
             "apply_application_discount",
             "application_discount",
             "apply_licence_discount",
@@ -317,21 +328,6 @@ class SaveDiscountSerializer(serializers.ModelSerializer):
             "charge_once_per_year",
             "max_num_months_ahead",
         )
-
-
-class OrganisationContactSerializer(serializers.ModelSerializer):
-    user_status = serializers.SerializerMethodField()
-    user_role = serializers.SerializerMethodField()
-
-    class Meta:
-        model = OrganisationContact
-        fields = "__all__"
-
-    def get_user_status(self, obj):
-        return obj.get_user_status_display()
-
-    def get_user_role(self, obj):
-        return obj.get_user_role_display()
 
 
 class OrgRequestRequesterSerializer(serializers.ModelSerializer):
