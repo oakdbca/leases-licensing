@@ -805,6 +805,7 @@ export default {
         display_requirements: function(){
             let ret_val =
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID ||
                 ((this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID || this.isFinalised) && this.showingRequirements)
             return ret_val
         },
@@ -894,7 +895,11 @@ export default {
         },
         canSeeSubmission: function(){
             //return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)' && this.proposal.processing_status != 'With Approver' && !this.isFinalised)
-            return this.proposal && (this.proposal.processing_status != 'With Assessor (Requirements)');
+            return this.proposal && ![
+                'With Assessor (Requirements)', // FIXME What is this processing status for?
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.TEXT,
+                constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.TEXT,
+            ].includes(this.proposal.processing_status)
         },
         on_current_revision: function() {
             // Returns whether the currently displayed version is the latest one
@@ -1076,8 +1081,8 @@ export default {
             vm.checkAssessorData();
             try {
                 let payload = {'proposal': this.proposal}
-                if (vm.$refs.application_form.$refs.component_map) {
-                    //this.proposal.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
+                // When in Entering Conditions status ApplicationForm might not be there
+                if (vm.$refs.application_form && vm.$refs.application_form.$refs.component_map) {
                     payload['proposal_geometry'] = vm.$refs.application_form.$refs.component_map.getJSONFeatures();
                 }
 
@@ -1321,79 +1326,41 @@ export default {
             }
         },
         switchStatus:async function(new_status){
-            if(this.proposal.processing_status == 'With Assessor' && new_status == 'with_assessor_requirements'){
-                this.checkAssessorData();
-                let formData = new FormData(vm.form);
-                let data = {'status': new_status, 'approver_comment': vm.approver_comment}
-                try {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (this.proposal.id + '/switch_status')),
-                    {
-                        body: JSON.stringify(data),
-                        method: 'POST',
-                    })
-                    const responseData = await response.json()
-                    this.proposal = responseData;
-                    this.approver_comment='';
-                    this.$nextTick(() => {
-                        this.initialiseAssignedOfficerSelect(true);
-                        this.updateAssignedOfficerSelect();
-                    });
-                } catch (error) {
-                    swal.fire(
-                        'Proposal Error',
-                        helpers.apiVueResourceError(error),
-                        'error'
-                    )
-                }
-            }
+            let data = {'status': new_status, 'approver_comment': this.approver_comment};
 
-            //if approver is pushing back proposal to Assessor then navigate the approver back to dashboard page
-            else if(this.proposal.processing_status == 'With Approver' && (new_status == 'with_assessor_requirements' || new_status=='with_assessor')) {
-                let data = {'status': new_status, 'approver_comment': this.approver_comment}
-                try {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (this.proposal.id + '/switch_status')),
-                    {
-                        body: JSON.stringify(data),
-                        method: 'POST',
+            fetch(helpers.add_endpoint_json(api_endpoints.proposal,
+                (this.proposal.id + '/switch_status')),
+                {
+                    body: JSON.stringify(data),
+                    method: 'POST',
+                }).then(async response => {
+                    if (!response.ok) {
+                        return await response.json().then(json => { throw new Error(json); });
+                    } else {
+                        return await response.json();
+                        }
                     })
-                    const responseData = await response.json()
-                    this.proposal = Object.assign({}, responseData);
+                .then (data => {
+                    this.proposal = Object.assign({}, data);
                     this.approver_comment='';
                     this.$nextTick(() => {
                         this.initialiseAssignedOfficerSelect(true);
                         this.updateAssignedOfficerSelect();
                     });
-                    this.$router.push({ path: '/internal' });
-                } catch (error) {
-                    swal.fire(
-                        'Proposal Error',
-                        helpers.apiVueResourceError(error),
-                        'error'
-                    )
-                }
-            } else {
-                let data = {'status': new_status, 'approver_comment': this.approver_comment}
-                try {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (this.proposal.id + '/switch_status')),
-                    {
-                        body: JSON.stringify(data),
-                        method: 'POST',
-                    })
-                    const resData = await response.json()
-                    this.proposal = Object.assign({}, resData);
-                    this.approver_comment='';
-                    this.$nextTick(() => {
-                        this.initialiseAssignedOfficerSelect(true);
-                        this.updateAssignedOfficerSelect();
+                    //if approver is pushing back proposal to Assessor then navigate the approver back to dashboard page
+                    if(this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID &&
+                        (new_status == 'with_assessor_requirements' || // FIXME What is this processing status for?
+                            new_status==constants.PROPOSAL_STATUS.WITH_ASSESSOR)) {
+                        this.$router.push({ path: '/internal' });
+                    }
+                })
+                .catch(error => {
+                    swal.fire({
+                        title: 'Proposal Error',
+                        text: error,
+                        icon: 'error'
                     });
-                } catch (error) {
-                    swal.fire(
-                        'Proposal Error',
-                        helpers.apiVueResourceError(error),
-                        'error'
-                    )
-                }
-            }
+                });
         },
         initialiseAssignedOfficerSelect:function(reinit=false){
             console.log('initialiseAssignedOfficerSelect')
