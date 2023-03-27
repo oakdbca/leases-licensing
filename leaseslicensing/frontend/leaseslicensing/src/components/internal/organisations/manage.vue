@@ -36,15 +36,16 @@
                                         <div class="row mb-2">
                                             <label for="" class="col-md-3 control-label">ABN</label>
                                             <div class="col-md-7">
-                                                <input type="text" class="form-control" name="last_name" placeholder=""
-                                                    v-model="org.organisation_abn" :disabled="!is_leaseslicensing_admin">
+                                                <input type="text" class="form-control" name="organisation_abn"
+                                                    placeholder="" v-model="org.organisation_abn"
+                                                    :disabled="!is_leaseslicensing_admin">
                                             </div>
                                         </div>
                                         <div class="row mb-2">
                                             <label for="" class="col-sm-3 control-label">Email</label>
                                             <div class="col-sm-6">
-                                                <input type="text" class="form-control" name="last_name" placeholder=""
-                                                    v-model="org.email">
+                                                <input type="text" class="form-control" name="organisation_email"
+                                                    placeholder="" v-model="org.organisation_email">
                                             </div>
                                         </div>
                                         <div class="row mb-2">
@@ -207,7 +208,8 @@
 
                                                     </ul>
                                                     <div v-else class="col">
-                                                        <span class="badge bg-secondary">This organisation currently has no
+                                                        <span class="badge bg-secondary fs-6">This organisation currently
+                                                            has no
                                                             linked
                                                             users.</span>
                                                     </div>
