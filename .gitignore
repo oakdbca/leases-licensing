@@ -9,7 +9,7 @@ node_modules/
 leaseslicensing/cache/*
 .ropeproject/
 .DAV
-.devcontainer
+.devcontainer/*
 !.devcontainer/devcontainer.json
 nohup.out
 
