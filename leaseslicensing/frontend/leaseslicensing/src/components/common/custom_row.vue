@@ -83,6 +83,7 @@ import { v4 as uuid } from 'uuid';
 
 export default {
     name: 'CustomRow',
+    emits: ["aho"],
     props: {
         party_full_data: null,
         competitive_process_id: '',
