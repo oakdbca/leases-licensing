@@ -302,7 +302,7 @@ class Approval(RevisionedMixin):
             # return self.org_applicant.organisation.id
             return self.org_applicant.id
         elif self.proxy_applicant:
-            return self.proxy_applicant
+            return self.proxy_applicant#.id
         else:
             # return None
             return self.submitter
