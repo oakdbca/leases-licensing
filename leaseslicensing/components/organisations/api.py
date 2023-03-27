@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 class OrganisationViewSet(viewsets.ModelViewSet):
-    queryset = Organisation.objects.all()
+    queryset = Organisation.objects.none()
     serializer_class = OrganisationSerializer
 
     def get_queryset(self):
@@ -55,7 +55,10 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return Organisation.objects.all()
         elif is_customer(self.request):
-            return user.leaseslicensing_organisations.all()
+            logger.info(
+                list(Organisation.objects.filter(delegates__contains=[user.id]))
+            )
+            return Organisation.objects.filter(delegates__contains=[user.id])
         return Organisation.objects.none()
 
     @basic_exception_handler
@@ -69,7 +72,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         # return Response({"results": data_transform})
 
         # TODO: search organisations with search term
-        serializer = OrganisationSerializer(self.queryset, many=True)
+        serializer = OrganisationSerializer(self.get_queryset(), many=True)
         return Response(serializer.data)
 
     @list_route(methods=["GET"], detail=False)
