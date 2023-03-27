@@ -368,8 +368,17 @@
         <div v-if="displaySaveBtns" class="navbar fixed-bottom" style="background-color: #f5f5f5;">
             <div class="container">
                 <div class="col-md-12 text-end">
-                    <button class="btn btn-primary" @click.prevent="save_and_continue()" :disabled="disableSaveAndContinueBtn">Save and Continue</button>
-                    <button class="btn btn-primary ml-2" @click.prevent="save_and_exit()" :disabled="disableSaveAndExitBtn">Save and Exit</button>
+                    <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
+                        Save and Exit&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
+                    </button>
+                    <input v-else type="button" @click.prevent="save_and_exit" class="btn btn-primary"
+                        value="Save and Exit" :disabled="disableSaveAndExitBtn"/>
+
+                    <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
+                        Save and Continue&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
+                    </button>
+                    <input v-else type="button" @click.prevent="save_and_continue" class="btn btn-primary"
+                        value="Save and Continue" :disabled="disableSaveAndContinueBtn"/>
                 </div>
             </div>
         </div>
@@ -412,6 +421,7 @@ export default {
             related_items_datatable_id: 'related_items_datatable' + vm._.uid,
             defaultKey: "aho",
             proposal: null,
+            savingProposal: false,
             latest_revision: {},
             current_revision_id: null,
             assessment: {},
@@ -1007,12 +1017,16 @@ export default {
         locationUpdated: function(){
             console.log('in locationUpdated()');
         },
-        save_and_continue: function(){
-            this.save()
+        save_and_continue: async function(){
+            this.savingProposal = true;
+            await this.save().then(() => {
+                this.savingProposal = false;
+            });
         },
         save_and_exit: async function(){
-            await this.save()
-            this.$router.push({ name: 'internal-dashboard' })
+            await this.save_and_continue().then(() => {
+                this.$router.push({ name: 'internal-dashboard' });
+            });
         },
         completeReferral: async function(){
             let vm = this;
@@ -1065,16 +1079,16 @@ export default {
                 const res = await fetch(vm.proposal_form_url, { body: JSON.stringify(payload), method: 'POST' })
 
                 if(res.ok){
-                    await new swal({
+                    swal.fire({
                         title: 'Saved',
                         text: 'Your proposal has been saved',
-                        type: 'success',
+                        icon: 'success',
                     })
                 } else {
-                    await new swal({
+                    swal.fire({
                         title: "Please fix following errors before saving",
                         text: err.bodyText,
-                        type:'error',
+                        icon:'error',
                     })
                 }
             } catch (err){
@@ -1536,5 +1550,8 @@ export default {
     border-bottom: 1px solid #888;
     font-weight: bold;
     font-size: 1.3em;
+}
+.btn-primary {
+    margin: 2px;
 }
 </style>
