@@ -378,6 +378,7 @@ CACHE_TIMEOUT_24_HOURS = 60 * 60 * 24
 
 CACHE_KEY_LEDGER_ORGANISATION = "ledger-organisation-{}"
 CACHE_KEY_ORGANISATION_IDS = "cache_organisation_ids"
+CACHE_KEY_ORGANISATIONS = "cache_organisations"
 CACHE_KEY_USER_IDS = "cache_user_ids"
 CACHE_KEY_COUNTRY_LIST = "country_list"
 CACHE_KEY_APPROVAL_STATUSES = "approval_statuses_dict"
