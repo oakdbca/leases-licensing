@@ -58,6 +58,12 @@ class Organisation(models.Model):
         editable=False,
         default="",
     )
+    organisation_email = models.EmailField(
+        verbose_name="Ledger Organisation Email",
+        null=True,
+        blank=True,
+        editable=False,
+    )
     delegates = ArrayField(models.IntegerField(), blank=True)  # EmailUserRO
     admin_pin_one = models.CharField(max_length=50, blank=True)
     admin_pin_two = models.CharField(max_length=50, blank=True)
@@ -113,6 +119,8 @@ class Organisation(models.Model):
     def save(self, *args, **kwargs):
         self.organisation_name = self.ledger_organisation["organisation_name"]
         self.organisation_abn = self.ledger_organisation["organisation_abn"]
+        if self.ledger_organisation["organisation_email"]:
+            self.organisation_email = self.ledger_organisation["organisation_email"]
         super().save(*args, **kwargs)
 
     @property

@@ -29,6 +29,7 @@ class OrganisationAdmin(admin.ModelAdmin):
         "organisation",
         "organisation_name",
         "organisation_abn",
+        "organisation_email",
         "delegates",
         "admin_pin_one",
         "admin_pin_two",
@@ -47,7 +48,7 @@ class OrganisationAdmin(admin.ModelAdmin):
         "last_event_application_fee_date",
         "max_num_months_ahead",
     ]
-    readonly_fields = ["organisation_name", "organisation_abn"]
+    readonly_fields = ["organisation_name", "organisation_abn", "organisation_email"]
 
     def organisation_name(self, obj):
         if obj.organisation:
@@ -62,6 +63,13 @@ class OrganisationAdmin(admin.ModelAdmin):
         return "No Organisation Assigned"
 
     organisation_abn.short_description = "Ledger Organisation ABN"
+
+    def organisation_email(self, obj):
+        if obj.organisation:
+            return obj.organisation["organisation_email"]
+        return "No Organisation Assigned"
+
+    organisation_email.short_description = "Ledger Organisation ABN"
 
 
 @admin.register(models.OrganisationRequest)
