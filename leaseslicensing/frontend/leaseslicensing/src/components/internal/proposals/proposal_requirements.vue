@@ -263,6 +263,7 @@ export default {
                     const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements,_id+'/discard'));
                     console.log(response)
                     if (response.ok) {
+                        this.selectedRequirement = {} // Unselect, so it can be re-added without error
                         this.$refs.requirements_datatable.vmDataTable.ajax.reload();
                     } else {
                         console.log("error")
