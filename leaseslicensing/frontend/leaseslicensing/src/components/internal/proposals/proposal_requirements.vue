@@ -47,7 +47,7 @@ export default {
             panelBody: "proposal-requirements-"+vm._uid,
             selectedRequirement: {},
             requirements: [],
-            requirement_headers:["Requirement","Due Date","Recurrence","Action","Order"],
+            requirement_headers:["Requirement","Due Date","Recurrence","Source","Action","Order"],
             requirement_options:{
                 autoWidth: false,
                 language: {
@@ -122,17 +122,36 @@ export default {
                         orderable: false
                     },
                     {
+                        data: "source",
+                        mRender:function (data,type,full) {
+                            if (full.source) {
+                                return full.source.fullname;
+                            } else {
+                                return "";
+                            }
+                        },
+                        orderable: false
+                    },
+                    {
                         data: "id",
                         mRender:function (data,type,full) {
                             let links = '';
                             if (vm.hasAssessorMode || vm.isReferrer){
-                                let show = vm.hasAssessorMode || (vm.isReferrerCanEdit && full.can_referral_edit);
-                                if (show) {
+                                // Whether the current user can edit/delete a referral
+                                let show_action_btns = vm.hasAssessorMode || (vm.isReferrerCanEdit && full.can_referral_edit);
+                                // Whether a referral has been completed, but can still be viewed
+                                let referral_completed = vm.isReferrer && !vm.isReferrerCanEdit && full.can_referral_edit;
+                                // Assessors can edit and/or delete all proposed requirements
+                                // Referral parties can only edit or delete their own requirements
+                                if (show_action_btns) {
                                     if(full.copied_from==null) {
                                             links +=  `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
                                         }
                                         links +=  `<a href='#' class="deleteRequirement" data-id="${full.id}">Delete</a><br/>`;
                                     }
+                                else if (referral_completed) {
+                                    links += 'Referral completed<br/>'
+                                }
                             }
                             return links;
                         },
@@ -233,25 +252,25 @@ export default {
         },
         removeRequirement: async function(_id){
             console.log(_id)
-            await new swal({
+            swal.fire({
                 title: "Remove Requirement",
                 text: "Are you sure you want to remove this requirement?",
-                type: "warning",
-            })
-            /*
-            await swal({
+                icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: 'Remove Requirement',
-                confirmButtonColor:'#d9534f'
+                confirmButtonText: 'Yes',
+            }).then(async result => {
+                if (result.isConfirmed){
+                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements,_id+'/discard'));
+                    console.log(response)
+                    if (response.ok) {
+                        this.$refs.requirements_datatable.vmDataTable.ajax.reload();
+                    } else {
+                        console.log("error")
+                    }
+                } else {
+                    // When cancel
+                }
             })
-            */
-            const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements,_id+'/discard'));
-            console.log(response)
-            if (response.ok) {
-                this.$refs.requirements_datatable.vmDataTable.ajax.reload();
-            } else {
-                console.log("error")
-            }
         },
         fetchRequirements: async function(){
             const url = api_endpoints.proposal_standard_requirements;

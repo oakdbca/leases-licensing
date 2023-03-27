@@ -2669,10 +2669,14 @@ class ProposalRequirementViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
 
             user = request.user
-            referral = Referral.objects.get(referral=user.id,
-                                            proposal=request.data["proposal"])
+            try:
+                referral = Referral.objects.get(referral=user.id,
+                                                proposal=request.data["proposal"])
+            except:
+                referral = None
 
-            serializer.save(referral=referral)
+            # Set associated referral and source user on requirement creation
+            serializer.save(referral=referral, source=user.id)
             #instance = serializer.save()
             # TODO: requirements documents in LL?
             # instance.add_documents(request)

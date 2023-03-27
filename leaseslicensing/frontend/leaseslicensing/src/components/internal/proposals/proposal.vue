@@ -1081,8 +1081,8 @@ export default {
             vm.checkAssessorData();
             try {
                 let payload = {'proposal': this.proposal}
-                if (vm.$refs.application_form.$refs.component_map) {
-                    //this.proposal.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
+                // When in Entering Conditions status ApplicationForm might not be there
+                if (vm.$refs.application_form && vm.$refs.application_form.$refs.component_map) {
                     payload['proposal_geometry'] = vm.$refs.application_form.$refs.component_map.getJSONFeatures();
                 }
 

@@ -1271,6 +1271,8 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
     # due_date = serializers.DateField(input_formats=['%d/%m/%Y'],required=False,allow_null=True)
     can_referral_edit = serializers.SerializerMethodField()
     requirement_documents = RequirementDocumentSerializer(many=True, read_only=True)
+    # The user who created the requirement
+    source = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProposalRequirement
@@ -1296,6 +1298,7 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             "copied_for_renewal",
             "notification_only",
             "referral",
+            "source",
         )
         read_only_fields = ("req_order", "requirement", "copied_from")
 
@@ -1305,6 +1308,17 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
         )
         return obj.can_referral_edit(user)
+
+    def get_source(self, obj):
+        """
+        Returns the user who created this proposal requirement
+        """
+
+        if obj.source:
+            email_user = retrieve_email_user(obj.source)
+            return EmailUserSerializer(email_user).data
+        else:
+            return None
 
 
 class ProposalStandardRequirementSerializer(serializers.ModelSerializer):

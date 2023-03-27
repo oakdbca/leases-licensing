@@ -1629,6 +1629,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             "with_assessor",
             "with_referral",
             "with_assessor_conditions",
+            Referral.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             logger.info("self.__assessor_group().get_system_group_member_ids()")
             logger.info(self.get_assessor_group().get_system_group_member_ids())
@@ -4212,6 +4213,7 @@ class ProposalRequirement(RevisionedMixin):
         blank=True,
         null=True,
         on_delete=models.SET_NULL)
+    source = models.IntegerField(null=True) # EmailUserRO
     notification_only = models.BooleanField(default=False)
     req_order = models.IntegerField(null=True, blank=True)
 
@@ -4324,10 +4326,11 @@ class ProposalRequirement(RevisionedMixin):
                 else:
                     return False
             elif self.proposal.is_referrer(user):
-                # This users referrals
-                # Referral.objects.get(referral=user.id, proposal=self.proposal)
-                if hasattr(self.referral, "referral") and self.referral.referral == user.id:
-                    return True
+                # True if this referral user's requirement
+                if hasattr(self.referral, "referral") and \
+                    self.referral.referral == user.id and \
+                    self.source == user.id:
+                        return True
                 else:
                     return False
         return False
