@@ -1,6 +1,6 @@
 <template lang="html">
     <div id="internal-proposal-amend">
-        <modal transition="modal fade" @ok="ok()" @cancel="cancel()" title="Amendment Request" large>
+        <modal transition="modal fade" @ok="ok()" :okDisabled="disableOkButton" @cancel="cancel()" title="Amendment Request" large>
             <div class="container-fluid">
                 <div class="row">
                     <form class="form-horizontal" name="amendForm">
@@ -12,8 +12,9 @@
                                         <label class="control-label pull-right"  for="reason_select">Reason</label>
                                     </div>
                                     <div class="col-sm-6">
-                                        <select class="form-control" id="reason_select" ref="reason" v-model="amendment.reason">
-                                            <option v-for="r in reason_choices" :value="r.key">{{r.value}}</option>
+                                        <select class="form-control" id="reason_select" ref="reason_choices"
+                                            @change="onReasonChange" v-model="amendment.reason_id">
+                                                <option v-for="r in reason_choices" :value="r.key">{{r.value}}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -34,7 +35,7 @@
                                     <div class="form-group">
                                         <div class="input-group date" ref="add_attachments" style="width: 70%;">
                                             <!--FileField ref="filefield" :uploaded_documents="amendment.amendment_request_documents" :delete_url="delete_url" :proposal_id="proposal_id" isRepeatable="true" name="amendment_request_file" @refreshFromResponse="refreshFromResponse"/-->
-                                            
+
                                             <!-- false for now 17 May 2021 -->
                                             <FileField v-if="false"
                                                 ref="filefield"
@@ -112,6 +113,11 @@ export default {
         },
         delete_url: function() {
             return (this.amendment.id) ? '/api/amendment_request/'+this.amendment.id+'/delete_document/' : '';
+        },
+        disableOkButton: function() {
+            // Disable amendment modal ok-button for as long as no amendment
+            // reason has been selected
+            return this.amendment.reason_id == null;
         }
     },
     methods:{
@@ -141,6 +147,15 @@ export default {
             this.validation_form.resetForm();
             */
         },
+        onReasonChange: function(e) {
+            // Update this proposal's amendment reason on selecting a different reason from the modal
+            let vm = this;
+            let reason = e.target.innerText;
+            let reason_id = e.target.value;
+
+            vm.amendment.reason = reason;
+            vm.amendment.reason_id = reason_id;
+        },
         fetchAmendmentChoices: async function(){
             try {
                 const res = await fetch('/api/amendment_request_reason_choices.json')
@@ -153,7 +168,7 @@ export default {
         sendData:async function(){
             this.errors = false;
             try {
-                await fetch('/api/amendment_request.json', 
+                await fetch('/api/amendment_request.json',
                     { body: JSON.stringify(this.amendment),
                         method: 'POST'
                     })
@@ -216,21 +231,21 @@ export default {
             let vm = this;
 
             // Intialise select2
-            $(vm.$refs.reason).select2({
-                "theme": "bootstrap",
-                allowClear: true,
-                placeholder:"Select Reason"
-            }).
-            on("select2:select",function (e) {
-                var selected = $(e.currentTarget);
-                vm.amendment.reason = selected.val();
-                vm.amendment.reason_id = selected.val();
-            }).
-            on("select2:unselect",function (e) {
-                var selected = $(e.currentTarget);
-                vm.amendment.reason = selected.val();
-                vm.amendment.reason_id = selected.val();
-            });
+            // $(vm.$refs.reason_choices).select2({
+            //     "theme": "bootstrap",
+            //     allowClear: true,
+            //     placeholder:"Select Reason"
+            // }).
+            // on("select2:select",function (e) {
+            //     var selected = $(e.currentTarget);
+            //     vm.amendment.reason = selected.val();
+            //     vm.amendment.reason_id = selected.val();
+            // }).
+            // on("select2:unselect",function (e) {
+            //     var selected = $(e.currentTarget);
+            //     vm.amendment.reason = selected.val();
+            //     vm.amendment.reason_id = selected.val();
+            // });
        }
    },
    mounted:function () {

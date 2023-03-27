@@ -81,7 +81,9 @@ target/
 .idea/
 
 # VSCode
-.vscode/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
 
 # Eclipse project files
 /.pydevproject

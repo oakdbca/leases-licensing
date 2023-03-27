@@ -2400,6 +2400,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     )
             if mandatory_doc_errors:
                 raise serializers.ValidationError(mandatory_doc_errors)
+
+        if self.processing_status == "with_approver":
+            # Add date of approval and the approver to `proposed_issuance_approval` dictionary
+            self.proposed_issuance_approval["approved_on"] = timezone.now().timestamp()
+            self.proposed_issuance_approval["approved_by"] = request.user.id
+
         self.save()
 
     def proposed_approval(self, request, details):
@@ -3068,6 +3074,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
             action_url=f'<a href=/internal/proposal/{self.id} target="_blank">Open</a>',
+            type="application",
         )
         return related_item
 
@@ -3077,7 +3084,17 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def related_item_descriptor(self):
-        return "(return descriptor)"
+        """
+        Returns this application's status as item description:
+        """
+
+        if self.application_type.name in [
+            APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
+            APPLICATION_TYPE_LEASE_LICENCE,
+        ]:
+            return self.processing_status
+        else:
+            return "(return descriptor)"
 
     def generate_competitive_process(self):
         if self.generated_competitive_process:
@@ -3430,7 +3447,6 @@ class AmendmentRequest(ProposalRequest):
                     # )
 
                     # send email
-
                     # send_amendment_email_notification(self, request, proposal)
 
                 self.save()

@@ -136,7 +136,7 @@ export default {
                 placeholder:"Type and select Person",
                 // dropdownParent: $('#modal_add_party'),
                 ajax: {
-                    url: api_endpoints.users_api + '/',
+                    url: api_endpoints.users_api,
                     dataType: 'json',
                     data: function(params) {
                         var query = {

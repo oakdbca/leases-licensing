@@ -650,6 +650,8 @@ def proposal_submit(proposal, request):
                 # proposal.documents.all().update(can_delete=False)
                 # proposal.required_documents.all().update(can_delete=False)
 
+                # Reason can be an object, e.g. `AmendmentReason`
+                reasons = [r.reason if hasattr(r, "reason") else r for r in reasons]
                 reason = ",".join(reasons)
                 proposal.save(
                     version_comment=f"Requested proposal amendments done {reason}"

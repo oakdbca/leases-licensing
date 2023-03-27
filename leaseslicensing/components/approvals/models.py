@@ -214,6 +214,7 @@ class Approval(RevisionedMixin):
     class Meta:
         app_label = "leaseslicensing"
         unique_together = ("lodgement_number", "issue_date")
+        verbose_name = "Lease/License"
 
     # @classmethod
     # def approval_types_dict(cls, include_codes=[]):
@@ -302,7 +303,7 @@ class Approval(RevisionedMixin):
             # return self.org_applicant.organisation.id
             return self.org_applicant.id
         elif self.proxy_applicant:
-            return self.proxy_applicant
+            return self.proxy_applicant#.id
         else:
             # return None
             return self.submitter
@@ -756,6 +757,7 @@ class Approval(RevisionedMixin):
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
             action_url=f'<a href=/internal/approval/{self.id} target="_blank">Open</a>',
+            type="lease_license"
         )
         return related_item
 
@@ -765,7 +767,11 @@ class Approval(RevisionedMixin):
 
     @property
     def related_item_descriptor(self):
-        return "(return descriptor)"
+        """
+            Returns this license's expiry date as item description
+        """
+
+        return self.expiry_date
 
 
 class PreviewTempApproval(Approval):

@@ -82,12 +82,15 @@
             closeWhenOK: {
                 type: Boolean,
                 default: false
+            },
+            okDisabled: {
+                type: Boolean,
+                default: false
             }
         },
         data () {
             return {
                 duration: null,
-                okDisabled: false,
             };
         },
         computed: {

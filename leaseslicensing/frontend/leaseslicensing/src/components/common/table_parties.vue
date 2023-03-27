@@ -29,12 +29,9 @@
 
 <script>
 import { v4 as uuid } from 'uuid'
-import { api_endpoints, helpers } from '@/utils/hooks'
 import datatable from '@/utils/vue/datatable.vue'
-import CustomRow from '@/components/common/custom_row.vue'
-import { createApp, h } from 'vue';
 import AddPartyModal from '@/components/common/modal_add_party.vue';
-import { none } from 'ol/centerconstraint';
+import { expandToggleParties } from '@/components/common/table_functions.js'
 
 export default {
     name: 'TableParties',
@@ -266,78 +263,8 @@ export default {
         addClickEventHandler: function(){
             let vm = this
 
-            vm.$refs.parties_datatable.vmDataTable.on('click', 'td', function(e) {
-                let td_link = $(this)
-                if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))){
-                    // This row is not configured as expandable row (at the rowCallback)
-                    return
-                }
-                let tr = td_link.closest('tr')
-                let first_td = tr.children().first()
-
-                // Get full data of this row
-                let $row = vm.$refs.parties_datatable.vmDataTable.row(tr)
-                let full_data = $row.data()
-
-                if(full_data.expanded){
-                    // Collapse
-                    let siblings = tr.next('tr.' + vm.expandable_row_class_name)
-                    siblings.fadeOut(500, function(){
-                        siblings.remove()
-                        // Change icon
-                        first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
-                        // Hide child row, where hidden columns are
-                        $row.child.hide()
-                        // Toggle flag
-                        full_data.expanded = false
-
-
-                        if (full_data.id in vm.custom_row_apps){
-                            vm.custom_row_apps[full_data.id].unmount()
-                            vm.custom_row_apps[full_data.id] = undefined
-                        }
-                        // if (full_data.custom_row_app){
-                        //     // Component mounted once cannot be remount easily.  Therefore unmount and delete it completely here and then when required, create it again.
-                        //     full_data.custom_row_app.unmount()
-                        //     full_data.custom_row_app = undefined
-                        // }
-                    })
-                } else {
-                    // Expand
-                    let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td id="custom_row_' + full_data.id + '"></td></tr>')
-                    details_elem.hide()
-                    details_elem.insertAfter(tr)
-                    vm.updateCustomRowColSpan()
-
-                    // -----------------------
-                    // Add vue component dynamically
-                    // -----------------------
-                    // Configure event listener (Ref: https://stackoverflow.com/questions/67516974/vue3-listen-to-event-from-dynamically-created-child-component-on-replacement)
-                    const comp = h(CustomRow, {
-                        onAho: e => console.log('onAho: ', e),  // 'aho' is the event name configured in CustomRow component.
-                    })
-                    let custom_row_app = createApp(comp, {
-                        // props
-                        party_full_data: full_data,
-                        competitive_process_id: vm.competitive_process_id,
-                        accessing_user: vm.accessing_user,
-                    })
-                    custom_row_app.mount('#custom_row_' + full_data.id)
-                    // -----------------------
-
-                    // Store custom_row_app in order to unmount when being hidden
-                    // full_data.custom_row_app = custom_row_app
-                    vm.custom_row_apps[full_data.id] = custom_row_app
-
-                    details_elem.fadeIn(1000)
-
-                    // Change icon
-                    first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
-                    // Show child row, where hidden columns are
-                    $row.child.show()
-                    // Toggle flag
-                    full_data.expanded = true
-                }
+            vm.$refs.parties_datatable.vmDataTable.on('click', 'td', function() {
+                expandToggleParties(vm, this);
             })
         },
         addResponsiveResizeHandler: function(){

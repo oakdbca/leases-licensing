@@ -9,7 +9,7 @@
 
 <script>
 import { v4 as uuid } from 'uuid'
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { constants } from '@/utils/hooks'
 import datatable from '@/utils/vue/datatable.vue'
 
 export default {
@@ -56,8 +56,21 @@ export default {
                 orderable: false,
                 searchable: false,
                 visible: true,
-                //'render': function(row, type, full){
-                //}
+                'render': function(row, type, full){
+                    /** The related item description is to be determined per type:
+                     * - Application - application status
+                     * - Lease/License - expiry date
+                     */
+                    if (full.type === "application") {
+                        return constants.PROPOSAL_STATUS[full.descriptor.toUpperCase()].TEXT;
+                    } else if (full.type === "lease_license") {
+                        return full.descriptor;
+                    } else if (full.type === "competitive_process") {
+                        return constants.COMPETITIVE_PROCESS_STATUS[full.descriptor.toUpperCase()].TEXT;
+                    } else {
+                        return full.descriptor;
+                    }
+                }
             }
         },
         column_action: function(){

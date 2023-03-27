@@ -123,7 +123,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
     applicant = serializers.SerializerMethodField(read_only=True)
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
-    licence_document = serializers.CharField(source="licence_document._file.url")
+    licence_document = serializers.CharField(source='licence_document._file.url',
+                                             allow_blank=True,
+                                             allow_null=True)
+    # renewal_document = serializers.SerializerMethodField(read_only=True)
     status = serializers.CharField(source="get_status_display")
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
@@ -251,7 +254,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return is_approver(request)
 
     def get_requirement_docs(self, obj):
-        if obj.requirement_docs:
+        if obj.requirement_docs and obj.requirement_docs._file:
             return [[d.name, d._file.url] for d in obj.requirement_docs]
         return None
 

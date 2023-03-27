@@ -77,6 +77,7 @@ import ApprovalHistory from '../internal/approvals/approval_history.vue'
 import { api_endpoints, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid';
+import { expandToggle } from '@/components/common/table_functions.js'
 
 export default {
     name: 'TableApprovals',
@@ -143,6 +144,11 @@ export default {
                 keepInvalid: true,
                 allowInputToggle: true
             },
+
+            // For Expandable row
+            td_expand_class_name: 'expand-icon',
+            td_collapse_class_name: 'collapse-icon',
+            expandable_row_class_name: 'expandable_row_class_name',
         }
     },
     components: {
@@ -350,7 +356,16 @@ export default {
                 visible: true,
                 'render': function (row, type, full) {
                     let _file_name = "Approval.PDF"
-                    return `<a href="${full.licence_document}" target="_blank"><i class="fa fa-file-pdf" style='color: red'></i> ${_file_name}</a>`
+                    if (full.licence_document) {
+                        return `<a href="${full.licence_document}" target="_blank">
+                            <i class="fa fa-file-pdf" style='color: red'></i>
+                            ${_file_name}</a>`
+                    } else {
+                        // Should not happen that there is no license document, but better not show one being
+                        // there when that is not the case
+                        console.warn(`No license document for license ${full.lodgement_number}`)
+                        return "";
+                    }
                 }
             }
         },
@@ -483,6 +498,11 @@ export default {
                 autoWidth: false,
                 language: {
                     processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                },
+                rowCallback: function (row, proposal){
+                    let row_jq = $(row)
+                    row_jq.attr('id', 'proposal_id_' + proposal.id)
+                    row_jq.children().first().addClass(vm.td_expand_class_name)
                 },
                 responsive: true,
                 serverSide: true,
@@ -683,6 +703,11 @@ export default {
                 var id = $(this).attr('data-history-approval');
                 vm.approvalHistory(id);
             });
+
+            // Listener for thr row
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'td', function(e) {
+                expandToggle(vm, this);
+            })
 
         },
         fetchFilterLists: async function () {

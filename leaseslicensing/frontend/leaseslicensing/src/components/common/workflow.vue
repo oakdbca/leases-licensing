@@ -429,9 +429,10 @@ export default {
             return this.proposal!= null ? helpers.add_endpoint_json(api_endpoints.referrals,'datatable_list')+'?proposal='+this.proposal.id : '';
         },
         show_toggle_proposal: function(){
-            if(this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
+            if( // this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
                 // this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID ||
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
                 this.isFinalised){
                 return true
             } else {
@@ -554,7 +555,7 @@ export default {
                 allowClear: true,
                 placeholder:"Select Referrer",
                 ajax: {
-                    url: api_endpoints.users_api + '/get_department_users/',
+                    url: api_endpoints.users_api + 'get_department_users/',
                     dataType: 'json',
                     data: function(params) {
                         var query = {
