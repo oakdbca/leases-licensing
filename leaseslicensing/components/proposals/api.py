@@ -357,18 +357,12 @@ class ProposalRenderer(DatatablesRenderer):
 # from django.utils.decorators import method_decorator
 # from django.views.decorators.cache import cache_page
 class ProposalPaginatedViewSet(viewsets.ModelViewSet):
-    # queryset = Proposal.objects.all()
-    # filter_backends = (DatatablesFilterBackend,)
     filter_backends = (ProposalFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
     renderer_classes = (ProposalRenderer,)
     queryset = Proposal.objects.none()
     serializer_class = ListProposalSerializer
     page_size = 10
-
-    #    @method_decorator(cache_page(60))
-    #    def dispatch(self, *args, **kwargs):
-    #        return super(ListProposalViewSet, self).dispatch(*args, **kwargs)
 
     @property
     def excluded_type(self):
@@ -2098,20 +2092,20 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 application_type_str = request.data.get("application_type", {}).get(
                     "code"
                 )
-
                 application_type = ApplicationType.objects.get(
                     name=application_type_str
                 )
                 proposal_type = ProposalType.objects.get(code="new")
 
                 data = {
-                    "org_applicant": request.data.get("org_applicant"),
+                    "org_applicant": request.data.get("org_applicant", None),
                     "ind_applicant": request.user.id
                     if not request.data.get("org_applicant")
                     else None,  # if no org_applicant, assume this application is for individual.
                     "application_type_id": application_type.id,
                     "proposal_type_id": proposal_type.id,
                 }
+
                 serializer = CreateProposalSerializer(data=data)
                 serializer.is_valid(raise_exception=True)
                 instance = serializer.save()
