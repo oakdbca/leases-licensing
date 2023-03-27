@@ -199,7 +199,8 @@ def send_amendment_email_notification(amendment_request, request, proposal):
         if cc_list:
             all_ccs = [cc_list]
 
-    msg = email.send(proposal.submitter.email, cc=all_ccs, context=context)
+    email_addr = EmailUser.objects.get(id=proposal.submitter).email
+    msg = email.send(email_addr, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, proposal, sender=sender)
     if proposal.org_applicant:
