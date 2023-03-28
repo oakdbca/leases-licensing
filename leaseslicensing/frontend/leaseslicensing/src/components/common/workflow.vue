@@ -184,7 +184,7 @@ export default {
                     'key': 'enter_conditions',
                     'button_title': 'Enter Conditions',
                     'function_when_clicked': () => {
-                        vm.switchStatus('with_assessor_conditions')
+                        vm.switchStatus(`${vm.proposal.processing_status_id}_conditions`);
                     },
                     'function_to_show_hide': () => {
                         let condition_to_display = {
@@ -267,12 +267,21 @@ export default {
                     'key': 'back_to_application',
                     'button_title': 'Back to Application',
                     'function_when_clicked': function(){
-                        vm.switchStatus('with_assessor')
+                        if (vm.proposal.processing_status_id === constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID) {
+                            vm.switchStatus(constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID)
+                        } else if (vm.proposal.processing_status_id === constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID) {
+                            vm.switchStatus(constants.PROPOSAL_STATUS.WITH_REFERRAL.ID);
+                        } else {
+                            console.log.error(`Can not switch back from status ${vm.proposal.processing_status}`);
+                        }
                     },
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
+                                // If either the assessor or referrer changes the status to `With Assessor/Referral (Conditions)`
+                                // both assessor and referrer should be able to return back to the Application
                                 [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID, ROLES.REFERRAL.ID,],
+                                [PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID, ROLES.REFERRAL.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
