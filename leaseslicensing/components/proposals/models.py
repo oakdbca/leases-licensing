@@ -1558,7 +1558,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         group_ids = self.get_assessor_group().get_system_group_member_ids()
         for id in group_ids:
             logger.info(id)
-            recipients.append(EmailUser.objects.get(id=id).email)
+            recipient = retrieve_email_user(id)
+            recipients.append(recipient.email)
         return recipients
 
     @property
@@ -1568,7 +1569,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         group_ids = self.get_approver_group().get_system_group_member_ids()
         for id in group_ids:
             logger.info(id)
-            recipients.append(EmailUser.objects.get(id=id).email)
+            recipient = retrieve_email_user(id)
+            recipients.append(recipient.email)
         return recipients
 
     # Check if the user is member of assessor group for the Proposal
