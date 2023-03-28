@@ -1239,10 +1239,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         elif self.proxy_applicant:
             email_user = retrieve_email_user(self.proxy_applicant)
         else:
-            logger.warning(
+            logger.error(
                 f"Applicant for the proposal {self.lodgement_number} not found"
             )
-            email_user = None
+            email_user = "No Applicant"
         return email_user
 
     @property
@@ -1275,15 +1275,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def applicant_name(self):
         if isinstance(self.applicant, Organisation):
-            return f"{self.org_applicant.organisation.name}"
-        else:
-            names = " ".join(
-                [
-                    self.applicant.first_name,
-                    self.applicant.last_name,
-                ]
-            )
-            return names if names else ""
+            return f"{self.applicant.organisation_name}"
+        elif isinstance(self.applicant, EmailUser):
+            return f"{self.applicant.first_name} {self.applicant.last_name}"
+        logger.error(f"Applicant for the proposal {self.lodgement_number} not found")
+        return "No Applicant"
 
     @property
     def applicant_details(self):
