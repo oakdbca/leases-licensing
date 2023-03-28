@@ -100,12 +100,29 @@ class DelegateSerializer(serializers.ModelSerializer):
         )
 
 
+class OrganisationContactSerializer(serializers.ModelSerializer):
+    user_status = serializers.SerializerMethodField()
+    user_role = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OrganisationContact
+        fields = "__all__"
+
+    def get_user_status(self, obj):
+        return obj.get_user_status_display()
+
+    def get_user_role(self, obj):
+        return obj.get_user_role_display()
+
+
 class OrganisationSerializer(serializers.ModelSerializer):
     # address = OrganisationAddressSerializer(read_only=True)
     pins = serializers.SerializerMethodField(read_only=True)
     # delegates = DelegateSerializer(many=True, read_only=True)
-    delegates = serializers.ListField(child=serializers.IntegerField(), read_only=True)
-    trading_name = serializers.SerializerMethodField(read_only=True)
+    delegate_organisation_contacts = serializers.ListField(
+        child=OrganisationContactSerializer(), read_only=True
+    )
+    trading_name = serializers.CharField(source="organisation_name", read_only=True)
     apply_application_discount = serializers.SerializerMethodField(read_only=True)
     application_discount = serializers.SerializerMethodField(read_only=True)
     apply_licence_discount = serializers.SerializerMethodField(read_only=True)
@@ -122,13 +139,13 @@ class OrganisationSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "organisation",
-            "name",
+            "organisation_abn",
+            "organisation_email",
             "trading_name",
             "abn",
-            "email",
             "phone_number",
             "pins",
-            "delegates",
+            "delegate_organisation_contacts",
             "apply_application_discount",
             "application_discount",
             "apply_licence_discount",
@@ -186,6 +203,9 @@ class OrganisationSerializer(serializers.ModelSerializer):
 
         return delegates
 
+    # def get_email(self, obj):
+    #     return obj.ledger_organisation["email"]
+
     def get_trading_name(self, obj):
         return obj.ledger_organisation["organisation_name"]
 
@@ -204,6 +224,13 @@ class OrganisationSerializer(serializers.ModelSerializer):
                 return None
         except KeyError:
             return None
+
+
+class OrganisationKeyValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organisation
+        fields = ["id", "organisation_name"]
+        read_only_fields = ["id", "organisation_name"]
 
 
 class OrganisationCheckExistSerializer(serializers.Serializer):
@@ -303,21 +330,6 @@ class SaveDiscountSerializer(serializers.ModelSerializer):
         )
 
 
-class OrganisationContactSerializer(serializers.ModelSerializer):
-    user_status = serializers.SerializerMethodField()
-    user_role = serializers.SerializerMethodField()
-
-    class Meta:
-        model = OrganisationContact
-        fields = "__all__"
-
-    def get_user_status(self, obj):
-        return obj.get_user_status_display()
-
-    def get_user_role(self, obj):
-        return obj.get_user_role_display()
-
-
 class OrgRequestRequesterSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
@@ -330,7 +342,6 @@ class OrgRequestRequesterSerializer(serializers.ModelSerializer):
 
 
 class OrganisationRequestSerializer(serializers.ModelSerializer):
-
     identification = serializers.FileField()
     requester_name = serializers.SerializerMethodField(read_only=True)
     lodgement_date = serializers.DateTimeField(format="%d/%m/%Y")
@@ -474,7 +485,6 @@ class OrganisationUnlinkUserSerializer(serializers.Serializer):
 
 
 class OrgUserAcceptSerializer(serializers.Serializer):
-
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     email = serializers.EmailField()

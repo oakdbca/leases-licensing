@@ -3,62 +3,43 @@
         <h4>{{ userHeader }}</h4>
         <div class="row">
             <div class="col-md-3">
-                <CommsLogs
-                    :comms_url="comms_url"
-                    :logs_url="logs_url"
-                    :comms_add_url="comms_add_url"
-                    :disable_add_entry="false"
-                />
+                <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
+                    :disable_add_entry="false" />
             </div>
 
-            <div class="col-md-1">
-            </div>
-
-            <div class="col-md-8">
+            <div class="col-md-9">
                 <ul class="nav nav-pills" id="pills-tab" role="tablist">
                     <li class="nav-item">
-                        <a class="nav-link active" id="pills-details-tab" data-toggle="pill" href="#pills-details" role="tab" aria-controls="pills-details" aria-selected="true">
+                        <a class="nav-link active" id="pills-details-tab" data-toggle="pill" href="#pills-details"
+                            role="tab" aria-controls="pills-details" aria-selected="true">
                             Details
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="pills-approvals-tab" data-toggle="pill" href="#pills-approvals" role="tab" aria-controls="pills-approvals" aria-selected="false">
+                        <a class="nav-link" id="pills-approvals-tab" data-toggle="pill" href="#pills-approvals" role="tab"
+                            aria-controls="pills-approvals" aria-selected="false">
                             Approvals
                         </a>
                     </li>
                 </ul>
                 <div class="tab-content" id="pills-tabContent">
-                    <div class="tab-pane show active" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab">
-                        <Applicant v-if="user"
-                            :email_user="user"
-                            applicantType="SUB"
-                            id="proposalStartApplicant"
-                            :readonly="readonly"
-                        />
+                    <div class="tab-pane show active" id="pills-details" role="tabpanel"
+                        aria-labelledby="pills-details-tab">
+                        <Applicant v-if="user" :email_user="user" applicantType="SUB" id="proposalStartApplicant"
+                            :readonly="readonly" />
                     </div>
                     <div class="tab-pane fade" id="pills-approvals" role="tabpanel" aria-labelledby="pills-approvals-tab">
-                        <FormSection :formCollapse="true" label="Applications" subtitle="" Index="applications" >
-                            <ApplicationsTable
-                                v-if="user"
-                                level="internal"
-                                :target_id="user.id"
-                            />
+                        <FormSection :formCollapse="true" label="Applications" subtitle="" Index="applications">
+                            <ApplicationsTable v-if="user" level="internal" :target_id="user.id" />
                         </FormSection>
 
-                        <FormSection :formCollapse="true" label="Approvals" subtitle="" Index="approvals" >
-                            <AppprovalsTable
-                                v-if="user"
-                                level="internal"
-                                :target_id="user.id"
-                            />
+                        <FormSection :formCollapse="true" label="Approvals" subtitle="" Index="approvals">
+                            <AppprovalsTable v-if="user" level="internal" :target_id="user.id" />
                         </FormSection>
 
-                        <FormSection :formCollapse="true" label="Compliances with Requirements" subtitle="" Index="compliances" >
-                            <CompliancesTable
-                                v-if="user"
-                                level="internal"
-                                :target_id="user.id"
-                            />
+                        <FormSection :formCollapse="true" label="Compliances with Requirements" subtitle=""
+                            Index="compliances">
+                            <CompliancesTable v-if="user" level="internal" :target_id="user.id" />
                         </FormSection>
                     </div>
                 </div>
@@ -100,12 +81,12 @@ export default {
         CommsLogs,
     },
     computed: {
-        readonly: function(){
+        readonly: function () {
             return true
         },
-        userHeader: function(){
+        userHeader: function () {
             if (this.user) {
-                if (this.user.dob){
+                if (this.user.dob) {
                     return this.user.first_name + ' ' + this.user.last_name + '(DOB: ' + this.user.dob + ')'
                 } else {
                     return this.user.first_name + ' ' + this.user.last_name
@@ -118,27 +99,27 @@ export default {
         fetchUser: function (id) {
             let vm = this;
             fetch(api_endpoints.users_api + id + '/')
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok) {
-                    const error = (data && data.message) || response.statusText;
-                    console.log(error)
-                    return Promise.reject(error);
-                }
-                vm.user = data
-                console.log(vm.user)
-            })
-            .catch(error => {
-                this.errorMessage = constants.ERRORS.API_ERROR;
-                console.error("There was an error!", error);
-            });
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        console.log(error)
+                        return Promise.reject(error);
+                    }
+                    vm.user = data
+                    console.log(vm.user)
+                })
+                .catch(error => {
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.error("There was an error!", error);
+                });
         },
     },
-    created: async function(){
+    created: async function () {
         console.log(this.$route.params.id)
         this.fetchUser(this.$route.params.id);
     },
-    mounted: function(){
+    mounted: function () {
         var triggerTabList = [].slice.call(document.querySelectorAll('#pills-tab a'));
         triggerTabList.forEach(function (triggerEl) {
             var tabTrigger = new bootstrap.Tab(triggerEl)
@@ -152,32 +133,39 @@ export default {
 </script>
 
 <style>
-    .section{
-        text-transform: capitalize;
-    }
-    .list-group{
-        margin-bottom: 0;
-    }
-    .fixed-top{
-        position: fixed;
-        top:56px;
-    }
-    .nav-item {
-        margin-bottom: 2px;
-    }
-    .nav-item>li>a {
-        background-color: yellow !important;
-        color: #fff;
-    }
+.section {
+    text-transform: capitalize;
+}
 
-    .nav-item>li.active>a, .nav-item>li.active>a:hover, .nav-item>li.active>a:focus {
-      color: white;
-      background-color: blue;
-      border: 1px solid #888888;
-    }
-	.admin > div {
-	  display: inline-block;
-	  vertical-align: top;
-	  margin-right: 1em;
-	}
+.list-group {
+    margin-bottom: 0;
+}
+
+.fixed-top {
+    position: fixed;
+    top: 56px;
+}
+
+.nav-item {
+    margin-bottom: 2px;
+}
+
+.nav-item>li>a {
+    background-color: yellow !important;
+    color: #fff;
+}
+
+.nav-item>li.active>a,
+.nav-item>li.active>a:hover,
+.nav-item>li.active>a:focus {
+    color: white;
+    background-color: blue;
+    border: 1px solid #888888;
+}
+
+.admin>div {
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 1em;
+}
 </style>

@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from ledger_api_client.managed_models import SystemGroup
+from ledger_api_client.utils import get_all_organisation
 
 from leaseslicensing.components.organisations.models import Organisation
 
@@ -72,6 +73,24 @@ def get_leaseslicensing_organisation_ids():
         cache.set(cache_key, organisation_ids, settings.CACHE_TIMEOUT_2_HOURS)
     logger.debug(f"{cache_key}:{organisation_ids}")
     return organisation_ids
+
+
+def get_leaseslicensing_organisations():
+    """Since the organisations of leases and licensing are a small subset of those in ledger
+    we can cache the list of organisations to improve performance."""
+    cache_key = settings.CACHE_KEY_ORGANISATIONS
+    organisations = cache.get(cache_key)
+    if organisations is None:
+        leases_organisation_ids = get_leaseslicensing_organisation_ids()
+        all_organisations_response = get_all_organisation()
+        all_organisations = all_organisations_response["data"]
+        organisations = []
+        for org in all_organisations:
+            if org["organisation_id"] in leases_organisation_ids:
+                organisations.append(org)
+    cache.set(cache_key, organisations, settings.CACHE_TIMEOUT_2_HOURS)
+    logger.debug(f"{cache_key}:{organisations}")
+    return organisations
 
 
 def get_leaseslicensing_external_emailuser_ids():

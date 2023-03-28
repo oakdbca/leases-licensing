@@ -29,6 +29,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationCheckSerializer,
     OrganisationCommsSerializer,
     OrganisationContactSerializer,
+    OrganisationKeyValueSerializer,
     OrganisationLogEntrySerializer,
     OrganisationPinCheckSerializer,
     OrganisationRequestActionSerializer,
@@ -46,15 +47,18 @@ logger = logging.getLogger(__name__)
 
 
 class OrganisationViewSet(viewsets.ModelViewSet):
-    queryset = Organisation.objects.all()
+    queryset = Organisation.objects.none()
     serializer_class = OrganisationSerializer
 
-    def _get_queryset(self):
+    def get_queryset(self):
         user = self.request.user
         if is_internal(self.request):
             return Organisation.objects.all()
         elif is_customer(self.request):
-            return user.leaseslicensing_organisations.all()
+            logger.info(
+                list(Organisation.objects.filter(delegates__contains=[user.id]))
+            )
+            return Organisation.objects.filter(delegates__contains=[user.id])
         return Organisation.objects.none()
 
     @basic_exception_handler
@@ -68,7 +72,14 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         # return Response({"results": data_transform})
 
         # TODO: search organisations with search term
-        serializer = OrganisationSerializer(self.queryset, many=True)
+        serializer = OrganisationSerializer(self.get_queryset(), many=True)
+        return Response(serializer.data)
+
+    @list_route(methods=["GET"], detail=False)
+    def key_value_list(self, request, *args, **kwargs):
+        queryset = self.get_queryset().only("id", "organisation_name")
+        self.serializer_class = OrganisationKeyValueSerializer
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @list_route(
@@ -77,23 +88,17 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         ],
         detail=False,
     )
-    @basic_exception_handler
-    def get_department_users(self, request, *args, **kwargs):
+    def organisation_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
-
-        data = Organisation.objects.filter(
-            Q(first_name__icontains=search_term)
-            | Q(last_name__icontains=search_term)
-            | Q(full_name__icontains=search_term)
-        ).values("email", "first_name", "last_name")[:10]
+        organisations = (
+            self.get_queryset()
+            .filter(organisation_name__icontains=search_term)
+            .only("id", "organisation_name")[:10]
+        )
         data_transform = [
-            {
-                "id": person["email"],
-                "text": f"{person['first_name']} {person['last_name']}",
-            }
-            for person in data
+            {"id": organisation.id, "text": organisation.organisation_name}
+            for organisation in organisations
         ]
-
         return Response({"results": data_transform})
 
     @detail_route(
@@ -992,7 +997,6 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
 
 
 class OrganisationAccessGroupMembers(views.APIView):
-
     renderer_classes = [
         JSONRenderer,
     ]

@@ -10,6 +10,16 @@ os.environ.setdefault("BASE_DIR", BASE_DIR)
 
 from ledger_api_client.settings_base import *  # noqa: F403
 
+if DEBUG:
+    ADMINS = [
+        ("Oak McIlwain", "oak.mcilwain@dbca.wa.gov.au"),
+        ("Karsten Prehn", "karsten.prehn@dbca.wa.gov.au"),
+    ]
+else:
+    ADMINS = [
+        ("ASI", "asi@dpaw.wa.gov.au"),
+    ]
+
 ROOT_URLCONF = "leaseslicensing.urls"
 SITE_ID = 1
 DEPT_DOMAINS = env("DEPT_DOMAINS", ["dpaw.wa.gov.au", "dbca.wa.gov.au"])
@@ -124,25 +134,21 @@ TEMPLATES[0]["OPTIONS"]["context_processors"].append(
     "leaseslicensing.context_processors.leaseslicensing_url"
 )
 
-# del BOOTSTRAP3["css_url"]
-
-# BOOTSTRAP3 = {
-#    'jquery_url': '//static.dpaw.wa.gov.au/static/libs/jquery/2.2.1/jquery.min.js',
-#    'base_url': '//static.dpaw.wa.gov.au/static/libs/twitter-bootstrap/3.3.6/',
-#    'css_url': None,
-#    'theme_url': None,
-#    'javascript_url': None,
-#    'javascript_in_head': False,
-#    'include_jquery': False,
-#    'required_css_class': 'required-form-field',
-#    'set_placeholder': False,
-# }
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
-        "LOCATION": os.path.join(BASE_DIR, "leaseslicensing", "cache"),
+USE_DUMMY_CACHE = env("USE_DUMMY_CACHE", False)
+if USE_DUMMY_CACHE:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        },
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
+            "LOCATION": os.path.join(BASE_DIR, "leaseslicensing", "cache"),
+        }
+    }
+
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_ll")
 STATICFILES_DIRS.extend(
     [
@@ -222,31 +228,71 @@ CONSOLE_EMAIL_BACKEND = env("CONSOLE_EMAIL_BACKEND", False)
 if CONSOLE_EMAIL_BACKEND:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
-# Additional logging for leaseslicensing
-LOGGING["handlers"]["payment_checkout"] = {
-    "level": "INFO",
-    "class": "logging.handlers.RotatingFileHandler",
-    "filename": os.path.join(BASE_DIR, "logs", "cols_payment_checkout.log"),
-    "formatter": "verbose",
-    "maxBytes": 5242880,
-}
-LOGGING["loggers"]["payment_checkout"] = {
-    "handlers": ["payment_checkout"],
-    "level": "INFO",
-}
-# Add a handler
-LOGGING["handlers"]["file_leaseslicensing"] = {
-    "level": "INFO",
-    "class": "logging.handlers.RotatingFileHandler",
-    "filename": os.path.join(BASE_DIR, "logs", "leaseslicensing.log"),
-    "formatter": "verbose",
-    "maxBytes": 5242880,
-}
 
-LOGGING["loggers"]["leaseslicensing"] = {
-    "handlers": ["file_leaseslicensing"],
-    "level": "INFO",
-}
+# Add a debug level logger for development
+if DEBUG:
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "formatters": {
+            "verbose": {
+                "format": "%(levelname)s %(asctime)s %(name)s [Line:%(lineno)s][%(funcName)s] %(message)s"
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "level": "DEBUG",
+            },
+            "leaseslicensing_rotating_file": {
+                "level": "INFO",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": os.path.join(BASE_DIR, "logs", "leaseslicensing.log"),
+                "formatter": "verbose",
+                "maxBytes": 5242880,
+            },
+            "mail_admins": {
+                "level": "ERROR",
+                "class": "django.utils.log.AdminEmailHandler",
+                "include_html": True,
+            },
+        },
+        "loggers": {
+            "leaseslicensing": {
+                "handlers": ["console", "leaseslicensing_rotating_file", "mail_admins"],
+                "level": "DEBUG",
+                "propagate": False,
+            },
+        },
+    }
+else:
+    # Additional logging for leaseslicensing
+    LOGGING["handlers"]["payment_checkout"] = {
+        "level": "INFO",
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": os.path.join(
+            BASE_DIR, "logs", "leaseslicensing_payment_checkout.log"
+        ),
+        "formatter": "verbose",
+        "maxBytes": 5242880,
+    }
+    LOGGING["loggers"]["payment_checkout"] = {
+        "handlers": ["payment_checkout"],
+        "level": "INFO",
+    }
+    # Add a handler
+    LOGGING["handlers"]["file_leaseslicensing"] = {
+        "level": "INFO",
+        "class": "logging.handlers.RotatingFileHandler",
+        "filename": os.path.join(BASE_DIR, "logs", "leaseslicensing.log"),
+        "formatter": "verbose",
+        "maxBytes": 5242880,
+    }
+    LOGGING["loggers"]["leaseslicensing"] = {
+        "handlers": ["file_leaseslicensing"],
+        "level": "INFO",
+    }
+
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
 DEV_APP_BUILD_URL = env(
     "DEV_APP_BUILD_URL"
@@ -342,4 +388,14 @@ CACHE_TIMEOUT_24_HOURS = 60 * 60 * 24
 
 CACHE_KEY_LEDGER_ORGANISATION = "ledger-organisation-{}"
 CACHE_KEY_ORGANISATION_IDS = "cache_organisation_ids"
+CACHE_KEY_ORGANISATIONS = "cache_organisations"
 CACHE_KEY_USER_IDS = "cache_user_ids"
+CACHE_KEY_COUNTRY_LIST = "country_list"
+CACHE_KEY_APPROVAL_STATUSES = "approval_statuses_dict"
+CACHE_KEY_APPLICATION_TYPE_DICT_FOR_FILTER = "application_type_dict_for_filter"
+CACHE_KEY_APPLICATION_TYPE_DICT = "application_type_dict"
+CACHE_KEY_APPLICATION_STATUSES_DICT_INTERNAL = "application_internal_statuses_dict"
+CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL = "application_external_statuses_dict"
+CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
+    "application_internal_statuses_dict_for_filter"
+)

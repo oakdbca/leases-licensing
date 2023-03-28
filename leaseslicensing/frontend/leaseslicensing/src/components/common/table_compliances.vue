@@ -86,7 +86,7 @@ export default {
             type: String,
             required: true,
             validator: function (val) {
-                let options = ['internal', 'referral', 'external'];
+                let options = ['internal', 'referral', 'external', 'organisation_view'];
                 return options.indexOf(val) != -1 ? true : false;
             }
         },
@@ -95,6 +95,11 @@ export default {
             required: false,
             default: 0,
         },
+        target_organisation_id: {
+            type: Number,
+            required: false,
+            default: 0,
+        }
     },
     data() {
         let vm = this;
@@ -168,9 +173,14 @@ export default {
         is_internal: function () {
             return this.level == 'internal'
         },
+        is_organisation_view: function () {
+            return this.level == 'organisation_view'
+        },
         compliancesHeaders: function () {
             let headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
-            if (this.level === 'internal') {
+            if (this.is_organisation_view) {
+                headers = ['Number', 'Type', 'Approval Number', 'Status', 'Due Date', 'Action'];
+            } else if (this.level === 'internal') {
                 headers = ['Number', 'Type', 'Holder', 'Approval Number', 'Status', 'Due Date', 'Action'];
             }
             return headers;
@@ -336,7 +346,17 @@ export default {
                 this.dueDateColumn, // Due Date
                 this.actionColumn, //Action
             ]
-            if (this.level === 'internal') {
+            if (this.is_organisation_view) {
+                columns = [
+                    this.lodgementNumberColumn,
+                    this.applicationTypeColumn,
+                    this.licenceNumberColumn,
+                    this.statusColumn,
+                    this.dueDateColumn,
+                    this.actionColumn,
+                ]
+            }
+            else if (this.level === 'internal') {
                 columns = [
                     this.lodgementNumberColumn,
                     this.applicationTypeColumn,
@@ -386,7 +406,8 @@ export default {
                 searching: true,
 
                 ajax: {
-                    "url": api_endpoints.compliances_paginated_external + '?format=datatables&target_email_user_id=' + vm.target_email_user_id,
+                    "url": api_endpoints.compliances_paginated_external + '?format=datatables&target_email_user_id=' + vm.target_email_user_id +
+                        '&target_organisation_id=' + vm.target_organisation_id,
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering
@@ -444,6 +465,7 @@ export default {
                         return Promise.reject(error)
                     }
                     vm.compliance_types = data
+                    console.log('Compliance Types: ')
                     console.log(vm.compliance_types)
                 })
                 .catch((error) => {
@@ -461,6 +483,7 @@ export default {
                         return Promise.reject(error)
                     }
                     vm.compliance_statuses = data
+                    console.log('Compliance Statuses: ')
                     console.log(vm.compliance_statuses)
                 })
                 .catch((error) => {

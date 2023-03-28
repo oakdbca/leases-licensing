@@ -446,14 +446,11 @@ class BaseProposalSerializer(serializers.ModelSerializer):
 
     def get_applicant(self, obj):
         if isinstance(obj.applicant, Organisation):
-            return obj.applicant.name
+            return obj.applicant.organisation_name
+        elif isinstance(obj.applicant, EmailUser):
+            return f"{obj.applicant.first_name} {obj.applicant.last_name}"
         else:
-            return " ".join(
-                [
-                    obj.applicant.first_name,
-                    obj.applicant.last_name,
-                ]
-            )
+            return "Applicant not yet assigned"
 
     def get_documents_url(self, obj):
         return "/media/{}/proposals/{}/documents/".format(
@@ -867,12 +864,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
     )  # Accessing user's roles for this proposal.
     invoicing_details = InvoicingDetailsSerializer()
     all_lodgement_versions = serializers.SerializerMethodField()
-    approved_on = (
-        serializers.SerializerMethodField()
-    )
-    approved_by = (
-        serializers.SerializerMethodField()
-    )
+    approved_on = serializers.SerializerMethodField()
+    approved_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Proposal
@@ -1107,7 +1100,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
         if ts:
             return datetime.datetime.fromtimestamp(ts).date().strftime("%d/%m/%Y")
 
-
     def get_approved_by(self, obj):
         """
         Returns the user who approved this proposal if available
@@ -1120,7 +1112,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
         if user:
             email_user = retrieve_email_user(user)
             return f"{email_user.first_name} {email_user.last_name}"
-
 
     # def get_fee_invoice_url(self,obj):
     #     return '/cols/payments/invoice-pdf/{}'.format(obj.fee_invoice_reference) if obj.fee_paid else None

@@ -1,216 +1,209 @@
 <template lang="html">
-    <div class="container" >
-        <!--button type="button" @click="createML">Mooring Licence Application</button-->
-        <div class="row" v-if="applicationsLoading">
-            <div class="col-sm-3">
-                <i class='fa fa-5x fa-spinner fa-spin pull-right'></i>
-            </div>
-        </div>
-        <div v-else class="row">
+    <div class="container">
+        <div v-if="!applicationsLoading" class="row">
             <div class="col-sm-12">
                 <form class="form-horizontal" name="personal_form" method="post">
-                    <!--FormSection label="Apply on behalf of">
-                        <label style="margin-left:20px">Apply on behalf of</label>
-                        <div class="col-sm-12" style="margin-left:20px">
-                            <div class="form-group">
-                            </div>
-                        </div>
-                    </FormSection-->
-
                     <FormSection label="Apply for">
-                        <label style="margin-left:20px">Apply for</label>
-                        <div class="col-sm-12" style="margin-left:20px">
-                            <div class="form-group">
-                                <div v-for="(application_type, index) in application_types">
-                                    <input
-                                    type="radio"
-                                    name="applicationType"
-                                    :id="application_type.code + '_' + index"
-                                    :value="application_type"
-                                    v-model="selectedApplication"
-                                    />
-                                    <label :for="application_type.code + '_' + index" style="font-weight:normal">{{ application_type.description }}</label>
-                                </div>
+                        <div class="col-sm-6">
+                            <div v-if="application_types && application_types.length" class="form-group">
+                                <ul class="list-group">
+                                    <li v-for="(application_type, index) in application_types" class="list-group-item">
+                                        <input class="form-check-input me-1" type="radio" :value="application_type"
+                                            v-model="selectedApplication" :aria-label="application_type">
+                                        <label :for="application_type.code + '_' + index" style="font-weight:normal">{{
+                                            application_type.description }}</label>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div v-else>
+                                <p>No application types available</p>
                             </div>
                         </div>
                     </FormSection>
+                    <FormSection label="on behalf of">
+                        <div class="col-sm-6">
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    <input class="form-check-input me-1" type="radio" name="behalf_of_org" value="myself"
+                                        v-model="selectedOrganisation" aria-label="myself">
+                                    <label for="myself">Myself (as an individual)</label>
+                                </li>
+                                <template v-if="linkedOrganisations && linkedOrganisations.length">
+                                    <li v-for="(linkedOrganisation, index) in linkedOrganisations" class="list-group-item">
+                                        <input class="form-check-input me-1" type="radio" name="behalf_of_org"
+                                            :value="linkedOrganisation" v-model="selectedOrganisation"
+                                            :aria-label="linkedOrganisation.trading_name">
+                                        <label :for="linkedOrganisation.trading_name">{{
+                                            linkedOrganisation.trading_name }}</label>
+                                    </li>
+                                </template>
+                                <template v-else>
+                                    <BootstrapSpinner class="text-primary" :centerOfScreen="false" :small="true" />
+                                </template>
+                            </ul>
+                        </div>
+                    </FormSection>
                     <div class="col-sm-12">
-                        <button v-if="!creatingProposal" :disabled="isDisabled" @click.prevent="submit()" class="btn btn-primary pull-right">Continue</button>
-                        <button v-else disabled class="pull-right btn btn-primary"><i class="fa fa-spin fa-spinner"></i>&nbsp;Creating</button>
+                        <button v-if="!creatingProposal" :disabled="isDisabled" @click.prevent="submit()"
+                            class="btn btn-primary float-end continue">Continue</button>
+                        <BootstrapButtonSpinner v-else class="btn btn-primary float-end continue" :isLoading="true"
+                            :centerOfScreen="false" :small="true" />
                     </div>
-                  </form>
+                </form>
+            </div>
+        </div>
+        <div v-else class="row">
+            <div class="col-sm-3">
+                <BootstrapSpinner class="text-primary" />
             </div>
         </div>
     </div>
 </template>
 <script>
-import Vue from 'vue'
 import FormSection from '@/components/forms/section_toggle.vue'
-//require('bootstrap/dist/css/bootstrap.css')
 import {
-  api_endpoints,
-  helpers
+    api_endpoints,
+    helpers
 }
-from '@/utils/hooks'
+    from '@/utils/hooks'
 import utils from './utils'
 export default {
-  data: function() {
-    let vm = this;
-    return {
-        applicationsLoading: false,
-        "proposal": null,
-        profile: {
+    data: function () {
+        let vm = this;
+        return {
+            applicationsLoading: false,
+            linkedOrganisations: null,
+            selectedOrganisation: null,
+            selectedApplication: null,
+            application_types: [],
+            creatingProposal: false,
+        }
+    },
+    components: {
+        FormSection
+    },
+    computed: {
+        isLoading: function () {
+            return this.loading.length > 0
         },
-        "loading": [],
-        form: null,
-        selectedApplication: {},
-        selectedCurrentProposal: null,
-        //selected_application_name: '',
-        application_types: [],
-        creatingProposal: false,
-        //site_url: (api_endpoints.site_url.endsWith("/")) ? (api_endpoints.site_url): (api_endpoints.site_url + "/"),
-    }
-  },
-  components: {
-      FormSection
-  },
-  computed: {
-    isLoading: function() {
-      return this.loading.length > 0
-    },
-    isDisabled: function() {
-        let disabled = true;
-        if (this.selectedApplication && this.selectedApplication.code) {
-            disabled = false;
-        }
-        return disabled;
-    },
-    alertText: function() {
-        let text = '';
-        if (this.selectedApplication && this.selectedApplication.description) {
-            text = this.selectedApplication.description;
-        }
-		if (this.selectedApplication.code == 'wla') {
-            text = "a " + text;
-		} else {
-        	//return "a Filming";
-            text = "an "+ text;
-        }
-        return text
-	},
-
-  },
-  methods: {
-      /*
-    selectApplication(applicationType) {
-        this.selectedCurrentProposal = null;
-        this.selectedApplication = Object.assign({}, applicationType)
-        if (this.selectedApplication.current_proposal_id) {
-            this.selectedCurrentProposal = this.selectedApplication.current_proposal_id;
-        }
-    },
-    */
-    submit: function() {
-        //let vm = this;
-        swal.fire({
-            title: "Create " + this.selectedApplication.description,
-            text: "Are you sure you want to create " + this.alertText + "?",
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: 'Accept'
-        }).then(() => {
-            this.createProposal();
-            /*
-            if (!vm.has_active_proposals()) {
-         	    vm.createProposal();
+        isDisabled: function () {
+            let disabled = true;
+            if (this.selectedOrganisation && this.selectedApplication) {
+                disabled = false;
             }
-            */
-        },(error) => {
-        });
+            return disabled;
+        },
+        alertText: function () {
+            let text = '';
+            if (this.selectedApplication && this.selectedApplication.description) {
+                text = this.selectedApplication.description;
+            }
+            if (this.selectedApplication.code == 'wla') {
+                text = "a " + text;
+            } else {
+                text = "an " + text;
+            }
+            return text
+        },
     },
-    createProposal: async function () {
-        this.$nextTick(async () => {
-            let res = null;
-            try {
-                this.creatingProposal = true;
-                const payload = {
-                    "application_type": this.selectedApplication,
+    methods: {
+        submit: function () {
+            swal.fire({
+                title: "Create " + this.selectedApplication.description,
+                text: "Are you sure you want to create " + this.alertText + "?",
+                icon: "question",
+                showCancelButton: true,
+                confirmButtonText: 'Accept'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.createProposal();
                 }
-                res = await fetch(api_endpoints.proposal, { body: JSON.stringify(payload), method: 'POST' });
-                const resData = await res.json()
-                const proposal = Object.assign({}, resData);
-                this.$router.push({
-                    name:"draft_proposal",
-                    params:{proposal_id:proposal.id}
-                });
-                this.creatingProposal = false;
-            } catch(error) {
+            }, (error) => {
                 console.log(error)
-                await swal.fire({
-                //title: "Renew/Amend Approval",
-                title: "Create Proposal",
-                text: error.body,
-                icon: "error",
-                });
-                this.$router.go();
-            }
-        });
-    },
-	searchList: function(id, search_list){
-        /* Searches for dictionary in list */
-        for (var i = 0; i < search_list.length; i++) {
-            if (search_list[i].value == id) {
-                return search_list[i];
-            }
-        }
-        return [];
-    },
-    fetchApplicationTypes: async function(){
-        //const response = await this.$http.get(api_endpoints.application_types_dict+'?apply_page=True');
-        const response = await fetch(api_endpoints.application_types_dict);
-        const resData = await response.json()
-        for (let app_type of resData) {
-            this.application_types.push(app_type)
-        }
-    },
-      /*
-    fetchExistingLicences: async function(){
-        const response = await this.$http.get(api_endpoints.existing_licences);
-        for (let l of response.body) {
-            this.application_types.push(l)
-        }
-    },
-    */
-  },
-  mounted: async function() {
-    this.applicationsLoading = true;
-    await this.fetchApplicationTypes();
-    //await this.fetchExistingLicences();
-    this.form = document.forms.new_proposal;
-    this.applicationsLoading = false;
-  },
-  beforeRouteEnter: function(to, from, next) {
-    let initialisers = [
-        utils.fetchProfile(),
-        //utils.fetchProposal(to.params.proposal_id)
-    ]
-    next(vm => {
-        vm.loading.push('fetching profile')
-        Promise.all(initialisers).then(data => {
-            vm.profile = data[0];
-            //vm.proposal = data[1];
-            vm.loading.splice('fetching profile', 1)
-        })
-    })
+            });
+        },
+        createProposal: async function () {
+            this.$nextTick(async () => {
+                let res = null;
+                try {
+                    this.creatingProposal = true;
+                    let payload = null;
+                    if ('myself' == this.selectedOrganisation) {
+                        payload = {
+                            "application_type": this.selectedApplication,
+                        }
+                    } else {
+                        payload = {
+                            "org_applicant": this.selectedOrganisation.id,
+                            "application_type": this.selectedApplication,
+                        }
+                    }
+                    res = await fetch(api_endpoints.proposal, { body: JSON.stringify(payload), method: 'POST' });
+                    const resData = await res.json()
+                    const proposal = Object.assign({}, resData);
+                    this.$router.push({
+                        name: "draft_proposal",
+                        params: { proposal_id: proposal.id }
+                    });
+                } catch (error) {
+                    console.log(error)
+                    await swal.fire({
+                        title: "Create Proposal",
+                        text: error.body,
+                        icon: "error",
+                        text: "There was an error attempting to create your application. Please try again later.",
 
-  }
+                    });
+                    this.$router.go();
+                }
+            });
+        },
+        fetchLinkedOrganisations: function (id) {
+            let vm = this
+            fetch(api_endpoints.organisations_viewset)
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.linkedOrganisations = data
+                    console.log(vm.linkedOrganisations)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+        },
+        fetchApplicationTypes: async function () {
+            const response = await fetch(api_endpoints.application_types_dict);
+            const resData = await response.json()
+            for (let app_type of resData) {
+                this.application_types.push(app_type)
+            }
+            if (1 == this.application_types.length) {
+                this.selectedApplication = this.application_types[0];
+            }
+        },
+    },
+    created: async function () {
+        this.applicationsLoading = true;
+        await this.fetchApplicationTypes();
+        this.fetchLinkedOrganisations();
+        this.applicationsLoading = false;
+    },
+    mounted: function () {
+
+    }
 }
 </script>
 
 <style scoped lang="css">
-input[type=text], select{
-    width:40%;
-    box-sizing:border-box;
+input[type=text],
+select {
+    width: 40%;
+    box-sizing: border-box;
 
     min-height: 34px;
     padding: 0;
@@ -218,11 +211,16 @@ input[type=text], select{
 }
 
 .group-box {
-	border-style: solid;
-	border-width: thin;
-	border-color: #FFFFFF;
+    border-style: solid;
+    border-width: thin;
+    border-color: #FFFFFF;
 }
+
 .radio-buttons {
     padding: 5px;
+}
+
+button.continue {
+    width: 150px;
 }
 </style>

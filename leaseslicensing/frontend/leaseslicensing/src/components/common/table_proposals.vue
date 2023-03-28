@@ -1,13 +1,15 @@
 <template>
     <div>
-        <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted" class="mb-2">
+        <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
+            class="mb-2">
             <div class="row">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Type</label>
                         <select class="form-control" v-model="filterApplicationType">
                             <option value="all">All</option>
-                            <option v-for="type in application_types" :value="type.id" :key="type.id">{{ type.text }}</option>
+                            <option v-for="type in application_types" :value="type.id" :key="type.id">{{ type.text }}
+                            </option>
                         </select>
                     </div>
                 </div>
@@ -16,7 +18,8 @@
                         <label for="">Status</label>
                         <select class="form-control" v-model="filterApplicationStatus">
                             <option value="all">All</option>
-                            <option v-for="status in application_statuses" :value="status.code" :key="status.code">{{ status.description }}</option>
+                            <option v-for="status in application_statuses" :value="status.code" :key="status.code">{{
+                                status.description }}</option>
                         </select>
                     </div>
                 </div>
@@ -24,7 +27,8 @@
                     <div class="form-group">
                         <label for="">Lodged From</label>
                         <div class="input-group date" ref="proposalDateFromPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterProposalLodgedFrom">
+                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
+                                v-model="filterProposalLodgedFrom">
                             <!--
                             <span class="input-group-addon">
                                 <span class="fa fa-calendar"></span>
@@ -37,7 +41,8 @@
                     <div class="form-group">
                         <label for="">Lodged To</label>
                         <div class="input-group date" ref="proposalDateToPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterProposalLodgedTo">
+                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
+                                v-model="filterProposalLodgedTo">
                             <!--
                             <span class="input-group-addon">
                                 <span class="fa fa-calendar"></span>
@@ -52,19 +57,15 @@
         <div v-if="is_external" class="row">
             <div class="col-md-12">
                 <div class="text-end">
-                    <button type="button" class="btn btn-primary mb-2" @click="new_application_button_clicked"><i class="fa-solid fa-circle-plus"></i> New Application</button>
+                    <button type="button" class="btn btn-primary mb-2" @click="new_application_button_clicked"><i
+                            class="fa-solid fa-circle-plus"></i> New Application</button>
                 </div>
             </div>
         </div>
 
         <div class="row">
             <div class="col-lg-12">
-                <datatable
-                    ref="application_datatable"
-                    :id="datatable_id"
-                    :dtOptions="dtOptions"
-                    :dtHeaders="dtHeaders"
-                />
+                <datatable ref="application_datatable" :id="datatable_id" :dtOptions="dtOptions" :dtHeaders="dtHeaders" />
             </div>
         </div>
     </div>
@@ -81,15 +82,20 @@ import { expandToggle } from '@/components/common/table_functions.js'
 export default {
     name: 'TableApplications',
     props: {
-        level:{
+        level: {
             type: String,
             required: true,
-            validator: function(val) {
-                let options = ['internal', 'referral', 'external'];
-                return options.indexOf(val) != -1 ? true: false;
+            validator: function (val) {
+                let options = ['internal', 'referral', 'external', 'organisation_view'];
+                return options.indexOf(val) != -1 ? true : false;
             }
         },
         email_user_id_assigned: {
+            type: Number,
+            required: false,
+            default: 0,
+        },
+        target_organisation_id: {
             type: Number,
             required: false,
             default: 0,
@@ -131,12 +137,12 @@ export default {
             application_statuses: [],
 
             dateFormat: 'DD/MM/YYYY',
-            datepickerOptions:{
+            datepickerOptions: {
                 format: 'DD/MM/YYYY',
-                showClear:true,
-                useCurrent:false,
-                keepInvalid:true,
-                allowInputToggle:true
+                showClear: true,
+                useCurrent: false,
+                keepInvalid: true,
+                allowInputToggle: true
             },
 
             // For Expandable row
@@ -145,68 +151,74 @@ export default {
             expandable_row_class_name: 'expandable_row_class_name',
         }
     },
-    components:{
+    components: {
         datatable,
         CollapsibleFilters,
     },
     watch: {
-        filterApplicationStatus: function() {
+        filterApplicationStatus: function () {
             this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(this.filterApplicationStatus_cache_name, this.filterApplicationStatus);
         },
-        filterApplicationType: function() {
+        filterApplicationType: function () {
             this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(this.filterApplicationType_cache_name, this.filterApplicationType);
         },
-        filterProposalLodgedFrom: function() {
+        filterProposalLodgedFrom: function () {
             this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(this.filterProposalLodgedFrom_cache_name, this.filterProposalLodgedFrom);
         },
-        filterProposalLodgedTo: function() {
+        filterProposalLodgedTo: function () {
             this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(this.filterProposalLodgedTo_cache_name, this.filterProposalLodgedTo);
         },
-        filterApplied: function(){
-            if (this.$refs.collapsible_filters){
+        filterApplied: function () {
+            if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
             }
         }
     },
     computed: {
-        number_of_columns: function() {
-            let num =  this.$refs.application_datatable.vmDataTable.columns(':visible').nodes().length;
+        number_of_columns: function () {
+            let num = this.$refs.application_datatable.vmDataTable.columns(':visible').nodes().length;
             return num
         },
-        filterApplied: function(){
+        filterApplied: function () {
             let filter_applied = true
-            if(this.filterApplicationStatus.toLowerCase() === 'all' && this.filterApplicationType.toLowerCase() === 'all' &&
-                this.filterProposalLodgedFrom.toLowerCase() === '' && this.filterProposalLodgedTo.toLowerCase() === ''){
+            if (this.filterApplicationStatus.toLowerCase() === 'all' && this.filterApplicationType.toLowerCase() === 'all' &&
+                this.filterProposalLodgedFrom.toLowerCase() === '' && this.filterProposalLodgedTo.toLowerCase() === '') {
                 filter_applied = false
             }
             return filter_applied
         },
-        debug: function(){
-            if (this.$route.query.debug){
+        debug: function () {
+            if (this.$route.query.debug) {
                 return this.$route.query.debug === 'true'
             }
             return false
         },
-        is_external: function() {
+        is_external: function () {
             return this.level == 'external'
         },
-        is_internal: function() {
+        is_internal: function () {
             return this.level == 'internal'
         },
-        dtHeaders: function(){
-            if (this.is_external){
+        is_organisation_view: function () {
+            return this.level == 'organisation_view'
+        },
+        dtHeaders: function () {
+            if (this.is_organisation_view) {
+                return ['id', 'Number', 'Type', 'Status', 'Lodged On', 'Action',]
+            }
+            if (this.is_external) {
                 return ['id', 'Number', 'Type', 'Submitter', 'Applicant', 'Status', 'Lodged On', 'Action',]
             }
-            if (this.is_internal){
+            if (this.is_internal) {
                 return ['id', 'Number', 'Type', 'Submitter', 'Applicant', 'Status', 'Lodged On', 'Assigned Officer', 'Action']
             }
         },
-        column_id: function(){
+        column_id: function () {
             let vm = this
             return {
                 // 1. ID
@@ -214,23 +226,23 @@ export default {
                 orderable: false,
                 searchable: false,
                 visible: false,
-                'render': function(row, type, full){
-                    if(vm.debug){
+                'render': function (row, type, full) {
+                    if (vm.debug) {
                         console.log(full)
                     }
                     return full.id
                 }
             }
         },
-        column_lodgement_number: function(){
+        column_lodgement_number: function () {
             return {
                 // 2. Lodgement Number
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    if (full.migrated){
+                'render': function (row, type, full) {
+                    if (full.migrated) {
                         return full.lodgement_number + ' (M)'
                     } else {
                         return full.lodgement_number
@@ -239,27 +251,27 @@ export default {
                 name: 'lodgement_number',
             }
         },
-        column_type: function(){
+        column_type: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.application_type.name_display
                 },
                 name: 'application_type_id__name',
             }
         },
-        column_submitter: function(){
+        column_submitter: function () {
             return {
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    if (full.submitter){
+                'render': function (row, type, full) {
+                    if (full.submitter) {
                         return full.submitter.fullname
                     } else {
                         return ''
@@ -268,13 +280,13 @@ export default {
                 name: 'submitter__first_name, submitter__last_name'
             }
         },
-        column_applicant: function(){
+        column_applicant: function () {
             return {
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     /*
                     if (full.submitter){
                         return `${full.submitter.first_name} ${full.submitter.last_name}`
@@ -286,7 +298,7 @@ export default {
                 name: "ind_applicant__first_name, ind_applicant__last_name"
             }
         },
-        column_status: function(){
+        column_status: function () {
             let vm = this
             return {
                 // 5. Status
@@ -294,8 +306,8 @@ export default {
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    if (vm.is_internal){
+                'render': function (row, type, full) {
+                    if (vm.is_internal) {
                         return full.processing_status
                     }
                     return full.customer_status
@@ -303,15 +315,15 @@ export default {
                 name: 'processing_status'
             }
         },
-        column_lodged_on: function(){
+        column_lodged_on: function () {
             return {
                 // 6. Lodged
                 data: "id",
                 orderable: true,
                 searchable: false,
                 visible: true,
-                'render': function(row, type, full){
-                    if (full.lodgement_date){
+                'render': function (row, type, full) {
+                    if (full.lodgement_date) {
                         return moment(full.lodgement_date).format('DD/MM/YYYY')
                     }
                     return ''
@@ -319,14 +331,14 @@ export default {
                 name: 'lodgement_date',
             }
         },
-        column_assigned_officer: function(){
+        column_assigned_officer: function () {
             return {
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    if (full.assigned_officer){
+                'render': function (row, type, full) {
+                    if (full.assigned_officer) {
                         return full.assigned_officer.fullname
                     } else {
                         return ''
@@ -335,7 +347,7 @@ export default {
                 name: 'assigned_officer__first_name, assigned_officer__last_name, assigned_approver__first_name, assigned_approver__last_name',
             }
         },
-        column_action: function(){
+        column_action: function () {
             let vm = this
             return {
                 // 8. Action
@@ -343,22 +355,22 @@ export default {
                 orderable: false,
                 searchable: false,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     let links = '';
-                    if (vm.is_internal){
-                        if(full.accessing_user_can_process){
-                            links +=  `<a href='/internal/proposal/${full.id}'>Process</a><br/>`;
+                    if (vm.is_internal) {
+                        if (full.accessing_user_can_process) {
+                            links += `<a href='/internal/proposal/${full.id}'>Process</a><br/>`;
                         } else {
-                            links +=  `<a href='/internal/proposal/${full.id}'>View</a><br/>`;
+                            links += `<a href='/internal/proposal/${full.id}'>View</a><br/>`;
                         }
                     }
-                    if (vm.is_external){
+                    if (vm.is_external) {
                         if (full.can_user_edit) {
-                            links +=  `<a href='/external/proposal/${full.id}'>Continue</a><br/>`;
-                            links +=  `<a href='#${full.id}' data-discard-proposal='${full.id}'>Discard</a><br/>`;
+                            links += `<a href='/external/proposal/${full.id}'>Continue</a><br/>`;
+                            links += `<a href='#${full.id}' data-discard-proposal='${full.id}'>Discard</a><br/>`;
                         }
                         else if (full.can_user_view) {
-                            links +=  `<a href='/external/proposal/${full.id}'>View</a><br/>`;
+                            links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
                         }
                         //for (let invoice of full.invoices){
                         //    console.log(invoice.payment_status.toLowerCase())
@@ -374,7 +386,7 @@ export default {
                 }
             }
         },
-        dtOptions: function(){
+        dtOptions: function () {
             let vm = this
 
             let columns = []
@@ -397,7 +409,19 @@ export default {
                     }
                 },
             ]
-            if(vm.is_external){
+            if (this.is_organisation_view) {
+                columns = [
+                    vm.column_id,
+                    vm.column_lodgement_number,
+                    vm.column_type,
+                    vm.column_status,
+                    vm.column_lodged_on,
+                    vm.column_action,
+                ]
+                search = true
+            }
+
+            if (vm.is_external) {
                 columns = [
                     vm.column_id,
                     vm.column_lodgement_number,
@@ -411,7 +435,7 @@ export default {
                 ]
                 search = false
             }
-            if(vm.is_internal){
+            if (vm.is_internal) {
                 columns = [
                     vm.column_id,
                     vm.column_lodgement_number,
@@ -431,7 +455,7 @@ export default {
                 language: {
                     processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
                 },
-                rowCallback: function (row, proposal){
+                rowCallback: function (row, proposal) {
                     let row_jq = $(row)
                     row_jq.attr('id', 'proposal_id_' + proposal.id)
                     row_jq.children().first().addClass(vm.td_expand_class_name)
@@ -440,11 +464,12 @@ export default {
                 serverSide: true,
                 searching: true,
                 ajax: {
-                    "url": api_endpoints.proposals_paginated_list + '?format=datatables&email_user_id_assigned=' + vm.email_user_id_assigned,
+                    "url": api_endpoints.proposals_paginated_list + '?format=datatables&email_user_id_assigned=' + vm.email_user_id_assigned +
+                        '&target_organisation_id=' + vm.target_organisation_id,
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering
-                    "data": function ( d ) {
+                    "data": function (d) {
                         d.filter_application_type = vm.filterApplicationType
                         d.filter_application_status = vm.filterApplicationStatus
                         d.filter_lodged_from = vm.filterProposalLodgedFrom
@@ -453,24 +478,24 @@ export default {
                     }
                 },
                 dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
-                     "<'row'<'col-sm-12'tr>>" +
-                     "<'d-flex align-items-center'<'me-auto'i>p>",
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'d-flex align-items-center'<'me-auto'i>p>",
                 buttons: buttons,
                 order: [[1, 'desc']],
                 columns: columns,
                 processing: true,
-                initComplete: function() {
+                initComplete: function () {
 
                 },
             }
         }
     },
     methods: {
-        adjust_table_width: function(){
+        adjust_table_width: function () {
             this.$refs.application_datatable.vmDataTable.columns.adjust()
             this.$refs.application_datatable.vmDataTable.responsive.recalc()
         },
-        collapsible_component_mounted: function(){
+        collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
         },
         //getActionDetailTable: function(sticker){
@@ -500,7 +525,7 @@ export default {
         //    let details = '<table class="table table-striped table-bordered table-sm table-sticker-details" id="table-sticker-details-' + sticker.id + '">' + thead + tbody + '</table>'
         //    return details
         //},
-        new_application_button_clicked: async function(){
+        new_application_button_clicked: async function () {
             //await this.$router.isReady()
             console.log(this.$router)
             await this.$router.push({
@@ -508,7 +533,7 @@ export default {
             })
             console.log(" new application")
         },
-        discardProposal: function(proposal_id) {
+        discardProposal: function (proposal_id) {
             let vm = this;
             swal.fire({
                 title: "Discard Application",
@@ -516,45 +541,46 @@ export default {
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Discard Application',
-                confirmButtonColor:'#dc3545'
+                confirmButtonColor: '#dc3545'
             }).then(async result => {
                 if (result.isConfirmed) {
                     fetch(api_endpoints.discard_proposal(proposal_id), { method: 'DELETE', })
-                    .then((response) => {
-                        swal.fire(
-                            'Discarded',
-                            'Your application has been discarded',
-                            'success'
-                        )
-                        //vm.$refs.application_datatable.vmDataTable.ajax.reload();
-                        vm.$refs.application_datatable.vmDataTable.draw();
-                    }, (error) => {
-                });
-            }},(error) => {
+                        .then((response) => {
+                            swal.fire(
+                                'Discarded',
+                                'Your application has been discarded',
+                                'success'
+                            )
+                            //vm.$refs.application_datatable.vmDataTable.ajax.reload();
+                            vm.$refs.application_datatable.vmDataTable.draw();
+                        }, (error) => {
+                        });
+                }
+            }, (error) => {
 
             });
         },
-        fetchFilterLists: async function(){
+        fetchFilterLists: async function () {
             let vm = this;
 
             // Application Types
-            let res = await fetch(api_endpoints.application_types_dict+'?apply_page=False&for_filter=true')
+            let res = await fetch(api_endpoints.application_types_dict + '?apply_page=False&for_filter=true')
             let data = await res.json()
-            console.log({data})
+            console.log({ data })
             vm.application_types = data
 
             // Application Statuses
             res = await fetch(api_endpoints.application_statuses_dict)
             data = await res.json()
-            if (vm.is_internal){
+            if (vm.is_internal) {
                 vm.application_statuses = data.internal_statuses
             } else {
                 vm.application_statuses = data.external_statuses
             }
         },
-        addEventListeners: function(){
+        addEventListeners: function () {
             let vm = this
-            vm.$refs.application_datatable.vmDataTable.on('click', 'a[data-discard-proposal]', function(e) {
+            vm.$refs.application_datatable.vmDataTable.on('click', 'a[data-discard-proposal]', function (e) {
                 e.preventDefault();
                 let id = $(this).attr('data-discard-proposal');
                 vm.discardProposal(id)
@@ -596,10 +622,10 @@ export default {
             });
         },
     },
-    created: function(){
+    created: function () {
         this.fetchFilterLists()
     },
-    mounted: function(){
+    mounted: function () {
         let vm = this;
         this.$nextTick(() => {
             vm.addEventListeners();
@@ -618,6 +644,7 @@ export default {
 .collapse-icon {
     cursor: pointer;
 }
+
 .collapse-icon::before {
     top: 5px;
     left: 4px;
@@ -638,9 +665,11 @@ export default {
     font-family: 'Courier New', Courier monospace;
     margin: 5px;
 }
+
 .expand-icon {
     cursor: pointer;
 }
+
 .expand-icon::before {
     top: 5px;
     left: 4px;
