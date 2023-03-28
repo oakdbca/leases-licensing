@@ -354,8 +354,6 @@ class ProposalRenderer(DatatablesRenderer):
         return super().render(data, accepted_media_type, renderer_context)
 
 
-# from django.utils.decorators import method_decorator
-# from django.views.decorators.cache import cache_page
 class ProposalPaginatedViewSet(viewsets.ModelViewSet):
     filter_backends = (ProposalFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
@@ -372,7 +370,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             return ApplicationType.objects.none()
 
     def get_queryset(self):
-        # import ipdb; ipdb.set_trace()
         user = self.request.user
         if not is_internal(self.request) and not is_customer(self.request):
             return Proposal.objects.none()
