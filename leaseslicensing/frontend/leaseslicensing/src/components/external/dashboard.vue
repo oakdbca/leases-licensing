@@ -14,7 +14,6 @@
             Index="compliances">
             <CompliancesTable level="external" />
         </FormSection>
-
     </div>
 </template>
 
@@ -44,9 +43,6 @@ export default {
         CompliancesTable,
     },
     computed: {
-        is_debug: function () {
-            return this.$route.query.hasOwnProperty('debug') && this.$route.query.debug == 'true' ? true : false
-        },
         is_external: function () {
             return this.level == 'external'
         },
