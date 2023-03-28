@@ -18,8 +18,8 @@ def retrieve_email_user(email_user_id):
     cache_key = settings.CACHE_KEY_LEDGER_EMAIL_USER.format(email_user_id)
     email_user = cache.get(cache_key)
     if email_user is None:
+        logger.debug(f"{cache_key}:{email_user}")
         email_user = EmailUser.objects.get(id=email_user_id)
     # Todo: A per request cache would be best here
     cache.set(cache_key, email_user, settings.CACHE_TIMEOUT_1_MINUTE)
-    logger.debug(f"{cache_key}:{email_user}")
     return email_user
