@@ -192,11 +192,10 @@ class GetApplicationStatusesDict(views.APIView):
                 )
             return Response(application_statuses)
         else:
-            if not cache.get(
+            internal_application_statuses = cache.get(
                 settings.CACHE_KEY_APPLICATION_STATUSES_DICT_INTERNAL
-            ) or not cache.get(settings.CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL):
-                # I know this code is repeated however maybe Brendan was going to seperate customer statuses
-                # from internal statuses so I'll leave it here for now
+            )
+            if internal_application_statuses is None:
                 internal_application_statuses = [
                     {"code": i[0], "description": i[1]}
                     for i in Proposal.PROCESSING_STATUS_CHOICES
@@ -206,6 +205,13 @@ class GetApplicationStatusesDict(views.APIView):
                     internal_application_statuses,
                     settings.LOV_CACHE_TIMEOUT,
                 )
+
+            external_application_statuses = cache.get(
+                settings.CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL
+            )
+            if external_application_statuses is None:
+                # I know this code is repeated however maybe Brendan was going to seperate customer statuses
+                # from internal statuses so I'll leave it here for now
                 external_application_statuses = [
                     {"code": i[0], "description": i[1]}
                     for i in Proposal.PROCESSING_STATUS_CHOICES
