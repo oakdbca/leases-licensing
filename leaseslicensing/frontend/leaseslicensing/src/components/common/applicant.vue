@@ -98,7 +98,7 @@
                                         <label for="residentialPostcode" class="form-label">Country</label>
                                     </div>
                                     <div class="col-md-4">
-                                        <select class="form-control" id="country" name="Country" v-model="
+                                        <select class="form-select" id="country" name="Country" v-model="
                                             email_user.residential_address
                                                 .country
                                         " :readonly="readonly">
@@ -157,7 +157,7 @@
                                     <div class="form-group">
                                         <label for="" class="col-sm-3 control-label">Country</label>
                                         <div class="col-sm-4">
-                                            <select :disabled="readonly" class="form-control" id="postal_country"
+                                            <select :disabled="readonly" class="form-select" id="postal_country"
                                                 name="Country" v-model="
                                                     email_user.postal_address
                                                         .country
