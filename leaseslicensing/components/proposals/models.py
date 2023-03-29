@@ -1662,15 +1662,13 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             or self.processing_status == "with_approver"
         ):
             try:
-                referral = Referral.objects.get(proposal=self, referral=user)
+                referral = Referral.objects.get(proposal=self, referral=user.id)
             except Referral.DoesNotExist:
                 referral = None
             if referral:
                 return True
-            # elif self.__assessor_group() in user.proposalassessorgroup_set.all():
             elif user.id in self.get_assessor_group().get_system_group_member_ids():
                 return True
-            # elif self.__approver_group() in user.proposalapprovergroup_set.all():
             elif user.id in self.get_approver_group().get_system_group_member_ids():
                 return True
             else:
