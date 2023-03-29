@@ -8,7 +8,6 @@
         <div class="">
             <ul class="nav nav-pills" id="pills-tab" role="tablist">
                 <li class="nav-item mr-1" role="presentation">
-                    <!--a class="nav-link active" id="pills-applicant-tab" data-toggle="pill" href="#pills-applicant" role="tab" aria-controls="pills-applicant" aria-selected="true"-->
                     <button class="nav-link active" id="pills-applicant-tab" data-bs-toggle="pill"
                         data-bs-target="#pills-applicant" role="tab" aria-controls="pills-applicant" aria-selected="true">
                         Applicant
@@ -71,6 +70,73 @@
 
                     <FormSection label="Other" Index="other_section">
                         <slot name="slot_other_checklist_questions"></slot>
+                        <div class="row question-row">
+                            <div class="col-sm-3">
+                                <label class="control-label pull-left">Site Name</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <ul class="list-inline col-sm-9">
+                                    <li class="list-inline-item">
+                                        <input class="form-control" v-model="proposal.site_name" type="text"
+                                            name="exclusive_use_yes" id="exclusive_use_yes" :disabled="readonly" />
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row question-row">
+                            <div class="col-sm-3">
+                                <label class="control-label pull-left">Group Name</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <ul class="list-inline col-sm-9">
+                                    <li class="list-inline-item">
+                                        <input class="form-control" v-model="proposal.group_name" type="text"
+                                            name="group_name" id="group_name" :disabled="readonly" />
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row question-row">
+                            <div class="col-sm-3">
+                                <label class="control-label pull-left">National Park / Reserve</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <ul class="list-inline col-sm-9">
+                                    <li class="list-inline-item">
+                                        <select :disabled="readonly" class="form-select" id="national_park_reserve"
+                                            name="national_park_reserve">
+                                            <option>National Park 1.</option>
+                                            <option>National Park 2.</option>
+                                            <option>National Park 3.</option>
+                                        </select>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row question-row">
+                            <div class="col-sm-3">
+                                <label class="control-label pull-left">Category</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <ul class="list-inline col-sm-9">
+                                    <li class="list-inline-item">
+                                        <select :disabled="readonly" class="form-select" id="category" name="category">
+                                            <option>Category 1.</option>
+                                            <option>Category 2.</option>
+                                            <option>Category 3.</option>
+                                        </select>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="row question-row">
+                            <div class="col-sm-3">
+                                <label class="control-label pull-left">...</label>
+                            </div>
+                            <div class="col-sm-9">
+                                More fields to come!
+                            </div>
+                        </div>
                     </FormSection>
 
                     <FormSection label="Deed Poll" Index="deed_poll">
