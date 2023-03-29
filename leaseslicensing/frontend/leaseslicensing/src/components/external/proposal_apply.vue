@@ -37,7 +37,7 @@
                                             linkedOrganisation.trading_name }}</label>
                                     </li>
                                 </template>
-                                <template v-else>
+                                <template v-if="loadingOrganisations">
                                     <BootstrapSpinner class="text-primary" :centerOfScreen="false" :small="true" />
                                 </template>
                             </ul>
@@ -72,6 +72,7 @@ export default {
         let vm = this;
         return {
             applicationsLoading: false,
+            loadingOrganisations: false,
             linkedOrganisations: null,
             selectedOrganisation: null,
             selectedApplication: null,
@@ -160,6 +161,7 @@ export default {
         },
         fetchLinkedOrganisations: function (id) {
             let vm = this
+            vm.loadingOrganisations = true;
             fetch(api_endpoints.organisations_viewset)
                 .then(async (response) => {
                     const data = await response.json()
@@ -171,6 +173,7 @@ export default {
                     }
                     vm.linkedOrganisations = data
                     console.log(vm.linkedOrganisations)
+                    vm.loadingOrganisations = false;
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
