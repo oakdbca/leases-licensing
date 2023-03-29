@@ -3,7 +3,7 @@
         <div v-if="!applicationsLoading" class="row">
             <div class="col-sm-12">
                 <form class="form-horizontal" name="personal_form" method="post">
-                    <FormSection label="Apply for">
+                    <FormSection label="Apply for a">
                         <div class="col-sm-6">
                             <div v-if="application_types && application_types.length" class="form-group">
                                 <ul class="list-group">
