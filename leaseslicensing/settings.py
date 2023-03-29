@@ -402,3 +402,4 @@ CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL = "application_external_statuses_di
 CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
     "application_internal_statuses_dict_for_filter"
 )
+CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS = "dbca_legislated_lands_and_waters"
