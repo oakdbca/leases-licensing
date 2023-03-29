@@ -10,7 +10,6 @@ import Approval from '../approvals/approval.vue';
 export default {
     path: '/external',
     component: RouterView,
-    name: 'external-dashboard',
     children: [
         {
             path: '/external/',
