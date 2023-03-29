@@ -249,8 +249,8 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
 
     def get_can_accessing_user_view(self, obj):
         try:
-            user = self.context.get("request").user
-            can_view = obj.can_user_view(user)
+            request = self.context.get("request")
+            can_view = obj.can_user_view(request)
             return can_view
         except:
             return False
@@ -298,6 +298,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     accessing_user = serializers.SerializerMethodField()
     competitive_process_parties = CompetitiveProcessPartySerializer(many=True, required=False)
     competitive_process_geometries = CompetitiveProcessGeometrySerializer(many=True, required=False)
+    allowed_editors = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = CompetitiveProcess
@@ -317,6 +318,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'winner',
             'details',
             'competitive_process_geometries',
+            'allowed_editors',
         )
         extra_kwargs = {
             'winner': {
@@ -358,6 +360,15 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
                 new_party.save()
 
         return instance
+
+    def get_allowed_editors(self, obj):
+        if obj.allowed_editors:
+            email_users = []
+            for user in obj.allowed_editors:
+                email_users.append(user)
+            return EmailUserSerializer(email_users, many=True).data
+        else:
+            return ""
 
 
 class CompetitiveProcessLogEntrySerializer(CommunicationLogEntrySerializer):

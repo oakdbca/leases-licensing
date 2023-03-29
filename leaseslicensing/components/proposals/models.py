@@ -26,6 +26,7 @@ from rest_framework import serializers
 from reversion.models import Version
 
 from leaseslicensing import exceptions
+from leaseslicensing.components.competitive_processes.email import send_competitive_process_create_notification
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.invoicing.models import InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
@@ -2682,9 +2683,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                             and not self.generated_proposal
                         ):
                             self.generate_competitive_process()
-                            self.processing_status = (
-                                Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
-                            )
+                            # Email notify all Competitive Process assessors
+                            send_competitive_process_create_notification(
+                                request,
+                                self.generated_competitive_process,
+                                details=details)
+                            self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
                     elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
                         # lease_licence (new)
                         approval, created = Approval.objects.update_or_create(

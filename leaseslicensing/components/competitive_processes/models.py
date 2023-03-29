@@ -1,9 +1,12 @@
 import uuid
 from django.db import models
 from django.db.models import Q
+from django.db import transaction
 from django.contrib.gis.db.models.fields import PolygonField
 
 from ledger_api_client.ledger_models import EmailUserRO
+from ledger_api_client.managed_models import SystemGroup
+
 from leaseslicensing import settings
 from leaseslicensing.components import competitive_processes
 from leaseslicensing.components.main.models import CommunicationsLogEntry, Document, UserAction, ApplicationType
@@ -14,6 +17,7 @@ from leaseslicensing.components.competitive_processes.email import send_winner_n
 from leaseslicensing.helpers import is_internal
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing import settings
+
 
 
 class CompetitiveProcessManager(models.Manager):
@@ -201,8 +205,8 @@ class CompetitiveProcess(models.Model):
 
         return self.status
 
-    def can_user_view(self, user):
-        if is_internal(user):  # TODO: confirm this condition
+    def can_user_view(self, request):
+        if is_internal(request):
             return True
         return False
 
@@ -210,6 +214,47 @@ class CompetitiveProcess(models.Model):
         if self.assigned_officer == user:  # TODO: confirm this condition
             return True
         return False
+
+    def assign_to(self, user_id, request):
+        with transaction.atomic():
+            self.assigned_officer_id = user_id
+            self.save()
+            email_user = retrieve_email_user(user_id)
+            self.log_user_action(
+                CompetitiveProcessUserAction.ACTION_ASSIGN_TO.format(
+                    email_user.get_full_name()
+                ),
+                request,
+            )
+
+    def unassign(self, request):
+        with transaction.atomic():
+            self.assigned_officer_id = None
+            self.save()
+            self.log_user_action(CompetitiveProcessUserAction.ACTION_UNASSIGN, request)
+
+    def log_user_action(self, action, request):
+        return CompetitiveProcessUserAction.log_action(self, action, request.user.id)
+
+    @property
+    def allowed_editors(self):
+        group = None
+        if self.status in [
+            CompetitiveProcess.STATUS_IN_PROGRESS,
+        ]:
+            group = SystemGroup.objects.get(name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR)
+
+        users = (
+            list(
+                map(
+                    lambda id: retrieve_email_user(id),
+                    group.get_system_group_member_ids(),
+                )
+            )
+            if group
+            else []
+        )
+        return users
 
 
 class CompetitiveProcessGeometry(models.Model):
@@ -378,6 +423,8 @@ class CompetitiveProcessLogEntry(CommunicationsLogEntry):
 class CompetitiveProcessUserAction(UserAction):
     ACTION_CREATE_CUSTOMER_ = "Create customer {}"
     ACTION_LINK_PARK = "Link park {} to application {}"
+    ACTION_ASSIGN_TO = "Assign to {}"
+    ACTION_UNASSIGN = "Unassign"
 
     competitive_process = models.ForeignKey(
         CompetitiveProcess, related_name="action_logs", on_delete=models.CASCADE
@@ -389,5 +436,7 @@ class CompetitiveProcessUserAction(UserAction):
 
     @classmethod
     def log_action(cls, competitive_process, action, user):
-        return cls.objects.create(competitive_processes=competitive_process, who=user, what=str(action))
+        return cls.objects.create(competitive_process=competitive_process,
+                                  who=user,
+                                  what=str(action))
 

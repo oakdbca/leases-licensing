@@ -8,6 +8,7 @@
             title="Add Party" 
             okText="Add" large
             @mounted="modalMounted"
+            :okDisabled="disableOkButton"
         >
             <div class="container-fluid">
                 <div class="row modal-input-row">
@@ -105,7 +106,7 @@ export default {
             var vm = this;
             return vm.errors;
         },
-        okButtonDisabled: function(){
+        disableOkButton: function(){
             let disabled = true
             if (this.selected_email_user || this.selected_organisation){
                 disabled = false
@@ -114,18 +115,10 @@ export default {
         },
     },
     watch: {
-        okButtonDisabled: function(){
-            this.updateOkButton()
-        },
     },
     methods:{
-        updateOkButton: function(){
-            if (this.$refs.modal_add_party){
-                this.$refs.modal_add_party.okDisabled = this.okButtonDisabled
-            }
-        },
         modalMounted: function(){
-            this.updateOkButton()
+            console.log("Add-party mounted.")
         },
         initialiseSelectPerson: function(){
             let vm = this;

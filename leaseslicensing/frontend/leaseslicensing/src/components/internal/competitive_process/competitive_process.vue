@@ -422,65 +422,47 @@ export default {
             let vm = this
             console.log('in assignTo')
             let unassign = true;
-            let data = {};
-            if (this.status == 'With Approver'){
-                unassign = this.competitive_process.assigned_approver != null && this.competitive_process.assigned_approver != 'undefined' ? false: true;
-                data = {'assessor_id': this.competitive_process.assigned_approver};
+
+            unassign = this.competitive_process.assigned_officer != null &&
+                       this.competitive_process.assigned_officer != 'undefined' ?
+                            false:
+                            true;
+            let data = {'assigned_officer': this.competitive_process.assigned_officer};
+            let payload = {body: JSON.stringify(data), method: 'POST',};
+
+            if (unassign) {
+                vm.assign_api_call('unassign');
             }
-            else{
-                unassign = this.competitive_process.assigned_officer != null && this.competitive_process.assigned_officer != 'undefined' ? false: true;
-                data = {'assessor_id': this.competitive_process.assigned_officer};
-            }
-            if (!unassign){
-                try {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.competitive_process, (vm.competitive_process.id+'/assign_to')),
-                    {
-                        body: JSON.stringify(data),
-                        method: 'POST',
-                    })
-                    const resData = await response.json()
-                    this.competitive_process = Object.assign({}, resData);
-                    this.updateAssignedOfficerSelect();
-                } catch (error) {
-                    this.updateAssignedOfficerSelect();
-                    swal.fire(
-                        'Proposal Error',
-                        helpers.apiVueResourceError(error),
-                        'error'
-                    )
-                }
-            }
-            else{
-                try {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.competitive_process, (vm.competitive_process.id+'/unassign')))
-                    const responseData = await response.json()
-                    this.competitive_process = Object.assign({}, responseData);
-                    this.updateAssignedOfficerSelect();
-                } catch (error) {
-                    this.updateAssignedOfficerSelect();
-                    swal.fire(
-                        'Proposal Error',
-                        helpers.apiVueResourceError(error),
-                        'error'
-                    )
-                }
+            else {
+                vm.assign_api_call('assign_user', payload);
             }
         },
         assignRequestUser: async function(){
+            let data = {'assigned_officer': this.competitive_process.accessing_user.id};
+            let payload = {body: JSON.stringify(data), method: 'POST',};
+            this.assign_api_call('assign_user', payload);
+        },
+        assign_api_call: async function(api_function, payload) {
             let vm = this
+            if (typeof(api_function) === 'undefined') {
+                api_function = 'assign_user';
+            }
+            if (typeof(payload) === 'undefined') {
+                payload = {};
+            }
             console.log('in assignRequestUser')
 
-            fetch(helpers.add_endpoint_json(api_endpoints.competitive_process, (vm.competitive_process.id + '/assign_request_user'))).then(async response => {
-            if (!response.ok) {
-                // const text = response.text();
-                // throw new Error(text);
-                return response.text().then(text => { throw new Error(text) });
-            } else {
-                return await response.json();
-                }
+            fetch(helpers.add_endpoint_json(api_endpoints.competitive_process, (`${vm.competitive_process.id}/${api_function}`)),
+                payload)
+            .then(async response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                } else {
+                    return await response.json();
+                    }
             })
             .then (data => {
-                vm.competitive_process = Object.assign({}, resData);
+                vm.competitive_process = Object.assign({}, data);
                 vm.updateAssignedOfficerSelect();
             })
             .catch(error => {
@@ -496,7 +478,7 @@ export default {
         fetchCompetitiveProcess: async function(){
             let vm = this
             try {
-                const res = await fetch('/api/competitive_process/' + vm.$route.params.competitive_process_id)
+                const res = await fetch(`${api_endpoints.competitive_process}${vm.$route.params.competitive_process_id}`)
                 if (!res.ok)
                     throw new Error(res.statusText)  // 400s or 500s error
                 let competitive_process = await res.json()
@@ -507,16 +489,16 @@ export default {
 
             }
         },
-        updateAssignedOfficerSelect:function(){
-            // FIXME not sure if adding this function here is the correct way of doing it
-            console.log('updateAssignedOfficerSelect')
+        updateAssignedOfficerSelect:function() {
             let vm = this;
-            if (vm.competitive_process.status === 'in_progress'){
-                vm.$refs.workflow.updateAssignedOfficerSelect(vm.competitive_process.accessing_user.id)
+            if (vm.competitive_process.status === 'In Progress'){
+                console.log('updateAssignedOfficerSelect')
+                let assigned_officer = vm.competitive_process.assigned_officer;
+                let _id = assigned_officer ? assigned_officer.id: null;
+                vm.$refs.workflow.updateAssignedOfficerSelect(_id);
             }
             else{
-                // ...
-                vm.$refs.workflow.updateAssignedOfficerSelect(vm.competitive_process.accessing_user.id)
+                console.log("Skipping assignment of selected officer")
             }
         },
     }

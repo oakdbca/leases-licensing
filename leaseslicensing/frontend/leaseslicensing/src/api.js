@@ -33,7 +33,7 @@ module.exports = {
     proposals: '/api/proposal.json',
     proposals_paginated_list: '/api/proposal_paginated/', // both for external and internal
     approvals_paginated_list: '/api/approval_paginated',
-    competitive_process: '/api/competitive_process',
+    competitive_process: '/api/competitive_process/',
     compliances_paginated_external: '/api/compliance_paginated/list_external/',
     compliances: '/api/compliances.json',
     proposal: '/api/proposal/',

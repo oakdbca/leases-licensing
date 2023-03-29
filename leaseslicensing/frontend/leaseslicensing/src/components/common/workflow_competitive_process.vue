@@ -15,33 +15,18 @@
                 <div v-if="!isFinalised" class="col-sm-12">
                     <strong>Currently assigned to</strong><br/>
                     <div class="form-group">
-                        <template v-if="competitive_process.status_id == 'with_approver'">
-                            <select
-                                ref="assigned_officer"
-                                :disabled="!canAction"
-                                class="form-control"
-                                v-model="competitive_process.assigned_approver"
-                                @change="assignTo()">
-                                <option v-for="member in competitive_process.allowed_assessors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
-                            </select>
-                            <div class="text-end">
-                                <a v-if="canAssess && competitive_process.assigned_approver != competitive_process.accessing_user.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
-                            </div>
-                        </template>
-                        <template v-else>
-                            <select
-                                ref="assigned_officer"
-                                :disabled="!canAction"
-                                class="form-control"
-                                v-model="competitive_process.assigned_officer"
-                                @change="assignTo()"
-                            >
-                                <option v-for="member in competitive_process.allowed_assessors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
-                            </select>
-                            <div class="text-end">
-                                <a v-if="canAssess && competitive_process.assigned_officer != competitive_process.accessing_user.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
-                            </div>
-                        </template>
+                        <select
+                            ref="assigned_officer"
+                            :disabled="!canAction"
+                            class="form-control"
+                            v-model="assigned_officer_id"
+                            @change="assignTo()"
+                        >
+                            <option v-for="member in competitive_process.allowed_editors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
+                        </select>
+                        <div class="text-end">
+                            <a v-if="canAssess && competitive_process.assigned_officer != competitive_process.accessing_user.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
+                        </div>
                     </div>
                 </div>
 
@@ -58,7 +43,7 @@
                     <template v-for="configuration in configurations_for_buttons" :key="configuration.key">
                         <button
                             v-if="configuration.function_to_show_hide()"
-                            class="btn btn-primary  w-75 my-1"
+                            class="btn btn-primary w-75 my-1"
                             @click.prevent="configuration.function_when_clicked"
                         >{{ configuration.button_title }}</button>
                     </template>
@@ -190,6 +175,13 @@ export default {
 
             return !this.isFinalised && this.canAction
         },
+        assigned_officer_id: function() {
+            if (this.competitive_process.assigned_officer) {
+                return this.competitive_process.assigned_officer.id;
+            } else {
+                return null;
+            }
+        }
     },
     filters: {
         formatDate: function(data){
@@ -241,9 +233,6 @@ export default {
         },
         completeEditing: function(){
         },
-        initialiseSelects: function(){
-            let vm = this;
-        },
         initialiseAssignedOfficerSelect:function(reinit=false){
             let vm = this;
             if (reinit){
@@ -283,15 +272,9 @@ export default {
         },
         updateAssignedOfficerSelect:function(selected_user){
             let vm = this;
-            //if (vm.proposal.processing_status == 'With Approver'){
-                //$(vm.$refs.assigned_officer).val(vm.proposal.assigned_approver);
-                $(vm.$refs.assigned_officer).val(selected_user)
-                $(vm.$refs.assigned_officer).trigger('change')
-            //}
-            //else{
-            //    $(vm.$refs.assigned_officer).val(vm.proposal.assigned_officer);
-            //    $(vm.$refs.assigned_officer).trigger('change');
-            //}
+
+            $(vm.$refs.assigned_officer).val(selected_user)
+            $(vm.$refs.assigned_officer).trigger('change')
         },
         refreshFromResponse:function(response){
             let vm = this;
@@ -321,7 +304,6 @@ export default {
     mounted: function(){
         let vm = this
         this.$nextTick(() => {
-            vm.initialiseSelects()
             vm.initialiseAssignedOfficerSelect()
         })
     },

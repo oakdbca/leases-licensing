@@ -6,6 +6,7 @@ from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from leaseslicensing.components.competitive_processes.email import send_competitive_process_create_notification
 
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.competitive_processes.serializers import (
@@ -64,6 +65,16 @@ class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
 class CompetitiveProcessViewSet(viewsets.ModelViewSet):
     queryset = CompetitiveProcess.objects.none()
     filter_backends = (CompetitiveProcessFilterBackend,)
+
+    def perform_create(self, serializer):
+        """
+        Send notification emails on Competitive Process creation
+        """
+
+        instance = serializer.save()
+        send_competitive_process_create_notification(
+                                self.request,
+                                instance)
 
     def get_serializer_class(self):
         """Configure serializers to use"""
@@ -239,6 +250,23 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         related_items = instance.get_related_items()
         serializer = RelatedItemsSerializer(related_items, many=True)
+        return Response(serializer.data)
+
+    @detail_route(methods=["POST",], detail=True,)
+    @basic_exception_handler
+    def assign_user(self, request, *args, **kwargs):
+        instance = self.get_object()
+        assigned_officer_id = request.data.get("assigned_officer", None)
+        instance.assign_to(assigned_officer_id, request)
+        serializer = CompetitiveProcessSerializer(instance, context={"request": request})
+        return Response(serializer.data)
+
+    @detail_route(methods=["GET",], detail=True,)
+    @basic_exception_handler
+    def unassign(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.unassign(request)
+        serializer = CompetitiveProcessSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
 
