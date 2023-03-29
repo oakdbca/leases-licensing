@@ -37,43 +37,45 @@
         <ApplicationForm v-if="proposal" :proposal="proposal" :is_external="true" ref="application_form"
             :readonly="readonly" :submitterId="submitterId" @updateSubmitText="updateSubmitText"
             :registrationOfInterest="registrationOfInterest" :leaseLicence="leaseLicence" />
+        <div v-else>
+            <BootstrapSpinner :isLoading="true" class="text-primary opacity-50" />
+        </div>
 
         <div>
             <input type="hidden" name="csrfmiddlewaretoken" :value="csrf_token" />
             <input type='hidden' name="schema" :value="JSON.stringify(proposal)" />
             <input type='hidden' name="proposal_id" :value="1" />
 
-            <div class="navbar fixed-bottom" style="background-color: #f5f5f5;">
+            <div class="navbar fixed-bottom me-1" style="background-color: #f5f5f5;">
                 <div v-if="proposal && !proposal.readonly" class="container">
                     <div class="col-md-12 text-end">
-                        <button v-if="saveExitProposal" type="button" class="btn btn-primary" disabled>
-                            Save and Exit&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
-                        </button>
-                        <input v-else type="button" @click.prevent="save_exit" class="btn btn-primary" value="Save and Exit"
-                            :disabled="savingProposal || paySubmitting" />
+                        <BootstrapButtonSpinner v-if="saveExitProposal" class="btn btn-primary me-1" :isLoading="true"
+                            :small="true" :centerOfScreen="false" />
+                        <button v-else @click.prevent="save_exit" class="btn btn-primary me-1"
+                            :disabled="navbarButtonsDisabled">Save and Exit</button>
 
-                        <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
-                            Save and Continue&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
-                        </button>
-                        <input v-else type="button" @click.prevent="save" class="btn btn-primary" value="Save and Continue"
-                            :disabled="saveExitProposal || paySubmitting" />
+                        <BootstrapButtonSpinner v-if="savingProposal" class="btn btn-primary me-1" :isLoading="true"
+                            :small="true" :centerOfScreen="false" />
+                        <button v-else @click.prevent="save" class="btn btn-primary me-1"
+                            :disabled="navbarButtonsDisabled">Save
+                            and Continue</button>
 
-                        <button v-if="paySubmitting" type="button" class="btn btn-primary" disabled>
-                            {{ submitText }}&nbsp; <i class="fa-solid fa-spinner fa-spin"></i>
-                        </button>
+                        <BootstrapButtonSpinner v-if="submitting || paySubmitting" class="btn btn-primary me-1"
+                            :isLoading="true" :small="true" :centerOfScreen="false" />
 
-                        <input v-else type="button" @click.prevent="submit" class="btn btn-primary" :value="submitText"
-                            :disabled="saveExitProposal || savingProposal || disableSubmit" id="submitButton"
-                            :title="disabledSubmitText" />
+                        <button v-else @click.prevent="submit" class="btn btn-primary me-1"
+                            :disabled="navbarButtonsDisabled" id="submitButton" :title="disabledSubmitText">{{ submitText
+                            }}</button>
 
                         <input id="save_and_continue_btn" type="hidden" @click.prevent="save_wo_confirm"
                             class="btn btn-primary" value="Save Without Confirmation" />
                     </div>
                 </div>
-                <div v-else>
-                    <div class="container-fluid">
-                        <router-link class="btn btn-primary" :to="{ name: 'external-dashboard' }">Back to
-                            Dashboard</router-link>
+                <div v-else class="container">
+                    <div class="col-md-12 text-end">
+                        <router-link class="btn btn-primary float-end" :to="{ name: 'external-dashboard' }">
+                            Back to Dashboard
+                        </router-link>
                     </div>
                 </div>
             </div>
@@ -91,6 +93,7 @@ export default {
         return {
             "proposal": null,
             "loading": [],
+            loadingProposal: false,
             amendment_request: [],
             proposal_readonly: true,
             hasAmendmentRequest: false,
@@ -115,6 +118,9 @@ export default {
         ApplicationForm,
     },
     computed: {
+        navbarButtonsDisabled: function () {
+            return this.submitting || this.savingProposal || this.paySubmitting;
+        },
         registrationOfInterest: function () {
             let retVal = false;
             if (this.proposal && this.proposal.application_type.name === 'registration_of_interest') {
@@ -337,10 +343,10 @@ export default {
         },
         save_exit: function () {
             let vm = this;
-            this.submitting = true;
             this.saveExitProposal = true;
             this.save().then(() => {
                 this.saveExitProposal = false;
+                this.savingProposal = false;
                 vm.$router.push({
                     name: 'external-dashboard'
                 });
@@ -494,6 +500,7 @@ export default {
         },
         fetchProposal: function (id) {
             let vm = this
+            vm.loadingProposal = true;
             fetch(api_endpoints.proposal + id + '.json')
                 .then(async (response) => {
                     const data = await response.json()
@@ -505,6 +512,7 @@ export default {
                     }
                     vm.proposal = data
                     console.log('Proposal: ', vm.proposal)
+                    vm.loadingProposal = false;
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
@@ -520,9 +528,3 @@ export default {
     },
 }
 </script>
-
-<style lang="css" scoped>
-.btn-primary {
-    margin: 2px;
-}
-</style>
