@@ -40,7 +40,7 @@
                 <div class="tab-pane fade show active" id="pills-applicant" role="tabpanel"
                     aria-labelledby="pills-applicant-tab">
                     <Applicant :email_user="email_user_applicant" id="proposalStartApplicant" :readonly="readonly"
-                        :proposalId="proposal.id" />
+                        :collapseFormSections="false" :proposalId="proposal.id" />
                 </div>
                 <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                     <FormSection :formCollapse="false" label="Map" Index="proposal_geometry">
