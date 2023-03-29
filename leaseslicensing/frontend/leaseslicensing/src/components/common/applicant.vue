@@ -2,198 +2,105 @@
     <div class="container m-0 p-0">
         <div class="row">
             <div class="col-md-12" id="ledgeraccount">
-                <FormSection
-                    v-if="email_user.personal_details"
-                    :formCollapse="true"
-                    label="Personal Details"
-                    index="personal-details"
-                >
+                <FormSection v-if="email_user.personal_details" :formCollapse="true" label="Personal Details"
+                    index="personal-details">
                     <form>
                         <div class="row mb-2">
                             <div class="col-md-3">
-                                <label for="firstName" class="form-label"
-                                    >First Name</label
-                                >
+                                <label for="firstName" class="form-label">First Name</label>
                             </div>
                             <div class="col-md-9">
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="firstName"
-                                    name="firstName"
-                                    v-model="email_user.first_name"
-                                    :readonly="readonly"
-                                />
+                                <input type="text" class="form-control" id="firstName" name="firstName"
+                                    v-model="email_user.first_name" :readonly="readonly" />
                             </div>
                         </div>
                         <div class="row mb-2">
                             <div class="col-md-3">
-                                <label for="lastName" class="form-label"
-                                    >Last Name</label
-                                >
+                                <label for="lastName" class="form-label">Last Name</label>
                             </div>
                             <div class="col-md-9">
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="lastName"
-                                    name="lastName"
-                                    v-model="email_user.last_name"
-                                    :readonly="readonly"
-                                />
+                                <input type="text" class="form-control" id="lastName" name="lastName"
+                                    v-model="email_user.last_name" :readonly="readonly" />
                             </div>
                         </div>
                     </form>
                 </FormSection>
-                <FormSection
-                    v-if="email_user.address_details"
-                    :formCollapse="true"
-                    label="Address Details"
-                    index="address-details"
-                >
-                    <form
-                        v-if="email_user.residential_address"
-                        class="form-horizontal"
-                    >
+                <FormSection v-if="email_user.address_details" :formCollapse="true" label="Address Details"
+                    index="address-details">
+                    <form v-if="email_user.residential_address" class="form-horizontal">
                         <fieldset>
                             <legend>Residential Address</legend>
                             <div class="address-box">
                                 <div class="row mb-2">
                                     <div class="col-md-3">
-                                        <label
-                                            for="residentialAddressLine1"
-                                            class="form-label"
-                                            >Line 1</label
-                                        >
+                                        <label for="residentialAddressLine1" class="form-label">Line 1</label>
                                     </div>
                                     <div class="col-md-9">
-                                        <input
-                                            type="text"
-                                            class="form-control"
-                                            id="residentialAddressLine1"
-                                            name="residentialAddressLine1"
-                                            v-model="
+                                        <input type="text" class="form-control" id="residentialAddressLine1"
+                                            name="residentialAddressLine1" v-model="
                                                 email_user.residential_address
                                                     .line1
-                                            "
-                                            :readonly="readonly"
-                                        />
+                                            " :readonly="readonly" />
                                     </div>
                                 </div>
-                                <div
-                                    v-if="email_user.residential_address.line2"
-                                    class="row mb-2"
-                                >
+                                <div v-if="email_user.residential_address.line2" class="row mb-2">
                                     <div class="col-md-3">
-                                        <label
-                                            for="residentialAddressLine2"
-                                            class="form-label"
-                                            >Line 2</label
-                                        >
+                                        <label for="residentialAddressLine2" class="form-label">Line 2</label>
                                     </div>
                                     <div class="col-md-9">
-                                        <input
-                                            type="text"
-                                            class="form-control"
-                                            id="residentialAddressLine2"
-                                            name="residentialAddressLine2"
-                                            v-model="
+                                        <input type="text" class="form-control" id="residentialAddressLine2"
+                                            name="residentialAddressLine2" v-model="
                                                 email_user.residential_address
                                                     .line2
-                                            "
-                                            :readonly="readonly"
-                                        />
+                                            " :readonly="readonly" />
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-3">
-                                        <label
-                                            for="residentialLocality"
-                                            class="form-label"
-                                            >Town/Suburb</label
-                                        >
+                                        <label for="residentialLocality" class="form-label">Town/Suburb</label>
                                     </div>
                                     <div class="col-md-9">
-                                        <input
-                                            type="text"
-                                            class="form-control"
-                                            id="residentialLocality"
-                                            name="residentialLocality"
-                                            v-model="
+                                        <input type="text" class="form-control" id="residentialLocality"
+                                            name="residentialLocality" v-model="
                                                 email_user.residential_address
                                                     .locality
-                                            "
-                                            :readonly="readonly"
-                                        />
+                                            " :readonly="readonly" />
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-3">
-                                        <label
-                                            for="residentialState"
-                                            class="form-label"
-                                            >State</label
-                                        >
+                                        <label for="residentialState" class="form-label">State</label>
                                     </div>
                                     <div class="col-md-9">
-                                        <input
-                                            type="text"
-                                            class="form-control"
-                                            id="residentialState"
-                                            name="residentialState"
-                                            v-model="
+                                        <input type="text" class="form-control" id="residentialState"
+                                            name="residentialState" v-model="
                                                 email_user.residential_address
                                                     .state
-                                            "
-                                            :readonly="readonly"
-                                        />
+                                            " :readonly="readonly" />
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-3">
-                                        <label
-                                            for="residentialPostcode"
-                                            class="form-label"
-                                            >Postcode</label
-                                        >
+                                        <label for="residentialPostcode" class="form-label">Postcode</label>
                                     </div>
                                     <div class="col-md-9">
-                                        <input
-                                            type="text"
-                                            class="form-control"
-                                            id="residentialPostcode"
-                                            name="residentialPostcode"
-                                            v-model="
+                                        <input type="text" class="form-control" id="residentialPostcode"
+                                            name="residentialPostcode" v-model="
                                                 email_user.residential_address
                                                     .postcode
-                                            "
-                                            :readonly="readonly"
-                                        />
+                                            " :readonly="readonly" />
                                     </div>
                                 </div>
                                 <div class="row mb-2">
                                     <div class="col-md-3">
-                                        <label
-                                            for="residentialPostcode"
-                                            class="form-label"
-                                            >Country</label
-                                        >
+                                        <label for="residentialPostcode" class="form-label">Country</label>
                                     </div>
                                     <div class="col-md-9">
-                                        <select
-                                            class="form-control"
-                                            id="country"
-                                            name="Country"
-                                            v-model="
-                                                email_user.residential_address
-                                                    .country
-                                            "
-                                            :readonly="readonly"
-                                        >
-                                            <option
-                                                v-for="c in countries"
-                                                :value="c.code"
-                                            >
+                                        <select class="form-control" id="country" name="Country" v-model="
+                                            email_user.residential_address
+                                                .country
+                                        " :readonly="readonly">
+                                            <option v-for="c in countries" :value="c.code">
                                                 {{ c.name }}
                                             </option>
                                         </select>
@@ -202,117 +109,58 @@
                             </div>
                         </fieldset>
                     </form>
-                    <form
-                        v-if="email_user.postal_address"
-                        class="form-horizontal"
-                    >
+                    <form v-if="email_user.postal_address" class="form-horizontal">
                         <fieldset>
                             <legend>Postal Address</legend>
                             <div class="form-group">
                                 <div class="address-box">
                                     <div class="form-group">
-                                        <label
-                                            for=""
-                                            class="col-sm-3 control-label"
-                                            >Postal Address</label
-                                        >
+                                        <label for="" class="col-sm-3 control-label">Postal Address</label>
                                         <div class="col-sm-6">
-                                            <input
-                                                :readonly="readonly"
-                                                type="text"
-                                                class="form-control"
-                                                id="postal_line1"
-                                                name="Street"
-                                                placeholder=""
-                                                v-model="
+                                            <input :readonly="readonly" type="text" class="form-control" id="postal_line1"
+                                                name="Street" placeholder="" v-model="
                                                     email_user.postal_address
                                                         .line1
-                                                "
-                                            />
+                                                " />
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <label
-                                            for=""
-                                            class="col-sm-3 control-label"
-                                            >Town/Suburb</label
-                                        >
+                                        <label for="" class="col-sm-3 control-label">Town/Suburb</label>
                                         <div class="col-sm-6">
-                                            <input
-                                                :readonly="readonly"
-                                                type="text"
-                                                class="form-control"
-                                                id="postal_locality"
-                                                name="Town/Suburb"
-                                                placeholder=""
-                                                v-model="
+                                            <input :readonly="readonly" type="text" class="form-control"
+                                                id="postal_locality" name="Town/Suburb" placeholder="" v-model="
                                                     email_user.postal_address
                                                         .locality
-                                                "
-                                            />
+                                                " />
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <label
-                                            for=""
-                                            class="col-sm-3 control-label"
-                                            >State</label
-                                        >
+                                        <label for="" class="col-sm-3 control-label">State</label>
                                         <div class="col-sm-3">
-                                            <input
-                                                :readonly="readonly"
-                                                type="text"
-                                                class="form-control"
-                                                id="postal_state"
-                                                name="State"
-                                                placeholder=""
-                                                v-model="
+                                            <input :readonly="readonly" type="text" class="form-control" id="postal_state"
+                                                name="State" placeholder="" v-model="
                                                     email_user.postal_address
                                                         .state
-                                                "
-                                            />
+                                                " />
                                         </div>
-                                        <label
-                                            for=""
-                                            class="col-sm-1 control-label"
-                                            >Postcode</label
-                                        >
+                                        <label for="" class="col-sm-1 control-label">Postcode</label>
                                         <div class="col-sm-2">
-                                            <input
-                                                :readonly="readonly"
-                                                type="text"
-                                                class="form-control"
-                                                id="postal_postcode"
-                                                name="Postcode"
-                                                placeholder=""
-                                                v-model="
+                                            <input :readonly="readonly" type="text" class="form-control"
+                                                id="postal_postcode" name="Postcode" placeholder="" v-model="
                                                     email_user.postal_address
                                                         .postcode
-                                                "
-                                            />
+                                                " />
                                         </div>
                                     </div>
                                     <div class="form-group">
-                                        <label
-                                            for=""
-                                            class="col-sm-3 control-label"
-                                            >Country</label
-                                        >
+                                        <label for="" class="col-sm-3 control-label">Country</label>
                                         <div class="col-sm-4">
-                                            <select
-                                                :disabled="readonly"
-                                                class="form-control"
-                                                id="postal_country"
-                                                name="Country"
-                                                v-model="
+                                            <select :disabled="readonly" class="form-control" id="postal_country"
+                                                name="Country" v-model="
                                                     email_user.postal_address
                                                         .country
-                                                "
-                                            >
-                                                <option
-                                                    v-for="c in countries"
-                                                    :value="c.code"
-                                                >
+                                                ">
+                                                <option v-for="c in countries" :value="c.code">
                                                     {{ c.name }}
                                                 </option>
                                             </select>
@@ -323,61 +171,33 @@
                         </fieldset>
                     </form>
                 </FormSection>
-                <FormSection
-                    :formCollapse="true"
-                    label="Contact Details"
-                    index="contact-details"
-                >
+                <FormSection :formCollapse="true" label="Contact Details" index="contact-details">
                     <form>
                         <div v-if="email_user.phone_number" class="row mb-2">
                             <div class="col-md-3">
-                                <label for="phone" class="form-label"
-                                    >Phone</label
-                                >
+                                <label for="phone" class="form-label">Phone</label>
                             </div>
                             <div class="col-md-9">
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="phone"
-                                    name="phone"
-                                    v-model="email_user.phone_number"
-                                    :readonly="readonly"
-                                />
+                                <input type="text" class="form-control" id="phone" name="phone"
+                                    v-model="email_user.phone_number" :readonly="readonly" />
                             </div>
                         </div>
                         <div v-if="email_user.mobile_number" class="row mb-2">
                             <div class="col-md-3">
-                                <label for="mobile" class="form-label"
-                                    >Mobile</label
-                                >
+                                <label for="mobile" class="form-label">Mobile</label>
                             </div>
                             <div class="col-md-9">
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="mobile"
-                                    name="mobile"
-                                    v-model="email_user.mobile_number"
-                                    :readonly="readonly"
-                                />
+                                <input type="text" class="form-control" id="mobile" name="mobile"
+                                    v-model="email_user.mobile_number" :readonly="readonly" />
                             </div>
                         </div>
                         <div v-if="email_user.email" class="row mb-2">
                             <div class="col-md-3">
-                                <label for="email" class="form-label"
-                                    >Email</label
-                                >
+                                <label for="email" class="form-label">Email</label>
                             </div>
                             <div class="col-md-9">
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    id="email"
-                                    name="email"
-                                    v-model="email_user.email"
-                                    :readonly="readonly"
-                                />
+                                <input type="text" class="form-control" id="email" name="email" v-model="email_user.email"
+                                    :readonly="readonly" />
                             </div>
                         </div>
                     </form>
@@ -395,10 +215,6 @@ export default {
     props: {
         email_user: {
             type: Object,
-            required: true,
-        },
-        applicantType: {
-            type: String,
             required: true,
         },
         customerType: {
@@ -490,9 +306,11 @@ fieldset,
 legend {
     all: revert;
 }
+
 legend {
     color: grey;
 }
+
 fieldset {
     border-color: #efefef;
     border-style: solid;
