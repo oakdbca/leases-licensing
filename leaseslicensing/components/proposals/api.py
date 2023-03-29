@@ -32,6 +32,7 @@ from leaseslicensing.components.main.models import ApplicationType, RequiredDocu
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.utils import check_db_connection
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentReason,
@@ -628,11 +629,14 @@ class ProposalViewSet(viewsets.ModelViewSet):
             # return qs.exclude(migrated=True)
             # return Proposal.objects.filter(region__isnull=False)
         elif is_customer(self.request):
-            # user_orgs = [org.id for org in user.leaseslicensing_organisations.all()]
-            user_orgs = []  # TODO array of organisations' id for this user
+            user_orgs = get_organisation_ids_for_user(user.id)
+            logger.debug(f"User orgs: {user_orgs}")
             queryset = Proposal.objects.filter(
-                Q(org_applicant_id__in=user_orgs) | Q(submitter=user.id)
+                Q(org_applicant_id__in=user_orgs)
+                | Q(ind_applicant=user.id)
+                | Q(submitter=user.id)
             ).exclude(migrated=True)
+            logger.debug(f"sql: {queryset.query}")
             # queryset =  Proposal.objects.filter(region__isnull=False)
             # .filter( Q(applicant_id__in = user_orgs) | Q(submitter = user) )
             return queryset.exclude(application_type=self.excluded_type)
