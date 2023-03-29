@@ -36,7 +36,10 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     SectionChecklist,
 )
-from leaseslicensing.components.users.serializers import UserAddressSerializer
+from leaseslicensing.components.users.serializers import (
+    UserAddressSerializer,
+    UserSerializer,
+)
 from leaseslicensing.helpers import is_assessor
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import GROUP_NAME_CHOICES
@@ -457,7 +460,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     def get_applicant_obj(self, obj):
         if isinstance(obj.applicant, Organisation):
             return OrganisationSerializer(obj.applicant).data
-        return EmailUserSerializer(obj.applicant).data
+        return UserSerializer(obj.applicant).data
 
     def get_documents_url(self, obj):
         return "/media/{}/proposals/{}/documents/".format(
