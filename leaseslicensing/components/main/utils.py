@@ -1,39 +1,13 @@
-import requests
-from ledger_api_client.ledger_models import EmailUserRO
-import json
 import pytz
+import requests
 from django.conf import settings
-from django.core.cache import cache
-from django.db import connection
-from django.db.models import Q
 from django.contrib.gis.geos import GEOSGeometry
+from django.core.cache import cache
 from ledger_api_client.models import EmailUser
 from rest_framework import serializers
 
-from leaseslicensing.components.main.serializers import EmailUserROSerializerForReferral
-
-
-#def retrieve_department_users():
-#    # try:
-#    #     res = requests.get('{}/api/users?minimal'.format(settings.CMS_URL), auth=(settings.LEDGER_USER, settings.LEDGER_PASS), verify=False)
-#    #     res.raise_for_status()
-#    #     cache.set('department_users', json.loads(res.content).get('objects'), 10800)
-#    # except:
-#    #     raise
-#    dep_users = (
-#        EmailUserRO.objects.filter(Q(email__endswith="@dbca.wa.gov.au"))
-#        .exclude(Q(first_name=""), Q(last_name=""))
-#        .order_by("first_name")
-#    )
-#    serialiser = EmailUserROSerializerForReferral(dep_users, many=True)
-#    return serialiser.data
-
 
 def handle_validation_error(e):
-    # if hasattr(e, 'error_dict'):
-    #     raise serializers.ValidationError(repr(e.error_dict))
-    # else:
-    #     raise serializers.ValidationError(repr(e[0].encode('utf-8')))
     if hasattr(e, "error_dict"):
         raise serializers.ValidationError(repr(e.error_dict))
     else:
@@ -43,24 +17,11 @@ def handle_validation_error(e):
             raise
 
 
-# def get_department_user(email):
-#     try:
-#         res = requests.get(
-#             "{}/api/users?email={}".format(settings.CMS_URL, email),
-#             auth=(settings.LEDGER_USER, settings.LEDGER_PASS),
-#             verify=False,
-#         )
-#         res.raise_for_status()
-#         data = json.loads(res.content).get("objects")
-#         if len(data) > 0:
-#             return data[0]
-#         else:
-#             return None
-#     except:
-#         raise
 def get_department_user(email):
-    if (EmailUser.objects.filter(email__iexact=email.strip()) and 
-            EmailUser.objects.get(email__iexact=email.strip()).is_staff):
+    if (
+        EmailUser.objects.filter(email__iexact=email.strip())
+        and EmailUser.objects.get(email__iexact=email.strip()).is_staff
+    ):
         return True
     return False
 
@@ -68,15 +29,6 @@ def get_department_user(email):
 def to_local_tz(_date):
     local_tz = pytz.timezone(settings.TIME_ZONE)
     return _date.astimezone(local_tz)
-
-
-def check_db_connection():
-    """check connection to DB exists, connect if no connection exists"""
-    try:
-        if not connection.is_usable():
-            connection.connect()
-    except Exception as e:
-        connection.connect()
 
 
 def _get_params(layer_name):
@@ -91,17 +43,17 @@ def _get_params(layer_name):
 
 
 def get_dbca_lands_and_waters_geojson():
-    data = cache.get("dbca_legislated_lands_and_waters")
+    data = cache.get(settings.CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS)
     if not data:
         URL = "https://kmi.dpaw.wa.gov.au/geoserver/public/ows"
         PARAMS = _get_params("public:dbca_legislated_lands_and_waters")
         res = requests.get(url=URL, params=PARAMS)
-        # geo_json = res.json()
+        data = res.json()
         cache.set(
-            "dbca_legislated_lands_and_waters", res.json(), settings.LOV_CACHE_TIMEOUT
+            settings.CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS,
+            data,
+            settings.LOV_CACHE_TIMEOUT,
         )
-        data = cache.get("dbca_legislated_lands_and_waters")
-    # print(data.get('properties'))
     return data
 
 
@@ -110,10 +62,6 @@ def get_dbca_lands_and_waters_geos():
     geoms = []
     for feature in geojson.get("features"):
         feature_geom = feature.get("geometry")
-        geos_geom = GEOSGeometry("{}".format(feature_geom)).prepared
+        geos_geom = GEOSGeometry(f"{feature_geom}").prepared
         geoms.append(geos_geom)
     return geoms
-    # geos_obj = GeometryCollection(tuple(geoms))
-    # print(geos_obj.valid)
-    # print(geos_obj.valid_reason)
-    # return geos_obj
