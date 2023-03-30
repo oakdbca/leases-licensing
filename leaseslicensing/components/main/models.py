@@ -6,6 +6,7 @@ from django.forms import ValidationError
 from reversion.models import Version
 
 from leaseslicensing import settings
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 
 class MapLayer(models.Model):
@@ -269,7 +270,7 @@ class Question(models.Model):
 # @python_2_unicode_compatible
 class UserAction(models.Model):
     who = models.IntegerField()  # EmailUserRO
-    who_full_name = models.CharField(max_length=200)
+    who_full_name = models.CharField(max_length=200, default="Anonymous User")
     when = models.DateTimeField(null=False, blank=False, auto_now_add=True)
     what = models.TextField(blank=False)
 
@@ -277,6 +278,14 @@ class UserAction(models.Model):
         return "{what} ({who} at {when})".format(
             what=self.what, who=self.who, when=self.when
         )
+
+    def save(self, *args, **kwargs):
+        if not self.who_full_name:
+            email_user = retrieve_email_user(self.who)
+            if email_user:
+                self.who_full_name = email_user.get_full_name()
+
+        super().save(*args, **kwargs)
 
     class Meta:
         abstract = True
