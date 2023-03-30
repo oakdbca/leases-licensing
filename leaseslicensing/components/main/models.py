@@ -1,3 +1,4 @@
+import logging
 import os
 
 from django.db import models
@@ -7,6 +8,8 @@ from reversion.models import Version
 
 from leaseslicensing import settings
 from leaseslicensing.ledger_api_utils import retrieve_email_user
+
+logger = logging.getLogger(__name__)
 
 
 class MapLayer(models.Model):
@@ -270,7 +273,7 @@ class Question(models.Model):
 # @python_2_unicode_compatible
 class UserAction(models.Model):
     who = models.IntegerField()  # EmailUserRO
-    who_full_name = models.CharField(max_length=200, default="Anonymous User")
+    who_full_name = models.CharField(max_length=200, default="")
     when = models.DateTimeField(null=False, blank=False, auto_now_add=True)
     what = models.TextField(blank=False)
 
@@ -284,8 +287,10 @@ class UserAction(models.Model):
             email_user = retrieve_email_user(self.who)
             if email_user:
                 self.who_full_name = email_user.get_full_name()
-
+            else:
+                self.who_full_name = "Anonymous User"
         super().save(*args, **kwargs)
+        logger.info("Logged User Action: %s", self)
 
     class Meta:
         abstract = True
