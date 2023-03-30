@@ -180,7 +180,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.log_user_action(
-            settings.ACTION_DELETE.format(
+            settings.ACTION_DESTROY.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-access
                 instance.id,
             ),
