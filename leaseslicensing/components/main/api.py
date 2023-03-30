@@ -1,5 +1,6 @@
 import logging
 
+from django.conf import settings
 from django.db import transaction
 from rest_framework import viewsets
 from rest_framework.decorators import action as detail_route
@@ -139,68 +140,50 @@ class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    # class PaymentViewSet(viewsets.ModelViewSet):
-    #    #queryset = Proposal.objects.all()
-    #    queryset = Proposal.objects.none()
-    #    #serializer_class = ProposalSerializer
-    #    serializer_class = ProposalSerializer
-    #    lookup_field = 'id'
-    #
-    #    def create(self, request, *args, **kwargs):
-    #        response = super(PaymentViewSet, self).create(request, *args, **kwargs)
-    #        # here may be placed additional operations for
-    #        # extracting id of the object and using reverse()
-    #        fallback_url = request.build_absolute_uri('/')
-    #        return HttpResponseRedirect(redirect_to=fallback_url + '/success/')
-    #
-    #
-    # class BookingSettlementReportView(views.APIView):
-    #    renderer_classes = (JSONRenderer,)
-    #
-    #    def get(self,request,format=None):
-    #        try:
-    #            http_status = status.HTTP_200_OK
-    #            #parse and validate data
-    #            report = None
-    #            data = {
-    #                "date":request.GET.get('date'),
-    #            }
-    #            serializer = BookingSettlementReportSerializer(data=data)
-    #            serializer.is_valid(raise_exception=True)
-    #            filename = 'Booking Settlement Report-{}'.format(str(serializer.validated_data['date']))
-    #            # Generate Report
-    #            report = reports.booking_bpoint_settlement_report(serializer.validated_data['date'])
-    #            if report:
-    #                response = HttpResponse(FileWrapper(report), content_type='text/csv')
-    #                response['Content-Disposition'] = 'attachment; filename="{}.csv"'.format(filename)
-    #                return response
-    #            else:
-    #                raise serializers.ValidationError('No report was generated.')
-    #        except serializers.ValidationError:
-    #            raise
-    #        except Exception as e:
-    #            traceback.print_exc()
-    #
-    #
-    # class OracleJob(views.APIView):
-    #    renderer_classes = [JSONRenderer,]
-    #    def get(self, request, format=None):
-    #        try:
-    #            data = {
-    #                "date":request.GET.get("date"),
-    #                "override": request.GET.get("override")
-    #            }
-    #            serializer = OracleSerializer(data=data)
-    #            serializer.is_valid(raise_exception=True)
-    #            oracle_integration(serializer.validated_data['date'].strftime('%Y-%m-%d'),serializer.validated_data['override'])
-    #            data = {'successful':True}
-    #            return Response(data)
-    #        except serializers.ValidationError:
-    #            print(traceback.print_exc())
-    #            raise
-    #        except ValidationError as e:
-    #            raise serializers.ValidationError(repr(e.error_dict))
-    # if hasattr(e, 'error_dict') else serializers.ValidationError(e)
-    #        except Exception as e:
-    #            print(traceback.print_exc())
-    #            raise serializers.ValidationError(str(e[0]))
+
+class UserActionLoggingViewset(viewsets.ModelViewSet):
+    """Class that extends the ModelViewSet to log the common user actions"""
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.log_user_action(
+            settings.ACTION_VIEW.format(
+                instance._meta.verbose_name.title(),  # pylint: disable=protected-access
+                instance.id,
+            ),
+            request,
+        )
+        return super().retrieve(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.log_user_action(
+            settings.ACTION_CREATE.format(
+                instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
+                instance.id,
+            ),
+            request,
+        )
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.log_user_action(
+            settings.ACTION_UPDATE.format(
+                instance._meta.verbose_name.title(),  # pylint: disable=protected-access
+                instance.id,
+            ),
+            request,
+        )
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.log_user_action(
+            settings.ACTION_DELETE.format(
+                instance._meta.verbose_name.title(),  # pylint: disable=protected-access
+                instance.id,
+            ),
+            request,
+        )
+        return super().destroy(request, *args, **kwargs)
