@@ -552,15 +552,15 @@ class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
     queryset = OrganisationRequest.objects.all()
     serializer_class = OrganisationRequestSerializer
 
+
+class OrganisationRequestsViewSet(UserActionLoggingViewset):
+    queryset = OrganisationRequest.objects.all()
+    serializer_class = OrganisationRequestSerializer
+
     def get_serializer_class(self):
         if "retrieve" == self.action:
             return OrganisationRequestDTSerializer
         return super().get_serializer_class()
-
-
-class OrganisationRequestsViewSet(viewsets.ModelViewSet):
-    queryset = OrganisationRequest.objects.all()
-    serializer_class = OrganisationRequestSerializer
 
     def get_queryset(self):
         user = self.request.user
