@@ -13,6 +13,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
+from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.organisations.models import (  # ledger_organisation,
@@ -46,7 +47,7 @@ from leaseslicensing.helpers import is_customer, is_internal
 logger = logging.getLogger(__name__)
 
 
-class OrganisationViewSet(viewsets.ModelViewSet):
+class OrganisationViewSet(UserActionLoggingViewset):
     queryset = Organisation.objects.none()
     serializer_class = OrganisationSerializer
 
@@ -60,20 +61,6 @@ class OrganisationViewSet(viewsets.ModelViewSet):
             )
             return Organisation.objects.filter(delegates__contains=[user.id])
         return Organisation.objects.none()
-
-    @basic_exception_handler
-    def list(self, request, *args, **kwargs):
-        # search_term = request.GET.get("term", "")
-        # data = self.queryset. \
-        #            filter(Q(first_name__icontains=search_term) | Q(last_name__icontains=search_term)). \
-        #            values('email', 'first_name', 'last_name')[:10]
-        # data_transform = [{'id': person['email'], 'text': person['first_name'] +
-        # ' ' + person['last_name']} for person in data]
-        # return Response({"results": data_transform})
-
-        # TODO: search organisations with search term
-        serializer = OrganisationSerializer(self.get_queryset(), many=True)
-        return Response(serializer.data)
 
     @list_route(methods=["GET"], detail=False)
     def key_value_list(self, request, *args, **kwargs):
