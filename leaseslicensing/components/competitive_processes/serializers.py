@@ -3,6 +3,7 @@ from rest_framework import serializers
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess, CompetitiveProcessLogEntry, \
     CompetitiveProcessParty, CompetitiveProcessUserAction, PartyDetail, PartyDetailDocument, \
     update_party_detail_doc_filename, CompetitiveProcessGeometry
+from leaseslicensing.components.proposals.serializers import ProposalGeometrySerializer
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from ..main.models import TemporaryDocumentCollection
 from ..organisations.serializers import OrganisationSerializer
@@ -15,14 +16,28 @@ from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 class RegistrationOfInterestSerializer(serializers.ModelSerializer):
     relevant_applicant_name = serializers.CharField()
-    
+    proposalgeometry = serializers.SerializerMethodField()
+
     class Meta:
         model = Proposal
         fields = (
             'id',
             'lodgement_number',
             'relevant_applicant_name',
+            'proposalgeometry',
         )
+
+    def get_proposalgeometry(self, obj):
+        """
+        Returns proposalgeometries for this Registration of Interest as FeatureCollection dict
+        """
+
+        geometry_data = {"type": "FeatureCollection", "features": []}
+        for proposalgeometry in obj.proposalgeometry.all():
+            pg_serializer = ProposalGeometrySerializer(proposalgeometry)
+            geometry_data["features"].append(pg_serializer.data)
+
+        return geometry_data
 
 
 class PartyDetailSerializer(serializers.ModelSerializer):

@@ -160,7 +160,7 @@ import VueAlert from '@vue-utils/alert.vue'
 import { api_endpoints, helpers } from '@/utils/hooks'
 import RangeSlider from '@/components/forms/range_slider.vue'
 //import { getDisplayNameFromStatus, getDisplayNameOfCategory, getStatusForColour, getApiaryFeatureStyle } from '@/components/common/site_colours.js'
-import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
+import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/components/common/map_functions.js'
 
 export default {
     name: 'ComponentMap',
@@ -406,11 +406,28 @@ export default {
                 }),
             });
 
-            let geometries = null
+            let geometries = {"type": "FeatureCollection", "features":[]}
             if (this.proposal && this.proposal.proposalgeometry) {
                 geometries = this.proposal.proposalgeometry
+                Object.keys(geometries["features"]).forEach(function(key, _) {
+                    geometries["features"][key]["properties"]["source"] = "registration_of_interest";
+                });
             } else if (this.competitive_process && this.competitive_process.competitive_process_geometries){
+                let proposalgeometries = null;
                 geometries = this.competitive_process.competitive_process_geometries
+                Object.keys(geometries["features"]).forEach(function(key, _) {
+                    geometries["features"][key]["properties"]["source"] = "competitive_process";
+                });
+                // Append proposal geometries to competitive process geometries
+                if (this.competitive_process.registration_of_interest) {
+                    proposalgeometries = this.competitive_process.registration_of_interest.proposalgeometry;
+                    Object.keys(proposalgeometries["features"]).forEach(function(key, _) {
+                        proposalgeometries["features"][key]["properties"]["source"] = "registration_of_interest";
+                    });
+                    for (let feature of proposalgeometries["features"]) {
+                        geometries["features"].push(feature);
+                    }
+                }
             }
             if (geometries){
                 for (let poly of geometries.features){
@@ -418,6 +435,16 @@ export default {
                     //console.log(feature)
                     if (!feature.getProperties().intersects) {
                         feature.setStyle(nonIntersectingStyle);
+                    } else {
+                        // feature.setStyle(new Style({
+                        //     fill: new Fill({
+                        //         color: '#fff',
+                        //     }),
+                        //     stroke: new Stroke({
+                        //         color: 'rgba(255, 255, 255, 0.7)',
+                        //         width: 2,
+                        //     }),
+                        // }))
                     }
                     feature.setProperties({"id": this.newFeatureId});
                     this.leaselicenceQuerySource.addFeature(feature);
@@ -550,7 +577,9 @@ export default {
                 vm.newFeatureId++;
             });
             vm.leaselicenceQueryLayer = new VectorLayer({
+                title: "Application Area of Interest",
                 source: vm.leaselicenceQuerySource,
+                style: polygon_style,
             });
             //console.log(vm.drawForLeaselicence);
             vm.map.addInteraction(vm.drawForLeaselicence);
@@ -647,6 +676,26 @@ export default {
                     vm.closePopup()
                     let view = vm.map.getView()
                     let viewResolution = view.getResolution()
+
+                    // Add click event popup to drawn polygons
+                    vm.map.forEachFeatureAtPixel(evt.pixel,
+                        (feature, layer) => {
+                            let feature_format = new GeoJSON();
+                            let geojson_str = feature_format.writeFeature(
+                                feature,
+                                { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
+                                if (geojson_str.length > 0) {
+                                    let geojson = {"type": "FeatureCollection", "features":[]}
+                                    geojson["features"].push(JSON.parse(geojson_str));
+                                    vm.showPopupForLayersJson(
+                                        geojson,
+                                        evt.coordinate,
+                                        ["source"],
+                                        true,
+                                        vm.leaselicenceQueryLayer);
+                            }
+                        }
+                    )
 
                     // Retrieve active layers' sources
                     for (let i=0; i < vm.optionalLayers.length; i++){
