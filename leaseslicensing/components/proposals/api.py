@@ -85,7 +85,7 @@ from leaseslicensing.settings import (
     APPLICATION_TYPES,
 )
 
-logger = logging.getLogger("leaseslicensing")
+logger = logging.getLogger(__name__)
 
 
 class GetAdditionalDocumentTypeDict(views.APIView):
