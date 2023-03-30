@@ -2,10 +2,8 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.utils import timezone
-from ledger_api_client.ledger_models import Address  # Profile,
-from ledger_api_client.ledger_models import (
-    EmailUserRO as EmailUser,  # EmailUserAction, EmailUserLogEntry
-)
+from ledger_api_client.ledger_models import Address
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
 from leaseslicensing.components.approvals.models import Approval
@@ -18,6 +16,7 @@ from leaseslicensing.components.main.models import (
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
 from leaseslicensing.components.proposals.models import Proposal
+from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.helpers import in_dbca_domain, is_leaseslicensing_admin
 
 
@@ -234,17 +233,18 @@ class ContactSerializer(serializers.ModelSerializer):
         return obj
 
 
-# class EmailUserActionSerializer(serializers.ModelSerializer):
-#    who = serializers.CharField(source='who.get_full_name')
-#
-#    class Meta:
-#        model = EmailUserAction
-#        fields = '__all__'
+class EmailUserActionSerializer(serializers.ModelSerializer):
+    who = serializers.CharField(source="who_full_name")
 
-# class EmailUserCommsSerializer(serializers.ModelSerializer):
-#    class Meta:
-#        model = EmailUserLogEntry
-#        fields = '__all__'
+    class Meta:
+        model = EmailUserAction
+        fields = "__all__"
+
+
+class EmailUserCommsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EmailUserLogEntry
+        fields = "__all__"
 
 
 class CommunicationLogEntrySerializer(serializers.ModelSerializer):
@@ -274,14 +274,16 @@ class CommunicationLogEntrySerializer(serializers.ModelSerializer):
         return [[d.name, d._file.url] for d in obj.documents.all()]
 
 
-# class EmailUserLogEntrySerializer(CommunicationLogEntrySerializer):
-#    documents = serializers.SerializerMethodField()
-#    class Meta:
-#        model = EmailUserLogEntry
-#        fields = '__all__'
-#        read_only_fields = (
-#            'customer',
-#        )
-#
-#    def get_documents(self,obj):
-#        return [[d.name,d._file.url] for d in obj.documents.all()]
+class EmailUserLogEntrySerializer(CommunicationLogEntrySerializer):
+    documents = serializers.SerializerMethodField()
+
+    class Meta:
+        model = EmailUserLogEntry
+        fields = "__all__"
+        read_only_fields = (
+            "customer",
+            "documents",
+        )
+
+    def get_documents(self, obj):
+        return [[d.name, d._file.url] for d in obj.documents.all()]
