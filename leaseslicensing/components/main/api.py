@@ -142,14 +142,33 @@ class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class UserActionLoggingViewset(viewsets.ModelViewSet):
-    """Class that extends the ModelViewSet to log the common user actions"""
+    """Class that extends the ModelViewSet to log the common user actions
+
+    will scan the instance provided for the fields listed in identifier_fields and
+    use the first one it finds. If it doesn't find one it will use the id field.
+    If the id field doesn't exist it will raise a ValueError.
+    """
+
+    identifier_fields = [
+        "lodgement_number",
+    ]
+
+    def get_identifier(self, instance):
+        for field in self.identifier_fields:
+            if hasattr(instance, field):
+                return getattr(instance, field)
+        if not hasattr(instance, "id"):
+            raise AttributeError(
+                "Model instance has no valid identifier to use for logging."
+            )
+        return instance.id
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.log_user_action(
             settings.ACTION_VIEW.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-access
-                instance.id,
+                self.get_identifier(instance),
             ),
             request,
         )
@@ -160,7 +179,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         instance.log_user_action(
             settings.ACTION_CREATE.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
-                instance.id,
+                self.get_identifier(instance),
             ),
             request,
         )
@@ -171,7 +190,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         instance.log_user_action(
             settings.ACTION_UPDATE.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-access
-                instance.id,
+                self.get_identifier(instance),
             ),
             request,
         )
@@ -182,7 +201,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         instance.log_user_action(
             settings.ACTION_DESTROY.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-access
-                instance.id,
+                self.get_identifier(instance),
             ),
             request,
         )
