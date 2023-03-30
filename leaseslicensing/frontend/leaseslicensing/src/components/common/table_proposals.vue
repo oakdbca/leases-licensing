@@ -287,13 +287,10 @@ export default {
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
-                    /*
-                    if (full.submitter){
-                        return `${full.submitter.first_name} ${full.submitter.last_name}`
+                    if (full.applicant_name) {
+                        return `${full.applicant_name}`
                     }
                     return ''
-                    */
-                    return full.applicant_name
                 },
                 name: "ind_applicant__first_name, ind_applicant__last_name"
             }
@@ -617,7 +614,7 @@ export default {
             */
 
             // Listener for thr row
-            vm.$refs.application_datatable.vmDataTable.on('click', 'td', function() {
+            vm.$refs.application_datatable.vmDataTable.on('click', 'td', function () {
                 expandToggle(vm, this);
             });
         },

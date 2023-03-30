@@ -1239,10 +1239,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         elif self.proxy_applicant:
             email_user = retrieve_email_user(self.proxy_applicant)
         else:
-            logger.warning(
+            logger.error(
                 f"Applicant for the proposal {self.lodgement_number} not found"
             )
-            email_user = None
+            email_user = "No Applicant"
         return email_user
 
     @property
@@ -1275,15 +1275,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def applicant_name(self):
         if isinstance(self.applicant, Organisation):
-            return f"{self.org_applicant.organisation.name}"
-        else:
-            names = " ".join(
-                [
-                    self.applicant.first_name,
-                    self.applicant.last_name,
-                ]
-            )
-            return names if names else ""
+            return f"{self.applicant.organisation_name}"
+        elif isinstance(self.applicant, EmailUser):
+            return f"{self.applicant.first_name} {self.applicant.last_name}"
+        logger.error(f"Applicant for the proposal {self.lodgement_number} not found")
+        return "No Applicant"
 
     @property
     def applicant_details(self):
@@ -1562,7 +1558,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         group_ids = self.get_assessor_group().get_system_group_member_ids()
         for id in group_ids:
             logger.info(id)
-            recipients.append(EmailUser.objects.get(id=id).email)
+            recipient = retrieve_email_user(id)
+            recipients.append(recipient.email)
         return recipients
 
     @property
@@ -1572,7 +1569,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         group_ids = self.get_approver_group().get_system_group_member_ids()
         for id in group_ids:
             logger.info(id)
-            recipients.append(EmailUser.objects.get(id=id).email)
+            recipient = retrieve_email_user(id)
+            recipients.append(recipient.email)
         return recipients
 
     # Check if the user is member of assessor group for the Proposal
@@ -1664,15 +1662,13 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             or self.processing_status == "with_approver"
         ):
             try:
-                referral = Referral.objects.get(proposal=self, referral=user)
+                referral = Referral.objects.get(proposal=self, referral=user.id)
             except Referral.DoesNotExist:
                 referral = None
             if referral:
                 return True
-            # elif self.__assessor_group() in user.proposalassessorgroup_set.all():
             elif user.id in self.get_assessor_group().get_system_group_member_ids():
                 return True
-            # elif self.__approver_group() in user.proposalapprovergroup_set.all():
             elif user.id in self.get_approver_group().get_system_group_member_ids():
                 return True
             else:

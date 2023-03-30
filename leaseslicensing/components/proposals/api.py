@@ -5,13 +5,11 @@ from collections import OrderedDict
 from datetime import datetime
 
 from django.conf import settings
-from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import Q
-from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
@@ -31,7 +29,7 @@ from leaseslicensing.components.main.filters import LedgerDatatablesFilterBacken
 from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
-from leaseslicensing.components.main.utils import check_db_connection
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentReason,
@@ -115,37 +113,19 @@ class GetApplicationTypeDict(views.APIView):
     def get(self, request, format=None):
         for_filter = request.query_params.get("for_filter", "")
         for_filter = True if for_filter == "true" else False
-        cache_data_name = (
-            settings.CACHE_KEY_APPLICATION_TYPE_DICT_FOR_FILTER
-            if for_filter
-            else settings.CACHE_KEY_APPLICATION_TYPE_DICT
-        )
 
-        # I have made this work for when the cache is not working or we are using dummy cache for testing
-        # however I'm not sure what it's
-        application_types = cache.get(cache_data_name)
-        if application_types is None:
-            if for_filter:
-                application_types = [
-                    {"id": app_type[0], "text": app_type[1]}
-                    for app_type in settings.APPLICATION_TYPES
-                ]
-                cache.set(
-                    cache_data_name,
-                    application_types,
-                    settings.LOV_CACHE_TIMEOUT,
-                )
-            else:
-                application_types = [
-                    {"code": app_type[0], "description": app_type[1]}
-                    for app_type in settings.APPLICATION_TYPES
-                    if app_type[0] == settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST
-                ]
-                cache.set(
-                    cache_data_name,
-                    application_types,
-                    settings.LOV_CACHE_TIMEOUT,
-                )
+        if for_filter:
+            application_types = [
+                {"id": app_type[0], "text": app_type[1]}
+                for app_type in settings.APPLICATION_TYPES
+            ]
+        else:
+            application_types = [
+                {"code": app_type[0], "description": app_type[1]}
+                for app_type in settings.APPLICATION_TYPES
+                if app_type[0] == settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST
+            ]
+
         return Response(application_types)
 
 
@@ -155,14 +135,7 @@ class GetApplicationTypeDescriptions(views.APIView):
     ]
 
     def get(self, request, format=None):
-        data = cache.get("application_type_descriptions")
-        if not data:
-            cache.set(
-                "application_type_descriptions",
-                [app_type[1] for app_type in settings.APPLICATION_TYPES],
-                settings.LOV_CACHE_TIMEOUT,
-            )
-            data = cache.get("application_type_descriptions")
+        data = [app_type[1] for app_type in settings.APPLICATION_TYPES]
         return Response(data)
 
 
@@ -178,43 +151,22 @@ class GetApplicationStatusesDict(views.APIView):
         for_filter = True if for_filter == "true" else False
 
         if for_filter:
-            cache_name = settings.CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER
-            application_statuses = cache.get(cache_name)
-            if application_statuses is None:
-                application_statuses = [
-                    {"id": i[0], "text": i[1]}
-                    for i in Proposal.PROCESSING_STATUS_CHOICES
-                ]
-                cache.set(
-                    cache_name,
-                    application_statuses,
-                    settings.LOV_CACHE_TIMEOUT,
-                )
+            application_statuses = [
+                {"id": i[0], "text": i[1]} for i in Proposal.PROCESSING_STATUS_CHOICES
+            ]
+
             return Response(application_statuses)
         else:
-            if not cache.get(
-                settings.CACHE_KEY_APPLICATION_STATUSES_DICT_INTERNAL
-            ) or not cache.get(settings.CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL):
-                # I know this code is repeated however maybe Brendan was going to seperate customer statuses
-                # from internal statuses so I'll leave it here for now
-                internal_application_statuses = [
-                    {"code": i[0], "description": i[1]}
-                    for i in Proposal.PROCESSING_STATUS_CHOICES
-                ]
-                cache.set(
-                    settings.CACHE_KEY_APPLICATION_STATUSES_DICT_INTERNAL,
-                    internal_application_statuses,
-                    settings.LOV_CACHE_TIMEOUT,
-                )
-                external_application_statuses = [
-                    {"code": i[0], "description": i[1]}
-                    for i in Proposal.PROCESSING_STATUS_CHOICES
-                ]
-                cache.set(
-                    settings.CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL,
-                    external_application_statuses,
-                    settings.LOV_CACHE_TIMEOUT,
-                )
+            internal_application_statuses = [
+                {"code": i[0], "description": i[1]}
+                for i in Proposal.PROCESSING_STATUS_CHOICES
+            ]
+
+            external_application_statuses = [
+                {"code": i[0], "description": i[1]}
+                for i in Proposal.PROCESSING_STATUS_CHOICES
+            ]
+
             data["external_statuses"] = external_application_statuses
             data["internal_statuses"] = internal_application_statuses
             return Response(data)
@@ -354,8 +306,6 @@ class ProposalRenderer(DatatablesRenderer):
         return super().render(data, accepted_media_type, renderer_context)
 
 
-# from django.utils.decorators import method_decorator
-# from django.views.decorators.cache import cache_page
 class ProposalPaginatedViewSet(viewsets.ModelViewSet):
     filter_backends = (ProposalFilterBackend,)
     pagination_class = DatatablesPageNumberPagination
@@ -372,7 +322,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             return ApplicationType.objects.none()
 
     def get_queryset(self):
-        # import ipdb; ipdb.set_trace()
         user = self.request.user
         if not is_internal(self.request) and not is_customer(self.request):
             return Proposal.objects.none()
@@ -604,51 +553,29 @@ class ProposalSubmitViewSet(viewsets.ModelViewSet):
 
 
 class ProposalViewSet(viewsets.ModelViewSet):
-    # class ProposalViewSet(VersionableModelViewSetMixin):
-    # queryset = Proposal.objects.all()
     queryset = Proposal.objects.none()
     serializer_class = ProposalSerializer
     lookup_field = "id"
 
-    @property
-    def excluded_type(self):
-        try:
-            return ApplicationType.objects.get(name="E Class")
-        except ApplicationType.DoesNotExist:
-            return ApplicationType.objects.none()
-
     def get_queryset(self):
         user = self.request.user
-        if is_internal(self.request):  # user.is_authenticated():
+        if is_internal(self.request):
             return Proposal.objects.all()
-            # qs = Proposal.objects.all().exclude(application_type=self.excluded_type)
-            # return qs.exclude(migrated=True)
-            # return Proposal.objects.filter(region__isnull=False)
         elif is_customer(self.request):
-            # user_orgs = [org.id for org in user.leaseslicensing_organisations.all()]
-            user_orgs = []  # TODO array of organisations' id for this user
-            queryset = Proposal.objects.filter(
-                Q(org_applicant_id__in=user_orgs) | Q(submitter=user.id)
+            user_orgs = get_organisation_ids_for_user(user.id)
+            logger.debug(f"User orgs: {user_orgs}")
+            return Proposal.objects.filter(
+                Q(org_applicant_id__in=user_orgs)
+                | Q(ind_applicant=user.id)
+                | Q(submitter=user.id)
             ).exclude(migrated=True)
-            # queryset =  Proposal.objects.filter(region__isnull=False)
-            # .filter( Q(applicant_id__in = user_orgs) | Q(submitter = user) )
-            return queryset.exclude(application_type=self.excluded_type)
+
         logger.warn(
             "User is neither customer nor internal user: {} <{}>".format(
                 user.get_full_name(), user.email
             )
         )
         return Proposal.objects.none()
-
-    def get_object(self):
-        check_db_connection()
-        try:
-            obj = super().get_object()
-        except Exception as e:
-            # because current queryset excludes migrated licences
-            logger.exception(e)
-            obj = get_object_or_404(Proposal, id=self.kwargs["id"])
-        return obj
 
     def get_serializer_class(self):
         try:

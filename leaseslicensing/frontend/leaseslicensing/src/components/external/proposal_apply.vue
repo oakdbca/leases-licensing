@@ -3,7 +3,7 @@
         <div v-if="!applicationsLoading" class="row">
             <div class="col-sm-12">
                 <form class="form-horizontal" name="personal_form" method="post">
-                    <FormSection label="Apply for">
+                    <FormSection label="Apply for a">
                         <div class="col-sm-6">
                             <div v-if="application_types && application_types.length" class="form-group">
                                 <ul class="list-group">
@@ -37,7 +37,7 @@
                                             linkedOrganisation.trading_name }}</label>
                                     </li>
                                 </template>
-                                <template v-else>
+                                <template v-if="loadingOrganisations">
                                     <BootstrapSpinner class="text-primary" :centerOfScreen="false" :small="true" />
                                 </template>
                             </ul>
@@ -72,6 +72,7 @@ export default {
         let vm = this;
         return {
             applicationsLoading: false,
+            loadingOrganisations: false,
             linkedOrganisations: null,
             selectedOrganisation: null,
             selectedApplication: null,
@@ -160,6 +161,7 @@ export default {
         },
         fetchLinkedOrganisations: function (id) {
             let vm = this
+            vm.loadingOrganisations = true;
             fetch(api_endpoints.organisations_viewset)
                 .then(async (response) => {
                     const data = await response.json()
@@ -171,6 +173,7 @@ export default {
                     }
                     vm.linkedOrganisations = data
                     console.log(vm.linkedOrganisations)
+                    vm.loadingOrganisations = false;
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)

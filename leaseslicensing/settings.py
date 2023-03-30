@@ -381,11 +381,14 @@ REPETITION_TYPES = (
 
 LOV_CACHE_TIMEOUT = 10800
 
+CACHE_TIMEOUT_1_MINUTE = 60
+CACHE_TIMEOUT_5_MINUTES = 60 * 5
 CACHE_TIMEOUT_2_HOURS = 60 * 60 * 2
 CACHE_TIMEOUT_24_HOURS = 60 * 60 * 24
 
 # ---------- Cache Keys ----------
 
+CACHE_KEY_LEDGER_EMAIL_USER = "ledger-emailuser-{}"
 CACHE_KEY_LEDGER_ORGANISATION = "ledger-organisation-{}"
 CACHE_KEY_ORGANISATION_IDS = "cache_organisation_ids"
 CACHE_KEY_ORGANISATIONS = "cache_organisations"
@@ -399,3 +402,4 @@ CACHE_KEY_APPLICATION_STATUSES_DICT_EXTERNAL = "application_external_statuses_di
 CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
     "application_internal_statuses_dict_for_filter"
 )
+CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS = "dbca_legislated_lands_and_waters"

@@ -36,7 +36,10 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     SectionChecklist,
 )
-from leaseslicensing.components.users.serializers import UserAddressSerializer
+from leaseslicensing.components.users.serializers import (
+    UserAddressSerializer,
+    UserSerializer,
+)
 from leaseslicensing.helpers import is_assessor
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import GROUP_NAME_CHOICES
@@ -362,12 +365,14 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
     applicant = serializers.SerializerMethodField()
     lodgement_date_display = serializers.SerializerMethodField()
+    applicant_obj = serializers.SerializerMethodField()
 
     class Meta:
         model = Proposal
         fields = (
             "id",
             "application_type",
+            "applicant_obj",
             "proposal_type",
             "title",
             "processing_status",
@@ -451,6 +456,11 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             return f"{obj.applicant.first_name} {obj.applicant.last_name}"
         else:
             return "Applicant not yet assigned"
+
+    def get_applicant_obj(self, obj):
+        if isinstance(obj.applicant, Organisation):
+            return OrganisationSerializer(obj.applicant).data
+        return UserSerializer(obj.applicant).data
 
     def get_documents_url(self, obj):
         return "/media/{}/proposals/{}/documents/".format(
