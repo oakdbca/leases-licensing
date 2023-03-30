@@ -1,10 +1,6 @@
 <template lang="html">
-    <datatable
-        ref="related_items_datatable"
-        :id="datatable_id"
-        :dtOptions="datatable_options"
-        :dtHeaders="datatable_headers"
-    />
+    <datatable ref="related_items_datatable" :id="datatable_id" :dtOptions="datatable_options"
+        :dtHeaders="datatable_headers" />
 </template>
 
 <script>
@@ -27,7 +23,7 @@ export default {
         }
     },
     computed: {
-        column_lodgement_number: function(){
+        column_lodgement_number: function () {
             return {
                 data: 'identifier',
                 //name: 'lodgement_number',
@@ -38,7 +34,7 @@ export default {
                 //}
             }
         },
-        column_type: function(){
+        column_type: function () {
             return {
                 data: 'model_name',
                 //name: 'type',
@@ -49,14 +45,14 @@ export default {
                 //}
             }
         },
-        column_description: function(){
+        column_description: function () {
             return {
                 data: 'descriptor',
                 //name: 'descriptor',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     /** The related item description is to be determined per type:
                      * - Application - application status
                      * - Lease/License - expiry date
@@ -73,7 +69,7 @@ export default {
                 }
             }
         },
-        column_action: function(){
+        column_action: function () {
             return {
                 data: 'action_url',
                 //name: 'action',
@@ -84,7 +80,7 @@ export default {
                 //}
             }
         },
-        datatable_options: function(){
+        datatable_options: function () {
             let vm = this
             let columns = [
                 vm.column_lodgement_number,
@@ -95,7 +91,7 @@ export default {
             return {
                 autoWidth: false,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 //serverSide: true,
@@ -108,7 +104,7 @@ export default {
                     "dataSrc": "",
 
                     // adding extra GET params for Custom filtering
-                    "data": function ( d ) {
+                    "data": function (d) {
                         /*
                         d.filter_application_type = vm.filterApplicationType
                         d.filter_application_status = vm.filterApplicationStatus
@@ -118,14 +114,14 @@ export default {
                     }
                 },
                 dom: 'lBfrtip',
-                buttons:[ ],
+                buttons: [],
                 columns: columns,
                 processing: true,
-                initComplete: function(settings, json) {
+                initComplete: function (settings, json) {
                 },
             }
         },
-        datatable_headers: function(){
+        datatable_headers: function () {
             return [
                 //'id',
                 'Number',
@@ -137,4 +133,3 @@ export default {
     }
 }
 </script>
-

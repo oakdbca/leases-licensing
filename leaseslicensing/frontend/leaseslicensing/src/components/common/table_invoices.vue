@@ -1,24 +1,14 @@
 <template>
     <div>
-        <CollapsibleComponent
-            component_title="Filters"
-            ref="collapsible_filters"
-            @created="collapsible_component_mounted"
-            class="mb-2"
-        >
+        <CollapsibleComponent component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
+            class="mb-2">
             <div class="row">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Organisation</label>
-                        <select
-                            class="form-control"
-                            v-model="filterOrganisation"
-                        >
+                        <select class="form-control" v-model="filterOrganisation">
                             <option value="all">All</option>
-                            <option
-                                v-for="organisation in organisations"
-                                :value="organisation.id"
-                            >
+                            <option v-for="organisation in organisations" :value="organisation.id">
                                 {{ organisation.name }}
                             </option>
                         </select>
@@ -27,15 +17,9 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Payment Status</label>
-                        <select
-                            class="form-control"
-                            v-model="filterInvoiceStatus"
-                        >
+                        <select class="form-control" v-model="filterInvoiceStatus">
                             <option value="all">All</option>
-                            <option
-                                v-for="payment_status in invoice_payment_statuses"
-                                :value="status.code"
-                            >
+                            <option v-for="payment_status in invoice_payment_statuses" :value="status.code">
                                 {{ status.description }}
                             </option>
                         </select>
@@ -44,20 +28,11 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Invoice Date From</label>
-                        <div
-                            class="input-group date"
-                            ref="invoiceDateFromPicker"
-                        >
-                            <input
-                                type="text"
-                                class="form-control"
-                                placeholder="DD/MM/YYYY"
-                                v-model="filterInvoiceDueDateFrom"
-                            />
+                        <div class="input-group date" ref="invoiceDateFromPicker">
+                            <input type="text" class="form-control" placeholder="DD/MM/YYYY"
+                                v-model="filterInvoiceDueDateFrom" />
                             <span class="input-group-addon">
-                                <span
-                                    class="glyphicon glyphicon-calendar"
-                                ></span>
+                                <span class="glyphicon glyphicon-calendar"></span>
                             </span>
                         </div>
                     </div>
@@ -66,16 +41,10 @@
                     <div class="form-group">
                         <label for="">Invoice Date To</label>
                         <div class="input-group date" ref="invoiceDateToPicker">
-                            <input
-                                type="text"
-                                class="form-control"
-                                placeholder="DD/MM/YYYY"
-                                v-model="filterInvoiceDueDateTo"
-                            />
+                            <input type="text" class="form-control" placeholder="DD/MM/YYYY"
+                                v-model="filterInvoiceDueDateTo" />
                             <span class="input-group-addon">
-                                <span
-                                    class="glyphicon glyphicon-calendar"
-                                ></span>
+                                <span class="glyphicon glyphicon-calendar"></span>
                             </span>
                         </div>
                     </div>
@@ -83,14 +52,14 @@
             </div>
         </CollapsibleComponent>
 
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
+        </div>
+
         <div class="row">
             <div class="col-lg-12">
-                <datatable
-                    ref="invoices_datatable"
-                    :id="datatable_id"
-                    :dtOptions="invoicesOptions"
-                    :dtHeaders="invoicesHeaders"
-                />
+                <datatable ref="invoices_datatable" :id="datatable_id" :dtOptions="invoicesOptions"
+                    :dtHeaders="invoicesHeaders" />
             </div>
         </div>
     </div>
@@ -98,7 +67,8 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { v4 as uuid } from 'uuid';
+import { api_endpoints, constants, helpers } from '@/utils/hooks'
 
 export default {
     name: 'TableInvoices',
@@ -120,7 +90,7 @@ export default {
     data() {
         let vm = this
         return {
-            datatable_id: 'invoices-datatable-' + vm._uid,
+            datatable_id: 'invoices-datatable-' + uuid(),
 
             // selected values for filtering
             filterOrganisation: sessionStorage.getItem('filterOrganisation')
@@ -382,7 +352,7 @@ export default {
                     this.lodgementNumberColumn,
                     this.applicationTypeColumn,
                     this.idColumn,
-                    this.licenceNumberColumn,                    this.statusColumn,
+                    this.licenceNumberColumn, this.statusColumn,
                     this.dueDateColumn,
                     this.actionColumn,
                 ]
@@ -417,11 +387,10 @@ export default {
                 searching: false,
                 autoWidth: false,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>",
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 serverSide: true,
-                searching: true,
 
                 ajax: {
                     url:
@@ -437,8 +406,7 @@ export default {
                         d.filter_lodged_to = vm.filterProposalLodgedTo
                     },
                 },
-                dom:
-                    "<'d-flex align-items-center'<'me-auto'l>fB>" +
+                dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
                     "<'row'<'col-sm-12'tr>>" +
                     "<'d-flex align-items-center'<'me-auto'i>p>",
                 buttons: buttons,

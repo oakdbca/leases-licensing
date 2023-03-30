@@ -1,6 +1,7 @@
 <template>
     <div>
-        <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted" class="mb-2">
+        <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
+            class="mb-2">
             <div class="row">
                 <div class="col-md-3">
                     <div class="form-group">
@@ -16,7 +17,8 @@
                         <label for="">Created From</label>
                         <div class="input-group date" ref="proposalDateFromPicker">
                             <!-- input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterCompetitiveProcessCreatedFrom" -->
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterCompetitiveProcessCreatedFrom">
+                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
+                                v-model="filterCompetitiveProcessCreatedFrom">
                             <span class="input-group-addon">
                                 <span class="glyphicon glyphicon-calendar"></span>
                             </span>
@@ -28,7 +30,8 @@
                         <label for="">Created To</label>
                         <div class="input-group date" ref="proposalDateToPicker">
                             <!-- input type="text" class="form-control" placeholder="DD/MM/YYYY" v-model="filterCompetitiveProcessCreatedTo" -->
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterCompetitiveProcessCreatedTo">
+                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
+                                v-model="filterCompetitiveProcessCreatedTo">
                             <span class="input-group-addon">
                                 <span class="glyphicon glyphicon-calendar"></span>
                             </span>
@@ -57,19 +60,15 @@
 
         <div v-if="is_internal" class="row">
             <div class="text-end mb-2">
-                <button type="button" class="btn btn-primary pull-right" @click="new_competitive_process_clicked"><i class="fa-solid fa-circle-plus"></i> New Competitive Process</button>
+                <button type="button" class="btn btn-primary pull-right" @click="new_competitive_process_clicked"><i
+                        class="fa-solid fa-circle-plus"></i> New Competitive Process</button>
             </div>
         </div>
 
         <div class="row">
             <div class="col-lg-12">
-                <datatable
-                    ref="competitive_process_datatable"
-                    :id="datatable_id"
-                    :dtOptions="datatable_options"
-                    :dtHeaders="datatable_headers"
-                    :key="datatable_key"
-                />
+                <datatable ref="competitive_process_datatable" :id="datatable_id" :dtOptions="datatable_options"
+                    :dtHeaders="datatable_headers" :key="datatable_key" />
             </div>
         </div>
     </div>
@@ -77,7 +76,7 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid'
 import { expandToggleCP } from '@/components/common/table_functions.js'
@@ -85,12 +84,12 @@ import { expandToggleCP } from '@/components/common/table_functions.js'
 export default {
     name: 'TableCompetitiveProcesses',
     props: {
-        level:{
+        level: {
             type: String,
             required: true,
-            validator: function(val) {
+            validator: function (val) {
                 let options = ['internal', 'referral', 'external'];
-                return options.indexOf(val) != -1 ? true: false;
+                return options.indexOf(val) != -1 ? true : false;
             }
         },
         /*
@@ -119,12 +118,12 @@ export default {
             filters_expanded: false,
 
             dateFormat: 'DD/MM/YYYY',
-            datepickerOptions:{
+            datepickerOptions: {
                 format: 'DD/MM/YYYY',
-                showClear:true,
-                useCurrent:false,
-                keepInvalid:true,
-                allowInputToggle:true
+                showClear: true,
+                useCurrent: false,
+                keepInvalid: true,
+                allowInputToggle: true
             },
 
             // For Expandable row
@@ -133,85 +132,85 @@ export default {
             expandable_row_class_name: 'expandable_row_class_name',
         }
     },
-    components:{
+    components: {
         datatable,
         CollapsibleFilters,
     },
     watch: {
-        filterApplicationStatus: function() {
+        filterApplicationStatus: function () {
             this.$refs.competitive_process_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem('filterApplicationStatus', this.filterApplicationStatus);
         },
-        filterCompetitiveProcessCreatedFrom: function() {
+        filterCompetitiveProcessCreatedFrom: function () {
             console.log('filterCompetitiveProcessCreatedFrom changed')
             this.$refs.competitive_process_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem('filterCompetitiveProcessCreatedFrom', this.filterCompetitiveProcessCreatedFrom);
         },
-        filterCompetitiveProcessCreatedTo: function() {
+        filterCompetitiveProcessCreatedTo: function () {
             console.log('filterCompetitiveProcessCreatedTo changed')
             this.$refs.competitive_process_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem('filterCompetitiveProcessCreatedTo', this.filterCompetitiveProcessCreatedTo);
         },
-        filterApplied: function(){
-            if (this.$refs.collapsible_filters){
+        filterApplied: function () {
+            if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
             }
         }
     },
     computed: {
-        number_of_columns: function() {
-            let num =  this.$refs.competitive_process_datatable.vmDataTable.columns(':visible').nodes().length;
+        number_of_columns: function () {
+            let num = this.$refs.competitive_process_datatable.vmDataTable.columns(':visible').nodes().length;
             return num
         },
-        filterApplied: function(){
+        filterApplied: function () {
             let filter_applied = true
-            if(this.filterApplicationStatus.toLowerCase() === 'all' && this.filterCompetitiveProcessCreatedFrom.toLowerCase() === '' && this.filterCompetitiveProcessCreatedTo.toLowerCase() === ''){
+            if (this.filterApplicationStatus.toLowerCase() === 'all' && this.filterCompetitiveProcessCreatedFrom.toLowerCase() === '' && this.filterCompetitiveProcessCreatedTo.toLowerCase() === '') {
                 filter_applied = false
             }
             return filter_applied
         },
-        debug: function(){
-            if (this.$route.query.debug){
+        debug: function () {
+            if (this.$route.query.debug) {
                 return this.$route.query.debug === 'Tru3'
             }
             return false
         },
-        is_external: function() {
+        is_external: function () {
             return this.level == 'external'
         },
-        is_internal: function() {
+        is_internal: function () {
             return this.level == 'internal'
         },
-        datatable_headers: function(){
-            if (this.is_external){
+        datatable_headers: function () {
+            if (this.is_external) {
                 return []
             }
-            if (this.is_internal){
+            if (this.is_internal) {
                 return ['Id', 'Lodgement Number', 'Registration of Interest', 'Status', 'Created On', 'Assigned Officer', 'Action']
             }
         },
-        column_id: function(){
+        column_id: function () {
             return {
                 data: "id",
                 // name: 'id',
                 orderable: false,
                 searchable: false,
                 visible: false,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.id
                 }
             }
         },
-        column_lodgement_number: function(){
+        column_lodgement_number: function () {
             return {
                 data: "lodgement_number",
                 name: 'lodgement_number',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    if (full.migrated){
+                'render': function (row, type, full) {
+                    if (full.migrated) {
                         return full.lodgement_number + ' (M)'
                     } else {
                         return full.lodgement_number
@@ -220,15 +219,15 @@ export default {
                 name: "lodgement_number",
             }
         },
-        column_registration_of_interest: function(){
+        column_registration_of_interest: function () {
             return {
                 data: "registration_of_interest",
                 name: 'originating_proposal__lodgement_number',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    if (full.registration_of_interest){
+                'render': function (row, type, full) {
+                    if (full.registration_of_interest) {
                         return '<a href="' + api_endpoints.proposal + full.registration_of_interest.id + '">' + full.registration_of_interest.lodgement_number + '</a>'
                     } else {
                         return ''
@@ -236,7 +235,7 @@ export default {
                 },
             }
         },
-        column_status: function(){
+        column_status: function () {
             let vm = this
             return {
                 data: 'status',
@@ -246,27 +245,27 @@ export default {
                 visible: true,
             }
         },
-        column_created_on: function(){
+        column_created_on: function () {
             return {
                 data: "id",
                 name: 'created_at',
                 orderable: true,
                 searchable: false,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return moment(full.created_at).format('DD/MM/YYYY')
                 }
             }
         },
-        column_assigned_to: function(){
+        column_assigned_to: function () {
             return {
                 data: "assigned_officer",
                 name: 'assigned_officer_id__first_name, assigned_officer_id__last_name',  // This functionality works with `LedgerDatatablesFilterBackend` as filter backaned
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
-                    if (full.assigned_officer){
+                'render': function (row, type, full) {
+                    if (full.assigned_officer) {
                         return full.assigned_officer.fullname
                     } else {
                         return ''
@@ -274,7 +273,7 @@ export default {
                 },
             }
         },
-        column_action: function(){
+        column_action: function () {
             let vm = this
             return {
                 // 8. Action
@@ -283,14 +282,14 @@ export default {
                 orderable: false,
                 searchable: false,
                 visible: true,
-                'render': function(row, type, full){
-                    console.log({full})
+                'render': function (row, type, full) {
+                    console.log({ full })
                     let links = '';
-                    if (vm.is_internal){
-                        if (full.can_accessing_user_view){
+                    if (vm.is_internal) {
+                        if (full.can_accessing_user_view) {
                             links += '<a href="/internal/competitive_process/' + full.id + '">View</a>'
                         }
-                        if (full.can_accessing_user_process){
+                        if (full.can_accessing_user_process) {
                             links += '<a href="/internal/competitive_process/' + full.id + '">Process</a>'
                         }
                     }
@@ -298,19 +297,19 @@ export default {
                 }
             }
         },
-        datatable_options: function(){
+        datatable_options: function () {
             let vm = this
 
             let columns = []
             let search = null
             let buttons = []
-            if(vm.is_external){
+            if (vm.is_external) {
                 columns = [
                 ]
                 search = false
                 buttons = []
             }
-            if(vm.is_internal){
+            if (vm.is_internal) {
                 columns = [
                     vm.column_id,
                     vm.column_lodgement_number,
@@ -344,9 +343,9 @@ export default {
             return {
                 autoWidth: false,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
-                rowCallback: function (row, competitive_process){
+                rowCallback: function (row, competitive_process) {
                     let row_jq = $(row)
                     row_jq.attr('id', 'competitive_process_id_' + competitive_process.id)
                     row_jq.children().first().addClass(vm.td_expand_class_name)
@@ -359,7 +358,7 @@ export default {
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering
-                    "data": function ( d ) {
+                    "data": function (d) {
                         d.filter_status = vm.filterApplicationStatus
                         d.filter_competitive_process_created_from = vm.filterCompetitiveProcessCreatedFrom
                         d.filter_competitive_process_created_to = vm.filterCompetitiveProcessCreatedTo
@@ -368,27 +367,27 @@ export default {
                 },
                 //dom: 'lBfrtip',
                 dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
-                     "<'row'<'col-sm-12'tr>>" +
-                     "<'d-flex align-items-center'<'me-auto'i>p>",
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'d-flex align-items-center'<'me-auto'i>p>",
                 //buttons:[ ],
                 buttons: buttons,
                 order: [[1, 'desc']],
                 columns: columns,
                 processing: true,
-                initComplete: function() {
+                initComplete: function () {
                 },
             }
         }
     },
     methods: {
-        createNewCompetitiveProcess: async function() {
+        createNewCompetitiveProcess: async function () {
             const res = await fetch('/api/competitive_process/', { method: 'POST' })
         },
-        adjust_table_width: function(){
+        adjust_table_width: function () {
             this.$refs.competitive_process_datatable.vmDataTable.columns.adjust()
             this.$refs.competitive_process_datatable.vmDataTable.responsive.recalc()
         },
-        collapsible_component_mounted: function(){
+        collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
         },
         //getActionDetailTable: function(sticker){
@@ -418,10 +417,10 @@ export default {
         //    let details = '<table class="table table-striped table-bordered table-sm table-sticker-details" id="table-sticker-details-' + sticker.id + '">' + thead + tbody + '</table>'
         //    return details
         //},
-        expandCollapseFilters: function(){
+        expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded
         },
-        new_competitive_process_clicked: function(){
+        new_competitive_process_clicked: function () {
             let vm = this
             swal.fire({
                 title: "Create New Competitive Process",
@@ -431,13 +430,13 @@ export default {
                 confirmButtonText: 'Create New Competitive Process',
                 // confirmButtonColor:'#dc3545'
             }).then(async result => {
-                if (result.isConfirmed){
+                if (result.isConfirmed) {
                     // When Yes
                     await vm.createNewCompetitiveProcess()
                     vm.datatable_key = uuid()
                     // this.$router.push({ name: 'apply_proposal' })
 
-                } else if (result.isDenied){
+                } else if (result.isDenied) {
                     // When No
                 } else {
                     // When cancel
@@ -448,7 +447,7 @@ export default {
             //})
             console.log('New Competitive Process Clicked')
         },
-        discardProposal: function(proposal_id) {
+        discardProposal: function (proposal_id) {
             let vm = this;
             swal({
                 title: "Discard Application",
@@ -456,24 +455,24 @@ export default {
                 type: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Discard Application',
-                confirmButtonColor:'#dc3545'
+                confirmButtonColor: '#dc3545'
             }).then(() => {
                 fetch(api_endpoints.discard_proposal(proposal_id), { method: 'DELETE' })
-                .then((response) => {
-                    swal(
-                        'Discarded',
-                        'Your application has been discarded',
-                        'success'
-                    )
-                    //vm.$refs.competitive_process_datatable.vmDataTable.ajax.reload();
-                    vm.$refs.competitive_process_datatable.vmDataTable.draw();
-                }, (error) => {
-                });
-            },(error) => {
+                    .then((response) => {
+                        swal(
+                            'Discarded',
+                            'Your application has been discarded',
+                            'success'
+                        )
+                        //vm.$refs.competitive_process_datatable.vmDataTable.ajax.reload();
+                        vm.$refs.competitive_process_datatable.vmDataTable.draw();
+                    }, (error) => {
+                    });
+            }, (error) => {
 
             });
         },
-        fetchFilterLists: async function(){
+        fetchFilterLists: async function () {
             let vm = this;
 
             try {
@@ -483,15 +482,15 @@ export default {
 
                 let aho = await res.json()
                 vm.application_statuses = aho
-            } catch(err){
+            } catch (err) {
 
             } finally {
 
             }
         },
-        addEventListeners: function(){
+        addEventListeners: function () {
             let vm = this
-            vm.$refs.competitive_process_datatable.vmDataTable.on('click', 'a[data-discard-proposal]', function(e) {
+            vm.$refs.competitive_process_datatable.vmDataTable.on('click', 'a[data-discard-proposal]', function (e) {
                 e.preventDefault();
                 let id = $(this).attr('data-discard-proposal');
                 vm.discardProposal(id)
@@ -526,15 +525,15 @@ export default {
             //});
 
             // Listener for thr row
-            vm.$refs.competitive_process_datatable.vmDataTable.on('click', 'td', function(e) {
+            vm.$refs.competitive_process_datatable.vmDataTable.on('click', 'td', function (e) {
                 expandToggleCP(vm, this);
             })
         },
     },
-    created: function(){
+    created: function () {
         this.fetchFilterLists()
     },
-    mounted: function(){
+    mounted: function () {
         let vm = this;
         this.$nextTick(() => {
             vm.addEventListeners();
@@ -547,6 +546,7 @@ export default {
 .collapse-icon {
     cursor: pointer;
 }
+
 .collapse-icon::before {
     top: 5px;
     left: 4px;
@@ -567,9 +567,11 @@ export default {
     font-family: 'Courier New', Courier monospace;
     margin: 5px;
 }
+
 .expand-icon {
     cursor: pointer;
 }
+
 .expand-icon::before {
     top: 5px;
     left: 4px;

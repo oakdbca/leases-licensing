@@ -74,7 +74,7 @@ import ApprovalCancellation from '../internal/approvals/approval_cancellation.vu
 import ApprovalSuspension from '../internal/approvals/approval_suspension.vue'
 import ApprovalSurrender from '../internal/approvals/approval_surrender.vue'
 import ApprovalHistory from '../internal/approvals/approval_history.vue'
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid';
 import { expandToggle } from '@/components/common/table_functions.js'
@@ -497,9 +497,9 @@ export default {
             return {
                 autoWidth: false,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
-                rowCallback: function (row, proposal){
+                rowCallback: function (row, proposal) {
                     let row_jq = $(row)
                     row_jq.attr('id', 'proposal_id_' + proposal.id)
                     row_jq.children().first().addClass(vm.td_expand_class_name)
@@ -705,7 +705,7 @@ export default {
             });
 
             // Listener for thr row
-            vm.$refs.approvals_datatable.vmDataTable.on('click', 'td', function(e) {
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'td', function (e) {
                 expandToggle(vm, this);
             })
 

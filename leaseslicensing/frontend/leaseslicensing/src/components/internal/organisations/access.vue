@@ -1,6 +1,6 @@
 <template>
-    <div v-if="access" class="container" id="internalOrgAccess">
-        <div class="row">
+    <div class="container" id="internalOrgAccess">
+        <div v-if="!loadingOrganisationRequest" class="row">
             <h3>Organisation Access Request: {{ access.lodgement_number }}</h3>
             <div class="col-md-3">
                 <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
@@ -117,6 +117,9 @@
 
             </div>
         </div>
+        <div v-else class="row">
+            <BootstrapSpinner class="text-primary" />
+        </div>
     </div>
 </template>
 <script>
@@ -137,6 +140,7 @@ export default {
         return {
             loading: [],
             profile: {},
+            loadingOrganisationRequest: false,
             access: {
                 requester: {}
             },
@@ -148,7 +152,7 @@ export default {
             comms_add_url: helpers.add_endpoint_json(api_endpoints.organisation_requests, vm.$route.params.access_id + '/add_comms_log'),
             actionDtOptions: {
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 deferRender: true,
@@ -182,7 +186,7 @@ export default {
             actionsTable: null,
             commsDtOptions: {
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 deferRender: true,
@@ -474,7 +478,8 @@ export default {
         },
         fetchOrganisationRequest: function (id) {
             let vm = this
-            fetch(api_endpoints.organisation_requests_paginated + `${id}/`)
+            vm.loadingOrganisationRequest = true;
+            fetch(api_endpoints.organisation_requests + `${id}/`)
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -485,6 +490,7 @@ export default {
                     }
                     vm.access = data
                     console.log(vm.access)
+                    vm.loadingOrganisationRequest = false;
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR

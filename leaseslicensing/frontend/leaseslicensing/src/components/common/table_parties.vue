@@ -2,28 +2,20 @@
     <div>
         <div v-if="is_internal" class="row">
             <div class="text-end mb-2">
-                <button type="button" class="btn btn-primary pull-right" @click="add_party_clicked"><i class="fa-solid fa-circle-plus"></i> Add Party</button>
+                <button type="button" class="btn btn-primary pull-right" @click="add_party_clicked"><i
+                        class="fa-solid fa-circle-plus"></i> Add Party</button>
             </div>
         </div>
 
         <div class="row">
             <div class="col-lg-12">
-                <datatable
-                    ref="parties_datatable"
-                    :id="datatable_id"
-                    :dtHeaders="datatable_headers"
-                    :dtOptions="datatable_options"
-                    :key="datatable_key"
-                />
+                <datatable ref="parties_datatable" :id="datatable_id" :dtHeaders="datatable_headers"
+                    :dtOptions="datatable_options" :key="datatable_key" />
             </div>
         </div>
 
-        <AddPartyModal 
-            ref="add_party" 
-            @closeModal="closeModal"
-            @refreshDatatable="refreshFromResponse"
-            @partyToAdd="addParty"
-        />
+        <AddPartyModal ref="add_party" @closeModal="closeModal" @refreshDatatable="refreshFromResponse"
+            @partyToAdd="addParty" />
     </div>
 </template>
 
@@ -39,7 +31,7 @@ export default {
         level: '',
         competitive_process_parties: {
             type: Array,
-            default: function(){
+            default: function () {
                 return []
             }
         },
@@ -63,9 +55,9 @@ export default {
         datatable,
         AddPartyModal,
     },
-    created: function(){
+    created: function () {
     },
-    mounted: function(){
+    mounted: function () {
         let vm = this
         vm.$nextTick(() => {
             vm.addEventListeners();
@@ -79,7 +71,7 @@ export default {
                 orderable: false,
                 searchable: false,
                 visible: false,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.id
                 }
             }
@@ -87,7 +79,7 @@ export default {
         column_name: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     if (full.is_person)
                         return full.person.fullname
                     return ''
@@ -97,7 +89,7 @@ export default {
         column_organisation: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     if (full.is_organisation)
                         return full.organisation.name
                     return ''
@@ -107,7 +99,7 @@ export default {
         column_phone: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return '(phone)'
                 }
             }
@@ -115,7 +107,7 @@ export default {
         column_mobile: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return '(mobile)'
                 }
             }
@@ -124,7 +116,7 @@ export default {
         column_email: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return '(email)'
                 }
             }
@@ -132,29 +124,29 @@ export default {
         column_action: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return '(action)'
                 }
             }
         },
-        is_external: function() {
+        is_external: function () {
             return this.level == 'external'
         },
-        is_internal: function() {
+        is_internal: function () {
             return this.level == 'internal'
         },
-        datatable_headers: function(){
-            if (this.is_internal){
+        datatable_headers: function () {
+            if (this.is_internal) {
                 return ['id', 'Name', 'Organisation', 'Phone', 'Mobile', 'Email', 'Action']
             }
             return []
         },
-        datatable_options: function(){
+        datatable_options: function () {
             let vm = this
 
             let columns = []
             let search = null
-            if(vm.is_internal){
+            if (vm.is_internal) {
                 columns = [
                     vm.column_id,
                     vm.column_name,
@@ -170,20 +162,20 @@ export default {
             return {
                 autoWidth: false,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 columnDefs: [
-                    {responsivePriority: 1, targets: 1},
-                    {responsivePriority: 2, targets: 2},
-                    {responsivePriority: 6, targets: 3},
-                    {responsivePriority: 5, targets: 4},
-                    {responsivePriority: 4, targets: 5},
-                    {responsivePriority: 3, targets: 6},
+                    { responsivePriority: 1, targets: 1 },
+                    { responsivePriority: 2, targets: 2 },
+                    { responsivePriority: 6, targets: 3 },
+                    { responsivePriority: 5, targets: 4 },
+                    { responsivePriority: 4, targets: 5 },
+                    { responsivePriority: 3, targets: 6 },
                 ],
-                createdRow: function(row, full_data, dataIndex){
+                createdRow: function (row, full_data, dataIndex) {
                     full_data.expanded = false
                 },
-                rowCallback: function (row, aho){
+                rowCallback: function (row, aho) {
                     let $row = $(row)
                     $row.children().first().addClass(vm.td_expand_class_name)
                 },
@@ -192,20 +184,20 @@ export default {
                 data: vm.competitive_process_parties,
                 searching: search,
                 dom: "<'d-flex align-items-center'<'me-auto'l>f>" +
-                     "<'row'<'col-sm-12'tr>>" +
-                     "<'d-flex align-items-center'<'me-auto'i>>",
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'d-flex align-items-center'<'me-auto'i>>",
                 columns: columns,
                 processing: true,
-                initComplete: function() {
+                initComplete: function () {
                     console.log('in initComplete')
                 },
             }
         }
     },
     methods: {
-        addParty: function(params){
-            if (params.type === 'person'){
-                for (let party of this.competitive_process_parties){
+        addParty: function (params) {
+            if (params.type === 'person') {
+                for (let party of this.competitive_process_parties) {
                     if (party.person_id === params.party_to_add.id)
                         // Person has been already added
                         return
@@ -224,60 +216,60 @@ export default {
                 }
                 this.competitive_process_parties.push(new_data)
                 this.$refs.parties_datatable.vmDataTable.row.add(new_data).draw()
-            } else if (params.type === 'organisation'){
+            } else if (params.type === 'organisation') {
 
                 // TODO
 
             }
 
-            for (let party of this.competitive_process_parties){
+            for (let party of this.competitive_process_parties) {
                 // Somehow all the expander collapsed when adding a new row.  Accordingly set the expanded attribute to false
                 party.expanded = false
             }
 
         },
-        openAddPartyModal: function() {
+        openAddPartyModal: function () {
             this.$nextTick(() => {
                 this.$refs.add_party.isModalOpen = true;
             });
         },
-        closeModal: function() {
+        closeModal: function () {
             this.uuid++;
         },
-        refreshFromResponse: async function(){
+        refreshFromResponse: async function () {
             // await this.$refs.vessels_datatable.vmDataTable.ajax.reload();
             console.log('TODO: update table')
         },
-        number_of_columns: function() {
+        number_of_columns: function () {
             // Return the number of visible columns
-            let num =  this.$refs.parties_datatable.vmDataTable.columns(':visible').nodes().length;
+            let num = this.$refs.parties_datatable.vmDataTable.columns(':visible').nodes().length;
             return num
         },
-        updateCustomRowColSpan: function(){
+        updateCustomRowColSpan: function () {
             // Set colspan to the manually added table row
             $('tr.' + this.expandable_row_class_name + ' td').attr('colspan', this.number_of_columns())
         },
-        add_party_clicked: function (){
+        add_party_clicked: function () {
             this.openAddPartyModal()
         },
-        addClickEventHandler: function(){
+        addClickEventHandler: function () {
             let vm = this
 
-            vm.$refs.parties_datatable.vmDataTable.on('click', 'td', function() {
+            vm.$refs.parties_datatable.vmDataTable.on('click', 'td', function () {
                 expandToggleParties(vm, this);
             })
         },
-        addResponsiveResizeHandler: function(){
+        addResponsiveResizeHandler: function () {
             console.log('in addResponsiveResizeHandler')
             // When columns are shown/hidden, expand/collapse the child row according to the current expand-collapse status of each row
             let vm = this
-            vm.$refs.parties_datatable.vmDataTable.on('responsive-resize', function(e, datatable, columns) {
+            vm.$refs.parties_datatable.vmDataTable.on('responsive-resize', function (e, datatable, columns) {
                 // This event can be used to inform external libraries and controls that Responsive has changed the visibility of columns in the table in response to a resize or recalculation event.
                 vm.updateCustomRowColSpan()
-                datatable.rows().every(function(rowIdx, tableLoop, rowLoop){
+                datatable.rows().every(function (rowIdx, tableLoop, rowLoop) {
                     // Work on each row
                     let full_data = this.data()
-                    if (full_data.expanded){
+                    if (full_data.expanded) {
                         this.child.show()
                     } else {
                         this.child.hide()
@@ -285,7 +277,7 @@ export default {
                 })
             })
         },
-        addEventListeners: function (){
+        addEventListeners: function () {
             console.log('in addEventListener')
             this.addClickEventHandler()
             this.addResponsiveResizeHandler()
@@ -298,6 +290,7 @@ export default {
 .collapse-icon {
     cursor: pointer;
 }
+
 .collapse-icon::before {
     top: 5px;
     left: 4px;
@@ -318,9 +311,11 @@ export default {
     font-family: 'Courier New', Courier monospace;
     margin: 5px;
 }
+
 .expand-icon {
     cursor: pointer;
 }
+
 .expand-icon::before {
     top: 5px;
     left: 4px;
@@ -341,8 +336,8 @@ export default {
     font-family: 'Courier New', Courier monospace;
     margin: 5px;
 }
+
 .expandable_row {
     background-color: lightgray !important;
 }
-
 </style>

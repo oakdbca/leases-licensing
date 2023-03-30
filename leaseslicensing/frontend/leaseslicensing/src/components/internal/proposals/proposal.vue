@@ -353,6 +353,8 @@
             </div>
         </div>
 
+
+
         <ProposedApproval v-if="proposal" :proposal="proposal" ref="proposed_approval"
             :processing_status="proposal.processing_status" :proposal_id="proposal.id"
             :proposal_type="proposal.proposal_type ? proposal.proposal_type.code : ''"
@@ -383,6 +385,11 @@
                         value="Save and Continue" :disabled="disableSaveAndContinueBtn" />
                 </div>
             </div>
+        </div>
+    </div>
+    <div v-else class="container">
+        <div class="row">
+            <BootstrapSpinner class="text-primary" />
         </div>
     </div>
 </template>
@@ -444,7 +451,7 @@ export default {
             contacts_table_id: vm._.uid + 'contacts-table',
             contacts_options: {
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 ajax: {
@@ -1454,7 +1461,32 @@ export default {
                 }).catch(error => {
                     console.error(error);
                 });
-        }
+        },
+        fetchProposal: async function () {
+            let vm = this;
+            fetch(`/api/proposal/${this.$route.params.proposal_id}/`).then(async response => {
+                if (!response.ok) {
+                    const text = await response.json();
+                    throw new Error(text);
+                } else {
+                    return await response.json();
+                }
+            })
+                .then(data => {
+                    vm.proposal = Object.assign({}, data);
+                    // Dict of the latest revision's parameters
+                    vm.latest_revision = Object.assign({}, data.lodgement_versions[0]);
+                    // Set current reivsion id to the latest one on creation
+                    vm.current_revision_id = vm.latest_revision.revision_id
+                    vm.hasAmendmentRequest = this.proposal.hasAmendmentRequest;
+                    if (vm.debug == true) {
+                        this.showingProposal = true;
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                })
+        },
     },
     mounted: function () {
         console.log('in mounted')
@@ -1484,29 +1516,7 @@ export default {
         });
     },
     created: function () {
-        let vm = this;
-        fetch(`/api/proposal/${this.$route.params.proposal_id}/`).then(async response => {
-            if (!response.ok) {
-                const text = await response.json();
-                throw new Error(text);
-            } else {
-                return await response.json();
-            }
-        })
-            .then(data => {
-                vm.proposal = Object.assign({}, data);
-                // Dict of the latest revision's parameters
-                vm.latest_revision = Object.assign({}, data.lodgement_versions[0]);
-                // Set current reivsion id to the latest one on creation
-                vm.current_revision_id = vm.latest_revision.revision_id
-                vm.hasAmendmentRequest = this.proposal.hasAmendmentRequest;
-                if (vm.debug == true) {
-                    this.showingProposal = true;
-                }
-            })
-            .catch(error => {
-                console.log(error);
-            })
+        this.fetchProposal();
     },
 }
 </script>
