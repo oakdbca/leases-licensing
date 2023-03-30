@@ -23,7 +23,7 @@ module.exports = {
     organisation_lookup: '/api/organisations/organisation_lookup',
     filtered_organisations: '/api/filtered_organisations',
     organisation_requests_paginated: '/api/organisation_requests_paginated/',
-    organisation_requests: '/api/organisation_requests.json',
+    organisation_requests: '/api/organisation_requests/',
     organisation_contacts: '/api/organisation_contacts.json',
     organisation_access_group_members: '/api/organisation_access_group_members',
     users_api: '/api/users/',
