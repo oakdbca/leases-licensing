@@ -5,8 +5,6 @@ from django.core.cache import cache
 from ledger_api_client.managed_models import SystemGroup
 from ledger_api_client.utils import get_all_organisation
 
-from leaseslicensing.components.organisations.models import Organisation
-
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +62,8 @@ def get_leaseslicensing_organisation_ids():
     we can cache the list of organisations to improve performance.
 
     Todo: Must delete the cache whenever a new organisation is added to the system."""
+    from leaseslicensing.components.organisations.models import Organisation
+
     cache_key = settings.CACHE_KEY_ORGANISATION_IDS
     organisation_ids = cache.get(cache_key)
     if organisation_ids is None:
@@ -124,3 +124,13 @@ def get_leaseslicensing_external_emailuser_ids():
         cache.set(cache_key, user_ids, settings.CACHE_TIMEOUT_2_HOURS)
     logger.debug(f"{cache_key}:{user_ids}")
     return user_ids
+
+
+def get_instance_identifier(instance):
+    """Checks the instance for the attributes specified in settings"""
+    for field in settings.LOGGING_IDENTIFIER_FIELDS:
+        if hasattr(instance, field):
+            return getattr(instance, field)
+    raise AttributeError(
+        f"Model instance has no valid identifier to use for logging. Tried: {settings.LOGGING_IDENTIFIER_FIELDS}"
+    )

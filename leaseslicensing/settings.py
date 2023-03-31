@@ -377,6 +377,15 @@ REPETITION_TYPES = (
     (REPETITION_TYPE_MONTHLY, "Monthly"),
 )
 
+# ---------- Identifier fields for logging ----------
+
+""" Fields that the logging functions will check for on the instance
+    and use to identify the instance in the logs. """
+LOGGING_IDENTIFIER_FIELDS = [
+    "lodgement_number",
+    "id",
+]
+
 # ---------- Cache Timeouts ----------
 
 LOV_CACHE_TIMEOUT = 10800

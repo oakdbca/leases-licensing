@@ -9,6 +9,7 @@ from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 
+from leaseslicensing import helpers
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.models import (
     ApplicationType,
@@ -45,10 +46,6 @@ class GlobalSettingsViewSet(viewsets.ReadOnlyModelViewSet):
 class RequiredDocumentViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = RequiredDocument.objects.all()
     serializer_class = RequiredDocumentSerializer
-
-    # def get_queryset(self):
-    #     categories=ActivityCategory.objects.filter(activity_type='marine')
-    #     return categories
 
 
 class QuestionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -146,29 +143,15 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
 
     will scan the instance provided for the fields listed in identifier_fields and
     use the first one it finds. If it doesn't find one it will use the id field.
-    If the id field doesn't exist it will raise a ValueError.
+    If the id field doesn't exist it will raise an AttributeError.
     """
-
-    identifier_fields = [
-        "lodgement_number",
-    ]
-
-    def get_identifier(self, instance):
-        for field in self.identifier_fields:
-            if hasattr(instance, field):
-                return getattr(instance, field)
-        if not hasattr(instance, "id"):
-            raise AttributeError(
-                "Model instance has no valid identifier to use for logging."
-            )
-        return instance.id
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.log_user_action(
             settings.ACTION_VIEW.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-access
-                self.get_identifier(instance),
+                helpers.get_instance_identifier(instance),
             ),
             request,
         )
@@ -179,7 +162,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         instance.log_user_action(
             settings.ACTION_CREATE.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
-                self.get_identifier(instance),
+                helpers.get_instance_identifier(instance),
             ),
             request,
         )
@@ -190,7 +173,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         instance.log_user_action(
             settings.ACTION_UPDATE.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-access
-                self.get_identifier(instance),
+                helpers.get_instance_identifier(instance),
             ),
             request,
         )
@@ -201,7 +184,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         instance.log_user_action(
             settings.ACTION_DESTROY.format(
                 instance._meta.verbose_name.title(),  # pylint: disable=protected-access
-                self.get_identifier(instance),
+                helpers.get_instance_identifier(instance),
             ),
             request,
         )
