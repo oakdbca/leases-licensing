@@ -6,7 +6,6 @@ from django.db import transaction
 from django.db.models import Q
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
-from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
@@ -14,7 +13,10 @@ from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
 from leaseslicensing.components.main.api import UserActionLoggingViewset
-from leaseslicensing.components.main.decorators import basic_exception_handler
+from leaseslicensing.components.main.decorators import (
+    basic_exception_handler,
+    logging_action,
+)
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.organisations.models import (  # ledger_organisation,
     Organisation,
@@ -88,7 +90,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         ]
         return Response({"results": data_transform})
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -102,7 +104,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -114,7 +116,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = OrganisationContactSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -127,7 +129,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = OrganisationContactSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -155,7 +157,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
             instance.send_organisation_request_link_notification(request)
         return Response(data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -173,7 +175,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -191,7 +193,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -209,7 +211,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -227,7 +229,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -245,7 +247,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -263,7 +265,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -281,7 +283,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -299,7 +301,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -317,7 +319,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -335,7 +337,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -348,7 +350,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = OrganisationActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -361,7 +363,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         serializer = OrganisationCommsSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -409,7 +411,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         return Response(serializer.data)
 
     # Todo: Implement for segregatted system
-    # @detail_route(
+    # @logging_action(
     #     methods=[
     #         "POST",
     #     ],
@@ -458,7 +460,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
     #     serializer = self.get_serializer(org)
     #     return Response(serializer.data)
 
-    # @detail_route(methods=['POST',], detail=True)
+    # @logging_action(methods=['POST',], detail=True)
     # def update_address(self, request, *args, **kwargs):
     #        try:
     #                org = self.get_object()
@@ -488,7 +490,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
     #                print(traceback.print_exc())
     #                raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -656,7 +658,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -678,7 +680,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -702,7 +704,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -724,7 +726,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -751,7 +753,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -773,7 +775,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PUT",
         ],
@@ -795,7 +797,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -818,7 +820,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -850,7 +852,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -872,7 +874,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -894,7 +896,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
