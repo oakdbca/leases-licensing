@@ -99,16 +99,38 @@ export default {
         column_phone: () => {
             return {
                 data: null,
+<<<<<<< HEAD
                 'render': function (row, type, full) {
                     return '(phone)'
+=======
+                'render': function(row, type, full){
+                    if (full.is_person && full.person) {
+                        return full.person.phone_number;
+                    } else if (full.is_organisation && full.organisation) {
+                        return full.organisation.phone_number;
+                    } else {
+                        return '(phone)';
+                    }
+>>>>>>> be89dce (Added populating of parties table)
                 }
             }
         },
         column_mobile: () => {
             return {
                 data: null,
+<<<<<<< HEAD
                 'render': function (row, type, full) {
                     return '(mobile)'
+=======
+                'render': function(row, type, full){
+                    if (full.is_person && full.person) {
+                        return full.person.mobile_number;
+                    } else if (full.is_organisation && full.organisation) {
+                        return full.organisation.mobile_number;
+                    } else {
+                        return '(mobile)';
+                    }
+>>>>>>> be89dce (Added populating of parties table)
                 }
             }
 
@@ -116,8 +138,19 @@ export default {
         column_email: () => {
             return {
                 data: null,
+<<<<<<< HEAD
                 'render': function (row, type, full) {
                     return '(email)'
+=======
+                'render': function(row, type, full){
+                    if (full.is_person && full.person) {
+                        return full.person.email;
+                    } else if (full.is_organisation && full.organisation) {
+                        return full.organisation.email;
+                    } else {
+                        return '(email)';
+                    }
+>>>>>>> be89dce (Added populating of parties table)
                 }
             }
         },

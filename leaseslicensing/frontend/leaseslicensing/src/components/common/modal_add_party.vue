@@ -175,7 +175,7 @@ export default {
                     processResults: function(data){
                         // Format results returned to match the format select2 expects
                         for (let item of data){
-                            item.text = item.name  // Select2 requires 'text' attribute
+                            item.text = item.trading_name  // Select2 requires 'text' attribute
                         }
                         return {'results': data}  // Select2 expects one object with an attribute 'results' 
                     }
