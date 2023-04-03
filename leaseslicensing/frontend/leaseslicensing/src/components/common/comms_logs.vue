@@ -296,29 +296,35 @@ export default {
                     {
                         title: 'Documents',
                         data: 'documents',
-                        'render': function (values) {
-                            var result = '';
-                            _.forEach(values, function (value) {
+                        'render': function (documents) {
+                            if (!documents || !documents.length) {
+                                return 'No documents'
+                            }
+
+                            var result = '<ul class="list-group list-group-numbered">';
+                            _.forEach(documents, function (_document) {
+                                // Not sure why this stuff is necessary but leaving it here for now
                                 // We expect an array [docName, url]
                                 // if it's a string it is the url
                                 var docName = '',
                                     url = '';
-                                if (_.isArray(value) && value.length > 1) {
-                                    docName = value[0];
-                                    url = value[1];
+                                if (_.isArray(_document) && _document.length > 1) {
+                                    docName = _document[0];
+                                    url = _document[1];
                                 }
                                 if (typeof s === 'string') {
-                                    url = value;
+                                    url = _document;
                                     // display the first  chars of the filename
-                                    docName = _.last(value.split('/'));
+                                    docName = _.last(_document.split('/'));
                                     docName = _.truncate(docName, {
                                         length: 18,
                                         omission: '...',
                                         separator: ' '
                                     });
                                 }
-                                result += '<a href="' + url + '" target="_blank"><p>' + docName + '</p></a><br>';
+                                result += '<li class="list-group-item"><a href="' + url + '" target="_blank"> ' + docName + '</a></li>';
                             });
+                            result += '</ul>';
                             return result;
                         }
                     },
@@ -556,6 +562,9 @@ export default {
         },
         addComm() {
             this.$refs.add_comm.isModalOpen = true;
+            this.$nextTick(() => {
+                $('input#to').focus();
+            });
         }
     },
     mounted: function () {
