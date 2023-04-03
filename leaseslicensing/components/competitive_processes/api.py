@@ -1,46 +1,61 @@
 from datetime import datetime
+
 from django.db import transaction
-from rest_framework import viewsets
-from rest_framework import viewsets, views
+from rest_framework import views, viewsets
+from rest_framework.decorators import action as detail_route
+from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from rest_framework_datatables.filters import DatatablesFilterBackend
 
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
-from leaseslicensing.components.competitive_processes.serializers import CompetitiveProcessLogEntrySerializer, \
-    CompetitiveProcessUserActionSerializer, ListCompetitiveProcessSerializer, \
-    CompetitiveProcessSerializer
+from leaseslicensing.components.competitive_processes.serializers import (
+    CompetitiveProcessLogEntrySerializer,
+    CompetitiveProcessSerializer,
+    CompetitiveProcessUserActionSerializer,
+    ListCompetitiveProcessSerializer,
+)
+from leaseslicensing.components.competitive_processes.utils import save_geometry
+from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
-from leaseslicensing.components.competitive_processes.utils import save_geometry
 from leaseslicensing.helpers import is_internal
-from rest_framework.decorators import (
-    action as detail_route,
-    renderer_classes,
-    parser_classes,
-)
-from leaseslicensing.components.main.decorators import basic_exception_handler
 
 
 class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
-
     def filter_queryset(self, request, queryset, view):
-        filter_status = request.GET.get("filter_status") if request.GET.get("filter_status") != "all" else ""
-        filter_competitive_process_created_from = request.GET.get("filter_competitive_process_created_from")
-        filter_competitive_process_created_to = request.GET.get("filter_competitive_process_created_to")
+        filter_status = (
+            request.GET.get("filter_status")
+            if request.GET.get("filter_status") != "all"
+            else ""
+        )
+        filter_competitive_process_created_from = request.GET.get(
+            "filter_competitive_process_created_from"
+        )
+        filter_competitive_process_created_to = request.GET.get(
+            "filter_competitive_process_created_to"
+        )
 
         if filter_status:
             queryset = queryset.filter(status=filter_status)
         if filter_competitive_process_created_from:
-            filter_competitive_process_created_from = datetime.strptime(filter_competitive_process_created_from, "%Y-%m-%d")
-            queryset = queryset.filter(created_at__gte=filter_competitive_process_created_from)
+            filter_competitive_process_created_from = datetime.strptime(
+                filter_competitive_process_created_from, "%Y-%m-%d"
+            )
+            queryset = queryset.filter(
+                created_at__gte=filter_competitive_process_created_from
+            )
         if filter_competitive_process_created_to:
-            filter_competitive_process_created_to = datetime.strptime(filter_competitive_process_created_to, "%Y-%m-%d")
-            queryset = queryset.filter(created_at__lte=filter_competitive_process_created_to)
+            filter_competitive_process_created_to = datetime.strptime(
+                filter_competitive_process_created_to, "%Y-%m-%d"
+            )
+            queryset = queryset.filter(
+                created_at__lte=filter_competitive_process_created_to
+            )
 
-        queryset = self.apply_request(request, queryset, view,
-                                        ledger_lookup_fields=["assigned_officer_id"])
+        queryset = self.apply_request(
+            request, queryset, view, ledger_lookup_fields=["assigned_officer_id"]
+        )
 
         # setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -51,8 +66,8 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
     filter_backends = (CompetitiveProcessFilterBackend,)
 
     def get_serializer_class(self):
-        """ Configure serializers to use """
-        if self.action == 'list':
+        """Configure serializers to use"""
+        if self.action == "list":
             return ListCompetitiveProcessSerializer
         return CompetitiveProcessSerializer
 
@@ -63,7 +78,12 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         else:
             return CompetitiveProcess.objects.none()
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def complete(self, request, *args, **kwargs):
@@ -76,7 +96,12 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         instance.complete(request)
         return Response({})
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def discard(self, request, *args, **kwargs):
@@ -93,7 +118,6 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def process_shapefile_document(self, request, *args, **kwargs):
-
         # TODO: implement
 
         return Response({})
@@ -107,13 +131,17 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         qs = qs.distinct()
         self.paginator.page_size = qs.count()
         result_page = self.paginator.paginate_queryset(qs, request)
-        serializer = self.get_serializer(result_page, context={"request": request}, many=True)
+        serializer = self.get_serializer(
+            result_page, context={"request": request}, many=True
+        )
         return self.paginator.get_paginated_response(serializer.data)
 
     @basic_exception_handler
     def retrieve(self, request, *args, **kwargs):
         competitive_process = self.get_object()
-        serializer = self.get_serializer(competitive_process, context={'request': request})
+        serializer = self.get_serializer(
+            competitive_process, context={"request": request}
+        )
         return Response(serializer.data)
 
     @basic_exception_handler
@@ -124,9 +152,11 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         return Response({})
 
     def perform_update(self, instance, request):
-        competitive_process_data = request.data.get('competitive_process', None)
+        competitive_process_data = request.data.get("competitive_process", None)
         # Pop "geometry" data to handle it independently of the "competitive process"
-        competitive_process_geometry_data = competitive_process_data.pop('competitive_process_geometries', None)
+        competitive_process_geometry_data = competitive_process_data.pop(
+            "competitive_process_geometries", None
+        )
         # Handle "competitive process"
         serializer = self.get_serializer(instance, data=competitive_process_data)
         serializer.is_valid(raise_exception=True)
@@ -135,7 +165,12 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         if competitive_process_geometry_data:
             save_geometry(instance, competitive_process_geometry_data, self.action)
 
-    @detail_route(methods=["GET",], detail=True,)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def action_log(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -143,7 +178,12 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         serializer = CompetitiveProcessUserActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["GET",], detail=True,)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -151,7 +191,12 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         serializer = CompetitiveProcessLogEntrySerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
@@ -159,19 +204,19 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             mutable = request.data._mutable
             request.data._mutable = True
-            request.data["proposal"] = "{}".format(instance.id)
-            request.data["staff"] = "{}".format(request.user.id)
+            request.data["proposal"] = f"{instance.id}"
+            request.data["staff"] = f"{request.user.id}"
             request.data._mutable = mutable
             serializer = CompetitiveProcessLogEntrySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             comms = serializer.save()
+
             # Save the files
-            for f in request.FILES:
+            for f in request.FILES.getlist("files"):
                 document = comms.documents.create()
-                document.name = str(request.FILES[f])
-                document._file = request.FILES[f]
+                document.name = str(f)
+                document._file = f
                 document.save()
-            # End Save Documents
 
             return Response(serializer.data)
 

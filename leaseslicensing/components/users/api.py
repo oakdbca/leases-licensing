@@ -341,12 +341,12 @@ class UserViewSet(UserActionLoggingViewset):
             serializer = EmailUserLogEntrySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             comms = serializer.save()
+
             # Save the files
-            for f in request.FILES:
+            for f in request.FILES.getlist("files"):
                 document = comms.documents.create()
-                document.name = str(request.FILES[f])
-                document._file = request.FILES[f]
+                document.name = str(f)
+                document._file = f
                 document.save()
-            # End Save Documents
 
             return Response(serializer.data)
