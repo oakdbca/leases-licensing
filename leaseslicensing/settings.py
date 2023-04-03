@@ -381,7 +381,7 @@ REPETITION_TYPES = (
 
 """ Fields that the logging functions will check for on the instance
     and use to identify the instance in the logs. """
-LOGGING_IDENTIFIER_FIELDS = [
+ACTION_LOGGING_IDENTIFIER_FIELDS = [
     "lodgement_number",
     "id",
 ]

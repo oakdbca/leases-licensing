@@ -128,9 +128,9 @@ def get_leaseslicensing_external_emailuser_ids():
 
 def get_instance_identifier(instance):
     """Checks the instance for the attributes specified in settings"""
-    for field in settings.LOGGING_IDENTIFIER_FIELDS:
+    for field in settings.ACTION_LOGGING_IDENTIFIER_FIELDS:
         if hasattr(instance, field):
             return getattr(instance, field)
     raise AttributeError(
-        f"Model instance has no valid identifier to use for logging. Tried: {settings.LOGGING_IDENTIFIER_FIELDS}"
+        f"Model instance has no valid identifier to use for logging. Tried: {settings.ACTION_LOGGING_IDENTIFIER_FIELDS}"
     )
