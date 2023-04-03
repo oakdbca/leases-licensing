@@ -92,7 +92,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
     delegate_organisation_contacts = serializers.ListField(
         child=OrganisationContactSerializer(), read_only=True
     )
-    trading_name = serializers.CharField(source="organisation_name", read_only=True)
+    trading_name = serializers.CharField(source="ledger_organisation_name", read_only=True)
     apply_application_discount = serializers.SerializerMethodField(read_only=True)
     application_discount = serializers.SerializerMethodField(read_only=True)
     apply_licence_discount = serializers.SerializerMethodField(read_only=True)
@@ -108,9 +108,9 @@ class OrganisationSerializer(serializers.ModelSerializer):
         model = Organisation
         fields = (
             "id",
-            "organisation",
-            "organisation_abn",
-            "organisation_email",
+            "ledger_organisation_id",
+            "ledger_organisation_abn",
+            "ledger_organisation_email",
             "trading_name",
             "abn",
             "phone_number",
@@ -199,8 +199,8 @@ class OrganisationSerializer(serializers.ModelSerializer):
 class OrganisationKeyValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organisation
-        fields = ["id", "organisation_name"]
-        read_only_fields = ["id", "organisation_name"]
+        fields = ["id", "ledger_organisation_name"]
+        read_only_fields = ["id", "ledger_organisation_name"]
 
 
 class OrganisationCheckExistSerializer(serializers.Serializer):

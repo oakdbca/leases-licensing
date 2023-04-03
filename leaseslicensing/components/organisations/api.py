@@ -66,7 +66,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
 
     @list_route(methods=["GET"], detail=False)
     def key_value_list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().only("id", "organisation_name")
+        queryset = self.get_queryset().only("id", "ledger_organisation_name")
         self.serializer_class = OrganisationKeyValueSerializer
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
@@ -82,10 +82,10 @@ class OrganisationViewSet(UserActionLoggingViewset):
         organisations = (
             self.get_queryset()
             .filter(organisation_name__icontains=search_term)
-            .only("id", "organisation_name")[:10]
+            .only("id", "ledger_organisation_name")[:10]
         )
         data_transform = [
-            {"id": organisation.id, "text": organisation.organisation_name}
+            {"id": organisation.id, "text": organisation.ledger_organisation_name}
             for organisation in organisations
         ]
         return Response({"results": data_transform})

@@ -1260,10 +1260,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def applicant_email(self):
         if (
             self.org_applicant
-            and hasattr(self.org_applicant.organisation, "email")
-            and self.org_applicant.organisation.email
+            and hasattr(self.org_applicant.ledger_organisation_id, "email")
+            and self.org_applicant.ledger_organisation_id.email
         ):
-            return self.org_applicant.organisation.email
+            return self.org_applicant.ledger_organisation_id.email
         elif self.ind_applicant:
             email_user = retrieve_email_user(self.ind_applicant)
         elif self.proxy_applicant:
@@ -1276,7 +1276,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def applicant_name(self):
         if isinstance(self.applicant, Organisation):
-            return f"{self.applicant.organisation_name}"
+            return f"{self.applicant.ledger_organisation_name}"
         elif isinstance(self.applicant, EmailUser):
             return f"{self.applicant.first_name} {self.applicant.last_name}"
         logger.error(f"Applicant for the proposal {self.lodgement_number} not found")
@@ -1286,7 +1286,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def applicant_details(self):
         if isinstance(self.applicant, Organisation):
             return "{} \n{}".format(
-                self.org_applicant.organisation.name, self.org_applicant.address
+                self.org_applicant.ledger_organisation_id.name, self.org_applicant.address
             )
         else:
             # return "{} {}\n{}".format(
