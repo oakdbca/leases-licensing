@@ -31,7 +31,7 @@ class Command(BaseCommand):
                             a.current_proposal.application_type.name,
                             org.abn,
                             org.name,
-                            org.ledger_organisation_id.trading_name,
+                            org.organisation.trading_name,
                             org.address.summary,
                             "; ".join(
                                 org.contacts.all().values_list("email", flat=True)

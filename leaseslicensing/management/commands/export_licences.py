@@ -35,8 +35,8 @@ class Command(BaseCommand):
                 abn = a.org_applicant.abn
                 # import ipdb; ipdb.set_trace()
                 org_applicant = (
-                    a.org_applicant.ledger_organisation_id.trading_name
-                    if a.org_applicant.ledger_organisation_id.trading_name
+                    a.org_applicant.organisation.trading_name
+                    if a.org_applicant.organisation.trading_name
                     else "None"
                 )
                 email = (
