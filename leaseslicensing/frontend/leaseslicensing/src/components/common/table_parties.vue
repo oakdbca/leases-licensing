@@ -99,10 +99,6 @@ export default {
         column_phone: () => {
             return {
                 data: null,
-<<<<<<< HEAD
-                'render': function (row, type, full) {
-                    return '(phone)'
-=======
                 'render': function(row, type, full){
                     if (full.is_person && full.person) {
                         return full.person.phone_number;
@@ -111,17 +107,12 @@ export default {
                     } else {
                         return '(phone)';
                     }
->>>>>>> be89dce (Added populating of parties table)
                 }
             }
         },
         column_mobile: () => {
             return {
                 data: null,
-<<<<<<< HEAD
-                'render': function (row, type, full) {
-                    return '(mobile)'
-=======
                 'render': function(row, type, full){
                     if (full.is_person && full.person) {
                         return full.person.mobile_number;
@@ -130,7 +121,6 @@ export default {
                     } else {
                         return '(mobile)';
                     }
->>>>>>> be89dce (Added populating of parties table)
                 }
             }
 
@@ -138,10 +128,6 @@ export default {
         column_email: () => {
             return {
                 data: null,
-<<<<<<< HEAD
-                'render': function (row, type, full) {
-                    return '(email)'
-=======
                 'render': function(row, type, full){
                     if (full.is_person && full.person) {
                         return full.person.email;
@@ -150,7 +136,6 @@ export default {
                     } else {
                         return '(email)';
                     }
->>>>>>> be89dce (Added populating of parties table)
                 }
             }
         },
@@ -228,10 +213,10 @@ export default {
         }
     },
     methods: {
-        addParty: function (params) {
-            if (params.type === 'person') {
-                for (let party of this.competitive_process_parties) {
-                    if (party.person_id === params.party_to_add.id)
+        addParty: function(params){
+            if (params.type === 'person'){
+                for (let party of this.competitive_process_parties){
+                    if (party.is_person && party.person_id === params.party_to_add.id)
                         // Person has been already added
                         return
                 }
@@ -249,8 +234,12 @@ export default {
                 }
                 this.competitive_process_parties.push(new_data)
                 this.$refs.parties_datatable.vmDataTable.row.add(new_data).draw()
-            } else if (params.type === 'organisation') {
-
+            } else if (params.type === 'organisation'){
+                for (let party of this.competitive_process_parties){
+                    if (party.is_organisation && party.organisation === params.party_to_add.id)
+                        // Organisation has been already added
+                        return
+                }
                 // TODO
 
             }

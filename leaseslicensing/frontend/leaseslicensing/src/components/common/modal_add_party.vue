@@ -163,7 +163,7 @@ export default {
                 allowClear: true,
                 placeholder:"Type and select Organisation",
                 ajax: {
-                    url: api_endpoints.organisations + '/',
+                    url: api_endpoints.organisations,
                     dataType: 'json',
                     data: function(params) {
                         var query = {
@@ -182,7 +182,7 @@ export default {
                 },
             })
             .on("select2:select", function (e) {
-                let data = e.params.data.id;
+                let data = e.params.data;
                 vm.selected_organisation = data;
             })
             .on("select2:unselect",function (e) {

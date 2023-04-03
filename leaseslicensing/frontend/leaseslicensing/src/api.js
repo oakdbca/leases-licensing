@@ -18,7 +18,7 @@ module.exports = {
     profile: '/api/profile',
     search_reference: '/api/search_reference/',
     submitter_profile: '/api/submitter_profile',
-    organisations: '/api/organisations.json',
+    organisations: '/api/organisations.json/',
     organisations_viewset: '/api/organisations/',
     organisation_lookup: '/api/organisations/organisation_lookup',
     filtered_organisations: '/api/filtered_organisations',
