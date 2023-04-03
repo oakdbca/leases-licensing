@@ -265,7 +265,7 @@ export default {
                         'render': function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
-                                    length: 100,
+                                    length: 25,
                                     omission: ellipsis,
                                     separator: ' '
                                 }),
