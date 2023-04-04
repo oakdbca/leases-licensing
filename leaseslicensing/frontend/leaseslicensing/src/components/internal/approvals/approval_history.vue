@@ -4,21 +4,17 @@
             <div class="container-fluid">
                 <div class="row">
                     <!-- <alert v-if="isApprovalLevelDocument" type="warning"><strong>{{warningString}}</strong></alert> -->
-                    <alert :show.sync="showError" type="danger"><strong>{{errorString}}</strong></alert>
+                    <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
                     <div class="col-sm-12">
                         <div class="form-group">
                             <div class="row">
                                 <div v-if="approvalId" class="col-lg-12">
-                                    <datatable
-                                        ref="history_datatable"
-                                        :id="datatable_id"
-                                        :dtOptions="datatable_options"
-                                        :dtHeaders="datatable_headers"
-                                    />
+                                    <datatable ref="history_datatable" :id="datatable_id" :dtOptions="datatable_options"
+                                        :dtHeaders="datatable_headers" />
                                 </div>
                             </div>
 
-                                <!--div class="col-sm-3">
+                            <!--div class="col-sm-3">
                                     <label class="control-label pull-left" for="mooring_bay">Bay</label>
                                 </div>
                                 <div class="col-sm-6">
@@ -50,14 +46,14 @@ import { helpers, api_endpoints, constants } from "@/utils/hooks.js"
 import datatable from '@/utils/vue/datatable.vue'
 
 export default {
-    name:'approvalHistory',
-    components:{
+    name: 'approvalHistory',
+    components: {
         modal,
         alert,
         datatable,
         //FileField,
     },
-    props:{
+    props: {
         approvalId: {
             type: Number,
             required: true,
@@ -69,7 +65,7 @@ export default {
         },
         */
     },
-    data:function () {
+    data: function () {
         let vm = this;
         return {
             //approvalId: null,
@@ -80,14 +76,14 @@ export default {
             },
             messageDetails: '',
             ccEmail: '',
-            isModalOpen:false,
+            isModalOpen: false,
             //state: 'proposed_approval',
             //savingOffer: false,
             validation_form: null,
             errors: false,
             errorString: '',
             successString: '',
-            success:false,
+            success: false,
             //warningString: 'Please attach Level of Approval document before issuing Approval',
             //siteLicenseeMooring: {},
             //mooringBays: [],
@@ -101,11 +97,11 @@ export default {
           //return this.submit();
         },
         */
-        showError: function() {
+        showError: function () {
             var vm = this;
             return vm.errors;
         },
-        title: function(){
+        title: function () {
             //return this.processing_status == 'With Approver' ? 'Grant' : 'Propose grant';
             let title = "History for ";
             if (this.approvalDetails && this.approvalDetails.approvalLodgementNumber) {
@@ -114,118 +110,118 @@ export default {
             }
             return title;
         },
-        csrf_token: function() {
-          return helpers.getCookie('csrftoken')
+        csrf_token: function () {
+            return helpers.getCookie('csrftoken')
         },
-        datatable_headers: function(){
+        datatable_headers: function () {
             return ['id', 'Lodgement Number', 'Type', 'Sticker Number/s', 'Holder', 'Status', 'Issue Date', 'Reason', 'Approval Letter']
         },
-        column_id: function(){
+        column_id: function () {
             return {
                 // 1. ID
                 data: "id",
                 orderable: false,
                 searchable: false,
                 visible: false,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.id
                 }
             }
         },
-        column_lodgement_number: function(){
+        column_lodgement_number: function () {
             return {
                 // 2. Lodgement Number
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.approval_lodgement_number
                 },
                 //name: 'lodgement_number',
             }
         },
-        column_type: function(){
+        column_type: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.approval_type_description;
                 }
             }
         },
-        column_sticker_numbers: function(){
+        column_sticker_numbers: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.sticker_numbers;
                 }
             }
         },
 
-        column_holder: function(){
+        column_holder: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.holder;
                 }
             }
         },
-        column_approval_status: function(){
+        column_approval_status: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.approval_status;
                 }
             }
         },
-        column_start_date: function(){
+        column_start_date: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.start_date_str
                 }
             }
         },
-        column_reason: function(){
+        column_reason: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     return full.reason;
                 }
             }
         },
-        column_approval_letter: function(){
+        column_approval_letter: function () {
             return {
                 // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     //return full.approval_letter;
                     //return '';
                     return `<div><a href='${full.approval_letter}' target='_blank'><i style='color:red;' class='fa fa-file-pdf-o'></i></a></div>`;
@@ -233,7 +229,7 @@ export default {
             }
         },
 
-        datatable_options: function(){
+        datatable_options: function () {
             let vm = this
             let columns = [
                 vm.column_id,
@@ -250,7 +246,7 @@ export default {
             return {
                 autoWidth: false,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 //serverSide: true,
@@ -263,7 +259,7 @@ export default {
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering
-                    "data": function ( d ) {
+                    "data": function (d) {
                         /*
                         d.filter_application_type = vm.filterApplicationType
                         d.filter_application_status = vm.filterApplicationStatus
@@ -273,22 +269,22 @@ export default {
                     }
                 },
                 dom: 'lBfrtip',
-                buttons:[ ],
+                buttons: [],
                 columns: columns,
                 processing: true,
-                initComplete: function() {
+                initComplete: function () {
                     console.log('in initComplete')
                 },
             }
         }
 
     },
-    methods:{
-        ok: async function() {
+    methods: {
+        ok: async function () {
             //await this.sendData();
             this.close()
         },
-        cancel:function () {
+        cancel: function () {
             this.close()
         },
         close: function () {
@@ -297,8 +293,8 @@ export default {
             $('.has-error').removeClass('has-error');
             //this.validation_form.resetForm();
         },
-        fetchApprovalDetails: async function() {
-            const res = await fetch(api_endpoints.lookupApprovalDetails(this.approvalId) );
+        fetchApprovalDetails: async function () {
+            const res = await fetch(api_endpoints.lookupApprovalDetails(this.approvalId));
             if (res.ok) {
                 this.approvalDetails = Object.assign({}, res.body);
             }
@@ -320,14 +316,14 @@ export default {
         */
 
     },
-    mounted:function () {
-        this.$nextTick(()=>{
+    mounted: function () {
+        this.$nextTick(() => {
             //this.initialiseMooringLookup();
 
         });
     },
-    created: function() {
-        this.$nextTick(()=>{
+    created: function () {
+        this.$nextTick(() => {
             this.fetchApprovalDetails();
             //this.fetchMooringBays();
             //this.selectedMooringBayId = this.mooringBayId;
@@ -336,5 +332,4 @@ export default {
 }
 </script>
 
-<style lang="css">
-</style>
+<style lang="css"></style>

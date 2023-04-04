@@ -6,14 +6,17 @@ from django.db import transaction
 from django.db.models import Q
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
-from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
-from leaseslicensing.components.main.decorators import basic_exception_handler
+from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.decorators import (
+    basic_exception_handler,
+    logging_action,
+)
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.organisations.models import (  # ledger_organisation,
     Organisation,
@@ -46,7 +49,7 @@ from leaseslicensing.helpers import is_customer, is_internal
 logger = logging.getLogger(__name__)
 
 
-class OrganisationViewSet(viewsets.ModelViewSet):
+class OrganisationViewSet(UserActionLoggingViewset):
     queryset = Organisation.objects.none()
     serializer_class = OrganisationSerializer
 
@@ -60,20 +63,6 @@ class OrganisationViewSet(viewsets.ModelViewSet):
             )
             return Organisation.objects.filter(delegates__contains=[user.id])
         return Organisation.objects.none()
-
-    @basic_exception_handler
-    def list(self, request, *args, **kwargs):
-        # search_term = request.GET.get("term", "")
-        # data = self.queryset. \
-        #            filter(Q(first_name__icontains=search_term) | Q(last_name__icontains=search_term)). \
-        #            values('email', 'first_name', 'last_name')[:10]
-        # data_transform = [{'id': person['email'], 'text': person['first_name'] +
-        # ' ' + person['last_name']} for person in data]
-        # return Response({"results": data_transform})
-
-        # TODO: search organisations with search term
-        serializer = OrganisationSerializer(self.get_queryset(), many=True)
-        return Response(serializer.data)
 
     @list_route(methods=["GET"], detail=False)
     def key_value_list(self, request, *args, **kwargs):
@@ -101,7 +90,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         ]
         return Response({"results": data_transform})
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -115,7 +104,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -127,7 +116,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = OrganisationContactSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -140,7 +129,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = OrganisationContactSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -168,7 +157,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
             instance.send_organisation_request_link_notification(request)
         return Response(data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -186,7 +175,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -204,7 +193,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -222,7 +211,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -240,7 +229,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -258,7 +247,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -276,7 +265,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -294,7 +283,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -312,7 +301,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -330,7 +319,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -348,7 +337,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -361,24 +350,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = OrganisationActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    #    @detail_route(methods=['GET',])
-    #    def applications(self, request, *args, **kwargs):
-    #        try:
-    #            instance = self.get_object()
-    #            qs = instance.org_applications.all()
-    #            serializer = BaseApplicationSerializer(qs,many=True)
-    #            return Response(serializer.data)
-    #        except serializers.ValidationError:
-    #            print(traceback.print_exc())
-    #            raise
-    #        except ValidationError as e:
-    #            print(traceback.print_exc())
-    #            raise serializers.ValidationError(repr(e.error_dict))
-    #        except Exception as e:
-    #            print(traceback.print_exc())
-    #            raise serializers.ValidationError(str(e))
-
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -391,7 +363,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         serializer = OrganisationCommsSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -410,13 +382,13 @@ class OrganisationViewSet(viewsets.ModelViewSet):
             serializer = OrganisationLogEntrySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             comms = serializer.save()
+
             # Save the files
-            for f in request.FILES:
+            for f in request.FILES.getlist("files"):
                 document = comms.documents.create()
-                document.name = str(request.FILES[f])
-                document._file = request.FILES[f]
+                document.name = str(f)
+                document._file = f
                 document.save()
-            # End Save Documents
 
             return Response(serializer.data)
 
@@ -439,7 +411,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     # Todo: Implement for segregatted system
-    # @detail_route(
+    # @logging_action(
     #     methods=[
     #         "POST",
     #     ],
@@ -488,7 +460,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
     #     serializer = self.get_serializer(org)
     #     return Response(serializer.data)
 
-    # @detail_route(methods=['POST',], detail=True)
+    # @logging_action(methods=['POST',], detail=True)
     # def update_address(self, request, *args, **kwargs):
     #        try:
     #                org = self.get_object()
@@ -518,7 +490,7 @@ class OrganisationViewSet(viewsets.ModelViewSet):
     #                print(traceback.print_exc())
     #                raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -582,15 +554,15 @@ class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
     queryset = OrganisationRequest.objects.all()
     serializer_class = OrganisationRequestSerializer
 
+
+class OrganisationRequestsViewSet(UserActionLoggingViewset):
+    queryset = OrganisationRequest.objects.all()
+    serializer_class = OrganisationRequestSerializer
+
     def get_serializer_class(self):
         if "retrieve" == self.action:
             return OrganisationRequestDTSerializer
         return super().get_serializer_class()
-
-
-class OrganisationRequestsViewSet(viewsets.ModelViewSet):
-    queryset = OrganisationRequest.objects.all()
-    serializer_class = OrganisationRequestSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -686,7 +658,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -708,7 +680,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -732,7 +704,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -754,7 +726,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -781,7 +753,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -803,7 +775,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PUT",
         ],
@@ -825,7 +797,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "PATCH",
         ],
@@ -848,7 +820,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -880,7 +852,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -902,7 +874,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "GET",
         ],
@@ -924,7 +896,7 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -944,13 +916,13 @@ class OrganisationRequestsViewSet(viewsets.ModelViewSet):
                 serializer = OrganisationRequestLogEntrySerializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
                 comms = serializer.save()
+
                 # Save the files
-                for f in request.FILES:
+                for f in request.FILES.getlist("files"):
                     document = comms.documents.create()
-                    document.name = str(request.FILES[f])
-                    document._file = request.FILES[f]
+                    document.name = str(f)
+                    document._file = f
                     document.save()
-                # End Save Documents
 
                 return Response(serializer.data)
         except serializers.ValidationError:

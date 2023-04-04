@@ -1,11 +1,12 @@
 <template id="more-referrals">
     <div>
-        <a v-if="!isFinalised" ref="showRef"  @click.prevent="" class="actionBtn top-buffer-s small text-xsmall">Show Referrals</a>
+        <a v-if="!isFinalised" ref="showRef" @click.prevent="" class="actionBtn top-buffer-s small text-xsmall">Show
+            Referrals</a>
     </div>
 </template>
 
 <script>
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
 
 export default {
@@ -28,7 +29,7 @@ export default {
             default: null
         }
     },
-    data(){
+    data() {
         let vm = this;
         return {
             table: null,
@@ -36,13 +37,13 @@ export default {
             datatable_url: '',
             datatable_options: {
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 deferRender: true,
                 autowidth: true,
                 //order: [[0, 'desc']],
-                processing:true,
+                processing: true,
                 ajax: {
                     //"url": helpers.add_endpoint_json(api_endpoints.referrals,'datatable_list')+'?proposal='+vm.proposal.id,
                     "url": this.referral_url,
@@ -52,7 +53,7 @@ export default {
                     "<'row'<'col-sm-4'l><'col-sm-8'f>>" +
                     "<'row'<'col-sm-12'tr>>" +
                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
-                columns:[
+                columns: [
                     {
                         title: 'Sent On',
                         data: 'lodged_on',
@@ -63,7 +64,7 @@ export default {
                     {
                         title: 'Referral',
                         data: 'referral',
-                        render: function (data,type,full){
+                        render: function (data, type, full) {
                             return `<span>${data.first_name} ${data.last_name}</span>`;
                         }
                     },
@@ -74,16 +75,16 @@ export default {
                     {
                         title: 'Action',
                         data: 'id',
-                        render: function (data,type,full) {
+                        render: function (data, type, full) {
                             var result = '';
-                            if (!vm.canAction){
+                            if (!vm.canAction) {
                                 return result;
                             }
                             var user = full.referral.first_name + ' ' + full.referral.last_name;
-                            if (full.referral_status == 'Awaiting'){
+                            if (full.referral_status == 'Awaiting') {
                                 result = `<a href="" data-id="${data}" data-user="${user}" class="remindRef">Remind</a>/<a href="" data-id="${data}" data-user="${user}" class="recallRef">Recall</a>`;
                             }
-                            else{
+                            else {
                                 result = `<a href="" data-id="${data}" data-user="${user}" class="resendRef">Resend</a>`;
                             }
                             return result;
@@ -130,17 +131,17 @@ export default {
 
     },
     methods: {
-        initialiseTable: function(){
+        initialiseTable: function () {
 
             // To allow table elements (ref: https://getbootstrap.com/docs/5.1/getting-started/javascript/#sanitizer)
             var myDefaultAllowList = bootstrap.Tooltip.Default.allowList
             myDefaultAllowList.table = []
 
             let vm = this;
-            let table_id = 'more-referrals-table'+vm._uid;
-            let popover_name = 'popover-'+ vm._uid;
+            let table_id = 'more-referrals-table' + vm._uid;
+            let popover_name = 'popover-' + vm._uid;
             let my_content = '<table id="' + table_id + '" class="hover table table-striped table-bordered dt-responsive" cellspacing="0" width="100%"></table>'
-            let my_template = '<div class="popover ' + popover_name +'" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+            let my_template = '<div class="popover ' + popover_name + '" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
             let popover_elem = $(vm.$refs.showRef)[0]
 
             new bootstrap.Popover(popover_elem, {
@@ -152,11 +153,11 @@ export default {
                 placement: 'right',
                 trigger: "click focus",
                 //offset: '0 10',
-            }) 
+            })
             popover_elem.addEventListener('inserted.bs.popover', function () {
                 console.log('in inserted.bs.popover')
 
-                vm.table = $('#'+table_id).DataTable(vm.datatable_options);
+                vm.table = $('#' + table_id).DataTable(vm.datatable_options);
 
                 // activate popover when table is drawn.
                 vm.table.on('draw.dt', function () {
@@ -169,21 +170,21 @@ export default {
                             return true;
                         });
                     }
-                }).on('click','.resendRef',function(e){
+                }).on('click', '.resendRef', function (e) {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.resendReferral(_id,user);
-                }).on('click','.recallRef',function(e){
+                    vm.resendReferral(_id, user);
+                }).on('click', '.recallRef', function (e) {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.recallReferral(_id,user);
-                }).on('click','.remindRef',function(e){
+                    vm.recallReferral(_id, user);
+                }).on('click', '.remindRef', function (e) {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.remindReferral(_id,user);
+                    vm.remindReferral(_id, user);
                 });
             })
             popover_elem.addEventListener('shown.bs.popover', function () {
@@ -192,7 +193,7 @@ export default {
                 var el = vm.$refs.showRef;
                 // var popoverheight = parseInt($('.'+popover_name).height());
 
-                var popover_bounding_top = parseInt($('.'+popover_name)[0].getBoundingClientRect().top);
+                var popover_bounding_top = parseInt($('.' + popover_name)[0].getBoundingClientRect().top);
                 // var popover_bounding_bottom = parseInt($('.'+popover_name)[0].getBoundingClientRect().bottom);
 
                 var el_bounding_top = parseInt($(el)[0].getBoundingClientRect().top);
@@ -204,17 +205,17 @@ export default {
                 // var pos2 = parseInt($(el).position().top) - 5;
 
                 var x = diff + 5;
-                $('.'+popover_name).children('.arrow').css('top', x + 'px');
+                $('.' + popover_name).children('.arrow').css('top', x + 'px');
             })
         },
-        switchStatus: function(value){
+        switchStatus: function (value) {
             this.$emit('switchStatus', value);
         },
     },
-    created(){
+    created() {
 
     },
-    mounted(){
+    mounted() {
         this.$nextTick(() => {
             //popoverTriggerElhelpers.enablePopovers()
             this.initialiseTable()
@@ -227,6 +228,7 @@ export default {
 .top-buffer-s {
     margin-top: 10px;
 }
+
 .actionBtn {
     cursor: pointer;
 }

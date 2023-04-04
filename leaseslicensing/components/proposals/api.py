@@ -24,6 +24,7 @@ from reversion.models import Version
 
 from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.compliances.models import Compliance
+from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
@@ -79,13 +80,9 @@ from leaseslicensing.components.proposals.utils import (
     save_referral_data,
 )
 from leaseslicensing.helpers import is_approver, is_assessor, is_customer, is_internal
-from leaseslicensing.settings import (
-    APPLICATION_TYPE_LEASE_LICENCE,
-    APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
-    APPLICATION_TYPES,
-)
+from leaseslicensing.settings import APPLICATION_TYPES
 
-logger = logging.getLogger("leaseslicensing")
+logger = logging.getLogger(__name__)
 
 
 class GetAdditionalDocumentTypeDict(views.APIView):
@@ -552,7 +549,7 @@ class ProposalSubmitViewSet(viewsets.ModelViewSet):
         return Proposal.objects.none()
 
 
-class ProposalViewSet(viewsets.ModelViewSet):
+class ProposalViewSet(UserActionLoggingViewset):
     queryset = Proposal.objects.none()
     serializer_class = ProposalSerializer
     lookup_field = "id"
@@ -578,42 +575,10 @@ class ProposalViewSet(viewsets.ModelViewSet):
         return Proposal.objects.none()
 
     def get_serializer_class(self):
-        try:
-            return ProposalSerializer
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        if is_internal(self.request):
+            return InternalProposalSerializer
 
-    def internal_serializer_class(self):
-        try:
-            application_type = Proposal.objects.get(
-                id=self.kwargs.get("id")
-            ).application_type.name
-            if application_type == APPLICATION_TYPE_REGISTRATION_OF_INTEREST:
-                return InternalProposalSerializer
-            elif application_type == APPLICATION_TYPE_LEASE_LICENCE:
-                return InternalProposalSerializer
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        return ProposalSerializer
 
     @list_route(
         methods=[
@@ -1158,13 +1123,13 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 serializer = ProposalLogEntrySerializer(data=request.data)
                 serializer.is_valid(raise_exception=True)
                 comms = serializer.save()
+
                 # Save the files
-                for f in request.FILES:
+                for f in request.FILES.getlist("files"):
                     document = comms.documents.create()
-                    document.name = str(request.FILES[f])
-                    document._file = request.FILES[f]
+                    document.name = str(f)
+                    document._file = f
                     document.save()
-                # End Save Documents
 
                 return Response(serializer.data)
         except serializers.ValidationError:
@@ -1192,7 +1157,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
         # This model's class
         model_class = self.get_object().__class__
         # The serializer to apply
-        serializer_class = self.internal_serializer_class()
+        serializer_class = self.get_serializer_class()
         if not revision_id:
             logger.warning(
                 f"Request does not contain revision_id. Returning {model_class.__name__}"
@@ -1498,7 +1463,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             instance.assign_officer(request, request.user)
             # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.internal_serializer_class()
+            serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
         except serializers.ValidationError:
@@ -1532,7 +1497,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
                 )
             instance.assign_officer(request, user)
             # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.internal_serializer_class()
+            serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
         except serializers.ValidationError:
@@ -1556,7 +1521,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             instance.unassign(request)
             # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.internal_serializer_class()
+            serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
         except serializers.ValidationError:
@@ -1595,7 +1560,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
                     )
             instance.move_to_status(request, status, approver_comment)
             # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.internal_serializer_class()
+            serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
             # if instance.application_type.name==ApplicationType.TCLASS:
             #     serializer = InternalProposalSerializer(instance,context={'request':request})
@@ -1707,7 +1672,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
 
         save_assessor_data(instance, request, self)
 
-        # serializer_class = self.internal_serializer_class()
+        # serializer_class = self.get_serializer_class()
         # serializer = serializer_class(instance, context={"request": request})
         # return Response(serializer.data)
         return Response()
@@ -1726,7 +1691,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
         # instance.proposed_approval(request, serializer.validated_data)
         instance.proposed_approval(request, request.data)
         # serializer = InternalProposalSerializer(instance,context={'request':request})
-        serializer_class = self.internal_serializer_class()
+        serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
@@ -1774,7 +1739,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
         except ValidationError:
             raise ValidationError
 
-        serializer_class = self.internal_serializer_class()
+        serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
@@ -1791,7 +1756,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             # serializer.is_valid(raise_exception=True)
             instance.final_approval(request, request.data)
             # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.internal_serializer_class()
+            serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
         except serializers.ValidationError:
@@ -1820,7 +1785,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             # serializer.is_valid(raise_exception=True)
             instance.proposed_decline(request, request.data)
             # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.internal_serializer_class()
+            serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
         except serializers.ValidationError:
@@ -1849,7 +1814,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             instance.final_decline(request, serializer.validated_data)
             # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.internal_serializer_class()
+            serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
         except serializers.ValidationError:
@@ -2009,7 +1974,7 @@ class ProposalViewSet(viewsets.ModelViewSet):
             serializer.validated_data["text"],
         )
         # serializer = InternalProposalSerializer(instance,context={'request':request})
-        serializer_class = self.internal_serializer_class()
+        serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 

@@ -6,8 +6,11 @@ import traceback
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import connection, reset_queries
 from rest_framework import serializers
+from rest_framework.decorators import action
 
-logger = logging.getLogger("leaseslicensing")
+from leaseslicensing import helpers
+
+logger = logging.getLogger(__name__)
 
 
 def basic_exception_handler(func):
@@ -42,6 +45,40 @@ def user_notexists_exception_handler(func):
             return None
 
     return wrapper
+
+
+def logging_action(**kwargs):
+    """Decorator that will log custom actions on viewset
+
+    The model for the viewset must have a log_user_action method
+    """
+
+    def decorator(func):
+        @action(**kwargs)
+        @functools.wraps(func)
+        def wrapper(self, request, *args, **kwargs):
+            try:
+                result = func(self, request, *args, **kwargs)
+                instance = self.get_object()
+                logging_method = getattr(instance, "log_user_action", None)
+                if not logging_method or not callable(logging_method):
+                    raise AttributeError(
+                        "Model instance must have a log_user_action method"
+                    )
+                instance_identifier = helpers.get_instance_identifier(instance)
+                model_name = instance._meta.verbose_name.title()
+                action_name = func.__name__.replace("_", " ").title()
+                instance.log_user_action(
+                    f"{model_name}: {instance_identifier} -> {action_name}", request
+                )
+                return result
+            except Exception as e:
+                logger.error(f"Error in {func.__name__}: {e}")
+                raise e
+
+        return wrapper
+
+    return decorator
 
 
 def timeit(method):

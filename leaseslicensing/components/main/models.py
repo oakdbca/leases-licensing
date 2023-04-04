@@ -1,9 +1,15 @@
+import logging
 import os
-import reversion
 
 from django.db import models
+from django.db.models import Q
+from django.forms import ValidationError
+from reversion.models import Version
 
 from leaseslicensing import settings
+from leaseslicensing.ledger_api_utils import retrieve_email_user
+
+logger = logging.getLogger(__name__)
 
 
 class MapLayer(models.Model):
@@ -111,33 +117,37 @@ class RevisionedMixin(models.Model):
         lookup_filter = kwargs.get("lookup_filter", None)
         if not lookup_filter:
             # The lookup filter to apply
-            lookup_filter = Q(**{f"revision_id{k}":f"{v}" for k,v in iter(lookup.items())})
+            lookup_filter = Q(
+                **{f"revision_id{k}": f"{v}" for k, v in iter(lookup.items())}
+            )
 
         # Reverse foreign key queryset
         if hasattr(self, reverse_attr):
             reverse_fk_qs = getattr(self, reverse_attr).all()
         else:
-            raise ValidationError(f"{self.__class__.__name__} has no attribute {reverse_attr}")
+            raise ValidationError(
+                f"{self.__class__.__name__} has no attribute {reverse_attr}"
+            )
 
         # A list of filtered attribute versions
         rfk_versions = []
         for obj in reverse_fk_qs:
-            version = [p for p in Version.objects.get_for_object(
-                obj).select_related(
-                'revision').filter(lookup_filter)
-                ]
+            version = [
+                p
+                for p in Version.objects.get_for_object(obj)
+                .select_related("revision")
+                .filter(lookup_filter)
+            ]
             rfk_versions += version
 
         return list(set(rfk_versions))
 
     @property
     def created_date(self):
-
         return Version.objects.get_for_object(self).last().revision.date_created
 
     @property
     def modified_date(self):
-
         return Version.objects.get_for_object(self).first().revision.date_created
 
     class Meta:
@@ -262,8 +272,8 @@ class Question(models.Model):
 
 # @python_2_unicode_compatible
 class UserAction(models.Model):
-    # who = models.ForeignKey(EmailUser, null=True, blank=True, on_delete=models.SET_NULL)
     who = models.IntegerField()  # EmailUserRO
+    who_full_name = models.CharField(max_length=200, default="")
     when = models.DateTimeField(null=False, blank=False, auto_now_add=True)
     what = models.TextField(blank=False)
 
@@ -271,6 +281,16 @@ class UserAction(models.Model):
         return "{what} ({who} at {when})".format(
             what=self.what, who=self.who, when=self.when
         )
+
+    def save(self, *args, **kwargs):
+        if not self.who_full_name:
+            email_user = retrieve_email_user(self.who)
+            if email_user:
+                self.who_full_name = email_user.get_full_name()
+            else:
+                self.who_full_name = "Anonymous User"
+        super().save(*args, **kwargs)
+        logger.info("Logged User Action: %s", self)
 
     class Meta:
         abstract = True
@@ -431,87 +451,3 @@ class TemporaryDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
-
-
-# Everything `django-reversion` related below
-
-# main
-reversion.register(ApplicationType, follow=[])
-
-# approval
-from leaseslicensing.components.approvals.models import (Approval, ApprovalSubType,
-                                                         ApprovalType, ApprovalTypeDocumentType,
-                                                         ApprovalTypeDocumentTypeOnApprovalType,
-                                                         ApprovalDocument
-                                                         )
-reversion.register(Approval, follow=["licence_document",
-                                     "cover_letter_document",
-                                     "replaced_by",
-                                     "current_proposal",
-                                     "renewal_document",
-                                     "org_applicant"
-                                     ])
-reversion.register(ApprovalSubType)
-reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])
-reversion.register(ApprovalTypeDocumentType)
-reversion.register(ApprovalTypeDocumentTypeOnApprovalType)
-reversion.register(ApprovalDocument)
-
-# bookings
-from leaseslicensing.components.bookings.models import (Payment, BookingInvoice,
-                                                        Booking,
-                                                        ApplicationFee, ApplicationFeeInvoice,
-                                                        ComplianceFeeInvoice, ComplianceFee
-                                                        )
-
-reversion.register(Payment)
-reversion.register(BookingInvoice, follow=["booking"])
-reversion.register(Booking)
-reversion.register(ApplicationFee)
-reversion.register(ApplicationFeeInvoice, follow=["application_fee"])
-reversion.register(ComplianceFeeInvoice, follow=["compliance_fee"])
-reversion.register(ComplianceFee)
-
-# proposal
-from leaseslicensing.components.proposals.models import (Proposal, ProposalType, Organisation,
-                                                         ProposalDocument, CompetitiveProcess,
-                                                         ShapefileDocument, AdditionalDocumentType,
-                                                         ApplicationFeeDiscount, ProposalStandardRequirement,
-                                                         Referral, ReferralDocument, ProposalRequirement,
-                                                         ProposalStandardRequirement, ReferralRecipientGroup,
-                                                         SectionChecklist, ChecklistQuestion,
-                                                         ProposalAssessment, ProposalAssessmentAnswer,
-                                                         ProposalGeometry
-                                                         )
-reversion.register(ProposalType)
-reversion.register(Organisation)
-reversion.register(ProposalDocument)
-reversion.register(CompetitiveProcess)
-reversion.register(ShapefileDocument, follow=["proposal"])
-reversion.register(AdditionalDocumentType)
-reversion.register(ApplicationFeeDiscount, follow=["proposal"])
-reversion.register(ProposalStandardRequirement, follow=["application_type"])
-reversion.register(Referral, follow=["proposal", "document"])
-reversion.register(ReferralDocument, follow=["referral"])
-reversion.register(ProposalRequirement, follow=["proposal",
-                                                "standard_requirement",
-                                                "copied_from",
-                                                "referral_group"])
-reversion.register(ReferralRecipientGroup)
-reversion.register(SectionChecklist, follow=["application_type"])
-reversion.register(ChecklistQuestion, follow=["section_checklist"])
-reversion.register(ProposalAssessment, follow=["proposal",
-                                               "referral"])
-reversion.register(ProposalAssessmentAnswer, follow=["checklist_question",
-                                                     "proposal_assessment"])
-reversion.register(Proposal, follow=["application_type",
-                                     "proposal_type",
-                                     "org_applicant",
-                                     "approval",
-                                     "previous_application",
-                                     "approval_level_document",
-                                     "generated_proposal",
-                                     "originating_competitive_process",
-                                    #  "proposalgeometry"
-                                     ])
-reversion.register(ProposalGeometry, follow=["proposal"])

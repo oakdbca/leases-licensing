@@ -867,7 +867,9 @@ class OrganisationAction(UserAction):
 
     @classmethod
     def log_action(cls, organisation, action, user):
-        return cls.objects.create(organisation=organisation, who=user, what=str(action))
+        return cls.objects.create(
+            organisation=organisation, who=user.id, what=str(action)
+        )
 
     organisation = models.ForeignKey(
         Organisation, related_name="action_logs", on_delete=models.CASCADE

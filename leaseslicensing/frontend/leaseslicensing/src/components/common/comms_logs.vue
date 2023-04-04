@@ -7,7 +7,7 @@
             <div class="card-body card-collapse">
                 <div class="row">
                     <div class="col-sm-12">
-                        <strong>Communications</strong><br/>
+                        <strong>Communications</strong><br />
                         <div class="row">
                             <div class="col-sm-5">
                                 <a tabindex="2" ref="showCommsBtn" @click.prevent="" class="actionBtn">Show</a>
@@ -23,13 +23,13 @@
                         </div>
                     </div>
                     <div class="col-sm-12 top-buffer-s">
-                        <strong>Actions</strong><br/>
+                        <strong>Actions</strong><br />
                         <a tabindex="2" ref="showActionBtn" @click.prevent="" class="actionBtn">Show</a>
                     </div>
                 </div>
             </div>
         </div>
-        <AddCommLog ref="add_comm" :url="comms_add_url"/>
+        <AddCommLog ref="add_comm" :url="comms_add_url" />
     </div>
 </template>
 
@@ -37,22 +37,23 @@
 import AddCommLog from './add_comm_log.vue'
 import {
     api_endpoints,
+    constants,
     helpers
-}from '@/utils/hooks'
+} from '@/utils/hooks'
 import { v4 as uuid } from 'uuid';
 
 export default {
     name: 'CommsLogSection',
     props: {
-        comms_url:{
+        comms_url: {
             type: String,
             required: true
         },
-        logs_url:{
+        logs_url: {
             type: String,
             required: true
         },
-        comms_add_url:{
+        comms_add_url: {
             type: String,
             required: true
         },
@@ -68,9 +69,9 @@ export default {
             dateFormat: 'DD/MM/YYYY HH:mm:ss',
             actionsTable: null,
             popoversInitialised: false,
-            actionsDtOptions:{
+            actionsDtOptions: {
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 deferRender: true,
@@ -86,22 +87,22 @@ export default {
                     "dataSrc": '',
                 },
                 order: [],
-                columns:[
+                columns: [
                     {
                         title: 'Who',
-                        data:"who",
+                        data: "who",
                         orderable: false
                     },
                     {
                         title: 'What',
-                        data:"what",
+                        data: "what",
                         orderable: false
                     },
                     {
                         title: 'When',
-                        data:"when",
+                        data: "when",
                         orderable: false,
-                        mRender:function(data,type,full){
+                        mRender: function (data, type, full) {
                             //return moment(data).format(vm.DATE_TIME_FORMAT)
                             return moment(data).format(vm.dateFormat);
                         }
@@ -113,15 +114,15 @@ export default {
                     }
                 ]
             },
-            commsDtOptions:{
+            commsDtOptions: {
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 deferRender: true,
                 autowidth: true,
                 order: [[8, 'desc']], // order the non-formatted date as a hidden column
-                processing:true,
+                processing: true,
                 dom:
                     "<'row'<'col-sm-4'l><'col-sm-8'f>>" +
                     "<'row'<'col-sm-12'tr>>" +
@@ -130,7 +131,7 @@ export default {
                     "url": vm.comms_url,
                     "dataSrc": '',
                 },
-                columns:[
+                columns: [
                     {
                         title: 'Date',
                         data: 'created',
@@ -187,7 +188,7 @@ export default {
                         title: 'CC',
                         data: 'cc',
                         //render: vm.commaToNewline
-                          'render': function (value) {
+                        'render': function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
                                     length: 25,
@@ -211,7 +212,7 @@ export default {
 
                             return result;
                         },
-                        
+
                         'createdCell': function (cell) {
                             console.log('in createdCell of CC')
                             //TODO why this is not working?
@@ -227,7 +228,7 @@ export default {
                     {
                         title: 'Subject/Desc.',
                         data: 'subject',
-                          'render': function (value) {
+                        'render': function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
                                     length: 25,
@@ -264,7 +265,7 @@ export default {
                         'render': function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
-                                    length: 100,
+                                    length: 25,
                                     omission: ellipsis,
                                     separator: ' '
                                 }),
@@ -295,29 +296,35 @@ export default {
                     {
                         title: 'Documents',
                         data: 'documents',
-                        'render': function (values) {
-                            var result = '';
-                            _.forEach(values, function (value) {
+                        'render': function (documents) {
+                            if (!documents || !documents.length) {
+                                return 'No documents'
+                            }
+
+                            var result = '<ul class="list-group list-group-numbered">';
+                            _.forEach(documents, function (_document) {
+                                // Not sure why this stuff is necessary but leaving it here for now
                                 // We expect an array [docName, url]
                                 // if it's a string it is the url
                                 var docName = '',
                                     url = '';
-                                if (_.isArray(value) && value.length > 1){
-                                    docName = value[0];
-                                    url = value[1];
+                                if (_.isArray(_document) && _document.length > 1) {
+                                    docName = _document[0];
+                                    url = _document[1];
                                 }
-                                if (typeof s === 'string'){
-                                    url = value;
+                                if (typeof s === 'string') {
+                                    url = _document;
                                     // display the first  chars of the filename
-                                    docName = _.last(value.split('/'));
+                                    docName = _.last(_document.split('/'));
                                     docName = _.truncate(docName, {
                                         length: 18,
                                         omission: '...',
                                         separator: ' '
                                     });
                                 }
-                                result += '<a href="' + url + '" target="_blank"><p>' + docName+ '</p></a><br>';
+                                result += '<li class="list-group-item"><a href="' + url + '" target="_blank"> ' + docName + '</a></li>';
                             });
+                            result += '</ul>';
                             return result;
                         }
                     },
@@ -328,19 +335,19 @@ export default {
                     }
                 ]
             },
-            commsTable : null,
+            commsTable: null,
 
         }
     },
-    components:{
+    components: {
         AddCommLog
     },
-    watch:{
+    watch: {
     },
     computed: {
     },
-    methods:{
-        initialiseCommLogs: function(){
+    methods: {
+        initialiseCommLogs: function () {
             // To allow table elements (ref: https://getbootstrap.com/docs/5.1/getting-started/javascript/#sanitizer)
             var myDefaultAllowList = bootstrap.Tooltip.Default.allowList
             myDefaultAllowList.table = []
@@ -350,9 +357,9 @@ export default {
             // let popover_name = 'popover-'+ vm._uid+'-comms';
             let commsLogId = 'comms-log-table' + vm.uuid;
             let popover_name = 'popover-' + vm.uuid + '-comms';
-            let popover_elem = $(vm.$refs.showCommsBtn)[0] 
+            let popover_elem = $(vm.$refs.showCommsBtn)[0]
             let my_content = '<table id="' + commsLogId + '" class="hover table table-striped table-bordered dt-responsive" cellspacing="0" width="100%"></table>'
-            let my_template = '<div class="popover ' + popover_name +'" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+            let my_template = '<div class="popover ' + popover_name + '" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
             //let my_template = `<div class="popover ${popover_name}" role="tooltip"><div class="arrow"></div><h3 class="popover-title"></h3><div class="popover-content"></div></div>`
 
             new bootstrap.Popover(popover_elem, {
@@ -365,7 +372,7 @@ export default {
                 placement: 'right',
                 // trigger: "click focus",
                 trigger: "click",
-            }) 
+            })
             popover_elem.addEventListener('inserted.bs.popover', () => {
                 // when the popover template has been added to the DOM
                 vm.commsTable = $('#' + commsLogId).DataTable(vm.commsDtOptions);
@@ -392,11 +399,11 @@ export default {
             popover_elem.addEventListener('shown.bs.popover', () => {
                 // when the popover has been made visible to the user
                 let el = vm.$refs.showCommsBtn
-                var popover_bounding_top = parseInt($('.'+popover_name)[0].getBoundingClientRect().top);
+                var popover_bounding_top = parseInt($('.' + popover_name)[0].getBoundingClientRect().top);
                 var el_bounding_top = parseInt($(el)[0].getBoundingClientRect().top);
                 var diff = el_bounding_top - popover_bounding_top;
                 var x = diff + 5;
-                $('.'+popover_name).children('.arrow').css('top', x + 'px');
+                $('.' + popover_name).children('.arrow').css('top', x + 'px');
             })
             //$(ref).popover({
             //    content: function() {
@@ -446,7 +453,7 @@ export default {
             //});
 
         },
-        initialiseActionLogs: function(){
+        initialiseActionLogs: function () {
             // To allow table elements (ref: https://getbootstrap.com/docs/5.1/getting-started/javascript/#sanitizer)
             var myDefaultAllowList = bootstrap.Tooltip.Default.allowList
             myDefaultAllowList.table = []
@@ -455,10 +462,10 @@ export default {
             //let actionLogId = 'actions-log-table' + vm_uid;
             //let popover_name = 'popover-'+ vm_uid + '-logs';
             let actionLogId = 'actions-log-table' + vm.uuid;
-            let popover_name = 'popover-'+ vm.uuid + '-logs';
+            let popover_name = 'popover-' + vm.uuid + '-logs';
             let popover_elem = $(vm.$refs.showActionBtn)[0]
             let my_content = '<table id="' + actionLogId + '" class="hover table table-striped table-bordered dt-responsive" cellspacing="0" width="100%"></table>'
-            let my_template = '<div class="popover ' + popover_name +'" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+            let my_template = '<div class="popover ' + popover_name + '" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
 
             new bootstrap.Popover(popover_elem, {
                 html: true,
@@ -469,7 +476,7 @@ export default {
                 placement: 'right',
                 // trigger: "click focus",
                 trigger: "click",
-            }) 
+            })
             popover_elem.addEventListener('inserted.bs.popover', () => {
                 // when the popover template has been added to the DOM
                 vm.actionsTable = $('#' + actionLogId).DataTable(this.actionsDtOptions);
@@ -494,11 +501,11 @@ export default {
             popover_elem.addEventListener('shown.bs.popover', () => {
                 // when the popover has been made visible to the user
                 let el = vm.$refs.showActionBtn
-                var popover_bounding_top = parseInt($('.'+popover_name)[0].getBoundingClientRect().top);
+                var popover_bounding_top = parseInt($('.' + popover_name)[0].getBoundingClientRect().top);
                 var el_bounding_top = parseInt($(el)[0].getBoundingClientRect().top);
                 var diff = el_bounding_top - popover_bounding_top;
                 var x = diff + 5;
-                $('.'+popover_name).children('.arrow').css('top', x + 'px');
+                $('.' + popover_name).children('.arrow').css('top', x + 'px');
             })
 
             //$(ref).popover({
@@ -545,19 +552,22 @@ export default {
             //    $('.'+popover_name).children('.arrow').css('top', x + 'px');
             //});
         },
-        initialisePopovers: function(){
-            if (!this.popoversInitialised){
+        initialisePopovers: function () {
+            if (!this.popoversInitialised) {
                 console.log(this._uid)
                 this.initialiseActionLogs();
                 this.initialiseCommLogs();
                 this.popoversInitialised = true;
             }
         },
-        addComm(){
+        addComm() {
             this.$refs.add_comm.isModalOpen = true;
+            this.$nextTick(() => {
+                $('input#to').focus();
+            });
         }
     },
-    mounted: function(){
+    mounted: function () {
         let vm = this;
         this.$nextTick(() => {
             vm.initialisePopovers();
@@ -569,6 +579,7 @@ export default {
 .top-buffer-s {
     margin-top: 10px;
 }
+
 .actionBtn {
     cursor: pointer;
 }

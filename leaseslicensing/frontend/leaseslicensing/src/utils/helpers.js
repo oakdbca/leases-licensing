@@ -114,8 +114,7 @@ module.exports = {
         else if (resp.status === 404) {
             error_str = 'The resource you are looking for does not exist.';
         }
-        console.log('error_str')
-        console.log(error_str)
+        console.log('apiVueResourceError: ', error_str)
         return error_str;
     },
 

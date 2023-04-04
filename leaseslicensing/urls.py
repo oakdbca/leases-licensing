@@ -25,9 +25,15 @@ from leaseslicensing.utils import are_migrations_running
 # API patterns
 router = routers.DefaultRouter()
 router.register(r"organisations", org_api.OrganisationViewSet, basename="organisations")
-router.register(r"proposal", proposal_api.ProposalViewSet)
-router.register(r"proposal_submit", proposal_api.ProposalSubmitViewSet)
-router.register(r"proposal_paginated", proposal_api.ProposalPaginatedViewSet)
+router.register(r"proposal", proposal_api.ProposalViewSet, basename="proposal")
+router.register(
+    r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
+)
+router.register(
+    r"proposal_paginated",
+    proposal_api.ProposalPaginatedViewSet,
+    basename="proposal_paginated",
+)
 router.register(r"approval_paginated", approval_api.ApprovalPaginatedViewSet)
 router.register(
     r"competitive_process", competitive_process_api.CompetitiveProcessViewSet

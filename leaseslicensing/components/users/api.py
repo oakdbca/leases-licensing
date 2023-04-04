@@ -8,7 +8,7 @@ from django.db.models.functions import Concat
 from django_countries import countries
 from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser  # EmailUserAction
-from rest_framework import filters, generics, views, viewsets
+from rest_framework import filters, generics, views
 from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -21,14 +21,18 @@ from leaseslicensing.components.invoicing.serializers import (
     ChargeMethodSerializer,
     RepetitionTypeSerializer,
 )
+from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.models import UserSystemSettings
 from leaseslicensing.components.main.serializers import EmailUserSerializer
 from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestDTSerializer,
 )
+from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.components.users.serializers import (
     ContactSerializer,
+    EmailUserActionSerializer,
+    EmailUserLogEntrySerializer,
     PersonalSerializer,
     UserAddressSerializer,
     UserFilterSerializer,
@@ -101,7 +105,7 @@ class UserListFilterView(generics.ListAPIView):
     search_fields = ("email", "first_name", "last_name")
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(UserActionLoggingViewset):
     queryset = EmailUser.objects.all()
     serializer_class = UserSerializer
 
@@ -267,39 +271,13 @@ class UserViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def update_system_settings(self, request, *args, **kwargs):
         instance = self.get_object()
-        # serializer = UserSystemSettingsSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
         user_setting, created = UserSystemSettings.objects.get_or_create(user=instance)
         serializer = UserSystemSettingsSerializer(user_setting, data=request.data)
         serializer.is_valid(raise_exception=True)
-        # instance.residential_address = address
         serializer.save()
         instance = self.get_object()
         serializer = UserSerializer(instance)
         return Response(serializer.data)
-
-    # @detail_route(
-    #     methods=[
-    #         "POST",
-    #     ],
-    #     detail=True,
-    # )
-    # @basic_exception_handler
-    # def upload_id(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     instance.upload_identification(request)
-    #     with transaction.atomic():
-    #         instance.save()
-    #         instance.log_user_action(
-    #             EmailUserAction.ACTION_ID_UPDATE.format(
-    #                 "{} {} ({})".format(
-    #                     instance.first_name, instance.last_name, instance.email
-    #                 )
-    #             ),
-    #             request,
-    #         )
-    #     serializer = UserSerializer(instance, partial=True)
-    #     return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -317,31 +295,31 @@ class UserViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    # @detail_route(
-    #     methods=[
-    #         "GET",
-    #     ],
-    #     detail=True,
-    # )
-    # @basic_exception_handler
-    # def action_log(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     qs = instance.action_logs.all()
-    #     serializer = EmailUserActionSerializer(qs, many=True)
-    #     return Response(serializer.data)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def action_log(self, request, *args, **kwargs):
+        instance = self.get_object()
+        qs = EmailUserAction.objects.filter(email_user=instance.id)
+        serializer = EmailUserActionSerializer(qs, many=True)
+        return Response(serializer.data)
 
-    # @detail_route(
-    #     methods=[
-    #         "GET",
-    #     ],
-    #     detail=True,
-    # )
-    # @basic_exception_handler
-    # def comms_log(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     qs = instance.comms_logs.all()
-    #     serializer = EmailUserCommsSerializer(qs, many=True)
-    #     return Response(serializer.data)
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def comms_log(self, request, *args, **kwargs):
+        instance = self.get_object()
+        qs = EmailUserLogEntry.objects.filter(email_user=instance.id)
+        serializer = EmailUserLogEntrySerializer(qs, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -352,22 +330,23 @@ class UserViewSet(viewsets.ModelViewSet):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
+        logger.debug("add_comms_log")
         with transaction.atomic():
             instance = self.get_object()
             mutable = request.data._mutable
             request.data._mutable = True
-            request.data["emailuser"] = f"{instance.id}"
+            request.data["email_user"] = f"{instance.id}"
             request.data["staff"] = f"{request.user.id}"
             request.data._mutable = mutable
-            serializer = None  # EmailUserLogEntrySerializer(data=request.data)
+            serializer = EmailUserLogEntrySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
             comms = serializer.save()
+
             # Save the files
-            for f in request.FILES:
+            for f in request.FILES.getlist("files"):
                 document = comms.documents.create()
-                document.name = str(request.FILES[f])
-                document._file = request.FILES[f]
+                document.name = str(f)
+                document._file = f
                 document.save()
-            # End Save Documents
 
             return Response(serializer.data)

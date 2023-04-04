@@ -377,6 +377,15 @@ REPETITION_TYPES = (
     (REPETITION_TYPE_MONTHLY, "Monthly"),
 )
 
+# ---------- Identifier fields for logging ----------
+
+""" Fields that the logging functions will check for on the instance
+    and use to identify the instance in the logs. """
+ACTION_LOGGING_IDENTIFIER_FIELDS = [
+    "lodgement_number",
+    "id",
+]
+
 # ---------- Cache Timeouts ----------
 
 LOV_CACHE_TIMEOUT = 10800
@@ -403,3 +412,10 @@ CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
     "application_internal_statuses_dict_for_filter"
 )
 CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS = "dbca_legislated_lands_and_waters"
+
+# ---------- User Log Actions ----------
+
+ACTION_VIEW = "View {} {}"
+ACTION_CREATE = "Create {} {}"
+ACTION_UPDATE = "Update {} {}"
+ACTION_DESTROY = "Destroy {} {}"

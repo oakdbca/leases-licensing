@@ -75,7 +75,7 @@
 
 import datatable from '@/utils/vue/datatable.vue'
 import { v4 as uuid } from 'uuid';
-import { api_endpoints } from '@/utils/hooks'
+import { api_endpoints, constants } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { expandToggle } from '@/components/common/table_functions.js'
 
@@ -449,17 +449,17 @@ export default {
 
             return {
                 autoWidth: false,
+                responsive: true,
+                serverSide: true,
+                searching: true,
                 language: {
-                    processing: "<i class='fa fa-4x fa-spinner fa-spin'></i>"
+                    processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 rowCallback: function (row, proposal) {
                     let row_jq = $(row)
                     row_jq.attr('id', 'proposal_id_' + proposal.id)
                     row_jq.children().first().addClass(vm.td_expand_class_name)
                 },
-                responsive: true,
-                serverSide: true,
-                searching: true,
                 ajax: {
                     "url": api_endpoints.proposals_paginated_list + '?format=datatables&email_user_id_assigned=' + vm.email_user_id_assigned +
                         '&target_organisation_id=' + vm.target_organisation_id,
@@ -632,12 +632,6 @@ export default {
 </script>
 
 <style>
-/*
-@import url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css');
-@import url('https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap.min.css');
-*/
-
-
 .collapse-icon {
     cursor: pointer;
 }
