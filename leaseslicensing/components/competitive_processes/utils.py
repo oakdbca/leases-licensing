@@ -2,6 +2,9 @@ import json
 from django.contrib.gis.gdal import SpatialReference
 from django.contrib.gis.geos import GEOSGeometry, Polygon, LinearRing
 
+from rest_framework import serializers
+
+from leaseslicensing.components.proposals.models import ProposalGeometry
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcessGeometry
 from leaseslicensing.components.competitive_processes.serializers import CompetitiveProcessGeometrySerializer
 from leaseslicensing.components.main.utils import get_dbca_lands_and_waters_geos
@@ -21,7 +24,11 @@ def save_geometry(instance, geometry, action_name):
     geometry = json.loads(geometry) if isinstance(geometry, str) else geometry
     lands_geos_data = get_dbca_lands_and_waters_geos()
     e4283 = SpatialReference("EPSG:4283")  # EPSG string
-    polygons_to_delete = list(instance.competitive_process_geometries.all())
+    # Ability for assesssor to replace or adjust the polygons
+    polygons_to_delete = list(instance.competitive_process_geometries.all()) + \
+                        list(instance.originating_proposal.proposalgeometry.all()) \
+                            if hasattr(instance, "originating_proposal") \
+                            else []
 
     for feature in geometry.get("features"):
         polygon = None
@@ -46,7 +53,15 @@ def save_geometry(instance, geometry, action_name):
 
         if geometry and feature.get("id"):
             # Update existing polygon
-            geom = CompetitiveProcessGeometry.objects.get(id=feature.get("id"))
+            source = feature.get("properties", {"source": None}).get("source", None)
+            if source in ["competitive_process"]:
+                geom = CompetitiveProcessGeometry.objects.get(id=feature.get("id"))
+            elif source in ["registration_of_interest"]:
+                geom = ProposalGeometry.objects.get(id=feature.get("id"))
+            else:
+                raise serializers.ValidationError(
+                    f"Error fetching geometry for source {source}")
+
             polygons_to_delete.remove(geom)
             serializer = CompetitiveProcessGeometrySerializer(
                 geom,

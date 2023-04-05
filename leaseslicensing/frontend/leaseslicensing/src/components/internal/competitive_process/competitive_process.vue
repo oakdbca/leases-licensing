@@ -291,31 +291,34 @@ export default {
         save: async function() {
             let vm = this;
 
-            try {
-                vm.processing = true
-                let payload = vm.constructPayload()
-                const res = await fetch(vm.competitive_process_form_url, {body: JSON.stringify(payload), method: 'PUT'})
-
-                if(res.ok){
-                    swal.fire({
-                        title: 'Saved',
-                        text: 'Competitive process has been saved',
-                        icon: 'success',
-                        confirmButtonColor: '#0d6efd',
-                    })
+            vm.processing = true;
+            let payload = vm.constructPayload();
+            fetch(vm.competitive_process_form_url, {body: JSON.stringify(payload), method: 'PUT'})
+            .then(async response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
                 } else {
-                    swal.fire({
-                        title: "Please fix following errors before saving",
-                        text: err.bodyText,
-                        icon:'error',
-                        confirmButtonColor: '#0d6efd',
-                    })
-                }
+                    return await response.json();
+                    }
+            })
+            .then (() => {
                 vm.processing = false
-            } catch (err){
+                swal.fire({
+                    title: 'Saved',
+                    text: 'Competitive process has been saved',
+                    icon: 'success',
+                    confirmButtonColor: '#0d6efd',
+                });
+            })
+            .catch(error => {
                 vm.processing = false
-                console.error(err)
-            }
+                swal.fire({
+                    title: "Please fix following errors before saving",
+                    text: JSON.parse(error.message),
+                    icon:'error',
+                    confirmButtonColor: '#0d6efd',
+                })
+            });
         },
         issueComplete: async function(){
             let vm = this;

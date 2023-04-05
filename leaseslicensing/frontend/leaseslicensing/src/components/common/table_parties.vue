@@ -91,7 +91,7 @@ export default {
                 data: null,
                 'render': function (row, type, full) {
                     if (full.is_organisation)
-                        return full.organisation.name
+                        return full.organisation.trading_name;
                     return ''
                 }
             }
@@ -101,9 +101,13 @@ export default {
                 data: null,
                 'render': function(row, type, full){
                     if (full.is_person && full.person) {
-                        return full.person.phone_number;
+                        return full.person.phone_number? full.person.phone_number: "";
                     } else if (full.is_organisation && full.organisation) {
-                        return full.organisation.phone_number;
+                        // Return the phone number of the first org contact in the list
+                        if (full.organisation.contacts && full.organisation.contacts.length > 0) {
+                            return full.organisation.contacts[0].phone_number;
+                        }
+                        return "";
                     } else {
                         return '(phone)';
                     }
@@ -115,9 +119,13 @@ export default {
                 data: null,
                 'render': function(row, type, full){
                     if (full.is_person && full.person) {
-                        return full.person.mobile_number;
+                        return full.person.mobile_number? full.person.mobile_number: "";
                     } else if (full.is_organisation && full.organisation) {
-                        return full.organisation.mobile_number;
+                        // Return the mobile number of the first org contact in the list
+                        if (full.organisation.contacts && full.organisation.contacts.length > 0) {
+                            return full.organisation.contacts[0].mobile_number;
+                        }
+                        return "";
                     } else {
                         return '(mobile)';
                     }
@@ -130,9 +138,10 @@ export default {
                 data: null,
                 'render': function(row, type, full){
                     if (full.is_person && full.person) {
-                        return full.person.email;
+                        return full.person.email? full.person.email: "";
                     } else if (full.is_organisation && full.organisation) {
-                        return full.organisation.email;
+                        return full.organisation.ledger_organisation_email?
+                                full.organisation.ledger_organisation_email: "";
                     } else {
                         return '(email)';
                     }
@@ -141,8 +150,8 @@ export default {
         },
         column_action: () => {
             return {
-                data: null,
-                'render': function (row, type, full) {
+                data: "id",
+                'render': function(row, type, full){
                     return '(action)'
                 }
             }
@@ -227,6 +236,7 @@ export default {
                     'person': params.party_to_add,
                     'person_id': params.party_to_add.id,
                     'organisation': null,
+                    'organisation_id': null,
                     'invited_at': null,
                     'removed_at': null,
                     'party_details': [],
@@ -237,10 +247,24 @@ export default {
             } else if (params.type === 'organisation'){
                 for (let party of this.competitive_process_parties){
                     if (party.is_organisation && party.organisation === params.party_to_add.id)
-                        // Organisation has been already added
-                        return
+                        // Organisation has already been added
+                        return;
                 }
-                // TODO
+                let new_data = {
+                    'id': 0,  // This is competitive_process_party id.  Empty string because this is not saved yet.
+                    'is_person': false,
+                    'is_organisation': true,
+                    'person': null,
+                    'person_id': null,
+                    'organisation': params.party_to_add,
+                    'organisation_id': params.party_to_add.ledger_organisation_id,
+                    'invited_at': null,
+                    'removed_at': null,
+                    'party_details': [],
+                    'expanded': false,
+                }
+                this.competitive_process_parties.push(new_data);
+                this.$refs.parties_datatable.vmDataTable.row.add(new_data).draw();
 
             }
 

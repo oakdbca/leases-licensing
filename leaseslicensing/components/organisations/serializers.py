@@ -103,6 +103,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
     last_event_application_fee_date = serializers.DateField(
         format="%d/%m/%Y", input_formats=["%d/%m/%Y"], required=False, allow_null=True
     )
+    contacts = OrganisationContactSerializer(many=True, read_only=True)
 
     class Meta:
         model = Organisation
@@ -123,6 +124,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "charge_once_per_year",
             "max_num_months_ahead",
             "last_event_application_fee_date",
+            "contacts",
         )
 
     def get_apply_application_discount(self, obj):

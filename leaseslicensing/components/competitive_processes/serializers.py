@@ -124,6 +124,7 @@ class CompetitiveProcessPartySerializer(serializers.ModelSerializer):
     is_organisation = serializers.BooleanField()  # This is property at the model
     person = serializers.SerializerMethodField()
     organisation = serializers.SerializerMethodField()
+    organisation_id = serializers.IntegerField(allow_null=True, required=False)
     party_details = PartyDetailSerializer(many=True)
 
     class Meta:
@@ -135,6 +136,7 @@ class CompetitiveProcessPartySerializer(serializers.ModelSerializer):
             'person_id',
             'person',
             'organisation',
+            'organisation_id',
             'invited_at',
             'removed_at',
             'party_details',
