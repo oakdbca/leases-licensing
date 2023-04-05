@@ -103,11 +103,13 @@ RUN touch /app/.env && \
 
 # The following patches must be applied for seggregated systems when setting up a new environment (i.e. local, dev, uat, prod)
 #
+# COPY --chown=oim:oim admin.patch.additional
 # (local) patch <path of leaseslicensing project>/.venv/lib/<python version>/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
 # RUN export virtual_env_path=$(poetry env info -p); \
 #     export python_version=$(python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'); \
 #     patch $virtual_env_path/lib/python$python_version/site-packages/django/contrib/admin/migrations/0001_initial.py admin.patch.additional
 
+# COPY --chown=oim:oim 0001_squashed_0004_auto_20160611_1202.patch
 # (local) patch <path of leaseslicensing project>/.venv/lib/<python version>/site-packages/reversion/migrations/0001_initial.py 0001_squashed_0004_auto_20160611_1202.patch
 # RUN export virtual_env_path=$(poetry env info -p); \
 #     export python_version=$(python -c 'import sys; print(str(sys.version_info[0])+"."+str(sys.version_info[1]))'); \
