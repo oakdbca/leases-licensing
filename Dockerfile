@@ -90,7 +90,7 @@ FROM builder_base_oim_leaseslicensing as python_dependencies_leaseslicensing
 WORKDIR /app
 USER oim
 ENV PATH=/app/.local/bin:$PATH
-COPY --chown=oim:oim gunicorn.ini manage.py startup.sh pyproject.toml poetry.lock ./
+COPY --chown=oim:oim gunicorn.ini manage.py manage.sh startup.sh pyproject.toml poetry.lock ./
 RUN pip install "poetry==$POETRY_VERSION" && \
     poetry install --only main --no-interaction --no-ansi
 
