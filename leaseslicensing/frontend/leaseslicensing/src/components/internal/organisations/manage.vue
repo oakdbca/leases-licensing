@@ -315,7 +315,6 @@ export default {
             prev_licence_discount: null,
             prev_application_discount: null,
             is_leaseslicensing_admin: false,
-            profile: {},
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
             activate_tables: false,
             comms_url: helpers.add_endpoint_json(api_endpoints.organisations, vm.$route.params.org_id + '/comms_log'),
@@ -545,16 +544,13 @@ export default {
         let initialisers = [
             utils.fetchCountries(),
             utils.fetchOrganisation(vm.$route.params.org_id),
-            utils.fetchProfile()
         ]
         Promise.all(initialisers).then(data => {
             console.log('vm.org: ', vm.org)
             vm.countries = data[0];
             vm.org = data[1];
-            vm.profile = data[2];
             vm.org.address = vm.org.address != null ? vm.org.address : {};
             vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
-            vm.is_leaseslicensing_admin = vm.profile.is_leaseslicensing_admin;
         });
     },
     mounted: function () {
