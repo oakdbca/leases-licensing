@@ -297,5 +297,36 @@ module.exports = {
         } else {
             return abn
         }
+    },
+    validateABN: function (abn) {
+        if (abn.length != 11) {
+            return false
+        }
+        let sum = 0
+        for (let i = 0; i < 11; i++) {
+            let weight = 11 - i
+            sum += weight * abn[i]
+        }
+        return sum % 89 == 0
+    },
+    validateACN: function (acn) {
+        if (acn.length != 9) {
+            return false
+        }
+        let sum = 0
+        for (let i = 0; i < 8; i++) {
+            let weight = 8 - i
+            sum += weight * acn[i]
+        }
+        return sum % 89 == 0
+    },
+    isValidABNorACN: function (input) {
+        if (input.length == 11) {
+            return this.validateABN(input)
+        } else if (input.length == 9) {
+            return this.validateACN(input)
+        } else {
+            return false
+        }
     }
 };
