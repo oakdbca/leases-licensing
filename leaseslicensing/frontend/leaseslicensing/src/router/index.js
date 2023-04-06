@@ -1,6 +1,6 @@
 //import Vue from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
-import Profile from '@/components/user/profile.vue'
+import Account from '@/components/user/account.vue'
 import external_routes from '@/components/external/routes'
 import internal_routes from '@/components/internal/routes'
 
@@ -14,18 +14,18 @@ const router = createRouter({
     //strict: true,
     routes: [
         {
-            path: '/:pathMatch(.*)', 
+            path: '/:pathMatch(.*)',
             component: NotFoundComponent
         },
         {
-          path: '/firsttime',
-          name: 'first-time',
-          component: Profile
+            path: '/firsttime',
+            name: 'first-time',
+            component: Account
         },
         {
-          path: '/account',
-          name: 'account',
-          component: Profile
+            path: '/account',
+            name: 'account',
+            component: Account
         },
         external_routes,
         internal_routes,
