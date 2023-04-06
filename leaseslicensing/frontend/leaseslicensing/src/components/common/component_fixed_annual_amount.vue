@@ -10,11 +10,11 @@
                         </div>
                         <div class="col-sm-1 text-end">year</div>
                         <div class="col-sm-2">
-                            <input 
-                                type="number" 
-                                :min="min_year" 
-                                :max="max_year" 
-                                :step="step_year" 
+                            <input
+                                type="number"
+                                :min="min_year"
+                                :max="max_year"
+                                :step="step_year"
                                 class="form-control"
                                 v-model="item.year"
                                 :disabled="item.readonly"
@@ -22,32 +22,32 @@
                         </div>
                         <div class="col-sm-3 text-end">{{ value_title }}</div>
                         <div class="col-sm-2">
-                            <input 
+                            <input
                                 v-if="increment_type === 'annual_increment_amount'"
-                                type="number" 
-                                :min="min_increment" 
-                                :max="max_increment" 
-                                :step="step_increment" 
+                                type="number"
+                                :min="min_increment"
+                                :max="max_increment"
+                                :step="step_increment"
                                 class="form-control"
                                 v-model="item.increment_amount"
                                 :disabled="item.readonly"
                             />
-                            <input 
+                            <input
                                 v-else-if="increment_type === 'annual_increment_percentage'"
-                                type="number" 
-                                :min="min_increment" 
-                                :max="max_increment" 
-                                :step="step_increment" 
+                                type="number"
+                                :min="min_increment"
+                                :max="max_increment"
+                                :step="step_increment"
                                 class="form-control"
                                 v-model="item.increment_percentage"
                                 :disabled="item.readonly"
                             />
-                            <input 
+                            <input
                                 v-else-if="increment_type === 'gross_turnover_percentage'"
-                                type="number" 
-                                :min="min_increment" 
-                                :max="max_increment" 
-                                :step="step_increment" 
+                                type="number"
+                                :min="min_increment"
+                                :max="max_increment"
+                                :step="step_increment"
                                 class="form-control"
                                 v-model="item.percentage"
                                 :disabled="item.readonly"
@@ -158,7 +158,7 @@ export default {
                 [key_name]: null,
                 'readonly': false,
             })
-            
+
         },
         remove_a_row: function(item, e){
             let vm = this
@@ -182,7 +182,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .remove_a_row{
     cursor: pointer;
 }
