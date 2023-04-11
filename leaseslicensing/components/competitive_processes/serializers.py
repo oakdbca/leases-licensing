@@ -139,7 +139,9 @@ class CompetitiveProcessPartySerializer(serializers.ModelSerializer):
             'organisation_id',
             'invited_at',
             'removed_at',
+            'created_at',
             'party_details',
+            'email_address',
         )
         extra_kwargs = {
             'id': {

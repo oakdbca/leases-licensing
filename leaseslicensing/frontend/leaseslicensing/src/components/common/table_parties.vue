@@ -37,6 +37,10 @@ export default {
         },
         competitive_process_id: '',
         accessing_user: null,
+        processing: {
+            type: Boolean,
+            default: false
+        },
     },
     data() {
         let vm = this;
@@ -139,32 +143,23 @@ export default {
                 'render': function(row, type, full){
                     if (full.is_person && full.person) {
                         return full.person.email? full.person.email: "";
-                    } else if (full.is_organisation && full.organisation) {
-                        return full.organisation.ledger_organisation_email?
-                                full.organisation.ledger_organisation_email: "";
+                    } else if (full.is_organisation) {
+                        return full.email_address;
                     } else {
                         return '(email)';
                     }
                 }
             }
         },
-        column_action: () => {
-            return {
-                data: "id",
-                'render': function(row, type, full){
-                    return '(action)'
-                }
-            }
-        },
-        is_external: function () {
+        is_external: function() {
             return this.level == 'external'
         },
         is_internal: function () {
             return this.level == 'internal'
         },
-        datatable_headers: function () {
-            if (this.is_internal) {
-                return ['id', 'Name', 'Organisation', 'Phone', 'Mobile', 'Email', 'Action']
+        datatable_headers: function(){
+            if (this.is_internal){
+                return ['id', 'Name', 'Organisation', 'Phone', 'Mobile', 'Email']
             }
             return []
         },
@@ -181,7 +176,6 @@ export default {
                     vm.column_phone,
                     vm.column_mobile,
                     vm.column_email,
-                    vm.column_action,
                 ]
                 search = true
             }
@@ -192,12 +186,11 @@ export default {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 columnDefs: [
-                    { responsivePriority: 1, targets: 1 },
-                    { responsivePriority: 2, targets: 2 },
-                    { responsivePriority: 6, targets: 3 },
-                    { responsivePriority: 5, targets: 4 },
-                    { responsivePriority: 4, targets: 5 },
-                    { responsivePriority: 3, targets: 6 },
+                    {responsivePriority: 1, targets: 1},
+                    {responsivePriority: 2, targets: 2},
+                    {responsivePriority: 6, targets: 3},
+                    {responsivePriority: 5, targets: 4},
+                    {responsivePriority: 4, targets: 5},
                 ],
                 createdRow: function (row, full_data, dataIndex) {
                     full_data.expanded = false

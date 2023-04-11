@@ -158,9 +158,9 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        self.perform_update(instance, request)
+        serializer = self.perform_update(instance, request)
 
-        return Response({})
+        return Response(serializer.data)
 
     def perform_update(self, instance, request):
         competitive_process_data = request.data.get("competitive_process", None)
@@ -175,6 +175,7 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         # Handle "geometry" data
         if competitive_process_geometry_data:
             save_geometry(instance, competitive_process_geometry_data, self.action)
+        return serializer
 
     @detail_route(
         methods=[

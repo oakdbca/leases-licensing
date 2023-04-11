@@ -54,11 +54,15 @@
                 <div class="tab-content" id="pills-tabContent">
                     <div class="tab-pane fade show active" id="pills-parties" role="tabpanel" aria-labelledby="pills-parties-tab">
                         <FormSection :formCollapse="false" label="Parties" Index="parties">
-                            <TableParties 
+                            <TableParties
+                                ref="competitive_process_parties"
                                 level=internal
                                 :competitive_process_parties="competitive_process.competitive_process_parties"
                                 :competitive_process_id="competitive_process.id"
                                 :accessing_user="competitive_process.accessing_user"
+                                :processing="processing"
+                                :key="cp_id"
+                                @add-detail="addDetail"
                             />
                         </FormSection>
                     </div>
@@ -148,7 +152,7 @@
                 </div>
             </div>
         </div>
-        <div v-if="displaySaveBtns" class="navbar fixed-bottom" style="background-color: #f5f5f5;">
+        <div v-if="displaySaveBtns" class="navbar navbar-fixed-bottom" style="background-color: #f5f5f5;">
             <div class="container">
                 <div class="col-md-12 text-end">
                     <button v-if="processing" type="button" class="btn btn-primary" disabled>
@@ -187,10 +191,11 @@ export default {
     data: function() {
         let vm = this;
         return {
+            cp_id: uuid(), // competitive process id
             competitive_process: null,
             can_modify: true,
             show_col_status_when_submitted: true,
-            
+
             // For Comms Log
             comms_url: helpers.add_endpoint_json(api_endpoints.competitive_process, vm.$route.params.competitive_process_id + '/comms_log'),
             comms_add_url: helpers.add_endpoint_json(api_endpoints.competitive_process, vm.$route.params.competitive_process_id + '/add_comms_log'),
@@ -285,13 +290,23 @@ export default {
                     a_party.custom_row_app = undefined  // Remove custom_row_app in order to JSON.stringify()
                 }
             }
-            
+
             return payload
+        },
+        set_custom_rows_property(property, value) {
+            let vm = this;
+            Object.keys(vm.$refs.competitive_process_parties.custom_row_apps).forEach(function(key) {
+                vm.$refs.competitive_process_parties.custom_row_apps[key]["instance"][property] = value;
+            });
+
         },
         save: async function() {
             let vm = this;
 
             vm.processing = true;
+            // Saving, so set custom row to processing
+            vm.set_custom_rows_property("processing", true);
+
             let payload = vm.constructPayload();
             fetch(vm.competitive_process_form_url, {body: JSON.stringify(payload), method: 'PUT'})
             .then(async response => {
@@ -301,23 +316,30 @@ export default {
                     return await response.json();
                     }
             })
-            .then (() => {
-                vm.processing = false
+            .then (data => {
+                vm.competitive_process = Object.assign(data, {});
+                this.$nextTick(async () => {
+                    this.cp_id = uuid();
+                });
                 swal.fire({
                     title: 'Saved',
                     text: 'Competitive process has been saved',
                     icon: 'success',
                     confirmButtonColor: '#0d6efd',
                 });
+                vm.processing = false;
+                // Done save, set custom row back to not processing
+                vm.set_custom_rows_property("processing", false);
             })
             .catch(error => {
-                vm.processing = false
                 swal.fire({
                     title: "Please fix following errors before saving",
                     text: JSON.parse(error.message),
                     icon:'error',
                     confirmButtonColor: '#0d6efd',
                 })
+                vm.processing = false;
+                vm.set_custom_rows_property("processing", false);
             });
         },
         issueComplete: async function(){
@@ -514,6 +536,20 @@ export default {
                 console.log("Skipping assignment of selected officer")
             }
         },
+        addDetail: function(new_party_data) {
+            /** Callback for `add-detail` event emitted by custom-row */
+
+            console.log("add detail: new_party_data", new_party_data);
+            // This party's ID
+            let id = Object.keys(new_party_data)[0];
+            this.competitive_process.competitive_process_parties
+            // The index of that party in the CP parties list
+            let idx = this.competitive_process.competitive_process_parties.findIndex(
+                p => p.id == id);
+            // Add new party detail
+            this.competitive_process.competitive_process_parties[idx].
+                party_details.push(new_party_data[id]);
+        }
     }
 }
 </script>
@@ -521,6 +557,7 @@ export default {
 <style>
 .btn-primary {
     margin: 2px;
+    width: 180px!important;
 }
 .nav-pills .nav-link {
     border-bottom-left-radius: 0;

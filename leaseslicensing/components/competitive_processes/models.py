@@ -351,8 +351,7 @@ class CompetitiveProcessParty(models.Model):
         if self.is_person:
             return self.person.email
         else:
-            # TODO: return organisation email address
-            return 'todo_org_email_address@mail.com'
+            return self.organisation.ledger_organisation_email
 
 
 class PartyDetail(models.Model):
