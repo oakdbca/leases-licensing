@@ -141,9 +141,8 @@ class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet):
 class UserActionLoggingViewset(viewsets.ModelViewSet):
     """Class that extends the ModelViewSet to log the common user actions
 
-    will scan the instance provided for the fields listed in identifier_fields and
-    use the first one it finds. If it doesn't find one it will use the id field.
-    If the id field doesn't exist it will raise an AttributeError.
+    will scan the instance provided for the fields listed in settings
+    use the first one it finds. If it doesn't find one it will raise an AttributeError.
     """
 
     def retrieve(self, request, *args, **kwargs):
