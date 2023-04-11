@@ -6,6 +6,7 @@ from django.db import transaction
 from django.db.models import CharField, Q, Value
 from django.db.models.functions import Concat
 from django_countries import countries
+from ledger_api_client.api import get_account_details
 from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser  # EmailUserAction
 from rest_framework import filters, generics, views
@@ -85,6 +86,32 @@ class GetCountries(views.APIView):
         return Response(country_list)
 
 
+class GetRequestUserID(views.APIView):
+    """Yes, this is a bit silly but for now the get_account_details from ledger_api_client doesn't return the
+    request user id"""
+
+    renderer_classes = [
+        JSONRenderer,
+    ]
+
+    def get(self, request, format=None):
+        if request.user.is_anonymous:
+            return Response({"id": None})
+        return Response({"id": request.user.id})
+
+
+class GetLedgerAccount(views.APIView):
+    renderer_classes = [
+        JSONRenderer,
+    ]
+
+    def get(self, request, format=None):
+        if request.user.is_anonymous:
+            return Response({"error": "User is not logged in."})
+        response = get_account_details(request, str(request.user.id))
+        return response
+
+
 class GetProfile(views.APIView):
     renderer_classes = [
         JSONRenderer,
@@ -117,6 +144,18 @@ class UserViewSet(UserActionLoggingViewset):
         )[:10]
         data_transform = EmailUserSerializer(queryset, many=True)
         return Response(data_transform.data)
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=False,
+    )
+    @basic_exception_handler
+    def request_user_account(self, request, *args, **kwargs):
+        instance = EmailUser.objects.get(id=request.user.id)
+        serializer = UserSerializer(instance)
+        return Response(serializer.data)
 
     @action(
         methods=[
