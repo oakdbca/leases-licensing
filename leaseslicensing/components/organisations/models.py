@@ -268,30 +268,18 @@ class Organisation(models.Model):
 
     @staticmethod
     def existence(abn):
-        # Todo: implement for segregation of ledger and organisation
-        # exists = True
-        # org = None
-        # l_org = None
-        # try:
-        #     l_org = ledger_organisation.objects.get(abn=abn)
-        # except ledger_organisation.DoesNotExist:
-        #     exists = False
-        # if l_org:
-        #     try:
-        #         org = Organisation.objects.get(organisation=l_org)
-        #     except Organisation.DoesNotExist:
-        #         exists = False
-        # if exists:
-        #     if has_atleast_one_admin(org):
-        #         return {
-        #             "exists": exists,
-        #             "id": org.id,
-        #             "first_five": org.first_five,
-        #         }
-        #     else:
-        #         return {"exists": has_atleast_one_admin(org)}
-        # return {"exists": exists}
-        return {"exists": False}
+        try:
+            organisation = Organisation.objects.get(organisation_abn=abn)
+            if organisation.admin_count:
+                return {
+                    "exists": True,
+                    "id": organisation.id,
+                    "first_five": organisation.first_five,
+                }
+            return {"exists": False}
+
+        except Organisation.DoesNotExist:
+            return {"exists": False}
 
     def accept_user(self, user, request):
         with transaction.atomic():
@@ -697,8 +685,17 @@ class Organisation(models.Model):
         )[:5]
         return ",".join([delegate.user_full_name for delegate in first_five_delegates])
 
+    @property
+    def admin_count(self):
+        return self.delegates.filter(
+            organisation__contacts__user_status="active",
+            organisation__contacts__user_role="organisation_admin",
+        ).count()
+
 
 # @python_2_unicode_compatible
+
+
 class OrganisationContact(models.Model):
     USER_STATUS_CHOICES = (
         ("draft", "Draft"),
@@ -904,6 +901,7 @@ class OrganisationRequest(models.Model):
     )
     ROLE_CHOICES = (("employee", "Employee"), ("consultant", "Consultant"))
     lodgement_number = models.CharField(max_length=9, blank=True, default="")
+    name = models.CharField(max_length=255, null=True, blank=True)
     organisation = models.ForeignKey(
         Organisation,
         related_name="organisation_requests",
