@@ -72,6 +72,16 @@ router.register(r"map_layers", main_api.MapLayerViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
 
 api_patterns = [
+    url(
+        r"^api/account/$",
+        users_api.GetLedgerAccount.as_view(),
+        name="get-ledger-account",
+    ),
+    url(
+        r"^api/request_user_id/$",
+        users_api.GetRequestUserID.as_view(),
+        name="get-request-user-id",
+    ),
     url(r"^api/profile$", users_api.GetProfile.as_view(), name="get-profile"),
     url(r"^api/countries$", users_api.GetCountries.as_view(), name="get-countries"),
     url(
@@ -168,8 +178,7 @@ urlpatterns = (
         ),
         url(r"^external/", views.ExternalView.as_view(), name="external"),
         url(r"^firsttime/$", views.first_time, name="first_time"),
-        # url(r"^account/$", views.ExternalView.as_view(), name="manage-account"),
-        # url(r"^ledger-ui/accounts$", views.ExternalView.as_view(), name="manage-account"),
+        url(r"^account/", views.ExternalView.as_view(), name="manage-account"),
         url(r"^profiles/", views.ExternalView.as_view(), name="manage-profiles"),
         url(
             r"^help/(?P<application_type>[^/]+)/(?P<help_type>[^/]+)/$",
