@@ -68,8 +68,6 @@ class Organisation(models.Model):
         blank=True,
         editable=False,
     )
-    # Todo: Decide if we are getting rid of the UserDelegates table and using this instead?
-    delegates = ArrayField(models.IntegerField(), blank=True)  # EmailUserRO
     admin_pin_one = models.CharField(max_length=50, blank=True)
     admin_pin_two = models.CharField(max_length=50, blank=True)
     user_pin_one = models.CharField(max_length=50, blank=True)
