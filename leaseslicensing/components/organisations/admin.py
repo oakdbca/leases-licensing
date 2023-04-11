@@ -74,7 +74,11 @@ class OrganisationAdmin(admin.ModelAdmin):
 
 @admin.register(models.OrganisationRequest)
 class OrganisationRequestAdmin(admin.ModelAdmin):
-    list_display = ["name", "requester", "abn", "status"]
+    list_display = ["organisation_name", "requester", "abn", "status"]
+
+    def organisation_name(self, obj):
+        if obj.organisation:
+            return obj.organisation.organisation_name
 
 
 @admin.register(models.OrganisationAccessGroup)
