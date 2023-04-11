@@ -920,7 +920,6 @@ class OrganisationRequest(models.Model):
     )
     ROLE_CHOICES = (("employee", "Employee"), ("consultant", "Consultant"))
     lodgement_number = models.CharField(max_length=9, blank=True, default="")
-    name = models.CharField(max_length=128)
     organisation = models.ForeignKey(
         Organisation,
         related_name="organisation_requests",
