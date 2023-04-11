@@ -22,7 +22,7 @@
 {% if request.user.is_superuser %}
     <li><a class="dropdown-item" href="{% url 'mgt-commands' %}">Management Commands</a></li>
 {% endif %}
-<li><a class="dropdown-item" href="/ledger-ui/accounts">Manage Account</a></li>
+<li><a class="dropdown-item" href="/account">Manage Account</a></li>
 <!-- <li><a href="{% url 'manage-profiles' %}">Manage Profiles</a></li> -->
 {% for org in request.user.leaseslicensing_organisations.all %}
     {% for org_contact in org.contacts.all%}
@@ -35,4 +35,3 @@
         {% endifequal %}
     {% endfor %}
 {% endfor %}
-
