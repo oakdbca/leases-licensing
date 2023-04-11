@@ -48,12 +48,12 @@ def is_last_admin(organisation, user):
     return _last_admin
 
 
-def can_admin_org(organisation, user):
+def can_admin_org(organisation, user_id):
     from leaseslicensing.components.organisations.models import OrganisationContact
 
     try:
         org_contact = OrganisationContact.objects.get(
-            organisation_id=organisation, email=user.email
+            organisation_id=organisation, user=user_id
         )
         return org_contact.can_edit
     except OrganisationContact.DoesNotExist:
