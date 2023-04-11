@@ -35,10 +35,7 @@ from leaseslicensing.components.organisations.emails import (  # send_organisati
 from leaseslicensing.components.organisations.exceptions import (
     UnableToRetrieveLedgerOrganisation,
 )
-from leaseslicensing.components.organisations.utils import (
-    can_admin_org,
-    random_generator,
-)
+from leaseslicensing.components.organisations.utils import random_generator
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 # @python_2_unicode_compatible
@@ -165,22 +162,20 @@ class Organisation(models.Model):
             val_user = self.user_pin_one == pin1 and self.user_pin_two == pin2
             if val_admin:
                 val = val_admin
-                admin_flag = True
                 role = "organisation_admin"
             elif val_user:
                 val = val_user
-                admin_flag = False
                 role = "organisation_user"
             else:
                 val = False
                 return val
 
-            self.add_user_contact(request.user, request, admin_flag, role)
+            self.add_user_contact(request.user, request, role)
             return val
         except Exception:
             return None
 
-    def check_user_contact(self, request, admin_flag, role):
+    def check_user_contact(self, request, role):
         user = request.user
         try:
             org = OrganisationContact.objects.create(
@@ -193,13 +188,12 @@ class Organisation(models.Model):
                 email=user.email,
                 user_role=role,
                 user_status="pending",
-                is_admin=admin_flag,
             )
             return org
         except Exception:
             return False
 
-    def add_user_contact(self, user, request, admin_flag, role):
+    def add_user_contact(self, user, request, role):
         with transaction.atomic():
             contact, created = OrganisationContact.objects.get_or_create(
                 organisation=self,
@@ -212,7 +206,6 @@ class Organisation(models.Model):
                     "fax_number": user.fax_number,
                     "user_role": role,
                     "user_status": "pending",
-                    "is_admin": admin_flag,
                 },
             )
 
@@ -222,7 +215,6 @@ class Organisation(models.Model):
                 contact.fax_number = user.fax_number
                 contact.user_role = role
                 contact.user_status = "pending"
-                contact.is_admin = admin_flag
                 contact.save()
 
             # log linking
@@ -270,7 +262,6 @@ class Organisation(models.Model):
             organisation_id=self.id,
             user_role="organisation_admin",
             user_status="active",
-            is_admin=True,
         )
         recipients = [c.email for c in contacts]
         send_organisation_request_link_email_notification(self, request, recipients)
@@ -356,7 +347,7 @@ class Organisation(models.Model):
             user, request.user, self, request
         )
 
-    def link_user(self, user, request, admin_flag):
+    def link_user(self, user, request):
         with transaction.atomic():
             try:
                 UserDelegation.objects.get(organisation=self, user=user)
@@ -368,14 +359,9 @@ class Organisation(models.Model):
             except UserDelegation.DoesNotExist:
                 delegate = UserDelegation.objects.create(organisation=self, user=user)
             if self.first_five_admin:
-                is_admin = True
                 role = "organisation_admin"
-            elif admin_flag:
-                role = "organisation_admin"
-                is_admin = True
             else:
                 role = "organisation_user"
-                is_admin = False
 
             # Create contact person
             OrganisationContact.objects.get_or_create(
@@ -388,7 +374,6 @@ class Organisation(models.Model):
                 email=user.email,
                 user_role=role,
                 user_status="pending",
-                is_admin=is_admin,
             )
 
             # log linking
@@ -405,7 +390,7 @@ class Organisation(models.Model):
             # send email
             send_organisation_link_email_notification(user, request.user, self, request)
 
-    def accept_declined_user(self, user, request, admin_flag):
+    def accept_declined_user(self, user, request):
         with transaction.atomic():
             try:
                 UserDelegation.objects.get(organisation=self, user=user)
@@ -417,18 +402,12 @@ class Organisation(models.Model):
             except UserDelegation.DoesNotExist:
                 delegate = UserDelegation.objects.create(organisation=self, user=user)
             if self.first_five_admin:
-                is_admin = True
                 role = "organisation_admin"
-            elif admin_flag:
-                role = "organisation_admin"
-                is_admin = True
             else:
                 role = "organisation_user"
-                is_admin = False
 
             try:
                 logger.info(f"role: {role}")
-                logger.info(f"is_admin: {is_admin}")
                 org_contact = OrganisationContact.objects.get(
                     organisation=self, email=delegate.user.email
                 )
@@ -555,7 +534,6 @@ class Organisation(models.Model):
                     organisation=self, email=delegate.user.email
                 )
                 org_contact.user_role = "organisation_admin"
-                org_contact.is_admin = True
                 org_contact.save()
             except OrganisationContact.DoesNotExist:
                 pass
@@ -599,7 +577,6 @@ class Organisation(models.Model):
                         > 1
                     ):
                         org_contact.user_role = "organisation_user"
-                        org_contact.is_admin = False
                         org_contact.save()
                     else:
                         raise ValidationError(
@@ -607,7 +584,6 @@ class Organisation(models.Model):
                         )
                 else:
                     org_contact.user_role = "organisation_user"
-                    org_contact.is_admin = False
                     org_contact.save()
             except OrganisationContact.DoesNotExist:
                 pass
@@ -715,13 +691,11 @@ class Organisation(models.Model):
 
     @property
     def first_five(self):
-        return ",".join(
-            [
-                user.get_full_name()
-                for user in self.delegates.all()[:5]
-                if can_admin_org(self, user)
-            ]
-        )
+        first_five_delegates = self.delegates.filter(
+            organisation__contacts__user_status="active",
+            organisation__contacts__user_role="organisation_admin",
+        )[:5]
+        return ",".join([delegate.user_full_name for delegate in first_five_delegates])
 
 
 # @python_2_unicode_compatible
@@ -756,7 +730,6 @@ class OrganisationContact(models.Model):
     user_role = models.CharField(
         "Role", max_length=40, choices=USER_ROLE_CHOICES, default="organisation_user"
     )
-    is_admin = models.BooleanField(default=False)
     organisation = models.ForeignKey(
         Organisation, related_name="contacts", on_delete=models.CASCADE
     )
@@ -783,15 +756,15 @@ class OrganisationContact(models.Model):
         return f"{self.last_name} {self.first_name}"
 
     @property
+    def is_admin(self):
+        return self.user_role == "organisation_admin"
+
+    @property
     def can_edit(self):
         """
         :return: True if the application is in one of the editable status.
         """
-        return (
-            self.is_admin
-            and self.user_status == "active"
-            and self.user_role == "organisation_admin"
-        )
+        return self.user_status == "active" and self.user_role == "organisation_admin"
 
     @property
     def check_consultant(self):
@@ -811,9 +784,14 @@ class OrganisationContactDeclinedDetails(models.Model):
 
 
 class UserDelegation(models.Model):
-    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE)
-    # user = models.ForeignKey(EmailUser, on_delete=models.CASCADE)
+    organisation = models.ForeignKey(
+        Organisation, on_delete=models.CASCADE, related_name="delegates"
+    )
     user = models.IntegerField()  # EmailUserRO
+    # Readonly field to store the user's full name at the time of delegation
+    # handy to being able to use in the 'first_five' property without having to query ledger
+    # for each user
+    user_full_name = models.CharField(max_length=255, editable=False, default="")
 
     class Meta:
         unique_together = (("organisation", "user"),)
@@ -821,6 +799,14 @@ class UserDelegation(models.Model):
 
     def __str__(self):
         return f"Org: {self.organisation}, User: {self.user}"
+
+    def save(self, *args, **kwargs):
+        if not self.user_full_name:
+            email_user = retrieve_email_user(self.user)
+            if email_user:
+                self.user_full_name = email_user.get_full_name()
+
+        super().save(*args, **kwargs)
 
 
 class OrganisationAction(UserAction):
@@ -1015,7 +1001,6 @@ class OrganisationRequest(models.Model):
             email=delegate_email_user.email,
             user_role=role,
             user_status="active",
-            is_admin=True,
         )
 
         # send email to requester
