@@ -30,13 +30,14 @@ export default {
                         const error =
                             (data && data.message) || response.statusText
                         console.log(error)
-                        return Promise.reject(error)
+                        reject(error)
                     }
                     resolve(data)
                     console.log('countries: ', data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
+                    reject(error)
                 })
         });
     },
@@ -49,13 +50,14 @@ export default {
                         const error =
                             (data && data.message) || response.statusText
                         console.log(error)
-                        return Promise.reject(error)
+                        reject(error)
                     }
                     console.log('organisation: ', data)
                     resolve(data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
+                    reject(error)
                 })
         });
     },
@@ -88,13 +90,14 @@ export default {
                         const error =
                             (data && data.message) || response.statusText
                         console.log(error)
-                        return Promise.reject(error)
+                        reject(error)
                     }
                     console.log('profile: ', data)
                     resolve(data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
+                    reject(error)
                 })
         });
     },
