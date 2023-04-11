@@ -3,7 +3,8 @@ import traceback
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import CharField, Q, Value
+from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as list_route
@@ -58,6 +59,11 @@ class OrganisationViewSet(UserActionLoggingViewset):
         if is_internal(self.request):
             return Organisation.objects.all()
         elif is_customer(self.request):
+            if "organisation_lookup" == self.action:
+                # Allow customers access to organisation lookup
+                return Organisation.objects.only(
+                    "id", "organisation_name", "organisation_abn"
+                )
             logger.info(
                 list(Organisation.objects.filter(delegates__contains=[user.id]))
             )
@@ -79,13 +85,23 @@ class OrganisationViewSet(UserActionLoggingViewset):
     )
     def organisation_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
-        organisations = (
-            self.get_queryset()
-            .filter(organisation_name__icontains=search_term)
-            .only("id", "organisation_name")[:10]
+        organisations = self.get_queryset().annotate(
+            search_term=Concat(
+                "organisation_name",
+                Value(" "),
+                "organisation_abn",
+                output_field=CharField(),
+            )
         )
+        organisations = organisations.filter(search_term__icontains=search_term).only(
+            "id", "organisation_name", "organisation_abn"
+        )[:10]
         data_transform = [
-            {"id": organisation.id, "text": organisation.organisation_name}
+            {
+                "id": organisation.id,
+                "text": f"{organisation.organisation_name} (ABN: {organisation.organisation_abn})",
+                "first_five": organisation.first_five,
+            }
             for organisation in organisations
         ]
         return Response({"results": data_transform})
@@ -399,10 +415,10 @@ class OrganisationViewSet(UserActionLoggingViewset):
         detail=False,
     )
     @basic_exception_handler
-    def existance(self, request, *args, **kwargs):
+    def existence(self, request, *args, **kwargs):
         serializer = OrganisationCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = Organisation.existance(serializer.validated_data["abn"])
+        data = Organisation.existence(serializer.validated_data["abn"])
         # Check request user cannot be relinked to org.
         data.update([("user", request.user.id)])
         data.update([("abn", request.data["abn"])])
@@ -942,7 +958,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
             serializer.validated_data["requester"] = request.user
             if request.data["role"] == "consultant":
                 # Check if consultant can be relinked to org.
-                data = Organisation.existance(request.data["abn"])
+                data = Organisation.existence(request.data["abn"])
                 data.update([("user", request.user.id)])
                 data.update([("abn", request.data["abn"])])
                 existing_org = OrganisationCheckExistSerializer(data=data)
@@ -1004,10 +1020,12 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """delete an Organisation contact"""
         num_admins = (
-            self.get_object().organisation.contacts.filter(is_admin=True).count()
+            self.get_object()
+            .organisation.contacts.filter(user_role="organisation_admin")
+            .count()
         )
         org_contact = self.get_object().organisation.contacts.get(id=kwargs["pk"])
-        if num_admins == 1 and org_contact.is_admin:
+        if num_admins == 1 and org_contact.user_role == "organisation_admin":
             raise serializers.ValidationError(
                 "Cannot delete the last Organisation Admin"
             )
