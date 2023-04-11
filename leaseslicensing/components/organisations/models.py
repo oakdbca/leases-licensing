@@ -278,7 +278,7 @@ class Organisation(models.Model):
         send_organisation_request_link_email_notification(self, request, recipients)
 
     @staticmethod
-    def existance(abn):
+    def existence(abn):
         # Todo: implement for segregation of ledger and organisation
         # exists = True
         # org = None
