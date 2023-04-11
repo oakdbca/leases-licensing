@@ -15,7 +15,7 @@ module.exports = {
     fee_seasons_dict: '/api/fee_seasons_dict',
     compliance_statuses_dict: '/api/compliance_statuses_dict',
     referrals: '/api/referrals.json',
-    profile: '/api/profile',
+    account: '/api/users/request_user_account/',
     search_reference: '/api/search_reference/',
     submitter_profile: '/api/submitter_profile',
     organisations: '/api/organisations.json',
@@ -52,4 +52,12 @@ module.exports = {
     discard_proposal: function (id) {
         return `/api/proposal/${id}.json`;
     },
+
+    // ------------------- ledger ui
+
+    request_user_id: '/api/request_user_id/',
+    account_details: '/api/account/',
+    updateAccountDetails: function (id) {
+        return `/ledger-ui/api/update-account-details/${id}/`;
+    }
 };
