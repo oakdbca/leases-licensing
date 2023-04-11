@@ -257,7 +257,7 @@ class MyOrganisationsSerializer(serializers.ModelSerializer):
     def get_is_admin(self, obj):
         user = self.context["request"].user
         # Check if the request user is among the first five delegates in the organisation
-        return can_admin_org(obj, user)
+        return can_admin_org(obj, user.id)
 
 
 class SaveDiscountSerializer(serializers.ModelSerializer):
