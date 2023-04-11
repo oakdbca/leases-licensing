@@ -24,6 +24,7 @@ import { v4 as uuid } from 'uuid'
 import datatable from '@/utils/vue/datatable.vue'
 import AddPartyModal from '@/components/common/modal_add_party.vue';
 import { expandToggleParties } from '@/components/common/table_functions.js'
+import { constants } from "@/utils/hooks.js"
 
 export default {
     name: 'TableParties',
