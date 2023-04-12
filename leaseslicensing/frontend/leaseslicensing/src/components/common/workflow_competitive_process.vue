@@ -9,15 +9,15 @@
                     <strong>Status</strong><br/>
                     {{ competitive_process.status }}
                 </div>
-                <div class="col-sm-12">
-                    <div class="separator"></div>
-                </div>
-                <div v-if="!isFinalised" class="col-sm-12">
+                <div v-if="!finalised" class="col-sm-12">
+                    <div class="col-sm-12">
+                        <div class="separator"></div>
+                    </div>
                     <strong>Currently assigned to</strong><br/>
                     <div class="form-group">
                         <select
                             ref="assigned_officer"
-                            :disabled="!canAction"
+                            :disabled="elementDisabled"
                             class="form-control"
                             v-model="assigned_officer_id"
                             @change="assignTo()"
@@ -25,17 +25,19 @@
                             <option v-for="member in competitive_process.allowed_editors" :value="member.id" :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
                         </select>
                         <div class="text-end">
-                            <a v-if="canAssess && competitive_process.assigned_officer != competitive_process.accessing_user.id" @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
+                            <a v-if="canAssess &&
+                                    competitive_process.assigned_officer != competitive_process.accessing_user.id &&
+                                    !elementDisabled"
+                                @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to me</a>
                         </div>
                     </div>
                 </div>
 
-
-                <div class="col-sm-12">
-                    <div class="separator"></div>
-                </div>
-
                 <div v-if="display_actions">
+                    <div class="col-sm-12">
+                        <div class="separator"></div>
+                    </div>
+
                     <div>
                         <strong>Action</strong>
                     </div>
@@ -45,6 +47,7 @@
                             v-if="configuration.function_to_show_hide()"
                             class="btn btn-primary w-75 my-1"
                             @click.prevent="configuration.function_when_clicked"
+                            :disabled="elementDisabled"
                         >{{ configuration.button_title }}</button>
                     </template>
                 </div>
@@ -122,7 +125,15 @@ export default {
             type: Object,
             default: null,
         },
-        isFinalised: {
+        processing: {
+            type: Boolean,
+            default: false
+        },
+        discarded: {
+            type: Boolean,
+            default: false
+        },
+        finalised: {
             type: Boolean,
             default: false,
         },
@@ -173,7 +184,7 @@ export default {
         display_actions: function(){
             if (this.debug) return true
 
-            return !this.isFinalised && this.canAction
+            return !this.finalised && this.canAction
         },
         assigned_officer_id: function() {
             if (this.competitive_process.assigned_officer) {
@@ -181,6 +192,11 @@ export default {
             } else {
                 return null;
             }
+        },
+        elementDisabled: function() {
+            // Returns whether an element is disabled
+            // True while processing (saving), when discarded, or when finalized
+            return this.processing || this.discarded || this.finalised;
         }
     },
     filters: {

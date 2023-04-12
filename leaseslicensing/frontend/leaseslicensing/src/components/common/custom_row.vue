@@ -8,7 +8,7 @@
         <tr>
             <th>Removed from competitive process</th>
             <td><input type="date" class="form-control w-auto" placeholder="DD/MM/YYYY"
-                v-model="party_full_data.removed_at" :disabled="processing"
+                v-model="party_full_data.removed_at" :disabled="elementDisabled"
                 @change="partyDateChanged($event, 'removed_at')"></td>
         </tr>
         <tr>
@@ -22,7 +22,7 @@
 
                         <div class="detail_wrapper">
 
-                            <template v-if="party_detail.id || processing">
+                            <template v-if="party_detail.id || elementDisabled">
                                 <!-- This is an entry already saved in the database -->
                                 <div>{{ party_detail.created_by.full_name?
                                         party_detail.created_by.full_name:
@@ -54,13 +54,13 @@
                             <th>New detail</th>
                             <td>
                                 <input type="text" class="form-control detail_text" v-model="new_detail_text"
-                                    :disabled="removed_from_cp || processing">
+                                    :disabled="removed_from_cp || elementDisabled">
                             </td>
                         </tr>
                         <tr>
                             <th>Documents</th>
                             <td>
-                                <div v-if="removed_from_cp || processing">Attach document</div>
+                                <div v-if="removed_from_cp || elementDisabled">Attach document</div>
                                 <div v-else>
                                     <FileField
                                         :readonly="readonly"
@@ -79,7 +79,7 @@
                         <tr>
                             <th></th>
                             <td class="text-end"><button class="btn btn-primary" @click="addDetailClicked"
-                                :disabled="removed_from_cp || processing">
+                                :disabled="removed_from_cp || elementDisabled">
                                 <i class="fa-solid fa-circle-plus"></i> Add</button>
                             </td>
                         </tr>
@@ -103,6 +103,10 @@ export default {
         competitive_process_id: '',
         accessing_user: null,
         processing: {
+            type: Boolean,
+            default: false
+        },
+        discarded: {
             type: Boolean,
             default: false
         },
@@ -151,6 +155,11 @@ export default {
             // Returns whether this party has been removed from the Competitive Process
             return moment(this.party_full_data.removed_at).isValid()? true: false;
         },
+        elementDisabled: function() {
+            // Returns whether an element is disabled
+            // True while processing (saving) or when discarded
+            return this.processing || this.discarded;
+        }
     },
     methods: {
         remove_party_detail: function(item, e){

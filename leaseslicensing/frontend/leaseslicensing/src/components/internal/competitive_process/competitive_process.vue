@@ -12,9 +12,11 @@
                 <Workflow
                     ref='workflow'
                     :competitive_process="competitive_process"
-                    :isFinalised="isFinalised"
-                    :canAction=true
-                    :canAssess=true
+                    :processing="processing"
+                    :discarded="discarded"
+                    :finalised="finalised"
+                    :canAction="canAction"
+                    :canAssess="canAssess"
                     :can_user_edit="competitive_process.can_user_edit"
                     @assignRequestUser="assignRequestUser"
                     @assignTo="assignTo"
@@ -61,6 +63,8 @@
                                 :competitive_process_id="competitive_process.id"
                                 :accessing_user="competitive_process.accessing_user"
                                 :processing="processing"
+                                :discarded="discarded"
+                                :finalised="finalised"
                                 :key="cp_id"
                                 @add-detail="addDetail"
                             />
@@ -94,16 +98,19 @@
                                     <label for="competitive_process_winner" class="control-label">Winner</label>
                                 </div>
                                 <div class="col-sm-4">
-                                    <select class="form-control" v-model="competitive_process.winner" id="competitive_process_winner">
-                                        <option value="">No winner</option>
-                                        <option v-for="party in competitive_process.competitive_process_parties" :value="party.id">
-                                            <template v-if="party.is_person">
-                                                {{ party.person.fullname }}
-                                            </template>
-                                            <template v-if="party.is_organisation">
-                                                {{ party.organisation.name }}
-                                            </template>
-                                        </option>
+                                    <select class="form-control"
+                                        v-model="competitive_process.winner"
+                                        id="competitive_process_winner"
+                                        :disabled="elementDisabled">
+                                            <option :value=null>No winner</option>
+                                            <option v-for="party in competitive_process.competitive_process_parties" :value="party.id">
+                                                <template v-if="party.is_person">
+                                                    {{ party.person.fullname }}
+                                                </template>
+                                                <template v-if="party.is_organisation">
+                                                    {{ party.organisation.name }}
+                                                </template>
+                                            </option>
                                     </select>
                                 </div>
                             </div>
@@ -116,8 +123,8 @@
                                         id="details"
                                         :proposalData="competitive_process.details"
                                         ref="details"
-                                        label="Rich text in here" 
-                                        :readonly="readonly" 
+                                        label="Rich text in here"
+                                        :readonly="elementDisabled"
                                         :can_view_richtext_src=true
                                         :key="competitive_process.id"
                                         @textChanged="detailsTextChanged"
@@ -130,7 +137,7 @@
                                 </div>
                                 <div class="col-sm-9">
                                     <FileField
-                                        :readonly="readonly"
+                                        :readonly="elementDisabled"
                                         ref="competitive_process_document"
                                         name="competitive_process_document"
                                         id="competitive_process_document"
@@ -174,7 +181,7 @@
 </template>
 
 <script>
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, helpers, constants } from '@/utils/hooks'
 import { v4 as uuid } from 'uuid'
 import CommsLogs from '@common-utils/comms_logs.vue'
 import Workflow from '@common-utils/workflow_competitive_process.vue'
@@ -184,7 +191,6 @@ import ComponentMap from '@/components/common/component_map.vue'
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
-import { doExpression } from '@babel/types'
 
 export default {
     name: 'CompetitiveProcess',
@@ -231,8 +237,61 @@ export default {
                 return true
             return false
         },
-        isFinalised: function(){
-            return false
+        hasWinner: function() {
+            /** Returns whether this CP has a winner */
+
+            return  ![null, ''].includes(this.competitive_process.winner) &&
+                    !isNaN(this.competitive_process.winner);
+        },
+        winnerApplicationApproved: function() {
+            /** Returns whether the winner's Application has been approved
+             *  or false when the winner is different from the originating proposal's
+             *  applicant.
+             */
+
+            let winner_party = this.partyById(this.competitive_process.winner);
+            // The ID if the winning party's applicant
+            let winner_applicant_id;
+            if (winner_party) {
+                winner_applicant_id = winner_party.is_person? winner_party.person_id:
+                                      winner_party.is_organisation? winner_party.organisation_id:
+                                      -1
+            } else {
+                console.warn(`No related party found for winner ID ${this.competitive_process.winner}.`);
+            }
+
+            return [
+                    constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID,
+                    constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID,
+                    constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID,
+                ].includes(this.competitive_process.registration_of_interest.processing_status) &&
+                this.competitive_process.registration_of_interest.applicant_id ==
+                        winner_applicant_id;
+        },
+        finalised: function () {
+            /** Returns whether this competitive process is finalized.
+             *  A CP is finalized when it is completed or discarded (TODO is that true?),
+             *  when a winner has been selected and when the winner's Application has
+             *  been approved.
+             *  A finalized CP can not be unlocked anymore.
+            */
+
+            return [
+                    constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.TEXT,
+                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_APPLICATION.TEXT,
+                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.TEXT,
+                ].includes(this.competitive_process.status) &&
+                this.hasWinner &&
+                this.winnerApplicationApproved;
+        },
+        canAction: function () {
+            return this.competitive_process.can_accessing_user_process;
+        },
+        canLimitedAction: function () {
+            return this.competitive_process.can_accessing_user_process;
+        },
+        canAssess: function () {
+            return this.competitive_process.can_accessing_user_view;
         },
         related_items_ajax_url: function(){
             return '/api/competitive_process/' + this.competitive_process.id + '/get_related_items/'
@@ -258,6 +317,16 @@ export default {
         competitive_process_complete_url: function() {
             return '/api/competitive_process/' + this.competitive_process.id + '/complete/'
         },
+        discarded: function(){
+            return this.competitive_process && (
+                this.competitive_process.status ===
+                     constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.TEXT);
+        },
+        elementDisabled: function() {
+            // Returns whether an element is disabled
+            // True while processing (saving), when discarded, or when finalized
+            return this.processing || this.discarded || this.finalised;
+        }
    },
     methods: {
         mapTabClicked: function(){
@@ -367,7 +436,7 @@ export default {
                     title: "Complete this competitive process",
                     // text: "Are you sure you want to complete this competitive process?<br />" + description,
                     html: "Are you sure you want to complete this competitive process?<br />" + description,
-                    type: "warning",
+                    icon: "warning",
                     showCancelButton: true,
                     confirmButtonText: 'Complete',
                     confirmButtonColor: '#0d6efd',
@@ -381,14 +450,14 @@ export default {
                             await new swal({
                                 title: 'Completed',
                                 text: 'Competitive process has been completed',
-                                type: 'success',
+                                icon: 'success',
                             })
                             this.$router.push({ name: 'internal-dashboard' })
                         } else {
                             await new swal({
                                 title: "Please fix following errors before saving",
                                 text: err.bodyText,
-                                type:'error',
+                                icon:'error',
                             })
                         }
                     } else if (result.isDenied){
@@ -409,7 +478,7 @@ export default {
                 swal.fire({
                     title: "Discard this competitive process",
                     text: "Are you sure you want to discard this competitive process?",
-                    type: "warning",
+                    icon: "warning",
                     showCancelButton: true,
                     confirmButtonText: 'Discard',
                     confirmButtonColor: '#0d6efd',
@@ -423,13 +492,13 @@ export default {
                             await swal.fire({
                                 title: 'Discarded',
                                 text: 'Competitive process has been discarded',
-                                type: 'success',
+                                icon: 'success',
                             })
                         } else {
                             await swal.fire({
                                 title: "Please fix following errors before saving",
                                 text: err.bodyText,
-                                type:'error',
+                                icon:'error',
                             })
                         }
                         this.$router.push({ name: 'internal-dashboard' })
@@ -536,19 +605,39 @@ export default {
                 console.log("Skipping assignment of selected officer")
             }
         },
+        partyById: function(party_id) {
+            /** Returns the competitive process party with ID `party_id`
+             *  or null if the party ID is null (e.g. when chosing no winner)
+             *  or when no party for the respective ID can not be found.
+             */
+
+            if (party_id == null) {
+                return null; // e.g. no winner outcome
+            }
+
+            let idx = this.competitive_process.competitive_process_parties.findIndex(
+                p => p.id == party_id);
+            if (idx == -1) {
+                console.warn(`There is no party with ID ${party_id}.`);
+                return null;
+            }
+            // Return the party
+            return this.competitive_process.competitive_process_parties[idx];
+        },
         addDetail: function(new_party_data) {
             /** Callback for `add-detail` event emitted by custom-row */
 
             console.log("add detail: new_party_data", new_party_data);
             // This party's ID
             let id = Object.keys(new_party_data)[0];
-            this.competitive_process.competitive_process_parties
-            // The index of that party in the CP parties list
-            let idx = this.competitive_process.competitive_process_parties.findIndex(
-                p => p.id == id);
-            // Add new party detail
-            this.competitive_process.competitive_process_parties[idx].
-                party_details.push(new_party_data[id]);
+            // Get the related competitive process party
+            let party = this.partyById(id);
+            if (party) {
+                // Add new party detail
+                party.party_details.push(new_party_data[id]);
+            } else {
+                console.error(`Can not add data to party with ID ${id}.`);
+            }
         }
     }
 }

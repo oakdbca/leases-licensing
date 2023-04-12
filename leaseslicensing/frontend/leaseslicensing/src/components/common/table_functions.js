@@ -148,6 +148,7 @@ export function expandToggleParties(vm, obj) {
             competitive_process_id: vm.competitive_process_id,
             accessing_user: vm.accessing_user,
             processing: vm.processing,
+            discarded: vm.discarded,
         }
         // Make the props reactive
         const react = reactive(props);

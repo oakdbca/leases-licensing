@@ -2,8 +2,8 @@
     <div>
         <div v-if="is_internal" class="row">
             <div class="text-end mb-2">
-                <button type="button" class="btn btn-primary pull-right" @click="add_party_clicked"><i
-                        class="fa-solid fa-circle-plus"></i> Add Party</button>
+                <button type="button" class="btn btn-primary pull-right" @click="add_party_clicked"
+                    :disabled="elementDisabled"><i class="fa-solid fa-circle-plus"></i> Add Party</button>
             </div>
         </div>
 
@@ -15,7 +15,7 @@
         </div>
 
         <AddPartyModal ref="add_party" @closeModal="closeModal" @refreshDatatable="refreshFromResponse"
-            @partyToAdd="addParty" />
+            @partyToAdd="addParty"/>
     </div>
 </template>
 
@@ -39,6 +39,14 @@ export default {
         competitive_process_id: '',
         accessing_user: null,
         processing: {
+            type: Boolean,
+            default: false
+        },
+        discarded: {
+            type: Boolean,
+            default: false
+        },
+        finalised: {
             type: Boolean,
             default: false
         },
@@ -213,6 +221,11 @@ export default {
                     console.log('in initComplete')
                 },
             }
+        },
+        elementDisabled: function() {
+            // Returns whether an element is disabled
+            // True while processing (saving), when discarded, or when finalized
+            return this.processing || this.discarded || this.finalised;
         }
     },
     methods: {

@@ -25,6 +25,8 @@ class RegistrationOfInterestSerializer(serializers.ModelSerializer):
             'lodgement_number',
             'relevant_applicant_name',
             'proposalgeometry',
+            'applicant_id',
+            'processing_status',
         )
 
     def get_proposalgeometry(self, obj):

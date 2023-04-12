@@ -24,12 +24,14 @@ def save_geometry(instance, geometry, action_name):
     geometry = json.loads(geometry) if isinstance(geometry, str) else geometry
     lands_geos_data = get_dbca_lands_and_waters_geos()
     e4283 = SpatialReference("EPSG:4283")  # EPSG string
-    # Ability for assesssor to replace or adjust the polygons
+    # Concat proposal geometries (if exist) and competitive process geometries
+    proposal_geometries = list(instance.originating_proposal.proposalgeometry.all()) \
+                    if hasattr(instance, "originating_proposal") \
+                    else []
     polygons_to_delete = list(instance.competitive_process_geometries.all()) + \
-                        list(instance.originating_proposal.proposalgeometry.all()) \
-                            if hasattr(instance, "originating_proposal") \
-                            else []
+                            proposal_geometries
 
+    # Ability for assesssor to replace or adjust the polygons
     for feature in geometry.get("features"):
         polygon = None
         intersects = False
