@@ -64,10 +64,10 @@ class OrganisationViewSet(UserActionLoggingViewset):
                 return Organisation.objects.only(
                     "id", "organisation_name", "organisation_abn"
                 )
-            logger.info(
-                list(Organisation.objects.filter(delegates__contains=[user.id]))
-            )
-            return Organisation.objects.filter(delegates__contains=[user.id])
+            if "validate_pins" == self.action:
+                return Organisation.objects.all()
+            logger.info(list(Organisation.objects.filter(delegates__user=user.id)))
+            return Organisation.objects.filter(delegates__user=user.id)
         return Organisation.objects.none()
 
     @list_route(methods=["GET"], detail=False)
@@ -154,6 +154,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def validate_pins(self, request, *args, **kwargs):
         instance = self.get_object()
+        logger.debug("request.data = " + str(request.data))
         serializer = OrganisationPinCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ret = instance.validate_pins(
@@ -164,7 +165,6 @@ class OrganisationViewSet(UserActionLoggingViewset):
 
         if ret is None:
             # user has already been to this organisation - don't add again
-            data = {"valid": ret}
             return Response({"valid": "User already exists"})
 
         data = {"valid": ret}
@@ -581,11 +581,10 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
         return super().get_serializer_class()
 
     def get_queryset(self):
-        user = self.request.user
         if is_internal(self.request):
             return OrganisationRequest.objects.all()
         elif is_customer(self.request):
-            return user.organisationrequest_set.all()
+            return OrganisationRequest.objects.filter(requester=self.request.user.id)
         return OrganisationRequest.objects.none()
 
     @list_route(
@@ -955,7 +954,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
         try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.validated_data["requester"] = request.user
+            serializer.validated_data["requester"] = request.user.id
             if request.data["role"] == "consultant":
                 # Check if consultant can be relinked to org.
                 data = Organisation.existence(request.data["abn"])
