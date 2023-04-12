@@ -16,6 +16,7 @@ module.exports = {
     compliance_statuses_dict: '/api/compliance_statuses_dict',
     referrals: '/api/referrals.json',
     account: '/api/users/request_user_account/',
+    profile: '/api/profile',
     search_reference: '/api/search_reference/',
     submitter_profile: '/api/submitter_profile',
     organisations: '/api/organisations.json',
