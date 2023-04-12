@@ -1,6 +1,6 @@
 <template>
     <div>
-        <CollapsibleComponent component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
+        <CollapsibleComponent componentTitle="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
             class="mb-2">
             <div class="row">
                 <div class="col-md-3">
@@ -336,6 +336,7 @@ export default {
                         d.filter_status = vm.filterStatus
                     },
                 },
+                order: [[0, 'desc']],
                 dom:
                     "<'d-flex align-items-center'<'me-auto'l>fB>" +
                     "<'row'<'col-sm-12'tr>>" +
