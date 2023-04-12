@@ -288,7 +288,7 @@ class OrgRequestRequesterSerializer(serializers.ModelSerializer):
 class OrganisationRequestSerializer(serializers.ModelSerializer):
     identification = serializers.FileField()
     requester_name = serializers.SerializerMethodField(read_only=True)
-    lodgement_date = serializers.DateTimeField(format="%d/%m/%Y")
+    lodgement_date = serializers.DateTimeField(format="%d/%m/%Y", read_only=True)
     status = serializers.SerializerMethodField()
     ledger_organisation_name = serializers.SerializerMethodField()
     assigned_officer_name = serializers.SerializerMethodField()
@@ -317,6 +317,8 @@ class OrganisationRequestSerializer(serializers.ModelSerializer):
         return obj.get_status_display()
 
     def get_ledger_organisation_name(self, obj):
+        if not obj.organisation:
+            return obj.name
         return obj.organisation.ledger_organisation["organisation_name"]
 
     def get_assigned_officer_name(self, obj):
