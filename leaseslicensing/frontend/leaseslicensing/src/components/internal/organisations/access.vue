@@ -424,6 +424,11 @@ export default {
                             }
                             vm.access = data
                             console.log(vm.access)
+                            Swal.fire(
+                                'Success',
+                                'Organisation request accepted. The user will be notified by email.',
+                                'success'
+                            )
                         })
                         .catch((error) => {
                             console.error('There was an error!', error)
