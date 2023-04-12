@@ -6,6 +6,11 @@ from leaseslicensing.components.organisations import models
 # Register your models here.
 
 
+class UserDelegationInline(admin.TabularInline):
+    model = models.UserDelegation
+    extra = 0
+
+
 @admin.register(models.Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
     list_display = [
@@ -30,7 +35,6 @@ class OrganisationAdmin(admin.ModelAdmin):
         "organisation_name",
         "organisation_abn",
         "organisation_email",
-        "delegates",
         "admin_pin_one",
         "admin_pin_two",
         "user_pin_one",
@@ -49,6 +53,9 @@ class OrganisationAdmin(admin.ModelAdmin):
         "max_num_months_ahead",
     ]
     readonly_fields = ["organisation_name", "organisation_abn", "organisation_email"]
+    inlines = [
+        UserDelegationInline,
+    ]
 
     def organisation_name(self, obj):
         if obj.organisation:
@@ -79,6 +86,8 @@ class OrganisationRequestAdmin(admin.ModelAdmin):
     def organisation_name(self, obj):
         if obj.organisation:
             return obj.organisation.organisation_name
+        if obj.name:
+            return obj.name
 
 
 @admin.register(models.OrganisationAccessGroup)
