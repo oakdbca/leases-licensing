@@ -70,12 +70,6 @@ export default {
                             return {
                                 results: []
                             }
-                        } else if (1 == data.results.length) {
-                            $(`#${vm.index}`).select2('close');
-                            vm.$emit('selected', data.results[0]);
-                            return {
-                                results: []
-                            }
                         }
 
                         return {
