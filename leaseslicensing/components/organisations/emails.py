@@ -372,13 +372,13 @@ def send_organisation_unlink_email_notification(
 
 
 def send_organisation_request_accept_email_notification(
-    org_request, organisation, request
+    org_request, organisation, requester, request
 ):
     email = OrganisationRequestAcceptNotificationEmail()
 
     context = {"request": org_request}
 
-    msg = email.send(org_request.requester.email, context=context)
+    msg = email.send(requester.email, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_org_request_email(msg, org_request, sender=sender)
     _log_org_email(msg, organisation, org_request.requester, sender=sender)
@@ -534,13 +534,13 @@ def _log_org_email(email_message, organisation, customer, sender=None):
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
         "text": text,
         "organisation": organisation,
-        "customer": customer,
+        "customer": customer.id,
         "staff": staff,
         "to": to,
         "fromm": fromm,
