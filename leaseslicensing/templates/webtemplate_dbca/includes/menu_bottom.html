@@ -23,15 +23,6 @@
     <li><a class="dropdown-item" href="{% url 'mgt-commands' %}">Management Commands</a></li>
 {% endif %}
 <li><a class="dropdown-item" href="/account">Manage Account</a></li>
-<!-- <li><a href="{% url 'manage-profiles' %}">Manage Profiles</a></li> -->
-{% for org in request.user.leaseslicensing_organisations.all %}
-    {% for org_contact in org.contacts.all%}
-        {% ifequal org_contact.email request.user.email %}
-            {% if org_contact.user_status == 'active' %}
-                {% if org_contact.is_admin or org_contact.check_consultant %}
-                    <li><a class="dropdown-item" href="/external/organisations/manage/{{org.id}}">Manage {{ org.organisation.name}} </a></li>
-                {% endif %}
-            {% endif %}
-        {% endifequal %}
-    {% endfor %}
+{% for org in organisations_user_can_admin %}
+    <li><a class="dropdown-item" href="/external/organisations/manage/{{org.id}}">Manage {{ org.organisation_name}} </a></li>
 {% endfor %}
