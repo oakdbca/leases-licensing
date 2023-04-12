@@ -231,7 +231,7 @@
 
                 </div>
                 <div class="tab-pane fade" id="organisations" role="tabpanel" aria-labelledby="organisations-tab">
-                    <FormSection index="organisation-details" label="Link an Organisation">
+                    <FormSection index="organisation-details" :label="linkOrganisationTitle">
                         <div class="row mb-4">
                             <label for="responsibleForOrganisations" class="col-auto form-check-label">Are you responsible
                                 for preparing
@@ -249,55 +249,78 @@
                                 @selected="organisationSelected" @new-organisation="prepareNewOrganisation"
                                 label="Organisations" :lookupApiEndpoint="api_endpoints.organisation_lookup" />
                             <template v-if="selectedOrganisation">
-                                <div class="row mb-3">
-                                    <label for="selectedOrganisation" class="col-sm-3 col-form-label">Selected
-                                        Organisation</label>
+                                <form id="existing-organisation-form" @submit.prevent="" class="needs-validation"
+                                    novalidate>
+                                    <div class="row mb-3">
+                                        <label for="selectedOrganisation" class="col-sm-3 col-form-label">Selected
+                                            Organisation</label>
 
-                                    <div class="col my-auto">
-                                        <span class="badge bg-primary fs-6">{{ selectedOrganisation.text }}</span> Wrong
-                                        Organisation? <a href="#" @click="searchAgain">Search
-                                            Again</a>
+                                        <div class="col my-auto">
+                                            <span class="badge bg-primary fs-6">{{ selectedOrganisation.text }}</span> Wrong
+                                            Organisation? <a href="#" @click="searchAgain">Search
+                                                Again</a>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <div class="col-sm-3">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-3">
+                                        </div>
+                                        <div class="col-sm-7">
+                                            <BootstrapAlert>
+                                                <ul class="list-group">
+                                                    <li class="list-group-item">
+                                                        This organisation has already been registered with the system.
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        Please enter the two pin codes below.
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        These pin codes can be retrieved from:
+                                                    </li>
+                                                    <li class="list-group-item">
+                                                        <span v-for="person in selectedOrganisation.first_five.split(',')"
+                                                            class="badge bg-primary bg-first-five">{{ person
+                                                            }}</span>
+                                                    </li>
+                                                </ul>
+                                            </BootstrapAlert>
+                                        </div>
                                     </div>
-                                    <div class="col-sm-7">
-                                        <BootstrapAlert>
-                                            <ul class="list-group">
-                                                <li class="list-group-item">
-                                                    This organisation has already been registered with the system.
-                                                </li>
-                                                <li class="list-group-item">
-                                                    Please enter the two pin codes below.
-                                                </li>
-                                                <li class="list-group-item">
-                                                    These pin codes can be retrieved from (Oak McIlwain)
-                                                </li>
-                                            </ul>
-                                        </BootstrapAlert>
+                                    <div class="row mb-3">
+                                        <label for="pin1" class="col-sm-3 col-form-label">Pin 1</label>
+                                        <div class="col-sm-4">
+                                            <input type="text" class="form-control" id="pin1" ref="pin1" v-model="pins.pin1"
+                                                minlength="12" maxlength="12" required>
+                                            <div class="invalid-feedback">
+                                                Please enter a 12 digit pin code.
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <label for="pin1" class="col-sm-3 col-form-label">Pin 1</label>
-                                    <div class="col-sm-4">
-                                        <input type="text" class="form-control" id="pin1" ref="pin1" maxlength="12"
-                                            required>
+                                    <div class="row mb-3">
+                                        <label for="pin2" class="col-sm-3 col-form-label">Pin 2</label>
+                                        <div class="col-sm-4">
+                                            <input type="text" class="form-control" id="pin2" ref="pin2" v-model="pins.pin2"
+                                                minlength="12" maxlength="12" required>
+                                            <div class="invalid-feedback">
+                                                Please enter a 12 digit pin code.
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="row mb-3">
-                                    <label for="pin2" class="col-sm-3 col-form-label">Pin 2</label>
-                                    <div class="col-sm-4">
-                                        <input type="text" class="form-control" id="pin2" ref="pin2" maxlength="12"
-                                            required>
+                                    <div v-if="validatePinsError" class="row mb-3">
+                                        <label for="pin2" class="col-sm-3 col-form-label">&nbsp;</label>
+                                        <div class="col-sm-4">
+                                            <BootstrapAlert type="danger" icon="exclamation-triangle-fill">{{
+                                                validatePinsError }}
+                                            </BootstrapAlert>
+                                        </div>
                                     </div>
-                                </div>
-                                <div v-if="pinCodesEntered" class="row mb-3">
-                                    <div for="pin2" class="col-sm-3">&nbsp;</div>
-                                    <div class="col-sm-4">
-                                        <button class="btn btn-primary">Validate Pins</button>
+                                    <div v-if="pinCodesEntered" class="row mb-3">
+                                        <div for="pin2" class="col-sm-3">&nbsp;</div>
+                                        <div class="col-sm-4">
+                                            <BootstrapLoadingButton text="Submit Request" @click="validatePinsForm"
+                                                :isLoading="validatingPins" class="btn licensing-btn-primary" />
+                                        </div>
                                     </div>
-                                </div>
+                                </form>
                             </template>
                             <template v-if="newOrganisation">
                                 <form id="new-organisation-form" @submit.prevent="" class="needs-validation" novalidate>
@@ -365,7 +388,8 @@
                             </template>
                         </template>
                     </FormSection>
-                    <FormSection index="organisation-requests" label="Linked Organisations">
+                    <FormSection v-if="organisation_requests && organisation_requests.length" index="organisation-requests"
+                        label="Linked Organisations">
                         <table class="table table-sm">
                             <thead>
                                 <tr>
@@ -376,26 +400,29 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>Organisation Name 1</td>
-                                    <td>123 123 123</td>
-                                    <td><span class="badge bg-secondary p-2"><i class="fa fa-clock"></i> Pending</span>
-                                    </td>
-                                    <td>&nbsp;</td>
-                                </tr>
-                                <tr>
-                                    <td>Organisation Name 2</td>
-                                    <td>12 312 312 312</td>
+                                <tr v-for="org in organisation_requests">
+                                    <td><span>{{ org.name }}</span></td>
+                                    <td><span>{{ helpers.formatABNorACN(org.abn) }}</span></td>
                                     <td>
-                                        <span class="badge bg-success me-1 p-2"><i class="fa fa-chain"></i> Linked</span>
+                                        <span v-if="'With Assessor' == org.status" class="badge bg-secondary p-2"><i
+                                                class="fa fa-clock"></i>
+                                            Pending</span>
+                                        <span v-if="'Approved' == org.status" class="badge bg-success me-1 p-2"><i
+                                                class="fa fa-chain"></i> Linked</span>
                                     </td>
                                     <td>
-                                        <button class="btn btn-primary btn-sm btn-status me-1">
-                                            <i class="fa fa-pencil-square"></i>
-                                            update</button>
-                                        <button class="btn btn-danger btn-sm btn-status">
-                                            <i class="fa fa-chain-broken"></i>
-                                            unlink</button>
+                                        <template v-if="'Approved' == org.status">
+                                            <div>
+                                                <a :href="'/external/organisations/manage/' + org.id"
+                                                    class="btn btn-primary btn-sm btn-status me-1" role="button">
+                                                    <i class="fa fa-pencil-square"></i>
+                                                    update</a>
+                                                <button class="btn btn-danger btn-sm btn-status">
+                                                    <i class="fa fa-chain-broken"></i>
+                                                    unlink</button>
+                                            </div>
+                                        </template>
+                                        <span v-else>&nbsp;</span>
                                     </td>
                                 </tr>
                             </tbody>
@@ -424,10 +451,19 @@ export default {
             updatingDetails: false,
             selectedOrganisation: null,
             newOrganisation: null,
+            organisation_requests: null,
             term: null,
             role: 'Employee',
             responsibleForOrganisations: false,
             loadingOrganisationRequest: false,
+            validatePinsError: null,
+            validatingPins: false,
+            pins: {
+                pin1: '',
+                pin2: '',
+            },
+            loadingOrganisationRequests: false,
+            helpers: helpers,
         };
     },
     components: {
@@ -435,7 +471,12 @@ export default {
         OrganisationSearch,
     },
     computed: {
-
+        linkOrganisationTitle: function () {
+            if (this.organisation_requests && this.organisation_requests.length) {
+                return 'Link another Organisation';
+            }
+            return 'Link an organisation';
+        }
     },
     methods: {
         numbersOnly: function (event) {
@@ -464,11 +505,13 @@ export default {
                 utils.fetchCountries(),
                 utils.fetchLedgerAccount(),
                 utils.fetchRequestUserID(),
+                utils.fetchOrganisationRequests(),
             ]
             Promise.all(initialisers).then(data => {
                 vm.countries = data[0];
                 vm.email_user = data[1].data;
                 vm.email_user.id = data[2].id;
+                vm.organisation_requests = data[3].results;
                 // Convert date to format that the date picker can use
                 vm.email_user.dob = vm.email_user.dob.split("/").reverse().join("-");
                 this.$nextTick(() => {
@@ -477,6 +520,14 @@ export default {
                     }
                 });
                 console.log(vm.email_user.dob)
+            });
+        },
+        fetchOrganisationRequests: function () {
+            let vm = this;
+            vm.loadingOrganisationRequests = true;
+            utils.fetchOrganisationRequests().then(data => {
+                vm.organisation_requests = data.results;
+                vm.loadingOrganisationRequests = false;
             });
         },
         // copyResidentialAddress: function (event) {
@@ -497,7 +548,9 @@ export default {
             if (form.checkValidity()) {
                 console.log('Form valid');
                 vm.updateDetails();
-                on
+            } else {
+                form.classList.add('was-validated');
+                $(form).find("input:invalid").first().focus();
             }
 
             return false;
@@ -584,7 +637,6 @@ export default {
                     $('#newOrganisationName').focus();
                 });
             }
-
         },
         toggleResponsibleForOrganisations: function () {
             if (this.responsibleForOrganisations) {
@@ -594,9 +646,29 @@ export default {
                 this.newOrganisation = null;
             }
         },
+        validatePinsForm: function () {
+            let vm = this;
+            var form = document.getElementById('existing-organisation-form')
+
+            if (form.checkValidity()) {
+                console.log('Form valid');
+                vm.validatePins();
+            } else {
+                form.classList.add('was-validated');
+                $('#existing-organisation-form').find("input:invalid").first().focus();
+            }
+
+            return false;
+        },
         validatePins: function () {
             let vm = this;
-            fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.newOrg.id + '/validate_pins')), JSON.stringify(vm.newOrganisation))
+            vm.validatingPins = true;
+            const requestOptions = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(vm.pins)
+            };
+            fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.selectedOrganisation.id + '/validate_pins')), requestOptions)
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -605,13 +677,27 @@ export default {
                         console.log(error)
                         return Promise.reject(error)
                     }
-                    vm.countries = data
-                    console.log(vm.countries)
+                    if (data.valid) {
+                        Swal.fire(
+                            'Success',
+                            'The pins you entered have been validated and your request will be processed by an organisation administrator.',
+                            'success')
+                        vm.selectedOrganisation = null;
+                        vm.fetchOrganisationRequests();
+                    } else {
+                        Swal.fire(
+                            'Error',
+                            'The pins you entered are not valid. Please check the pins and try again.',
+                            'error')
+                    }
+
+                    console.log(data)
                 })
                 .catch((error) => {
-                    this.errorMessage = constants.ERRORS.API_ERROR
                     console.error('There was an error!', error)
-                })
+                }).finally(() => {
+                    vm.validatingPins = false;
+                });
         },
         validateOrganisationRequest: function () {
             let vm = this;
@@ -631,6 +717,7 @@ export default {
             let vm = this;
             vm.loadingOrganisationRequest = true;
             let data = new FormData();
+            data.append('name', vm.newOrganisation.name);
             data.append('abn', vm.newOrganisation.abn);
             data.append('identification', vm.newOrganisation.identification);
             data.append('role', vm.role);
@@ -639,7 +726,7 @@ export default {
                 headers: { "Content-Type": "application/json" },
                 body: data
             };
-            fetch(helpers.add_endpoint_json(api_endpoints.organisation_requests), requestOptions)
+            fetch(api_endpoints.organisation_requests, requestOptions)
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -648,6 +735,12 @@ export default {
                         console.log(error)
                         return Promise.reject(error)
                     }
+                    Swal.fire(
+                        'Success',
+                        'Your request has been submitted successfully. You will be notified once your request has been processed.',
+                        'success')
+                    vm.newOrganisation = null;
+                    vm.fetchOrganisationRequests();
                     console.log(data)
                 })
                 .catch((error) => {
