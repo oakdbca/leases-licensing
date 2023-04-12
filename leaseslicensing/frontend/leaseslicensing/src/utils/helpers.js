@@ -298,6 +298,22 @@ module.exports = {
             return abn
         }
     },
+    formatACN: function (acn) {
+        if (acn.length == 9) {
+            return acn.slice(0, 3) + ' ' + acn.slice(3, 6) + ' ' + acn.slice(6, 9)
+        } else {
+            return acn
+        }
+    },
+    formatABNorACN: function (input) {
+        if (input.length == 11) {
+            return this.formatABN(input)
+        } else if (input.length == 9) {
+            return this.formatACN(input)
+        } else {
+            return input
+        }
+    },
     validateABN: function (abn) {
         if (abn.length != 11) {
             return false
@@ -328,5 +344,5 @@ module.exports = {
         } else {
             return false
         }
-    }
+    },
 };
