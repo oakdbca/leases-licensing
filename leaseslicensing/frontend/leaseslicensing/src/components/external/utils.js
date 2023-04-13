@@ -1,5 +1,5 @@
 import api from './api'
-import {helpers} from '@/utils/hooks' 
+import {helpers} from '@/utils/hooks'
 
 export default {
     fetchProfile: function (){
@@ -34,16 +34,7 @@ export default {
         });
 
     },
-    fetchOrganisationPermissions: function(id){
-        return new Promise ((resolve,reject) => {
-            fetch(helpers.add_endpoint_json(api.my_organisations,id)).then((response) => {
-                resolve(response.body);
-            },
-            (error) => {
-                reject(error);
-            });
-        });
-    },
+
     fetchOrganisation: function(id){
         return new Promise ((resolve,reject) => {
             fetch(helpers.add_endpoint_json(api.organisations,id)).then((response) => {
