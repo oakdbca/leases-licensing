@@ -271,6 +271,17 @@ module.exports = {
         console.log(errorString)
         return errorString
     },
+    getErrorStringFromResponseData(data) {
+        let errorString = '';
+        if (Array.isArray(data)) {
+            for (let i = 0; i < data.length; i++) {
+                errorString += (data[i] + "<br>")
+            }
+        } else {
+            errorString = JSON.stringify(data);
+        }
+        return errorString;
+    },
     getFileIconClass: function (filepath, additional_class_names = []) {
         let ext = filepath.split('.').pop().toLowerCase()
         let classname = additional_class_names
