@@ -257,7 +257,8 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def assign_user(self, request, *args, **kwargs):
         instance = self.get_object()
-        assigned_officer_id = request.data.get("assigned_officer", None)
+        assigned_officer = request.data.get("assigned_officer", None)
+        assigned_officer_id = assigned_officer.get("id", None) if assigned_officer else None
         instance.assign_to(assigned_officer_id, request)
         serializer = CompetitiveProcessSerializer(instance, context={"request": request})
         return Response(serializer.data)

@@ -65,10 +65,6 @@ export default {
     data: function() {
         let vm = this;
 
-        let APPLICATION_TYPE = constants.APPLICATION_TYPES
-        let PROPOSAL_STATUS = constants.PROPOSAL_STATUS
-        let ROLES = constants.ROLES
-
         return {
             showingProposal: false,
             showingRequirements: false,
@@ -82,19 +78,7 @@ export default {
                     'button_title': 'Complete',
                     'function_when_clicked': vm.issueComplete,
                     'function_to_show_hide': () => {
-                        /*
-                        let condition_to_display = {
-                            [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.APPROVER,],
-                            },
-                            [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.APPROVER,],
-                            }
-                        }
-                        let show = vm.check_role_conditions(condition_to_display)
-                        return show
-                        */
-                        return true
+                        return vm.user_is_eligible(this.action_roles("complete"))
                     }
                 },
                 {
@@ -102,19 +86,7 @@ export default {
                     'button_title': 'Discard',
                     'function_when_clicked': vm.issueDiscard,
                     'function_to_show_hide': () => {
-                        /*
-                        let condition_to_display = {
-                            [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.APPROVER,],
-                            },
-                            [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.APPROVER,],
-                            }
-                        }
-                        let show = vm.check_role_conditions(condition_to_display)
-                        return show
-                        */
-                        return true
+                        return vm.user_is_eligible(this.action_roles("discard"))
                     }
                 },
             ]
@@ -194,8 +166,10 @@ export default {
             }
         },
         elementDisabled: function() {
-            // Returns whether an element is disabled
-            // True while processing (saving), when discarded, or when finalized
+            /** Returns whether an element is disabled
+             * True while processing (saving), when discarded, or when finalized
+             * */
+
             return this.processing || this.discarded || this.finalised;
         }
     },
@@ -205,18 +179,37 @@ export default {
         }
     },
     methods: {
-        // check_role_conditions: function(condition_to_display){
-        //     let condition = false
-        //     if (this.competitive_process.application_type.name in condition_to_display){
-        //         if (this.competitive_process.status_id in condition_to_display[this.competitive_process.application_type.name]){
-        //             let roles = condition_to_display[this.competitive_process.application_type.name][this.competitive_process.status_id]
-        //             const intersection = roles.filter(role => this.competitive_process.accessing_user_roles.includes(role.ID));
-        //             if (intersection.length > 0)
-        //                 condition = true
-        //         }
-        //     }
-        //     return condition
-        // },
+        user_is_eligible: function(status_roles){
+            /** Checks whether the user's roles allow for making certain
+             *  actions (e.g. complete, discard) on this competitive process
+             *  given the competitive process' current workflow status.
+             */
+
+            let status_id = this.competitive_process.status_id;
+            if (status_id in status_roles) {
+                let eligible_roles = status_roles[status_id];
+
+                // Return true if the accessing user's roles are in the eligible roles
+                if (eligible_roles.filter(
+                        role => this.competitive_process.accessing_user_roles.includes(
+                            role)).length > 0) {
+                                return true;
+                            }
+            }
+            return false;
+        },
+        action_roles: function(action) {
+            /** Returns a dictionary of workflow status and user roles to define
+             *  when workflow action items (e.g. complete, discard) are usable
+             */
+
+            if (["complete", "discard"].includes(action)) {
+                return { [constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID]:
+                                [constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID,], }
+            } else {
+                return {};
+            }
+        },
         get_allowed_ids: function(ids){
             let me = this
 
@@ -262,12 +255,12 @@ export default {
             }).
             on("select2:select",function (e) {
                 var selected = $(e.currentTarget);
-                // if (vm.competitive_process.status.id == 'With Approver'){
+                // Competitve process only has one relevant status, so we can just set the assigned officer
                 if (vm.competitive_process.status_id == constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID){
-                    vm.competitive_process.assigned_approver = selected.val();
+                    vm.competitive_process.assigned_officer = selected.val();
                 }
                 else{
-                    vm.competitive_process.assigned_officer = selected.val();
+                    console.warn(`Can not change assignment while in status {vm.competitive_process.status}`);
                 }
                 vm.assignTo();
             }).on("select2:unselecting", function(e) {
@@ -276,12 +269,12 @@ export default {
                     self.select2('close');
                 }, 0);
             }).on("select2:unselect",function (e) {
-                var selected = $(e.currentTarget);
+                // Competitve process only has one relevant status, so we can just unset the assigned officer
                 if (vm.competitive_process.status_id == constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID){
-                    vm.competitive_process.assigned_approver = null;
+                    vm.competitive_process.assigned_officer = null;
                 }
                 else{
-                    vm.competitive_process.assigned_officer = null;
+                    console.warn(`Can not change assignment while in status {vm.competitive_process.status}`);
                 }
                 vm.assignTo();
             })

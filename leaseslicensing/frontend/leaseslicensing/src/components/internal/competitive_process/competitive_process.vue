@@ -522,6 +522,25 @@ export default {
         popupClosed: function() {
 
         },
+        assignedOfficerPayload: function(user) {
+            /* Return the payload for assigning an officer to a competitive process.
+            *  If the user is a number, it is assumed to be a user ID.
+            *  Creates a user dictionary from the user ID if user is not already
+            *  a dictionary.
+            *  Else if the user is null, it is assumed to be unassigning the officer.
+            */
+
+            let assigned_officer = user;
+            if (user != null && !isNaN(Number(user))) {
+                // Get the assigned officer dictionary from the user ID if user isa number
+                // or string representation of a number
+                assigned_officer = this.partyById(Number(user),
+                                this.competitive_process.allowed_editors);
+            }
+            // Return the payload
+            return {body: JSON.stringify({'assigned_officer': assigned_officer}),
+                             method: 'POST',};
+        },
         assignTo: async function(){
             let vm = this
             console.log('in assignTo')
@@ -531,8 +550,9 @@ export default {
                        this.competitive_process.assigned_officer != 'undefined' ?
                             false:
                             true;
-            let data = {'assigned_officer': this.competitive_process.assigned_officer};
-            let payload = {body: JSON.stringify(data), method: 'POST',};
+
+            let payload = this.assignedOfficerPayload(
+                this.competitive_process.assigned_officer);
 
             if (unassign) {
                 vm.assign_api_call('unassign');
@@ -542,8 +562,7 @@ export default {
             }
         },
         assignRequestUser: async function(){
-            let data = {'assigned_officer': this.competitive_process.accessing_user.id};
-            let payload = {body: JSON.stringify(data), method: 'POST',};
+            let payload = this.assignedOfficerPayload(this.competitive_process.accessing_user);
             this.assign_api_call('assign_user', payload);
         },
         assign_api_call: async function(api_function, payload) {
@@ -605,24 +624,30 @@ export default {
                 console.log("Skipping assignment of selected officer")
             }
         },
-        partyById: function(party_id) {
-            /** Returns the competitive process party with ID `party_id`
-             *  or null if the party ID is null (e.g. when chosing no winner)
+        partyById: function(party_id, party_dict) {
+            /** Returns the party with ID `party_id` from the dictionary `party_dict`,
+             *  or null if the party ID is null (e.g. when chosing no winner),
              *  or when no party for the respective ID can not be found.
+             *  Defaults to the competitive process party when `party_dict` is not provided.
              */
 
             if (party_id == null) {
+                console.log("No party ID. Returning null.");
                 return null; // e.g. no winner outcome
             }
 
-            let idx = this.competitive_process.competitive_process_parties.findIndex(
+            if (party_dict == null) {
+                party_dict = this.competitive_process.competitive_process_parties;
+            }
+
+            let idx = party_dict.findIndex(
                 p => p.id == party_id);
             if (idx == -1) {
                 console.warn(`There is no party with ID ${party_id}.`);
                 return null;
             }
             // Return the party
-            return this.competitive_process.competitive_process_parties[idx];
+            return party_dict[idx];
         },
         addDetail: function(new_party_data) {
             /** Callback for `add-detail` event emitted by custom-row */

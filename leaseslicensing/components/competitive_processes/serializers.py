@@ -12,6 +12,8 @@ from leaseslicensing.components.main.serializers import CommunicationLogEntrySer
 from leaseslicensing.components.users.serializers import UserSerializerSimple
 from ... import settings
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
+from ledger_api_client.managed_models import SystemGroup
+from leaseslicensing.settings import GROUP_NAME_CHOICES
 
 
 class RegistrationOfInterestSerializer(serializers.ModelSerializer):
@@ -320,6 +322,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     competitive_process_parties = CompetitiveProcessPartySerializer(many=True, required=False)
     competitive_process_geometries = CompetitiveProcessGeometrySerializer(many=True, required=False)
     allowed_editors = serializers.SerializerMethodField(read_only=True)
+    accessing_user_roles = serializers.SerializerMethodField()
 
     class Meta:
         model = CompetitiveProcess
@@ -328,6 +331,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'lodgement_number',
             'registration_of_interest',
             'status',
+            'status_id',
             'created_at',
             'assigned_officer',
             'site',
@@ -340,6 +344,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'details',
             'competitive_process_geometries',
             'allowed_editors',
+            'accessing_user_roles',
         )
         extra_kwargs = {
             'winner': {
@@ -352,6 +357,19 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
         user = self.context.get("request").user
         serializer = UserSerializerSimple(user)
         return serializer.data
+
+    def get_accessing_user_roles(self, obj):
+        request = self.context.get("request")
+        accessing_user = request.user
+        roles = []
+
+        for choice in GROUP_NAME_CHOICES:
+            group = SystemGroup.objects.get(name=choice[0])
+            ids = group.get_system_group_member_ids()
+            if accessing_user.id in ids:
+                roles.append(group.name)
+
+        return roles
 
     def update(self, instance, validated_data):
         competitive_process_parties_data = validated_data.pop('competitive_process_parties')
