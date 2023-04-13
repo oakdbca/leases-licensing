@@ -584,7 +584,9 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
         if is_internal(self.request):
             return OrganisationRequest.objects.all()
         elif is_customer(self.request):
-            return OrganisationRequest.objects.filter(requester=self.request.user.id)
+            return OrganisationRequest.objects.filter(
+                requester=self.request.user.id
+            ).exclude(status="declined")
         return OrganisationRequest.objects.none()
 
     @list_route(
@@ -1051,5 +1053,9 @@ class MyOrganisationsViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return Organisation.objects.all()
         elif is_customer(self.request):
-            return user.leaseslicensing_organisations.all()
+            return Organisation.objects.filter(
+                contacts__user=user.id,
+                contacts__user_status="active",
+                contacts__user_role="organisation_admin",
+            )
         return Organisation.objects.none()
