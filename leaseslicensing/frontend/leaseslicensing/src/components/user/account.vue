@@ -232,160 +232,143 @@
                 </div>
                 <div class="tab-pane fade" id="organisations" role="tabpanel" aria-labelledby="organisations-tab">
                     <FormSection index="organisation-details" :label="linkOrganisationTitle">
-                        <div class="row mb-4">
-                            <label for="responsibleForOrganisations" class="col-auto form-check-label">Are you responsible
-                                for preparing
-                                applications on behalf of one or more organisations?</label>
-                            <div class="col">
-                                <div class="form-check form-switch">
-                                    <input @change="toggleResponsibleForOrganisations" class="form-check-input"
-                                        type="checkbox" v-model="responsibleForOrganisations"
-                                        id="responsibleForOrganisations">
-                                </div>
-                            </div>
-                        </div>
-                        <template v-if="responsibleForOrganisations">
-                            <OrganisationSearch v-if="!selectedOrganisation && !newOrganisation"
-                                @selected="organisationSelected" @new-organisation="prepareNewOrganisation"
-                                label="Organisations" :lookupApiEndpoint="api_endpoints.organisation_lookup" />
-                            <template v-if="selectedOrganisation">
-                                <form id="existing-organisation-form" @submit.prevent="" class="needs-validation"
-                                    novalidate>
-                                    <div class="row mb-3">
-                                        <label for="selectedOrganisation" class="col-sm-3 col-form-label">Selected
-                                            Organisation</label>
+                        <OrganisationSearch v-if="!selectedOrganisation && !newOrganisation"
+                            @selected="organisationSelected" @new-organisation="prepareNewOrganisation"
+                            label="Organisations" :lookupApiEndpoint="api_endpoints.organisation_lookup" />
+                        <template v-if="selectedOrganisation">
+                            <form id="existing-organisation-form" @submit.prevent="" class="needs-validation" novalidate>
+                                <div class="row mb-3">
+                                    <label for="selectedOrganisation" class="col-sm-3 col-form-label">Selected
+                                        Organisation</label>
 
-                                        <div class="col my-auto">
-                                            <span class="badge bg-primary fs-6">{{ selectedOrganisation.text }}</span> Wrong
-                                            Organisation? <a href="#" @click="searchAgain">Search
-                                                Again</a>
+                                    <div class="col my-auto">
+                                        <span class="badge bg-primary fs-6">{{ selectedOrganisation.text }}</span> Wrong
+                                        Organisation? <a href="#" @click="searchAgain">Search
+                                            Again</a>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <BootstrapAlert>
+                                            <ul class="list-group">
+                                                <li class="list-group-item">
+                                                    This organisation has already been registered with the system.
+                                                </li>
+                                                <li class="list-group-item">
+                                                    Please enter the two pin codes below.
+                                                </li>
+                                                <li class="list-group-item">
+                                                    These pin codes can be retrieved from:
+                                                </li>
+                                                <li class="list-group-item">
+                                                    <span v-for="person in selectedOrganisation.first_five.split(',')"
+                                                        class="badge bg-primary bg-first-five">{{ person
+                                                        }}</span>
+                                                </li>
+                                            </ul>
+                                        </BootstrapAlert>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="pin1" class="col-sm-3 col-form-label">Pin 1</label>
+                                    <div class="col-sm-4">
+                                        <input type="text" class="form-control" id="pin1" ref="pin1" v-model="pins.pin1"
+                                            minlength="12" maxlength="12" required>
+                                        <div class="invalid-feedback">
+                                            Please enter a 12 digit pin code.
                                         </div>
                                     </div>
-                                    <div class="row mb-3">
-                                        <div class="col-sm-3">
-                                        </div>
-                                        <div class="col-sm-7">
-                                            <BootstrapAlert>
-                                                <ul class="list-group">
-                                                    <li class="list-group-item">
-                                                        This organisation has already been registered with the system.
-                                                    </li>
-                                                    <li class="list-group-item">
-                                                        Please enter the two pin codes below.
-                                                    </li>
-                                                    <li class="list-group-item">
-                                                        These pin codes can be retrieved from:
-                                                    </li>
-                                                    <li class="list-group-item">
-                                                        <span v-for="person in selectedOrganisation.first_five.split(',')"
-                                                            class="badge bg-primary bg-first-five">{{ person
-                                                            }}</span>
-                                                    </li>
-                                                </ul>
-                                            </BootstrapAlert>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="pin2" class="col-sm-3 col-form-label">Pin 2</label>
+                                    <div class="col-sm-4">
+                                        <input type="text" class="form-control" id="pin2" ref="pin2" v-model="pins.pin2"
+                                            minlength="12" maxlength="12" required>
+                                        <div class="invalid-feedback">
+                                            Please enter a 12 digit pin code.
                                         </div>
                                     </div>
-                                    <div class="row mb-3">
-                                        <label for="pin1" class="col-sm-3 col-form-label">Pin 1</label>
-                                        <div class="col-sm-4">
-                                            <input type="text" class="form-control" id="pin1" ref="pin1" v-model="pins.pin1"
-                                                minlength="12" maxlength="12" required>
-                                            <div class="invalid-feedback">
-                                                Please enter a 12 digit pin code.
-                                            </div>
+                                </div>
+                                <div v-if="validatePinsError" class="row mb-3">
+                                    <label for="pin2" class="col-sm-3 col-form-label">&nbsp;</label>
+                                    <div class="col-sm-4">
+                                        <BootstrapAlert type="danger" icon="exclamation-triangle-fill">{{
+                                            validatePinsError }}
+                                        </BootstrapAlert>
+                                    </div>
+                                </div>
+                                <div v-if="pinCodesEntered" class="row mb-3">
+                                    <div for="pin2" class="col-sm-3">&nbsp;</div>
+                                    <div class="col-sm-4">
+                                        <BootstrapLoadingButton text="Submit Request" @click="validatePinsForm"
+                                            :isLoading="validatingPins" class="btn licensing-btn-primary" />
+                                    </div>
+                                </div>
+                            </form>
+                        </template>
+                        <template v-if="newOrganisation">
+                            <form id="new-organisation-form" @submit.prevent="" class="needs-validation" novalidate>
+                                <div class="row mb-3">
+                                    <div class="col-auto">
+                                        <BootstrapAlert>
+                                            <ul class="list-group">
+                                                <li class="list-group-item">
+                                                    The organisation you searched for has not yet been registered
+                                                </li>
+                                                <li class="list-group-item">
+                                                    Please enter the details below
+                                                </li>
+                                            </ul>
+                                        </BootstrapAlert>
+                                    </div>
+                                    <div class="col">
+                                        <a href="#" @click="searchAgain">Search
+                                            Again</a>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="newOrganisationName" class="col-sm-3 col-form-label">Organisation
+                                        Name</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" id="newOrganisationName"
+                                            ref="newOrganisationName" v-model="newOrganisation.name" required>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="newOrganisationABN" class="col-sm-3 col-form-label">Organisation
+                                        ABN or ACN</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" id="newOrganisationABN"
+                                            ref="newOrganisationABN" v-model="newOrganisation.abn" minlength="9"
+                                            maxlength="11" required
+                                            onkeydown="javascript: return['Backspace','Delete','ArrowLeft','ArrowRight'].includes(event.code) ? true : !isNaN(Number(event.key)) && event.code !== 'Space'">
+                                        <div class="invalid-feedback">
+                                            This is not a valid ABN or ACN.
                                         </div>
                                     </div>
-                                    <div class="row mb-3">
-                                        <label for="pin2" class="col-sm-3 col-form-label">Pin 2</label>
-                                        <div class="col-sm-4">
-                                            <input type="text" class="form-control" id="pin2" ref="pin2" v-model="pins.pin2"
-                                                minlength="12" maxlength="12" required>
-                                            <div class="invalid-feedback">
-                                                Please enter a 12 digit pin code.
-                                            </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <label for="newOrganisationIdentification" class="col-sm-3 col-form-label">Proof of
+                                        Employment</label>
+                                    <div class="col-sm-9">
+                                        <input @change="readFile" type="file" class="form-control"
+                                            id="newOrganisationIdentification" ref="newOrganisationIdentification" required>
+                                        <div id="passwordHelpBlock" class="form-text">
+                                            Please upload a letter on your organisation's official letter head stating
+                                            that you are an employee of this organisation.
                                         </div>
                                     </div>
-                                    <div v-if="validatePinsError" class="row mb-3">
-                                        <label for="pin2" class="col-sm-3 col-form-label">&nbsp;</label>
-                                        <div class="col-sm-4">
-                                            <BootstrapAlert type="danger" icon="exclamation-triangle-fill">{{
-                                                validatePinsError }}
-                                            </BootstrapAlert>
-                                        </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-3"></div>
+                                    <div class="col-sm-9">
+                                        <BootstrapLoadingButton text="Submit Request" @click="validateOrganisationRequest"
+                                            :isLoading="loadingOrganisationRequest" class="btn licensing-btn-primary" />
                                     </div>
-                                    <div v-if="pinCodesEntered" class="row mb-3">
-                                        <div for="pin2" class="col-sm-3">&nbsp;</div>
-                                        <div class="col-sm-4">
-                                            <BootstrapLoadingButton text="Submit Request" @click="validatePinsForm"
-                                                :isLoading="validatingPins" class="btn licensing-btn-primary" />
-                                        </div>
-                                    </div>
-                                </form>
-                            </template>
-                            <template v-if="newOrganisation">
-                                <form id="new-organisation-form" @submit.prevent="" class="needs-validation" novalidate>
-                                    <div class="row mb-3">
-                                        <div class="col-auto">
-                                            <BootstrapAlert>
-                                                <ul class="list-group">
-                                                    <li class="list-group-item">
-                                                        The organisation you searched for has not yet been registered
-                                                    </li>
-                                                    <li class="list-group-item">
-                                                        Please enter the details below
-                                                    </li>
-                                                </ul>
-                                            </BootstrapAlert>
-                                        </div>
-                                        <div class="col">
-                                            <a href="#" @click="searchAgain">Search
-                                                Again</a>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="newOrganisationName" class="col-sm-3 col-form-label">Organisation
-                                            Name</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" id="newOrganisationName"
-                                                ref="newOrganisationName" v-model="newOrganisation.name" required>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="newOrganisationABN" class="col-sm-3 col-form-label">Organisation
-                                            ABN or ACN</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" id="newOrganisationABN"
-                                                ref="newOrganisationABN" v-model="newOrganisation.abn" minlength="9"
-                                                maxlength="11" required
-                                                onkeydown="javascript: return['Backspace','Delete','ArrowLeft','ArrowRight'].includes(event.code) ? true : !isNaN(Number(event.key)) && event.code !== 'Space'">
-                                            <div class="invalid-feedback">
-                                                This is not a valid ABN or ACN.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="newOrganisationIdentification" class="col-sm-3 col-form-label">Proof of
-                                            Employment</label>
-                                        <div class="col-sm-9">
-                                            <input @change="readFile" type="file" class="form-control"
-                                                id="newOrganisationIdentification" ref="newOrganisationIdentification"
-                                                required>
-                                            <div id="passwordHelpBlock" class="form-text">
-                                                Please upload a letter on your organisation's official letter head stating
-                                                that you are an employee of this organisation.
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <div class="col-sm-3"></div>
-                                        <div class="col-sm-9">
-                                            <BootstrapLoadingButton text="Submit Request"
-                                                @click="validateOrganisationRequest" :isLoading="loadingOrganisationRequest"
-                                                class="btn licensing-btn-primary" />
-                                        </div>
-                                    </div>
-                                </form>
-                            </template>
+                                </div>
+                            </form>
                         </template>
                     </FormSection>
                     <FormSection v-if="organisation_requests && organisation_requests.length" index="organisation-requests"
@@ -454,7 +437,6 @@ export default {
             organisation_requests: null,
             term: null,
             role: 'Employee',
-            responsibleForOrganisations: false,
             loadingOrganisationRequest: false,
             validatePinsError: null,
             validatingPins: false,
@@ -636,14 +618,6 @@ export default {
                 this.$nextTick(() => {
                     $('#newOrganisationName').focus();
                 });
-            }
-        },
-        toggleResponsibleForOrganisations: function () {
-            if (this.responsibleForOrganisations) {
-                $('#search-organisations').select2('open');
-            } else {
-                this.selectedOrganisation = null;
-                this.newOrganisation = null;
             }
         },
         validatePinsForm: function () {
