@@ -160,6 +160,10 @@ module.exports = {
         // assumes api_string has trailing forward slash "/" character required for POST
         let endpoint = api_string + addition;
         endpoint = endpoint.replace("//", "/")  // Remove duplicated '/' just in case
+        // if the last character is not a forward slash then add one
+        if (endpoint.slice(-1) != '/') {
+            endpoint += '/'
+        }
         return endpoint
     },
     dtPopover: function (value, truncate_length = 30, trigger = 'hover') {
