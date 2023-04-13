@@ -78,6 +78,26 @@ export default {
                 });
         });
     },
+    fetchOrganisation: function (id) {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.organisations_viewset + id + '/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        reject(error)
+                    }
+                    console.log('organisation: ', data)
+                    resolve(data)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                    reject(error)
+                })
+        });
+    },
     fetchOrganisationRequests: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisation_requests)
@@ -90,6 +110,25 @@ export default {
                     }
                     resolve(data)
                     console.log("organisation requests: ", data)
+                })
+                .catch(error => {
+                    console.error("There was an error!", error);
+                    reject(error)
+                });
+        });
+    },
+    fetchOrganisationPermissions: function (id) {
+        return new Promise((resolve, reject) => {
+            fetch(helpers.add_endpoint_join(api_endpoints.my_organisations, id))
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        console.log(error)
+                        reject(error);
+                    }
+                    resolve(data)
+                    console.log("organisation permissions: ", data)
                 })
                 .catch(error => {
                     console.error("There was an error!", error);
