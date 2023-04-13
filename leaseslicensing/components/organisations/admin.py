@@ -107,3 +107,13 @@ class OrganisationAccessGroupAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(models.OrganisationContact)
+class OrganisationContact(admin.ModelAdmin):
+    list_display = ["organisation_name", "full_name", "user_status", "user_role"]
+    ordering = ["organisation", "-user_status", "first_name"]
+
+    def organisation_name(self, obj):
+        if obj.organisation:
+            return obj.organisation.organisation_name
