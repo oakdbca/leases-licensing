@@ -659,11 +659,11 @@ class Organisation(models.Model):
 
     @property
     def name(self):
-        return self.organisation.name
+        return self.organisation_name
 
     @property
     def abn(self):
-        return self.organisation.abn
+        return self.organisation_abn
 
     @property
     def address(self):
@@ -675,7 +675,7 @@ class Organisation(models.Model):
 
     @property
     def email(self):
-        return self.organisation.email
+        return self.organisation.organisation_email
 
     @property
     def first_five(self):
@@ -691,6 +691,18 @@ class Organisation(models.Model):
             organisation__contacts__user_status="active",
             organisation__contacts__user_role="organisation_admin",
         ).count()
+
+    @classmethod
+    def organisations_user_can_admin(cls, user_id):
+        return (
+            cls.objects.filter(
+                delegates__user=user_id,
+                contacts__user_status="active",
+                contacts__user_role="organisation_admin",
+            )
+            .distinct()
+            .only("id", "organisation_name")
+        )
 
 
 # @python_2_unicode_compatible
@@ -769,6 +781,10 @@ class OrganisationContact(models.Model):
         :return: True if the application is in one of the editable status.
         """
         return self.user_status == "active" and self.user_role == "consultant"
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 class OrganisationContactDeclinedDetails(models.Model):
@@ -907,7 +923,7 @@ class OrganisationRequest(models.Model):
         related_name="organisation_requests",
         on_delete=models.PROTECT,
         null=True,
-        blank=False,
+        blank=True,
     )
     abn = models.CharField(max_length=50, null=True, blank=True, verbose_name="ABN")
     requester = models.IntegerField()  # EmailUserRO
@@ -926,6 +942,7 @@ class OrganisationRequest(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ["-lodgement_number"]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -947,15 +964,33 @@ class OrganisationRequest(models.Model):
                 request,
             )
 
-            ledger_org = get_search_organisation(self.name, self.abn)
+            ledger_org = None
+            search_organisation_response = get_search_organisation(self.name, self.abn)
+            if 200 == search_organisation_response["status"]:
+                data = search_organisation_response["data"]
+                ledger_org = data[0]
 
             if not ledger_org:
-                ledger_org = create_organisation(self.name, self.abn)
+                # Would be much more robust if this api call gave some feedback, talk to
+                # a coordinator about this
+                create_organisation(self.name, self.abn)
+                search_organisation_response = get_search_organisation(
+                    self.name, self.abn
+                )
+                if 200 == search_organisation_response["status"]:
+                    data = search_organisation_response["data"]
+                    ledger_org = data[0]
+
+            logger.debug("ledger_org = " + str(ledger_org))
+
             org, created = Organisation.objects.get_or_create(
                 organisation=ledger_org["organisation_id"]
             )
 
-            delegate = UserDelegation.objects.create(
+            self.organisation = org
+            self.save()
+
+            delegate, created = UserDelegation.objects.get_or_create(
                 user=self.requester, organisation=org
             )
 
@@ -988,7 +1023,7 @@ class OrganisationRequest(models.Model):
                 role = "organisation_admin"
 
         # Create contact person
-        OrganisationContact.objects.create(
+        OrganisationContact.objects.get_or_create(
             user=self.requester,
             organisation=org,
             first_name=delegate_email_user.first_name,
@@ -1002,7 +1037,9 @@ class OrganisationRequest(models.Model):
         )
 
         # send email to requester
-        send_organisation_request_accept_email_notification(self, org, request)
+        send_organisation_request_accept_email_notification(
+            self, org, delegate_email_user, request
+        )
 
     def send_org_access_group_request_notification(self, request):
         # user submits a new organisation request
