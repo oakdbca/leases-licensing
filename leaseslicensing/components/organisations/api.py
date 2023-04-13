@@ -3,7 +3,7 @@ import traceback
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import CharField, Q, Value
+from django.db.models import CharField, IntegerField, Q, Value
 from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
@@ -32,6 +32,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationCheckExistSerializer,
     OrganisationCheckSerializer,
     OrganisationCommsSerializer,
+    OrganisationContactAdminCountSerializer,
     OrganisationContactSerializer,
     OrganisationKeyValueSerializer,
     OrganisationLogEntrySerializer,
@@ -115,9 +116,13 @@ class OrganisationViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def contacts(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = OrganisationContactSerializer(
-            instance.contacts.exclude(user_status="pending"), many=True
+        admin_count = instance.contacts.filter(user_role="organisation_admin").count()
+        logger.debug("admin_count = " + str(admin_count))
+        queryset = instance.contacts.exclude(user_status="pending")
+        queryset = queryset.annotate(
+            admin_count=Value(admin_count, output_field=IntegerField())
         )
+        serializer = OrganisationContactAdminCountSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @logging_action(

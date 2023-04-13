@@ -86,6 +86,10 @@ class OrganisationContactSerializer(serializers.ModelSerializer):
         return obj.get_user_role_display()
 
 
+class OrganisationContactAdminCountSerializer(OrganisationContactSerializer):
+    admin_count = serializers.IntegerField(allow_null=True, read_only=True)
+
+
 class BasicUserDelegationSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserDelegation

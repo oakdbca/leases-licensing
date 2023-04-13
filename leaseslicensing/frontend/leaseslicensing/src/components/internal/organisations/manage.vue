@@ -362,6 +362,9 @@ export default {
                     {
                         data: 'id',
                         mRender: function (data, type, full) {
+                            if ('Organisation Admin' == full.user_role && 1 == full.admin_count) {
+                                return '';
+                            }
                             let links = '';
                             let name = full.first_name + ' ' + full.last_name;
                             links += `<a data-email='${full.email}' data-name='${name}' data-id='${full.id}' class="remove-contact">Remove</a><br/>`;
@@ -454,13 +457,16 @@ export default {
                 let id = $(e.target).data('id');
                 Swal.fire({
                     title: "Delete Contact",
-                    text: "Are you sure you want to remove " + name + "(" + email + ") as a contact  ?",
-                    type: "error",
+                    text: `Are you sure you want to remove ${name} (${email}) as a contact  ?`,
+                    icon: "warning",
                     showCancelButton: true,
                     confirmButtonText: 'Accept'
-                }).then(() => {
-                    vm.deleteContact(id);
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        vm.deleteContact(id);
+                    }
                 }, (error) => {
+                    console.log(error);
                 });
             });
             // Fix the table responsiveness when tab is shown
@@ -515,21 +521,41 @@ export default {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
             };
-            fetch(helpers.add_endpoint_json(api_endpoints.organisation_contacts, id), requestOptions).then((response) => {
-                Swal.fire(
-                    'Contact Deleted',
-                    'The contact was successfully deleted',
-                    'success'
-                )
-                vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-            }, (error) => {
-                console.log(error);
-                Swal.fire(
-                    'Contact Deleted',
-                    'The contact could not be deleted because of the following error ' + error,
-                    'error'
-                )
-            });
+            fetch(helpers.add_endpoint_json(api_endpoints.organisation_contacts, id), requestOptions)
+                .then(async response => {
+                    if (204 === response.status) {
+                        Swal.fire(
+                            'Contact Deleted',
+                            'The contact was successfully deleted',
+                            'success'
+                        )
+                        vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
+                    }
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        if (400 == response.status) {
+                            const errorString = helpers.getErrorStringFromResponseData(data);
+                            Swal.fire({
+                                title: 'Unable to Delete Contact',
+                                html: `${errorString}`,
+                                icon: 'error'
+                            })
+                        }
+                        console.log(data)
+                        return Promise.reject(error);
+                    }
+                    Swal.fire(
+                        'Contact Deleted',
+                        'The contact was successfully deleted',
+                        'success'
+                    )
+                    vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
+                })
+                .catch(error => {
+                    console.error("There was an error!", error);
+                });
+
         },
         updateAddress: function () {
             let vm = this;
