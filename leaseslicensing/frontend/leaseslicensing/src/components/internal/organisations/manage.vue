@@ -53,7 +53,7 @@
                                         </div>
                                         <div class="row row-waiver mb-3">
                                             <div class="col-sm-4">
-                                                <label class="control-label pull-right" for="Name">
+                                                <label class="control-label float-end" for="Name">
                                                     T Class application fee
                                                 </label>
                                             </div>
@@ -87,7 +87,7 @@
                                         </div>
                                         <div class="row row-waiver mb-3">
                                             <div class="col-sm-4">
-                                                <label class="control-label pull-right" for="Name">T Class licence
+                                                <label class="control-label float-end" for="Name">T Class licence
                                                     fee</label>
                                             </div>
                                             <div class="col-sm-1">
@@ -119,10 +119,10 @@
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-sm-12">
-                                                <button v-if="!updatingDetails" class="pull-right btn btn-primary"
+                                                <button v-if="!updatingDetails" class="float-end btn btn-primary"
                                                     @click.prevent="updateDetails()"
                                                     :disabled="!can_update()">Update</button>
-                                                <button v-else disabled class="pull-right btn btn-primary"><i
+                                                <button v-else disabled class="float-end btn btn-primary"><i
                                                         class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
                                             </div>
                                         </div>
@@ -168,24 +168,28 @@
                                         </div>
                                         <div class="row mb-2">
                                             <div class="col-sm-12">
-                                                <button v-if="!updatingAddress" class="pull-right btn btn-primary"
+                                                <button v-if="!updatingAddress" class="float-end btn btn-primary"
                                                     @click.prevent="updateAddress()">Update</button>
-                                                <button v-else disabled class="pull-right btn btn-primary"><i
+                                                <button v-else disabled class="float-end btn btn-primary"><i
                                                         class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
                                             </div>
                                         </div>
                                     </form>
                                 </FormSection>
                                 <FormSection :formCollapse="true" label="Contacts" index="contacts">
-                                    <form class="form-horizontal" action="index.html" method="post">
-                                        <div class="col-sm-12">
+                                    <div class="row">
+                                        <div class="col">
                                             <button @click.prevent="addContact()" style="margin-bottom:10px;"
-                                                class="btn btn-primary pull-right">Add Contact</button>
+                                                class="btn btn-primary float-end">Add Contact</button>
                                         </div>
-                                        <datatable @hook:mounted="addOrgContactEventListeners" ref="contacts_datatable"
-                                            id="organisation_contacts_datatable" :dtOptions="contacts_options"
-                                            :dtHeaders="contacts_headers" />
-                                    </form>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col">
+                                            <datatable @vue:mounted="addOrgContactEventListeners" ref="contacts_datatable"
+                                                id="organisation_contacts_datatable" :dtOptions="contacts_options"
+                                                :dtHeaders="contacts_headers" />
+                                        </div>
+                                    </div>
                                 </FormSection>
                                 <FormSection :formCollapse="true" label="Linked User Accounts" index="linkeduseraccounts">
                                     <form class="form-horizontal">
@@ -195,15 +199,15 @@
                                                     <p class="fs-6">Users linked to this organisation:</p>
                                                 </div>
                                                 <div class="mb-3">
-                                                    <ul v-if="org.delegate_email_users && org.delegate_email_users.length"
-                                                        class="ms-0 ps-0">
-                                                        <span @click="personRedirect(d.id)"
-                                                            v-for="d in org.delegate_email_users"
-                                                            class="badge bg-secondary me-1 fs-6" data-bs-toggle="tooltip"
+                                                    <ul v-if="org.delegates && org.delegates.length" class="ms-0 ps-0">
+                                                        <span @click="personRedirect(d.user)" v-for="d in org.delegates"
+                                                            :class="'organisation_admin' == d.user_role ? 'bg-primary' : 'bg-secondary'"
+                                                            class="badge me-1 fs-6" data-bs-toggle="tooltip"
                                                             data-bs-html="true"
                                                             data-bs-title="<em>Tooltip</em> <u>with</u> <b>HTML</b>">
-                                                            {{ d.first_name }}
-                                                            {{ d.last_name }}
+                                                            {{ d.full_name }}
+                                                            <span v-if="'organisation_admin' == d.user_role">
+                                                                (Admin)</span>
                                                         </span>
 
                                                     </ul>
@@ -272,24 +276,28 @@
                         </div>
                     </div>
                 </div>
+                <AddContact ref="add_contact" :org_id="org.id" />
             </div>
             <div v-else>
                 <BootstrapSpinner class="text-primary" :isLoading="true" />
             </div>
         </div>
     </div>
-    <!--AddContact ref="add_contact" :org_id="org.id" /-->
 </template>
 
 <script>
+
 import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import datatable from '@vue-utils/datatable.vue'
-// import AddContact from '@common-utils/add_contact.vue'
 import ApplicationsTable from "@/components/common/table_proposals"
 import ApprovalsTable from '@/components/common/table_approvals.vue'
 import CompliancesTable from '@/components/common/table_compliances.vue'
 import CommsLogs from '@common-utils/comms_logs.vue'
+import AddContact from '@common-utils/add_contact.vue'
 import utils from '../utils'
+import Swal from 'sweetalert2'
+
+
 export default {
     name: 'Organisation',
     data() {
@@ -342,6 +350,7 @@ export default {
                 },
                 columns: [
                     {
+                        data: 'id',
                         mRender: function (data, type, full) {
                             return full.first_name + " " + full.last_name;
                         }
@@ -351,6 +360,7 @@ export default {
                     { data: 'fax_number' },
                     { data: 'email' },
                     {
+                        data: 'id',
                         mRender: function (data, type, full) {
                             let links = '';
                             let name = full.first_name + ' ' + full.last_name;
@@ -369,7 +379,7 @@ export default {
         ApplicationsTable,
         ApprovalsTable,
         CompliancesTable,
-        // AddContact,
+        AddContact,
     },
     computed: {
         isLoading: function () {
@@ -427,6 +437,9 @@ export default {
         },
         addContact: function () {
             this.$refs.add_contact.isModalOpen = true;
+            this.$nextTick(() => {
+                this.$refs.add_contact.$refs.first_name.focus();
+            });
         },
         personRedirect: function (id) {
             window.location.href = '/internal/person/details/' + id;
@@ -439,7 +452,7 @@ export default {
                 let name = $(e.target).data('name');
                 let email = $(e.target).data('email');
                 let id = $(e.target).data('id');
-                swal({
+                Swal.fire({
                     title: "Delete Contact",
                     text: "Are you sure you want to remove " + name + "(" + email + ") as a contact  ?",
                     type: "error",
@@ -466,7 +479,7 @@ export default {
                 vm.updatingDetails = false;
                 vm.org = response.body;
                 if (vm.org.address == null) { vm.org.address = {}; }
-                swal(
+                Swal.fire(
                     'Saved',
                     'Organisation details have been saved',
                     'success'
@@ -479,7 +492,7 @@ export default {
                         text = text.email[0];
                     }
                 }
-                swal(
+                Swal.fire(
                     'Error',
                     'Organisation details have cannot be saved because of the following error: ' + text,
                     'error'
@@ -489,7 +502,7 @@ export default {
         },
         addedContact: function () {
             let vm = this;
-            swal(
+            Swal.fire(
                 'Added',
                 'The contact has been successfully added.',
                 'success'
@@ -498,11 +511,12 @@ export default {
         },
         deleteContact: function (id) {
             let vm = this;
-
-            vm.$http.delete(helpers.add_endpoint_json(api_endpoints.organisation_contacts, id), {
-                emulateJSON: true
-            }).then((response) => {
-                swal(
+            const requestOptions = {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+            };
+            fetch(helpers.add_endpoint_json(api_endpoints.organisation_contacts, id), requestOptions).then((response) => {
+                Swal.fire(
                     'Contact Deleted',
                     'The contact was successfully deleted',
                     'success'
@@ -510,7 +524,7 @@ export default {
                 vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
             }, (error) => {
                 console.log(error);
-                swal(
+                Swal.fire(
                     'Contact Deleted',
                     'The contact could not be deleted because of the following error ' + error,
                     'error'
@@ -525,7 +539,7 @@ export default {
             }).then((response) => {
                 vm.updatingAddress = false;
                 vm.org = response.body;
-                swal(
+                Swal.fire(
                     'Saved',
                     'Address details have been saved',
                     'success'
