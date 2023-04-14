@@ -540,7 +540,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
         "subject": subject,
         "text": text,
         "organisation": organisation,
-        "customer": customer.id,
+        "customer": customer,
         "staff": staff,
         "to": to,
         "fromm": fromm,
