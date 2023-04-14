@@ -81,7 +81,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
         search_term = request.GET.get("term", "")
         organisations = (
             self.get_queryset()
-            .filter(organisation_name__icontains=search_term)
+            .filter(ledger_organisation_name__icontains=search_term)
             .only("id", "ledger_organisation_name")[:10]
         )
         data_transform = [

@@ -113,6 +113,12 @@ class CompetitiveProcess(models.Model):
             self.status = CompetitiveProcess.STATUS_COMPLETED_DECLINED
         self.save()
 
+    def unlock(self, request):
+        """Unlock the competitive process and make it available for editing again."""
+
+        self.status = CompetitiveProcess.STATUS_IN_PROGRESS
+        self.save()
+
     @property
     def site(self):
         return 'site_name'

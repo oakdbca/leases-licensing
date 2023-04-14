@@ -125,6 +125,23 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         instance.discard(request)
         return Response({})
 
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def unlock(self, request, *args, **kwargs):
+        """Unlock a competitive process"""
+
+        instance = self.get_object()
+        serializer = self.perform_update(instance, request)
+        instance.unlock(request)
+
+        return Response(serializer.data)
+
     @detail_route(methods=["POST"], detail=True)
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
@@ -175,7 +192,10 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         # Handle "geometry" data
         if competitive_process_geometry_data:
             save_geometry(instance, competitive_process_geometry_data, self.action)
-        return serializer
+
+        # Return the serialized saved instance
+        return CompetitiveProcessSerializer(
+            CompetitiveProcess.objects.get(id=instance.id), context={"request": request})
 
     @detail_route(
         methods=[

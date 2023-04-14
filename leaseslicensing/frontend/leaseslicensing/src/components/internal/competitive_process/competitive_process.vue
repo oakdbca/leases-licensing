@@ -14,6 +14,7 @@
                     :competitive_process="competitive_process"
                     :processing="processing"
                     :discarded="discarded"
+                    :declined="declined"
                     :finalised="finalised"
                     :canAction="canAction"
                     :canAssess="canAssess"
@@ -22,6 +23,7 @@
                     @assignTo="assignTo"
                     @issueComplete="issueComplete"
                     @issueDiscard="issueDiscard"
+                    @issueUnlock="issueUnlock"
                     class="mt-2"
                 />
             </div>
@@ -64,6 +66,7 @@
                                 :accessing_user="competitive_process.accessing_user"
                                 :processing="processing"
                                 :discarded="discarded"
+                                :declined="declined"
                                 :finalised="finalised"
                                 :key="cp_id"
                                 @add-detail="addDetail"
@@ -317,15 +320,23 @@ export default {
         competitive_process_complete_url: function() {
             return '/api/competitive_process/' + this.competitive_process.id + '/complete/'
         },
+        competitive_process_unlock_url: function() {
+            return '/api/competitive_process/' + this.competitive_process.id + '/unlock/'
+        },
         discarded: function(){
             return this.competitive_process && (
                 this.competitive_process.status ===
                      constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.TEXT);
         },
+        declined: function(){
+            return this.competitive_process && (
+                this.competitive_process.status ===
+                     constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.TEXT);
+        },
         elementDisabled: function() {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, or when finalized
-            return this.processing || this.discarded || this.finalised;
+            return this.processing || this.discarded || this.finalised || this.declined;
         }
    },
     methods: {
@@ -387,9 +398,6 @@ export default {
             })
             .then (data => {
                 vm.competitive_process = Object.assign(data, {});
-                this.$nextTick(async () => {
-                    this.cp_id = uuid();
-                });
                 swal.fire({
                     title: 'Saved',
                     text: 'Competitive process has been saved',
@@ -399,6 +407,9 @@ export default {
                 vm.processing = false;
                 // Done save, set custom row back to not processing
                 vm.set_custom_rows_property("processing", false);
+                this.$nextTick(async () => {
+                    this.cp_id = uuid();
+                });
             })
             .catch(error => {
                 swal.fire({
@@ -512,6 +523,54 @@ export default {
             } catch (err){
                 console.error(err)
             }
+        },
+        issueUnlock: async function(){
+            let vm = this;
+            console.log("issue unlock");
+            swal.fire({
+                    title: "Unlock this competitive process",
+                    text: "Unlocking this competitive process will change the status to 'In Progress'\
+                            and discard the application of the previous winner.\
+                            Are you sure you want to unlock this competitive process?",
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: 'Unlock',
+                    confirmButtonColor: '#0d6efd',
+                }).then(async result => {
+                    if (result.isConfirmed){
+                        vm.processing = true;
+                        // When Yes
+                        let payload = vm.constructPayload();
+                        await fetch(vm.competitive_process_unlock_url,
+                            {body: JSON.stringify(payload), method: 'POST'}).then(async response => {
+                                if (!response.ok) {
+                                    return response.text().then(text => { throw new Error(text) });
+                                } else {
+                                    return await response.json();
+                                    }
+                            }).then(async data => {
+                                console.log("success", data);
+                                this.competitive_process = Object.assign({}, data);
+                                await swal.fire({
+                                    title: 'Unlocked',
+                                    text: 'Competitive process has been unlocked',
+                                    icon: 'success',
+                                });
+                                vm.processing = false;
+                            }).catch(async error => {
+                                await swal.fire({
+                                    title: "Please fix following errors before saving",
+                                    text: JSON.parse(error.message),
+                                    icon:'error',
+                                });
+                                vm.processing = false;
+                            })
+                    } else if (result.isDenied){
+                        // When No
+                    } else {
+                        // When cancel
+                    }
+                })
         },
         updateTableByFeatures: function() {
 

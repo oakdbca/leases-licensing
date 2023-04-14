@@ -24,7 +24,7 @@ import { v4 as uuid } from 'uuid'
 import datatable from '@/utils/vue/datatable.vue'
 import AddPartyModal from '@/components/common/modal_add_party.vue';
 import { expandToggleParties } from '@/components/common/table_functions.js'
-import { constants } from "@/utils/hooks.js"
+import { api_endpoints, constants } from "@/utils/hooks.js"
 
 export default {
     name: 'TableParties',
@@ -43,6 +43,10 @@ export default {
             default: false
         },
         discarded: {
+            type: Boolean,
+            default: false
+        },
+        declined: {
             type: Boolean,
             default: false
         },
@@ -93,9 +97,13 @@ export default {
             return {
                 data: null,
                 'render': function (row, type, full) {
-                    if (full.is_person)
-                        return full.person.fullname
-                    return ''
+                    if (full.is_person) {
+                        return  "fullname" in full.person? full.person.fullname:
+                                "full_name" in full.person? full.person.full_name:
+                                "(name)";
+                    } else {
+                        return "";
+                    }
                 }
             }
         },
@@ -153,7 +161,7 @@ export default {
                     if (full.is_person && full.person) {
                         return full.person.email? full.person.email: "";
                     } else if (full.is_organisation) {
-                        return full.email_address;
+                        return full.organisation.ledger_organisation_email;
                     } else {
                         return '(email)';
                     }
@@ -225,25 +233,52 @@ export default {
         elementDisabled: function() {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, or when finalized
-            return this.processing || this.discarded || this.finalised;
+            return this.processing || this.discarded || this.finalised || this.declined;
         }
     },
     methods: {
-        addParty: function(params){
-            if (params.type === 'person'){
-                for (let party of this.competitive_process_parties){
+        addParty: async function(params){
+            let url;
+            let is_person = params.type === 'person';
+            let is_organisation = params.type === 'organisation'
+
+            if (is_person) {
+                for (let party of this.competitive_process_parties) {
                     if (party.is_person && party.person_id === params.party_to_add.id)
                         // Person has been already added
                         return
+                    }
+                url = `${api_endpoints.users}${params.party_to_add.id}`;
+            } else if (is_organisation) {
+                for (let party of this.competitive_process_parties){
+                    if (party.is_organisation && party.organisation === params.party_to_add.id)
+                        // Organisation has already been added
+                        return;
                 }
+                url = `${api_endpoints.organisations_viewset}${params.party_to_add.id}`;
+            }
+
+            console.log(api_endpoints)
+            await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            }).then(async response => {
+                if (response.ok) {
+                    return await response.json();
+                } else {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+            }).then(data => {
                 let new_data = {
                     'id': 0,  // This is competitive_process_party id.  Empty string because this is not saved yet.
-                    'is_person': true,
-                    'is_organisation': false,
-                    'person': params.party_to_add,
-                    'person_id': params.party_to_add.id,
-                    'organisation': null,
-                    'organisation_id': null,
+                    'is_person': is_person, //true,
+                    'is_organisation': is_organisation, // false,
+                    'person': is_person? data: null,
+                    'person_id': is_person? data.id: null,
+                    'organisation': is_organisation? data: null,
+                    'organisation_id': is_organisation? data.id: null,
                     'invited_at': null,
                     'removed_at': null,
                     'party_details': [],
@@ -251,29 +286,9 @@ export default {
                 }
                 this.competitive_process_parties.push(new_data)
                 this.$refs.parties_datatable.vmDataTable.row.add(new_data).draw()
-            } else if (params.type === 'organisation'){
-                for (let party of this.competitive_process_parties){
-                    if (party.is_organisation && party.organisation === params.party_to_add.id)
-                        // Organisation has already been added
-                        return;
-                }
-                let new_data = {
-                    'id': 0,  // This is competitive_process_party id.  Empty string because this is not saved yet.
-                    'is_person': false,
-                    'is_organisation': true,
-                    'person': null,
-                    'person_id': null,
-                    'organisation': params.party_to_add,
-                    'organisation_id': params.party_to_add.ledger_organisation_id,
-                    'invited_at': null,
-                    'removed_at': null,
-                    'party_details': [],
-                    'expanded': false,
-                }
-                this.competitive_process_parties.push(new_data);
-                this.$refs.parties_datatable.vmDataTable.row.add(new_data).draw();
-
-            }
+            }).catch(error => {
+                console.error(error.message);
+            });
 
             for (let party of this.competitive_process_parties) {
                 // Somehow all the expander collapsed when adding a new row.  Accordingly set the expanded attribute to false

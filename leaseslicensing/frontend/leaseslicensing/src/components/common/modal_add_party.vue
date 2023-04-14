@@ -129,7 +129,7 @@ export default {
                 placeholder:"Type and select Person",
                 // dropdownParent: $('#modal_add_party'),
                 ajax: {
-                    url: api_endpoints.users_api,
+                    url: api_endpoints.person_lookup,
                     dataType: 'json',
                     data: function(params) {
                         var query = {
@@ -139,11 +139,7 @@ export default {
                         return query;
                     },
                     processResults: function(data){
-                        // Format results returned to match the format select2 expects
-                        for (let item of data){
-                            item.text = item.fullname  // Select2 requires 'text' attribute
-                        }
-                        return {'results': data}  // Select2 expects one object with an attribute 'results' 
+                        return data;
                     }
                 },
             })
@@ -163,7 +159,7 @@ export default {
                 allowClear: true,
                 placeholder:"Type and select Organisation",
                 ajax: {
-                    url: api_endpoints.organisations,
+                    url: api_endpoints.organisation_lookup,
                     dataType: 'json',
                     data: function(params) {
                         var query = {
@@ -173,11 +169,7 @@ export default {
                         return query;
                     },
                     processResults: function(data){
-                        // Format results returned to match the format select2 expects
-                        for (let item of data){
-                            item.text = item.trading_name  // Select2 requires 'text' attribute
-                        }
-                        return {'results': data}  // Select2 expects one object with an attribute 'results' 
+                        return data;
                     }
                 },
             })

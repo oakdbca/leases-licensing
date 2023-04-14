@@ -47,7 +47,7 @@
                             v-if="configuration.function_to_show_hide()"
                             class="btn btn-primary w-75 my-1"
                             @click.prevent="configuration.function_when_clicked"
-                            :disabled="elementDisabled"
+                            :disabled="configuration.function_to_disable()"
                         >{{ configuration.button_title }}</button>
                     </template>
                 </div>
@@ -79,6 +79,9 @@ export default {
                     'function_when_clicked': vm.issueComplete,
                     'function_to_show_hide': () => {
                         return vm.user_is_eligible(this.action_roles("complete"))
+                    },
+                    'function_to_disable': () => {
+                        return this.elementDisabled;
                     }
                 },
                 {
@@ -87,6 +90,22 @@ export default {
                     'function_when_clicked': vm.issueDiscard,
                     'function_to_show_hide': () => {
                         return vm.user_is_eligible(this.action_roles("discard"))
+                    },
+                    'function_to_disable': () => {
+                        return this.elementDisabled;
+                    }
+                },
+                {
+                    'key': 'unlock',
+                    'button_title': 'Unlock',
+                    'function_when_clicked': vm.issueUnlock,
+                    'function_to_show_hide': () => {
+                        return vm.user_is_eligible(this.action_roles("unlock"))
+                    },
+                    'function_to_disable': () => {
+                        // Disable Unlock button only on processing|discarded|finalised,
+                        // but not on completed|declined
+                        return this.processing || this.discarded || this.finalised;
                     }
                 },
             ]
@@ -102,6 +121,10 @@ export default {
             default: false
         },
         discarded: {
+            type: Boolean,
+            default: false
+        },
+        declined: {
             type: Boolean,
             default: false
         },
@@ -167,10 +190,10 @@ export default {
         },
         elementDisabled: function() {
             /** Returns whether an element is disabled
-             * True while processing (saving), when discarded, or when finalized
+             * True while processing (saving), when discarded, when finalized, or when declined
              * */
 
-            return this.processing || this.discarded || this.finalised;
+            return this.processing || this.discarded || this.finalised || this.declined;
         }
     },
     filters: {
@@ -204,9 +227,18 @@ export default {
              */
 
             if (["complete", "discard"].includes(action)) {
+                // A competitive process editor can complete or discard a competitive process in progress
                 return { [constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID]:
                                 [constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID,], }
+            } else if (action == "unlock") {
+                // A competitive process editor can unlock a completed or declined competitive process
+                return { [constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_APPLICATION.ID]:
+                                [constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID,],
+                            [constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID]:
+                                [constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID,],
+                            }
             } else {
+                console.warn(`action_roles: action ${action} not recognised`);
                 return {};
             }
         },
@@ -305,6 +337,9 @@ export default {
         },
         issueDiscard: function(){
             this.$emit('issueDiscard')
+        },
+        issueUnlock: function(){
+            this.$emit('issueUnlock')
         },
     },
     created: function(){

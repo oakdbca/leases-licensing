@@ -110,6 +110,10 @@ export default {
             type: Boolean,
             default: false
         },
+        declined: {
+            type: Boolean,
+            default: false
+        },
     },
     components: {
         FileField,
@@ -158,7 +162,7 @@ export default {
         elementDisabled: function() {
             // Returns whether an element is disabled
             // True while processing (saving) or when discarded
-            return this.processing || this.discarded;
+            return this.processing || this.discarded || this.declined;
         }
     },
     methods: {
