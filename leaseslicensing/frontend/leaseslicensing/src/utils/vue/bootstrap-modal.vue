@@ -17,10 +17,9 @@
                     </div>
                     <div class="modal-footer">
                         <slot name="footer">
-                            <button type="button" :class="cancelClass" class="btn-danger licensing-btn mb-1"
-                                @click="cancel">{{
-                                    cancelText
-                                }}</button>
+                            <button type="button" :class="cancelClass" class="licensing-btn mb-1" @click="cancel">{{
+                                cancelText
+                            }}</button>
                             <button id="okBtn" type="button" class="licensing-btn-primary mb-1" :class="okClass" @click="ok"
                                 :disabled="okDisabled">{{ okText
                                 }}</button>
@@ -81,7 +80,7 @@ export default {
         },
         cancelClass: {
             type: String,
-            default: 'btn btn-primary'
+            default: 'btn btn-danger'
         },
         closeWhenOK: {
             type: Boolean,
