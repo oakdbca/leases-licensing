@@ -1,7 +1,49 @@
 /* Bring app content inline with header logo and navbar */
 div#app .container {
-    padding: 0 36px 0 36px;
+    padding: 0 40px 0 40px;
 }
+
+.btn-primary{
+    color: #fff  !important;
+    background-color: #226fbb !important;
+}
+
+.btn-primary:hover {
+    color: #fff  !important;
+    background-color: #5393d2 !important;
+    border-color:#5393d2 !important;
+}
+
+.bg-primary{
+    background-color: #226fbb !important;
+}
+
+.page-item > .page-link {
+    color: #226fbb;
+}
+
+.nav-link {
+    color: #226fbb;
+}
+
+table.dataTable a {
+    color: #226fbb;
+}
+
+table.dataTable a:hover {
+    color: #5393d2;
+}
+
+.page-item.active > .page-link {
+    color:#fff;
+    background-color: #226fbb !important;
+
+}
+
+.text-primary{
+    color: #226fbb !important;
+}
+
 
 .licensing-btn {
     min-width:150px;
