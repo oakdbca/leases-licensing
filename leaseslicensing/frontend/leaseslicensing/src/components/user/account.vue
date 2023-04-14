@@ -311,6 +311,7 @@
                         <template v-if="newOrganisation">
                             <form id="new-organisation-form" @submit.prevent="" class="needs-validation" novalidate>
                                 <div class="row mb-3">
+                                    <label for="" class="col-sm-3 col-form-label">&nbsp;</label>
                                     <div class="col-auto">
                                         <BootstrapAlert>
                                             <ul class="list-group">
