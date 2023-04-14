@@ -33,7 +33,7 @@
                             </div>
 
                             <div class="row mb-3">
-                                <label for="organisation_email" class="col-sm-3 control-label">ABN
+                                <label for="organisation_email" class="col-sm-3 control-label">Email
                                 </label>
                                 <div class="col-sm-4">
                                     <input type="text" class="form-control" name="organisation_email"
