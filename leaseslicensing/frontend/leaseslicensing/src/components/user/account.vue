@@ -8,7 +8,8 @@
                             href="#">Account</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" data-bs-target="#organisations" href="#">Organisations</a>
+                        <a id="organisations-tab-link" class="nav-link" data-bs-toggle="tab" data-bs-target="#organisations"
+                            href="#">Organisations</a>
                     </li>
                 </ul>
             </div>
@@ -500,6 +501,16 @@ export default {
                 this.$nextTick(() => {
                     if (vm.email_user.postal_same_as_residential) {
                         vm.togglePostalAddressFieldsDisabled();
+
+                    }
+                    if (window.location.hash == '#organisations') {
+                        console.log('opening organisations tab')
+                        var tab_element = document.querySelector('#organisations-tab-link');
+                        var tab = new bootstrap.Tab(tab_element);
+                        tab.show();
+                        this.$nextTick(() => {
+                            $('#search-organisations').select2('open');
+                        })
                     }
                 });
                 console.log(vm.email_user.dob)
@@ -745,7 +756,6 @@ export default {
         this.fetchInitialData();
     },
     mounted: function () {
-        let vm = this;
 
     },
 };

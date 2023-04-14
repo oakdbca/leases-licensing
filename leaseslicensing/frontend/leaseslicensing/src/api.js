@@ -20,7 +20,6 @@ module.exports = {
     search_reference: '/api/search_reference/',
     submitter_profile: '/api/submitter_profile',
     organisations: '/api/organisations/',
-    organisations_viewset: '/api/organisations/',
     organisation_lookup: '/api/organisations/organisation_lookup',
     filtered_organisations: '/api/filtered_organisations',
     my_organisations: '/api/my_organisations/',

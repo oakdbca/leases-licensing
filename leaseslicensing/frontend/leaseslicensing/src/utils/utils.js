@@ -80,7 +80,7 @@ export default {
     },
     fetchOrganisation: function (id) {
         return new Promise((resolve, reject) => {
-            fetch(api_endpoints.organisations_viewset + id + '/')
+            fetch(api_endpoints.organisations + id + '/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
