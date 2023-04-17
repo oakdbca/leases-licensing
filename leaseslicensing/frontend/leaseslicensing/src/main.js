@@ -30,20 +30,21 @@ import '@/../node_modules/@fortawesome/fontawesome-free/css/all.min.css';
 import 'select2/dist/css/select2.min.css';
 import 'select2-bootstrap-5-theme/dist/select2-bootstrap-5-theme.min.css';
 import '@/../node_modules/datatables.net-bs5/css/dataTables.bootstrap5.min.css';
+import '@/../node_modules/datatables.net-responsive-bs5/css/responsive.bootstrap5.min.css';
 
 // Add CSRF Token to every request
 const customHeaders = new Headers({
-    'X-CSRFToken': helpers.getCookie( 'csrftoken' ),
+    'X-CSRFToken': helpers.getCookie('csrftoken'),
 });
 const customHeadersJSON = new Headers({
-    'X-CSRFToken': helpers.getCookie( 'csrftoken' ),
+    'X-CSRFToken': helpers.getCookie('csrftoken'),
     'Content-Type': 'application/json',
 });
 // eslint-disable-next-line no-global-assign
 fetch = (originalFetch => {
     return (...args) => {
         if (args.length > 1) {
-            if (typeof(args[1].body) === 'string') {
+            if (typeof (args[1].body) === 'string') {
                 args[1].headers = customHeadersJSON;
             } else {
                 args[1].headers = customHeaders;
