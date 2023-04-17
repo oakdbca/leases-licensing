@@ -40,6 +40,7 @@ from leaseslicensing.components.users.serializers import (
     UserSerializer,
     UserSystemSettingsSerializer,
 )
+from leaseslicensing.helpers import is_internal
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +97,8 @@ class GetRequestUserID(views.APIView):
 
     def get(self, request, format=None):
         if request.user.is_anonymous:
-            return Response({"id": None})
-        return Response({"id": request.user.id})
+            return Response({"id": None, "is_internal": False})
+        return Response({"id": request.user.id, "is_internal": is_internal(request)})
 
 
 class GetLedgerAccount(views.APIView):
