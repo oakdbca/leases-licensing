@@ -1,21 +1,18 @@
-from django.conf import settings
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser, Address
-from leaseslicensing.components.compliances.models import (
-    Compliance,
-    ComplianceUserAction,
-    ComplianceLogEntry,
-    ComplianceAmendmentRequest,
-    ComplianceAmendmentReason,
-)
 from rest_framework import serializers
 
-from leaseslicensing.ledger_api_utils import retrieve_email_user
+from leaseslicensing.components.compliances.models import (
+    Compliance,
+    ComplianceAmendmentRequest,
+    ComplianceLogEntry,
+    ComplianceUserAction,
+)
 from leaseslicensing.components.main.serializers import EmailUserSerializer
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 
 class ComplianceSerializer(serializers.ModelSerializer):
-    #regions = serializers.CharField(source="proposal.region")
-    #activity = serializers.CharField(source="proposal.activity")
+    # regions = serializers.CharField(source="proposal.region")
+    # activity = serializers.CharField(source="proposal.activity")
     title = serializers.CharField(source="proposal.title")
     holder = serializers.CharField(read_only=True)
     processing_status = serializers.CharField(source="get_processing_status_display")
@@ -25,7 +22,7 @@ class ComplianceSerializer(serializers.ModelSerializer):
     # submitter = serializers.CharField(source='submitter.get_full_name')
     submitter = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
-    #allowed_assessors = EmailUserSerializer(many=True)
+    # allowed_assessors = EmailUserSerializer(many=True)
     # assigned_to = serializers.CharField(source='assigned_to.get_full_name')
     assigned_to = serializers.SerializerMethodField(read_only=True)
     requirement = serializers.CharField(
@@ -44,8 +41,8 @@ class ComplianceSerializer(serializers.ModelSerializer):
             "due_date",
             "processing_status",
             "customer_status",
-            #"regions",
-            #"activity",
+            # "regions",
+            # "activity",
             "title",
             "text",
             "holder",
@@ -75,8 +72,8 @@ class ComplianceSerializer(serializers.ModelSerializer):
             "due_date",
             "processing_status",
             "customer_status",
-            #"regions",
-            #"activity",
+            # "regions",
+            # "activity",
             "title",
             "text",
             "holder",
@@ -135,11 +132,16 @@ class ComplianceSerializer(serializers.ModelSerializer):
 
     def get_lodgement_date_display(self, obj):
         if obj.lodgement_date:
-            return obj.lodgement_date.strftime("%d/%m/%Y %I:%M %p")
+            return (
+                obj.lodgement_date.strftime("%d/%m/%Y")
+                + " at "
+                + obj.lodgement_date.strftime("%I:%M %p")
+            )
+
 
 class InternalComplianceSerializer(serializers.ModelSerializer):
-    #regions = serializers.CharField(source="proposal.region")
-    #activity = serializers.CharField(source="proposal.activity")
+    # regions = serializers.CharField(source="proposal.region")
+    # activity = serializers.CharField(source="proposal.activity")
     title = serializers.CharField(source="proposal.title")
     holder = serializers.CharField(source="proposal.applicant")
     processing_status = serializers.CharField(source="get_processing_status_display")
@@ -148,7 +150,7 @@ class InternalComplianceSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField()
     # submitter = serializers.CharField(source='submitter.get_full_name')
     submitter = serializers.SerializerMethodField(read_only=True)
-    #allowed_assessors = EmailUserSerializer(many=True)
+    # allowed_assessors = EmailUserSerializer(many=True)
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
     # assigned_to = serializers.CharField(source='assigned_to.get_full_name')
     # assigned_to = serializers.SerializerMethodField(read_only=True)
@@ -166,8 +168,8 @@ class InternalComplianceSerializer(serializers.ModelSerializer):
             "due_date",
             "processing_status",
             "customer_status",
-            #"regions",
-            #"activity",
+            # "regions",
+            # "activity",
             "title",
             "text",
             "holder",
@@ -198,7 +200,7 @@ class InternalComplianceSerializer(serializers.ModelSerializer):
             return EmailUserSerializer(email_users, many=True).data
         else:
             return ""
-    
+
     def get_lodgement_date(self, obj):
         return obj.lodgement_date.strftime("%d/%m/%Y") if obj.lodgement_date else ""
 
@@ -231,7 +233,7 @@ class SaveComplianceSerializer(serializers.ModelSerializer):
 
 
 class ComplianceActionSerializer(serializers.ModelSerializer):
-    #who = serializers.CharField(source="who.get_full_name")
+    # who = serializers.CharField(source="who.get_full_name")
     who = serializers.SerializerMethodField()
 
     class Meta:
@@ -240,8 +242,9 @@ class ComplianceActionSerializer(serializers.ModelSerializer):
 
     def get_who(self, obj):
         user = retrieve_email_user(obj.id)
-        #return user.first_name + " " + user.last_name
-        return "{} {}".format(user.first_name, user.last_name)
+        # return user.first_name + " " + user.last_name
+        return f"{user.first_name} {user.last_name}"
+
 
 class ComplianceCommsSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField()
