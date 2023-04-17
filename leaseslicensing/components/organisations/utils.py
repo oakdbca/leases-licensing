@@ -132,7 +132,7 @@ def get_organisation_ids_for_user(email_user_id):
     from leaseslicensing.components.organisations.models import Organisation
 
     return list(
-        Organisation.objects.filter(delegates__contains=[email_user_id]).values_list(
+        Organisation.objects.filter(delegates__user=email_user_id).values_list(
             "id", flat=True
         )
     )
