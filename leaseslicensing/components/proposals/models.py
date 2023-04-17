@@ -41,6 +41,7 @@ from leaseslicensing.components.main.utils import (
     get_department_user,
 )
 from leaseslicensing.components.organisations.models import Organisation
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.email import (
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
@@ -56,7 +57,7 @@ from leaseslicensing.settings import (
     GROUP_NAME_ASSESSOR,
 )
 
-logger = logging.getLogger("leaseslicensing")
+logger = logging.getLogger(__name__)
 
 
 def update_proposal_doc_filename(instance, filename):
@@ -916,7 +917,18 @@ class ProposalType(models.Model):
         app_label = "leaseslicensing"
 
 
+class ProposalManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("proposal_type", "org_applicant", "application_type")
+        )
+
+
 class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
+    objects = ProposalManager()
+
     APPLICANT_TYPE_ORGANISATION = "ORG"
     APPLICANT_TYPE_INDIVIDUAL = "IND"
     APPLICANT_TYPE_PROXY = "PRX"
@@ -3205,6 +3217,16 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         self.generate_compliances(approval, request)
         self.save()
+
+    @classmethod
+    def get_proposals_for_emailuser(cls, emailuser_id):
+        user_orgs = get_organisation_ids_for_user(emailuser_id)
+        return cls.objects.filter(
+            Q(org_applicant_id__in=user_orgs)
+            | Q(submitter=emailuser_id)
+            | Q(ind_applicant=emailuser_id)
+            | Q(proxy_applicant=emailuser_id)
+        )
 
 
 class ProposalAdditionalDocumentType(models.Model):
