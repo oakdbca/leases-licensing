@@ -421,7 +421,8 @@ class SpecialFieldsSearch:
         return item_data
 
 
-def save_proponent_data(instance, request, viewset, parks=None, trails=None):
+def save_proponent_data(instance, request, viewset):
+    logger.debug("save_proponent_data")
     if (
         instance.application_type.name
         == settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST
