@@ -1,51 +1,48 @@
-from __future__ import unicode_literals
-
-import json
 import datetime
-from django.db import models, transaction
-from django.dispatch import receiver
-from django.db.models.signals import pre_delete
-from django.core.exceptions import ValidationError
+import logging
 
-# from django.contrib.postgres.fields.jsonb import JSONField
-from django.db.models import JSONField
-from django.utils import timezone
-from django.contrib.sites.models import Site
 from django.conf import settings
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from leaseslicensing.ledger_api_utils import retrieve_email_user
-from leaseslicensing import exceptions
-from leaseslicensing.components.main.models import (
-    CommunicationsLogEntry,
-    UserAction,
-    Document,
-    RevisionedMixin,
-)
-from leaseslicensing.components.proposals.models import (
-    ProposalRequirement,
-    AmendmentReason,
-)
-from leaseslicensing.components.compliances.email import (
-    send_compliance_accept_email_notification,
-    send_amendment_email_notification,
-    send_reminder_email_notification,
-    send_external_submit_email_notification,
-    send_submit_email_notification,
-    send_internal_reminder_email_notification,
-    send_due_email_notification,
-    send_internal_due_email_notification,
-    send_notification_only_email,
-    send_internal_notification_only_email,
-)
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+from django.utils import timezone
 from ledger_api_client.ledger_models import Invoice
 
-import logging
+from leaseslicensing.components.compliances.email import (
+    send_amendment_email_notification,
+    send_compliance_accept_email_notification,
+    send_due_email_notification,
+    send_external_submit_email_notification,
+    send_internal_due_email_notification,
+    send_internal_notification_only_email,
+    send_internal_reminder_email_notification,
+    send_notification_only_email,
+    send_reminder_email_notification,
+    send_submit_email_notification,
+)
+from leaseslicensing.components.main.models import (
+    CommunicationsLogEntry,
+    Document,
+    UserAction,
+)
+from leaseslicensing.components.proposals.models import ProposalRequirement
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
 
 
+class ComplianceManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related(
+                "proposal", "proposal__application_type", "approval", "requirement"
+            )
+        )
+
+
 class Compliance(models.Model):
-    # class Compliance(RevisionedMixin):
+    objects = ComplianceManager()
 
     PROCESSING_STATUS_CHOICES = (
         ("due", "Due"),
@@ -85,7 +82,6 @@ class Compliance(models.Model):
         max_length=20,
         default=CUSTOMER_STATUS_CHOICES[1][0],
     )
-    # assigned_to = models.ForeignKey(EmailUser,related_name='leaseslicensing_compliance_assignments',null=True,blank=True, on_delete=models.SET_NULL)
     assigned_to = models.IntegerField(null=True)  # EmailUserRO
     requirement = models.ForeignKey(
         ProposalRequirement,
@@ -95,7 +91,6 @@ class Compliance(models.Model):
         on_delete=models.SET_NULL,
     )
     lodgement_date = models.DateTimeField(blank=True, null=True)
-    # submitter = models.ForeignKey(EmailUser, blank=True, null=True, related_name='leaseslicensing_compliances', on_delete=models.SET_NULL)
     submitter = models.IntegerField(null=True)  # EmailUserRO
     reminder_sent = models.BooleanField(default=False)
     post_reminder_sent = models.BooleanField(default=False)
@@ -116,7 +111,9 @@ class Compliance(models.Model):
 
     @property
     def holder(self):
-        return f"{self.proposal.applicant.first_name} {self.proposal.applicant.last_name}"
+        return (
+            f"{self.proposal.applicant.first_name} {self.proposal.applicant.last_name}"
+        )
 
     @property
     def reference(self):
@@ -177,53 +174,45 @@ class Compliance(models.Model):
         return None
 
     def save(self, *args, **kwargs):
-        super(Compliance, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
         if self.lodgement_number == "":
-            new_lodgment_id = "C{0:06d}".format(self.pk)
+            new_lodgment_id = f"C{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
 
     def submit(self, request):
         with transaction.atomic():
-            try:
-                if self.processing_status == "discarded":
-                    raise ValidationError(
-                        "You cannot submit this compliance with requirements as it has been discarded."
-                    )
-                if self.processing_status == "future" or "due":
-                    self.processing_status = "with_assessor"
-                    self.customer_status = "with_assessor"
-                    self.submitter = request.user.id
-
-                    if request.FILES:
-                        for f in request.FILES:
-                            document = self.documents.create(name=str(request.FILES[f]))
-                            document._file = request.FILES[f]
-                            document.save()
-                    if self.amendment_requests:
-                        qs = self.amendment_requests.filter(status="requested")
-                        if qs:
-                            for q in qs:
-                                q.status = "amended"
-                                q.save()
-
-                # self.lodgement_date = datetime.datetime.strptime(timezone.now().strftime('%Y-%m-%d'),'%Y-%m-%d').date()
-                self.lodgement_date = timezone.now()
-
-                self.save(
-                    version_comment=f"Compliance Submitted: {self.id}"
+            if self.processing_status == "discarded":
+                raise ValidationError(
+                    "You cannot submit this compliance with requirements as it has been discarded."
                 )
-                self.proposal.save(
-                    version_comment=f"Compliance Submitted: {self.id}"
-                )
-                self.log_user_action(
-                    ComplianceUserAction.ACTION_SUBMIT_REQUEST.format(self.id), request
-                )
-                send_external_submit_email_notification(request, self)
-                send_submit_email_notification(request, self)
-                self.documents.all().update(can_delete=False)
-            except:
-                raise
+            if self.processing_status == "future" or "due":
+                self.processing_status = "with_assessor"
+                self.customer_status = "with_assessor"
+                self.submitter = request.user.id
+
+                if request.FILES:
+                    for f in request.FILES:
+                        document = self.documents.create(name=str(request.FILES[f]))
+                        document._file = request.FILES[f]
+                        document.save()
+                if self.amendment_requests:
+                    qs = self.amendment_requests.filter(status="requested")
+                    if qs:
+                        for q in qs:
+                            q.status = "amended"
+                            q.save()
+
+            self.lodgement_date = timezone.now()
+
+            self.save(version_comment=f"Compliance Submitted: {self.id}")
+            self.proposal.save(version_comment=f"Compliance Submitted: {self.id}")
+            self.log_user_action(
+                ComplianceUserAction.ACTION_SUBMIT_REQUEST.format(self.id), request
+            )
+            send_external_submit_email_notification(request, self)
+            send_submit_email_notification(request, self)
+            self.documents.all().update(can_delete=False)
 
     def delete_document(self, request, document):
         with transaction.atomic():
@@ -232,7 +221,7 @@ class Compliance(models.Model):
                     doc = self.documents.get(id=document[2])
                     doc.delete()
                 return self
-            except:
+            except Document.DoesNotExist:
                 raise ValidationError("Document not found")
 
     def assign_to(self, user, request):
@@ -240,7 +229,9 @@ class Compliance(models.Model):
             self.assigned_to = user
             self.save()
             self.log_user_action(
-                ComplianceUserAction.ACTION_ASSIGN_TO.format(retrieve_email_user(user).get_full_name()),
+                ComplianceUserAction.ACTION_ASSIGN_TO.format(
+                    retrieve_email_user(user).get_full_name()
+                ),
                 request,
             )
 
@@ -267,8 +258,8 @@ class Compliance(models.Model):
                 if self.processing_status == "due":
                     if (
                         self.due_date < today
-                        and self.lodgement_date == None
-                        and self.post_reminder_sent == False
+                        and self.lodgement_date is None
+                        and self.post_reminder_sent is False
                     ):
                         send_reminder_email_notification(self)
                         send_internal_reminder_email_notification(self)
@@ -288,9 +279,10 @@ class Compliance(models.Model):
                     elif (
                         self.due_date >= today
                         and today >= self.due_date - datetime.timedelta(days=14)
-                        and self.reminder_sent == False
+                        and self.reminder_sent is False
                     ):
-                        # second part: if today is with 14 days of due_date, and email reminder is not sent (deals with Compliances created with the reminder period)
+                        # second part: if today is with 14 days of due_date, and email reminder is not sent
+                        # (deals with Compliances created with the reminder period)
                         print(self.id)
                         if self.requirement.notification_only:
                             send_notification_only_email(self)
@@ -348,9 +340,10 @@ class ComplianceDocument(Document):
 
     def delete(self):
         if self.can_delete:
-            return super(ComplianceDocument, self).delete()
+            return super().delete()
         logger.info(
-            "Cannot delete existing document object after Compliance has been submitted (including document submitted before Compliance pushback to status Due): {}".format(
+            "Cannot delete existing document object after Compliance has been submitted "
+            "(including document submitted before Compliance pushback to status Due): {}".format(
                 self.name
             )
         )
@@ -393,7 +386,7 @@ class ComplianceLogEntry(CommunicationsLogEntry):
         # save the request id if the reference not provided
         if not self.reference:
             self.reference = self.compliance.id
-        super(ComplianceLogEntry, self).save(**kwargs)
+        super().save(**kwargs)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -475,11 +468,11 @@ class ComplianceAmendmentRequest(CompRequest):
                 compliance.log_user_action(
                     ComplianceUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
                 )
+
                 # Create a log entry for the organisation
-                applicant_field = getattr(
-                    compliance.proposal, compliance.proposal.applicant_field
-                )
-                #applicant_field.log_user_action(
-                #    ComplianceUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
-                #)
+                # Not sure what the intention of this was so commenting out for now
+                # applicant_field = getattr(
+                #     compliance.proposal, compliance.proposal.applicant_field
+                # )
+
                 send_amendment_email_notification(self, request, compliance)
