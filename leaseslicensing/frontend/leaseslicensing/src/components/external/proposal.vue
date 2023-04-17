@@ -464,8 +464,14 @@ export default {
                 title: vm.submitText + " Application",
                 text: "Are you sure you want to " + vm.submitText.toLowerCase() + " this application?",
                 icon: "question",
+                reverseButtons: true,
                 showCancelButton: true,
-                confirmButtonText: vm.submitText
+                confirmButtonText: vm.submitText,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
             }).then(async result => {
                 if (!result.isConfirmed) {
                     // Cancel
