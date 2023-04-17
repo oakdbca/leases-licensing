@@ -88,12 +88,6 @@ export default {
             statuses: [],
             // Filters toggle
             filters_expanded: false,
-
-            // For Expandable row
-            td_expand_class_name: 'expand-icon',
-            td_collapse_class_name: 'collapse-icon',
-            expandable_row_class_name: 'expandable_row_class_name',
-
         }
     },
     components: {
@@ -317,11 +311,6 @@ export default {
                 },
                 responsive: true,
                 serverSide: true,
-                rowCallback: function (row, organisation_request) {
-                    let row_jq = $(row)
-                    row_jq.attr('id', 'organisation_request_id_' + organisation_request.id)
-                    row_jq.children().first().addClass(vm.td_expand_class_name)
-                },
                 ajax: {
                     url:
                         api_endpoints.organisation_requests_paginated +
@@ -382,61 +371,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-/*
-@import url('https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css');
-@import url('https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap.min.css');
-*/
-
-
-.collapse-icon {
-    cursor: pointer;
-}
-
-.collapse-icon::before {
-    top: 5px;
-    left: 4px;
-    height: 14px;
-    width: 14px;
-    border-radius: 14px;
-    line-height: 14px;
-    border: 2px solid white;
-    line-height: 14px;
-    content: '-';
-    color: white;
-    background-color: #d33333;
-    display: inline-block;
-    box-shadow: 0px 0px 3px #444;
-    box-sizing: content-box;
-    text-align: center;
-    text-indent: 0 !important;
-    font-family: 'Courier New', Courier monospace;
-    margin: 5px;
-}
-
-.expand-icon {
-    cursor: pointer;
-}
-
-.expand-icon::before {
-    top: 5px;
-    left: 4px;
-    height: 14px;
-    width: 14px;
-    border-radius: 14px;
-    line-height: 14px;
-    border: 2px solid white;
-    line-height: 14px;
-    content: '+';
-    color: white;
-    background-color: #337ab7;
-    display: inline-block;
-    box-shadow: 0px 0px 3px #444;
-    box-sizing: content-box;
-    text-align: center;
-    text-indent: 0 !important;
-    font-family: 'Courier New', Courier monospace;
-    margin: 5px;
-}
-</style>
