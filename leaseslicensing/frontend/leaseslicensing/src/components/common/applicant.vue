@@ -114,59 +114,59 @@
                     <form v-if="email_user.postal_address" class="form-horizontal mb-2">
                         <fieldset>
                             <legend>Postal Address</legend>
-                            <div class="form-group">
-                                <div class="address-box">
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Postal Address</label>
-                                        <div class="col-sm-6">
-                                            <input :readonly="readonly" type="text" class="form-control" id="postal_line1"
-                                                name="Street" placeholder="" v-model="
-                                                    email_user.postal_address
-                                                        .line1
-                                                " />
-                                        </div>
+                            <div class="address-box">
+                                <div class="row mb-2">
+                                    <label for="" class="col-md-2 form-label">Postal Address</label>
+                                    <div class="col-md-4">
+                                        <input :readonly="readonly" type="text" class="form-control" id="postal_line1"
+                                            name="Street" placeholder="" v-model="
+                                                email_user.postal_address
+                                                    .line1
+                                            " />
                                     </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Town/Suburb</label>
-                                        <div class="col-sm-6">
-                                            <input :readonly="readonly" type="text" class="form-control"
-                                                id="postal_locality" name="Town/Suburb" placeholder="" v-model="
-                                                    email_user.postal_address
-                                                        .locality
-                                                " />
-                                        </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-md-2 form-label">Town/Suburb</label>
+                                    <div class="col-md-4">
+                                        <input :readonly="readonly" type="text" class="form-control" id="postal_locality"
+                                            name="Town/Suburb" placeholder="" v-model="
+                                                email_user.postal_address
+                                                    .locality
+                                            " />
                                     </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">State</label>
-                                        <div class="col-sm-3">
-                                            <input :readonly="readonly" type="text" class="form-control" id="postal_state"
-                                                name="State" placeholder="" v-model="
-                                                    email_user.postal_address
-                                                        .state
-                                                " />
-                                        </div>
-                                        <label for="" class="col-sm-1 control-label">Postcode</label>
-                                        <div class="col-sm-2">
-                                            <input :readonly="readonly" type="text" class="form-control"
-                                                id="postal_postcode" name="Postcode" placeholder="" v-model="
-                                                    email_user.postal_address
-                                                        .postcode
-                                                " />
-                                        </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-md-2 form-label">State</label>
+                                    <div class="col-md-4">
+                                        <input :readonly="readonly" type="text" class="form-control" id="postal_state"
+                                            name="State" placeholder="" v-model="
+                                                email_user.postal_address
+                                                    .state
+                                            " />
                                     </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Country</label>
-                                        <div class="col-sm-4">
-                                            <select :disabled="readonly" class="form-select" id="postal_country"
-                                                name="Country" v-model="
-                                                    email_user.postal_address
-                                                        .country
-                                                ">
-                                                <option v-for="c in countries" :value="c.code">
-                                                    {{ c.name }}
-                                                </option>
-                                            </select>
-                                        </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-md-2 form-label">Postcode</label>
+                                    <div class="col-md-4">
+                                        <input :readonly="readonly" type="text" class="form-control" id="postal_postcode"
+                                            name="Postcode" placeholder="" v-model="
+                                                email_user.postal_address
+                                                    .postcode
+                                            " />
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-md-2 form-label">Country</label>
+                                    <div class="col-sm-4">
+                                        <select :disabled="readonly" class="form-select" id="postal_country" name="Country"
+                                            v-model="
+                                                email_user.postal_address
+                                                    .country
+                                            ">
+                                            <option v-for="c in countries" :value="c.code">
+                                                {{ c.name }}
+                                            </option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
