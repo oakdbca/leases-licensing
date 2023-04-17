@@ -106,12 +106,14 @@
                                         id="competitive_process_winner"
                                         :disabled="elementDisabled">
                                             <option :value=null>No winner</option>
-                                            <option v-for="party in competitive_process.competitive_process_parties" :value="party.id">
-                                                <template v-if="party.is_person">
-                                                    {{ party.person.fullname }}
-                                                </template>
-                                                <template v-if="party.is_organisation">
-                                                    {{ party.organisation.name }}
+                                            <option v-for="party in possibleWinner" :value="party.id">
+                                                <template v-if="party.id!=0">
+                                                    <template v-if="party.is_person">
+                                                        {{ party.person.fullname }}
+                                                    </template>
+                                                    <template v-else-if="party.is_organisation">
+                                                        {{ party.organisation.name }}
+                                                    </template>
                                                 </template>
                                             </option>
                                     </select>
@@ -337,6 +339,11 @@ export default {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, or when finalized
             return this.processing || this.discarded || this.finalised || this.declined;
+        },
+        possibleWinner: function() {
+            // Returns list of possible winners without newly added parties
+            return this.competitive_process.competitive_process_parties.filter(
+                party => party.id > 0);
         }
    },
     methods: {

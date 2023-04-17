@@ -384,14 +384,15 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
 
         # competitive_process_parties
         for competitive_process_party_data in competitive_process_parties_data:
-            if competitive_process_party_data['id']:
+            # Existing competitive process parties have a positive id
+            if competitive_process_party_data['id'] > 0:
                 # This competitive_process_party exists
                 competitive_process_party_instance = CompetitiveProcessParty.objects.get(id=int(competitive_process_party_data['id']))
                 serializer = CompetitiveProcessPartySerializer(competitive_process_party_instance, competitive_process_party_data, context={'competitive_process': instance})
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
             else:
-                # New competitive_process_party
+                # New competitive_process_party has a negative id (set in the frontend)
                 serializer = CompetitiveProcessPartySerializer(data=competitive_process_party_data, context={'competitive_process': instance})
                 serializer.is_valid(raise_exception=True)
                 new_party = serializer.save()

@@ -60,6 +60,7 @@ export default {
         return {
             datatable_id: uuid(),
             datatable_key: uuid(),
+            new_party_id: -1, // This is used to identify new parties in the datatable
 
             // For expander
             td_expand_class_name: 'expand-icon',
@@ -275,7 +276,7 @@ export default {
                     'id': 0,  // This is competitive_process_party id.  Empty string because this is not saved yet.
                     'is_person': is_person, //true,
                     'is_organisation': is_organisation, // false,
-                    'person': is_person? data: null,
+                    'person': is_person? data: null, // Either a person or an organisation
                     'person_id': is_person? data.id: null,
                     'organisation': is_organisation? data: null,
                     'organisation_id': is_organisation? data.id: null,
@@ -345,8 +346,32 @@ export default {
                 })
             })
         },
+        addTableDrawListener: function() {
+            /** Listens on datatable draw events and adds a negative id to new rows.
+             *  This is because new rows are not yet saved to the database and therefore
+             *  do not have an id, but need to be distinguishable in the frontend for
+             *  adding new details/documents.
+             */
+
+            let vm = this;
+            // The id of the datatable
+            let id = $(vm.$refs.parties_datatable)[0].id;
+
+            $(`#${id}`).DataTable().on('draw.dt', function (e, table) {
+                // Iterate through all new rows and add a negative id to those with id = 0
+                $(table.aoData).each(function (_, row) {
+                    let _id = row._aData["id"];
+                    if (_id == 0) {
+                        row._aData["id"] = vm.new_party_id;
+                        console.log("ID", row._aData["id"]);
+                        vm.new_party_id --;
+                    }
+                })
+            })
+        },
         addEventListeners: function () {
             console.log('in addEventListener')
+            this.addTableDrawListener();
             this.addClickEventHandler()
             this.addResponsiveResizeHandler()
         },
