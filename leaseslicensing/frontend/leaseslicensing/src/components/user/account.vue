@@ -7,7 +7,7 @@
                         <a class="nav-link active" aria-current="true" data-bs-toggle="tab" data-bs-target="#account"
                             href="#">Account</a>
                     </li>
-                    <li class="nav-item">
+                    <li v-if="!email_user.is_internal" class="nav-item">
                         <a id="organisations-tab-link" class="nav-link" data-bs-toggle="tab" data-bs-target="#organisations"
                             href="#">Organisations</a>
                     </li>
@@ -231,7 +231,8 @@
                     </FormSection>
 
                 </div>
-                <div class="tab-pane fade" id="organisations" role="tabpanel" aria-labelledby="organisations-tab">
+                <div v-if="!email_user.is_internal" class="tab-pane fade" id="organisations" role="tabpanel"
+                    aria-labelledby="organisations-tab">
                     <FormSection index="organisation-details" :label="linkOrganisationTitle">
                         <OrganisationSearch v-if="!selectedOrganisation && !newOrganisation"
                             @selected="organisationSelected" @new-organisation="prepareNewOrganisation"
@@ -495,13 +496,13 @@ export default {
                 vm.countries = data[0];
                 vm.email_user = data[1].data;
                 vm.email_user.id = data[2].id;
+                vm.email_user.is_internal = data[2].is_internal;
                 vm.organisation_requests = data[3].results;
                 // Convert date to format that the date picker can use
                 vm.email_user.dob = vm.email_user.dob.split("/").reverse().join("-");
                 this.$nextTick(() => {
                     if (vm.email_user.postal_same_as_residential) {
                         vm.togglePostalAddressFieldsDisabled();
-
                     }
                     if (window.location.hash == '#organisations') {
                         console.log('opening organisations tab')
