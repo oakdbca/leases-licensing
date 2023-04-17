@@ -50,19 +50,6 @@
 
         </CollapsibleFilters>
 
-        <!--
-        <div class="toggle_filters_wrapper">
-            <div @click="expandCollapseFilters" class="toggle_filters_button">
-                <div class="toggle_filters_icon">
-                    <span v-if="filters_expanded" class="text-right"><i class="fa fa-chevron-up"></i></span>
-                    <span v-else class="text-right"><i class="fa fa-chevron-down"></i></span>
-                </div>
-                <i v-if="filterApplied" title="filter(s) applied" class="fa fa-exclamation-circle fa-2x filter-warning-icon"></i>
-            </div>
-
-        </div>
-        -->
-
         <div class="row">
             <div class="col-lg-12">
                 <datatable ref="compliances_datatable" :id="datatable_id" :dtOptions="compliancesOptions"
@@ -74,10 +61,8 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
-import Vue from 'vue'
 import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
-//import '@/components/common/filters.css'
 
 export default {
     name: 'TableCompliances',
@@ -419,22 +404,10 @@ export default {
                         d.filter_due_date_to = vm.filterComplianceDueDateTo;
                     }
                 },
-                //dom: 'lBfrtip',
                 dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
                     "<'row'<'col-sm-12'tr>>" +
                     "<'d-flex align-items-center'<'me-auto'i>p>",
                 buttons: buttons,
-                /*
-
-                buttons:[
-                    //{
-                    //    extend: 'csv',
-                    //    exportOptions: {
-                    //        columns: ':visible'
-                    //    }
-                    //},
-                ],
-                */
                 columns: vm.applicableColumns,
                 processing: true,
                 initComplete: function () {
@@ -490,49 +463,9 @@ export default {
                     console.error('There was an error!', error)
                 })
         },
-        addEventListeners: function () {
-            let vm = this;
-            /*
-            // update to bs5
-            // Lodged From
-            $(vm.$refs.complianceDateFromPicker).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.complianceDateFromPicker).on('dp.change',function (e) {
-                if ($(vm.$refs.complianceDateFromPicker).data('DateTimePicker').date()) {
-                    // DateFrom has been picked
-                    vm.filterComplianceDueDateFrom = e.date.format('DD/MM/YYYY');
-                    $(vm.$refs.complianceDateToPicker).data("DateTimePicker").minDate(e.date);
-                }
-                else if ($(vm.$refs.complianceDateFromPicker).data('date') === "") {
-                    vm.filterComplianceDueDateFrom = "";
-                    $(vm.$refs.complianceDateToPicker).data("DateTimePicker").minDate(false);
-                }
-            });
-
-            // Lodged To
-            $(vm.$refs.complianceDateToPicker).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.complianceDateToPicker).on('dp.change',function (e) {
-                if ($(vm.$refs.complianceDateToPicker).data('DateTimePicker').date()) {
-                    // DateTo has been picked
-                    vm.filterComplianceDueDateTo = e.date.format('DD/MM/YYYY');
-                    $(vm.$refs.complianceDateFromPicker).data("DateTimePicker").maxDate(e.date);
-                }
-                else if ($(vm.$refs.complianceDateToPicker).data('date') === "") {
-                    vm.filterComplianceDueDateTo = "";
-                    $(vm.$refs.complianceDateFromPicker).data("DateTimePicker").maxDate(false);
-                }
-            });
-            */
-        }
     },
     created: function () {
         this.fetchFilterLists()
     },
-    mounted: function () {
-        this.$nextTick(() => {
-            this.addEventListeners();
-        });
-    }
 }
 </script>
-
-<style scoped></style>
