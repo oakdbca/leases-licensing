@@ -365,6 +365,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
     applicant = serializers.SerializerMethodField()
     lodgement_date_display = serializers.SerializerMethodField()
+    applicant_type = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
 
     class Meta:
@@ -372,6 +373,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "application_type",
+            "applicant_type",
             "applicant_obj",
             "proposal_type",
             "title",
@@ -447,7 +449,19 @@ class BaseProposalSerializer(serializers.ModelSerializer):
 
     def get_lodgement_date_display(self, obj):
         if obj.lodgement_date:
-            return obj.lodgement_date.strftime("%d/%m/%Y %I:%M %p")
+            return (
+                obj.lodgement_date.strftime("%d/%m/%Y")
+                + " at "
+                + obj.lodgement_date.strftime("%-I:%M %p")
+            )
+
+    def get_applicant_type(self, obj):
+        if isinstance(obj.applicant, Organisation):
+            return "organisation"
+        elif isinstance(obj.applicant, EmailUser):
+            return "individual"
+        else:
+            return "Applicant not yet assigned"
 
     def get_applicant(self, obj):
         if isinstance(obj.applicant, Organisation):
