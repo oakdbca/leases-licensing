@@ -38,8 +38,10 @@
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="pills-applicant" role="tabpanel"
                     aria-labelledby="pills-applicant-tab">
-                    <Applicant :email_user="email_user_applicant" id="proposalStartApplicant" :readonly="readonly"
-                        :collapseFormSections="false" :proposalId="proposal.id" />
+                    <Applicant v-if="'individual' == proposal.applicant_type" :email_user="email_user_applicant"
+                        id="proposalStartApplicant" :readonly="readonly" :collapseFormSections="false"
+                        :proposalId="proposal.id" />
+                    <OrganisationApplicant v-else :org="proposal.applicant_obj" />
                 </div>
                 <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                     <FormSection :formCollapse="false" label="Map" Index="proposal_geometry">
@@ -143,11 +145,13 @@
                         <slot name="slot_deed_poll_checklist_questions"></slot>
                         <div class="col-sm-12 section-style">
                             <p>
-                                <strong>It is a requirement of all lease and licence holders to sign a deed poll to release
+                                <strong>It is a requirement of all lease and licence holders to sign a deed poll to
+                                    release
                                     and indemnify the State of Western Australia.
                                     Please note: electronic or digital signatures cannot be accepted.
                                     <p></p>
-                                    The deed poll must be signed and have a witness signature and be dated. Once signed and
+                                    The deed poll must be signed and have a witness signature and be dated. Once
+                                    signed and
                                     dated, please scan and attach the deed poll below.
                                 </strong>
                             </p>
@@ -181,6 +185,7 @@
 <script>
 import Profile from '@/components/user/profile.vue'
 import Applicant from '@/components/common/applicant.vue'
+import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
 import FormSection from '@/components/forms/section_toggle.vue'
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
@@ -280,6 +285,7 @@ export default {
         RegistrationOfInterest,
         LeaseLicence,
         Applicant,
+        OrganisationApplicant,
         Profile,
         FormSection,
         RichText,
