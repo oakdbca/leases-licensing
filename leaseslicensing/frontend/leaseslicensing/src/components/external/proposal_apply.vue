@@ -28,7 +28,7 @@
                                         v-model="selectedOrganisation" aria-label="myself">
                                     <label for="myself">Myself (as an individual)</label>
                                 </li>
-                                <template v-if="linkedOrganisations && linkedOrganisations.length">
+                                <template v-if="linkedOrganisations && linkedOrganisations.length > 0">
                                     <li v-for="(linkedOrganisation, index) in linkedOrganisations" class="list-group-item">
                                         <input class="form-check-input me-1" type="radio" name="behalf_of_org"
                                             :value="linkedOrganisation" v-model="selectedOrganisation"
@@ -37,8 +37,17 @@
                                             linkedOrganisation.trading_name }}</label>
                                     </li>
                                 </template>
-                                <template v-if="loadingOrganisations">
-                                    <BootstrapSpinner class="text-primary" :centerOfScreen="false" :small="true" />
+                                <template v-if="!loadingOrganisations && !linkedOrganisations">
+                                    <li class="list-group-item">
+                                        <BootstrapAlert class="mb-1 mt-1">
+                                            <span class="me-5">
+                                                You are not linked to any organisations
+                                            </span>
+                                            <a class="btn btn-primary btn-sm ms-2" role="button"
+                                                href="/account#organisations">Link an
+                                                Organisation</a>
+                                        </BootstrapAlert>
+                                    </li>
                                 </template>
                             </ul>
                         </div>
@@ -99,11 +108,7 @@ export default {
             if (this.selectedApplication && this.selectedApplication.description) {
                 text = this.selectedApplication.description;
             }
-            if (this.selectedApplication.code == 'wla') {
-                text = "a " + text;
-            } else {
-                text = "an " + text;
-            }
+            text = "a " + text;
             return text
         },
     },
@@ -114,7 +119,13 @@ export default {
                 text: "Are you sure you want to create " + this.alertText + "?",
                 icon: "question",
                 showCancelButton: true,
-                confirmButtonText: 'Accept'
+                confirmButtonText: 'Proceed',
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
             }).then((result) => {
                 if (result.isConfirmed) {
                     this.createProposal();
@@ -162,7 +173,7 @@ export default {
         fetchLinkedOrganisations: function (id) {
             let vm = this
             vm.loadingOrganisations = true;
-            fetch(api_endpoints.organisations_viewset)
+            fetch(api_endpoints.organisations)
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -171,7 +182,7 @@ export default {
                         console.log(error)
                         return Promise.reject(error)
                     }
-                    vm.linkedOrganisations = data
+                    vm.linkedOrganisations = data.results
                     console.log(vm.linkedOrganisations)
                     vm.loadingOrganisations = false;
                 })
