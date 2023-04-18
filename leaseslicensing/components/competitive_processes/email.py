@@ -20,25 +20,26 @@ def send_winner_notification(request, competitive_process):
         txt_template="leaseslicensing/emails/competitive_processes/send_winner_notification.txt",
     )
 
-    # TODO: complete logic below
+    url = request.build_absolute_uri(
+        reverse("internal-competitive-process-detail",
+            kwargs={"competitive_process_pk": competitive_process.id})
+    )
+    context = {"competitive_process": competitive_process,
+               "url": url}
 
-    context = {
+    winner = competitive_process.winner
+    id = winner.person.id if winner.is_person else winner.organisation.id
+    email_user_email = retrieve_email_user(id).email
+    msg = email.send(email_user_email,
+               context=context)
 
-    }
-    recipients = [competitive_process.winner.email_address,]
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+    log_competitive_process = _log_competitive_process_email(
+        msg, competitive_process, sender=sender
+    )
 
-    msg = email.send(recipients, context=context)
+    return log_competitive_process
 
-    # sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    # _log_proposal_email(msg, proposal, sender=sender)
-    # if proposal.org_applicant:
-    #     _log_org_email(
-    #         msg, proposal.org_applicant, referral, sender=sender
-    #     )
-    # elif proposal.ind_applicant:
-    #     _log_user_email(
-    #         msg, proposal.ind_applicant, referral, sender=sender
-    #     )
 
 def send_competitive_process_create_notification(request, competitive_process, **kwargs):
     """
