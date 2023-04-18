@@ -37,6 +37,8 @@
                                             linkedOrganisation.trading_name }}</label>
                                     </li>
                                 </template>
+                                <BootstrapSpinner v-if="loadingOrganisations" class="text-primary" :centerOfScreen="false"
+                                    :small="true" />
                                 <template v-if="!loadingOrganisations && !linkedOrganisations">
                                     <li class="list-group-item">
                                         <BootstrapAlert class="mb-1 mt-1">
