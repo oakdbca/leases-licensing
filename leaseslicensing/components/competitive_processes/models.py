@@ -407,6 +407,22 @@ class PartyDetailDocument(Document):
         app_label = "leaseslicensing"
 
 
+def update_competitive_process_comms_log_filename(instance, filename):
+    return "{}/competitive_process/{}/communications/{}".format(
+        settings.MEDIA_APP_DIR, instance.log_entry.competitive_process.id, filename
+    )
+
+class CompetitiveProcessLogDocument(Document):
+    log_entry = models.ForeignKey(
+        "CompetitiveProcessLogEntry", related_name="documents", on_delete=models.CASCADE
+    )
+    _file = models.FileField(
+        upload_to=update_competitive_process_comms_log_filename, max_length=512
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
 class CompetitiveProcessLogEntry(CommunicationsLogEntry):
     competitive_process = models.ForeignKey(
         CompetitiveProcess, related_name="comms_logs", on_delete=models.CASCADE
