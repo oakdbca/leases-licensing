@@ -428,7 +428,7 @@ export default {
             let vm = this;
 
             // Types
-            fetch(api_endpoints.application_types + 'key_value_list/')
+            fetch(api_endpoints.application_types + 'key-value-list/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
