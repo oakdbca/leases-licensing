@@ -49,6 +49,7 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_decline_email_notification,
     send_referral_email_notification,
 )
+from leaseslicensing.components.tenure.models import LGA, Category, District
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
     APPLICATION_TYPE_LEASE_LICENCE,
@@ -1170,6 +1171,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     risk_factors_text = models.TextField(blank=True)
     legislative_requirements_text = models.TextField(blank=True)
     shapefile_json = JSONField(blank=True, null=True)
+
+    category = models.ForeignKey(
+        Category, on_delete=models.PROTECT, null=True, blank=True
+    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -3226,6 +3231,25 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             | Q(submitter=emailuser_id)
             | Q(ind_applicant=emailuser_id)
             | Q(proxy_applicant=emailuser_id)
+        )
+
+
+class ProposalLocality(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.CASCADE, related_name="localities"
+    )
+    district = models.ForeignKey(
+        District, on_delete=models.PROTECT, null=True, blank=True
+    )
+    lga = models.ForeignKey(LGA, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+    def __str__(self):
+        return (
+            f"Proposal: {self.proposal.lodgement_number} is located in Region: "
+            f"{self.district.region}, District: {self.district}, LGA: {self.lga}"
         )
 
 
