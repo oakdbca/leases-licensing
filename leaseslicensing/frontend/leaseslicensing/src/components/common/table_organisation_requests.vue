@@ -8,8 +8,8 @@
                         <label for="">Organisation</label>
                         <select class="form-control" v-model="filterOrganisation">
                             <option value="">All</option>
-                            <option v-for="organisation in organisations" :value="organisation.organisation">
-                                {{ organisation.trading_name }}
+                            <option v-for="organisation in organisations" :value="organisation.id">
+                                {{ organisation.organisation_name }}
                             </option>
                         </select>
                     </div>
@@ -342,7 +342,7 @@ export default {
     methods: {
         fetchOrganisations: function () {
             let vm = this
-            fetch(api_endpoints.organisations)
+            fetch(api_endpoints.organisations + 'key-value-list/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
