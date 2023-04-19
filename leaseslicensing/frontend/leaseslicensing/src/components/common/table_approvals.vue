@@ -258,10 +258,10 @@ export default {
                 this.filterApprovalStatus.toLowerCase() === 'all' &&
                 this.filterApprovalExpiryDateFrom.toLowerCase() === '' &&
                 this.filterApprovalExpiryDateTo.toLowerCase() === '' &&
-                this.filterOrganisation.toLowerCase() === 'all' &&
-                this.filterRegion.toLowerCase() === 'all' &&
-                this.filterDistrict.toLowerCase() === 'all' &&
-                this.filterCategory.toLowerCase() === 'all'
+                this.filterOrganisation === 'all' &&
+                this.filterRegion === 'all' &&
+                this.filterDistrict === 'all' &&
+                this.filterCategory === 'all'
             ) {
                 filter_applied = false
             }
