@@ -43,7 +43,10 @@ module.exports = {
     proposal_requirements: '/api/proposal_requirements.json',
     proposal_by_uuid: '/api/proposal_by_uuid/',
     temporary_document: '/api/temporary_document/',
-
+    regions: '/api/regions/',
+    districts: '/api/districts/',
+    lgas: '/api/lgas/',
+    categories: '/api/categories/',
     lookupApprovalDetails: function (id) {
         return `/api/approvals/${id}/lookup_approval.json`;
     },
