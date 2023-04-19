@@ -55,6 +55,7 @@ INSTALLED_APPS += [
     "leaseslicensing.components.bookings",
     "leaseslicensing.components.competitive_processes",
     "leaseslicensing.components.invoicing",
+    "leaseslicensing.components.tenure",
     "rest_framework",
     "rest_framework_datatables",
     "rest_framework_gis",
