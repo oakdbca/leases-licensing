@@ -552,8 +552,9 @@ class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
         filter_status = request.GET.get("filter_status", None)
 
         if filter_organisation:
+            logger.debug("filter_organisation: %s", filter_organisation)
             filter_organisation = int(filter_organisation)
-            queryset = queryset.filter(organisation__organisation=filter_organisation)
+            queryset = queryset.filter(organisation_id=filter_organisation)
 
         if filter_role:
             queryset = queryset.filter(role=filter_role)
