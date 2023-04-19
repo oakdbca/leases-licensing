@@ -2,7 +2,7 @@
     <div>
         <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
             class="mb-2">
-            <div class="row">
+            <div class="row mb-2">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Type</label>
@@ -47,6 +47,49 @@
                     </div>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-region">Organisation</label>
+                        <select id="filter-region" class="form-control" v-model="filterOrganisation">
+                            <option value="all">All</option>
+                            <option v-for="organisation in organisations" :value="organisation.id">{{
+                                organisation.organisation_name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-region">Region</label>
+                        <select id="filter-region" class="form-control" v-model="filterRegion">
+                            <option value="all">All</option>
+                            <option v-for="region in regions" :value="region.id">{{ region.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-district">District</label>
+                        <select id=" filter-district" class="form-control" v-model="filterDistrict">
+                            <option value="all">All</option>
+                            <option v-for="district in districts" :value="district.id">{{ district.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-category">Category</label>
+                        <select id="filter-category" class="form-control" v-model="filterCategory">
+                            <option value="all">All</option>
+                            <option v-for="category in categories" :value="category.id">{{ category.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </CollapsibleFilters>
 
         <div class="row">
@@ -82,12 +125,6 @@ import { expandToggle } from '@/components/common/table_functions.js'
 export default {
     name: 'TableApprovals',
     props: {
-        /*
-        approvalTypeFilter: {
-            type: Array,
-            required: true,
-        },
-        */
         level: {
             type: String,
             required: true,
@@ -121,6 +158,10 @@ export default {
             filterApprovalType: null,
             approvalTypes: [],
             holderList: [],
+            organisations: [],
+            regions: [],
+            districts: [],
+            categories: [],
             profile: {},
 
             // selected values for filtering
@@ -128,6 +169,12 @@ export default {
             filterApprovalStatus: sessionStorage.getItem('filterApprovalStatus') ? sessionStorage.getItem('filterApprovalStatus') : 'all',
             filterApprovalExpiryDateFrom: sessionStorage.getItem('filterApprovalExpiryDateFrom') ? sessionStorage.getItem('filterApprovalExpiryDateFrom') : '',
             filterApprovalExpiryDateTo: sessionStorage.getItem('filterApprovalExpiryDateTo') ? sessionStorage.getItem('filterApprovalExpiryDateTo') : '',
+
+            filterOrganisation: sessionStorage.getItem('filterOrganisation') ? sessionStorage.getItem('filterOrganisation') : 'all',
+            filterRegion: sessionStorage.getItem('filterRegion') ? sessionStorage.getItem('filterRegion') : 'all',
+            filterDistrict: sessionStorage.getItem('filterDistrict') ? sessionStorage.getItem('filterDistrict') : 'all',
+            filterCategory: sessionStorage.getItem('filterCategory') ? sessionStorage.getItem('filterCategory') : 'all',
+
 
             // filtering options
             approval_types: [],
@@ -181,6 +228,22 @@ export default {
             this.$refs.approvals_datatable.vmDataTable.draw();
             sessionStorage.setItem('filterApprovalExpiryDateTo', this.filterApprovalExpiryDateTo);
         },
+        filterOrganisation: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterOrganisation', this.filterOrganisation);
+        },
+        filterRegion: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterRegion', this.filterRegion);
+        },
+        filterDistrict: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterDistrict', this.filterDistrict);
+        },
+        filterCategory: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterCategory', this.filterCategory);
+        },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
@@ -191,8 +254,15 @@ export default {
     computed: {
         filterApplied: function () {
             let filter_applied = true
-            if (this.filterApprovalType === 'all' && this.filterApprovalStatus.toLowerCase() === 'all' &&
-                this.filterApprovalExpiryDateFrom.toLowerCase() === '' && this.filterApprovalExpiryDateTo.toLowerCase() === '') {
+            if (this.filterApprovalType === 'all' &&
+                this.filterApprovalStatus.toLowerCase() === 'all' &&
+                this.filterApprovalExpiryDateFrom.toLowerCase() === '' &&
+                this.filterApprovalExpiryDateTo.toLowerCase() === '' &&
+                this.filterOrganisation.toLowerCase() === 'all' &&
+                this.filterRegion.toLowerCase() === 'all' &&
+                this.filterDistrict.toLowerCase() === 'all' &&
+                this.filterCategory.toLowerCase() === 'all'
+            ) {
                 filter_applied = false
             }
             return filter_applied
@@ -520,6 +590,12 @@ export default {
                         d.filter_approval_status = vm.filterApprovalStatus
                         d.filter_approval_expiry_date_from = vm.filterApprovalExpiryDateFrom
                         d.filter_approval_expiry_date_to = vm.filterApprovalExpiryDateTo
+
+                        d.filter_organisation = vm.filterOrganisation
+                        d.filter_region = vm.filterRegion
+                        d.filter_district = vm.filterDistrict
+                        d.filter_category = vm.filterCategory
+
                         d.level = vm.level
                     }
                 },
@@ -713,7 +789,7 @@ export default {
         fetchFilterLists: async function () {
             let vm = this;
             // Types
-            fetch(api_endpoints.application_types + 'key_value_list/')
+            fetch(api_endpoints.application_types + 'key-value-list/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -744,7 +820,71 @@ export default {
                 .catch((error) => {
                     console.error('There was an error!', error)
                 })
-            // Not totally sure what this does so comming out for now
+            // Organisations
+            fetch(api_endpoints.organisations + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.organisations = data
+                    console.log(vm.organisations)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Regions
+            fetch(api_endpoints.regions + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.regions = data
+                    console.log(vm.regions)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Districts
+            fetch(api_endpoints.districts + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.districts = data
+                    console.log(vm.districts)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Category
+            fetch(api_endpoints.categories + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.categories = data
+                    console.log(vm.categories)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Not totally sure what this does so commenting out for now
             // const statusRes = await fetch(api_endpoints.approval_statuses_dict);
             // const statusData = await statusRes.json()
             // for (let s of statusData) {
