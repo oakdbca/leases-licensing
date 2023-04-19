@@ -316,7 +316,6 @@ export default {
                     'Number',
                     'Type',
                     'Holder',
-                    //'Application',
                     'Status',
                     'Expiry Date',
                     'Document',
@@ -326,7 +325,6 @@ export default {
         },
         columnId: function () {
             return {
-                // 1. ID
                 data: "id",
                 orderable: false,
                 searchable: false,
@@ -340,7 +338,6 @@ export default {
         },
         columnLodgementNumber: function () {
             return {
-                // 2. Lodgement Number
                 data: "lodgement_number",
                 orderable: true,
                 searchable: true,
@@ -363,7 +360,6 @@ export default {
                 'render': function (row, type, full) {
                     return full.application_type;
                 },
-                name: 'proposal__application_type__name'
             }
         },
         columnSite: function () {
@@ -380,20 +376,17 @@ export default {
         },
         columnHolder: function () {
             return {
-                data: "id",
+                data: "holder",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
                     return full.holder;
                 },
-                // TODO Is it correct to fetch the applicant as the holder?
-                name: "current_proposal__ind_applicant__first_name, current_proposal__ind_applicant__last_name"
             }
         },
         columnStatus: function () {
             return {
-                // 5. Status
                 data: "status",
                 orderable: true,
                 searchable: true,
@@ -405,8 +398,7 @@ export default {
         },
         columnExpiryDate: function () {
             return {
-                // 9. Expiry Date
-                data: "id",
+                data: "expiry_date",
                 orderable: true,
                 searchable: false,
                 visible: true,
@@ -449,14 +441,7 @@ export default {
                 visible: true,
                 'render': function (row, type, full) {
                     let links = '';
-                    if (vm.debug) {
-                        links += `<a href='#${full.id}' data-request-new-sticker='${full.id}'>Request New Sticker</a><br/>`;
-                    }
-                    /*
-                    if (vm.is_internal && vm.wlaDash) {
-                        links += full.offer_link;
-                    } else
-                    */
+                    links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                     if (vm.is_external && full.can_reissue) {
                         if (full.can_action || vm.debug) {
                             if (full.amend_or_renew === 'amend' || vm.debug) {
@@ -464,14 +449,9 @@ export default {
                             } else if (full.amend_or_renew === 'renew' || vm.debug) {
                                 links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal_id}'>Renew</a><br/>`;
                             }
-                            // Links to `external/approvals/approval.vue`
-                            links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                             links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
                         }
-
-
                     } else if (!vm.is_external) {
-                        links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}'>History</a><br/>`;
                         if (full.can_reissue && full.current_proposal_id && full.is_approver && full.current_proposal_approved) {
                             links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal_id}'>Reissue</a><br/>`;
@@ -479,10 +459,7 @@ export default {
                         if (vm.is_internal && vm.wlaDash) {
                             links += full.offer_link;
                         }
-                        //if(vm.check_assessor(full)){
-                        //if (full.allowed_assessors.includes(vm.profile.id)) {
                         if (full.allowed_assessors_user) {
-                            //if (true) {
                             if (full.can_reissue && full.can_action) {
                                 links += `<a href='#${full.id}' data-cancel-approval='${full.id}'>Cancel</a><br/>`;
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
