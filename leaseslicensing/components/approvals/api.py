@@ -168,24 +168,24 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             "filter_approval_expiry_date_to"
         )
 
-        filter_organisation = (
-            request.GET.get("filter_organisation")
-            if request.GET.get("filter_organisation") != "all"
+        filter_approval_organisation = (
+            request.GET.get("filter_approval_organisation")
+            if request.GET.get("filter_approval_organisation") != "all"
             else ""
         )
-        filter_region = (
-            request.GET.get("filter_region")
-            if request.GET.get("filter_region") != "all"
+        filter_approval_region = (
+            request.GET.get("filter_approval_region")
+            if request.GET.get("filter_approval_region") != "all"
             else ""
         )
-        filter_district = (
-            request.GET.get("filter_district")
-            if request.GET.get("filter_district") != "all"
+        filter_approval_district = (
+            request.GET.get("filter_approval_district")
+            if request.GET.get("filter_approval_district") != "all"
             else ""
         )
-        filter_category = (
-            request.GET.get("filter_category")
-            if request.GET.get("filter_category") != "all"
+        filter_approval_category = (
+            request.GET.get("filter_approval_category")
+            if request.GET.get("filter_approval_category") != "all"
             else ""
         )
 
@@ -210,26 +210,30 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             )
             queryset = queryset.filter(expiry_date__lte=filter_approval_expiry_date_to)
 
-        if filter_organisation:
-            filter_organisation = int(filter_organisation)
-            logger.debug(f"filter_organisation: {filter_organisation}")
-            queryset = queryset.filter(org_applicant_id=filter_organisation)
-        if filter_region:
-            filter_region = int(filter_region)
-            logger.debug(f"filter_region: {filter_region}")
-            queryset = queryset.filter(
-                current_proposal__localities__district__region_id=filter_region
+        if filter_approval_organisation:
+            filter_approval_organisation = int(filter_approval_organisation)
+            logger.debug(
+                f"filter_approval_organisation: {filter_approval_organisation}"
             )
-        if filter_district:
-            filter_district = int(filter_district)
-            logger.debug(f"filter_district: {filter_district}")
+            queryset = queryset.filter(org_applicant_id=filter_approval_organisation)
+        if filter_approval_region:
+            filter_approval_region = int(filter_approval_region)
+            logger.debug(f"filter_approval_region: {filter_approval_region}")
             queryset = queryset.filter(
-                current_proposal__localities__district_id=filter_district
+                current_proposal__localities__district__region_id=filter_approval_region
             )
-        if filter_category:
-            filter_category = int(filter_category)
-            logger.debug(f"filter_category: {filter_category}")
-            queryset = queryset.filter(current_proposal__category_id=filter_category)
+        if filter_approval_district:
+            filter_approval_district = int(filter_approval_district)
+            logger.debug(f"filter_approval_district: {filter_approval_district}")
+            queryset = queryset.filter(
+                current_proposal__localities__district_id=filter_approval_district
+            )
+        if filter_approval_category:
+            filter_approval_category = int(filter_approval_category)
+            logger.debug(f"filter_approval_category: {filter_approval_category}")
+            queryset = queryset.filter(
+                current_proposal__category_id=filter_approval_category
+            )
 
         # getter = request.query_params.get
         # fields = self.get_fields(getter)

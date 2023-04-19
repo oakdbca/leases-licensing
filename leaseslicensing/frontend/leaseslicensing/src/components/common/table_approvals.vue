@@ -51,7 +51,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="filter-region">Organisation</label>
-                        <select id="filter-region" class="form-control" v-model="filterOrganisation">
+                        <select id="filter-region" class="form-control" v-model="filterApprovalOrganisation">
                             <option value="all">All</option>
                             <option v-for="organisation in organisations" :value="organisation.id">{{
                                 organisation.organisation_name }}
@@ -62,7 +62,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="filter-region">Region</label>
-                        <select id="filter-region" class="form-control" v-model="filterRegion">
+                        <select id="filter-region" class="form-control" v-model="filterApprovalRegion">
                             <option value="all">All</option>
                             <option v-for="region in regions" :value="region.id">{{ region.name }}
                             </option>
@@ -72,7 +72,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="filter-district">District</label>
-                        <select id=" filter-district" class="form-control" v-model="filterDistrict">
+                        <select id=" filter-district" class="form-control" v-model="filterApprovalDistrict">
                             <option value="all">All</option>
                             <option v-for="district in districts" :value="district.id">{{ district.name }}
                             </option>
@@ -82,7 +82,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="filter-category">Category</label>
-                        <select id="filter-category" class="form-control" v-model="filterCategory">
+                        <select id="filter-category" class="form-control" v-model="filterApprovalCategory">
                             <option value="all">All</option>
                             <option v-for="category in categories" :value="category.id">{{ category.name }}
                             </option>
@@ -170,10 +170,10 @@ export default {
             filterApprovalExpiryDateFrom: sessionStorage.getItem('filterApprovalExpiryDateFrom') ? sessionStorage.getItem('filterApprovalExpiryDateFrom') : '',
             filterApprovalExpiryDateTo: sessionStorage.getItem('filterApprovalExpiryDateTo') ? sessionStorage.getItem('filterApprovalExpiryDateTo') : '',
 
-            filterOrganisation: sessionStorage.getItem('filterOrganisation') ? sessionStorage.getItem('filterOrganisation') : 'all',
-            filterRegion: sessionStorage.getItem('filterRegion') ? sessionStorage.getItem('filterRegion') : 'all',
-            filterDistrict: sessionStorage.getItem('filterDistrict') ? sessionStorage.getItem('filterDistrict') : 'all',
-            filterCategory: sessionStorage.getItem('filterCategory') ? sessionStorage.getItem('filterCategory') : 'all',
+            filterApprovalOrganisation: sessionStorage.getItem('filterApprovalOrganisation') ? sessionStorage.getItem('filterApprovalOrganisation') : 'all',
+            filterApprovalRegion: sessionStorage.getItem('filterApprovalRegion') ? sessionStorage.getItem('filterApprovalRegion') : 'all',
+            filterApprovalDistrict: sessionStorage.getItem('filterApprovalDistrict') ? sessionStorage.getItem('filterApprovalDistrict') : 'all',
+            filterApprovalCategory: sessionStorage.getItem('filterApprovalCategory') ? sessionStorage.getItem('filterApprovalCategory') : 'all',
 
 
             // filtering options
@@ -228,21 +228,21 @@ export default {
             this.$refs.approvals_datatable.vmDataTable.draw();
             sessionStorage.setItem('filterApprovalExpiryDateTo', this.filterApprovalExpiryDateTo);
         },
-        filterOrganisation: function () {
+        filterApprovalOrganisation: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterOrganisation', this.filterOrganisation);
+            sessionStorage.setItem('filterApprovalOrganisation', this.filterApprovalOrganisation);
         },
-        filterRegion: function () {
+        filterApprovalRegion: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterRegion', this.filterRegion);
+            sessionStorage.setItem('filterApprovalRegion', this.filterApprovalRegion);
         },
-        filterDistrict: function () {
+        filterApprovalDistrict: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterDistrict', this.filterDistrict);
+            sessionStorage.setItem('filterApprovalDistrict', this.filterApprovalDistrict);
         },
-        filterCategory: function () {
+        filterApprovalCategory: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterCategory', this.filterCategory);
+            sessionStorage.setItem('filterApprovalCategory', this.filterApprovalCategory);
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
@@ -258,10 +258,10 @@ export default {
                 this.filterApprovalStatus.toLowerCase() === 'all' &&
                 this.filterApprovalExpiryDateFrom.toLowerCase() === '' &&
                 this.filterApprovalExpiryDateTo.toLowerCase() === '' &&
-                this.filterOrganisation === 'all' &&
-                this.filterRegion === 'all' &&
-                this.filterDistrict === 'all' &&
-                this.filterCategory === 'all'
+                this.filterApprovalOrganisation === 'all' &&
+                this.filterApprovalRegion === 'all' &&
+                this.filterApprovalDistrict === 'all' &&
+                this.filterApprovalCategory === 'all'
             ) {
                 filter_applied = false
             }
@@ -591,10 +591,10 @@ export default {
                         d.filter_approval_expiry_date_from = vm.filterApprovalExpiryDateFrom
                         d.filter_approval_expiry_date_to = vm.filterApprovalExpiryDateTo
 
-                        d.filter_organisation = vm.filterOrganisation
-                        d.filter_region = vm.filterRegion
-                        d.filter_district = vm.filterDistrict
-                        d.filter_category = vm.filterCategory
+                        d.filter_approval_organisation = vm.filterApprovalOrganisation
+                        d.filter_approval_region = vm.filterApprovalRegion
+                        d.filter_approval_district = vm.filterApprovalDistrict
+                        d.filter_approval_category = vm.filterApprovalCategory
 
                         d.level = vm.level
                     }
