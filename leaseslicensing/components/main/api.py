@@ -3,8 +3,8 @@ import logging
 from django.conf import settings
 from django.db import transaction
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
-from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -126,16 +126,26 @@ class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
         return Response({"filedata": returned_file_data})
 
 
-class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet):
+class KeyValueListMixin:
+    @action(detail=False, methods=["get"], url_path="key-value-list")
+    def key_value_list(self, request):
+        if not self.key_value_display_field:
+            raise AttributeError("key_value_display_field is not defined on viewset")
+        serializer = self.get_serializer(
+            self.get_queryset().only("id", self.key_value_display_field), many=True
+        )
+        return Response(serializer.data)
+
+
+class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet, KeyValueListMixin):
     queryset = ApplicationType.objects.all()
     serializer_class = ApplicationTypeSerializer
+    key_value_display_field = "name"
 
-    @list_route(methods=["GET"], detail=False)
-    def key_value_list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().only("id", "name")
-        self.serializer_class = ApplicationTypeKeyValueSerializer
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    def get_serializer_class(self):
+        if "key_value_list" == self.action:
+            return ApplicationTypeKeyValueSerializer
+        return super().get_serializer_class()
 
 
 class UserActionLoggingViewset(viewsets.ModelViewSet):
