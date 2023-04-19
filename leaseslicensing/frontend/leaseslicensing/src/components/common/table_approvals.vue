@@ -441,8 +441,12 @@ export default {
                 visible: true,
                 'render': function (row, type, full) {
                     let links = '';
-                    links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
+                    if (vm.debug) {
+                        links += `<a href='#${full.id}' data-request-new-sticker='${full.id}'>Request New Sticker</a><br/>`;
+                    }
+
                     if (vm.is_external && full.can_reissue) {
+                        links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                         if (full.can_action || vm.debug) {
                             if (full.amend_or_renew === 'amend' || vm.debug) {
                                 links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal_id}'>Amend</a><br/>`;
@@ -452,6 +456,7 @@ export default {
                             links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
                         }
                     } else if (!vm.is_external) {
+                        links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}'>History</a><br/>`;
                         if (full.can_reissue && full.current_proposal_id && full.is_approver && full.current_proposal_approved) {
                             links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal_id}'>Reissue</a><br/>`;
