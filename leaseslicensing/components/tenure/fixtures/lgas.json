@@ -1,0 +1,968 @@
+[
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 1,
+        "fields": {
+            "name": "Albany"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 2,
+        "fields": {
+            "name": "Armadale"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 3,
+        "fields": {
+            "name": "Ashburton"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 4,
+        "fields": {
+            "name": "Augusta-Margaret River"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 5,
+        "fields": {
+            "name": "Bassendean"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 6,
+        "fields": {
+            "name": "Bayswater"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 7,
+        "fields": {
+            "name": "Belmont"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 8,
+        "fields": {
+            "name": "Beverley"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 9,
+        "fields": {
+            "name": "Boddington"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 10,
+        "fields": {
+            "name": "Boyup Brook"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 11,
+        "fields": {
+            "name": "Bridgetown-Greenbushes"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 12,
+        "fields": {
+            "name": "Brookton"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 13,
+        "fields": {
+            "name": "Broome"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 14,
+        "fields": {
+            "name": "Broomehill-Tambellup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 15,
+        "fields": {
+            "name": "Bruce Rock"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 16,
+        "fields": {
+            "name": "Bunbury"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 17,
+        "fields": {
+            "name": "Busselton"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 18,
+        "fields": {
+            "name": "Cambridge"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 19,
+        "fields": {
+            "name": "Canning"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 20,
+        "fields": {
+            "name": "Capel"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 21,
+        "fields": {
+            "name": "Carnamah"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 22,
+        "fields": {
+            "name": "Carnarvon"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 23,
+        "fields": {
+            "name": "Chapman Valley"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 24,
+        "fields": {
+            "name": "Chittering"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 25,
+        "fields": {
+            "name": "Claremont"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 26,
+        "fields": {
+            "name": "Cockburn"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 27,
+        "fields": {
+            "name": "Collie"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 28,
+        "fields": {
+            "name": "Coolgardie"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 29,
+        "fields": {
+            "name": "Coorow"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 30,
+        "fields": {
+            "name": "Corrigin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 31,
+        "fields": {
+            "name": "Cottesloe"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 32,
+        "fields": {
+            "name": "Cranbrook"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 33,
+        "fields": {
+            "name": "Cuballing"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 34,
+        "fields": {
+            "name": "Cue"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 35,
+        "fields": {
+            "name": "Cunderdin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 36,
+        "fields": {
+            "name": "Dalwallinu"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 37,
+        "fields": {
+            "name": "Dandaragan"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 38,
+        "fields": {
+            "name": "Dardanup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 39,
+        "fields": {
+            "name": "Denmark"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 40,
+        "fields": {
+            "name": "Derby-West Kimberley"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 41,
+        "fields": {
+            "name": "Donnybrook-Balingup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 42,
+        "fields": {
+            "name": "Dowerin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 43,
+        "fields": {
+            "name": "Dumbleyung"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 44,
+        "fields": {
+            "name": "Dundas"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 45,
+        "fields": {
+            "name": "East Fremantle"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 46,
+        "fields": {
+            "name": "East Pilbara"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 47,
+        "fields": {
+            "name": "Esperance"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 48,
+        "fields": {
+            "name": "Exmouth"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 49,
+        "fields": {
+            "name": "Fremantle"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 50,
+        "fields": {
+            "name": "Geraldton-Greenough"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 51,
+        "fields": {
+            "name": "Gingin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 52,
+        "fields": {
+            "name": "Gnowangerup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 53,
+        "fields": {
+            "name": "Goomalling"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 54,
+        "fields": {
+            "name": "Gosnells"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 55,
+        "fields": {
+            "name": "Halls Creek"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 56,
+        "fields": {
+            "name": "Harvey"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 57,
+        "fields": {
+            "name": "Irwin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 58,
+        "fields": {
+            "name": "Jerramungup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 59,
+        "fields": {
+            "name": "Joondalup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 60,
+        "fields": {
+            "name": "Kalamunda"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 61,
+        "fields": {
+            "name": "Kalgoorlie/Boulder"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 62,
+        "fields": {
+            "name": "Katanning"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 63,
+        "fields": {
+            "name": "Kellerberrin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 64,
+        "fields": {
+            "name": "Kent"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 65,
+        "fields": {
+            "name": "Kojonup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 66,
+        "fields": {
+            "name": "Kondinin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 67,
+        "fields": {
+            "name": "Koorda"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 68,
+        "fields": {
+            "name": "Kulin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 69,
+        "fields": {
+            "name": "Kwinana"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 70,
+        "fields": {
+            "name": "Lake Grace"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 71,
+        "fields": {
+            "name": "Laverton"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 72,
+        "fields": {
+            "name": "Leonora"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 73,
+        "fields": {
+            "name": "Mandurah"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 74,
+        "fields": {
+            "name": "Manjimup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 75,
+        "fields": {
+            "name": "Meekatharra"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 76,
+        "fields": {
+            "name": "Melville"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 77,
+        "fields": {
+            "name": "Menzies"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 78,
+        "fields": {
+            "name": "Merredin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 79,
+        "fields": {
+            "name": "Mingenew"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 80,
+        "fields": {
+            "name": "Moora"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 81,
+        "fields": {
+            "name": "Morawa"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 82,
+        "fields": {
+            "name": "Mosman Park"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 83,
+        "fields": {
+            "name": "Mount Magnet"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 84,
+        "fields": {
+            "name": "Mount Marshall"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 85,
+        "fields": {
+            "name": "Mukinbudin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 86,
+        "fields": {
+            "name": "Mullewa"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 87,
+        "fields": {
+            "name": "Mundaring"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 88,
+        "fields": {
+            "name": "Murchison"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 89,
+        "fields": {
+            "name": "Murray"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 90,
+        "fields": {
+            "name": "Nannup"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 91,
+        "fields": {
+            "name": "Narembeen"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 92,
+        "fields": {
+            "name": "Narrogin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 93,
+        "fields": {
+            "name": "Nedlands"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 94,
+        "fields": {
+            "name": "Ngaanyatjarraku"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 95,
+        "fields": {
+            "name": "Northam"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 96,
+        "fields": {
+            "name": "Northampton"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 97,
+        "fields": {
+            "name": "Nungarin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 98,
+        "fields": {
+            "name": "Peppermint Grove"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 99,
+        "fields": {
+            "name": "Perenjori"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 100,
+        "fields": {
+            "name": "Perth"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 101,
+        "fields": {
+            "name": "Pingelly"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 102,
+        "fields": {
+            "name": "Plantagenet"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 103,
+        "fields": {
+            "name": "Port Hedland"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 104,
+        "fields": {
+            "name": "Quairading"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 105,
+        "fields": {
+            "name": "Ravensthorpe"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 106,
+        "fields": {
+            "name": "Rockingham"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 107,
+        "fields": {
+            "name": "Roebourne"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 108,
+        "fields": {
+            "name": "Sandstone"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 109,
+        "fields": {
+            "name": "Serpentine-Jarrahdale"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 110,
+        "fields": {
+            "name": "Shark Bay"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 111,
+        "fields": {
+            "name": "South Perth"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 112,
+        "fields": {
+            "name": "Stirling"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 113,
+        "fields": {
+            "name": "Subiaco"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 114,
+        "fields": {
+            "name": "Swan"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 115,
+        "fields": {
+            "name": "Tammin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 116,
+        "fields": {
+            "name": "Three Springs"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 117,
+        "fields": {
+            "name": "Toodyay"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 118,
+        "fields": {
+            "name": "Trayning"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 119,
+        "fields": {
+            "name": "Upper Gascoyne"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 120,
+        "fields": {
+            "name": "Victoria Park"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 121,
+        "fields": {
+            "name": "Victoria Plains"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 122,
+        "fields": {
+            "name": "Vincent"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 123,
+        "fields": {
+            "name": "Wagin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 124,
+        "fields": {
+            "name": "Wandering"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 125,
+        "fields": {
+            "name": "Wanneroo"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 126,
+        "fields": {
+            "name": "Waroona"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 127,
+        "fields": {
+            "name": "West Arthur"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 128,
+        "fields": {
+            "name": "Westonia"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 129,
+        "fields": {
+            "name": "Wickepin"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 130,
+        "fields": {
+            "name": "Williams"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 131,
+        "fields": {
+            "name": "Wiluna"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 132,
+        "fields": {
+            "name": "Wongan-Ballidu"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 133,
+        "fields": {
+            "name": "Woodanilling"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 134,
+        "fields": {
+            "name": "Wyalkatchem"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 135,
+        "fields": {
+            "name": "Wyndham-East Kimberley"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 136,
+        "fields": {
+            "name": "Yalgoo"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 137,
+        "fields": {
+            "name": "Yilgarn"
+        }
+    },
+    {
+        "model": "leaseslicensing.lga",
+        "pk": 138,
+        "fields": {
+            "name": "York"
+        }
+    }
+]

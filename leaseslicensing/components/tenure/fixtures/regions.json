@@ -1,0 +1,65 @@
+[
+    {
+        "model": "leaseslicensing.region",
+        "pk": 1,
+        "fields": {
+            "name": "Goldfields"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 2,
+        "fields": {
+            "name": "Kimberley"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 3,
+        "fields": {
+            "name": "Midwest"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 4,
+        "fields": {
+            "name": "Pilbara"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 5,
+        "fields": {
+            "name": "South Coast"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 6,
+        "fields": {
+            "name": "South West"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 7,
+        "fields": {
+            "name": "Swan"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 8,
+        "fields": {
+            "name": "Warren"
+        }
+    },
+    {
+        "model": "leaseslicensing.region",
+        "pk": 9,
+        "fields": {
+            "name": "Wheatbelt"
+        }
+    }
+]
