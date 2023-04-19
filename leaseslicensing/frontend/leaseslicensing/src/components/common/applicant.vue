@@ -101,7 +101,7 @@
                                         <select class="form-select" id="country" name="Country" v-model="
                                             email_user.residential_address
                                                 .country
-                                        " :readonly="readonly">
+                                        " :disabled="readonly">
                                             <option v-for="c in countries" :value="c.code">
                                                 {{ c.name }}
                                             </option>
@@ -227,9 +227,6 @@ export default {
             type: String,
             required: false,
         },
-        proposalId: {
-            type: Number,
-        },
         collapseFormSections: {
             type: Boolean,
             default: true,
@@ -255,16 +252,6 @@ export default {
         }
     },
     computed: {
-        electoralRollDocumentUrl: function () {
-            let url = ''
-            if (this.proposalId) {
-                url = helpers.add_endpoint_join(
-                    '/api/proposal/',
-                    this.proposalId + '/process_electoral_roll_document/'
-                )
-            }
-            return url
-        },
         customerLabel: function () {
             let label = 'Applicant'
             if (this.customerType && this.customerType === 'holder') {
