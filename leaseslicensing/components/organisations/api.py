@@ -13,7 +13,10 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
-from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.api import (
+    KeyValueListMixin,
+    UserActionLoggingViewset,
+)
 from leaseslicensing.components.main.decorators import (
     basic_exception_handler,
     logging_action,
@@ -51,9 +54,10 @@ from leaseslicensing.helpers import is_customer, is_internal
 logger = logging.getLogger(__name__)
 
 
-class OrganisationViewSet(UserActionLoggingViewset):
+class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     queryset = Organisation.objects.none()
     serializer_class = OrganisationSerializer
+    key_value_display_field = "organisation_name"
 
     def get_queryset(self):
         user = self.request.user
@@ -71,12 +75,10 @@ class OrganisationViewSet(UserActionLoggingViewset):
             return Organisation.objects.filter(delegates__user=user.id)
         return Organisation.objects.none()
 
-    @list_route(methods=["GET"], detail=False)
-    def key_value_list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().only("id", "organisation_name")
-        self.serializer_class = OrganisationKeyValueSerializer
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    def get_serializer_class(self):
+        if "key_value_list" == self.action:
+            return OrganisationKeyValueSerializer
+        return super().get_serializer_class()
 
     @list_route(
         methods=[
