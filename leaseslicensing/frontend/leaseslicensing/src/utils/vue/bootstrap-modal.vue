@@ -20,8 +20,8 @@
                             <button type="button" :class="cancelClass" class="licensing-btn mb-1" @click="cancel">{{
                                 cancelText
                             }}</button>
-                            <button id="okBtn" type="button" class="licensing-btn-primary mb-1" :class="okClass" @click="ok"
-                                :disabled="okDisabled">{{ okText
+                            <button v-if="okText" id="okBtn" type="button" class="licensing-btn-primary mb-1"
+                                :class="okClass" @click="ok" :disabled="okDisabled">{{ okText
                                 }}</button>
 
                         </slot>
@@ -54,6 +54,10 @@ export default {
             type: Boolean,
             default: false
         },
+        extraLarge: {
+            type: Boolean,
+            default: false
+        },
         full: {
             type: Boolean,
             default: false
@@ -80,7 +84,7 @@ export default {
         },
         cancelClass: {
             type: String,
-            default: 'btn btn-danger'
+            default: 'btn btn-secondary'
         },
         closeWhenOK: {
             type: Boolean,
@@ -100,6 +104,7 @@ export default {
     computed: {
         modalClass() {
             return {
+                'modal-xl': this.extraLarge,
                 'modal-lg': this.large,
                 'modal-sm': this.small,
                 'modal-full': this.full
