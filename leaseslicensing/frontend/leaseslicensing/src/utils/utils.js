@@ -136,4 +136,61 @@ export default {
                 });
         });
     },
+    fetchLGAsKeyValueList: function () {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.lgas + 'key-value-list/')
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        console.log(error)
+                        reject(error);
+                    }
+                    resolve(data)
+                    console.log("LGA key value list: ", data)
+                })
+                .catch(error => {
+                    console.error("There was an error!", error);
+                    reject(error)
+                });
+        });
+    },
+    fetchDistricts: function () {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.districts + 'no-pagination/')
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        console.log(error)
+                        reject(error);
+                    }
+                    resolve(data)
+                    console.log("Districts list: ", data)
+                })
+                .catch(error => {
+                    console.error("There was an error!", error);
+                    reject(error)
+                });
+        });
+    },
+    fetchCategoriesKeyValueList: function () {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.categories + 'key-value-list/')
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        console.log(error)
+                        reject(error);
+                    }
+                    resolve(data)
+                    console.log("Categories key value list: ", data)
+                })
+                .catch(error => {
+                    console.error("There was an error!", error);
+                    reject(error)
+                });
+        });
+    },
 }
