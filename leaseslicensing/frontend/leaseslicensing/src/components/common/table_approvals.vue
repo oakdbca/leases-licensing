@@ -316,6 +316,7 @@ export default {
                     'Number',
                     'Type',
                     'Holder',
+                    'Application',
                     'Status',
                     'Expiry Date',
                     'Document',
@@ -353,7 +354,7 @@ export default {
         },
         columnType: function () {
             return {
-                data: "id",
+                data: "application_type",
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -382,6 +383,17 @@ export default {
                 visible: true,
                 'render': function (row, type, full) {
                     return full.holder;
+                },
+            }
+        },
+        columnLinkedApplications: function () {
+            return {
+                data: "id",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    return full.linked_applications.join(', ');
                 },
             }
         },
@@ -517,7 +529,7 @@ export default {
                     vm.columnLodgementNumber,
                     vm.columnType,
                     vm.columnHolder,
-                    //vm.columnApplication,
+                    vm.columnLinkedApplications,
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
