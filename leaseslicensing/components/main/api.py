@@ -35,7 +35,7 @@ from leaseslicensing.components.main.serializers import (
 )
 from leaseslicensing.helpers import is_customer, is_internal
 
-logger = logging.getLogger("payment_checkout")
+logger = logging.getLogger(__name__)
 
 
 class GlobalSettingsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -131,9 +131,24 @@ class KeyValueListMixin:
     def key_value_list(self, request):
         if not self.key_value_display_field:
             raise AttributeError("key_value_display_field is not defined on viewset")
-        serializer = self.get_serializer(
+        if not self.key_value_serializer_class:
+            raise AttributeError("key_value_serializer_class is not defined on viewset")
+
+        serializer = self.key_value_serializer_class(
             self.get_queryset().only("id", self.key_value_display_field), many=True
         )
+        return Response(serializer.data)
+
+
+class NoPaginationListMixin:
+    def get_paginated_response(self, data):
+        if "no_pagination" == self.action:
+            return data
+        return super().get_paginated_response(data)
+
+    @action(detail=False, methods=["get"], url_path="no-pagination")
+    def no_pagination(self, request):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
         return Response(serializer.data)
 
 
