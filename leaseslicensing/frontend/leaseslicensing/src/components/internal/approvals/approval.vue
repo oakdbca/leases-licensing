@@ -90,43 +90,40 @@
                         <FormSection :formCollapse="false" label="License" Index="oBody">
                             <div v-if="loading.length == 0" class="card-body" :id="oBody">
                                 <form class="form-horizontal" action="index.html" method="post">
-                                    <div v-if="mooringLicence" class="row mb-3">
-                                        <label for="" class="col-sm-3 control-label">Mooring</label>
+                                    <div class="row mb-3">
+                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Lodgement
+                                            Number</label>
                                         <div class="col-sm-6">
-                                            <textarea disabled class="form-control" name="mooring" rows="1" placeholder=""
-                                                style="resize: none">{{ approval.mooring_licence_mooring }}</textarea>
+                                            <input class="form-control" type="text" :value="approval.lodgement_number"
+                                                readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="issue_date" class="col-sm-3 control-label">Issue Date</label>
+                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Approval Type</label>
                                         <div class="col-sm-6">
-                                            <textarea disabled id="issue_date" class="form-control" name="issue_date"
-                                                rows="1" placeholder=""
-                                                style="resize: none">{{ formatDate(approval.issue_date) }}</textarea>
+                                            <input class="form-control" type="text" :value="approval.application_type"
+                                                readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="start_date" class="col-sm-3 control-label">Start Date</label>
+                                        <label for="start_date" class="col-sm-3 col-form-label">Commencement</label>
                                         <div class="col-sm-6">
-                                            <textarea disabled id="issue_date" class="form-control" name="start_date"
-                                                rows="1" placeholder=""
-                                                style="resize: none">{{ formatDate(approval.start_date) }}</textarea>
+                                            <input class="form-control" id="issue_date" type="text"
+                                                :value="formatDate(approval.start_date)" readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="expiry_date" class="col-sm-3 control-label">Expiry Date</label>
+                                        <label for="expiry_date" class="col-sm-3 col-form-label">Expiry</label>
                                         <div class="col-sm-6">
-                                            <textarea disabled id="issue_date" class="form-control" name="expiry_date"
-                                                rows="1" placeholder=""
-                                                style="resize: none">{{ formatDate(approval.expiry_date) }}</textarea>
+                                            <input class="form-control" id="issue_date" type="text"
+                                                :value="formatDate(approval.expiry_date)" readonly />
                                         </div>
-
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="" class="col-sm-3 control-label">{{ approvalLabel }}</label>
+                                        <label for="" class="col-sm-3 col-form-label">{{ approvalLabel }}</label>
                                         <div class="col-sm-4">
                                             <p><a target="_blank" :href="approval.licence_document"
-                                                    class="control-label pull-left">Licence.pdf</a></p>
+                                                    class="form-label pull-left">Licence.pdf</a></p>
                                         </div>
                                     </div>
 
@@ -350,7 +347,6 @@ export default {
             }
             return permit;
         },
-
     },
     methods: {
         formatDate: function (data) {
