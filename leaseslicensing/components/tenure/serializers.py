@@ -10,6 +10,8 @@ class RegionSerializer(serializers.ModelSerializer):
 
 
 class DistrictSerializer(serializers.ModelSerializer):
+    region = RegionSerializer()
+
     class Meta:
         model = District
         fields = "__all__"
