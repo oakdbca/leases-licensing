@@ -2,7 +2,7 @@
     <div class="">
         <div v-if="debug">components/form.vue</div>
         <div v-if="proposal && show_application_title" id="scrollspy-heading" class="">
-            <h4>{{ applicationTypeText }} Application: {{ proposal.lodgement_number }}</h4>
+            <h3>{{ applicationTypeText }} Application: {{ proposal.lodgement_number }}</h3>
         </div>
 
         <div class="">
@@ -173,8 +173,14 @@
                             </div>
                             <div class="col-sm-9">
                                 <ul v-if="groups" class="list-group">
-                                    <li v-for="group in groups" class="list-group-item"><input class="me-2" type="checkbox"
-                                            :value="group.id" name="tenure"><label>{{ group.name }}</label>
+                                    <li v-for="(group, index) in  groups " class="list-group-item">
+                                        <div class="form-check">
+                                            <input class="form-check-input me-2" type="checkbox" :id="group.id" :value="{
+                                                    'group': { 'id': group.id, 'name': group.name }
+                                                }" name="tenure" v-model="proposal.groups"><label
+                                                class="form-check-label" :for="group.id">{{
+                                                    group.name }}</label>
+                                        </div>
                                     </li>
                                 </ul>
                             </div>
