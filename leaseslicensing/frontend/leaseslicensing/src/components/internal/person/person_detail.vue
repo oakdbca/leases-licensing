@@ -1,6 +1,6 @@
 <template>
     <div class="container" id="personDash">
-        <h4>{{ userHeader }}</h4>
+        <h3>{{ userHeader }}</h3>
         <div class="row">
             <div class="col-md-3">
                 <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
