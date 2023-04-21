@@ -26,6 +26,7 @@ from leaseslicensing.components.proposals.models import (
     ProposalAssessmentAnswer,
     ProposalDeclinedDetails,
     ProposalGeometry,
+    ProposalGroup,
     ProposalLogEntry,
     ProposalOtherDetails,
     ProposalRequirement,
@@ -36,6 +37,7 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     SectionChecklist,
 )
+from leaseslicensing.components.tenure.serializers import GroupSerializer
 from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
     UserSerializer,
@@ -356,6 +358,14 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         return ret_dict
 
 
+class ProposalGroupSerializer(serializers.ModelSerializer):
+    group = GroupSerializer()
+
+    class Meta:
+        model = ProposalGroup
+        fields = ["group"]
+
+
 class BaseProposalSerializer(serializers.ModelSerializer):
     readonly = serializers.SerializerMethodField(read_only=True)
     documents_url = serializers.SerializerMethodField()
@@ -367,6 +377,8 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     lodgement_date_display = serializers.SerializerMethodField()
     applicant_type = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
+    # groups = serializers.SerializerMethodField()
+    groups = ProposalGroupSerializer(many=True, read_only=True)
 
     class Meta:
         model = Proposal
@@ -444,8 +456,14 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "legislative_requirements_text",
             "lodgement_date_display",
             "shapefile_json",
+            "groups",
         )
         read_only_fields = ("supporting_documents",)
+
+    def get_groups(self, obj):
+        return ProposalGroup.objects.filter(proposal=obj).values_list(
+            "group", flat=True
+        )
 
     def get_lodgement_date_display(self, obj):
         if obj.lodgement_date:
@@ -731,6 +749,7 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
             "aboriginal_site_text",
             "native_title_consultation_text",
             "mining_tenement_text",
+            "groups",
         )
         read_only_fields = ("id",)
 
