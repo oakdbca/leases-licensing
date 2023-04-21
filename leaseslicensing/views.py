@@ -31,6 +31,7 @@ class ExternalView(LoginRequiredMixin, TemplateView):
         if self.request.user.is_authenticated:
             if is_internal(self.request):
                 return redirect("internal")
+        return super().get(*args, **kwargs)
 
 
 class ReferralView(ReferralOwnerMixin, DetailView):
