@@ -1,8 +1,10 @@
+import logging
 import uuid
 from django.db import models
 from django.db.models import Q
 from django.db import transaction
 from django.contrib.gis.db.models.fields import PolygonField
+from django.core.exceptions import ValidationError
 
 from ledger_api_client.ledger_models import EmailUserRO
 from ledger_api_client.managed_models import SystemGroup
@@ -18,7 +20,7 @@ from leaseslicensing.helpers import is_internal
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing import settings
 
-
+logger = logging.getLogger("leaseslicensing")
 
 class CompetitiveProcessManager(models.Manager):
 
@@ -73,26 +75,27 @@ class CompetitiveProcess(models.Model):
 
     def create_lease_licence_from_competitive_process(self):
         from leaseslicensing.components.proposals.models import Proposal
+        from leaseslicensing.components.proposals.models import ProposalType
 
-        # TODO: complete logic below
-
-        lease_licence = Proposal.objects.create(
-            application_type=ApplicationType.objects.get(
-                name=settings.APPLICATION_TYPE_LEASE_LICENCE
-            ),
-            # submitter=self.submitter,
-            ind_applicant=self.winner.person_id,
-            org_applicant=self.winner.organisation,
-            # proposal_type_id=self.proposal_type.id,
-        )
-        # add geometry
-        from copy import deepcopy
-        for geo in self.competitive_process_geometries.all():
-            new_geo = deepcopy(geo)
-            new_geo.proposal = lease_licence
-            new_geo.copied_from = geo
-            new_geo.id = None
-            new_geo.save()
+        lease_licence = None
+        with transaction.atomic():
+            lease_licence = Proposal.objects.create(
+                application_type=ApplicationType.objects.get(
+                    name=settings.APPLICATION_TYPE_LEASE_LICENCE
+                ),
+                submitter=None,
+                ind_applicant=self.winner.person_id,
+                org_applicant=self.winner.organisation,
+                proposal_type_id=ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW).id,
+            )
+            # add geometry
+            from copy import deepcopy
+            for geo in self.competitive_process_geometries.all():
+                new_geo = deepcopy(geo)
+                new_geo.proposal = lease_licence
+                new_geo.copied_from = geo
+                new_geo.id = None
+                new_geo.save()
 
         return lease_licence
 
@@ -105,7 +108,9 @@ class CompetitiveProcess(models.Model):
             self.status = CompetitiveProcess.STATUS_COMPLETED_APPLICATION
 
             # 1. Create application for the winner
-            self.create_lease_licence_from_competitive_process()
+            lease_licence = self.create_lease_licence_from_competitive_process()
+
+            self.generated_proposal.add(lease_licence)
 
             # 2. Send email to the winner
             send_winner_notification(request, self)
@@ -114,10 +119,85 @@ class CompetitiveProcess(models.Model):
         self.save()
 
     def unlock(self, request):
-        """Unlock the competitive process and make it available for editing again."""
+        """Unlock the competitive process and make it available for editing again.
+           Unlock action changes status back to In Progress, allowing to change the
+           Outcome.
+           The outcome can only be changes if the application from the prvious winner
+           has not been approved yet.
+           TODO Changing the outcome will discard the application of the previous winner
+           and allow the user to select another winner (or no winner).
 
-        self.status = CompetitiveProcess.STATUS_IN_PROGRESS
-        self.save()
+        """
+
+        from leaseslicensing.components.proposals.models import Proposal
+
+        # Get the winning party
+        winning_party = CompetitiveProcessParty.objects.get(pk=self.winner_id)\
+            if self.winner_id\
+            else None
+
+        # Get the generated proposals for the winning party or an empty Proposal queryset
+        # when there is no winning party
+        if not winning_party:
+            generated_proposals = Proposal.objects.none()
+        elif winning_party.is_person:
+            generated_proposals = self.generated_proposal.filter(
+                ind_applicant=winning_party.person_id)
+        elif winning_party.is_organisation:
+            generated_proposals = self.generated_proposal.filter(
+                org_applicant=winning_party.organisation_id)
+        else:
+            raise ValidationError(
+                "Winning party is neither a person nor an organisation."
+            )
+
+        # May happen if the competitive process has a selected winner but has been discarded,
+        # i.e. no proposal has been generated
+        if winning_party and len(generated_proposals) == 0:
+            logger.warn("No generated proposals found for the winning party.")
+
+        # Get the generated lease/license application / generated proposal
+        # that is still active (not discarded)
+        generated_proposal = generated_proposals.filter(
+            ~Q(processing_status=Proposal.PROCESSING_STATUS_DISCARDED))
+        if len(generated_proposal) > 1:
+                raise ValidationError(
+                    "There are more than one proposals that have not been discarded for the winning party."
+                )
+        # There might be no valid application, because the applicant or an officer
+        # might have discarded the application
+        if not generated_proposal.exists():
+            generated_proposal = None
+        else:
+            generated_proposal = generated_proposal.first()
+
+        # Cannot unlock if the application has been approved
+        if generated_proposal and generated_proposal.processing_status in [
+            Proposal.PROCESSING_STATUS_APPROVED_APPLICATION,
+            Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+            ]:
+            raise ValidationError(
+                "The generated proposal has already been approved."
+            )
+
+        with transaction.atomic():
+            # Set the generated proposal's processing status to discarded
+            # TODO: Disarding the previous winnner's application should be
+            # done when saving the competitive process only after unlocking
+            # and changing the outcome.
+            if generated_proposal:
+                generated_proposal.processing_status = Proposal.PROCESSING_STATUS_DISCARDED
+                generated_proposal.save()
+
+            # Set the status of the competitive process to in progress
+            self.status = CompetitiveProcess.STATUS_IN_PROGRESS
+            # Remove the outcome data (winner, details, documents)
+            self.winner = None
+            self.winner_id = None
+            self.details = ""
+            self.competitive_process_documents.all().delete()
+            self.save()
+
 
     @property
     def site(self):
@@ -226,18 +306,11 @@ class CompetitiveProcess(models.Model):
             self.assigned_officer_id = user_id
             self.save()
             email_user = retrieve_email_user(user_id)
-            self.log_user_action(
-                CompetitiveProcessUserAction.ACTION_ASSIGN_TO.format(
-                    email_user.get_full_name()
-                ),
-                request,
-            )
 
     def unassign(self, request):
         with transaction.atomic():
             self.assigned_officer_id = None
             self.save()
-            self.log_user_action(CompetitiveProcessUserAction.ACTION_UNASSIGN, request)
 
     def log_user_action(self, action, request):
         return CompetitiveProcessUserAction.log_action(self, action, request.user.id)

@@ -1,4 +1,5 @@
 from datetime import datetime
+import logging
 
 from django.db import transaction
 from rest_framework import views, viewsets
@@ -8,20 +9,26 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from leaseslicensing.components.competitive_processes.email import send_competitive_process_create_notification
 
-from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
+from leaseslicensing.components.competitive_processes.models import (
+    CompetitiveProcess,
+    CompetitiveProcessParty
+)
 from leaseslicensing.components.competitive_processes.serializers import (
     CompetitiveProcessLogEntrySerializer,
+    CompetitiveProcessPartySerializer,
     CompetitiveProcessSerializer,
     CompetitiveProcessUserActionSerializer,
     ListCompetitiveProcessSerializer,
 )
 from leaseslicensing.components.competitive_processes.utils import save_geometry
-from leaseslicensing.components.main.decorators import basic_exception_handler
+from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.decorators import basic_exception_handler, logging_action
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.helpers import is_internal
 
+logger = logging.getLogger("leaseslicensing")
 
 class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
     def filter_queryset(self, request, queryset, view):
@@ -62,7 +69,7 @@ class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class CompetitiveProcessViewSet(viewsets.ModelViewSet):
+class CompetitiveProcessViewSet(UserActionLoggingViewset):
     queryset = CompetitiveProcess.objects.none()
     filter_backends = (CompetitiveProcessFilterBackend,)
 
@@ -89,7 +96,7 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         else:
             return CompetitiveProcess.objects.none()
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -107,7 +114,7 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         instance.complete(request)
         return Response({})
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -125,7 +132,7 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         instance.discard(request)
         return Response({})
 
-    @detail_route(
+    @logging_action(
         methods=[
             "POST",
         ],
@@ -138,7 +145,10 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
 
         instance = self.get_object()
         serializer = self.perform_update(instance, request)
+        # Unlock this competitive process
         instance.unlock(request)
+
+        serializer = CompetitiveProcessSerializer(instance, context={"request": request})
 
         return Response(serializer.data)
 
@@ -179,12 +189,28 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
+    @basic_exception_handler
     def perform_update(self, instance, request):
         competitive_process_data = request.data.get("competitive_process", None)
         # Pop "geometry" data to handle it independently of the "competitive process"
         competitive_process_geometry_data = competitive_process_data.pop(
             "competitive_process_geometries", None
         )
+        winner = competitive_process_data.get("winner", {})
+        winner_id = winner.get("id", None) if winner else None
+        if winner_id != competitive_process_data["winner_id"]:
+            # Set the winner to the new winner_id
+            new_winner_party = CompetitiveProcessParty.objects.get(
+                id=competitive_process_data["winner_id"])\
+                if competitive_process_data["winner_id"]\
+                else None
+            logger.info(f"Updating winner to {new_winner_party}")
+            if not new_winner_party:
+                competitive_process_data["winner"] = None
+            else:
+                competitive_process_data["winner"] = CompetitiveProcessPartySerializer(
+                    new_winner_party).data
+
         # Handle "competitive process"
         serializer = self.get_serializer(instance, data=competitive_process_data)
         serializer.is_valid(raise_exception=True)
@@ -273,7 +299,7 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         serializer = RelatedItemsSerializer(related_items, many=True)
         return Response(serializer.data)
 
-    @detail_route(methods=["POST",], detail=True,)
+    @logging_action(methods=["POST",], detail=True,)
     @basic_exception_handler
     def assign_user(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -283,7 +309,7 @@ class CompetitiveProcessViewSet(viewsets.ModelViewSet):
         serializer = CompetitiveProcessSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @detail_route(methods=["GET",], detail=True,)
+    @logging_action(methods=["GET",], detail=True,)
     @basic_exception_handler
     def unassign(self, request, *args, **kwargs):
         instance = self.get_object()

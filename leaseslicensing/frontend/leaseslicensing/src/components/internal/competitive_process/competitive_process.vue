@@ -24,6 +24,7 @@
                     @issueComplete="issueComplete"
                     @issueDiscard="issueDiscard"
                     @issueUnlock="issueUnlock"
+                    :key="cp_id"
                     class="mt-2"
                 />
             </div>
@@ -67,6 +68,7 @@
                                 :processing="processing"
                                 :discarded="discarded"
                                 :declined="declined"
+                                :completed="completed"
                                 :finalised="finalised"
                                 :key="cp_id"
                                 @add-detail="addDetail"
@@ -102,7 +104,7 @@
                                 </div>
                                 <div class="col-sm-4">
                                     <select class="form-control"
-                                        v-model="competitive_process.winner"
+                                        v-model="competitive_process.winner_id"
                                         id="competitive_process_winner"
                                         :disabled="elementDisabled">
                                             <option :value=null>No winner</option>
@@ -112,7 +114,7 @@
                                                         {{ party.person.fullname }}
                                                     </template>
                                                     <template v-else-if="party.is_organisation">
-                                                        {{ party.organisation.name }}
+                                                        {{ party.organisation.trading_name }}
                                                     </template>
                                                 </template>
                                             </option>
@@ -131,7 +133,7 @@
                                         label="Rich text in here"
                                         :readonly="elementDisabled"
                                         :can_view_richtext_src=true
-                                        :key="competitive_process.id"
+                                        :key="cp_id"
                                         @textChanged="detailsTextChanged"
                                     />
                                 </div>
@@ -149,6 +151,7 @@
                                         :isRepeatable="true"
                                         :documentActionUrl="competitiveProcessDocumentUrl"
                                         :replace_button_by_text="true"
+                                        :key="cp_id"
                                     />
                                 </div>
                             </div>
@@ -158,6 +161,7 @@
                         <FormSection :formCollapse="false" label="Related Items" Index="related_items">
                                 <TableRelatedItems
                                     :ajax_url="related_items_ajax_url"
+                                    :key="cp_id"
                                 />
                         </FormSection>
                     </div>
@@ -245,49 +249,79 @@ export default {
         hasWinner: function() {
             /** Returns whether this CP has a winner */
 
-            return  ![null, ''].includes(this.competitive_process.winner) &&
-                    !isNaN(this.competitive_process.winner);
+            return  ![null, ''].includes(this.competitive_process.winner_id) &&
+                    !isNaN(this.competitive_process.winner_id);
         },
         winnerApplicationApproved: function() {
-            /** Returns whether the winner's Application has been approved
+            /** Returns whether the winner's lease/license Application has been approved
              *  or false when the winner is different from the originating proposal's
              *  applicant.
              */
 
-            let winner_party = this.partyById(this.competitive_process.winner);
-            // The ID if the winning party's applicant
+            let winner_party_id = this.competitive_process.winner_id;
+            let winner_party = this.partyById(winner_party_id);
+            // The ID of the winning party's applicant
             let winner_applicant_id;
             if (winner_party) {
                 winner_applicant_id = winner_party.is_person? winner_party.person_id:
                                       winner_party.is_organisation? winner_party.organisation_id:
                                       -1
             } else {
-                console.warn(`No related party found for winner ID ${this.competitive_process.winner}.`);
+                console.warn(`No related party found for winner ID ${winner_party_id}.`);
+                return false;
             }
 
-            return [
-                    constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID,
-                    constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID,
-                    constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID,
-                ].includes(this.competitive_process.registration_of_interest.processing_status) &&
-                this.competitive_process.registration_of_interest.applicant_id ==
-                        winner_applicant_id;
+            let generated_proposals = this.competitive_process.generated_proposal;
+            if (!generated_proposals) {
+                console.log(`No Applications have been generated for this competitive process.`);
+                return false;
+            }
+
+            // The winner's lease/license Applications
+            let winner_applications = generated_proposals.filter(
+                proposal => proposal.applicant_obj.id == winner_applicant_id);
+            if (!winner_applications || winner_applications.length == 0) {
+                    console.log(`No related Application found for winner ID ${winner_party_id}.`);
+                    return false;
+                }
+
+            // Statuses that indicate an Application has been approved
+            let status_approved = [
+                    constants.PROPOSAL_STATUS.APPROVED_APPLICATION.TEXT,
+                    constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.TEXT,
+                    constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.TEXT,
+                    constants.PROPOSAL_STATUS.DISCARDED.TEXT,
+                ];
+
+            // The winner's lease/license Applications that have not been approved
+            let open_applications = winner_applications.filter(
+                proposal => !status_approved.includes(proposal.processing_status));
+
+            if (open_applications.length == 0) {
+                console.log(`No open Applications found for winner ID ${winner_party_id}.`);
+                return true;
+            } else if (open_applications.length == 1) {
+                console.log(`An open Application found for winner ID ${winner_party_id}.`);
+                return false;
+            } else {
+                let winner_name = winner_party.is_person? winner_party.person.fullname:
+                    winner_party.is_organisation? winner_party.organisation.trading_name:
+                    'Unknown';
+                console.warn(`Multiple open Applications found for winner ID ${winner_party_id}. (${winner_name})`);
+                return false;
+            }
         },
         finalised: function () {
             /** Returns whether this competitive process is finalized.
              *  A CP is finalized when it is completed or discarded (TODO is that true?),
-             *  when a winner has been selected and when the winner's Application has
+             *  when a winner has been selected and when the winner's license Application has
              *  been approved.
              *  A finalized CP can not be unlocked anymore.
             */
 
-            return [
-                    constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.TEXT,
-                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_APPLICATION.TEXT,
-                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.TEXT,
-                ].includes(this.competitive_process.status) &&
-                this.hasWinner &&
-                this.winnerApplicationApproved;
+            return  (this.completed || this.discarded) &&
+                    this.hasWinner &&
+                    this.winnerApplicationApproved;
         },
         canAction: function () {
             return this.competitive_process.can_accessing_user_process;
@@ -327,24 +361,33 @@ export default {
         },
         discarded: function(){
             return this.competitive_process && (
-                this.competitive_process.status ===
-                     constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.TEXT);
+                this.competitive_process.status_id ===
+                     constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.ID);
         },
         declined: function(){
             return this.competitive_process && (
-                this.competitive_process.status ===
-                     constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.TEXT);
+                this.competitive_process.status_id ===
+                     constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID);
+        },
+        completed: function(){
+            /** Returns whether this CP is completed */
+
+            return this.competitive_process &&
+                [
+                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_APPLICATION.ID,
+                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID,
+                ].includes(this.competitive_process.status_id)
         },
         elementDisabled: function() {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, or when finalized
-            return this.processing || this.discarded || this.finalised || this.declined;
+            return this.processing || this.discarded || this.finalised || this.declined || this.completed;
         },
         possibleWinner: function() {
             // Returns list of possible winners without newly added parties
             return this.competitive_process.competitive_process_parties.filter(
                 party => party.id > 0);
-        }
+        },
    },
     methods: {
         mapTabClicked: function(){
@@ -414,8 +457,8 @@ export default {
                 vm.processing = false;
                 // Done save, set custom row back to not processing
                 vm.set_custom_rows_property("processing", false);
-                this.$nextTick(async () => {
-                    this.cp_id = uuid();
+                vm.$nextTick(async () => {
+                    vm.cp_id = uuid();
                 });
             })
             .catch(error => {
@@ -434,14 +477,14 @@ export default {
             try {
                 vm.processing = true
                 let description = ''
-                if (vm.competitive_process.winner){
+                if (vm.competitive_process.winner_id){
                     for (let party of vm.competitive_process.competitive_process_parties){
-                        if (party.id === vm.competitive_process.winner){
+                        if (party.id === vm.competitive_process.winner_id){
                             if (party.is_person){
                                 description = '<strong>' + party.person.fullname + '</strong> is selected as a winner.'
                                 break
                             } else if (party.is_organisation) {
-                                description = '<strong>' + party.organisation.name + '</strong> is selected as a winner.'
+                                description = '<strong>' + party.organisation.trading_name + '</strong> is selected as a winner.'
                                 break
                             }
                             return
@@ -473,7 +516,7 @@ export default {
                             this.$router.push({ name: 'internal-dashboard' })
                         } else {
                             await new swal({
-                                title: "Please fix following errors before saving",
+                                title: "Please fix following errors before completing",
                                 text: err.bodyText,
                                 icon:'error',
                             })
@@ -503,27 +546,30 @@ export default {
                 }).then(async result => {
                     if (result.isConfirmed){
                         // When Yes
-                        let payload = vm.constructPayload()
-                        const res = await fetch(vm.competitive_process_discard_url, {body: JSON.stringify(payload), method: 'POST'})
-
-                        if(res.ok){
-                            await swal.fire({
-                                title: 'Discarded',
-                                text: 'Competitive process has been discarded',
-                                icon: 'success',
-                            })
-                        } else {
-                            await swal.fire({
-                                title: "Please fix following errors before saving",
-                                text: err.bodyText,
-                                icon:'error',
-                            })
-                        }
-                        this.$router.push({ name: 'internal-dashboard' })
-                    } else if (result.isDenied){
-                        // When No
-                    } else {
-                        // When cancel
+                        let payload = vm.constructPayload();
+                        await fetch(vm.competitive_process_discard_url,
+                            {body: JSON.stringify(payload), method: 'POST'}).then(async response => {
+                                if (!response.ok) {
+                                    return response.text().then(text => { throw new Error(text) });
+                                } else {
+                                    return await response.json();
+                                    }
+                            }).then(async data => {
+                                await swal.fire({
+                                    title: 'Discarded',
+                                    text: 'Competitive process has been discarded',
+                                    icon: 'success',
+                                });
+                                this.$router.push({ name: 'internal-dashboard' });
+                            }).catch(error => {
+                                swal.fire({
+                                    title: "Please fix following errors before discarding",
+                                    text: JSON.parse(error.message),
+                                    icon:'error',
+                                    confirmButtonColor: '#0d6efd',
+                                })
+                                vm.processing = false;
+                            });
                     }
                     vm.processing = false
                 })
@@ -557,16 +603,19 @@ export default {
                                     }
                             }).then(async data => {
                                 console.log("success", data);
-                                this.competitive_process = Object.assign({}, data);
+                                vm.competitive_process = Object.assign({}, data);
                                 await swal.fire({
                                     title: 'Unlocked',
                                     text: 'Competitive process has been unlocked',
                                     icon: 'success',
                                 });
                                 vm.processing = false;
+                                vm.$nextTick(async () => {
+                                    vm.cp_id = uuid();
+                                });
                             }).catch(async error => {
                                 await swal.fire({
-                                    title: "Please fix following errors before saving",
+                                    title: "Error unlocking competitive process",
                                     text: JSON.parse(error.message),
                                     icon:'error',
                                 });

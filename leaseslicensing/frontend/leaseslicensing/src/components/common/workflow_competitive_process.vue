@@ -100,12 +100,18 @@ export default {
                     'button_title': 'Unlock',
                     'function_when_clicked': vm.issueUnlock,
                     'function_to_show_hide': () => {
+                        if (this.debug) {
+                            return true;
+                        };
                         return vm.user_is_eligible(this.action_roles("unlock"))
                     },
                     'function_to_disable': () => {
-                        // Disable Unlock button only on processing|discarded|finalised,
+                        if (this.debug) {
+                            return false;
+                        };
+                        // Disable Unlock button only on processing or discarded,
                         // but not on completed|declined
-                        return this.processing || this.discarded || this.finalised;
+                        return this.processing || this.discarded;
                     }
                 },
             ]
@@ -179,7 +185,7 @@ export default {
         display_actions: function(){
             if (this.debug) return true
 
-            return !this.finalised && this.canAction
+            return this.canAction;
         },
         assigned_officer_id: function() {
             if (this.competitive_process.assigned_officer) {

@@ -50,6 +50,10 @@ export default {
             type: Boolean,
             default: false
         },
+        completed: {
+            type: Boolean,
+            default: false
+        },
         finalised: {
             type: Boolean,
             default: false
@@ -233,8 +237,8 @@ export default {
         },
         elementDisabled: function() {
             // Returns whether an element is disabled
-            // True while processing (saving), when discarded, or when finalized
-            return this.processing || this.discarded || this.finalised || this.declined;
+            // True while processing (saving), when discarded, finalized, declined, or completed
+            return this.processing || this.discarded || this.finalised || this.declined || this.completed;
         }
     },
     methods: {

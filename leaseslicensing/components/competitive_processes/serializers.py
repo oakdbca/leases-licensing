@@ -3,7 +3,7 @@ from rest_framework import serializers
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess, CompetitiveProcessLogEntry, \
     CompetitiveProcessParty, CompetitiveProcessUserAction, PartyDetail, PartyDetailDocument, \
     update_party_detail_doc_filename, CompetitiveProcessGeometry
-from leaseslicensing.components.proposals.serializers import ProposalGeometrySerializer
+from leaseslicensing.components.proposals.serializers import ProposalGeometrySerializer, ProposalSerializer
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from ..main.models import TemporaryDocumentCollection
 from ..organisations.serializers import OrganisationSerializer
@@ -235,6 +235,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
             'id',
             'lodgement_number',
             'registration_of_interest',
+            'generated_proposal',
             'status',
             'created_at',
             'assigned_officer',
@@ -323,6 +324,8 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     competitive_process_geometries = CompetitiveProcessGeometrySerializer(many=True, required=False)
     allowed_editors = serializers.SerializerMethodField(read_only=True)
     accessing_user_roles = serializers.SerializerMethodField()
+    generated_proposal = ProposalSerializer(many=True, required=False, read_only=True)
+    winner = CompetitiveProcessPartySerializer(allow_null=True, required=False)
 
     class Meta:
         model = CompetitiveProcess
@@ -330,6 +333,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'id',
             'lodgement_number',
             'registration_of_interest',
+            'generated_proposal',
             'status',
             'status_id',
             'created_at',
@@ -341,13 +345,14 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'accessing_user',
             'competitive_process_parties',
             'winner',
+            'winner_id',
             'details',
             'competitive_process_geometries',
             'allowed_editors',
             'accessing_user_roles',
         )
         extra_kwargs = {
-            'winner': {
+            'winner_id': {
                 'read_only': False,
                 'required': False,
             },
@@ -375,10 +380,11 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
         competitive_process_parties_data = validated_data.pop('competitive_process_parties')
 
         # competitive_process
-        # winner_dict = validated_data['winner']
-        # winner = CompetitiveProcessParty.objects.get(id=int(winner_dict['id']))
-        # instance.winner = winner
-        instance.winner = validated_data['winner']
+        if isinstance(validated_data['winner'], dict):
+            instance.winner = CompetitiveProcessParty.objects.get(
+                pk=dict(validated_data['winner'])["id"])
+        else:
+            instance.winner = validated_data['winner']
         instance.details = validated_data['details']
         instance.save()
 

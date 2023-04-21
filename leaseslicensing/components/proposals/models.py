@@ -2733,7 +2733,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             application_type=ApplicationType.objects.get(
                 name=APPLICATION_TYPE_LEASE_LICENCE
             ),
-            submitter=self.submitter,
+            submitter=None,
             ind_applicant=self.ind_applicant,
             org_applicant=self.org_applicant,
             proposal_type_id=self.proposal_type.id,
