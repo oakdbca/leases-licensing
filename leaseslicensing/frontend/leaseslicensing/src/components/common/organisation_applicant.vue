@@ -9,16 +9,17 @@
                 </div>
             </div>
             <div class="row mb-2">
-                <label for="organisation_abn" class="col-md-2 col-form-label">ABN</label>
+                <label for="ledger_organisation_abn" class="col-md-2 col-form-label">ABN</label>
                 <div class="col-md-6">
-                    <input type="text" class="form-control" id="organisation_abn" v-model="org.organisation_abn" disabled>
+                    <input type="text" class="form-control" id="ledger_organisation_abn"
+                        v-model="org.ledger_organisation_abn" disabled>
                 </div>
             </div>
             <div class="row mb-2">
-                <label for="organisation_email" class="col-md-2 col-form-label">Email</label>
+                <label for="ledger_organisation_email" class="col-md-2 col-form-label">Email</label>
                 <div class="col-md-6">
-                    <input type="text" class="form-control" id="organisation_email" v-model="org.organisation_email"
-                        disabled>
+                    <input type="text" class="form-control" id="ledger_organisation_email"
+                        v-model="org.ledger_organisation_email" disabled>
                 </div>
             </div>
             <div class="row mb2">
@@ -91,10 +92,10 @@ export default {
             return this.loading.length == 0;
         },
         formattedABN: function () {
-            if (this.org.organisation_abn == null || this.org.organisation_abn == '') {
+            if (this.org.ledger_organisation_abn == null || this.org.ledger_organisation_abn == '') {
                 return ''
             }
-            return helpers.formatABN(this.org.organisation_abn)
+            return helpers.formatABN(this.org.ledger_organisation_abn)
         },
         orgHasAddress: function () {
             return this.org && this.org.address && Object.keys(this.org.address).length !== 0

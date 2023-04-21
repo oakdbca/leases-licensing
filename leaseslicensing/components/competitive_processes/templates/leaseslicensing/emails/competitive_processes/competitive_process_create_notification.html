@@ -1,0 +1,7 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+    <p>A new Competitive Process {{ competitive_process.lodgement_number }} has been created and is ready for processing.</p>
+    <p>You can access this Competitive Process using the following link:</p>
+    <a href="{{ url }}">Access Competitive Process</a>
+{%  endblock %}

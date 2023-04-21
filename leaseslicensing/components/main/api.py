@@ -156,11 +156,7 @@ class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet, KeyValueListMixin):
     queryset = ApplicationType.objects.all()
     serializer_class = ApplicationTypeSerializer
     key_value_display_field = "name"
-
-    def get_serializer_class(self):
-        if "key_value_list" == self.action:
-            return ApplicationTypeKeyValueSerializer
-        return super().get_serializer_class()
+    key_value_serializer_class = ApplicationTypeKeyValueSerializer
 
 
 class UserActionLoggingViewset(viewsets.ModelViewSet):

@@ -70,8 +70,8 @@ class GetApprovalTypesDict(views.APIView):
     ]
 
     def get(self, request, format=None):
-        data = cache.get("approval_types_dict")
-        if not data:
+        approval_types_dict = cache.get("approval_types_dict")
+        if not approval_types_dict:
             approval_types_dict = [
                 {
                     "id": t.id,
@@ -94,8 +94,7 @@ class GetApprovalTypesDict(views.APIView):
                 approval_types_dict,
                 settings.LOV_CACHE_TIMEOUT,
             )
-            data = cache.get("approval_types_dict")
-        return Response(data)
+        return Response(approval_types_dict)
 
 
 class GetApprovalSubTypesDict(views.APIView):
@@ -104,8 +103,8 @@ class GetApprovalSubTypesDict(views.APIView):
     ]
 
     def get(self, request, format=None):
-        data = cache.get("approval_sub_types_dict")
-        if not data:
+        approval_sub_types_dict = cache.get("approval_sub_types_dict")
+        if not approval_sub_types_dict:
             approval_sub_types_dict = [
                 {"id": t.id, "name": t.name} for t in ApprovalSubType.objects.all()
             ]
@@ -114,8 +113,7 @@ class GetApprovalSubTypesDict(views.APIView):
                 approval_sub_types_dict,
                 settings.LOV_CACHE_TIMEOUT,
             )
-            data = cache.get("approval_sub_types_dict")
-        return Response(data)
+        return Response(approval_sub_types_dict)
 
 
 class GetApprovalStatusesDict(views.APIView):

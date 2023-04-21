@@ -163,7 +163,6 @@ class EmailUserROSerializerForReferral(serializers.ModelSerializer):
 
 class EmailUserSerializer(serializers.ModelSerializer):
     fullname = serializers.SerializerMethodField()
-    # text = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailUser
@@ -175,14 +174,13 @@ class EmailUserSerializer(serializers.ModelSerializer):
             "title",
             "organisation",
             "fullname",
-            # "text",
+            "phone_number",
+            "mobile_number"
         )
 
     def get_fullname(self, obj):
         return f"{obj.first_name} {obj.last_name}"
 
-    def get_text(self, obj):
-        return self.get_fullname(obj)
 
 
 class TemporaryDocumentCollectionSerializer(serializers.ModelSerializer):

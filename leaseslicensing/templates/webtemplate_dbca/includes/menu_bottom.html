@@ -24,5 +24,5 @@
 {% endif %}
 <li><a class="dropdown-item" href="/account">Manage Account</a></li>
 {% for org in organisations_user_can_admin %}
-    <li><a class="dropdown-item" href="/external/organisations/manage/{{org.id}}">Manage {{ org.organisation_name}} </a></li>
+    <li><a class="dropdown-item" href="/external/organisations/manage/{{org.id}}">Manage {{ org.ledger_organisation_name}} </a></li>
 {% endfor %}

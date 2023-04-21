@@ -285,12 +285,12 @@ export default {
                 'render': function (row, type, full) {
                     console.log({ full })
                     let links = '';
-                    if (vm.is_internal) {
-                        if (full.can_accessing_user_view) {
-                            links += '<a href="/internal/competitive_process/' + full.id + '">View</a>'
-                        }
-                        if (full.can_accessing_user_process) {
+                    if (vm.is_internal){
+                        if (full.can_accessing_user_process){
                             links += '<a href="/internal/competitive_process/' + full.id + '">Process</a>'
+                        }
+                        else if (full.can_accessing_user_view){
+                            links += '<a href="/internal/competitive_process/' + full.id + '">View</a>'
                         }
                     }
                     return links;
@@ -380,8 +380,26 @@ export default {
         }
     },
     methods: {
-        createNewCompetitiveProcess: async function () {
-            const res = await fetch('/api/competitive_process/', { method: 'POST' })
+        createNewCompetitiveProcess: async function() {
+            await fetch(api_endpoints.competitive_process, { method: 'POST' })
+                .then(async response => {
+                    if (!response.ok) {
+                        return await response.json().then(json => { throw new Error(json); });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then (data => {
+                    const competitive_process = Object.assign({}, data);
+                    this.$router.push({
+                        name:"internal-competitive-process",
+                        params:{competitive_process_id:competitive_process.id}
+                    });
+                })
+                .catch(error => {
+                    console.log(`Error fetching external approval data ${error}`);
+                    throw error;
+                })
         },
         adjust_table_width: function () {
             this.$refs.competitive_process_datatable.vmDataTable.columns.adjust()
@@ -425,23 +443,28 @@ export default {
             swal.fire({
                 title: "Create New Competitive Process",
                 text: "Are you sure you want to create new competitive process?",
-                type: "warning",
+                icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Create New Competitive Process',
+                preConfirm: () => {
+                    return true;
+                }
                 // confirmButtonColor:'#dc3545'
             }).then(async result => {
                 if (result.isConfirmed) {
                     // When Yes
                     await vm.createNewCompetitiveProcess()
                     vm.datatable_key = uuid()
-                    // this.$router.push({ name: 'apply_proposal' })
-
-                } else if (result.isDenied) {
-                    // When No
-                } else {
-                    // When cancel
                 }
-            })
+            }).catch(error => {
+                swal.fire({
+                    title: "New Competitive Process",
+                    text: error.message,
+                    icon: "error",
+                });
+            });
+
+
             //this.$router.push({
             //    name: 'apply_proposal'
             //})

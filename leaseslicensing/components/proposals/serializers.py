@@ -483,7 +483,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
 
     def get_applicant(self, obj):
         if isinstance(obj.applicant, Organisation):
-            return obj.applicant.organisation_name
+            return obj.applicant.ledger_organisation_name
         elif isinstance(obj.applicant, EmailUser):
             return f"{obj.applicant.first_name} {obj.applicant.last_name}"
         else:

@@ -54,7 +54,7 @@
                         <select id="filter-region" class="form-control" v-model="filterApprovalOrganisation">
                             <option value="all">All</option>
                             <option v-for="organisation in organisations" :value="organisation.id">{{
-                                organisation.organisation_name }}
+                                organisation.ledger_organisation_name }}
                             </option>
                         </select>
                     </div>

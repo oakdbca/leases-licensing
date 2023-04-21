@@ -57,7 +57,8 @@ logger = logging.getLogger(__name__)
 class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     queryset = Organisation.objects.none()
     serializer_class = OrganisationSerializer
-    key_value_display_field = "organisation_name"
+    key_value_display_field = "ledger_organisation_name"
+    key_value_serializer_class = OrganisationKeyValueSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -67,18 +68,13 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             if "organisation_lookup" == self.action:
                 # Allow customers access to organisation lookup
                 return Organisation.objects.only(
-                    "id", "organisation_name", "organisation_abn"
+                    "id", "ledger_organisation_name", "ledger_organisation_abn"
                 )
             if "validate_pins" == self.action:
                 return Organisation.objects.all()
             logger.info(list(Organisation.objects.filter(delegates__user=user.id)))
             return Organisation.objects.filter(delegates__user=user.id)
         return Organisation.objects.none()
-
-    def get_serializer_class(self):
-        if "key_value_list" == self.action:
-            return OrganisationKeyValueSerializer
-        return super().get_serializer_class()
 
     @list_route(
         methods=[
@@ -90,19 +86,19 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
         search_term = request.GET.get("term", "")
         organisations = self.get_queryset().annotate(
             search_term=Concat(
-                "organisation_name",
+                "ledger_organisation_name",
                 Value(" "),
-                "organisation_abn",
+                "ledger_organisation_abn",
                 output_field=CharField(),
             )
         )
         organisations = organisations.filter(search_term__icontains=search_term).only(
-            "id", "organisation_name", "organisation_abn"
+            "id", "ledger_organisation_name", "ledger_organisation_abn"
         )[:10]
         data_transform = [
             {
                 "id": organisation.id,
-                "text": f"{organisation.organisation_name} (ABN: {organisation.organisation_abn})",
+                "text": f"{organisation.ledger_organisation_name} (ABN: {organisation.ledger_organisation_abn})",
                 "first_five": organisation.first_five,
             }
             for organisation in organisations

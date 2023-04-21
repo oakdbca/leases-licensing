@@ -1165,7 +1165,7 @@ class InvoicePDFView(View):
         else:
             proposal = Proposal.objects.get(fee_invoice_reference=invoice.reference)
 
-        organisation = proposal.org_applicant.organisation.organisation_set.all()[0]
+        organisation = proposal.org_applicant.ledger_organisation_id.organisation_set.all()[0]
         if self.check_owner(organisation):
             response = HttpResponse(content_type="application/pdf")
             response.write(create_invoice_pdf_bytes("invoice.pdf", invoice, proposal))
@@ -1188,7 +1188,7 @@ class InvoiceFilmingFeePDFView(View):
         invoice = get_object_or_404(Invoice, reference=self.kwargs["reference"])
         proposal = Proposal.objects.get(fee_invoice_reference=invoice.reference)
 
-        organisation = proposal.org_applicant.organisation.organisation_set.all()[0]
+        organisation = proposal.org_applicant.ledger_organisation_id.organisation_set.all()[0]
         if self.check_owner(organisation):
             response = HttpResponse(content_type="application/pdf")
             response.write(
@@ -1245,7 +1245,7 @@ class ConfirmationPDFView(View):
         invoice = get_object_or_404(Invoice, reference=self.kwargs["reference"])
         bi = BookingInvoice.objects.filter(invoice_reference=invoice.reference).last()
         organisation = (
-            bi.booking.proposal.org_applicant.organisation.organisation_set.all()[0]
+            bi.booking.proposal.org_applicant.ledger_organisation_id.organisation_set.all()[0]
         )
 
         if self.check_owner(organisation):

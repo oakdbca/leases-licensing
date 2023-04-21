@@ -8,6 +8,7 @@ from django.views.generic import DetailView
 from django.views.generic.base import TemplateView
 
 from leaseslicensing.components.approvals.models import Approval
+from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.proposals.mixins import ReferralOwnerMixin
 from leaseslicensing.components.proposals.models import HelpPage, Proposal, Referral
@@ -100,6 +101,11 @@ class InternalApprovalView(DetailView):
             return redirect("external-proposal-detail")
         kwargs["form"] = LoginForm
         return super(LeasesLicensingRoutingView, self).get(*args, **kwargs)
+
+
+class InternalCompetitiveProcessView(DetailView):
+    model = CompetitiveProcess
+    template_name = "leaseslicensing/dash/index.html"
 
 
 @login_required(login_url="ds_home")

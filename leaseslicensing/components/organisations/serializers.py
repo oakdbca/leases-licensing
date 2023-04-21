@@ -110,10 +110,14 @@ class BasicOrganisationContactSerializer(serializers.ModelSerializer):
 
 
 class OrganisationSerializer(serializers.ModelSerializer):
-    # address = OrganisationAddressSerializer(read_only=True)
     pins = serializers.SerializerMethodField(read_only=True)
     delegates = serializers.SerializerMethodField(read_only=True)
-    trading_name = serializers.CharField(source="organisation_name", read_only=True)
+    delegate_organisation_contacts = serializers.ListField(
+        child=OrganisationContactSerializer(), read_only=True
+    )
+    trading_name = serializers.CharField(
+        source="ledger_organisation_name", read_only=True
+    )
     apply_application_discount = serializers.SerializerMethodField(read_only=True)
     application_discount = serializers.SerializerMethodField(read_only=True)
     apply_licence_discount = serializers.SerializerMethodField(read_only=True)
@@ -124,14 +128,15 @@ class OrganisationSerializer(serializers.ModelSerializer):
     last_event_application_fee_date = serializers.DateField(
         format="%d/%m/%Y", input_formats=["%d/%m/%Y"], required=False, allow_null=True
     )
+    contacts = OrganisationContactSerializer(many=True, read_only=True)
 
     class Meta:
         model = Organisation
         fields = (
             "id",
-            "organisation",
-            "organisation_abn",
-            "organisation_email",
+            "ledger_organisation_id",
+            "ledger_organisation_abn",
+            "ledger_organisation_email",
             "trading_name",
             "phone_number",
             "pins",
@@ -143,6 +148,8 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "max_num_months_ahead",
             "last_event_application_fee_date",
             "delegates",
+            "delegate_organisation_contacts",
+            "contacts",
         )
 
     def get_apply_application_discount(self, obj):
@@ -161,7 +168,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
         return obj.charge_once_per_year
 
     def get_trading_name(self, obj):
-        return obj.ledger_organisation["organisation_name"]
+        return obj.ledger_organisation_name
 
     def get_pins(self, obj):
         try:
@@ -197,8 +204,8 @@ class OrganisationSerializer(serializers.ModelSerializer):
 class OrganisationKeyValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organisation
-        fields = ["id", "organisation_name"]
-        read_only_fields = ["id", "organisation_name"]
+        fields = ["id", "ledger_organisation_name"]
+        read_only_fields = ["id", "ledger_organisation_name"]
 
 
 class OrganisationCheckExistSerializer(serializers.Serializer):
@@ -317,7 +324,7 @@ class OrganisationRequestSerializer(serializers.ModelSerializer):
     def get_ledger_organisation_name(self, obj):
         if not obj.organisation:
             return obj.name
-        return obj.organisation.ledger_organisation["organisation_name"]
+        return obj.organisation.ledger_organisation_name
 
     def get_assigned_officer_name(self, obj):
         email_user = EmailUser.objects.filter(id=obj.assigned_officer).first()

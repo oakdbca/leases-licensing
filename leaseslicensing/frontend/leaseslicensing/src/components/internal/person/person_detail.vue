@@ -97,7 +97,7 @@ export default {
     methods: {
         fetchUser: function (id) {
             let vm = this;
-            fetch(api_endpoints.users_api + id + '/')
+            fetch(api_endpoints.users + id + '/')
                 .then(async response => {
                     const data = await response.json();
                     if (!response.ok) {

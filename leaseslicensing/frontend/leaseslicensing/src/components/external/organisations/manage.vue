@@ -7,11 +7,11 @@
                         <form class="form-horizontal" name="personal_form" method="post">
 
                             <div class="row mb-3">
-                                <label for="organisation_name" class="col-sm-3 control-label">Organisation
+                                <label for="ledger_organisation_name" class="col-sm-3 control-label">Organisation
                                     Name</label>
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="organisation_name"
-                                        v-model="org.organisation_name">
+                                    <input type="text" class="form-control" name="ledger_organisation_name"
+                                        v-model="org.ledger_organisation_name">
                                 </div>
                             </div>
 
@@ -24,20 +24,20 @@
                             </div>
 
                             <div class="row mb-3">
-                                <label for="organisation_abn" class="col-sm-3 control-label">ABN
+                                <label for="ledger_organisation_abn" class="col-sm-3 control-label">ABN
                                 </label>
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="organisation_abn"
-                                        v-model="org.organisation_abn" disabled>
+                                    <input type="text" class="form-control" name="ledger_organisation_abn"
+                                        v-model="org.ledger_organisation_abn" disabled>
                                 </div>
                             </div>
 
                             <div class="row mb-3">
-                                <label for="organisation_email" class="col-sm-3 control-label">Email
+                                <label for="ledger_organisation_email" class="col-sm-3 control-label">Email
                                 </label>
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="organisation_email"
-                                        v-model="org.organisation_email">
+                                    <input type="text" class="form-control" name="ledger_organisation_email"
+                                        v-model="org.ledger_organisation_email">
                                 </div>
                             </div>
 

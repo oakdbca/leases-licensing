@@ -44,22 +44,22 @@ logger = logging.getLogger(__name__)
 
 
 class Organisation(models.Model):
-    organisation = models.IntegerField(
+    ledger_organisation_id = models.IntegerField(
         unique=True, verbose_name="Ledger Organisation ID"
     )  # Ledger Organisation
-    organisation_name = models.CharField(
+    ledger_organisation_name = models.CharField(
         max_length=255,
         verbose_name="Ledger Organisation Name",
         editable=False,
         default="",
     )
-    organisation_abn = models.CharField(
+    ledger_organisation_abn = models.CharField(
         max_length=50,
         verbose_name="Ledger Organisation ABN",
         editable=False,
         default="",
     )
-    organisation_email = models.EmailField(
+    ledger_organisation_email = models.EmailField(
         verbose_name="Ledger Organisation Email",
         null=True,
         blank=True,
@@ -110,32 +110,43 @@ class Organisation(models.Model):
         app_label = "leaseslicensing"
 
     def __str__(self):
-        if self.organisation_name and self.organisation_abn:
-            return f"{self.organisation_name} (ABN: {self.organisation_abn})"
-        if self.organisation_name:
-            return self.organisation_name
-        return f"Ledger Organisation ID: {self.organisation})"
+        if self.ledger_organisation_name and self.ledger_organisation_abn:
+            return (
+                f"{self.ledger_organisation_name} (ABN: {self.ledger_organisation_abn})"
+            )
+        if self.ledger_organisation_name:
+            return self.ledger_organisation_name
+        return f"Ledger Organisation ID: {self.ledger_organisation_id})"
 
     def save(self, *args, **kwargs):
-        self.organisation_name = self.ledger_organisation["organisation_name"]
-        self.organisation_abn = self.ledger_organisation["organisation_abn"]
+        self.ledger_organisation_name = self.ledger_organisation["organisation_name"]
+        self.ledger_organisation_abn = self.ledger_organisation["organisation_abn"]
         if self.ledger_organisation["organisation_email"]:
-            self.organisation_email = self.ledger_organisation["organisation_email"]
+            self.ledger_organisation_email = self.ledger_organisation[
+                "organisation_email"
+            ]
         super().save(*args, **kwargs)
 
     @property
     def ledger_organisation(self):
-        logger.info(f"Retrieving organisation {self.organisation} from ledger.")
-        if self.organisation:
-            cache_key = settings.CACHE_KEY_LEDGER_ORGANISATION.format(self.organisation)
+        logger.info(
+            f"Retrieving organisation {self.ledger_organisation_id} from ledger."
+        )
+        if self.ledger_organisation_id:
+            cache_key = settings.CACHE_KEY_LEDGER_ORGANISATION.format(
+                self.ledger_organisation_id
+            )
             organisation = cache.get(cache_key)
             if organisation is None:
-                organisation_response = get_organisation(self.organisation)
+                organisation_response = get_organisation(self.ledger_organisation_id)
                 if status.HTTP_200_OK == organisation_response["status"]:
                     organisation = organisation_response["data"]
                     cache.set(cache_key, organisation, settings.CACHE_TIMEOUT_24_HOURS)
                 else:
-                    error_message = f"CRITICAL: Unable to retrieve organisation {self.organisation} from ledger."
+                    error_message = (
+                        "CRITICAL: Unable to retrieve organisation "
+                        f"{self.ledger_organisation_id} from ledger."
+                    )
                     logger.error(error_message)
                     raise UnableToRetrieveLedgerOrganisation(error_message)
             logger.info(f"Retrieved organisation {organisation} from ledger.")
@@ -341,7 +352,7 @@ class Organisation(models.Model):
                 UserDelegation.objects.get(organisation=self, user=user)
                 raise ValidationError(
                     "This user has already been linked to {}".format(
-                        str(self.organisation)
+                        str(self.ledger_organisation_id)
                     )
                 )
             except UserDelegation.DoesNotExist:
@@ -384,7 +395,7 @@ class Organisation(models.Model):
                 UserDelegation.objects.get(organisation=self, user=user)
                 raise ValidationError(
                     "This user has already been linked to {}".format(
-                        str(self.organisation)
+                        str(self.ledger_organisation_id)
                     )
                 )
             except UserDelegation.DoesNotExist:
@@ -424,7 +435,7 @@ class Organisation(models.Model):
                 UserDelegation.objects.get(organisation=self, user=user)
                 raise ValidationError(
                     "This user has not yet been linked to {}".format(
-                        str(self.organisation)
+                        str(self.ledger_organisation_id)
                     )
                 )
             except UserDelegation.DoesNotExist:
@@ -459,7 +470,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    f"This user is not a member of {str(self.organisation)}"
+                    f"This user is not a member of {str(self.ledger_organisation_id)}"
                 )
             # delete contact person
             try:
@@ -514,7 +525,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    f"This user is not a member of {str(self.organisation)}"
+                    f"This user is not a member of {str(self.ledger_organisation_id)}"
                 )
             # delete contact person
             try:
@@ -547,7 +558,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    f"This user is not a member of {str(self.organisation)}"
+                    f"This user is not a member of {str(self.ledger_organisation_id)}"
                 )
             # delete contact person
             try:
@@ -597,7 +608,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    f"This user is not a member of {str(self.organisation)}"
+                    f"This user is not a member of {str(self.ledger_organisation_id)}"
                 )
             # delete contact person
             try:
@@ -630,7 +641,7 @@ class Organisation(models.Model):
                 delegate = UserDelegation.objects.get(organisation=self, user=user)
             except UserDelegation.DoesNotExist:
                 raise ValidationError(
-                    f"This user is not a member of {str(self.organisation)}"
+                    f"This user is not a member of {str(self.ledger_organisation_id)}"
                 )
             # delete contact person
             try:
@@ -659,23 +670,23 @@ class Organisation(models.Model):
 
     @property
     def name(self):
-        return self.organisation_name
+        return self.ledger_organisation_name
 
     @property
     def abn(self):
-        return self.organisation_abn
+        return self.ledger_organisation_abn
 
     @property
     def address(self):
-        return self.organisation.postal_address
+        return self.ledger_organisation.postal_address
 
     @property
     def phone_number(self):
-        return self.organisation.phone_number
+        return self.ledger_organisation.phone_number
 
     @property
     def email(self):
-        return self.organisation.organisation_email
+        return self.organisation.ledger_organisation_email
 
     @property
     def first_five(self):
@@ -701,7 +712,7 @@ class Organisation(models.Model):
                 contacts__user_role="organisation_admin",
             )
             .distinct()
-            .only("id", "organisation_name")
+            .only("id", "ledger_organisation_name")
         )
 
 

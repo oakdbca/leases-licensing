@@ -270,6 +270,11 @@ urlpatterns = (
             views.InternalComplianceView.as_view(),
             name="internal-compliance-detail",
         ),
+        url(
+            r"^internal/competitive_process/(?P<competitive_process_pk>\d+)/$",
+            views.InternalCompetitiveProcessView.as_view(),
+            name="internal-competitive-process-detail",
+        ),
     ]
     + ledger_patterns
     + media_serv_patterns
