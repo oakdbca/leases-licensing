@@ -3,6 +3,10 @@ div#app .container {
     padding: 0 40px 0 40px;
 }
 
+div#app .container h3 {
+    margin-bottom: 22px;
+}
+
 .btn-primary{
     color: #fff  !important;
     background-color: #226fbb !important;
