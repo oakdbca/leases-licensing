@@ -3231,11 +3231,14 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
 
 class ProposalGroup(models.Model):
-    proposal = models.ForeignKey(Proposal, on_delete=models.PROTECT)
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="groups"
+    )
     group = models.ForeignKey(Group, on_delete=models.PROTECT)
 
     class Meta:
         app_label = "leaseslicensing"
+        unique_together = ("proposal", "group")
 
     def __str__(self):
         return f"Proposal: {self.proposal.lodgement_number} is in Group: {self.group}"
@@ -3252,6 +3255,7 @@ class ProposalLocality(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+        unique_together = ("proposal", "district", "lga")
 
     def __str__(self):
         return (
