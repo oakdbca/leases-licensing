@@ -49,7 +49,7 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_decline_email_notification,
     send_referral_email_notification,
 )
-from leaseslicensing.components.tenure.models import LGA, Category, District
+from leaseslicensing.components.tenure.models import LGA, District, Group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
     APPLICATION_TYPE_LEASE_LICENCE,
@@ -1171,10 +1171,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     risk_factors_text = models.TextField(blank=True)
     legislative_requirements_text = models.TextField(blank=True)
     shapefile_json = JSONField(blank=True, null=True)
-
-    category = models.ForeignKey(
-        Category, on_delete=models.PROTECT, null=True, blank=True
-    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -3234,9 +3230,20 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         )
 
 
+class ProposalGroup(models.Model):
+    proposal = models.ForeignKey(Proposal, on_delete=models.PROTECT)
+    group = models.ForeignKey(Group, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} is in Group: {self.group}"
+
+
 class ProposalLocality(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.CASCADE, related_name="localities"
+        Proposal, on_delete=models.PROTECT, related_name="localities"
     )
     district = models.ForeignKey(
         District, on_delete=models.PROTECT, null=True, blank=True
