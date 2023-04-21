@@ -1,6 +1,32 @@
 from django.db import models
 
 
+class Tenure(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class SubTenure(models.Model):
+    tenure = models.ForeignKey(
+        Tenure, related_name="subtenures", on_delete=models.PROTECT
+    )
+    name = models.CharField(max_length=200)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["name"]
+        unique_together = ("tenure", "name")
+
+    def __str__(self):
+        return f"{self.name} (Tenure: {self.tenure.name})"
+
+
 class Region(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
@@ -41,13 +67,12 @@ class LGA(models.Model):
         return self.name
 
 
-class Category(models.Model):
+class Group(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
     class Meta:
         app_label = "leaseslicensing"
         ordering = ["name"]
-        verbose_name_plural = "Categories"
 
     def __str__(self):
         return self.name
