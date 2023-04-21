@@ -284,6 +284,7 @@ export default {
                     'aboriginal_site': this.proposal.aboriginal_site,
                     'native_title_consultation': this.proposal.native_title_consultation,
                     'mining_tenement': this.proposal.mining_tenement,
+                    'groups': this.proposal.groups,
                 }
                 payload.proposal.details_text = this.$refs.application_form.$refs.registration_of_interest.$refs.details_text.detailsText;
                 payload.proposal.exclusive_use_text = this.$refs.application_form.$refs.registration_of_interest.$refs.exclusive_use_text.detailsText;
