@@ -107,10 +107,10 @@
                         <table class="table">
                             <thead>
                                 <tr>
-                                    <th scope="col">Local Goverment Area</th>
-                                    <th scope="col">District</th>
-                                    <th scope="col">Region</th>
-                                    <th scope="col">Actions</th>
+                                    <th scope="col" class="w-25">Local Goverment Area</th>
+                                    <th scope="col" class="w-25">District</th>
+                                    <th scope="col" class="w-25">Region</th>
+                                    <th scope="col" class="w-25">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -143,8 +143,6 @@
                                             @click="removeLocality(locality, index)" :disabled="1 == localities.length"><i
                                                 class="fa fa-trash"></i>
                                             Remove</button>
-                                        <button type="button" class="btn btn-primary me-1"><i
-                                                class="fa fa-pencil-square"></i> Update</button>
                                         <button v-if="index == (localities.length - 1)" type="button"
                                             class="btn btn-primary" @click="addAnotherLocality"><i class="fa fa-plus"></i>
                                             Add
