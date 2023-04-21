@@ -764,7 +764,7 @@ export default {
 
 <style scoped>
 .card-header-tabs .nav-link {
-    margin-bottom: -3px;
+    margin-bottom: -1px;
 }
 
 .btn-status {
