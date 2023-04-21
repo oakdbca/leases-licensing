@@ -270,7 +270,7 @@ export default {
 
 </script>
 
-<style scoped="true" lang="css">
+<style scoped lang="css">
 input {
     box-shadow: none;
 }
