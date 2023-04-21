@@ -30,7 +30,7 @@ router.register(r"proposal", proposal_api.ProposalViewSet, basename="proposal")
 router.register(r"regions", tenure_api.RegionViewSet, basename="regions")
 router.register(r"districts", tenure_api.DistrictViewSet, basename="districts")
 router.register(r"lgas", tenure_api.LGAViewSet, basename="lgas")
-router.register(r"categories", tenure_api.CategoryViewSet, basename="categories")
+router.register(r"groups", tenure_api.GroupViewSet, basename="groups")
 router.register(
     r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
 )
