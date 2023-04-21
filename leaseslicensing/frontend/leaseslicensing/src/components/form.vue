@@ -169,29 +169,12 @@
                         </div>
                         <div class="row question-row">
                             <div class="col-sm-3">
-                                <label class="col-form-label">Group Name</label>
+                                <label class="col-form-label">Group(s)</label>
                             </div>
                             <div class="col-sm-9">
-                                <ul class="list-group">
-                                    <li class="list-group-item"><input class="me-2" type="checkbox" name="tenure"
-                                            checked><label>Caravan parks, eco-tourism accommodation</label>
-                                    </li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Sawmills</label></li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Telecommunications Facilities</label>
-                                    </li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Dams</label>
-                                    </li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Sporting and Recreation Clubs</label>
-                                    </li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Public Infrastructure (Power, Water or Wastewater)</label>
-                                    </li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Gravel Extraction for Local Roads</label>
+                                <ul v-if="groups" class="list-group">
+                                    <li v-for="group in groups" class="list-group-item"><input class="me-2" type="checkbox"
+                                            :value="group.id" name="tenure"><label>{{ group.name }}</label>
                                     </li>
                                 </ul>
                             </div>
@@ -342,11 +325,10 @@ export default {
                 district: null,
                 lga: '',
             },
-            localities: [
-
-            ],
+            localities: [],
             districts: null,
             lgas: null,
+            groups: null,
         }
     },
     components: {
@@ -445,12 +427,12 @@ export default {
         let initialisers = [
             utils.fetchLGAsKeyValueList(),
             utils.fetchDistricts(),
-            utils.fetchCategoriesKeyValueList(),
+            utils.fetchGroupsKeyValueList(),
         ]
         Promise.all(initialisers).then(data => {
             vm.lgas = data[0];
             vm.districts = data[1];
-            vm.categories = data[2];
+            vm.groups = data[2];
         });
     },
     mounted: function () {
@@ -464,8 +446,6 @@ export default {
 </script>
 
 <style lang="css" scoped>
-radio {}
-
 .question-title {
     padding-left: 15px;
 }
