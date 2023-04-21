@@ -37,7 +37,7 @@
                                             <label for="" class="col-md-3 control-label">ABN</label>
                                             <div class="col-md-7">
                                                 <input type="text" class="form-control" name="organisation_abn"
-                                                    placeholder="" v-model="org.organisation_abn"
+                                                    placeholder="" v-model="org.ledger_organisation_abn"
                                                     :disabled="!is_leaseslicensing_admin">
                                             </div>
                                         </div>
@@ -45,7 +45,7 @@
                                             <label for="" class="col-sm-3 control-label">Email</label>
                                             <div class="col-sm-6">
                                                 <input type="text" class="form-control" name="organisation_email"
-                                                    placeholder="" v-model="org.organisation_email">
+                                                    placeholder="" v-model="org.ledger_organisation_email">
                                             </div>
                                         </div>
                                         <div class="row mb-2">
@@ -342,23 +342,24 @@ export default {
                     "dataSrc": ''
                 },
                 columns: [
-                    {
+                    {   data: null,
                         mRender: function (data, type, full) {
                             return full.first_name + " " + full.last_name;
                         }
                     },
-                    { data: 'phone_number' },
-                    { data: 'mobile_number' },
-                    { data: 'fax_number' },
-                    { data: 'email' },
+                    { data: 'phone_number', "defaultContent": "" },
+                    { data: 'mobile_number', "defaultContent": "" },
+                    { data: 'fax_number', "defaultContent": "" },
+                    { data: 'email', "defaultContent": "" },
                     {
+                        data: null,
                         mRender: function (data, type, full) {
                             let links = '';
                             let name = full.first_name + ' ' + full.last_name;
                             links += `<a data-email='${full.email}' data-name='${name}' data-id='${full.id}' class="remove-contact">Remove</a><br/>`;
                             return links;
                         }
-                    }
+                    },
                 ],
                 processing: true
             }
@@ -377,10 +378,10 @@ export default {
             return this.loading.length == 0;
         },
         formattedABN: function () {
-            if (this.org.organisation_abn == null || this.org.organisation_abn == '') {
+            if (this.org.ledger_organisation_abn == null || this.org.ledger_organisation_abn == '') {
                 return ''
             }
-            return helpers.formatABN(this.org.organisation_abn)
+            return helpers.formatABN(this.org.ledger_organisation_abn)
         },
         orgHasAddress: function () {
             return this.org && this.org.address && Object.keys(this.org.address).length !== 0

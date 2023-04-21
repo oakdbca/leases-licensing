@@ -1,6 +1,7 @@
 import WMSCapabilities from 'ol/format/WMSCapabilities';
 import TileWMS from 'ol/source/TileWMS';
 import TileLayer from 'ol/layer/Tile';
+import { Style, Fill, Stroke } from 'ol/style';
 
 // Tile server url
 var url = `${env['kmi_server_url']}/geoserver/public/wms/?SERVICE=WMS&VERSION=1.0.0&REQUEST=GetCapabilities`;
@@ -97,6 +98,35 @@ export function set_mode(mode) {
         console.error(`Cannot set mode ${mode}`)
     }
 }
+
+ /**
+* Defines polygon feature styling depending on whether the polygon source
+* is a Registration of Interest or a Competitive Process
+* @param {object} feature A single geometry feature (e.g. a drawn polygon)
+*/
+export function polygon_style(feature) {
+   let strokecolor = "#3498DB";
+   let fillcolor = "#85C1E9"
+   if(feature.get('source') === 'registration_of_interest') {
+       // yellowish
+       strokecolor = [244, 208, 63, 1.0];
+       fillcolor = [241, 196, 15, .7];
+   } else if(feature.get('source') === 'competitive_process') {
+       // orangish
+       strokecolor = [240, 178, 122, 1.0];
+       fillcolor = [230, 126, 34, .7];
+   }
+   return new Style({
+       fill: new Fill({
+           color: fillcolor
+       }),
+       stroke: new Stroke({
+           color: strokecolor,
+           width: 1,
+       }),
+   });
+}
+
 
 /**
  * Module with map related helper functions

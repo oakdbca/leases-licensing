@@ -8,6 +8,7 @@
             title="Add Party" 
             okText="Add" large
             @mounted="modalMounted"
+            :okDisabled="disableOkButton"
         >
             <div class="container-fluid">
                 <div class="row modal-input-row">
@@ -105,7 +106,7 @@ export default {
             var vm = this;
             return vm.errors;
         },
-        okButtonDisabled: function(){
+        disableOkButton: function(){
             let disabled = true
             if (this.selected_email_user || this.selected_organisation){
                 disabled = false
@@ -114,18 +115,10 @@ export default {
         },
     },
     watch: {
-        okButtonDisabled: function(){
-            this.updateOkButton()
-        },
     },
     methods:{
-        updateOkButton: function(){
-            if (this.$refs.modal_add_party){
-                this.$refs.modal_add_party.okDisabled = this.okButtonDisabled
-            }
-        },
         modalMounted: function(){
-            this.updateOkButton()
+            console.log("Add-party mounted.")
         },
         initialiseSelectPerson: function(){
             let vm = this;
@@ -136,7 +129,7 @@ export default {
                 placeholder:"Type and select Person",
                 // dropdownParent: $('#modal_add_party'),
                 ajax: {
-                    url: api_endpoints.users_api,
+                    url: api_endpoints.person_lookup,
                     dataType: 'json',
                     data: function(params) {
                         var query = {
@@ -146,11 +139,7 @@ export default {
                         return query;
                     },
                     processResults: function(data){
-                        // Format results returned to match the format select2 expects
-                        for (let item of data){
-                            item.text = item.fullname  // Select2 requires 'text' attribute
-                        }
-                        return {'results': data}  // Select2 expects one object with an attribute 'results' 
+                        return data;
                     }
                 },
             })
@@ -170,7 +159,7 @@ export default {
                 allowClear: true,
                 placeholder:"Type and select Organisation",
                 ajax: {
-                    url: api_endpoints.organisations + '/',
+                    url: api_endpoints.organisation_lookup,
                     dataType: 'json',
                     data: function(params) {
                         var query = {
@@ -180,16 +169,12 @@ export default {
                         return query;
                     },
                     processResults: function(data){
-                        // Format results returned to match the format select2 expects
-                        for (let item of data){
-                            item.text = item.name  // Select2 requires 'text' attribute
-                        }
-                        return {'results': data}  // Select2 expects one object with an attribute 'results' 
+                        return data;
                     }
                 },
             })
             .on("select2:select", function (e) {
-                let data = e.params.data.id;
+                let data = e.params.data;
                 vm.selected_organisation = data;
             })
             .on("select2:unselect",function (e) {

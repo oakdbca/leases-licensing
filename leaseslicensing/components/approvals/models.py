@@ -256,7 +256,7 @@ class Approval(RevisionedMixin):
     @property
     def applicant(self):
         if self.org_applicant:
-            return self.org_applicant.organisation.name
+            return self.org_applicant.ledger_organisation_id.name
         elif self.proxy_applicant:
             return "{} {}".format(
                 self.proxy_applicant.first_name, self.proxy_applicant.last_name

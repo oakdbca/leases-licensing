@@ -1,5 +1,5 @@
 
-import { createApp, h } from 'vue';
+import { createApp, h, reactive, toRefs } from 'vue';
 import CustomRow from '@/components/common/custom_row.vue'
 
 /**
@@ -143,21 +143,44 @@ export function expandToggleParties(vm, obj) {
         // Add vue component dynamically
         // -----------------------
         // Configure event listener (Ref: https://stackoverflow.com/questions/67516974/vue3-listen-to-event-from-dynamically-created-child-component-on-replacement)
-        const comp = h(CustomRow, {
-            onAho: e => console.log('onAho: ', e),  // 'aho' is the event name configured in CustomRow component.
-        })
-
-        let custom_row_app = createApp(comp, {
-            // props
+        const props = {
             party_full_data: full_data,
             competitive_process_id: vm.competitive_process_id,
             accessing_user: vm.accessing_user,
+            processing: vm.processing,
+            discarded: vm.discarded,
+            declined: vm.declined,
+            completed: vm.completed,
+        }
+        // Make the props reactive
+        const react = reactive(props);
+        // Keep an instance of this custom row
+        let instance;
+        let custom_row_app = createApp({
+            setup() {
+                return {
+                    ...toRefs(react),
+                }
+            },
+            created() {
+                // Get a reference to this custom row instance
+                instance = this;
+              },
+            // Render the dynamically added custom row and catch
+            // events of newly added details and emit them to the
+            // `competitive_process` vue files
+            render: () => h(CustomRow,
+                        {...react,
+                            onAddDetail: e => vm.$emit("add-detail", e)
+                        })
+
         })
         custom_row_app.mount('#custom_row_' + full_data.id)
         // -----------------------
 
         // Store custom_row_app in order to unmount when being hidden
         // full_data.custom_row_app = custom_row_app
+        custom_row_app["instance"] = instance;
         vm.custom_row_apps[full_data.id] = custom_row_app
 
         details_elem.fadeIn(1000)

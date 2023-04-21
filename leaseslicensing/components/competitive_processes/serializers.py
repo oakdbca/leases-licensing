@@ -3,6 +3,7 @@ from rest_framework import serializers
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess, CompetitiveProcessLogEntry, \
     CompetitiveProcessParty, CompetitiveProcessUserAction, PartyDetail, PartyDetailDocument, \
     update_party_detail_doc_filename, CompetitiveProcessGeometry
+from leaseslicensing.components.proposals.serializers import ProposalGeometrySerializer, ProposalSerializer
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from ..main.models import TemporaryDocumentCollection
 from ..organisations.serializers import OrganisationSerializer
@@ -11,18 +12,36 @@ from leaseslicensing.components.main.serializers import CommunicationLogEntrySer
 from leaseslicensing.components.users.serializers import UserSerializerSimple
 from ... import settings
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
+from ledger_api_client.managed_models import SystemGroup
+from leaseslicensing.settings import GROUP_NAME_CHOICES
 
 
 class RegistrationOfInterestSerializer(serializers.ModelSerializer):
     relevant_applicant_name = serializers.CharField()
-    
+    proposalgeometry = serializers.SerializerMethodField()
+
     class Meta:
         model = Proposal
         fields = (
             'id',
             'lodgement_number',
             'relevant_applicant_name',
+            'proposalgeometry',
+            'applicant_id',
+            'processing_status',
         )
+
+    def get_proposalgeometry(self, obj):
+        """
+        Returns proposalgeometries for this Registration of Interest as FeatureCollection dict
+        """
+
+        geometry_data = {"type": "FeatureCollection", "features": []}
+        for proposalgeometry in obj.proposalgeometry.all():
+            pg_serializer = ProposalGeometrySerializer(proposalgeometry)
+            geometry_data["features"].append(pg_serializer.data)
+
+        return geometry_data
 
 
 class PartyDetailSerializer(serializers.ModelSerializer):
@@ -109,6 +128,7 @@ class CompetitiveProcessPartySerializer(serializers.ModelSerializer):
     is_organisation = serializers.BooleanField()  # This is property at the model
     person = serializers.SerializerMethodField()
     organisation = serializers.SerializerMethodField()
+    organisation_id = serializers.IntegerField(allow_null=True, required=False)
     party_details = PartyDetailSerializer(many=True)
 
     class Meta:
@@ -120,9 +140,12 @@ class CompetitiveProcessPartySerializer(serializers.ModelSerializer):
             'person_id',
             'person',
             'organisation',
+            'organisation_id',
             'invited_at',
             'removed_at',
+            'created_at',
             'party_details',
+            'email_address',
         )
         extra_kwargs = {
             'id': {
@@ -212,6 +235,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
             'id',
             'lodgement_number',
             'registration_of_interest',
+            'generated_proposal',
             'status',
             'created_at',
             'assigned_officer',
@@ -249,8 +273,8 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
 
     def get_can_accessing_user_view(self, obj):
         try:
-            user = self.context.get("request").user
-            can_view = obj.can_user_view(user)
+            request = self.context.get("request")
+            can_view = obj.can_user_view(request)
             return can_view
         except:
             return False
@@ -298,6 +322,10 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     accessing_user = serializers.SerializerMethodField()
     competitive_process_parties = CompetitiveProcessPartySerializer(many=True, required=False)
     competitive_process_geometries = CompetitiveProcessGeometrySerializer(many=True, required=False)
+    allowed_editors = serializers.SerializerMethodField(read_only=True)
+    accessing_user_roles = serializers.SerializerMethodField()
+    generated_proposal = ProposalSerializer(many=True, required=False, read_only=True)
+    winner = CompetitiveProcessPartySerializer(allow_null=True, required=False)
 
     class Meta:
         model = CompetitiveProcess
@@ -305,7 +333,9 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'id',
             'lodgement_number',
             'registration_of_interest',
+            'generated_proposal',
             'status',
+            'status_id',
             'created_at',
             'assigned_officer',
             'site',
@@ -315,11 +345,14 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'accessing_user',
             'competitive_process_parties',
             'winner',
+            'winner_id',
             'details',
             'competitive_process_geometries',
+            'allowed_editors',
+            'accessing_user_roles',
         )
         extra_kwargs = {
-            'winner': {
+            'winner_id': {
                 'read_only': False,
                 'required': False,
             },
@@ -330,27 +363,42 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
         serializer = UserSerializerSimple(user)
         return serializer.data
 
+    def get_accessing_user_roles(self, obj):
+        request = self.context.get("request")
+        accessing_user = request.user
+        roles = []
+
+        for choice in GROUP_NAME_CHOICES:
+            group = SystemGroup.objects.get(name=choice[0])
+            ids = group.get_system_group_member_ids()
+            if accessing_user.id in ids:
+                roles.append(group.name)
+
+        return roles
+
     def update(self, instance, validated_data):
         competitive_process_parties_data = validated_data.pop('competitive_process_parties')
 
         # competitive_process
-        # winner_dict = validated_data['winner']
-        # winner = CompetitiveProcessParty.objects.get(id=int(winner_dict['id']))
-        # instance.winner = winner
-        instance.winner = validated_data['winner']
+        if isinstance(validated_data['winner'], dict):
+            instance.winner = CompetitiveProcessParty.objects.get(
+                pk=dict(validated_data['winner'])["id"])
+        else:
+            instance.winner = validated_data['winner']
         instance.details = validated_data['details']
         instance.save()
 
         # competitive_process_parties
         for competitive_process_party_data in competitive_process_parties_data:
-            if competitive_process_party_data['id']:
+            # Existing competitive process parties have a positive id
+            if competitive_process_party_data['id'] > 0:
                 # This competitive_process_party exists
                 competitive_process_party_instance = CompetitiveProcessParty.objects.get(id=int(competitive_process_party_data['id']))
                 serializer = CompetitiveProcessPartySerializer(competitive_process_party_instance, competitive_process_party_data, context={'competitive_process': instance})
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
             else:
-                # New competitive_process_party
+                # New competitive_process_party has a negative id (set in the frontend)
                 serializer = CompetitiveProcessPartySerializer(data=competitive_process_party_data, context={'competitive_process': instance})
                 serializer.is_valid(raise_exception=True)
                 new_party = serializer.save()
@@ -358,6 +406,15 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
                 new_party.save()
 
         return instance
+
+    def get_allowed_editors(self, obj):
+        if obj.allowed_editors:
+            email_users = []
+            for user in obj.allowed_editors:
+                email_users.append(user)
+            return EmailUserSerializer(email_users, many=True).data
+        else:
+            return ""
 
 
 class CompetitiveProcessLogEntrySerializer(CommunicationLogEntrySerializer):

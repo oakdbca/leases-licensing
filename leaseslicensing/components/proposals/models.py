@@ -26,6 +26,7 @@ from rest_framework import serializers
 from reversion.models import Version
 
 from leaseslicensing import exceptions
+from leaseslicensing.components.competitive_processes.email import send_competitive_process_create_notification
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.invoicing.models import InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
@@ -1259,10 +1260,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def applicant_email(self):
         if (
             self.org_applicant
-            and hasattr(self.org_applicant.organisation, "email")
-            and self.org_applicant.organisation.email
+            and hasattr(self.org_applicant.ledger_organisation_id, "email")
+            and self.org_applicant.ledger_organisation_id.email
         ):
-            return self.org_applicant.organisation.email
+            return self.org_applicant.ledger_organisation_id.email
         elif self.ind_applicant:
             email_user = retrieve_email_user(self.ind_applicant)
         elif self.proxy_applicant:
@@ -1275,7 +1276,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def applicant_name(self):
         if isinstance(self.applicant, Organisation):
-            return f"{self.applicant.organisation_name}"
+            return f"{self.applicant.ledger_organisation_name}"
         elif isinstance(self.applicant, EmailUser):
             return f"{self.applicant.first_name} {self.applicant.last_name}"
         logger.error(f"Applicant for the proposal {self.lodgement_number} not found")
@@ -1285,7 +1286,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def applicant_details(self):
         if isinstance(self.applicant, Organisation):
             return "{} \n{}".format(
-                self.org_applicant.organisation.name, self.org_applicant.address
+                self.org_applicant.ledger_organisation_id.name, self.org_applicant.address
             )
         else:
             # return "{} {}\n{}".format(
@@ -2682,9 +2683,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                             and not self.generated_proposal
                         ):
                             self.generate_competitive_process()
-                            self.processing_status = (
-                                Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
-                            )
+                            # Email notify all Competitive Process assessors
+                            send_competitive_process_create_notification(
+                                request,
+                                self.generated_competitive_process,
+                                details=details)
+                            self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
                     elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
                         # lease_licence (new)
                         approval, created = Approval.objects.update_or_create(
@@ -2729,7 +2733,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             application_type=ApplicationType.objects.get(
                 name=APPLICATION_TYPE_LEASE_LICENCE
             ),
-            submitter=self.submitter,
+            submitter=None,
             ind_applicant=self.ind_applicant,
             org_applicant=self.org_applicant,
             proposal_type_id=self.proposal_type.id,

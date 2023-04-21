@@ -1,1 +1,9 @@
-    (notification email body here)
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+    You are the winner of the Competitive Process {{ competitive_process.lodgement_number }} and are invited to apply for a lease or license.
+
+    You can access this Application using the following link
+
+    {{ url }}
+{%  endblock %}

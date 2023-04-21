@@ -92,7 +92,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
     delegate_organisation_contacts = serializers.ListField(
         child=OrganisationContactSerializer(), read_only=True
     )
-    trading_name = serializers.CharField(source="organisation_name", read_only=True)
+    trading_name = serializers.CharField(source="ledger_organisation_name", read_only=True)
     apply_application_discount = serializers.SerializerMethodField(read_only=True)
     application_discount = serializers.SerializerMethodField(read_only=True)
     apply_licence_discount = serializers.SerializerMethodField(read_only=True)
@@ -103,14 +103,15 @@ class OrganisationSerializer(serializers.ModelSerializer):
     last_event_application_fee_date = serializers.DateField(
         format="%d/%m/%Y", input_formats=["%d/%m/%Y"], required=False, allow_null=True
     )
+    contacts = OrganisationContactSerializer(many=True, read_only=True)
 
     class Meta:
         model = Organisation
         fields = (
             "id",
-            "organisation",
-            "organisation_abn",
-            "organisation_email",
+            "ledger_organisation_id",
+            "ledger_organisation_abn",
+            "ledger_organisation_email",
             "trading_name",
             "abn",
             "phone_number",
@@ -123,6 +124,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "charge_once_per_year",
             "max_num_months_ahead",
             "last_event_application_fee_date",
+            "contacts",
         )
 
     def get_apply_application_discount(self, obj):
@@ -199,8 +201,8 @@ class OrganisationSerializer(serializers.ModelSerializer):
 class OrganisationKeyValueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organisation
-        fields = ["id", "organisation_name"]
-        read_only_fields = ["id", "organisation_name"]
+        fields = ["id", "ledger_organisation_name"]
+        read_only_fields = ["id", "ledger_organisation_name"]
 
 
 class OrganisationCheckExistSerializer(serializers.Serializer):

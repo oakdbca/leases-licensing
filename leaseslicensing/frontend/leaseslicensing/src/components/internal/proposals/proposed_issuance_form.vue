@@ -574,7 +574,6 @@ export default {
                     method: 'POST',
                 })
                 */
-
                 if (this.proposedApprovalState == 'proposed_approval'){
                     const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposals,this.proposal_id+'/proposed_approval'),{
                         body: JSON.stringify(this.approval),

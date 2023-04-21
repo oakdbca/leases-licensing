@@ -18,7 +18,7 @@ def can_manage_org(organisation, user):
         user_delegation = UserDelegation.objects.get(
             organisation=organisation, user=user.id
         )
-        return can_admin_org(organisation, user_delegation.user)
+        return can_admin_org(organisation, user)
     except UserDelegation.DoesNotExist:
         try:
             group = OrganisationAccessGroup.objects.first()
