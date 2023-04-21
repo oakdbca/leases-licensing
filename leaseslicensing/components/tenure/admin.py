@@ -1,10 +1,10 @@
 from django.contrib import admin
 
-from leaseslicensing.components.tenure.models import LGA, Category, District, Region
+from leaseslicensing.components.tenure.models import LGA, District, Group, Region
 
 
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+@admin.register(Group)
+class GroupAdmin(admin.ModelAdmin):
     pass
 
 

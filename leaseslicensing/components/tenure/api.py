@@ -3,11 +3,11 @@ import logging
 from rest_framework import viewsets
 
 from leaseslicensing.components.main.api import KeyValueListMixin, NoPaginationListMixin
-from leaseslicensing.components.tenure.models import LGA, Category, District, Region
+from leaseslicensing.components.tenure.models import LGA, District, Group, Region
 from leaseslicensing.components.tenure.serializers import (
-    CategorySerializer,
     DistrictKeyValueSerializer,
     DistrictSerializer,
+    GroupSerializer,
     LGASerializer,
     RegionSerializer,
 )
@@ -39,9 +39,9 @@ class LGAViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin
     queryset = LGA.objects.all()
 
 
-class CategoryViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
-    model = Category
-    serializer_class = CategorySerializer
+class GroupViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
+    model = Group
+    serializer_class = GroupSerializer
     key_value_display_field = "name"
-    key_value_serializer_class = CategorySerializer
-    queryset = Category.objects.all()
+    key_value_serializer_class = GroupSerializer
+    queryset = Group.objects.all()
