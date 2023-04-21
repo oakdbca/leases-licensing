@@ -16,7 +16,7 @@ def can_manage_org(organisation, user):
     try:
         # Not 100% sure what was intended here see git history for what was here before
         UserDelegation.objects.get(organisation=organisation, user=user.id)
-        return can_admin_org(organisation, user)
+        return can_admin_org(organisation, user.id)
     except UserDelegation.DoesNotExist:
         try:
             group = OrganisationAccessGroup.objects.first()
