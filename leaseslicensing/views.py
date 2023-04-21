@@ -27,6 +27,11 @@ class InternalView(UserPassesTestMixin, TemplateView):
 class ExternalView(LoginRequiredMixin, TemplateView):
     template_name = "leaseslicensing/dash/index.html"
 
+    def get(self, *args, **kwargs):
+        if self.request.user.is_authenticated:
+            if is_internal(self.request):
+                return redirect("internal")
+
 
 class ReferralView(ReferralOwnerMixin, DetailView):
     model = Referral
