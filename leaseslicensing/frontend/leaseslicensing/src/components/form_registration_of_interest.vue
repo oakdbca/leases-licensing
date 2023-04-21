@@ -28,12 +28,12 @@
             </div>
 
             <div class="row mb-3 pt-3 border-top">
-                <div class="col-sm-7">
-                    <label class="form-label">Will the proposal require exclusive use of or non-exclusive
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal require exclusive use of or non-exclusive
                         access to a site?</label>
                 </div>
-                <div class="col-sm-5">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.exclusive_use" type="radio"
                             name="exclusive_use_yes" id="exclusive_use_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -42,7 +42,7 @@
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" v-model="proposal.exclusive_use" type="radio"
                             name="exclusive_use_no" id="exclusive_use_no" :value="false" data-parsley-required
-                            :disabled="readonly" />
+                            :disabled="readonly" :checked="null == proposal.exclusive_use" />
                         <label for="exclusive_use_no">No</label>
                     </div>
                 </div>
@@ -69,12 +69,12 @@
             </div>
 
             <div class="row mb-3 pt-3 border-top">
-                <div class="col-sm-7">
-                    <label class="form-label">Will the proposal require long-term use of or access to a
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal require long-term use of or access to a
                         site?</label>
                 </div>
-                <div class="col-sm-5">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.long_term_use" type="radio"
                             name="long_term_use_yes" id="long_term_use_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -83,7 +83,7 @@
                     <div class="form-check form-check-inline">
                         <input class="form-check-input" v-model="proposal.long_term_use" type="radio"
                             name="long_term_use_no" id="long_term_use_no" :value="false" data-parsley-required
-                            :disabled="readonly" />
+                            :disabled="readonly" :checked="null == proposal.long_term_use" />
                         <label for="long_term_use_no">No</label>
                     </div>
                 </div>
@@ -110,12 +110,12 @@
                 </div>
             </div>
             <div class="row mb-3 pt-3 border-top">
-                <div class="col-sm-7">
-                    <label class="form-label">Is the proposal consistent with the purpose of the park or
+                <div class="col-sm-8">
+                    <label class="col-form-label">Is the proposal consistent with the purpose of the park or
                         reserve?</label>
                 </div>
-                <div class="col-sm-5">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.consistent_purpose" type="radio"
                             name="consistent_purpose_yes" id="consistent_purpose_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -157,13 +157,13 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
-                <div class="col-sm-7">
-                    <label class="form-label">Is the proposal consistent with the park or reserve management
+            <div class="row mb-1 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Is the proposal consistent with the park or reserve management
                         plan?</label>
                 </div>
-                <div class="col-sm-5">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.consistent_plan" type="radio"
                             name="consistent_plan_yes" id="consistent_plan_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -183,38 +183,38 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.consistent_plan">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="consistent_plan_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.consistent_plan_text" ref="consistent_plan_text"
-                            id="consistent_plan_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.consistent_plan">
+                <div class="col-12">
+                    <label for="consistent_plan_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-6">
-                        <label for="consistent_plan_documents">Attach any supporting documents</label>
-                    </div>
-                    <div class="col-sm-6">
-                        <FileField :readonly="readonly" ref="consistent_plan_documents" name="consistent_plan_documents"
-                            id="consistent_plan_documents" :isRepeatable="true"
-                            :documentActionUrl="consistentPlanDocumentsUrl" :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.consistent_plan_text" ref="consistent_plan_text"
+                        id="consistent_plan_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
+                </div>
+            </div>
+            <div class="row mb-3" v-show="proposal.consistent_plan">
+                <div class="col-sm-6">
+                    <label for="consistent_plan_documents">Attach any supporting documents</label>
+                </div>
+                <div class="col-sm-6">
+                    <FileField :readonly="readonly" ref="consistent_plan_documents" name="consistent_plan_documents"
+                        id="consistent_plan_documents" :isRepeatable="true" :documentActionUrl="consistentPlanDocumentsUrl"
+                        :replace_button_by_text="true" />
                 </div>
             </div>
         </FormSection>
+
+
         <FormSection label="Proposal Impact" Index="proposal_impact" v-if="proposal">
             <slot name="slot_proposal_impact_checklist_questions"></slot>
-            <div class="row">
-                <div class="col-sm-6">
-                    <label class="form-label">Will the proposal involve clearing of native vegetation?</label>
+            <div class="row mb-3">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal involve clearing of native vegetation?</label>
                 </div>
-                <div class="col-sm-6">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.clearing_vegetation" type="radio"
                             name="clearing_vegetation_yes" id="clearing_vegetation_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -234,34 +234,33 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.clearing_vegetation">
-                <div class="row">
-                    <div class="col-sm-6">
-                        <label for="clearing_vegetation_text" class="form-label">Provide details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.clearing_vegetation_text" ref="clearing_vegetation_text"
-                            id="clearing_vegetation_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.clearing_vegetation">
+                <div class="col-12">
+                    <label for="clearing_vegetation_text" class="form-label">Provide details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="clearing_vegetation_documents">Attach any supporting documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="clearing_vegetation_documents"
-                            name="clearing_vegetation_documents" id="clearing_vegetation_documents" :isRepeatable="true"
-                            :documentActionUrl="clearingVegetationDocumentsUrl" :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.clearing_vegetation_text" ref="clearing_vegetation_text"
+                        id="clearing_vegetation_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.clearing_vegetation">
                 <div class="col-sm-3">
-                    <label class="form-label">Will the proposal involve ground-disturbing works?</label>
+                    <label for="clearing_vegetation_documents">Attach any supporting documents</label>
                 </div>
                 <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                    <FileField :readonly="readonly" ref="clearing_vegetation_documents" name="clearing_vegetation_documents"
+                        id="clearing_vegetation_documents" :isRepeatable="true"
+                        :documentActionUrl="clearingVegetationDocumentsUrl" :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal involve ground-disturbing works?</label>
+                </div>
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.ground_disturbing_works" type="radio"
                             name="ground_disturbing_works_yes" id="ground_disturbing_works_yes" :value="true"
                             data-parsley-required :disabled="readonly" />
@@ -281,37 +280,35 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.ground_disturbing_works">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="ground_disturbing_works_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.ground_disturbing_works_text" ref="ground_disturbing_works_text"
-                            id="ground_disturbing_works_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.ground_disturbing_works">
+                <div class="col-12">
+                    <label for="ground_disturbing_works_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="ground_disturbing_works_documents">Attach any supporting documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="ground_disturbing_works_documents"
-                            name="ground_disturbing_works_documents" id="ground_disturbing_works_documents"
-                            :isRepeatable="true" :documentActionUrl="groundDisturbingWorksDocumentsUrl"
-                            :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.ground_disturbing_works_text" ref="ground_disturbing_works_text"
+                        id="ground_disturbing_works_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.ground_disturbing_works">
                 <div class="col-sm-3">
-                    <label class="form-label">Will the proposal impact on a World or National Heritage
-                        area?</label>
+                    <label for="ground_disturbing_works_documents">Attach any supporting documents</label>
                 </div>
                 <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                    <FileField :readonly="readonly" ref="ground_disturbing_works_documents"
+                        name="ground_disturbing_works_documents" id="ground_disturbing_works_documents" :isRepeatable="true"
+                        :documentActionUrl="groundDisturbingWorksDocumentsUrl" :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal impact on a World or National Heritage
+                        area?</label>
+                </div>
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.heritage_site" type="radio"
                             name="heritage_site_yes" id="heritage_site_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -331,38 +328,35 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.heritage_site">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="heritage_site_text" class="form-label">Provide details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.heritage_site_text" ref="heritage_site_text"
-                            id="heritage_site_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.heritage_site">
+                <div class="col-12">
+                    <label for="heritage_site_text" class="form-label">Provide details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="heritage_site_documents">Attach any supporting documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="heritage_site_documents" name="heritage_site_documents"
-                            id="heritage_site_documents" :isRepeatable="true" :documentActionUrl="heritageSiteDocumentsUrl"
-                            :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.heritage_site_text" ref="heritage_site_text" id="heritage_site_text"
+                        :readonly="readonly" :can_view_richtext_src=true v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.heritage_site">
                 <div class="col-sm-3">
-                    <label class="form-label">Is the proposal located in a environmentally
+                    <label for="heritage_site_documents">Attach any supporting documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="heritage_site_documents" name="heritage_site_documents"
+                        id="heritage_site_documents" :isRepeatable="true" :documentActionUrl="heritageSiteDocumentsUrl"
+                        :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Is the proposal located in a environmentally
                         sensitive
                         area or
                         habitat for significant flora and fauna?</label>
                 </div>
-                <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
-
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.environmentally_sensitive" type="radio"
                             name="environmentally_sensitive_yes" id="environmentally_sensitive_yes" :value="true"
                             data-parsley-required :disabled="readonly" />
@@ -383,40 +377,37 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.environmentally_sensitive">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="environmentally_sensitive_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.environmentally_sensitive_text"
-                            ref="environmentally_sensitive_text" id="environmentally_sensitive_text" :readonly="readonly"
-                            :can_view_richtext_src=true v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.environmentally_sensitive">
+                <div class="col-12">
+                    <label for="environmentally_sensitive_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="environmentally_sensitive_documents">Attach any supporting
-                            documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="environmentally_sensitive_documents"
-                            name="environmentally_sensitive_documents" id="environmentally_sensitive_documents"
-                            :isRepeatable="true" :documentActionUrl="environmentallySensitiveDocumentsUrl"
-                            :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.environmentally_sensitive_text" ref="environmentally_sensitive_text"
+                        id="environmentally_sensitive_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
+                </div>
+            </div>
+            <div class="row mb-3" v-show="proposal.environmentally_sensitive">
+                <div class="col-sm-3">
+                    <label for="environmentally_sensitive_documents">Attach any supporting
+                        documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="environmentally_sensitive_documents"
+                        name="environmentally_sensitive_documents" id="environmentally_sensitive_documents"
+                        :isRepeatable="true" :documentActionUrl="environmentallySensitiveDocumentsUrl"
+                        :replace_button_by_text="true" />
                 </div>
             </div>
 
-            <!--div class="col-sm-12"-->
-            <div class="row">
-                <div class="col-sm-3">
-                    <label class="form-label">Will the proposal impact on wetlands or water
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal impact on wetlands or water
                         courses?</label>
                 </div>
-                <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.wetlands_impact" type="radio"
                             name="wetlands_impact_yes" id="wetlands_impact_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -436,37 +427,36 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.wetlands_impact">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="wetlands_impact_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.wetlands_impact_text" ref="wetlands_impact_text"
-                            id="wetlands_impact_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.wetlands_impact">
+                <div class="col-12">
+                    <label for="wetlands_impact_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="wetlands_impact_documents">Attach any supporting documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="wetlands_impact_documents" name="wetlands_impact_documents"
-                            id="wetlands_impact_documents" :isRepeatable="true"
-                            :documentActionUrl="wetlandsImpactDocumentsUrl" :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.wetlands_impact_text" ref="wetlands_impact_text"
+                        id="wetlands_impact_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.wetlands_impact">
                 <div class="col-sm-3">
-                    <label class="form-label">Will the proposal involve building a
+                    <label for="wetlands_impact_documents">Attach any supporting documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="wetlands_impact_documents" name="wetlands_impact_documents"
+                        id="wetlands_impact_documents" :isRepeatable="true" :documentActionUrl="wetlandsImpactDocumentsUrl"
+                        :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal involve building a
                         structure or
                         building?</label>
                 </div>
-                <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.building_required" type="radio"
                             name="building_required_yes" id="building_required_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -486,41 +476,40 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.building_required">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="building_required_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.building_required_text" ref="building_required_text"
-                            id="building_required_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.building_required">
+                <div class="col-12">
+                    <label for="building_required_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="building_required_documents">Attach any supporting
-                            documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="building_required_documents" name="building_required_documents"
-                            id="building_required_documents" :isRepeatable="true"
-                            :documentActionUrl="buildingRequiredDocumentsUrl" :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.building_required_text" ref="building_required_text"
+                        id="building_required_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.building_required">
                 <div class="col-sm-3">
-                    <label class="form-label">Will the proposal create a significant
+                    <label for="building_required_documents">Attach any supporting
+                        documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="building_required_documents" name="building_required_documents"
+                        id="building_required_documents" :isRepeatable="true"
+                        :documentActionUrl="buildingRequiredDocumentsUrl" :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal create a significant
                         change
                         to
                         or
                         visual impact
                         on the proposed site?</label>
                 </div>
-                <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.significant_change" type="radio"
                             name="significant_change_yes" id="significant_change_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -540,38 +529,37 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.significant_change">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="significant_change_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.significant_change_text" ref="significant_change_text"
-                            id="significant_change_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.significant_change">
+                <div class="col-12">
+                    <label for="significant_change_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="significant_change_documents">Attach any supporting
-                            documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="significant_change_documents"
-                            name="significant_change_documents" id="significant_change_documents" :isRepeatable="true"
-                            :documentActionUrl="significantChangeDocumentsUrl" :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.significant_change_text" ref="significant_change_text"
+                        id="significant_change_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.significant_change">
                 <div class="col-sm-3">
-                    <label class="form-label">Will the proposal impact on a <a target="_blank"
+                    <label for="significant_change_documents">Attach any supporting
+                        documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="significant_change_documents" name="significant_change_documents"
+                        id="significant_change_documents" :isRepeatable="true"
+                        :documentActionUrl="significantChangeDocumentsUrl" :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal impact on a <a target="_blank"
                             href="http://www.google.com">registered Aboriginal
                             site</a>?</label>
                 </div>
-                <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.aboriginal_site" type="radio"
                             name="aboriginal_site_yes" id="aboriginal_site_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -591,41 +579,40 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.aboriginal_site">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="aboriginal_site_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.aboriginal_site_text" ref="aboriginal_site_text"
-                            id="aboriginal_site_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.aboriginal_site">
+                <div class="col-12">
+                    <label for="aboriginal_site_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="aboriginal_site_documents">Attach any supporting
-                            documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="aboriginal_site_documents" name="aboriginal_site_documents"
-                            id="aboriginal_site_documents" :isRepeatable="true"
-                            :documentActionUrl="aboriginalSiteDocumentsUrl" :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.aboriginal_site_text" ref="aboriginal_site_text"
+                        id="aboriginal_site_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.aboriginal_site">
                 <div class="col-sm-3">
-                    <label class="form-label">Has any consultation occurred
+                    <label for="aboriginal_site_documents">Attach any supporting
+                        documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="aboriginal_site_documents" name="aboriginal_site_documents"
+                        id="aboriginal_site_documents" :isRepeatable="true" :documentActionUrl="aboriginalSiteDocumentsUrl"
+                        :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Has any consultation occurred
                         with
                         the
                         relevant
                         Aboriginal native
                         title party?</label>
                 </div>
-                <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.native_title_consultation" type="radio"
                             name="native_title_consultation_yes" id="native_title_consultation_yes" :value="true"
                             data-parsley-required :disabled="readonly" />
@@ -646,40 +633,39 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.native_title_consultation">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="native_title_consultation_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.native_title_consultation_text"
-                            ref="native_title_consultation_text" id="native_title_consultation_text" :readonly="readonly"
-                            :can_view_richtext_src=true v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.native_title_consultation">
+                <div class="col-12">
+                    <label for="native_title_consultation_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="native_title_consultation_documents">Attach any
-                            supporting
-                            documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="native_title_consultation_documents"
-                            name="native_title_consultation_documents" id="native_title_consultation_documents"
-                            :isRepeatable="true" :documentActionUrl="nativeTitleConsultationDocumentsUrl"
-                            :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.native_title_consultation_text" ref="native_title_consultation_text"
+                        id="native_title_consultation_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
                 </div>
             </div>
-            <div class="row">
+            <div class="row mb-3" v-show="proposal.native_title_consultation">
                 <div class="col-sm-3">
-                    <label class="form-label">Will the proposal impact on a
+                    <label for="native_title_consultation_documents">Attach any
+                        supporting
+                        documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="native_title_consultation_documents"
+                        name="native_title_consultation_documents" id="native_title_consultation_documents"
+                        :isRepeatable="true" :documentActionUrl="nativeTitleConsultationDocumentsUrl"
+                        :replace_button_by_text="true" />
+                </div>
+            </div>
+
+            <div class="row mb-3 pt-3 border-top">
+                <div class="col-sm-8">
+                    <label class="col-form-label">Will the proposal impact on a
                         <a target="_blank" href="http://google.com">mining
                             tenement</a>?</label>
                 </div>
-                <div class="col-sm-9">
-                    <div class="form-check form-check-inline">
+                <div class="col-sm-4">
+                    <div class="form-check form-check-inline pt-2">
                         <input class="form-check-input" v-model="proposal.mining_tenement" type="radio"
                             name="mining_tenement_yes" id="mining_tenement_yes" :value="true" data-parsley-required
                             :disabled="readonly" />
@@ -699,28 +685,26 @@
                     </div>
                 </div>
             </div>
-            <div class="col-sm-12 inline-details-text" v-show="proposal.mining_tenement">
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="mining_tenement_text" class="form-label">Provide
-                            details</label>
-                    </div>
-                    <div class="col-sm-8">
-                        <RichText :proposalData="proposal.mining_tenement_text" ref="mining_tenement_text"
-                            id="mining_tenement_text" :readonly="readonly" :can_view_richtext_src=true
-                            v-bind:key="proposal.id" />
-                    </div>
+            <div class="row mb-3" v-show="proposal.mining_tenement">
+                <div class="col-12">
+                    <label for="mining_tenement_text" class="form-label">Provide
+                        details</label>
                 </div>
-                <div class="row">
-                    <div class="col-sm-3">
-                        <label for="mining_tenement_documents">Attach any supporting
-                            documents</label>
-                    </div>
-                    <div class="col-sm-9">
-                        <FileField :readonly="readonly" ref="mining_tenement_documents" name="mining_tenement_documents"
-                            id="mining_tenement_documents" :isRepeatable="true"
-                            :documentActionUrl="miningTenementDocumentsUrl" :replace_button_by_text="true" />
-                    </div>
+                <div class="col-12">
+                    <RichText :proposalData="proposal.mining_tenement_text" ref="mining_tenement_text"
+                        id="mining_tenement_text" :readonly="readonly" :can_view_richtext_src=true
+                        v-bind:key="proposal.id" />
+                </div>
+            </div>
+            <div class="row mb-3" v-show="proposal.mining_tenement">
+                <div class="col-sm-3">
+                    <label for="mining_tenement_documents">Attach any supporting
+                        documents</label>
+                </div>
+                <div class="col-sm-9">
+                    <FileField :readonly="readonly" ref="mining_tenement_documents" name="mining_tenement_documents"
+                        id="mining_tenement_documents" :isRepeatable="true" :documentActionUrl="miningTenementDocumentsUrl"
+                        :replace_button_by_text="true" />
                 </div>
             </div>
 
