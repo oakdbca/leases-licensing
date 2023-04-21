@@ -98,7 +98,7 @@
                                         <label for="residentialPostcode" class="form-label">Country</label>
                                     </div>
                                     <div class="col-md-4">
-                                        <select class="form-select" id="country" name="Country" v-model="
+                                        <select v-if="countries" class="form-select" id="country" name="Country" v-model="
                                             email_user.residential_address
                                                 .country
                                         " :disabled="readonly">
@@ -106,6 +106,8 @@
                                                 {{ c.name }}
                                             </option>
                                         </select>
+                                        <BootstrapSpinner v-else class="text-primary" :isLoading="true"
+                                            :centerOfScreen="false" :small="true" />
                                     </div>
                                 </div>
                             </div>
@@ -158,8 +160,8 @@
                                 <div class="row mb-2">
                                     <label for="" class="col-md-2 form-label">Country</label>
                                     <div class="col-sm-4">
-                                        <select :disabled="readonly" class="form-select" id="postal_country" name="Country"
-                                            v-model="
+                                        <select v-if="countries" :disabled="readonly" class="form-select"
+                                            id="postal_country" name="Country" v-model="
                                                 email_user.postal_address
                                                     .country
                                             ">
@@ -167,6 +169,8 @@
                                                 {{ c.name }}
                                             </option>
                                         </select>
+                                        <BootstrapSpinner v-else class="text-primary" :isLoading="true"
+                                            :centerOfScreen="false" :small="true" />
                                     </div>
                                 </div>
                             </div>
@@ -242,7 +246,7 @@ export default {
             electoralRollSectionIndex: 'electoral_roll_' + vm._uid,
             silentElector: null,
             values: null,
-            countries: [],
+            countries: null,
             showAddressError: false,
             detailsBody: 'detailsBody' + vm._uid,
             addressBody: 'addressBody' + vm._uid,
