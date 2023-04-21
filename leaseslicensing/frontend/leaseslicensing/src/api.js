@@ -46,7 +46,7 @@ module.exports = {
     regions: '/api/regions/',
     districts: '/api/districts/',
     lgas: '/api/lgas/',
-    categories: '/api/categories/',
+    groups: '/api/groups/',
     lookupApprovalDetails: function (id) {
         return `/api/approvals/${id}/lookup_approval.json`;
     },
