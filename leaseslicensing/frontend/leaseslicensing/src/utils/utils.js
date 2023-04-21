@@ -174,9 +174,9 @@ export default {
                 });
         });
     },
-    fetchCategoriesKeyValueList: function () {
+    fetchGroupsKeyValueList: function () {
         return new Promise((resolve, reject) => {
-            fetch(api_endpoints.categories + 'key-value-list/')
+            fetch(api_endpoints.groups + 'key-value-list/')
                 .then(async response => {
                     const data = await response.json();
                     if (!response.ok) {
@@ -185,7 +185,7 @@ export default {
                         reject(error);
                     }
                     resolve(data)
-                    console.log("Categories key value list: ", data)
+                    console.log("Groups key value list: ", data)
                 })
                 .catch(error => {
                     console.error("There was an error!", error);
