@@ -4,17 +4,17 @@
             <div class="container-fluid">
                 <div class="row">
                     <form class="form-horizontal" name="approvalForm">
-                        <alert :show.sync="showError" type="danger"><strong>{{errorString}}</strong></alert>
+                        <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
                         <div class="col-sm-12">
                             <div class="form-group">
                                 <div class="row">
                                     <div class="col-sm-3">
-
-                                        <label class="control-label pull-left"  for="Name">Surrender Date</label>
+                                        <label class="control-label pull-left" for="Name">Surrender Date</label>
                                     </div>
                                     <div class="col-sm-9">
                                         <div class="input-group date" ref="surrender_date" style="width: 70%;">
-                                            <input type="text" class="form-control" name="surrender_date" placeholder="DD/MM/YYYY" v-model="approval.surrender_date">
+                                            <input type="text" class="form-control" name="surrender_date"
+                                                placeholder="DD/MM/YYYY" v-model="approval.surrender_date">
                                             <span class="input-group-addon">
                                                 <span class="glyphicon glyphicon-calendar"></span>
                                             </span>
@@ -27,10 +27,11 @@
                                 <div class="row">
                                     <div class="col-sm-3">
 
-                                        <label class="control-label pull-left"  for="Name">Surrender Details</label>
+                                        <label class="control-label pull-left" for="Name">Surrender Details</label>
                                     </div>
                                     <div class="col-sm-9">
-                                        <textarea name="surrender_details" class="form-control" style="width:70%;" v-model="approval.surrender_details"></textarea>
+                                        <textarea name="surrender_details" class="form-control" style="width:70%;"
+                                            v-model="approval.surrender_details"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -40,7 +41,8 @@
                 </div>
             </div>
             <div slot="footer">
-                <button type="button" v-if="issuingApproval" disabled class="btn btn-primary" @click="ok"><i class="fa fa-spinner fa-spin"></i> Processing</button>
+                <button type="button" v-if="issuingApproval" disabled class="btn btn-primary" @click="ok"><i
+                        class="fa fa-spinner fa-spin"></i> Processing</button>
                 <button type="button" v-else class="btn btn-primary" @click="ok">Ok</button>
                 <button type="button" class="btn btn-primary" @click="cancel">Cancel</button>
             </div>
@@ -52,24 +54,24 @@
 //import $ from 'jquery'
 import modal from '@vue-utils/bootstrap-modal.vue'
 import alert from '@vue-utils/alert.vue'
-import {helpers,api_endpoints} from "@/utils/hooks.js"
+import { helpers, api_endpoints } from "@/utils/hooks.js"
 export default {
-    name:'Surrender-Approval',
-    components:{
+    name: 'Surrender-Approval',
+    components: {
         modal,
         alert
     },
-    props:{
+    props: {
         //approval_id: {
         //    type: Number,
         //    required: true
         //},
     },
-    data:function () {
+    data: function () {
         let vm = this;
         return {
-            isModalOpen:false,
-            form:null,
+            isModalOpen: false,
+            form: null,
             approval: {},
             approval_id: Number,
             state: 'proposed_approval',
@@ -78,37 +80,37 @@ export default {
             errors: false,
             errorString: '',
             successString: '',
-            success:false,
-            datepickerOptions:{
+            success: false,
+            datepickerOptions: {
                 format: 'DD/MM/YYYY',
-                showClear:true,
-                useCurrent:false,
-                keepInvalid:true,
-                allowInputToggle:true
+                showClear: true,
+                useCurrent: false,
+                keepInvalid: true,
+                allowInputToggle: true
             },
         }
     },
     computed: {
-        showError: function() {
+        showError: function () {
             var vm = this;
             return vm.errors;
         },
-        title: function(){
+        title: function () {
             return 'Surrender Approval';
         }
     },
-    methods:{
-        ok:function () {
-            let vm =this;
-            if($(vm.form).valid()){
+    methods: {
+        ok: function () {
+            let vm = this;
+            if ($(vm.form).valid()) {
                 vm.sendData();
 
             }
         },
-        cancel:function () {
+        cancel: function () {
             this.close()
         },
-        close:function () {
+        close: function () {
             this.isModalOpen = false;
             this.approval = {};
             this.errors = false;
@@ -116,100 +118,44 @@ export default {
             $(this.$refs.surrender_date).data('DateTimePicker').clear();
             this.validation_form.resetForm();
         },
-        fetchContact: function(id){
+        fetchContact: function (id) {
             let vm = this;
             vm.$http.get(api_endpoints.contact(id)).then((response) => {
                 vm.contact = response.body; vm.isModalOpen = true;
-            },(error) => {
+            }, (error) => {
                 console.log(error);
-            } );
+            });
         },
-        sendData:function(){
+        sendData: function () {
             let vm = this;
             vm.errors = false;
             let approval = JSON.parse(JSON.stringify(vm.approval));
             vm.issuingApproval = true;
 
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.approvals,vm.approval_id+'/approval_surrender'),JSON.stringify(approval),{
-                        emulateJSON:true,
-                    }).then((response)=>{
-                        vm.issuingApproval = false;
-                        vm.close();
-                        swal(
-                             'Surrender',
-                             'An email has been sent to the proponent about surrender of this approval',
-                             'success'
-                        );
-                        vm.$emit('refreshFromResponse',response);
+            vm.$http.post(helpers.add_endpoint_json(api_endpoints.approvals, vm.approval_id + '/approval_surrender'), JSON.stringify(approval), {
+                emulateJSON: true,
+            }).then((response) => {
+                vm.issuingApproval = false;
+                vm.close();
+                swal(
+                    'Surrender',
+                    'An email has been sent to the proponent about surrender of this approval',
+                    'success'
+                );
+                vm.$emit('refreshFromResponse', response);
 
 
-                    },(error)=>{
-                        vm.errors = true;
-                        vm.issuingApproval = false;
-                        vm.errorString = helpers.apiVueResourceError(error);
-                    });
+            }, (error) => {
+                vm.errors = true;
+                vm.issuingApproval = false;
+                vm.errorString = helpers.apiVueResourceError(error);
+            });
 
 
         },
-        addFormValidations: function() {
-            let vm = this;
-            vm.validation_form = $(vm.form).validate({
-                rules: {
-                    to_date:"required",
-                    surrender_details:"required",
-                },
-                messages: {
-                    surrender_details:"Field is required",
-                },
-                showErrors: function(errorMap, errorList) {
-                    $.each(this.validElements(), function(index, element) {
-                        var $element = $(element);
-                        $element.attr("data-original-title", "").parents('.form-group').removeClass('has-error');
-                    });
-                    // destroy tooltips on valid elements
-                    $("." + this.settings.validClass).tooltip("destroy");
-                    // add or update tooltips
-                    for (var i = 0; i < errorList.length; i++) {
-                        var error = errorList[i];
-                        $(error.element)
-                            .tooltip({
-                                trigger: "focus"
-                            })
-                            .attr("data-original-title", error.message)
-                            .parents('.form-group').addClass('has-error');
-                    }
-                }
-            });
-       },
-       eventListeners:function () {
-            let vm = this;
-            // Initialise Date Picker
-            /*
-            // update to bs5
-            $(vm.$refs.surrender_date).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.surrender_date).on('dp.change', function(e){
-                if ($(vm.$refs.surrender_date).data('DateTimePicker').date()) {
-                    vm.approval.surrender_date =  e.date.format('DD/MM/YYYY');
-                }
-                else if ($(vm.$refs.surrender_date).data('date') === "") {
-                    vm.approval.surrender_date = "";
-                }
-             });
-             */
+    },
+    mounted: function () {
 
-
-       }
-   },
-   mounted:function () {
-        let vm =this;
-        vm.form = document.forms.approvalForm;
-        vm.addFormValidations();
-        this.$nextTick(()=>{
-            vm.eventListeners();
-        });
-   }
+    }
 }
 </script>
-
-<style lang="css">
-</style>
