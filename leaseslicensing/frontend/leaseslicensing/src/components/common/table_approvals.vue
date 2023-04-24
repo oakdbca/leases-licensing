@@ -81,10 +81,10 @@
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for="filter-category">Category</label>
-                        <select id="filter-category" class="form-control" v-model="filterApprovalCategory">
+                        <label for="filter-group">Group</label>
+                        <select id="filter-group" class="form-control" v-model="filterApprovalGroup">
                             <option value="all">All</option>
-                            <option v-for="category in categories" :value="category.id">{{ category.name }}
+                            <option v-for="group in groups" :value="group.id">{{ group.name }}
                             </option>
                         </select>
                     </div>
@@ -98,7 +98,8 @@
                     :dtHeaders="datatable_headers" />
             </div>
         </div>
-        <ApprovalCancellation ref="approval_cancellation" @refreshFromResponse="refreshFromResponseApprovalModify">
+        <ApprovalCancellation ref="approval_cancellation" :approval_id="selectedApprovalId"
+            @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalCancellation>
         <ApprovalSuspension ref="approval_suspension" @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalSuspension>
@@ -161,8 +162,9 @@ export default {
             organisations: [],
             regions: [],
             districts: [],
-            categories: [],
+            groups: [],
             profile: {},
+            selectedApprovalId: null,
 
             // selected values for filtering
             filterApprovalType: sessionStorage.getItem('filterApprovalType') ? sessionStorage.getItem('filterApprovalType') : 'all',
@@ -173,7 +175,7 @@ export default {
             filterApprovalOrganisation: sessionStorage.getItem('filterApprovalOrganisation') ? sessionStorage.getItem('filterApprovalOrganisation') : 'all',
             filterApprovalRegion: sessionStorage.getItem('filterApprovalRegion') ? sessionStorage.getItem('filterApprovalRegion') : 'all',
             filterApprovalDistrict: sessionStorage.getItem('filterApprovalDistrict') ? sessionStorage.getItem('filterApprovalDistrict') : 'all',
-            filterApprovalCategory: sessionStorage.getItem('filterApprovalCategory') ? sessionStorage.getItem('filterApprovalCategory') : 'all',
+            filterApprovalGroup: sessionStorage.getItem('filterApprovalGroup') ? sessionStorage.getItem('filterApprovalGroup') : 'all',
 
 
             // filtering options
@@ -240,9 +242,9 @@ export default {
             this.$refs.approvals_datatable.vmDataTable.draw();
             sessionStorage.setItem('filterApprovalDistrict', this.filterApprovalDistrict);
         },
-        filterApprovalCategory: function () {
+        filterApprovalGroup: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterApprovalCategory', this.filterApprovalCategory);
+            sessionStorage.setItem('filterApprovalGroup', this.filterApprovalGroup);
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
@@ -261,7 +263,7 @@ export default {
                 this.filterApprovalOrganisation === 'all' &&
                 this.filterApprovalRegion === 'all' &&
                 this.filterApprovalDistrict === 'all' &&
-                this.filterApprovalCategory === 'all'
+                this.filterApprovalGroup === 'all'
             ) {
                 filter_applied = false
             }
@@ -588,7 +590,7 @@ export default {
                         d.filter_approval_organisation = vm.filterApprovalOrganisation
                         d.filter_approval_region = vm.filterApprovalRegion
                         d.filter_approval_district = vm.filterApprovalDistrict
-                        d.filter_approval_category = vm.filterApprovalCategory
+                        d.filter_approval_category = vm.filterApprovalGroup
 
                         d.level = vm.level
                     }
@@ -863,7 +865,7 @@ export default {
                     console.error('There was an error!', error)
                 })
             // Category
-            fetch(api_endpoints.categories + 'key-value-list/')
+            fetch(api_endpoints.groups + 'key-value-list/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -872,8 +874,8 @@ export default {
                         console.log(error)
                         return Promise.reject(error)
                     }
-                    vm.categories = data
-                    console.log(vm.categories)
+                    vm.groups = data
+                    console.log(vm.groups)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
@@ -956,8 +958,11 @@ export default {
             }
         },
         cancelApproval: function (approval_id) {
-            this.$refs.approval_cancellation.approval_id = approval_id;
+            this.selectedApprovalId = parseInt(approval_id);
             this.$refs.approval_cancellation.isModalOpen = true;
+            this.$nextTick(() => {
+                $(`#approvalCancellation${approval_id} textarea.cancellation-details`).focus();
+            });
         },
 
         suspendApproval: function (approval_id) {
