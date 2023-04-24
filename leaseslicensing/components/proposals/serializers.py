@@ -379,11 +379,13 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     applicant_obj = serializers.SerializerMethodField()
     # groups = serializers.SerializerMethodField()
     groups = ProposalGroupSerializer(many=True, read_only=True)
+    allowed_assessors = serializers.ListField(read_only=True)
 
     class Meta:
         model = Proposal
         fields = (
             "id",
+            "allowed_assessors",
             "application_type",
             "applicant_type",
             "applicant_obj",
