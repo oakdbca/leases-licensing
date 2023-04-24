@@ -221,7 +221,7 @@ class CompetitiveProcessGeometrySerializer(GeoFeatureModelSerializer):
 class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
     registration_of_interest = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
-    status_id = serializers.CharField(source='status')
+    status_id = serializers.CharField(source='status', required=False)
     # status = serializers.ChoiceField(choices=CompetitiveProcess.STATUS_CHOICES)
     assigned_officer = serializers.SerializerMethodField()
     site = serializers.CharField(read_only=True)  # For property
