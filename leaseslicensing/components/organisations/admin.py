@@ -6,6 +6,11 @@ from leaseslicensing.components.organisations import models
 # Register your models here.
 
 
+class UserDelegationInline(admin.TabularInline):
+    model = models.UserDelegation
+    extra = 0
+
+
 @admin.register(models.Organisation)
 class OrganisationAdmin(admin.ModelAdmin):
     list_display = [
@@ -48,7 +53,11 @@ class OrganisationAdmin(admin.ModelAdmin):
         "last_event_application_fee_date",
         "max_num_months_ahead",
     ]
-    readonly_fields = ["ledger_organisation_name", "ledger_organisation_abn", "ledger_organisation_email"]
+    readonly_fields = [
+        "ledger_organisation_name",
+        "ledger_organisation_abn",
+        "ledger_organisation_email",
+    ]
 
     def ledger_organisation_name(self, obj):
         if obj.organisation:
@@ -74,7 +83,13 @@ class OrganisationAdmin(admin.ModelAdmin):
 
 @admin.register(models.OrganisationRequest)
 class OrganisationRequestAdmin(admin.ModelAdmin):
-    list_display = ["name", "requester", "abn", "status"]
+    list_display = ["ledger_organisation_name", "requester", "abn", "status"]
+
+    def ledger_organisation_name(self, obj):
+        if obj.organisation:
+            return obj.organisation.ledger_organisation_name
+        if obj.name:
+            return obj.name
 
 
 @admin.register(models.OrganisationAccessGroup)
@@ -94,3 +109,13 @@ class OrganisationAccessGroupAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(models.OrganisationContact)
+class OrganisationContact(admin.ModelAdmin):
+    list_display = ["ledger_organisation_name", "full_name", "user_status", "user_role"]
+    ordering = ["organisation", "-user_status", "first_name"]
+
+    def ledger_organisation_name(self, obj):
+        if obj.organisation:
+            return obj.organisation.ledger_organisation_name

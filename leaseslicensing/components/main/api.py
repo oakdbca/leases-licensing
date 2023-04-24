@@ -3,8 +3,8 @@ import logging
 from django.conf import settings
 from django.db import transaction
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
-from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -35,7 +35,7 @@ from leaseslicensing.components.main.serializers import (
 )
 from leaseslicensing.helpers import is_customer, is_internal
 
-logger = logging.getLogger("payment_checkout")
+logger = logging.getLogger(__name__)
 
 
 class GlobalSettingsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -126,24 +126,44 @@ class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
         return Response({"filedata": returned_file_data})
 
 
-class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet):
+class KeyValueListMixin:
+    @action(detail=False, methods=["get"], url_path="key-value-list")
+    def key_value_list(self, request):
+        if not self.key_value_display_field:
+            raise AttributeError("key_value_display_field is not defined on viewset")
+        if not self.key_value_serializer_class:
+            raise AttributeError("key_value_serializer_class is not defined on viewset")
+
+        serializer = self.key_value_serializer_class(
+            self.get_queryset().only("id", self.key_value_display_field), many=True
+        )
+        return Response(serializer.data)
+
+
+class NoPaginationListMixin:
+    def get_paginated_response(self, data):
+        if "no_pagination" == self.action:
+            return data
+        return super().get_paginated_response(data)
+
+    @action(detail=False, methods=["get"], url_path="no-pagination")
+    def no_pagination(self, request):
+        serializer = self.get_serializer(self.get_queryset(), many=True)
+        return Response(serializer.data)
+
+
+class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet, KeyValueListMixin):
     queryset = ApplicationType.objects.all()
     serializer_class = ApplicationTypeSerializer
-
-    @list_route(methods=["GET"], detail=False)
-    def key_value_list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().only("id", "name")
-        self.serializer_class = ApplicationTypeKeyValueSerializer
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+    key_value_display_field = "name"
+    key_value_serializer_class = ApplicationTypeKeyValueSerializer
 
 
 class UserActionLoggingViewset(viewsets.ModelViewSet):
     """Class that extends the ModelViewSet to log the common user actions
 
-    will scan the instance provided for the fields listed in identifier_fields and
-    use the first one it finds. If it doesn't find one it will use the id field.
-    If the id field doesn't exist it will raise an AttributeError.
+    will scan the instance provided for the fields listed in settings
+    use the first one it finds. If it doesn't find one it will raise an AttributeError.
     """
 
     def retrieve(self, request, *args, **kwargs):

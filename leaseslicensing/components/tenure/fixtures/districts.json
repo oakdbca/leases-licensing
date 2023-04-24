@@ -1,0 +1,146 @@
+[
+    {
+        "model": "leaseslicensing.district",
+        "pk": 1,
+        "fields": {
+            "region": 1,
+            "name": "Goldfields Region"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 2,
+        "fields": {
+            "region": 2,
+            "name": "East Kimberley"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 3,
+        "fields": {
+            "region": 2,
+            "name": "West Kimberley"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 4,
+        "fields": {
+            "region": 3,
+            "name": "Geraldton"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 5,
+        "fields": {
+            "region": 3,
+            "name": "Moora"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 6,
+        "fields": {
+            "region": 3,
+            "name": "Shark Bay"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 7,
+        "fields": {
+            "region": 4,
+            "name": "Exmouth"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 8,
+        "fields": {
+            "region": 4,
+            "name": "Pilbara Region"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 9,
+        "fields": {
+            "region": 5,
+            "name": "Albany"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 10,
+        "fields": {
+            "region": 5,
+            "name": "Esperance"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 11,
+        "fields": {
+            "region": 6,
+            "name": "Blackwood"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 12,
+        "fields": {
+            "region": 6,
+            "name": "Wellington"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 13,
+        "fields": {
+            "region": 7,
+            "name": "Perth Hills"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 14,
+        "fields": {
+            "region": 7,
+            "name": "Swan Coastal"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 15,
+        "fields": {
+            "region": 8,
+            "name": "Donnelly"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 16,
+        "fields": {
+            "region": 8,
+            "name": "Frankland"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 17,
+        "fields": {
+            "region": 9,
+            "name": "Central Wheatbelt"
+        }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 18,
+        "fields": {
+            "region": 9,
+            "name": "Wheatbelt Region"
+        }
+    }
+]

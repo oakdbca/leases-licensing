@@ -3,7 +3,8 @@ import traceback
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import CharField, IntegerField, Q, Value
+from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as list_route
@@ -12,7 +13,10 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
-from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.api import (
+    KeyValueListMixin,
+    UserActionLoggingViewset,
+)
 from leaseslicensing.components.main.decorators import (
     basic_exception_handler,
     logging_action,
@@ -31,6 +35,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationCheckExistSerializer,
     OrganisationCheckSerializer,
     OrganisationCommsSerializer,
+    OrganisationContactAdminCountSerializer,
     OrganisationContactSerializer,
     OrganisationKeyValueSerializer,
     OrganisationLogEntrySerializer,
@@ -49,27 +54,27 @@ from leaseslicensing.helpers import is_customer, is_internal
 logger = logging.getLogger(__name__)
 
 
-class OrganisationViewSet(UserActionLoggingViewset):
+class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     queryset = Organisation.objects.none()
     serializer_class = OrganisationSerializer
+    key_value_display_field = "ledger_organisation_name"
+    key_value_serializer_class = OrganisationKeyValueSerializer
 
     def get_queryset(self):
         user = self.request.user
         if is_internal(self.request):
             return Organisation.objects.all()
         elif is_customer(self.request):
-            logger.info(
-                list(Organisation.objects.filter(delegates__contains=[user.id]))
-            )
-            return Organisation.objects.filter(delegates__contains=[user.id])
+            if "organisation_lookup" == self.action:
+                # Allow customers access to organisation lookup
+                return Organisation.objects.only(
+                    "id", "ledger_organisation_name", "ledger_organisation_abn"
+                )
+            if "validate_pins" == self.action:
+                return Organisation.objects.all()
+            logger.info(list(Organisation.objects.filter(delegates__user=user.id)))
+            return Organisation.objects.filter(delegates__user=user.id)
         return Organisation.objects.none()
-
-    @list_route(methods=["GET"], detail=False)
-    def key_value_list(self, request, *args, **kwargs):
-        queryset = self.get_queryset().only("id", "ledger_organisation_name")
-        self.serializer_class = OrganisationKeyValueSerializer
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
 
     @list_route(
         methods=[
@@ -79,13 +84,23 @@ class OrganisationViewSet(UserActionLoggingViewset):
     )
     def organisation_lookup(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
-        organisations = (
-            self.get_queryset()
-            .filter(ledger_organisation_name__icontains=search_term)
-            .only("id", "ledger_organisation_name")[:10]
+        organisations = self.get_queryset().annotate(
+            search_term=Concat(
+                "ledger_organisation_name",
+                Value(" "),
+                "ledger_organisation_abn",
+                output_field=CharField(),
+            )
         )
+        organisations = organisations.filter(search_term__icontains=search_term).only(
+            "id", "ledger_organisation_name", "ledger_organisation_abn"
+        )[:10]
         data_transform = [
-            {"id": organisation.id, "text": organisation.ledger_organisation_name}
+            {
+                "id": organisation.id,
+                "text": f"{organisation.ledger_organisation_name} (ABN: {organisation.ledger_organisation_abn})",
+                "first_five": organisation.first_five,
+            }
             for organisation in organisations
         ]
         return Response({"results": data_transform})
@@ -99,9 +114,13 @@ class OrganisationViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def contacts(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = OrganisationContactSerializer(
-            instance.contacts.exclude(user_status="pending"), many=True
+        admin_count = instance.contacts.filter(user_role="organisation_admin").count()
+        logger.debug("admin_count = " + str(admin_count))
+        queryset = instance.contacts.exclude(user_status="pending")
+        queryset = queryset.annotate(
+            admin_count=Value(admin_count, output_field=IntegerField())
         )
+        serializer = OrganisationContactAdminCountSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @logging_action(
@@ -138,6 +157,7 @@ class OrganisationViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def validate_pins(self, request, *args, **kwargs):
         instance = self.get_object()
+        logger.debug("request.data = " + str(request.data))
         serializer = OrganisationPinCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ret = instance.validate_pins(
@@ -148,7 +168,6 @@ class OrganisationViewSet(UserActionLoggingViewset):
 
         if ret is None:
             # user has already been to this organisation - don't add again
-            data = {"valid": ret}
             return Response({"valid": "User already exists"})
 
         data = {"valid": ret}
@@ -399,10 +418,10 @@ class OrganisationViewSet(UserActionLoggingViewset):
         detail=False,
     )
     @basic_exception_handler
-    def existance(self, request, *args, **kwargs):
+    def existence(self, request, *args, **kwargs):
         serializer = OrganisationCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        data = Organisation.existance(serializer.validated_data["abn"])
+        data = Organisation.existence(serializer.validated_data["abn"])
         # Check request user cannot be relinked to org.
         data.update([("user", request.user.id)])
         data.update([("abn", request.data["abn"])])
@@ -529,8 +548,9 @@ class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
         filter_status = request.GET.get("filter_status", None)
 
         if filter_organisation:
+            logger.debug("filter_organisation: %s", filter_organisation)
             filter_organisation = int(filter_organisation)
-            queryset = queryset.filter(organisation__organisation=filter_organisation)
+            queryset = queryset.filter(organisation_id=filter_organisation)
 
         if filter_role:
             queryset = queryset.filter(role=filter_role)
@@ -565,11 +585,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
         return super().get_serializer_class()
 
     def get_queryset(self):
-        user = self.request.user
         if is_internal(self.request):
             return OrganisationRequest.objects.all()
         elif is_customer(self.request):
-            return user.organisationrequest_set.all()
+            return OrganisationRequest.objects.filter(
+                requester=self.request.user.id
+            ).exclude(status="declined")
         return OrganisationRequest.objects.none()
 
     @list_route(
@@ -939,10 +960,10 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
         try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.validated_data["requester"] = request.user
+            serializer.validated_data["requester"] = request.user.id
             if request.data["role"] == "consultant":
                 # Check if consultant can be relinked to org.
-                data = Organisation.existance(request.data["abn"])
+                data = Organisation.existence(request.data["abn"])
                 data.update([("user", request.user.id)])
                 data.update([("abn", request.data["abn"])])
                 existing_org = OrganisationCheckExistSerializer(data=data)
@@ -1004,10 +1025,12 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         """delete an Organisation contact"""
         num_admins = (
-            self.get_object().organisation.contacts.filter(is_admin=True).count()
+            self.get_object()
+            .organisation.contacts.filter(user_role="organisation_admin")
+            .count()
         )
         org_contact = self.get_object().organisation.contacts.get(id=kwargs["pk"])
-        if num_admins == 1 and org_contact.is_admin:
+        if num_admins == 1 and org_contact.user_role == "organisation_admin":
             raise serializers.ValidationError(
                 "Cannot delete the last Organisation Admin"
             )
@@ -1034,5 +1057,9 @@ class MyOrganisationsViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return Organisation.objects.all()
         elif is_customer(self.request):
-            return user.leaseslicensing_organisations.all()
+            return Organisation.objects.filter(
+                contacts__user=user.id,
+                contacts__user_status="active",
+                contacts__user_role="organisation_admin",
+            )
         return Organisation.objects.none()

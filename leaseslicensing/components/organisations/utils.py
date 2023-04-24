@@ -15,10 +15,8 @@ def can_manage_org(organisation, user):
 
     try:
         # Not 100% sure what was intended here see git history for what was here before
-        user_delegation = UserDelegation.objects.get(
-            organisation=organisation, user=user.id
-        )
-        return can_admin_org(organisation, user)
+        UserDelegation.objects.get(organisation=organisation, user=user.id)
+        return can_admin_org(organisation, user.id)
     except UserDelegation.DoesNotExist:
         try:
             group = OrganisationAccessGroup.objects.first()
@@ -48,12 +46,12 @@ def is_last_admin(organisation, user):
     return _last_admin
 
 
-def can_admin_org(organisation, user):
+def can_admin_org(organisation, user_id):
     from leaseslicensing.components.organisations.models import OrganisationContact
 
     try:
         org_contact = OrganisationContact.objects.get(
-            organisation_id=organisation, email=user.email
+            organisation_id=organisation, user=user_id
         )
         return org_contact.can_edit
     except OrganisationContact.DoesNotExist:
@@ -132,7 +130,7 @@ def get_organisation_ids_for_user(email_user_id):
     from leaseslicensing.components.organisations.models import Organisation
 
     return list(
-        Organisation.objects.filter(delegates__contains=[email_user_id]).values_list(
+        Organisation.objects.filter(delegates__user=email_user_id).values_list(
             "id", flat=True
         )
     )

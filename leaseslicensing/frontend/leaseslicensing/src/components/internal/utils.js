@@ -30,32 +30,34 @@ export default {
                         const error =
                             (data && data.message) || response.statusText
                         console.log(error)
-                        return Promise.reject(error)
+                        reject(error)
                     }
                     resolve(data)
                     console.log('countries: ', data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
+                    reject(error)
                 })
         });
     },
     fetchOrganisation: function (id) {
         return new Promise((resolve, reject) => {
-            fetch(api_endpoints.organisations_viewset + id + '/')
+            fetch(api_endpoints.organisations + id + '/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText
                         console.log(error)
-                        return Promise.reject(error)
+                        reject(error)
                     }
                     console.log('organisation: ', data)
                     resolve(data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
+                    reject(error)
                 })
         });
     },
@@ -88,13 +90,14 @@ export default {
                         const error =
                             (data && data.message) || response.statusText
                         console.log(error)
-                        return Promise.reject(error)
+                        reject(error)
                     }
                     console.log('profile: ', data)
                     resolve(data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
+                    reject(error)
                 })
         });
     },

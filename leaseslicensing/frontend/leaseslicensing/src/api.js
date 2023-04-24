@@ -15,13 +15,14 @@ module.exports = {
     fee_seasons_dict: '/api/fee_seasons_dict',
     compliance_statuses_dict: '/api/compliance_statuses_dict',
     referrals: '/api/referrals.json',
+    account: '/api/users/request_user_account/',
     profile: '/api/profile',
     search_reference: '/api/search_reference/',
     submitter_profile: '/api/submitter_profile',
-    organisations: '/api/organisations.json/',
-    organisations_viewset: '/api/organisations/',
+    organisations: '/api/organisations/',
     organisation_lookup: '/api/organisations/organisation_lookup',
     filtered_organisations: '/api/filtered_organisations',
+    my_organisations: '/api/my_organisations/',
     organisation_requests_paginated: '/api/organisation_requests_paginated/',
     organisation_requests: '/api/organisation_requests/',
     organisation_contacts: '/api/organisation_contacts.json',
@@ -41,7 +42,10 @@ module.exports = {
     proposal_requirements: '/api/proposal_requirements.json',
     proposal_by_uuid: '/api/proposal_by_uuid/',
     temporary_document: '/api/temporary_document/',
-
+    regions: '/api/regions/',
+    districts: '/api/districts/',
+    lgas: '/api/lgas/',
+    groups: '/api/groups/',
     lookupApprovalDetails: function (id) {
         return `/api/approvals/${id}/lookup_approval.json`;
     },
@@ -51,4 +55,12 @@ module.exports = {
     discard_proposal: function (id) {
         return `/api/proposal/${id}.json`;
     },
+
+    // ------------------- ledger ui
+
+    request_user_id: '/api/request_user_id/',
+    account_details: '/api/account/',
+    updateAccountDetails: function (id) {
+        return `/ledger-ui/api/update-account-details/${id}/`;
+    }
 };

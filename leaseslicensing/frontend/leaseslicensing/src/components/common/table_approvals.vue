@@ -2,7 +2,7 @@
     <div>
         <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
             class="mb-2">
-            <div class="row">
+            <div class="row mb-2">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Type</label>
@@ -47,6 +47,49 @@
                     </div>
                 </div>
             </div>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-region">Organisation</label>
+                        <select id="filter-region" class="form-control" v-model="filterApprovalOrganisation">
+                            <option value="all">All</option>
+                            <option v-for="organisation in organisations" :value="organisation.id">{{
+                                organisation.ledger_organisation_name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-region">Region</label>
+                        <select id="filter-region" class="form-control" v-model="filterApprovalRegion">
+                            <option value="all">All</option>
+                            <option v-for="region in regions" :value="region.id">{{ region.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-district">District</label>
+                        <select id=" filter-district" class="form-control" v-model="filterApprovalDistrict">
+                            <option value="all">All</option>
+                            <option v-for="district in districts" :value="district.id">{{ district.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-category">Category</label>
+                        <select id="filter-category" class="form-control" v-model="filterApprovalCategory">
+                            <option value="all">All</option>
+                            <option v-for="category in categories" :value="category.id">{{ category.name }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
         </CollapsibleFilters>
 
         <div class="row">
@@ -82,12 +125,6 @@ import { expandToggle } from '@/components/common/table_functions.js'
 export default {
     name: 'TableApprovals',
     props: {
-        /*
-        approvalTypeFilter: {
-            type: Array,
-            required: true,
-        },
-        */
         level: {
             type: String,
             required: true,
@@ -121,6 +158,10 @@ export default {
             filterApprovalType: null,
             approvalTypes: [],
             holderList: [],
+            organisations: [],
+            regions: [],
+            districts: [],
+            categories: [],
             profile: {},
 
             // selected values for filtering
@@ -128,6 +169,12 @@ export default {
             filterApprovalStatus: sessionStorage.getItem('filterApprovalStatus') ? sessionStorage.getItem('filterApprovalStatus') : 'all',
             filterApprovalExpiryDateFrom: sessionStorage.getItem('filterApprovalExpiryDateFrom') ? sessionStorage.getItem('filterApprovalExpiryDateFrom') : '',
             filterApprovalExpiryDateTo: sessionStorage.getItem('filterApprovalExpiryDateTo') ? sessionStorage.getItem('filterApprovalExpiryDateTo') : '',
+
+            filterApprovalOrganisation: sessionStorage.getItem('filterApprovalOrganisation') ? sessionStorage.getItem('filterApprovalOrganisation') : 'all',
+            filterApprovalRegion: sessionStorage.getItem('filterApprovalRegion') ? sessionStorage.getItem('filterApprovalRegion') : 'all',
+            filterApprovalDistrict: sessionStorage.getItem('filterApprovalDistrict') ? sessionStorage.getItem('filterApprovalDistrict') : 'all',
+            filterApprovalCategory: sessionStorage.getItem('filterApprovalCategory') ? sessionStorage.getItem('filterApprovalCategory') : 'all',
+
 
             // filtering options
             approval_types: [],
@@ -181,6 +228,22 @@ export default {
             this.$refs.approvals_datatable.vmDataTable.draw();
             sessionStorage.setItem('filterApprovalExpiryDateTo', this.filterApprovalExpiryDateTo);
         },
+        filterApprovalOrganisation: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterApprovalOrganisation', this.filterApprovalOrganisation);
+        },
+        filterApprovalRegion: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterApprovalRegion', this.filterApprovalRegion);
+        },
+        filterApprovalDistrict: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterApprovalDistrict', this.filterApprovalDistrict);
+        },
+        filterApprovalCategory: function () {
+            this.$refs.approvals_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterApprovalCategory', this.filterApprovalCategory);
+        },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
@@ -191,8 +254,15 @@ export default {
     computed: {
         filterApplied: function () {
             let filter_applied = true
-            if (this.filterApprovalType === 'all' && this.filterApprovalStatus.toLowerCase() === 'all' &&
-                this.filterApprovalExpiryDateFrom.toLowerCase() === '' && this.filterApprovalExpiryDateTo.toLowerCase() === '') {
+            if (this.filterApprovalType === 'all' &&
+                this.filterApprovalStatus.toLowerCase() === 'all' &&
+                this.filterApprovalExpiryDateFrom.toLowerCase() === '' &&
+                this.filterApprovalExpiryDateTo.toLowerCase() === '' &&
+                this.filterApprovalOrganisation === 'all' &&
+                this.filterApprovalRegion === 'all' &&
+                this.filterApprovalDistrict === 'all' &&
+                this.filterApprovalCategory === 'all'
+            ) {
                 filter_applied = false
             }
             return filter_applied
@@ -246,7 +316,7 @@ export default {
                     'Number',
                     'Type',
                     'Holder',
-                    //'Application',
+                    'Application',
                     'Status',
                     'Expiry Date',
                     'Document',
@@ -256,7 +326,6 @@ export default {
         },
         columnId: function () {
             return {
-                // 1. ID
                 data: "id",
                 orderable: false,
                 searchable: false,
@@ -270,7 +339,6 @@ export default {
         },
         columnLodgementNumber: function () {
             return {
-                // 2. Lodgement Number
                 data: "lodgement_number",
                 orderable: true,
                 searchable: true,
@@ -286,14 +354,13 @@ export default {
         },
         columnType: function () {
             return {
-                data: "id",
+                data: "application_type",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
                     return full.application_type;
                 },
-                name: 'proposal__application_type__name'
             }
         },
         columnSite: function () {
@@ -310,20 +377,28 @@ export default {
         },
         columnHolder: function () {
             return {
-                data: "id",
+                data: "holder",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
                     return full.holder;
                 },
-                // TODO Is it correct to fetch the applicant as the holder?
-                name: "current_proposal__ind_applicant__first_name, current_proposal__ind_applicant__last_name"
+            }
+        },
+        columnLinkedApplications: function () {
+            return {
+                data: "id",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    return full.linked_applications.join(', ');
+                },
             }
         },
         columnStatus: function () {
             return {
-                // 5. Status
                 data: "status",
                 orderable: true,
                 searchable: true,
@@ -335,8 +410,7 @@ export default {
         },
         columnExpiryDate: function () {
             return {
-                // 9. Expiry Date
-                data: "id",
+                data: "expiry_date",
                 orderable: true,
                 searchable: false,
                 visible: true,
@@ -382,24 +456,17 @@ export default {
                     if (vm.debug) {
                         links += `<a href='#${full.id}' data-request-new-sticker='${full.id}'>Request New Sticker</a><br/>`;
                     }
-                    /*
-                    if (vm.is_internal && vm.wlaDash) {
-                        links += full.offer_link;
-                    } else
-                    */
+
                     if (vm.is_external && full.can_reissue) {
+                        links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                         if (full.can_action || vm.debug) {
                             if (full.amend_or_renew === 'amend' || vm.debug) {
                                 links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal_id}'>Amend</a><br/>`;
                             } else if (full.amend_or_renew === 'renew' || vm.debug) {
                                 links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal_id}'>Renew</a><br/>`;
                             }
-                            // Links to `external/approvals/approval.vue`
-                            links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                             links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
                         }
-
-
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}'>History</a><br/>`;
@@ -409,10 +476,7 @@ export default {
                         if (vm.is_internal && vm.wlaDash) {
                             links += full.offer_link;
                         }
-                        //if(vm.check_assessor(full)){
-                        //if (full.allowed_assessors.includes(vm.profile.id)) {
                         if (full.allowed_assessors_user) {
-                            //if (true) {
                             if (full.can_reissue && full.can_action) {
                                 links += `<a href='#${full.id}' data-cancel-approval='${full.id}'>Cancel</a><br/>`;
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
@@ -465,7 +529,7 @@ export default {
                     vm.columnLodgementNumber,
                     vm.columnType,
                     vm.columnHolder,
-                    //vm.columnApplication,
+                    vm.columnLinkedApplications,
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
@@ -520,6 +584,12 @@ export default {
                         d.filter_approval_status = vm.filterApprovalStatus
                         d.filter_approval_expiry_date_from = vm.filterApprovalExpiryDateFrom
                         d.filter_approval_expiry_date_to = vm.filterApprovalExpiryDateTo
+
+                        d.filter_approval_organisation = vm.filterApprovalOrganisation
+                        d.filter_approval_region = vm.filterApprovalRegion
+                        d.filter_approval_district = vm.filterApprovalDistrict
+                        d.filter_approval_category = vm.filterApprovalCategory
+
                         d.level = vm.level
                     }
                 },
@@ -713,7 +783,7 @@ export default {
         fetchFilterLists: async function () {
             let vm = this;
             // Types
-            fetch(api_endpoints.application_types + 'key_value_list/')
+            fetch(api_endpoints.application_types + 'key-value-list/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -744,7 +814,71 @@ export default {
                 .catch((error) => {
                     console.error('There was an error!', error)
                 })
-            // Not totally sure what this does so comming out for now
+            // Organisations
+            fetch(api_endpoints.organisations + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.organisations = data
+                    console.log(vm.organisations)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Regions
+            fetch(api_endpoints.regions + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.regions = data
+                    console.log(vm.regions)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Districts
+            fetch(api_endpoints.districts + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.districts = data
+                    console.log(vm.districts)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Category
+            fetch(api_endpoints.categories + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        return Promise.reject(error)
+                    }
+                    vm.categories = data
+                    console.log(vm.categories)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+            // Not totally sure what this does so commenting out for now
             // const statusRes = await fetch(api_endpoints.approval_statuses_dict);
             // const statusData = await statusRes.json()
             // for (let s of statusData) {

@@ -1,21 +1,18 @@
 import logging
+from datetime import datetime
 
-from django.core.mail import EmailMultiAlternatives, EmailMessage
-from django.utils.encoding import smart_text
-
-# from django.core.urlresolvers import reverse
-from django.urls import reverse
 from django.conf import settings
-from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+from django.core.mail import EmailMessage, EmailMultiAlternatives
+from django.urls import reverse
+from django.utils.encoding import smart_text
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
-from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.components.bookings.awaiting_payment_invoice_pdf import (
     create_awaiting_payment_invoice_pdf_bytes,
 )
-from datetime import datetime
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-
+from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
@@ -88,14 +85,14 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
     # email = ReferralSendNotificationEmail()
     application_type = referral.proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="A referral for a {} has been sent to you.".format(application_type),
+        subject=f"A referral for a {application_type} has been sent to you.",
         html_template="leaseslicensing/emails/proposals/send_referral_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_notification.txt",
     )
     url = request.build_absolute_uri(
         reverse(
             "internal-proposal-detail",
-            kwargs={ "proposal_pk": referral.proposal.id },
+            kwargs={"proposal_pk": referral.proposal.id},
         )
     )
 
@@ -112,7 +109,8 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
     }
 
     # msg = email.send(referral.referral.email, context=context)
-    # recipients = list(ReferralRecipientGroup.objects.get(name=referral.email_group).members.all().values_list('email', flat=True))
+    # recipients = list(ReferralRecipientGroup.objects.get(name=referral.email_group)
+    # .members.all().values_list('email', flat=True))
     msg = email.send(recipients, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, referral.proposal, sender=sender)
@@ -131,7 +129,7 @@ def send_referral_complete_email_notification(referral, request):
 
     application_type = referral.proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="A referral for a {} has been completed.".format(application_type),
+        subject=f"A referral for a {application_type} has been completed.",
         html_template="leaseslicensing/emails/proposals/send_referral_complete_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_complete_notification.txt",
     )
@@ -172,7 +170,7 @@ def send_referral_complete_email_notification(referral, request):
 def send_amendment_email_notification(amendment_request, request, proposal):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="{} - Incomplete {}.".format(settings.DEP_NAME, application_type),
+        subject=f"{settings.DEP_NAME} - Incomplete {application_type}.",
         html_template="leaseslicensing/emails/proposals/send_amendment_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_amendment_notification.txt",
     )
@@ -212,7 +210,7 @@ def send_amendment_email_notification(amendment_request, request, proposal):
 def send_submit_email_notification(request, proposal):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="A new {} has been submitted.".format(application_type),
+        subject=f"A new {application_type} has been submitted.",
         html_template="leaseslicensing/emails/proposals/send_submit_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_submit_notification.txt",
     )
@@ -222,7 +220,7 @@ def send_submit_email_notification(request, proposal):
     )
     if "-internal" not in url:
         # add it. This email is for internal staff (assessors)
-        url = "-internal.{}".format(settings.SITE_DOMAIN).join(
+        url = f"-internal.{settings.SITE_DOMAIN}".join(
             url.split("." + settings.SITE_DOMAIN)
         )
 
@@ -258,7 +256,7 @@ def send_external_submit_email_notification(request, proposal):
 
     context = {
         "proposal": proposal,
-        #'submitter': proposal.submitter.get_full_name(),
+        # 'submitter': proposal.submitter.get_full_name(),
         "submitter": EmailUser.objects.get(id=proposal.submitter).get_full_name(),
         "url": url,
     }
@@ -284,7 +282,7 @@ def send_external_submit_email_notification(request, proposal):
 def send_approver_decline_email_notification(reason, request, proposal):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="A {} has been recommended for decline.".format(application_type),
+        subject=f"A {application_type} has been recommended for decline.",
         html_template="leaseslicensing/emails/proposals/send_approver_decline_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_approver_decline_notification.txt",
     )
@@ -308,7 +306,7 @@ def send_approver_decline_email_notification(reason, request, proposal):
 def send_approver_approve_email_notification(request, proposal):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="A {} has been recommended for approval.".format(application_type),
+        subject=f"A {application_type} has been recommended for approval.",
         html_template="leaseslicensing/emails/proposals/send_approver_approve_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_approver_approve_notification.txt",
     )
@@ -336,7 +334,7 @@ def send_approver_approve_email_notification(request, proposal):
 def send_proposal_decline_email_notification(proposal, request, proposal_decline):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="Your {} has been declined.".format(application_type),
+        subject=f"Your {application_type} has been declined.",
         html_template="leaseslicensing/emails/proposals/send_decline_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_decline_notification.txt",
     )
@@ -367,7 +365,7 @@ def send_proposal_decline_email_notification(proposal, request, proposal_decline
 def send_proposal_approver_sendback_email_notification(request, proposal):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="An {} has been sent back by approver.".format(application_type),
+        subject=f"An {application_type} has been sent back by approver.",
         html_template="leaseslicensing/emails/proposals/send_approver_sendback_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_approver_sendback_notification.txt",
     )
@@ -395,7 +393,7 @@ def send_proposal_approver_sendback_email_notification(request, proposal):
 def send_proposal_approval_email_notification(proposal, request):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject="{} - {} Approved.".format(settings.DEP_NAME, application_type),
+        subject=f"{settings.DEP_NAME} - {application_type} Approved.",
         html_template="leaseslicensing/emails/proposals/send_approval_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_approval_notification.txt",
     )
@@ -465,7 +463,8 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
         all_ccs = cc_list.split(",")
 
     url = request.build_absolute_uri(reverse("external"))
-    # payment_url = request.build_absolute_uri(reverse('existing_invoice_payment', kwargs={'invoice_ref':invoice.reference}))
+    # payment_url = request.build_absolute_uri(
+    # reverse('existing_invoice_payment', kwargs={'invoice_ref':invoice.reference}))
     if "-internal" in url:
         # remove '-internal'. This email is for external submitters
         url = "".join(url.split("-internal"))
@@ -487,7 +486,7 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
     filename_appended = "{}_{}.{}".format(
         "confirmation", datetime.now().strftime("%d%b%Y"), "pdf"
     )
-    log_proposal = _log_proposal_email(
+    _log_proposal_email(
         msg, proposal, sender=sender, file_bytes=doc, filename=filename_appended
     )
 
@@ -602,7 +601,7 @@ def _log_proposal_email(
         path_to_file = "{}/proposals/{}/communications/{}".format(
             settings.MEDIA_APP_DIR, proposal.id, filename
         )
-        path = default_storage.save(path_to_file, ContentFile(file_bytes))
+        default_storage.save(path_to_file, ContentFile(file_bytes))
         email_entry.documents.get_or_create(_file=path_to_file, name=filename)
 
     return email_entry
@@ -644,7 +643,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
 
     customer = customer
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,

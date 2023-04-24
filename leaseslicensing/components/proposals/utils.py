@@ -29,6 +29,7 @@ from leaseslicensing.components.proposals.models import (
     ProposalAssessmentAnswer,
     ProposalDeclinedDetails,
     ProposalGeometry,
+    ProposalGroup,
     ProposalUserAction,
     Referral,
 )
@@ -421,7 +422,8 @@ class SpecialFieldsSearch:
         return item_data
 
 
-def save_proponent_data(instance, request, viewset, parks=None, trails=None):
+def save_proponent_data(instance, request, viewset):
+    logger.debug("save_proponent_data")
     if (
         instance.application_type.name
         == settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST
@@ -443,6 +445,18 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
     )
     serializer.is_valid(raise_exception=True)
     instance = serializer.save()
+    logger.debug("proposal_data = " + str(proposal_data))
+    groups_data = proposal_data["groups"]
+    if groups_data and len(groups_data) > 0:
+        group_ids = []
+        for group_data in groups_data:
+            logger.debug("group_data: %s", group_data)
+            group = group_data["group"]
+            ProposalGroup.objects.get_or_create(proposal=instance, group_id=group["id"])
+            group_ids.append(group["id"])
+        ProposalGroup.objects.filter(proposal=instance).exclude(
+            group_id__in=group_ids
+        ).delete()
     if request.data.get("proposal_geometry"):
         save_geometry(instance, request, viewset)
     if viewset.action == "submit":

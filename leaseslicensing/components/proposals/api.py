@@ -30,7 +30,6 @@ from leaseslicensing.components.main.filters import LedgerDatatablesFilterBacken
 from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
-from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentReason,
@@ -332,16 +331,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     referrals__in=Referral.objects.filter(referral=user.id)
                 )
         if is_customer(self.request):
-            # user_orgs = [org.id for org in user.leaseslicensing_organisations.all()]
-            # qs= Proposal.objects.filter( Q(org_applicant_id__in = user_orgs) | Q(submitter = user) )
-            # .exclude(application_type=self.excluded_type)
-            # return qs.exclude(migrated=True)
-            # return Proposal.objects.all()
-            qs = Proposal.objects.filter(
-                Q(ind_applicant=user.id)
-                | Q(submitter=user.id)
-                | Q(proxy_applicant=user.id)
-            )
+            qs = Proposal.get_proposals_for_emailuser(user.id)
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
@@ -357,18 +347,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                 org_applicant__id=target_organisation_id
             )
         return qs
-
-    #    def filter_queryset(self, request, queryset, view):
-    #        return self.filter_backends[0]().filter_queryset(self.request, queryset, view)
-    # return super(ProposalPaginatedViewSet, self).filter_queryset(request, queryset, view)
-
-    #    def list(self, request, *args, **kwargs):
-    #        response = super(ProposalPaginatedViewSet, self).list(request, args, kwargs)
-    #
-    #        # Add extra data to response.data
-    #        #response.data['regions'] = self.get_queryset().filter(region__isnull=False)
-    # .values_list('region__name', flat=True).distinct()
-    #        return response
 
     def list(self, request, *args, **kwargs):
         """serializer.data = {ReturnList: 10} [OrderedDict([('id', 4), ('application_type', OrderedDict([('id', 1),
@@ -425,7 +403,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             qs = qs.filter(org_applicant_id=applicant_id)
         submitter_id = request.GET.get("submitter_id", None)
         if submitter_id:
-            qs = qs.filter(submitter_id=submitter_id)
+            qs = qs.filter(submitter=submitter_id)
 
         self.paginator.page_size = qs.count()
         result_page = self.paginator.paginate_queryset(qs, request)
@@ -488,7 +466,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             qs = qs.filter(org_applicant_id=applicant_id)
         submitter_id = request.GET.get("submitter_id", None)
         if submitter_id:
-            qs = qs.filter(submitter_id=submitter_id)
+            qs = qs.filter(submitter=submitter_id)
 
         self.paginator.page_size = qs.count()
         result_page = self.paginator.paginate_queryset(qs, request)
@@ -496,24 +474,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             result_page, context={"request": request}, many=True
         )
         return self.paginator.get_paginated_response(serializer.data)
-
-
-# class VersionableModelViewSetMixin(viewsets.ModelViewSet):
-#    @detail_route(methods=['GET',])
-#    def history(self, request, *args, **kwargs):
-#        _object = self.get_object()
-#        #_versions = reversion.get_for_object(_object)
-#        _versions = Version.objects.get_for_object(_object)
-#
-#        _context = {
-#            'request': request
-#        }
-#
-#        #_version_serializer = VersionSerializer(_versions, many=True, context=_context)
-#        _version_serializer = ProposalSerializer([v.object for v in _versions], many=True, context=_context)
-#        # TODO
-#        # check pagination
-#        return Response(_version_serializer.data)
 
 
 class ProposalSubmitViewSet(viewsets.ModelViewSet):
@@ -530,23 +490,15 @@ class ProposalSubmitViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if is_internal(self.request):  # user.is_authenticated():
-            return Proposal.objects.all().exclude(application_type=self.excluded_type)
-            # return Proposal.objects.filter(region__isnull=False)
+
+        if not is_internal(self.request) and not is_customer(self.request):
+            return Proposal.objects.none()
+
+        if is_internal(self.request):
+            return Proposal.objects.all()
+
         elif is_customer(self.request):
-            user_orgs = [org.id for org in user.leaseslicensing_organisations.all()]
-            queryset = Proposal.objects.filter(
-                Q(org_applicant_id__in=user_orgs) | Q(submitter=user)
-            )
-            # queryset =  Proposal.objects.filter(region__isnull=False)
-            # .filter( Q(applicant_id__in = user_orgs) | Q(submitter = user) )
-            return queryset.exclude(application_type=self.excluded_type)
-        logger.warn(
-            "User is neither customer nor internal user: {} <{}>".format(
-                user.get_full_name(), user.email
-            )
-        )
-        return Proposal.objects.none()
+            return Proposal.get_proposals_for_emailuser(user.id)
 
 
 class ProposalViewSet(UserActionLoggingViewset):
@@ -559,13 +511,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         if is_internal(self.request):
             return Proposal.objects.all()
         elif is_customer(self.request):
-            user_orgs = get_organisation_ids_for_user(user.id)
-            logger.debug(f"User orgs: {user_orgs}")
-            return Proposal.objects.filter(
-                Q(org_applicant_id__in=user_orgs)
-                | Q(ind_applicant=user.id)
-                | Q(submitter=user.id)
-            ).exclude(migrated=True)
+            return Proposal.get_proposals_for_emailuser(user.id)
 
         logger.warn(
             "User is neither customer nor internal user: {} <{}>".format(

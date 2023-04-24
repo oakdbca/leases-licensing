@@ -8,7 +8,8 @@
                         <label for="">Type</label>
                         <select class="form-control" v-model="filterApplicationType">
                             <option value="all">All</option>
-                            <option v-for="type in application_types" :value="type.id" :key="type.id">{{ type.text }}
+                            <option v-for="application_type in application_types" :value="application_type.id"
+                                :key="application_type.id">{{ application_type.text }}
                             </option>
                         </select>
                     </div>
@@ -631,7 +632,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .collapse-icon {
     cursor: pointer;
 }

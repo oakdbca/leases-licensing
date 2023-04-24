@@ -565,7 +565,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .collapse-icon {
     cursor: pointer;
 }

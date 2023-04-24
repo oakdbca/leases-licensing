@@ -26,7 +26,9 @@ from rest_framework import serializers
 from reversion.models import Version
 
 from leaseslicensing import exceptions
-from leaseslicensing.components.competitive_processes.email import send_competitive_process_create_notification
+from leaseslicensing.components.competitive_processes.email import (
+    send_competitive_process_create_notification,
+)
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.invoicing.models import InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
@@ -42,6 +44,7 @@ from leaseslicensing.components.main.utils import (
     get_department_user,
 )
 from leaseslicensing.components.organisations.models import Organisation
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.email import (
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
@@ -49,6 +52,7 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_decline_email_notification,
     send_referral_email_notification,
 )
+from leaseslicensing.components.tenure.models import LGA, District, Group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
     APPLICATION_TYPE_LEASE_LICENCE,
@@ -57,7 +61,7 @@ from leaseslicensing.settings import (
     GROUP_NAME_ASSESSOR,
 )
 
-logger = logging.getLogger("leaseslicensing")
+logger = logging.getLogger(__name__)
 
 
 def update_proposal_doc_filename(instance, filename):
@@ -917,7 +921,18 @@ class ProposalType(models.Model):
         app_label = "leaseslicensing"
 
 
+class ProposalManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("proposal_type", "org_applicant", "application_type")
+        )
+
+
 class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
+    objects = ProposalManager()
+
     APPLICANT_TYPE_ORGANISATION = "ORG"
     APPLICANT_TYPE_INDIVIDUAL = "IND"
     APPLICANT_TYPE_PROXY = "PRX"
@@ -1286,7 +1301,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def applicant_details(self):
         if isinstance(self.applicant, Organisation):
             return "{} \n{}".format(
-                self.org_applicant.ledger_organisation_id.name, self.org_applicant.address
+                self.org_applicant.ledger_organisation_id.name,
+                self.org_applicant.address,
             )
         else:
             # return "{} {}\n{}".format(
@@ -2687,8 +2703,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                             send_competitive_process_create_notification(
                                 request,
                                 self.generated_competitive_process,
-                                details=details)
-                            self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
+                                details=details,
+                            )
+                            self.processing_status = (
+                                Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
+                            )
                     elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
                         # lease_licence (new)
                         approval, created = Approval.objects.update_or_create(
@@ -3209,6 +3228,50 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         self.generate_compliances(approval, request)
         self.save()
+
+    @classmethod
+    def get_proposals_for_emailuser(cls, emailuser_id):
+        user_orgs = get_organisation_ids_for_user(emailuser_id)
+        return cls.objects.filter(
+            Q(org_applicant_id__in=user_orgs)
+            | Q(submitter=emailuser_id)
+            | Q(ind_applicant=emailuser_id)
+            | Q(proxy_applicant=emailuser_id)
+        )
+
+
+class ProposalGroup(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="groups"
+    )
+    group = models.ForeignKey(Group, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "group")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} is in Group: {self.group}"
+
+
+class ProposalLocality(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="localities"
+    )
+    district = models.ForeignKey(
+        District, on_delete=models.PROTECT, null=True, blank=True
+    )
+    lga = models.ForeignKey(LGA, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "district", "lga")
+
+    def __str__(self):
+        return (
+            f"Proposal: {self.proposal.lodgement_number} is located in Region: "
+            f"{self.district.region}, District: {self.district}, LGA: {self.lga}"
+        )
 
 
 class ProposalAdditionalDocumentType(models.Model):

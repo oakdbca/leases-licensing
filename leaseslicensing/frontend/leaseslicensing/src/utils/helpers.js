@@ -160,6 +160,10 @@ module.exports = {
         // assumes api_string has trailing forward slash "/" character required for POST
         let endpoint = api_string + addition;
         endpoint = endpoint.replace("//", "/")  // Remove duplicated '/' just in case
+        // if the last character is not a forward slash then add one
+        if (endpoint.slice(-1) != '/') {
+            endpoint += '/'
+        }
         return endpoint
     },
     dtPopover: function (value, truncate_length = 30, trigger = 'hover') {
@@ -267,6 +271,17 @@ module.exports = {
         console.log(errorString)
         return errorString
     },
+    getErrorStringFromResponseData(data) {
+        let errorString = '';
+        if (Array.isArray(data)) {
+            for (let i = 0; i < data.length; i++) {
+                errorString += (data[i] + "<br>")
+            }
+        } else {
+            errorString = JSON.stringify(data);
+        }
+        return errorString;
+    },
     getFileIconClass: function (filepath, additional_class_names = []) {
         let ext = filepath.split('.').pop().toLowerCase()
         let classname = additional_class_names
@@ -297,5 +312,52 @@ module.exports = {
         } else {
             return abn
         }
-    }
+    },
+    formatACN: function (acn) {
+        if (acn.length == 9) {
+            return acn.slice(0, 3) + ' ' + acn.slice(3, 6) + ' ' + acn.slice(6, 9)
+        } else {
+            return acn
+        }
+    },
+    formatABNorACN: function (input) {
+        if (input.length == 11) {
+            return this.formatABN(input)
+        } else if (input.length == 9) {
+            return this.formatACN(input)
+        } else {
+            return input
+        }
+    },
+    validateABN: function (abn) {
+        if (abn.length != 11) {
+            return false
+        }
+        let sum = 0
+        for (let i = 0; i < 11; i++) {
+            let weight = 11 - i
+            sum += weight * abn[i]
+        }
+        return sum % 89 == 0
+    },
+    validateACN: function (acn) {
+        if (acn.length != 9) {
+            return false
+        }
+        let sum = 0
+        for (let i = 0; i < 8; i++) {
+            let weight = 8 - i
+            sum += weight * acn[i]
+        }
+        return sum % 89 == 0
+    },
+    isValidABNorACN: function (input) {
+        if (input.length == 11) {
+            return this.validateABN(input)
+        } else if (input.length == 9) {
+            return this.validateACN(input)
+        } else {
+            return false
+        }
+    },
 };

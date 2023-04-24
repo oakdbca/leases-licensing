@@ -284,6 +284,7 @@ export default {
                     'aboriginal_site': this.proposal.aboriginal_site,
                     'native_title_consultation': this.proposal.native_title_consultation,
                     'mining_tenement': this.proposal.mining_tenement,
+                    'groups': this.proposal.groups,
                 }
                 payload.proposal.details_text = this.$refs.application_form.$refs.registration_of_interest.$refs.details_text.detailsText;
                 payload.proposal.exclusive_use_text = this.$refs.application_form.$refs.registration_of_interest.$refs.exclusive_use_text.detailsText;
@@ -464,8 +465,14 @@ export default {
                 title: vm.submitText + " Application",
                 text: "Are you sure you want to " + vm.submitText.toLowerCase() + " this application?",
                 icon: "question",
+                reverseButtons: true,
                 showCancelButton: true,
-                confirmButtonText: vm.submitText
+                confirmButtonText: vm.submitText,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
             }).then(async result => {
                 if (!result.isConfirmed) {
                     // Cancel

@@ -19,7 +19,7 @@ import { v4 as uuid } from 'uuid'
 import FormSection from '@/components/forms/section_toggle.vue'
 
 export default {
-    name: 'Select2Search',
+    name: 'Select2SearchReferenceNumber',
     props: {
         label: {
             type: String,

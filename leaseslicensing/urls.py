@@ -18,6 +18,7 @@ from leaseslicensing.components.main import api as main_api
 from leaseslicensing.components.organisations import api as org_api
 from leaseslicensing.components.proposals import api as proposal_api
 from leaseslicensing.components.proposals import views as proposal_views
+from leaseslicensing.components.tenure import api as tenure_api
 from leaseslicensing.components.users import api as users_api
 from leaseslicensing.management.default_data_manager import DefaultDataManager
 from leaseslicensing.utils import are_migrations_running
@@ -26,6 +27,10 @@ from leaseslicensing.utils import are_migrations_running
 router = routers.DefaultRouter()
 router.register(r"organisations", org_api.OrganisationViewSet, basename="organisations")
 router.register(r"proposal", proposal_api.ProposalViewSet, basename="proposal")
+router.register(r"regions", tenure_api.RegionViewSet, basename="regions")
+router.register(r"districts", tenure_api.DistrictViewSet, basename="districts")
+router.register(r"lgas", tenure_api.LGAViewSet, basename="lgas")
+router.register(r"groups", tenure_api.GroupViewSet, basename="groups")
 router.register(
     r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
 )
@@ -72,6 +77,16 @@ router.register(r"map_layers", main_api.MapLayerViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
 
 api_patterns = [
+    url(
+        r"^api/account/$",
+        users_api.GetLedgerAccount.as_view(),
+        name="get-ledger-account",
+    ),
+    url(
+        r"^api/request_user_id/$",
+        users_api.GetRequestUserID.as_view(),
+        name="get-request-user-id",
+    ),
     url(r"^api/profile$", users_api.GetProfile.as_view(), name="get-profile"),
     url(r"^api/countries$", users_api.GetCountries.as_view(), name="get-countries"),
     url(
@@ -168,8 +183,7 @@ urlpatterns = (
         ),
         url(r"^external/", views.ExternalView.as_view(), name="external"),
         url(r"^firsttime/$", views.first_time, name="first_time"),
-        # url(r"^account/$", views.ExternalView.as_view(), name="manage-account"),
-        # url(r"^ledger-ui/accounts$", views.ExternalView.as_view(), name="manage-account"),
+        url(r"^account/", views.ExternalView.as_view(), name="manage-account"),
         url(r"^profiles/", views.ExternalView.as_view(), name="manage-profiles"),
         url(
             r"^help/(?P<application_type>[^/]+)/(?P<help_type>[^/]+)/$",

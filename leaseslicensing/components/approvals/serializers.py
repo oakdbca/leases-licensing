@@ -1,5 +1,5 @@
 from django.conf import settings
-from ledger_api_client.ledger_models import EmailUserRO
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
 from leaseslicensing.components.approvals.models import (
@@ -12,6 +12,8 @@ from leaseslicensing.components.main.serializers import (
     EmailUserSerializer,
 )
 from leaseslicensing.components.organisations.models import Organisation
+from leaseslicensing.components.organisations.serializers import OrganisationSerializer
+from leaseslicensing.components.users.serializers import UserSerializer
 from leaseslicensing.helpers import is_approver, is_assessor
 
 
@@ -120,12 +122,11 @@ class _ApprovalPaymentSerializer(serializers.ModelSerializer):
 
 
 class ApprovalSerializer(serializers.ModelSerializer):
-    applicant = serializers.SerializerMethodField(read_only=True)
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
-    licence_document = serializers.CharField(source='licence_document._file.url',
-                                             allow_blank=True,
-                                             allow_null=True)
+    licence_document = serializers.CharField(
+        source="licence_document._file.url", allow_blank=True, allow_null=True
+    )
     # renewal_document = serializers.SerializerMethodField(read_only=True)
     status = serializers.CharField(source="get_status_display")
     application_type = serializers.SerializerMethodField(read_only=True)
@@ -136,6 +137,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
     is_approver = serializers.SerializerMethodField()
     requirement_docs = serializers.SerializerMethodField()
     submitter = serializers.SerializerMethodField()
+    holder = serializers.SerializerMethodField()
+    holder_obj = serializers.SerializerMethodField()
 
     class Meta:
         model = Approval
@@ -154,10 +157,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "expiry_date",
             "surrender_details",
             "suspension_details",
-            "applicant",
             "applicant_type",
             "applicant_id",
             "holder",
+            "holder_obj",
             "extracted_fields",
             "status",
             "reference",
@@ -191,8 +194,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "licence_document",
             "start_date",
             "expiry_date",
-            "applicant",
             "holder",
+            "holder_obj",
             "can_reissue",
             "can_action",
             "can_reinstate",
@@ -213,7 +216,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
         )
 
     def get_submitter(self, obj):
-        user = EmailUserRO.objects.get(id=obj.submitter)
+        user = EmailUser.objects.get(id=obj.submitter)
         return EmailUserSerializer(user).data
 
     def get_linked_applications(self, obj):
@@ -230,14 +233,29 @@ class ApprovalSerializer(serializers.ModelSerializer):
                 return obj.current_proposal.application_type.name_display
         return None
 
-    def get_applicant(self, obj):
-        return obj.applicant
+    def get_holder(self, obj):
+        if isinstance(obj.applicant, Organisation):
+            return obj.applicant.ledger_organisation_name
+        elif isinstance(obj.applicant, EmailUser):
+            return f"{obj.applicant.first_name} {obj.applicant.last_name}"
+        else:
+            return "Applicant not yet assigned"
 
     def get_applicant_type(self, obj):
-        return obj.applicant_type
+        if isinstance(obj.applicant, Organisation):
+            return "organisation"
+        elif isinstance(obj.applicant, EmailUser):
+            return "individual"
+        else:
+            return "Applicant not yet assigned"
 
     def get_applicant_id(self, obj):
         return obj.applicant_id
+
+    def get_holder_obj(self, obj):
+        if isinstance(obj.applicant, Organisation):
+            return OrganisationSerializer(obj.applicant).data
+        return UserSerializer(obj.applicant).data
 
     def get_can_renew(self, obj):
         return obj.can_renew

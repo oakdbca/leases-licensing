@@ -166,6 +166,27 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             "filter_approval_expiry_date_to"
         )
 
+        filter_approval_organisation = (
+            request.GET.get("filter_approval_organisation")
+            if request.GET.get("filter_approval_organisation") != "all"
+            else ""
+        )
+        filter_approval_region = (
+            request.GET.get("filter_approval_region")
+            if request.GET.get("filter_approval_region") != "all"
+            else ""
+        )
+        filter_approval_district = (
+            request.GET.get("filter_approval_district")
+            if request.GET.get("filter_approval_district") != "all"
+            else ""
+        )
+        filter_approval_category = (
+            request.GET.get("filter_approval_category")
+            if request.GET.get("filter_approval_category") != "all"
+            else ""
+        )
+
         if filter_approval_type:
             filter_approval_type = int(filter_approval_type)
             logger.debug(f"filter_approval_type: {filter_approval_type}")
@@ -186,6 +207,31 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
                 filter_approval_expiry_date_to, "%Y-%m-%d"
             )
             queryset = queryset.filter(expiry_date__lte=filter_approval_expiry_date_to)
+
+        if filter_approval_organisation:
+            filter_approval_organisation = int(filter_approval_organisation)
+            logger.debug(
+                f"filter_approval_organisation: {filter_approval_organisation}"
+            )
+            queryset = queryset.filter(org_applicant_id=filter_approval_organisation)
+        if filter_approval_region:
+            filter_approval_region = int(filter_approval_region)
+            logger.debug(f"filter_approval_region: {filter_approval_region}")
+            queryset = queryset.filter(
+                current_proposal__localities__district__region_id=filter_approval_region
+            )
+        if filter_approval_district:
+            filter_approval_district = int(filter_approval_district)
+            logger.debug(f"filter_approval_district: {filter_approval_district}")
+            queryset = queryset.filter(
+                current_proposal__localities__district_id=filter_approval_district
+            )
+        if filter_approval_category:
+            filter_approval_category = int(filter_approval_category)
+            logger.debug(f"filter_approval_category: {filter_approval_category}")
+            queryset = queryset.filter(
+                current_proposal__category_id=filter_approval_category
+            )
 
         # getter = request.query_params.get
         # fields = self.get_fields(getter)

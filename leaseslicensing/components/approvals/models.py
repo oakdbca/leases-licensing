@@ -256,17 +256,19 @@ class Approval(RevisionedMixin):
     @property
     def applicant(self):
         if self.org_applicant:
-            return self.org_applicant.ledger_organisation_id.name
+            return self.org_applicant
+        # ind_applicant is missing from the approval model so using submitter instead
+        # may need to add ind_applicant in future so it matches proposal?
+        elif self.submitter:
+            email_user = retrieve_email_user(self.submitter)
         elif self.proxy_applicant:
-            return "{} {}".format(
-                self.proxy_applicant.first_name, self.proxy_applicant.last_name
-            )
+            email_user = retrieve_email_user(self.proxy_applicant)
         else:
-            user = retrieve_email_user(self.submitter)
-            if user:
-                return f"{user.first_name} {user.last_name}"
-            logger.warning(f"Approval {self} has no applicant set.")
-            return "Applicant Not Set"
+            logger.error(
+                f"Applicant for the approval {self.lodgement_number} not found"
+            )
+            email_user = "No Applicant"
+        return email_user
 
     @property
     def holder(self):
@@ -303,7 +305,7 @@ class Approval(RevisionedMixin):
             # return self.org_applicant.organisation.id
             return self.org_applicant.id
         elif self.proxy_applicant:
-            return self.proxy_applicant#.id
+            return self.proxy_applicant  # .id
         else:
             # return None
             return self.submitter
@@ -757,7 +759,7 @@ class Approval(RevisionedMixin):
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
             action_url=f'<a href=/internal/approval/{self.id} target="_blank">Open</a>',
-            type="lease_license"
+            type="lease_license",
         )
         return related_item
 
@@ -768,7 +770,7 @@ class Approval(RevisionedMixin):
     @property
     def related_item_descriptor(self):
         """
-            Returns this license's expiry date as item description
+        Returns this license's expiry date as item description
         """
 
         return self.expiry_date

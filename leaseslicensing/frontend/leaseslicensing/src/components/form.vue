@@ -2,7 +2,7 @@
     <div class="">
         <div v-if="debug">components/form.vue</div>
         <div v-if="proposal && show_application_title" id="scrollspy-heading" class="">
-            <h4>{{ applicationTypeText }} Application: {{ proposal.lodgement_number }}</h4>
+            <h3>{{ applicationTypeText }} Application: {{ proposal.lodgement_number }}</h3>
         </div>
 
         <div class="">
@@ -38,8 +38,10 @@
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="pills-applicant" role="tabpanel"
                     aria-labelledby="pills-applicant-tab">
-                    <Applicant :email_user="email_user_applicant" id="proposalStartApplicant" :readonly="readonly"
-                        :collapseFormSections="false" :proposalId="proposal.id" />
+                    <Applicant v-if="'individual' == proposal.applicant_type" :email_user="email_user_applicant"
+                        id="proposalStartApplicant" :readonly="readonly" :collapseFormSections="false"
+                        :proposalId="proposal.id" />
+                    <OrganisationApplicant v-else :org="proposal.applicant_obj" />
                 </div>
                 <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                     <FormSection :formCollapse="false" label="Map" Index="proposal_geometry">
@@ -62,17 +64,99 @@
                         <template v-slot:slot_proposal_impact_checklist_questions>
                             <slot name="slot_proposal_impact_checklist_questions"></slot>
                         </template>
-
                     </RegistrationOfInterest>
 
                     <LeaseLicence :proposal="proposal" :readonly="readonly" ref="lease_licence" v-if="leaseLicence">
                     </LeaseLicence>
 
-                    <FormSection label="Other" Index="other_section">
+                    <FormSection label="Tenure" Index="other_section">
                         <slot name="slot_other_checklist_questions"></slot>
+
+                        <div class="row question-row">
+                            <div class="col">
+                                <ul class="list-group">
+                                    <li class="list-group-item"><input class="me-2" type="checkbox" name="tenure"
+                                            checked><label>Forest Estate
+                                            S97</label>
+                                        <ul class="list-group mt-2">
+                                            <li class="list-group-item">
+                                                <input class="me-2" type="checkbox" name="tenure" checked><label>State
+                                                    Forest 5(a)</label>
+                                            </li>
+                                            <li class="list-group-item">
+                                                <input class="me-2" type="checkbox" name="tenure"><label>Timber
+                                                    Reserve 5(b)</label>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    <li class="list-group-item"><input class="me-2" type="checkbox"
+                                            name="tenure"><label>Conservation
+                                            Estate S100</label></li>
+                                    <li class="list-group-item"><input class="me-2" type="checkbox"
+                                            name="tenure"><label>Freehold</label>
+                                    </li>
+                                    <li class="list-group-item"><input class="me-2" type="checkbox"
+                                            name="tenure"><label>Other</label>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </FormSection>
+
+                    <FormSection label="Localities" Index="localities">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th scope="col" class="w-25">Local Goverment Area</th>
+                                    <th scope="col" class="w-25">District</th>
+                                    <th scope="col" class="w-25">Region</th>
+                                    <th scope="col" class="w-25">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(locality, index) in localities">
+                                    <td>
+                                        <!-- {{ locality }} -->
+                                        <input type="hidden" name="locality_id" v-model="locality.id" />
+                                        <select class="form-select" id="local_government_area" name="local_government_area"
+                                            v-model="locality.lga">
+                                            <option value="" selected>Select the LGA</option>
+                                            <option v-for="lga in lgas" :value="lga.id">{{ lga.name }}</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select class="form-select" id="district" name="district"
+                                            v-model="locality.district">
+                                            <option :value="null">Select the District</option>
+                                            <option v-for="district in districts" :value="district">{{ district.name }}
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <select :disabled="true" class="form-select" id="region" name="region">
+                                            <option v-if="locality.district">{{ locality.district.region.name }}</option>
+                                            <option v-else>Select the District</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-danger me-1"
+                                            @click="removeLocality(locality, index)" :disabled="1 == localities.length"><i
+                                                class="fa fa-trash"></i>
+                                            Remove</button>
+                                        <button v-if="index == (localities.length - 1)" type="button"
+                                            class="btn btn-primary" @click="addAnotherLocality"><i class="fa fa-plus"></i>
+                                            Add
+                                            Another</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </FormSection>
+
+                    <FormSection label="Categorisation" Index="categorisation">
                         <div class="row question-row">
                             <div class="col-sm-3">
-                                <label class="control-label pull-left">Site Name</label>
+                                <label class="col-form-label">Site Name</label>
                             </div>
                             <div class="col-sm-9">
                                 <ul class="list-inline col-sm-9">
@@ -85,56 +169,20 @@
                         </div>
                         <div class="row question-row">
                             <div class="col-sm-3">
-                                <label class="control-label pull-left">Group Name</label>
+                                <label class="col-form-label">Group(s)</label>
                             </div>
                             <div class="col-sm-9">
-                                <ul class="list-inline col-sm-9">
-                                    <li class="list-inline-item">
-                                        <input class="form-control" v-model="proposal.group_name" type="text"
-                                            name="group_name" id="group_name" :disabled="readonly" />
+                                <ul v-if="groups" class="list-group">
+                                    <li v-for="(group, index) in  groups " class="list-group-item">
+                                        <div class="form-check">
+                                            <input class="form-check-input me-2" type="checkbox" :id="group.id" :value="{
+                                                    'group': { 'id': group.id, 'name': group.name }
+                                                }" name="tenure" v-model="proposal.groups"><label
+                                                class="form-check-label" :for="group.id">{{
+                                                    group.name }}</label>
+                                        </div>
                                     </li>
                                 </ul>
-                            </div>
-                        </div>
-                        <div class="row question-row">
-                            <div class="col-sm-3">
-                                <label class="control-label pull-left">National Park / Reserve</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <ul class="list-inline col-sm-9">
-                                    <li class="list-inline-item">
-                                        <select :disabled="readonly" class="form-select" id="national_park_reserve"
-                                            name="national_park_reserve">
-                                            <option>National Park 1.</option>
-                                            <option>National Park 2.</option>
-                                            <option>National Park 3.</option>
-                                        </select>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="row question-row">
-                            <div class="col-sm-3">
-                                <label class="control-label pull-left">Category</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <ul class="list-inline col-sm-9">
-                                    <li class="list-inline-item">
-                                        <select :disabled="readonly" class="form-select" id="category" name="category">
-                                            <option>Category 1.</option>
-                                            <option>Category 2.</option>
-                                            <option>Category 3.</option>
-                                        </select>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="row question-row">
-                            <div class="col-sm-3">
-                                <label class="control-label pull-left">...</label>
-                            </div>
-                            <div class="col-sm-9">
-                                More fields to come!
                             </div>
                         </div>
                     </FormSection>
@@ -143,11 +191,13 @@
                         <slot name="slot_deed_poll_checklist_questions"></slot>
                         <div class="col-sm-12 section-style">
                             <p>
-                                <strong>It is a requirement of all lease and licence holders to sign a deed poll to release
+                                <strong>It is a requirement of all lease and licence holders to sign a deed poll to
+                                    release
                                     and indemnify the State of Western Australia.
                                     Please note: electronic or digital signatures cannot be accepted.
                                     <p></p>
-                                    The deed poll must be signed and have a witness signature and be dated. Once signed and
+                                    The deed poll must be signed and have a witness signature and be dated. Once
+                                    signed and
                                     dated, please scan and attach the deed poll below.
                                 </strong>
                             </p>
@@ -181,6 +231,7 @@
 <script>
 import Profile from '@/components/user/profile.vue'
 import Applicant from '@/components/common/applicant.vue'
+import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
 import FormSection from '@/components/forms/section_toggle.vue'
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
@@ -189,7 +240,8 @@ import RegistrationOfInterest from './form_registration_of_interest.vue'
 import LeaseLicence from './form_lease_licence.vue'
 import {
     api_endpoints,
-    helpers
+    helpers,
+    utils
 }
     from '@/utils/hooks'
 /*
@@ -271,15 +323,25 @@ export default {
             profile: {},
             uuid: 0,
             keep_current_vessel: true,
-            //vesselLength: null,
             showPaymentTab: false,
             detailsText: null,
+            defaultLocality: {
+                id: null,
+                proposal_id: this.proposal.id,
+                district: null,
+                lga: '',
+            },
+            localities: [],
+            districts: null,
+            lgas: null,
+            groups: null,
         }
     },
     components: {
         RegistrationOfInterest,
         LeaseLicence,
         Applicant,
+        OrganisationApplicant,
         Profile,
         FormSection,
         RichText,
@@ -311,7 +373,6 @@ export default {
                 this.proposal.id + '/process_deed_poll_document/'
             )
         },
-
         profileVar: function () {
             if (this.is_external) {
                 return this.profile;
@@ -334,6 +395,19 @@ export default {
 
     },
     methods: {
+        addAnotherLocality: function () {
+            this.localities.push(
+                Object.assign({}, this.defaultLocality)
+            )
+        },
+        removeLocality: function (locality, index) {
+            console.log('removeLocality', locality, index)
+            if (locality.id) {
+                alert('Remove locality from database');
+            }
+            this.localities.splice(index, 1)
+        },
+
         incrementComponentMapKey: function () {
             this.componentMapKey++;
         },
@@ -354,8 +428,24 @@ export default {
             this.profile = Object.assign({}, profile);
         },
     },
+    created: function () {
+        let vm = this;
+        let initialisers = [
+            utils.fetchLGAsKeyValueList(),
+            utils.fetchDistricts(),
+            utils.fetchGroupsKeyValueList(),
+        ]
+        Promise.all(initialisers).then(data => {
+            vm.lgas = data[0];
+            vm.districts = data[1];
+            vm.groups = data[2];
+        });
+    },
     mounted: function () {
         this.$emit('formMounted')
+        this.localities = [
+            Object.assign({}, this.defaultLocality)
+        ]
     }
 
 }

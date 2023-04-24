@@ -1,249 +1,231 @@
 <template>
-    <div :class="classCompute" id="userInfo">
-        <div class="col-sm-12">
-            <div class="row">
-                <div class="col-sm-12">
-                    <div class="card card-default">
-                        <div class="card-header">
-                            <h3 class="card-title">Organisation Details <small> - View and update the organisation's
-                                    details</small>
-                                <a class="panelClicker" :href="'#' + pBody" data-toggle="collapse" data-parent="#userInfo"
-                                    expanded="true" :aria-controls="pBody">
-                                    <span class="glyphicon glyphicon-chevron-up pull-right "></span>
-                                </a>
-                            </h3>
-                        </div>
-                        <div class="card-body collapse in" :id="pBody">
-                            <form class="form-horizontal" name="personal_form" method="post">
-                                <div v-if="org">
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Organisation Name</label>
-                                        <div class="col-sm-9">
-                                            <input type="text" class="form-control" name="first_name" placeholder=""
-                                                v-model="org.name">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Trading Name</label>
-                                        <div class="col-sm-9">
-                                            <input type="text" class="form-control" name="trading_name" placeholder=""
-                                                v-model="org.trading_name">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">ABN</label>
-                                        <div class="col-sm-9">
-                                            <input type="text" disabled class="form-control" name="last_name" placeholder=""
-                                                v-model="org.abn">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Email</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="email" placeholder=""
-                                                v-model="org.email">
-                                        </div>
-                                    </div>
+    <div class="container" id="externalOrgInfo">
+        <div class="row">
+            <div v-if="org" class="col">
+                <div class="row">
+                    <FormSection :formCollapse="false" label="Organisation Details" index="organisation-details">
+                        <form class="form-horizontal" name="personal_form" method="post">
 
-                                    <div class="form-group">
-                                        <div class="col-sm-12">
-                                            <button v-if="!updatingDetails" class="pull-right btn btn-primary"
-                                                @click.prevent="updateDetails()">Update</button>
-                                            <button v-else disabled class="pull-right btn btn-primary"><i
-                                                    class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
-                                        </div>
-                                    </div>
+                            <div class="row mb-3">
+                                <label for="ledger_organisation_name" class="col-sm-3 control-label">Organisation
+                                    Name</label>
+                                <div class="col-sm-4">
+                                    <input type="text" class="form-control" name="ledger_organisation_name"
+                                        v-model="org.ledger_organisation_name">
                                 </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-sm-12">
-                    <div class="card card-default">
-                        <div class="card-header">
-                            <h3 class="card-title">Address Details <small> - View and update the organisation's address
-                                    details</small>
-                                <a class="panelClicker" :href="'#' + adBody" data-toggle="collapse" expanded="false"
-                                    data-parent="#userInfo" :aria-controls="adBody">
-                                    <span class="glyphicon glyphicon-chevron-down pull-right "></span>
-                                </a>
-                            </h3>
-                        </div>
-                        <div v-if="loading.length == 0" class="card-body collapse" :id="adBody">
-                            <form class="form-horizontal" action="index.html" method="post">
-                                <div v-if="org">
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Street</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="street" placeholder=""
-                                                v-model="org.address.line1">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Town/Suburb</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" class="form-control" name="surburb" placeholder=""
-                                                v-model="org.address.locality">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">State</label>
-                                        <div class="col-sm-3">
-                                            <input type="text" class="form-control" name="country" placeholder=""
-                                                v-model="org.address.state">
-                                        </div>
-                                        <label for="" class="col-sm-1 control-label">Postcode</label>
-                                        <div class="col-sm-2">
-                                            <input type="text" class="form-control" name="postcode" placeholder=""
-                                                v-model="org.address.postcode">
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-3 control-label">Country</label>
-                                        <div class="col-sm-4">
-                                            <select class="form-control" name="country" v-model="org.address.country">
-                                                <option v-for="c in countries" :value="c.alpha2Code">{{ c.name }}</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <div class="col-sm-12">
-                                            <button v-if="!updatingAddress" class="pull-right btn btn-primary"
-                                                @click.prevent="updateAddress()">Update</button>
-                                            <button v-else disabled class="pull-right btn btn-primary"><i
-                                                    class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
-                                        </div>
-                                    </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label for="trading_name" class="col-sm-3 control-label">Trading
+                                    Name</label>
+                                <div class="col-sm-4">
+                                    <input type="text" class="form-control" name="trading_name" v-model="org.trading_name">
                                 </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div v-if="!isApplication" class="row">
-                <div class="col-sm-12">
-                    <div class="card card-default">
-                        <div class="card-header">
-                            <h3 class="card-title">Contact Details <small> - View and update the organisation's contact
-                                    details</small>
-                                <a class="panelClicker" :href="'#' + cBody" data-toggle="collapse" data-parent="#userInfo"
-                                    expanded="false" :aria-controls="cBody">
-                                    <span class="glyphicon glyphicon-chevron-down pull-right "></span>
-                                </a>
-                            </h3>
-                        </div>
-                        <div class="card-body collapse" :id="cBody">
-                            <form class="form-horizontal" action="index.html" method="post">
+                            </div>
+
+                            <div class="row mb-3">
+                                <label for="ledger_organisation_abn" class="col-sm-3 control-label">ABN
+                                </label>
+                                <div class="col-sm-4">
+                                    <input type="text" class="form-control" name="ledger_organisation_abn"
+                                        v-model="org.ledger_organisation_abn" disabled>
+                                </div>
+                            </div>
+
+                            <div class="row mb-3">
+                                <label for="ledger_organisation_email" class="col-sm-3 control-label">Email
+                                </label>
+                                <div class="col-sm-4">
+                                    <input type="text" class="form-control" name="ledger_organisation_email"
+                                        v-model="org.ledger_organisation_email">
+                                </div>
+                            </div>
+
+                            <div class="form-group">
                                 <div class="col-sm-12">
-                                    <button @click.prevent="addContact()" style="margin-bottom:10px;"
-                                        class="btn btn-primary pull-right">Add Contact</button>
+                                    <button v-if="!updatingDetails" class="float-end btn btn-primary"
+                                        @click.prevent="updateDetails()">Update</button>
+                                    <button v-else disabled class="float-end btn btn-primary"><i
+                                            class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
                                 </div>
-                                <datatable ref="contacts_datatable" id="organisation_contacts_datatable"
-                                    :dtOptions="contacts_options" :dtHeaders="contacts_headers" />
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div v-if="!isApplication" class="row">
-                <div class="col-sm-12">
+                            </div>
+                        </form>
+                    </FormSection>
 
-                    <div class="card card-default">
-                        <div class="card-header">
-                            <h3 class="card-title">Linked User Accounts<small> Manage the user accounts linked to the
-                                    organisation</small>
-                                <a class="panelClicker" :href="'#' + oBody" data-toggle="collapse" data-parent="#userInfo"
-                                    expanded="true" :aria-controls="oBody">
-                                    <span class="glyphicon glyphicon-chevron-down pull-right "></span>
-                                </a>
-                            </h3>
-                        </div>
-                        <div class="card-body collapse" :id="oBody">
-                            <div class="col-sm-12 row">
-                                Use the Organisation Administrator pin codes if you want the new user to be linked as
-                                organisation administrator.<br> Use the Organisation User pin codes if you want the new user
-                                to be linked as organisation user.
-                            </div>
-                            <form class="form-horizontal" action="index.html" method="post">
-                                <div class="col-sm-6 row">
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-6 control-label"> Organisation User Pin Code 1:</label>
-                                        <div class="col-sm-6">
-                                            <label class="control-label">{{ org.pins.three }}</label>
-                                        </div>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="" class="col-sm-6 control-label">Organisation User Pin Code 2:</label>
-                                        <div class="col-sm-6">
-                                            <label class="control-label">{{ org.pins.four }}</label>
-                                        </div>
+                    <FormSection v-if="org.address" :formCollapse="true" label="Address Details" index="address-details">
+                        <form class="form-horizontal" action="index.html" method="post">
+                            <div v-if="org">
+                                <div class="form-group">
+                                    <label for="" class="col-sm-3 control-label">Street</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="street" placeholder=""
+                                            v-model="org.address.line1">
                                     </div>
                                 </div>
-                                <div class="col-sm-6 row">
-                                    <div class="form-group" :disabled='!myorgperms.is_admin'>
-                                        <label for="" class="col-sm-6 control-label"> Organisation Administrator Pin Code
-                                            1:</label>
-                                        <div class="col-sm-6">
-                                            <label class="control-label">{{ org.pins.one }}</label>
-                                        </div>
-                                    </div>
-                                    <div class="form-group" :disabled='!myorgperms.is_admin'>
-                                        <label for="" class="col-sm-6 control-label">Organisation Administrator Pin Code
-                                            2:</label>
-                                        <div class="col-sm-6">
-                                            <label class="control-label">{{ org.pins.two }}</label>
-                                        </div>
+                                <div class="form-group">
+                                    <label for="" class="col-sm-3 control-label">Town/Suburb</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="surburb" placeholder=""
+                                            v-model="org.address.locality">
                                     </div>
                                 </div>
-                            </form>
-                            <div>
-                                <div class="col-sm-12 row">
-                                    <div class="row">
-                                        <div class="col-sm-12 top-buffer-s">
-                                            It is the responsibility of the organisation administrator to manage the
-                                            distribution of pin codes. If you are not sure which pin code to give to your
-                                            staff member please call the Tourism and Concessions Branch on (08) 9219 9978.
-                                        </div>
+                                <div class="form-group">
+                                    <label for="" class="col-sm-3 control-label">State</label>
+                                    <div class="col-sm-3">
+                                        <input type="text" class="form-control" name="country" placeholder=""
+                                            v-model="org.address.state">
                                     </div>
-                                    <div class="row">
-                                        <div class="col-sm-12 top-buffer-s">
-                                            Please ensure the pin codes are not provided to people that are not authorised
-                                            to apply/cancel/surrender/pay fees on behalf of this organisation.
-                                        </div>
+                                    <label for="" class="col-sm-1 control-label">Postcode</label>
+                                    <div class="col-sm-2">
+                                        <input type="text" class="form-control" name="postcode" placeholder=""
+                                            v-model="org.address.postcode">
                                     </div>
-                                    <div class="row">
-                                        <div class="col-sm-12 top-buffer-s">
-                                            The list of accounts linked to the organisation is controlled by the
-                                            organisation. The Department cannot manage this list of accounts.
-                                        </div>
+                                </div>
+                                <div class="form-group">
+                                    <label for="" class="col-sm-3 control-label">Country</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control" name="country" v-model="org.address.country">
+                                            <option v-for="c in countries" :value="c.alpha2Code">{{ c.name }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <div class="col-sm-12">
+                                        <button v-if="!updatingAddress" class="float-end btn btn-primary"
+                                            @click.prevent="updateAddress()">Update</button>
+                                        <button v-else disabled class="float-end btn btn-primary"><i
+                                                class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
                                     </div>
                                 </div>
                             </div>
-                            <div>
-                                <datatable ref="contacts_datatable_user" id="organisation_contacts_datatable_ref"
-                                    :dtOptions="contacts_options_ref" :dtHeaders="contacts_headers_ref"
-                                    v-model="filterOrgContactStatus" />
+                        </form>
+                    </FormSection>
+
+                    <FormSection :formCollapse="true" label="Contact Details" index="contact-details">
+                        <div class="row">
+                            <div class="col">
+                                <button @click.prevent="addContact()" style="margin-bottom:10px;"
+                                    class="btn btn-primary float-end">Add Contact</button>
                             </div>
                         </div>
-                    </div>
+
+                        <datatable ref="contacts_datatable" id="organisation_contacts_datatable"
+                            :dtOptions="contacts_options" :dtHeaders="contacts_headers" />
+
+                    </FormSection>
+
+                    <FormSection :formCollapse="false" label="Account Pins" index="account-pins">
+
+                        <BootstrapAlert type="warning" icon="exclamation-triangle-fill" class="ms-1">
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    You and your organisation are responsible for managing the
+                                    distribution of pin codes.
+                                </li>
+                                <li class="list-group-item">
+                                    If you are not sure which pin code to give to a staff member please call
+                                    the Tourism and Concessions Branch on (08) 9219 9978.</li>
+                                <li class="list-group-item">
+                                    Never provide these pin codes to people that are not
+                                    authorised
+                                    to apply/cancel/surrender/pay fees on behalf of this organisation.</li>
+                            </ul>
+                        </BootstrapAlert>
+
+                        <h5>Administrator Pins</h5>
+
+                        <BootstrapAlert class="ms-1">
+                            <ul class="list-group">
+                                <li class="list-group-item">Provide the new user these pin codes if you want the
+                                    them to have administrator privileges.</li>
+                                <li class="list-group-item">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2 mt-1">
+                                                <span class="input-group-text pin-label" id="basic-addon1">Admin Pin
+                                                    1</span>
+                                                <input type="text" class="form-control" :value="org.pins.one"
+                                                    aria-label="Username" aria-describedby="basic-addon1" readonly>
+                                                <span class="input-group-text">copy</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2 mt-1">
+                                                <span class="input-group-text pin-label" id="basic-addon1">Admin Pin
+                                                    2</span>
+                                                <input type="text" class="form-control" :value="org.pins.two"
+                                                    aria-label="Username" aria-describedby="basic-addon1" readonly>
+                                                <button class="btn-copy input-group-text">copy</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </li>
+                            </ul>
+                        </BootstrapAlert>
+
+                        <h5>User Pins</h5>
+
+                        <BootstrapAlert class="ms-1">
+                            <ul class="list-group">
+                                <li class="list-group-item">Provide the new user these pin codes if you want the
+                                    new user to be a regular user.</li>
+                                <li class="list-group-item">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2 mt-1">
+                                                <span class="input-group-text pin-label" id="user-pin-1">User Pin 1</span>
+                                                <input type="text" class="form-control" :value="org.pins.three"
+                                                    aria-label="Username" aria-describedby="user-pin-1" readonly>
+                                                <span class="input-group-text">copy</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="input-group mb-2 mt-1">
+                                                <span class="input-group-text pin-label" id="basic-addon1">User Pin
+                                                    2</span>
+                                                <input type="text" class="form-control" :value="org.pins.four"
+                                                    aria-label="Username" aria-describedby="basic-addon1" readonly>
+                                                <span class="input-group-text">copy</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </li>
+                            </ul>
+                        </BootstrapAlert>
+                    </FormSection>
+
+                    <FormSection :formCollapse="false" label="Linked User Accounts" index="linked-user-accounts">
+
+                        <BootstrapAlert type="warning" icon="exclamation-triangle-fill" class="ms-1">
+                            The list of users linked to your organisation is controlled by you and your
+                            organisation. The Department cannot manage this list.
+                        </BootstrapAlert>
+
+                        <div>
+                            <datatable ref="contacts_datatable_user" id="organisation_contacts_datatable_ref"
+                                :dtOptions="contacts_options_ref" :dtHeaders="contacts_headers_ref" />
+                        </div>
+                    </FormSection>
 
                 </div>
+                <AddContact ref="add_contact" :org_id="org.id" />
             </div>
-            <!--AddContact ref="add_contact" v-if="org" :org_id="org.id" /-->
+            <div v-else>
+                <BootstrapSpinner class="text-primary" :isLoading="true" />
+            </div>
         </div>
     </div>
 </template>
 
 <script>
-//import $ from 'jquery'
 import Vue from 'vue'
-import { api_endpoints, constants, helpers } from '@/utils/hooks'
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
 import datatable from '@vue-utils/datatable.vue'
-import utils from '../utils'
-import api from '../api'
-//import AddContact from '@common-utils/add_contact.vue'
+import AddContact from '@common-utils/add_contact.vue'
+
 export default {
     name: 'Organisation',
     props: {
@@ -442,6 +424,7 @@ export default {
                 },
                 columns: [
                     {
+                        data: 'id',
                         mRender: function (data, type, full) {
                             return full.first_name + " " + full.last_name;
                         }
@@ -451,6 +434,7 @@ export default {
                     { data: 'fax_number' },
                     { data: 'email' },
                     {
+                        data: 'id',
                         mRender: function (data, type, full) {
                             let links = '';
                             let name = full.first_name + ' ' + full.last_name;
@@ -470,12 +454,11 @@ export default {
                 responsive: true,
                 ajax: {
                     "url": helpers.add_endpoint_json(api_endpoints.organisations, vm.$route.params.org_id + '/contacts_exclude'),
-                    //"url": helpers.add_endpoint_json(api_endpoints.organisations,vm.org.id+'/contacts_exclude'),
-
                     "dataSrc": ''
                 },
                 columns: [
                     {
+                        data: 'id',
                         mRender: function (data, type, full) {
                             return full.first_name + " " + full.last_name;
                         }
@@ -484,6 +467,7 @@ export default {
                     { data: 'email' },
                     { data: 'user_status' },
                     {
+                        data: 'id',
                         mRender: function (data, type, full) {
                             let links = '';
                             if (vm.myorgperms.is_admin) {
@@ -518,7 +502,7 @@ export default {
     },
     components: {
         datatable,
-        //AddContact
+        AddContact
     },
     computed: {
         classCompute: function () {
@@ -534,11 +518,10 @@ export default {
         Promise.all(initialisers).then(data => {
             next(vm => {
                 vm.countries = data[0];
-                vm.org = data[1];
+                vm.org = Object.assign({}, data[1]);
                 vm.myorgperms = data[2];
-                vm.org.address = vm.org.address != null ? vm.org.address : {};
-                vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
-
+                // vm.org.address = vm.org.address != null ? vm.org.address : {};
+                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
     },
@@ -549,11 +532,10 @@ export default {
         ]
         Promise.all(initialisers).then(data => {
             next(vm => {
-                vm.org = data[0];
+                vm.org = Object.assign({}, data[0]);
                 vm.myorgperms = data[1];
-                vm.org.address = vm.org.address != null ? vm.org.address : {};
-                vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
-
+                // vm.org.address = vm.org.address != null ? vm.org.address : {};
+                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
     },
@@ -1006,7 +988,7 @@ export default {
         deleteContact: function (id) {
             let vm = this;
 
-            vm.$http.delete(helpers.add_endpoint_json(api.organisation_contacts, id), {
+            vm.$http.delete(helpers.add_endpoint_json(api_endpoints.organisation_contacts, id), {
                 emulateJSON: true
             }).then((response) => {
                 swal(
@@ -1078,24 +1060,24 @@ export default {
             });
         }
     },
-    mounted: function () {
-        this.personal_form = document.forms.personal_form;
-
+    created: function () {
         let vm = this;
+        console.log('vm.$route.params.org_id = ' + vm.$route.params.org_id)
+        this.personal_form = document.forms.personal_form;
         let initialisers = [
             utils.fetchCountries(),
-            utils.fetchOrganisation(vm.org_id),
-            utils.fetchOrganisationPermissions(vm.org_id)
+            utils.fetchOrganisation(vm.$route.params.org_id),
+            utils.fetchOrganisationPermissions(vm.$route.params.org_id)
         ]
         Promise.all(initialisers).then(data => {
             vm.countries = data[0];
-            vm.org = data[1];
+            vm.org = Object.assign({}, data[1]);
             vm.myorgperms = data[2];
-            vm.org.address = vm.org.address != null ? vm.org.address : {};
-            vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
-
+            console.log('vm.org = ' + JSON.stringify(vm.org));
         });
-
+    },
+    mounted: function () {
+        this.personal_form = document.forms.personal_form;
     },
     updated: function () {
         let vm = this;
@@ -1109,13 +1091,27 @@ export default {
             this.eventListeners();
         });
     }
-
 }
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
 .top-buffer-s {
     margin-top: 25px;
+}
+
+#organisation_contacts_datatable {
+    width: 100% !important;
+}
+
+.btn-copy:hover {
+    background-color: linear-gradient(rgb(0 0 0/40%) 0 0);
+}
+
+.pin-label {
+    width: 120px;
+}
+
+input[readonly] {
+    background-color: white;
 }
 </style>

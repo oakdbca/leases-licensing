@@ -1,9 +1,9 @@
 <template lang="html">
     <div id="approvalHistory">
-        <modal transition="modal fade" @ok="ok()" @cancel="cancel()" :title="title" large>
+        <modal transition="modal fade" @ok="ok()" @cancel="cancel()" :title="title" :extraLarge="true" cancelText="Close"
+            okText="">
             <div class="container-fluid">
                 <div class="row">
-                    <!-- <alert v-if="isApprovalLevelDocument" type="warning"><strong>{{warningString}}</strong></alert> -->
                     <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
                     <div class="col-sm-12">
                         <div class="form-group">
@@ -13,34 +13,17 @@
                                         :dtHeaders="datatable_headers" />
                                 </div>
                             </div>
-
-                            <!--div class="col-sm-3">
-                                    <label class="control-label pull-left" for="mooring_bay">Bay</label>
-                                </div>
-                                <div class="col-sm-6">
-                                    <select class="form-control" v-model="selectedMooringBayId" id="mooring_bay_lookup">
-                                        <option v-for="bay in mooringBays" v-bind:value="bay.id">
-                                        {{ bay.name }}
-                                        </option>
-                                    </select>
-                                </div-->
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div slot="footer">
-                <button type="button" class="btn btn-primary" @click="ok">Ok</button>
-                <button type="button" class="btn btn-primary" @click="cancel">Cancel</button>
-            </div>
         </modal>
     </div>
 </template>
 
 <script>
-//import $ from 'jquery'
 import modal from '@vue-utils/bootstrap-modal.vue'
-//import FileField from '@/components/forms/filefield_immediate.vue'
 import alert from '@vue-utils/alert.vue'
 import { helpers, api_endpoints, constants } from "@/utils/hooks.js"
 import datatable from '@/utils/vue/datatable.vue'
@@ -51,58 +34,36 @@ export default {
         modal,
         alert,
         datatable,
-        //FileField,
     },
     props: {
         approvalId: {
             type: Number,
             required: true,
         },
-        /*
-        mooringBayId: {
-            type: Number,
-            required: true,
-        },
-        */
     },
     data: function () {
         let vm = this;
         return {
-            //approvalId: null,
             datatable_id: 'history-datatable-' + vm._uid,
             approvalDetails: {
                 approvalLodgementNumber: null,
-                //history: {},
             },
             messageDetails: '',
             ccEmail: '',
             isModalOpen: false,
-            //state: 'proposed_approval',
-            //savingOffer: false,
             validation_form: null,
             errors: false,
             errorString: '',
             successString: '',
             success: false,
-            //warningString: 'Please attach Level of Approval document before issuing Approval',
-            //siteLicenseeMooring: {},
-            //mooringBays: [],
         }
     },
     computed: {
-        /*
-        waitingListOfferSubmitUrl: function() {
-          return `/api/waitinglistallocation/${this.wlaId}/create_mooring_licence_application.json`;
-          //return `/api/waitinglistallocation/${this.wlaId}/create_mooring_licence_application/`;
-          //return this.submit();
-        },
-        */
         showError: function () {
             var vm = this;
             return vm.errors;
         },
         title: function () {
-            //return this.processing_status == 'With Approver' ? 'Grant' : 'Propose grant';
             let title = "History for ";
             if (this.approvalDetails && this.approvalDetails.approvalLodgementNumber) {
                 title += this.approvalDetails.approvalType + ' ';
@@ -138,12 +99,10 @@ export default {
                 'render': function (row, type, full) {
                     return full.approval_lodgement_number
                 },
-                //name: 'lodgement_number',
             }
         },
         column_type: function () {
             return {
-                // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
@@ -155,7 +114,6 @@ export default {
         },
         column_sticker_numbers: function () {
             return {
-                // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
@@ -168,7 +126,6 @@ export default {
 
         column_holder: function () {
             return {
-                // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
@@ -180,7 +137,6 @@ export default {
         },
         column_approval_status: function () {
             return {
-                // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
@@ -192,7 +148,6 @@ export default {
         },
         column_start_date: function () {
             return {
-                // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
@@ -204,7 +159,6 @@ export default {
         },
         column_reason: function () {
             return {
-                // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
@@ -216,14 +170,11 @@ export default {
         },
         column_approval_letter: function () {
             return {
-                // 3. Type (This corresponds to the 'ApplicationType' at the backend)
                 data: "id",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
-                    //return full.approval_letter;
-                    //return '';
                     return `<div><a href='${full.approval_letter}' target='_blank'><i style='color:red;' class='fa fa-file-pdf-o'></i></a></div>`;
                 }
             }
@@ -249,23 +200,15 @@ export default {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
-                //serverSide: true,
                 searching: true,
                 ordering: true,
                 order: [[0, 'desc']],
                 ajax: {
-                    //"url": api_endpoints.proposals_paginated_list + '?format=datatables',
                     "url": api_endpoints.lookupApprovalHistory(this.approvalId),
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering
                     "data": function (d) {
-                        /*
-                        d.filter_application_type = vm.filterApplicationType
-                        d.filter_application_status = vm.filterApplicationStatus
-                        d.filter_applicant = vm.filterApplicant
-                        d.level = vm.level
-                        */
                     }
                 },
                 dom: 'lBfrtip',
@@ -299,37 +242,11 @@ export default {
                 this.approvalDetails = Object.assign({}, res.body);
             }
         },
-        /*
-        eventListeners:function (){
-            let vm = this;
-        },
-        */
-        /*
-        readRiaMooring: function() {
-            let vm = this;
-            if (vm.approval.ria_mooring_name) {
-                console.log("read ria mooring")
-                var option = new Option(vm.approval.ria_mooring_name, vm.approval.ria_mooring_name, true, true);
-                $(vm.$refs.mooring_lookup).append(option).trigger('change');
-            }
-        },
-        */
-
-    },
-    mounted: function () {
-        this.$nextTick(() => {
-            //this.initialiseMooringLookup();
-
-        });
     },
     created: function () {
         this.$nextTick(() => {
             this.fetchApprovalDetails();
-            //this.fetchMooringBays();
-            //this.selectedMooringBayId = this.mooringBayId;
         });
     },
 }
 </script>
-
-<style lang="css"></style>
