@@ -32,7 +32,7 @@ from leaseslicensing.components.proposals.models import (
     ProposalUserAction,
     RequirementDocument,
 )
-from leaseslicensing.helpers import is_customer
+from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
 from leaseslicensing.utils import search_keys, search_multiple_keys
@@ -372,7 +372,21 @@ class Approval(RevisionedMixin):
 
     @property
     def allowed_assessors(self):
-        return self.current_proposal.allowed_assessors
+        lease_license_assessor_ids = user_ids_in_group(
+            settings.GROUP_LEASE_LICENCE_ASSESSOR
+        )
+        emailusers = []
+        for id in lease_license_assessor_ids:
+            emailuser = retrieve_email_user(id)
+            emailusers.append(
+                {
+                    "id": id,
+                    "first_name": emailuser.first_name,
+                    "last_name": emailuser.last_name,
+                    "email": emailuser.email,
+                }
+            )
+        return emailusers
 
     @property
     def is_issued(self):
