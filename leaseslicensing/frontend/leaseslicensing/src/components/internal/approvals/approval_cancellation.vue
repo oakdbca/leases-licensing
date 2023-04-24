@@ -89,6 +89,7 @@ export default {
             this.approval_cancellation = {
                 cancellation_date: new Date().toISOString().slice(0, 10),
             };
+            vm.errors = false;
         },
         close: function () {
             var form = document.getElementById('approvalForm')
@@ -121,10 +122,12 @@ export default {
             let vm = this;
             vm.errors = false;
             console.log(vm.approval_cancellation.cancellation_date)
+            let approval_cancellation = Object.assign({}, vm.approval_cancellation);
+            approval_cancellation.cancellation_date = helpers.formatDateForAPI(vm.approval_cancellation.cancellation_date);
             const requestOptions = {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(vm.approval_cancellation)
+                body: JSON.stringify(approval_cancellation)
             };
             fetch(helpers.add_endpoint_json(api_endpoints.approvals, vm.approval_id + '/approval_cancellation'), requestOptions)
                 .then(async response => {
