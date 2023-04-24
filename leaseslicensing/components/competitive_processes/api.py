@@ -72,6 +72,7 @@ class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
 class CompetitiveProcessViewSet(UserActionLoggingViewset):
     queryset = CompetitiveProcess.objects.none()
     filter_backends = (CompetitiveProcessFilterBackend,)
+    lookup_field = "id"
 
     def perform_create(self, serializer):
         """
