@@ -178,15 +178,16 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         return super().retrieve(request, *args, **kwargs)
 
     def create(self, request, *args, **kwargs):
-        instance = self.get_object()
+        response = super().create(request, *args, **kwargs)
+        instance = response.data.serializer.instance
         instance.log_user_action(
-            settings.ACTION_CREATE.format(
-                instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
-                helpers.get_instance_identifier(instance),
-            ),
-            request,
-        )
-        return super().create(request, *args, **kwargs)
+                settings.ACTION_CREATE.format(
+                    instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
+                    helpers.get_instance_identifier(instance),
+                ),
+                request,
+            )
+        return response
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()

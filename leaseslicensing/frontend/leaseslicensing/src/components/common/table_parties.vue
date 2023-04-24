@@ -15,7 +15,7 @@
         </div>
 
         <AddPartyModal ref="add_party" @closeModal="closeModal" @refreshDatatable="refreshFromResponse"
-            @partyToAdd="addParty"/>
+            @partyToAdd="addParty" />
     </div>
 </template>
 
@@ -103,8 +103,8 @@ export default {
                 data: null,
                 'render': function (row, type, full) {
                     if (full.is_person) {
-                        return  "fullname" in full.person? full.person.fullname:
-                                "full_name" in full.person? full.person.full_name:
+                        return "fullname" in full.person ? full.person.fullname :
+                            "full_name" in full.person ? full.person.full_name :
                                 "(name)";
                     } else {
                         return "";
@@ -125,9 +125,9 @@ export default {
         column_phone: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     if (full.is_person && full.person) {
-                        return full.person.phone_number? full.person.phone_number: "";
+                        return full.person.phone_number ? full.person.phone_number : "";
                     } else if (full.is_organisation && full.organisation) {
                         // Return the phone number of the first org contact in the list
                         if (full.organisation.contacts && full.organisation.contacts.length > 0) {
@@ -143,9 +143,9 @@ export default {
         column_mobile: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     if (full.is_person && full.person) {
-                        return full.person.mobile_number? full.person.mobile_number: "";
+                        return full.person.mobile_number ? full.person.mobile_number : "";
                     } else if (full.is_organisation && full.organisation) {
                         // Return the mobile number of the first org contact in the list
                         if (full.organisation.contacts && full.organisation.contacts.length > 0) {
@@ -162,9 +162,9 @@ export default {
         column_email: () => {
             return {
                 data: null,
-                'render': function(row, type, full){
+                'render': function (row, type, full) {
                     if (full.is_person && full.person) {
-                        return full.person.email? full.person.email: "";
+                        return full.person.email ? full.person.email : "";
                     } else if (full.is_organisation) {
                         return full.organisation.ledger_organisation_email;
                     } else {
@@ -173,14 +173,14 @@ export default {
                 }
             }
         },
-        is_external: function() {
+        is_external: function () {
             return this.level == 'external'
         },
         is_internal: function () {
             return this.level == 'internal'
         },
-        datatable_headers: function(){
-            if (this.is_internal){
+        datatable_headers: function () {
+            if (this.is_internal) {
                 return ['id', 'Name', 'Organisation', 'Phone', 'Mobile', 'Email']
             }
             return []
@@ -208,11 +208,11 @@ export default {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 columnDefs: [
-                    {responsivePriority: 1, targets: 1},
-                    {responsivePriority: 2, targets: 2},
-                    {responsivePriority: 6, targets: 3},
-                    {responsivePriority: 5, targets: 4},
-                    {responsivePriority: 4, targets: 5},
+                    { responsivePriority: 1, targets: 1 },
+                    { responsivePriority: 2, targets: 2 },
+                    { responsivePriority: 6, targets: 3 },
+                    { responsivePriority: 5, targets: 4 },
+                    { responsivePriority: 4, targets: 5 },
                 ],
                 createdRow: function (row, full_data, dataIndex) {
                     full_data.expanded = false
@@ -235,14 +235,14 @@ export default {
                 },
             }
         },
-        elementDisabled: function() {
+        elementDisabled: function () {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, finalized, declined, or completed
             return this.processing || this.discarded || this.finalised || this.declined || this.completed;
         }
     },
     methods: {
-        addParty: async function(params){
+        addParty: async function (params) {
             let url;
             let is_person = params.type === 'person';
             let is_organisation = params.type === 'organisation'
@@ -252,15 +252,15 @@ export default {
                     if (party.is_person && party.person_id === params.party_to_add.id)
                         // Person has been already added
                         return
-                    }
+                }
                 url = `${api_endpoints.users}${params.party_to_add.id}`;
             } else if (is_organisation) {
-                for (let party of this.competitive_process_parties){
+                for (let party of this.competitive_process_parties) {
                     if (party.is_organisation && party.organisation === params.party_to_add.id)
                         // Organisation has already been added
                         return;
                 }
-                url = `${api_endpoints.organisations_viewset}${params.party_to_add.id}`;
+                url = `${api_endpoints.organisations}${params.party_to_add.id}`;
             }
 
             console.log(api_endpoints)
@@ -280,10 +280,10 @@ export default {
                     'id': 0,  // This is competitive_process_party id.  Empty string because this is not saved yet.
                     'is_person': is_person, //true,
                     'is_organisation': is_organisation, // false,
-                    'person': is_person? data: null, // Either a person or an organisation
-                    'person_id': is_person? data.id: null,
-                    'organisation': is_organisation? data: null,
-                    'organisation_id': is_organisation? data.id: null,
+                    'person': is_person ? data : null, // Either a person or an organisation
+                    'person_id': is_person ? data.id : null,
+                    'organisation': is_organisation ? data : null,
+                    'organisation_id': is_organisation ? data.id : null,
                     'invited_at': null,
                     'removed_at': null,
                     'party_details': [],
@@ -350,7 +350,7 @@ export default {
                 })
             })
         },
-        addTableDrawListener: function() {
+        addTableDrawListener: function () {
             /** Listens on datatable draw events and adds a negative id to new rows.
              *  This is because new rows are not yet saved to the database and therefore
              *  do not have an id, but need to be distinguishable in the frontend for
@@ -368,7 +368,7 @@ export default {
                     if (_id == 0) {
                         row._aData["id"] = vm.new_party_id;
                         console.log("ID", row._aData["id"]);
-                        vm.new_party_id --;
+                        vm.new_party_id--;
                     }
                 })
             })

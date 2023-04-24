@@ -126,19 +126,19 @@
                 </div>
             </div>
         </div>
-        <div v-if="displaySaveBtns" class="navbar navbar-fixed-bottom" style="background-color: #f5f5f5;">
+        <div v-if="displaySaveBtns" class="navbar fixed-bottom me-1" style="background-color: #f5f5f5;">
             <div class="container">
                 <div class="col-md-12 text-end">
-                    <button v-if="processing" type="button" class="btn btn-primary" disabled>
+                    <button v-if="processing" type="button" class="btn btn-primary me-1" disabled>
                         Save and Continue&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
                     </button>
-                    <input v-else type="button" @click.prevent="save_and_continue()" class="btn btn-primary"
+                    <input v-else type="button" @click.prevent="save_and_continue()" class="btn btn-primary me-1"
                         value="Save and Continue" ::disabled="disableSaveAndContinueBtn" />
 
-                    <button v-if="processing" type="button" class="btn btn-primary" disabled>
+                    <button v-if="processing" type="button" class="btn btn-primary me-1" disabled>
                         Save and Exit&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
                     </button>
-                    <input v-else type="button" @click.prevent="save_and_exit()" class="btn btn-primary"
+                    <input v-else type="button" @click.prevent="save_and_exit()" class="btn btn-primary me-1"
                         value="Save and Exit" :disabled="disableSaveAndExitBtn" />
 
                     <!-- <button class="btn btn-primary" @click.prevent="save_and_continue()" :disabled="disableSaveAndContinueBtn">Save and Continue</button> -->
