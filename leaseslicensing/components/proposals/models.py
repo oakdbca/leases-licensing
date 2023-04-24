@@ -1511,14 +1511,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         emailusers = []
         for id in group.get_system_group_member_ids():
             emailuser = retrieve_email_user(id)
-            emailusers.append(
-                {
-                    "id": id,
-                    "first_name": emailuser.first_name,
-                    "last_name": emailuser.last_name,
-                    "email": emailuser.email,
-                }
-            )
+            emailusers.append(emailuser)
 
         return emailusers
 
