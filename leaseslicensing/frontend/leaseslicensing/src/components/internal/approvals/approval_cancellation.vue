@@ -1,212 +1,155 @@
 <template lang="html">
-    <div id="approvalCancellation">
-        <modal transition="modal fade" @ok="ok()" @cancel="cancel()" :title="title" large>
+    <div :id="'approvalCancellation' + approval_id">
+        <modal transition="modal fade" @ok="validateForm()" @cancel="cancel()" :title="title" large>
             <div class="container-fluid">
                 <div class="row">
-                    <form class="form-horizontal" name="approvalForm">
-                        <alert :show.sync="showError" type="danger"><strong>{{errorString}}</strong></alert>
+                    <form id="approvalForm" class="form-horizontal required-validation" name="approvalForm" novalidate>
+                        <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
                         <div class="col-sm-12">
-                            <div class="form-group">
-                                <div class="row">
-                                    <div class="col-sm-3">
-
-                                        <label class="control-label pull-left"  for="Name">Cancellation Date</label>
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <div class="input-group date" ref="cancellation_date" style="width: 70%;">
-                                            <input type="text" class="form-control" name="cancellation_date" placeholder="DD/MM/YYYY" v-model="approval.cancellation_date">
-                                            <span class="input-group-addon">
-                                                <span class="glyphicon glyphicon-calendar"></span>
-                                            </span>
+                            <div class="row mb-3">
+                                <label class="col-sm-3 col-form-label" for="Name">Cancellation Date</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group date" ref="cancellation_date">
+                                        <input type="date" class="form-control" placeholder="DD/MM/YYYY"
+                                            id="cancellation_date" name="cancellation_date"
+                                            v-model="approval_cancellation.cancellation_date" required>
+                                        <div class="invalid-feedback">
+                                            Please select the cancellation date.
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="form-group">
-                                <div class="row">
-                                    <div class="col-sm-3">
-
-                                        <label class="control-label pull-left"  for="Name">Cancellation Details</label>
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <textarea name="cancellation_details" class="form-control" style="width:70%;" v-model="approval.cancellation_details"></textarea>
+                            <div class="row">
+                                <label class="col-sm-3 col-form-label" for="Name">Cancellation Details</label>
+                                <div class="col-sm-9">
+                                    <textarea name="cancellation_details" class="cancellation-details form-control" required
+                                        v-model="approval_cancellation.cancellation_details"></textarea>
+                                    <div class="invalid-feedback">
+                                        Please enter some details about the cancellation.
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </form>
                 </div>
-            </div>
-            <div slot="footer">
-                <button type="button" v-if="issuingApproval" disabled class="btn btn-primary" @click="ok"><i class="fa fa-spinner fa-spin"></i> Processing</button>
-                <button type="button" v-else class="btn btn-primary" @click="ok">Ok</button>
-                <button type="button" class="btn btn-primary" @click="cancel">Cancel</button>
             </div>
         </modal>
     </div>
 </template>
 
 <script>
-//import $ from 'jquery'
 import modal from '@vue-utils/bootstrap-modal.vue'
 import alert from '@vue-utils/alert.vue'
-import {helpers,api_endpoints} from "@/utils/hooks.js"
+import { helpers, api_endpoints } from "@/utils/hooks.js"
+import Swal from 'sweetalert2'
+
 export default {
-    name:'Cancel-Approval',
-    components:{
+    name: 'Cancel-Approval',
+    components: {
         modal,
         alert
     },
-    props:{
-        //approval_id: {
-        //    type: Number,
-        //    required: true
-        //},
+    props: {
+        approval_id: {
+            type: Number,
+            default: null,
+        },
     },
-    data:function () {
+    data: function () {
         let vm = this;
         return {
-            isModalOpen:false,
-            form:null,
-            approval: {},
-            approval_id: Number,
+            isModalOpen: false,
+            form: null,
+            approval_cancellation: {
+                cancellation_date: new Date().toISOString().slice(0, 10),
+            },
             state: 'proposed_approval',
-            issuingApproval: false,
             validation_form: null,
             errors: false,
             errorString: '',
             successString: '',
-            success:false,
-            datepickerOptions:{
-                format: 'DD/MM/YYYY',
-                showClear:true,
-                useCurrent:false,
-                keepInvalid:true,
-                allowInputToggle:true
-            },
+            success: false,
         }
     },
     computed: {
-        showError: function() {
+        showError: function () {
             var vm = this;
             return vm.errors;
         },
-        title: function(){
+        title: function () {
             return 'Cancel Approval';
         }
     },
-    methods:{
-        ok:function () {
-            let vm =this;
-            if($(vm.form).valid()){
-                vm.sendData();
-
-            }
-        },
-        cancel:function () {
+    methods: {
+        cancel: function () {
             this.close()
         },
-        close:function () {
+        resetForm: function () {
             this.isModalOpen = false;
-            this.approval = {};
-            this.errors = false;
-            $('.has-error').removeClass('has-error');
-            $(this.$refs.cancellation_date).data('DateTimePicker').clear();
-            this.validation_form.resetForm();
+            this.approval_cancellation = {
+                cancellation_date: new Date().toISOString().slice(0, 10),
+            };
         },
-        fetchContact: function(id){
+        close: function () {
+            var form = document.getElementById('approvalForm')
+            form.classList.remove('was-validated');
+            this.resetForm();
+        },
+        fetchContact: function (id) {
             let vm = this;
             vm.$http.get(api_endpoints.contact(id)).then((response) => {
                 vm.contact = response.body; vm.isModalOpen = true;
-            },(error) => {
+            }, (error) => {
                 console.log(error);
-            } );
+            });
         },
-        sendData:function(){
+        validateForm: function () {
+            let vm = this;
+            var form = document.getElementById('approvalForm')
+
+            if (form.checkValidity()) {
+                console.log('Form valid');
+                vm.sendData();
+            } else {
+                form.classList.add('was-validated');
+                $('#approvalForm').find(":invalid").first().focus();
+            }
+
+            return false;
+        },
+        sendData: function () {
             let vm = this;
             vm.errors = false;
-            let approval = JSON.parse(JSON.stringify(vm.approval));
-            vm.issuingApproval = true;
-
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.approvals,vm.approval_id+'/approval_cancellation'),JSON.stringify(approval),{
-                        emulateJSON:true,
-                    }).then((response)=>{
-                        vm.issuingApproval = false;
-                        vm.close();
-                        swal(
-                             'Cancelled',
-                             'An email has been sent to the proponent about cancellation of this approval',
-                             'success'
-                        );
-                        vm.$emit('refreshFromResponse',response);
-
-
-                    },(error)=>{
-                        vm.errors = true;
-                        vm.issuingApproval = false;
-                        vm.errorString = helpers.apiVueResourceError(error);
+            const requestOptions = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(vm.approval)
+            };
+            fetch(helpers.add_endpoint_json(api_endpoints.approvals, vm.approval_id + '/approval_cancellation'), requestOptions)
+                .then((response) => {
+                    vm.close();
+                    Swal.fire({
+                        title: 'Cancelled',
+                        text: 'An email has been sent to the proponent regarding the cancellation of this approval',
+                        icon: 'success',
+                        showCancelButton: false,
+                        confirmButtonText: 'Ok',
+                        buttonsStyling: false,
+                        customClass: {
+                            confirmButton: 'btn btn-primary',
+                        },
                     });
-
-
+                    this.resetForm();
+                    vm.$emit('refreshFromResponse', response);
+                }, (error) => {
+                    vm.errors = true;
+                    vm.errorString = helpers.apiVueResourceError(error);
+                });
         },
-        addFormValidations: function() {
-            let vm = this;
-            vm.validation_form = $(vm.form).validate({
-                rules: {
-                    cancellation_date:"required",
-                    cancellation_details:"required",
-                },
-                messages: {
-                },
-                showErrors: function(errorMap, errorList) {
-                    $.each(this.validElements(), function(index, element) {
-                        var $element = $(element);
-                        $element.attr("data-original-title", "").parents('.form-group').removeClass('has-error');
-                    });
-                    // destroy tooltips on valid elements
-                    $("." + this.settings.validClass).tooltip("destroy");
-                    // add or update tooltips
-                    for (var i = 0; i < errorList.length; i++) {
-                        var error = errorList[i];
-                        $(error.element)
-                            .tooltip({
-                                trigger: "focus"
-                            })
-                            .attr("data-original-title", error.message)
-                            .parents('.form-group').addClass('has-error');
-                    }
-                }
-            });
-       },
-       eventListeners:function () {
-            let vm = this;
-            // Initialise Date Picker
-            /*
-            // update to bs5
-            $(vm.$refs.cancellation_date).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.cancellation_date).on('dp.change', function(e){
-                if ($(vm.$refs.cancellation_date).data('DateTimePicker').date()) {
-                    vm.approval.cancellation_date =  e.date.format('DD/MM/YYYY');
-                }
-                else if ($(vm.$refs.cancellation_date).data('date') === "") {
-                    vm.approval.cancellation_date = "";
-                }
-             });
-             */
-       }
-   },
-   mounted:function () {
-        let vm =this;
-        vm.form = document.forms.approvalForm;
-        vm.addFormValidations();
-        this.$nextTick(()=>{
-            vm.eventListeners();
-        });
-   }
+
+    },
+    mounted: function () {
+
+    }
 }
 </script>
-
-<style lang="css">
-</style>
