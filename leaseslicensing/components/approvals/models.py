@@ -371,12 +371,13 @@ class Approval(RevisionedMixin):
         ) and self.can_action
 
     @property
+    def allowed_assessor_ids(self):
+        return user_ids_in_group(settings.GROUP_LEASE_LICENCE_ASSESSOR)
+
+    @property
     def allowed_assessors(self):
-        lease_license_assessor_ids = user_ids_in_group(
-            settings.GROUP_LEASE_LICENCE_ASSESSOR
-        )
         emailusers = []
-        for id in lease_license_assessor_ids:
+        for id in self.allowed_assessor_ids():
             emailuser = retrieve_email_user(id)
             emailusers.append(
                 {
@@ -603,7 +604,7 @@ class Approval(RevisionedMixin):
 
     def approval_cancellation(self, request, details):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to cancel this approval")
             if not self.can_reissue and self.can_action:
                 raise ValidationError(
@@ -844,7 +845,7 @@ class ApprovalUserAction(UserAction):
 
     @classmethod
     def log_action(cls, approval, action, user):
-        return cls.objects.create(approval=approval, who=user, what=str(action))
+        return cls.objects.create(approval=approval, who=user.id, what=str(action))
 
     approval = models.ForeignKey(
         Approval, related_name="action_logs", on_delete=models.CASCADE
