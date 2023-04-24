@@ -120,13 +120,24 @@ export default {
         sendData: function () {
             let vm = this;
             vm.errors = false;
+            console.log(vm.approval_cancellation.cancellation_date)
             const requestOptions = {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(vm.approval)
+                body: JSON.stringify(vm.approval_cancellation)
             };
             fetch(helpers.add_endpoint_json(api_endpoints.approvals, vm.approval_id + '/approval_cancellation'), requestOptions)
-                .then((response) => {
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        if (400 == response.status) {
+                            vm.errors = true;
+                            vm.errorString = helpers.getErrorStringFromResponseData(data);
+                        }
+                        console.log(error)
+                        return Promise.reject(error);
+                    }
                     vm.close();
                     Swal.fire({
                         title: 'Cancelled',
