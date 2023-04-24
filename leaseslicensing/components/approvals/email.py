@@ -11,6 +11,7 @@ from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationLogEntry,
 )
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
 
@@ -184,10 +185,11 @@ def send_approval_cancel_email_notification(approval):
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
     if proposal.org_applicant and proposal.org_applicant.email:
-        cc_list = proposal.org_applicant.email
+        cc_list = proposal.org_applicant.ledger_organisation_email
         if cc_list:
             all_ccs = [cc_list]
-    msg = email.send(proposal.submitter.email, cc=all_ccs, context=context)
+    submitter_obj = retrieve_email_user(proposal.submitter)
+    msg = email.send(submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
@@ -454,7 +456,7 @@ def _log_approval_email(email_message, approval, sender=None):
 
     customer = approval.current_proposal.submitter
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
@@ -529,7 +531,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
 
 
 def _log_user_email(email_message, emailuser, customer, sender=None):
-    from ledger.accounts.models import EmailUserLogEntry
+    from leaseslicensing.components.users.models import EmailUserLogEntry
 
     if isinstance(
         email_message,
@@ -564,12 +566,12 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
 
     customer = customer
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
         "text": text,
-        "emailuser": emailuser,
+        "email_user": emailuser,
         "customer": customer,
         "staff": staff,
         "to": to,
