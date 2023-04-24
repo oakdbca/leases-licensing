@@ -590,7 +590,7 @@ export default {
                         d.filter_approval_organisation = vm.filterApprovalOrganisation
                         d.filter_approval_region = vm.filterApprovalRegion
                         d.filter_approval_district = vm.filterApprovalDistrict
-                        d.filter_approval_category = vm.filterApprovalGroup
+                        d.filter_approval_group = vm.filterApprovalGroup
 
                         d.level = vm.level
                     }
