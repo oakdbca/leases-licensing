@@ -360,4 +360,7 @@ module.exports = {
             return false
         }
     },
+    formatDateForAPI: function (data, format = 'DD/MM/YYYY') {
+        return data ? moment(data).format(format) : '';
+    },
 };
