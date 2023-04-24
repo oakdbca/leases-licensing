@@ -181,9 +181,9 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             if request.GET.get("filter_approval_district") != "all"
             else ""
         )
-        filter_approval_category = (
-            request.GET.get("filter_approval_category")
-            if request.GET.get("filter_approval_category") != "all"
+        filter_approval_group = (
+            request.GET.get("filter_approval_group")
+            if request.GET.get("filter_approval_group") != "all"
             else ""
         )
 
@@ -226,12 +226,15 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(
                 current_proposal__localities__district_id=filter_approval_district
             )
-        if filter_approval_category:
-            filter_approval_category = int(filter_approval_category)
-            logger.debug(f"filter_approval_category: {filter_approval_category}")
-            queryset = queryset.filter(
-                current_proposal__category_id=filter_approval_category
+        if filter_approval_group:
+            filter_approval_group = int(filter_approval_group)
+            logger.debug(f"filter_approval_group: {filter_approval_group}")
+            proposal_ids = (
+                Proposal.objects.filter(groups__id__contains=filter_approval_group)
+                .distinct()
+                .values_list("id", flat=True)
             )
+            queryset = queryset.filter(current_proposal__in=proposal_ids)
 
         # getter = request.query_params.get
         # fields = self.get_fields(getter)
