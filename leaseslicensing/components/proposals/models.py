@@ -53,6 +53,7 @@ from leaseslicensing.components.proposals.email import (
     send_referral_email_notification,
 )
 from leaseslicensing.components.tenure.models import LGA, District, Group
+from leaseslicensing.helpers import user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
     APPLICATION_TYPE_LEASE_LICENCE,
@@ -1503,17 +1504,27 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
         ]:
             group = self.get_assessor_group()
-        users = (
-            list(
-                map(
-                    lambda id: retrieve_email_user(id),
-                    group.get_system_group_member_ids(),
-                )
+
+        if not group:
+            return []
+
+        emailusers = []
+        for id in group.get_system_group_member_ids():
+            emailuser = retrieve_email_user(id)
+            emailusers.append(
+                {
+                    "id": id,
+                    "first_name": emailuser.first_name,
+                    "last_name": emailuser.last_name,
+                    "email": emailuser.email,
+                }
             )
-            if group
-            else []
-        )
-        return users
+
+        return emailusers
+
+    @property
+    def allowed_approvers(self):
+        return user_ids_in_group()
 
     @property
     def compliance_assessors(self):
@@ -3945,7 +3956,7 @@ class Referral(RevisionedMixin):
 
     @property
     def allowed_assessors(self):
-        raise NotImplementedError("TODO: implement this")
+        return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
     def can_process(self, user):
         raise NotImplementedError("TODO: implement this")
