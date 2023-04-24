@@ -476,7 +476,7 @@ export default {
                         if (vm.is_internal && vm.wlaDash) {
                             links += full.offer_link;
                         }
-                        if (full.allowed_assessors_user) {
+                        if (full.is_assessor) {
                             if (full.can_reissue && full.can_action) {
                                 links += `<a href='#${full.id}' data-cancel-approval='${full.id}'>Cancel</a><br/>`;
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
