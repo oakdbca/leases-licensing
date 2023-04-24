@@ -995,7 +995,7 @@ class OrganisationRequest(models.Model):
             logger.debug("ledger_org = " + str(ledger_org))
 
             org, created = Organisation.objects.get_or_create(
-                organisation=ledger_org["organisation_id"]
+                ledger_organisation_id=ledger_org["organisation_id"]
             )
 
             self.organisation = org
