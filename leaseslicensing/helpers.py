@@ -8,6 +8,15 @@ from ledger_api_client.utils import get_all_organisation
 logger = logging.getLogger(__name__)
 
 
+def user_ids_in_group(group_name):
+    try:
+        system_group = SystemGroup.objects.get(name=group_name)
+        return system_group.get_system_group_member_ids()
+    except SystemGroup.DoesNotExist:
+        logger.warn(f"SystemGroup {group_name} does not exist.")
+        return []
+
+
 def belongs_to_by_user_id(user_id, group_name):
     system_group = SystemGroup.objects.filter(name=group_name).first()
     return system_group and user_id in system_group.get_system_group_member_ids()
