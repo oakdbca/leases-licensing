@@ -56,6 +56,15 @@ def update_approval_comms_log_filename(instance, filename):
     )
 
 
+def update_approval_cancellation_doc_filename(instance, filename):
+    return "{}/proposals/{}/approvals/{}/cancellation_documents/{}".format(
+        settings.MEDIA_APP_DIR,
+        instance.current_proposal.id,
+        instance.id,
+        filename,
+    )
+
+
 class ApprovalDocument(Document):
     approval = models.ForeignKey(
         "Approval", related_name="documents", on_delete=models.CASCADE
@@ -821,6 +830,23 @@ class ApprovalLogDocument(Document):
     )
     _file = models.FileField(
         upload_to=update_approval_comms_log_filename, null=True, max_length=512
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+
+class ApprovalCancellationDocument(Document):
+    approval = models.ForeignKey(
+        Approval,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approval_cancellation_documents",
+    )
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    _file = models.FileField(
+        upload_to=update_approval_cancellation_doc_filename, max_length=512
     )
 
     class Meta:
