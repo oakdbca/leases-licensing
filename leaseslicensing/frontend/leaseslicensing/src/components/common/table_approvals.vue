@@ -496,6 +496,10 @@ export default {
                             if (full.can_reinstate) {
                                 links += `<a href='#${full.id}' data-reinstate-approval='${full.id}'>Reinstate</a><br/>`;
                             }
+                            // Todo: Not yet sure under which circumstances these actions should be visible
+                            links += `<a href='#${full.id}' data-review-invoice-details-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
+                            links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
+
                         }
                         if (full.renewal_document && full.renewal_sent) {
                             links += `<a href='${full.renewal_document}' target='_blank'>Renewal Notice</a><br/>`;
@@ -786,6 +790,22 @@ export default {
                 vm.approvalHistory(id);
             });
 
+            // Internal review invoice details listener
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-review-invoice-details-approval]', function (e) {
+                e.preventDefault();
+                var id = $(this).attr('data-review-invoice-detail-approval');
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.approvalReviewInvoiceDetails(id, lodgement_number);
+            });
+
+            // Internal review renewal listener
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-review-renewal-approval]', function (e) {
+                e.preventDefault();
+                var id = $(this).attr('data-review-renewal-approval');
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.approvalReviewRenewal(id, lodgement_number);
+            });
+
             // Listener for thr row
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'td', function (e) {
                 expandToggle(vm, this);
@@ -1004,7 +1024,12 @@ export default {
                 this.$refs.approval_history.isModalOpen = true;
             });
         },
-
+        approvalReviewInvoiceDetails: function (approval_id, approval_lodgement_number) {
+            alert('Will implement once we have completed the invoicing functionality.')
+        },
+        approvalReviewRenewal: function (approval_id, approval_lodgement_number) {
+            alert('Will implement when we have an idea what is supposed to happen here.')
+        },
         renewApproval: async function (proposal_id) {
             let vm = this;
             let status = 'with_approver'
