@@ -580,7 +580,7 @@ class Approval(RevisionedMixin):
 
     def approval_extend(self, request, details):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to extend this approval")
             if not self.can_extend and self.can_action:
                 raise ValidationError("You cannot extend approval any further")
@@ -651,7 +651,7 @@ class Approval(RevisionedMixin):
 
     def approval_suspension(self, request, details):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to suspend this approval")
             if not self.can_reissue and self.can_action:
                 raise ValidationError(
@@ -694,7 +694,7 @@ class Approval(RevisionedMixin):
 
     def reinstate_approval(self, request):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError(
                     "You do not have access to reinstate this approval"
                 )
@@ -735,8 +735,9 @@ class Approval(RevisionedMixin):
             if not request.user.leaseslicensing_organisations.filter(
                 organisation_id=self.applicant_id
             ):
-                if request.user not in self.allowed_assessors and not is_customer(
-                    request
+                if (
+                    request.user.id not in self.allowed_assessor_ids
+                    and not is_customer(request)
                 ):
                     raise ValidationError(
                         "You do not have access to surrender this approval"

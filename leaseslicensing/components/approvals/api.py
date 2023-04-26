@@ -5,8 +5,6 @@ from datetime import datetime
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import Q
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
@@ -34,7 +32,9 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalSuspensionSerializer,
     ApprovalUserActionSerializer,
 )
+from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
+from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationContact,
@@ -452,67 +452,81 @@ class ApprovalViewSet(viewsets.ModelViewSet):
 
     @detail_route(methods=["POST"], detail=True)
     @renderer_classes((JSONRenderer,))
-    def process_document(self, request, *args, **kwargs):
+    @basic_exception_handler
+    def process_approval_cancellation_document(self, request, *args, **kwargs):
         instance = self.get_object()
-        action = request.POST.get("action")
-        section = request.POST.get("input_name")
-        if action == "list" and "input_name" in request.POST:
-            pass
-
-        elif action == "delete" and "document_id" in request.POST:
-            document_id = request.POST.get("document_id")
-            document = instance.qaofficer_documents.get(id=document_id)
-
-            document.visible = False
-            document.save()
-            instance.save(
-                version_comment=f"Licence ({section}): {document.name}"
-            )  # to allow revision to be added to reversion history
-
-        elif (
-            action == "save"
-            and "input_name" in request.POST
-            and "filename" in request.POST
-        ):
-            proposal_id = request.POST.get("proposal_id")
-            filename = request.POST.get("filename")
-            _file = request.POST.get("_file")
-            if not _file:
-                _file = request.FILES.get("_file")
-
-            document = instance.qaofficer_documents.get_or_create(
-                input_name=section, name=filename
-            )[0]
-            path = default_storage.save(
-                "{}/proposals/{}/approvals/{}".format(
-                    settings.MEDIA_APP_DIR, proposal_id, filename
-                ),
-                ContentFile(_file.read()),
-            )
-
-            document._file = path
-            document.save()
-            instance.save(
-                version_comment=f"Licence ({section}): {filename}"
-            )  # to allow revision to be added to reversion history
-            # instance.current_proposal.save(version_comment='File Added: {}'.format(filename))
-            # # to allow revision to be added to reversion history
-
-        return Response(
-            [
-                dict(
-                    input_name=d.input_name,
-                    name=d.name,
-                    file=d._file.url,
-                    id=d.id,
-                    can_delete=d.can_delete,
-                )
-                for d in instance.qaofficer_documents.filter(
-                    input_name=section, visible=True
-                )
-                if d._file
-            ]
+        returned_data = process_generic_document(
+            request, instance, document_type="approval_cancellation_document"
         )
+        if returned_data:
+            return Response(returned_data)
+        else:
+            return Response()
+
+    # Commenting this out for now. Not sure if we need this
+    # @detail_route(methods=["POST"], detail=True)
+    # @renderer_classes((JSONRenderer,))
+    # def process_document(self, request, *args, **kwargs):
+    #     instance = self.get_object()
+    #     action = request.POST.get("action")
+    #     section = request.POST.get("input_name")
+    #     if action == "list" and "input_name" in request.POST:
+    #         pass
+
+    #     elif action == "delete" and "document_id" in request.POST:
+    #         document_id = request.POST.get("document_id")
+    #         document = instance.qaofficer_documents.get(id=document_id)
+
+    #         document.visible = False
+    #         document.save()
+    #         instance.save(
+    #             version_comment=f"Licence ({section}): {document.name}"
+    #         )  # to allow revision to be added to reversion history
+
+    #     elif (
+    #         action == "save"
+    #         and "input_name" in request.POST
+    #         and "filename" in request.POST
+    #     ):
+    #         proposal_id = request.POST.get("proposal_id")
+    #         filename = request.POST.get("filename")
+    #         _file = request.POST.get("_file")
+    #         if not _file:
+    #             _file = request.FILES.get("_file")
+
+    #         document = instance.qaofficer_documents.get_or_create(
+    #             input_name=section, name=filename
+    #         )[0]
+    #         path = default_storage.save(
+    #             "{}/proposals/{}/approvals/{}".format(
+    #                 settings.MEDIA_APP_DIR, proposal_id, filename
+    #             ),
+    #             ContentFile(_file.read()),
+    #         )
+
+    #         document._file = path
+    #         document.save()
+    #         instance.save(
+    #             version_comment=f"Licence ({section}): {filename}"
+    #         )  # to allow revision to be added to reversion history
+    #         # instance.current_proposal.save(version_comment='File Added: {}'.format(filename))
+    #         # # to allow revision to be added to reversion history
+
+    #     return Response(
+    #         [
+    #             dict(
+    #                 input_name=d.input_name,
+    #                 name=d.name,
+    #                 file=d._file.url,
+    #                 id=d.id,
+    #                 can_delete=d.can_delete,
+    #             )
+    #             for d in instance.qaofficer_documents.filter(
+    #                 input_name=section, visible=True
+    #             )
+    #             if d._file
+    #         ]
+    #     )
 
     @detail_route(
         methods=[

@@ -7,7 +7,7 @@
                         <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
                         <div class="col-sm-12">
                             <div class="row mb-3">
-                                <label class="col-sm-3 col-form-label" for="Name">Cancellation Date</label>
+                                <label class="col-sm-3 col-form-label" for="cancellation_date">Cancellation Date</label>
                                 <div class="col-sm-9">
                                     <div class="input-group date" ref="cancellation_date">
                                         <input type="date" class="form-control" placeholder="DD/MM/YYYY"
@@ -19,14 +19,24 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row">
-                                <label class="col-sm-3 col-form-label" for="Name">Cancellation Details</label>
+                            <div class="row mb-3">
+                                <label class="col-sm-3 col-form-label" for="cancellation_details">Cancellation
+                                    Details</label>
                                 <div class="col-sm-9">
                                     <textarea name="cancellation_details" class="cancellation-details form-control" required
                                         v-model="approval_cancellation.cancellation_details"></textarea>
                                     <div class="invalid-feedback">
                                         Please enter some details about the cancellation.
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <label class="col-sm-3 col-form-label" for="files">Files</label>
+                                <div class="col-sm-9">
+                                    <FileField v-if="approval_id" ref="approval_cancellation_documents"
+                                        name="approval_cancellation_documents" id="approval_cancellation_documents"
+                                        :isRepeatable="true" :documentActionUrl="approvalCancellationDocumentsUrl"
+                                        :replace_button_by_text="true" />
                                 </div>
                             </div>
                         </div>
@@ -39,6 +49,7 @@
 
 <script>
 import modal from '@vue-utils/bootstrap-modal.vue'
+import FileField from '@/components/forms/filefield_immediate.vue'
 import alert from '@vue-utils/alert.vue'
 import { helpers, api_endpoints } from "@/utils/hooks.js"
 import Swal from 'sweetalert2'
@@ -47,11 +58,16 @@ export default {
     name: 'Cancel-Approval',
     components: {
         modal,
-        alert
+        alert,
+        FileField
     },
     props: {
         approval_id: {
             type: Number,
+            default: null,
+        },
+        approval_lodgement_number: {
+            type: String,
             default: null,
         },
     },
@@ -77,8 +93,14 @@ export default {
             return vm.errors;
         },
         title: function () {
-            return 'Cancel Approval';
-        }
+            return 'Cancel Approval ' + this.approval_lodgement_number;
+        },
+        approvalCancellationDocumentsUrl: function () {
+            return helpers.add_endpoint_join(
+                api_endpoints.approvals,
+                this.approval_id + '/process_approval_cancellation_document'
+            )
+        },
     },
     methods: {
         cancel: function () {
@@ -89,7 +111,7 @@ export default {
             this.approval_cancellation = {
                 cancellation_date: new Date().toISOString().slice(0, 10),
             };
-            vm.errors = false;
+            this.errors = false;
         },
         close: function () {
             var form = document.getElementById('approvalForm')
