@@ -99,6 +99,7 @@
             </div>
         </div>
         <ApprovalCancellation ref="approval_cancellation" :approval_id="selectedApprovalId"
+            :approval_lodgement_number="selectedApprovalLodgementNumber"
             @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalCancellation>
         <ApprovalSuspension ref="approval_suspension" @refreshFromResponse="refreshFromResponseApprovalModify">
@@ -122,6 +123,7 @@ import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid';
 import { expandToggle } from '@/components/common/table_functions.js'
+import Swal from 'sweetalert2'
 
 export default {
     name: 'TableApprovals',
@@ -165,6 +167,7 @@ export default {
             groups: [],
             profile: {},
             selectedApprovalId: null,
+            selectedApprovalLodgementNumber: null,
 
             // selected values for filtering
             filterApprovalType: sessionStorage.getItem('filterApprovalType') ? sessionStorage.getItem('filterApprovalType') : 'all',
@@ -480,7 +483,7 @@ export default {
                         }
                         if (full.is_assessor) {
                             if (full.can_reissue && full.can_action) {
-                                links += `<a href='#${full.id}' data-cancel-approval='${full.id}'>Cancel</a><br/>`;
+                                links += `<a href='#${full.id}' data-cancel-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Cancel</a><br/>`;
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
                             }
                             if (full.status == 'Current' && full.can_action) {
@@ -724,7 +727,8 @@ export default {
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-cancel-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-cancel-approval');
-                vm.cancelApproval(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.cancelApproval(id, lodgement_number);
             });
 
             //Internal Suspend listener
@@ -928,37 +932,40 @@ export default {
         reinstateApproval: async function (approval_id) {
             let vm = this;
             let status = 'with_approver'
-            //let data = {'status': status}
-            await swal.fire({
+            Swal.fire({
                 title: "Reinstate Approval",
                 text: "Are you sure you want to reinstate this approval?",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Reinstate approval',
-                //confirmButtonColor:'#d9534f'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(helpers.add_endpoint_json(api_endpoints.approvals, (approval_id + '/approval_reinstate')),
+                            {
+                                method: 'POST',
+                            })
+                        Swal.fire(
+                            'Reinstate',
+                            'Your approval has been reinstated',
+                            'success'
+                        )
+                        vm.$refs.approvals_datatable.vmDataTable.ajax.reload();
+                    } catch (error) {
+                        console.log(error);
+                        Swal.fire(
+                            "Reinstate Approval",
+                            error.body,
+                            "error"
+                        )
+                    }
+                }
             })
-            try {
-                const response = fetch(helpers.add_endpoint_json(api_endpoints.approvals, (approval_id + '/approval_reinstate')),
-                    {
-                        method: 'POST',
-                    })
-                await swal(
-                    'Reinstate',
-                    'Your approval has been reinstated',
-                    'success'
-                )
-                vm.$refs.approvals_datatable.vmDataTable.ajax.reload();
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: "Reinstate Approval",
-                    text: error.body,
-                    type: "error",
-                })
-            }
+
         },
-        cancelApproval: function (approval_id) {
+        cancelApproval: function (approval_id, approval_lodgement_number) {
             this.selectedApprovalId = parseInt(approval_id);
+            this.selectedApprovalLodgementNumber = approval_lodgement_number;
             this.$refs.approval_cancellation.isModalOpen = true;
             this.$nextTick(() => {
                 $(`#approvalCancellation${approval_id} textarea.cancellation-details`).focus();
