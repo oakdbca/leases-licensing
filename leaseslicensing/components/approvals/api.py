@@ -463,6 +463,32 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         else:
             return Response()
 
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def process_approval_surrender_document(self, request, *args, **kwargs):
+        instance = self.get_object()
+        returned_data = process_generic_document(
+            request, instance, document_type="approval_surrender_document"
+        )
+        if returned_data:
+            return Response(returned_data)
+        else:
+            return Response()
+
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def process_approval_suspension_document(self, request, *args, **kwargs):
+        instance = self.get_object()
+        returned_data = process_generic_document(
+            request, instance, document_type="approval_suspension_document"
+        )
+        if returned_data:
+            return Response(returned_data)
+        else:
+            return Response()
+
     # Commenting this out for now. Not sure if we need this
     # @detail_route(methods=["POST"], detail=True)
     # @renderer_classes((JSONRenderer,))
