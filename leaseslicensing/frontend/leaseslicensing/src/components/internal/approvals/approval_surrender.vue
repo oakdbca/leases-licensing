@@ -1,161 +1,158 @@
-<template lang="html">
-    <div id="approvalSurrender">
-        <modal transition="modal fade" @ok="ok()" @cancel="cancel()" :title="title" large>
+<template>
+    <div :id="'approvalSurrender' + approval_id">
+        <modal transition="modal fade" @ok="validateForm()" @cancel="close()" :title="title" large>
             <div class="container-fluid">
                 <div class="row">
-                    <form class="form-horizontal" name="approvalForm">
-                        <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
+                    <form id="approvalSurrenderForm" class="form-horizontal required-validation"
+                        name="approvalSurrenderForm" novalidate>
+                        <alert v-if="errorString" type="danger"><strong>{{ errorString }}</strong></alert>
                         <div class="col-sm-12">
-                            <div class="form-group">
-                                <div class="row">
-                                    <div class="col-sm-3">
-                                        <label class="control-label pull-left" for="Name">Surrender Date</label>
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <div class="input-group date" ref="surrender_date" style="width: 70%;">
-                                            <input type="text" class="form-control" name="surrender_date"
-                                                placeholder="DD/MM/YYYY" v-model="approval.surrender_date">
-                                            <span class="input-group-addon">
-                                                <span class="glyphicon glyphicon-calendar"></span>
-                                            </span>
+                            <div class="row mb-3">
+                                <label class="col-form-label col-sm-3" for="Name">Surrender Date</label>
+                                <div class="col-sm-9">
+                                    <div class="input-group date" ref="surrender_date">
+                                        <input type="date" class="form-control" name="surrender_date"
+                                            v-model="approval_surrender.surrender_date" required>
+                                        <div class="invalid-feedback">
+                                            Please select the surrender date.
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="form-group">
-                                <div class="row">
-                                    <div class="col-sm-3">
-
-                                        <label class="control-label pull-left" for="Name">Surrender Details</label>
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <textarea name="surrender_details" class="form-control" style="width:70%;"
-                                            v-model="approval.surrender_details"></textarea>
+                            <div class="row mb-3">
+                                <div class="col-sm-3">
+                                    <label class="col-form-label" for="Name">Surrender Details</label>
+                                </div>
+                                <div class="col-sm-9">
+                                    <textarea name="surrender_details" class="form-control surrender-details"
+                                        v-model="approval_surrender.surrender_details" required></textarea>
+                                    <div class="invalid-feedback">
+                                        Please enter some details about the surrender.
                                     </div>
                                 </div>
                             </div>
-
+                            <div class="row mb-3">
+                                <label class="col-sm-3 col-form-label" for="files">Files</label>
+                                <div class="col-sm-9">
+                                    <FileField v-if="approval_id" ref="approval_surrender_documents"
+                                        name="approval_surrender_documents" id="approval_surrender_documents"
+                                        :isRepeatable="true" :documentActionUrl="approvalSurrenderDocumentsUrl"
+                                        :replace_button_by_text="true" />
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
-            </div>
-            <div slot="footer">
-                <button type="button" v-if="issuingApproval" disabled class="btn btn-primary" @click="ok"><i
-                        class="fa fa-spinner fa-spin"></i> Processing</button>
-                <button type="button" v-else class="btn btn-primary" @click="ok">Ok</button>
-                <button type="button" class="btn btn-primary" @click="cancel">Cancel</button>
             </div>
         </modal>
     </div>
 </template>
 
 <script>
-//import $ from 'jquery'
+
 import modal from '@vue-utils/bootstrap-modal.vue'
+import FileField from '@/components/forms/filefield_immediate.vue'
 import alert from '@vue-utils/alert.vue'
+import Swal from 'sweetalert2'
+
 import { helpers, api_endpoints } from "@/utils/hooks.js"
+
 export default {
     name: 'Surrender-Approval',
     components: {
         modal,
-        alert
+        alert,
+        FileField,
     },
     props: {
-        //approval_id: {
-        //    type: Number,
-        //    required: true
-        //},
+        approval_id: {
+            type: Number,
+            default: null
+        },
+        approval_lodgement_number: {
+            type: String,
+            default: null,
+        },
     },
     data: function () {
         let vm = this;
         return {
             isModalOpen: false,
-            form: null,
-            approval: {},
-            approval_id: Number,
-            state: 'proposed_approval',
-            issuingApproval: false,
-            validation_form: null,
-            errors: false,
-            errorString: '',
-            successString: '',
-            success: false,
-            datepickerOptions: {
-                format: 'DD/MM/YYYY',
-                showClear: true,
-                useCurrent: false,
-                keepInvalid: true,
-                allowInputToggle: true
+            approval_surrender: {
+                surrender_date: new Date().toISOString().slice(0, 10),
             },
+            errorString: '',
         }
     },
     computed: {
-        showError: function () {
-            var vm = this;
-            return vm.errors;
-        },
         title: function () {
-            return 'Surrender Approval';
-        }
+            return 'Surrender Approval ' + this.approval_lodgement_number;
+        },
+        approvalSurrenderDocumentsUrl: function () {
+            return helpers.add_endpoint_join(
+                api_endpoints.approvals,
+                this.approval_id + '/process_approval_surrender_document'
+            )
+        },
     },
     methods: {
-        ok: function () {
-            let vm = this;
-            if ($(vm.form).valid()) {
-                vm.sendData();
-
-            }
-        },
-        cancel: function () {
-            this.close()
-        },
         close: function () {
-            this.isModalOpen = false;
-            this.approval = {};
-            this.errors = false;
-            $('.has-error').removeClass('has-error');
-            $(this.$refs.surrender_date).data('DateTimePicker').clear();
-            this.validation_form.resetForm();
+            var form = document.getElementById('approvalSurrenderForm')
+            form.classList.remove('was-validated');
+            this.resetForm();
         },
-        fetchContact: function (id) {
+        resetForm: function () {
+            this.isModalOpen = false;
+            this.approval_surrender = {
+                surrender_date: new Date().toISOString().slice(0, 10),
+            };
+            this.errorString = '';
+        },
+        validateForm: function () {
             let vm = this;
-            vm.$http.get(api_endpoints.contact(id)).then((response) => {
-                vm.contact = response.body; vm.isModalOpen = true;
-            }, (error) => {
-                console.log(error);
-            });
+            var form = document.getElementById('approvalSurrenderForm')
+
+            if (form.checkValidity()) {
+                console.log('Form valid');
+                vm.sendData();
+            } else {
+                form.classList.add('was-validated');
+                $('#approvalSurrenderForm').find(":invalid").first().focus();
+            }
+
+            return false;
         },
         sendData: function () {
             let vm = this;
-            vm.errors = false;
-            let approval = JSON.parse(JSON.stringify(vm.approval));
-            vm.issuingApproval = true;
-
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.approvals, vm.approval_id + '/approval_surrender'), JSON.stringify(approval), {
-                emulateJSON: true,
-            }).then((response) => {
-                vm.issuingApproval = false;
-                vm.close();
-                swal(
-                    'Surrender',
-                    'An email has been sent to the proponent about surrender of this approval',
-                    'success'
-                );
-                vm.$emit('refreshFromResponse', response);
-
-
-            }, (error) => {
-                vm.errors = true;
-                vm.issuingApproval = false;
-                vm.errorString = helpers.apiVueResourceError(error);
-            });
-
-
+            let approval_surrender = Object.assign({}, vm.approval_surrender);
+            approval_surrender.surrender_date = helpers.formatDateForAPI(vm.approval_surrender.surrender_date);
+            const requestOptions = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(approval_surrender)
+            };
+            fetch(helpers.add_endpoint_json(api_endpoints.approvals, vm.approval_id + '/approval_surrender'), requestOptions)
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        if (400 == response.status) {
+                            vm.errorString = helpers.getErrorStringFromResponseData(data);
+                        }
+                        console.log(error)
+                        return Promise.reject(error);
+                    }
+                    vm.close();
+                    Swal.fire(
+                        'Surrender',
+                        'An email has been sent to the proponent about surrender of this approval',
+                        'success'
+                    );
+                    vm.$emit('refreshFromResponse', response);
+                }, (error) => {
+                    vm.errorString = helpers.apiVueResourceError(error);
+                });
         },
     },
-    mounted: function () {
-
-    }
 }
 </script>

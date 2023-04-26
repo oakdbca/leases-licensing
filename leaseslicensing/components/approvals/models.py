@@ -26,6 +26,7 @@ from leaseslicensing.components.main.models import (
 )
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.organisations.models import Organisation
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.models import (
     Proposal,
     ProposalType,
@@ -747,9 +748,8 @@ class Approval(RevisionedMixin):
 
     def approval_surrender(self, request, details):
         with transaction.atomic():
-            if not request.user.leaseslicensing_organisations.filter(
-                organisation_id=self.applicant_id
-            ):
+            orgs_for_user = get_organisation_ids_for_user(request.user.id)
+            if self.applicant_id not in orgs_for_user:
                 if (
                     request.user.id not in self.allowed_assessor_ids
                     and not is_customer(request)

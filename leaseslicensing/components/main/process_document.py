@@ -119,6 +119,11 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
                 documents_qs = instance.proposed_decline_documents
             elif document_type == "approval_cancellation_document":
                 documents_qs = instance.approval_cancellation_documents
+            elif document_type == "approval_surrender_document":
+                documents_qs = instance.approval_surrender_documents
+            elif document_type == "approval_suspension_document":
+                documents_qs = instance.approval_suspension_documents
+
             elif document_type == "lease_licence_approval_document":
                 documents_qs = instance.lease_licence_approval_documents
 
@@ -237,6 +242,10 @@ def delete_document(request, instance, comms_instance, document_type, input_name
             document = instance.competitive_process_documents.get(id=document_id)
         elif document_type == "approval_cancellation_document":
             document = instance.approval_cancellation_documents.get(id=document_id)
+        elif document_type == "approval_surrender_document":
+            document = instance.approval_surrender_documents.get(id=document_id)
+        elif document_type == "approval_suspension_document":
+            document = instance.approval_suspension_documents.get(id=document_id)
 
     # comms_log doc store delete
     elif comms_instance and "document_id" in request.data:
@@ -485,6 +494,16 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
                 input_name=input_name, name=filename
             )[0]
             path_format_string = "{}/approvals/{}/cancellation_documents/{}"
+        elif document_type == "approval_surrender_document":
+            document = instance.approval_surrender_documents.get_or_create(
+                input_name=input_name, name=filename
+            )[0]
+            path_format_string = "{}/approvals/{}/surrender_documents/{}"
+        elif document_type == "approval_suspension_document":
+            document = instance.approval_suspension_documents.get_or_create(
+                input_name=input_name, name=filename
+            )[0]
+            path_format_string = "{}/approvals/{}/suspension_documents/{}"
 
         # -------------- Competitive Process
         elif document_type == "competitive_process_document":

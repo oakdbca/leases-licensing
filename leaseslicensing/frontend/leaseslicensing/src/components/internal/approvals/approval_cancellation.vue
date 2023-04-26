@@ -1,10 +1,11 @@
-<template lang="html">
+<template>
     <div :id="'approvalCancellation' + approval_id">
-        <modal transition="modal fade" @ok="validateForm()" @cancel="cancel()" :title="title" large>
+        <modal transition="modal fade" @ok="validateForm()" @cancel="close()" :title="title" large>
             <div class="container-fluid">
                 <div class="row">
-                    <form id="approvalForm" class="form-horizontal required-validation" name="approvalForm" novalidate>
-                        <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
+                    <form id="approvalCancellationForm" class="form-horizontal required-validation"
+                        name="approvalCancellationForm" novalidate>
+                        <alert v-if="errorString" type="danger"><strong>{{ errorString }}</strong></alert>
                         <div class="col-sm-12">
                             <div class="row mb-3">
                                 <label class="col-sm-3 col-form-label" for="cancellation_date">Cancellation Date</label>
@@ -81,17 +82,10 @@ export default {
             },
             state: 'proposed_approval',
             validation_form: null,
-            errors: false,
             errorString: '',
-            successString: '',
-            success: false,
         }
     },
     computed: {
-        showError: function () {
-            var vm = this;
-            return vm.errors;
-        },
         title: function () {
             return 'Cancel Approval ' + this.approval_lodgement_number;
         },
@@ -103,46 +97,34 @@ export default {
         },
     },
     methods: {
-        cancel: function () {
-            this.close()
-        },
         resetForm: function () {
             this.isModalOpen = false;
             this.approval_cancellation = {
                 cancellation_date: new Date().toISOString().slice(0, 10),
             };
-            this.errors = false;
+            this.errorString = '';
         },
         close: function () {
-            var form = document.getElementById('approvalForm')
+            var form = document.getElementById('approvalCancellationForm')
             form.classList.remove('was-validated');
             this.resetForm();
         },
-        fetchContact: function (id) {
-            let vm = this;
-            vm.$http.get(api_endpoints.contact(id)).then((response) => {
-                vm.contact = response.body; vm.isModalOpen = true;
-            }, (error) => {
-                console.log(error);
-            });
-        },
         validateForm: function () {
             let vm = this;
-            var form = document.getElementById('approvalForm')
+            var form = document.getElementById('approvalCancellationForm')
 
             if (form.checkValidity()) {
                 console.log('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');
-                $('#approvalForm').find(":invalid").first().focus();
+                $('#approvalCancellationForm').find(":invalid").first().focus();
             }
 
             return false;
         },
         sendData: function () {
             let vm = this;
-            vm.errors = false;
             console.log(vm.approval_cancellation.cancellation_date)
             let approval_cancellation = Object.assign({}, vm.approval_cancellation);
             approval_cancellation.cancellation_date = helpers.formatDateForAPI(vm.approval_cancellation.cancellation_date);
@@ -157,7 +139,6 @@ export default {
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
                         if (400 == response.status) {
-                            vm.errors = true;
                             vm.errorString = helpers.getErrorStringFromResponseData(data);
                         }
                         console.log(error)
@@ -175,17 +156,11 @@ export default {
                             confirmButton: 'btn btn-primary',
                         },
                     });
-                    this.resetForm();
                     vm.$emit('refreshFromResponse', response);
                 }, (error) => {
-                    vm.errors = true;
                     vm.errorString = helpers.apiVueResourceError(error);
                 });
         },
-
     },
-    mounted: function () {
-
-    }
 }
 </script>

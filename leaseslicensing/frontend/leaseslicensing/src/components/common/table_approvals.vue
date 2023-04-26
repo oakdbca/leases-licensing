@@ -102,10 +102,14 @@
             :approval_lodgement_number="selectedApprovalLodgementNumber"
             @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalCancellation>
-        <ApprovalSuspension ref="approval_suspension" @refreshFromResponse="refreshFromResponseApprovalModify">
-        </ApprovalSuspension>
-        <ApprovalSurrender ref="approval_surrender" @refreshFromResponse="refreshFromResponseApprovalModify">
+        <ApprovalSurrender ref="approval_surrender" :approval_id="selectedApprovalId"
+            :approval_lodgement_number="selectedApprovalLodgementNumber"
+            @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalSurrender>
+        <ApprovalSuspension ref="approval_suspension" :approval_id="selectedApprovalId"
+            :approval_lodgement_number="selectedApprovalLodgementNumber"
+            @refreshFromResponse="refreshFromResponseApprovalModify">
+        </ApprovalSuspension>
         <div v-if="approvalHistoryId">
             <ApprovalHistory ref="approval_history" :key="approvalHistoryId" :approvalId="approvalHistoryId" />
         </div>
@@ -484,10 +488,10 @@ export default {
                         if (full.is_assessor) {
                             if (full.can_reissue && full.can_action) {
                                 links += `<a href='#${full.id}' data-cancel-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Cancel</a><br/>`;
-                                links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
+                                links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                             }
                             if (full.status == 'Current' && full.can_action) {
-                                links += `<a href='#${full.id}' data-suspend-approval='${full.id}'>Suspend</a><br/>`;
+                                links += `<a href='#${full.id}' data-suspend-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Suspend</a><br/>`;
                             }
                             if (full.can_reinstate) {
                                 links += `<a href='#${full.id}' data-reinstate-approval='${full.id}'>Reinstate</a><br/>`;
@@ -735,7 +739,8 @@ export default {
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-suspend-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-suspend-approval');
-                vm.suspendApproval(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.suspendApproval(id, lodgement_number);
             });
 
             // Internal Reinstate listener
@@ -749,7 +754,8 @@ export default {
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-surrender-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-surrender-approval');
-                vm.surrenderApproval(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.surrenderApproval(id, lodgement_number);
             });
 
             //External Request New Sticker listener
@@ -971,16 +977,21 @@ export default {
                 $(`#approvalCancellation${approval_id} textarea.cancellation-details`).focus();
             });
         },
-
-        suspendApproval: function (approval_id) {
-            this.$refs.approval_suspension.approval = {};
-            this.$refs.approval_suspension.approval_id = approval_id;
+        suspendApproval: function (approval_id, approval_lodgement_number) {
+            this.selectedApprovalId = parseInt(approval_id);
+            this.selectedApprovalLodgementNumber = approval_lodgement_number;
             this.$refs.approval_suspension.isModalOpen = true;
+            this.$nextTick(() => {
+                $(`#approvalSuspension${approval_id} input#to_date`).focus();
+            });
         },
-
-        surrenderApproval: function (approval_id) {
-            this.$refs.approval_surrender.approval_id = approval_id;
+        surrenderApproval: function (approval_id, approval_lodgement_number) {
+            this.selectedApprovalId = parseInt(approval_id);
+            this.selectedApprovalLodgementNumber = approval_lodgement_number;
             this.$refs.approval_surrender.isModalOpen = true;
+            this.$nextTick(() => {
+                $(`#approvalSurrender${approval_id} textarea.surrender-details`).focus();
+            });
         },
         requestNewSticker: function (approval_id) {
             this.$refs.request_new_sticker_modal.approval_id = approval_id
