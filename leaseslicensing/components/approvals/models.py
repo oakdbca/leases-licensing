@@ -57,9 +57,24 @@ def update_approval_comms_log_filename(instance, filename):
 
 
 def update_approval_cancellation_doc_filename(instance, filename):
-    return "{}/proposals/{}/approvals/{}/cancellation_documents/{}".format(
+    return "{}/approvals/{}/cancellation_documents/{}".format(
         settings.MEDIA_APP_DIR,
-        instance.current_proposal.id,
+        instance.id,
+        filename,
+    )
+
+
+def update_approval_surrender_doc_filename(instance, filename):
+    return "{}//approvals/{}/surrender_documents/{}".format(
+        settings.MEDIA_APP_DIR,
+        instance.id,
+        filename,
+    )
+
+
+def update_approval_suspension_doc_filename(instance, filename):
+    return "{}//approvals/{}/suspension_documents/{}".format(
+        settings.MEDIA_APP_DIR,
         instance.id,
         filename,
     )
@@ -848,6 +863,40 @@ class ApprovalCancellationDocument(Document):
     input_name = models.CharField(max_length=255, null=True, blank=True)
     _file = models.FileField(
         upload_to=update_approval_cancellation_doc_filename, max_length=512
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+
+class ApprovalSurrenderDocument(Document):
+    approval = models.ForeignKey(
+        Approval,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approval_surrender_documents",
+    )
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    _file = models.FileField(
+        upload_to=update_approval_surrender_doc_filename, max_length=512
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+
+class ApprovalSuspensionDocument(Document):
+    approval = models.ForeignKey(
+        Approval,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approval_suspension_documents",
+    )
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    _file = models.FileField(
+        upload_to=update_approval_suspension_doc_filename, max_length=512
     )
 
     class Meta:
