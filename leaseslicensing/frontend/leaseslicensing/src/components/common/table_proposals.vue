@@ -30,11 +30,6 @@
                         <div class="input-group date" ref="proposalDateFromPicker">
                             <input type="date" class="form-control" placeholder="DD/MM/YYYY"
                                 v-model="filterProposalLodgedFrom">
-                            <!--
-                            <span class="input-group-addon">
-                                <span class="fa fa-calendar"></span>
-                            </span>
-                            -->
                         </div>
                     </div>
                 </div>
@@ -44,11 +39,6 @@
                         <div class="input-group date" ref="proposalDateToPicker">
                             <input type="date" class="form-control" placeholder="DD/MM/YYYY"
                                 v-model="filterProposalLodgedTo">
-                            <!--
-                            <span class="input-group-addon">
-                                <span class="fa fa-calendar"></span>
-                            </span>
-                            -->
                         </div>
                     </div>
                 </div>
