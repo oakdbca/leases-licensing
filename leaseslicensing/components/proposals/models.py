@@ -1195,6 +1195,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             self.save()
 
     @property
+    def submitter_obj(self):
+        if self.submitter:
+            return retrieve_email_user(self.submitter)
+        return None
+
+    @property
     def relevant_applicant(self):
         if self.ind_applicant:
             return retrieve_email_user(self.ind_applicant)
