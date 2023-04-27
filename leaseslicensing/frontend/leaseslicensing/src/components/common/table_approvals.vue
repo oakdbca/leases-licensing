@@ -329,6 +329,9 @@ export default {
                     'Status',
                     'Expiry Date',
                     'Document',
+                    'Site Name',
+                    'Group(s)',
+                    'Original Lease/License Number',
                     'Action',
                 ]
             }
@@ -380,7 +383,18 @@ export default {
                 visible: true,
                 'render': function (row, type, full) {
                     // TODO Site
-                    return '(todo)'
+                    return 'Todo: static value'
+                }
+            }
+        },
+        columnGroups: function () {
+            return {
+                data: "id",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    return full.groups_comma_list
                 }
             }
         },
@@ -449,6 +463,20 @@ export default {
                         console.warn(`No license document for license ${full.lodgement_number}`)
                         return "";
                     }
+                }
+            }
+        },
+        columnOriginalLeaseLicenseNumber: function () {
+            return {
+                data: "original_leaselicense_number",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    if (full.original_leaselicense_number) {
+                        return full.original_leaselicense_number
+                    }
+                    return 'N/A'
                 }
             }
         },
@@ -546,6 +574,9 @@ export default {
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
+                    vm.columnSite,
+                    vm.columnGroups,
+                    vm.columnOriginalLeaseLicenseNumber,
                     vm.columnAction,
                 ]
             }
@@ -621,6 +652,10 @@ export default {
         },
     },
     methods: {
+        number_of_columns: function () {
+            let num_cols = this.$refs.approvals_datatable.vmDataTable.columns(':visible').nodes().length;
+            return num_cols;
+        },
         adjust_table_width: function () {
             this.$refs.approvals_datatable.vmDataTable.columns.adjust()
             this.$refs.approvals_datatable.vmDataTable.responsive.recalc()
@@ -805,12 +840,6 @@ export default {
                 var lodgement_number = $(this).attr('data-approval-lodgement-number');
                 vm.approvalReviewRenewal(id, lodgement_number);
             });
-
-            // Listener for thr row
-            vm.$refs.approvals_datatable.vmDataTable.on('click', 'td', function (e) {
-                expandToggle(vm, this);
-            })
-
         },
         fetchFilterLists: async function () {
             let vm = this;
