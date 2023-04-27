@@ -166,7 +166,7 @@ export default {
             if (this.is_organisation_view) {
                 headers = ['Number', 'Type', 'Approval', 'Status', 'Due Date', 'Action'];
             } else if (this.level === 'internal') {
-                headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
+                headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Assigned To', 'Action'];
             }
             return headers;
         },
@@ -222,23 +222,6 @@ export default {
                     //return full.id;
                 },
                 name: "approval__lodgement_number",
-            }
-        },
-        conditionColumn: function () {
-            return {
-                // 4. Condition
-                data: "id",
-                orderable: true,
-                searchable: true,
-                visible: true,
-                'render': function (row, type, full) {
-                    let requirement = '';
-                    if (full.requirement) {
-                        requirement = full.requirement.requirement;
-                    }
-                    //return requirement;
-                    return full.id;
-                }
             }
         },
         dueDateColumn: function () {
@@ -315,8 +298,7 @@ export default {
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
-                    //return full.assigned_to_name;
-                    return full.id;
+                    return full.assigned_to_name;
                 }
             }
         },
@@ -347,10 +329,9 @@ export default {
                     this.applicationTypeColumn,
                     this.holderColumn,
                     this.licenceNumberColumn,
-                    //this.conditionColumn,
                     this.statusColumn,
                     this.dueDateColumn,
-                    //this.assignedToNameColumn,
+                    this.assignedToNameColumn,
                     this.actionColumn,
                 ]
             }
