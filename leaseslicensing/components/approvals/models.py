@@ -231,6 +231,10 @@ class Approval(RevisionedMixin):
     renewal_count = models.PositiveSmallIntegerField(
         "Number of times an Approval has been renewed", default=0
     )
+    # For leases that are migrated
+    original_leaselicense_number = models.CharField(
+        max_length=255, blank=True, null=True
+    )
     migrated = models.BooleanField(default=False)
     # for eclass licence as it can be extended/ renewed once
     extended = models.BooleanField(default=False)
