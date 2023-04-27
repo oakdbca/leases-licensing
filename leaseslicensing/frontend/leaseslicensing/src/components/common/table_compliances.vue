@@ -164,9 +164,9 @@ export default {
         compliancesHeaders: function () {
             let headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
             if (this.is_organisation_view) {
-                headers = ['Number', 'Type', 'Approval Number', 'Status', 'Due Date', 'Action'];
+                headers = ['Number', 'Type', 'Approval', 'Status', 'Due Date', 'Action'];
             } else if (this.level === 'internal') {
-                headers = ['Number', 'Type', 'Holder', 'Approval Number', 'Status', 'Due Date', 'Action'];
+                headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
             }
             return headers;
         },
