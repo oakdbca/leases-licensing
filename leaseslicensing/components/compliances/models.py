@@ -111,9 +111,7 @@ class Compliance(models.Model):
 
     @property
     def holder(self):
-        return (
-            f"{self.proposal.applicant.first_name} {self.proposal.applicant.last_name}"
-        )
+        return self.proposal.applicant_name
 
     @property
     def reference(self):
