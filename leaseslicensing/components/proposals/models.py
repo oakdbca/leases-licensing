@@ -3249,6 +3249,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             | Q(proxy_applicant=emailuser_id)
         )
 
+    @property
+    def groups_comma_list(self):
+        return ", ".join([pg.group.name for pg in self.groups.all()])
+
 
 class ProposalGroup(models.Model):
     proposal = models.ForeignKey(
