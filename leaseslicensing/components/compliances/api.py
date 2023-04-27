@@ -47,6 +47,19 @@ class GetComplianceStatusesDict(views.APIView):
     def get(self, request, format=None):
         data = [
             {"code": i[0], "description": i[1]}
+            for i in Compliance.PROCESSING_STATUS_CHOICES
+        ]
+        return Response(data)
+
+
+class GetComplianceCustomerStatusesDict(views.APIView):
+    renderer_classes = [
+        JSONRenderer,
+    ]
+
+    def get(self, request, format=None):
+        data = [
+            {"code": i[0], "description": i[1]}
             for i in Compliance.CUSTOMER_STATUS_CHOICES
         ]
         return Response(data)
