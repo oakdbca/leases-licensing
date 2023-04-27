@@ -139,6 +139,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     submitter = serializers.SerializerMethodField()
     holder = serializers.SerializerMethodField()
     holder_obj = serializers.SerializerMethodField()
+    groups_comma_list = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Approval
@@ -176,11 +177,13 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_amend",
             "can_reinstate",
             "application_type",
+            "original_leaselicense_number",
             "migrated",
             "is_assessor",
             "is_approver",
             "requirement_docs",
             "submitter",
+            "groups_comma_list",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -213,6 +216,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "is_approver",
             "requirement_docs",
             "submitter",
+            "groups_comma_list",
         )
 
     def get_submitter(self, obj):
@@ -275,6 +279,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
         if obj.requirement_docs and obj.requirement_docs._file:
             return [[d.name, d._file.url] for d in obj.requirement_docs]
         return None
+
+    def get_groups_comma_list(self, obj):
+        return obj.current_proposal.groups_comma_list
 
 
 class ApprovalExtendSerializer(serializers.Serializer):
