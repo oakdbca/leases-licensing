@@ -1,286 +1,275 @@
 <template>
     <div class="container" id="internalOrgInfo">
-        <div class="row">
-            <div v-if="org" class="col-md-10 col-md-offset-1">
-                <div class="row">
-                    <h3>{{ org.trading_name }} [ABN: {{ formattedABN }}]</h3>
-                    <div class="col-md-3">
-                        <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
-                            :disable_add_entry="false" />
-                    </div>
-                    <div class="col-md-9">
-                        <ul class="nav nav-pills" id="pills-tab" role="tablist">
-                            <li class="nav-item">
-                                <a class="nav-link active" id="pills-details-tab" data-bs-toggle="pill"
-                                    href="#pills-details" role="tab" aria-controls="pills-details"
-                                    aria-selected="true">Details</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" id="pills-other-tab" data-bs-toggle="pill" href="#pills-other"
-                                    role="tab" aria-controls="pills-other" aria-selected="false">Other</a>
-                            </li>
-                        </ul>
-                        <div class="tab-content">
-                            <div class="tab-pane active" id="pills-details" role="tabpanel"
-                                aria-labelledby="pills-applications-tab">
-                                <FormSection :formCollapse="false" label="Details" index="details">
-                                    <form class="form-horizontal" name="personal_form" method="post">
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label">Trading
-                                                Name</label>
-                                            <div class="col-sm-9">
-                                                <input type="text" class="form-control" name="trading_name" placeholder=""
-                                                    v-model="org.trading_name">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-md-3 control-label">ABN</label>
-                                            <div class="col-md-7">
-                                                <input type="text" class="form-control" name="ledger_organisation_abn"
-                                                    placeholder="" v-model="org.ledger_organisation_abn"
-                                                    :disabled="!is_leaseslicensing_admin">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label">Email</label>
-                                            <div class="col-sm-6">
-                                                <input type="text" class="form-control" name="ledger_organisation_email"
-                                                    placeholder="" v-model="org.ledger_organisation_email">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label fw-bold">Waivers</label>
-                                        </div>
-                                        <div class="row row-waiver mb-3">
-                                            <div class="col-sm-4">
-                                                <label class="control-label float-end" for="Name">
-                                                    T Class application fee
-                                                </label>
-                                            </div>
-                                            <div class="col-sm-1">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox" :value="true"
-                                                        v-model="org.apply_application_discount"
-                                                        ref="application_discount_yes" />
-                                                </div>
-                                            </div>
-                                            <div class="col-sm-7">
-                                                <div class="row" v-show="org.apply_application_discount">
-                                                    <div class="col-auto">
-                                                        <div class="input-group input-group-sm">
-                                                            <span class="input-group-text" id="dollars-addon">$</span>
-                                                            <input type="number" class="form-control discount" min="0"
-                                                                name="application_discount"
-                                                                v-model.number="org.application_discount"
-                                                                @input="handleApplicationCurrencyInput"
-                                                                aria-label="application_discount"
-                                                                aria-describedby="dollars-addon">
-                                                        </div>
-                                                    </div>
-                                                    <div v-show="!validateLicenceDiscount()" class="col-auto">
-                                                        <div class="text-danger form-text">Must be
-                                                            between
-                                                            $0 - $10,000 </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row row-waiver mb-3">
-                                            <div class="col-sm-4">
-                                                <label class="control-label float-end" for="Name">T Class licence
-                                                    fee</label>
-                                            </div>
-                                            <div class="col-sm-1">
-                                                <div class="form-check form-switch">
-                                                    <input class="form-check-input" type="checkbox"
-                                                        v-model="org.apply_licence_discount" ref="licence_discount_yes" />
-                                                </div>
-                                            </div>
-                                            <div class="col-sm-7">
-                                                <div class="row" v-show="org.apply_licence_discount">
-                                                    <div class="col-auto">
-                                                        <div class="input-group input-group-sm mb-0">
-                                                            <span class="input-group-text" id="dollars-addon">$</span>
-                                                            <input type="number" class="form-control discount" min="0"
-                                                                name="licence_discount"
-                                                                v-model.number="org.licence_discount"
-                                                                @input="handleLicenceCurrencyInput"
-                                                                aria-label="licence_discount"
-                                                                aria-describedby="dollars-addon">
-                                                        </div>
-                                                    </div>
-                                                    <div v-show="!validateLicenceDiscount()" class="col-auto">
-                                                        <div class="text-danger form-text">Must be
-                                                            between
-                                                            $0 - $10,000 </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <div class="col-sm-12">
-                                                <button v-if="!updatingDetails" class="float-end btn btn-primary"
-                                                    @click.prevent="updateDetails()"
-                                                    :disabled="!can_update()">Update</button>
-                                                <button v-else disabled class="float-end btn btn-primary"><i
-                                                        class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </FormSection>
-                                <FormSection v-if="orgHasAddress" :formCollapse="true" label="Address Details"
-                                    index="addressdetails">
-                                    <form class="form-horizontal" action="index.html" method="post">
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label">Street</label>
-                                            <div class="col-sm-6">
-                                                <input type="text" class="form-control" name="street" placeholder=""
-                                                    v-model="org.address.line1">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label">Town/Suburb</label>
-                                            <div class="col-sm-6">
-                                                <input type="text" class="form-control" name="surburb" placeholder=""
-                                                    v-model="org.address.locality">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label">State</label>
-                                            <div class="col-sm-2">
-                                                <input type="text" class="form-control" name="country" placeholder=""
-                                                    v-model="org.address.state">
-                                            </div>
-                                            <label for="" class="col-sm-2 control-label">Postcode</label>
-                                            <div class="col-sm-2">
-                                                <input type="text" class="form-control" name="postcode" placeholder=""
-                                                    v-model="org.address.postcode">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label">Country</label>
-                                            <div class="col-sm-4">
-                                                <select class="form-control" name="country" v-model="org.address.country">
-                                                    <option v-for="c in countries" :value="c.alpha2Code">{{
-                                                        c.name }}</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-2">
-                                            <div class="col-sm-12">
-                                                <button v-if="!updatingAddress" class="float-end btn btn-primary"
-                                                    @click.prevent="updateAddress()">Update</button>
-                                                <button v-else disabled class="float-end btn btn-primary"><i
-                                                        class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </FormSection>
-                                <FormSection :formCollapse="true" label="Contacts" index="contacts">
-                                    <div class="row">
-                                        <div class="col">
-                                            <button @click.prevent="addContact()" style="margin-bottom:10px;"
-                                                class="btn btn-primary float-end">Add Contact</button>
+        <div v-if="org" class="row">
+            <h3>{{ org.trading_name }} [ABN: {{ formattedABN }}]</h3>
+            <div class="col-md-3">
+                <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
+                    :disable_add_entry="false" />
+            </div>
+            <div class="col-md-9">
+                <ul class="nav nav-pills" id="pills-tab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="pills-details-tab" data-bs-toggle="pill" href="#pills-details"
+                            role="tab" aria-controls="pills-details" aria-selected="true">Details</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="pills-other-tab" data-bs-toggle="pill" href="#pills-other" role="tab"
+                            aria-controls="pills-other" aria-selected="false">Other</a>
+                    </li>
+                </ul>
+                <div class="tab-content">
+                    <div class="tab-pane active" id="pills-details" role="tabpanel"
+                        aria-labelledby="pills-applications-tab">
+                        <FormSection :formCollapse="false" label="Details" index="details">
+                            <form class="form-horizontal" name="personal_form" method="post">
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label">Trading
+                                        Name</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" name="trading_name" placeholder=""
+                                            v-model="org.trading_name">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-md-3 control-label">ABN</label>
+                                    <div class="col-md-7">
+                                        <input type="text" class="form-control" name="ledger_organisation_abn"
+                                            placeholder="" v-model="org.ledger_organisation_abn"
+                                            :disabled="!is_leaseslicensing_admin">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label">Email</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="ledger_organisation_email"
+                                            placeholder="" v-model="org.ledger_organisation_email">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label fw-bold">Waivers</label>
+                                </div>
+                                <div class="row row-waiver mb-3">
+                                    <div class="col-sm-4">
+                                        <label class="control-label float-end" for="Name">
+                                            T Class application fee
+                                        </label>
+                                    </div>
+                                    <div class="col-sm-1">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" :value="true"
+                                                v-model="org.apply_application_discount" ref="application_discount_yes" />
                                         </div>
                                     </div>
-                                    <div class="row">
-                                        <div class="col">
-                                            <datatable @vue:mounted="addOrgContactEventListeners" ref="contacts_datatable"
-                                                id="organisation_contacts_datatable" :dtOptions="contacts_options"
-                                                :dtHeaders="contacts_headers" />
+                                    <div class="col-sm-7">
+                                        <div class="row" v-show="org.apply_application_discount">
+                                            <div class="col-auto">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text" id="dollars-addon">$</span>
+                                                    <input type="number" class="form-control discount" min="0"
+                                                        name="application_discount"
+                                                        v-model.number="org.application_discount"
+                                                        @input="handleApplicationCurrencyInput"
+                                                        aria-label="application_discount" aria-describedby="dollars-addon">
+                                                </div>
+                                            </div>
+                                            <div v-show="!validateLicenceDiscount()" class="col-auto">
+                                                <div class="text-danger form-text">Must be
+                                                    between
+                                                    $0 - $10,000 </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </FormSection>
-                                <FormSection :formCollapse="true" label="Linked User Accounts" index="linkeduseraccounts">
-                                    <form class="form-horizontal">
+                                </div>
+                                <div class="row row-waiver mb-3">
+                                    <div class="col-sm-4">
+                                        <label class="control-label float-end" for="Name">T Class licence
+                                            fee</label>
+                                    </div>
+                                    <div class="col-sm-1">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox"
+                                                v-model="org.apply_licence_discount" ref="licence_discount_yes" />
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <div class="row" v-show="org.apply_licence_discount">
+                                            <div class="col-auto">
+                                                <div class="input-group input-group-sm mb-0">
+                                                    <span class="input-group-text" id="dollars-addon">$</span>
+                                                    <input type="number" class="form-control discount" min="0"
+                                                        name="licence_discount" v-model.number="org.licence_discount"
+                                                        @input="handleLicenceCurrencyInput" aria-label="licence_discount"
+                                                        aria-describedby="dollars-addon">
+                                                </div>
+                                            </div>
+                                            <div v-show="!validateLicenceDiscount()" class="col-auto">
+                                                <div class="text-danger form-text">Must be
+                                                    between
+                                                    $0 - $10,000 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-12">
+                                        <button v-if="!updatingDetails" class="float-end btn btn-primary"
+                                            @click.prevent="updateDetails()" :disabled="!can_update()">Update</button>
+                                        <button v-else disabled class="float-end btn btn-primary"><i
+                                                class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </FormSection>
+                        <FormSection v-if="orgHasAddress" :formCollapse="true" label="Address Details"
+                            index="addressdetails">
+                            <form class="form-horizontal" action="index.html" method="post">
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label">Street</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="street" placeholder=""
+                                            v-model="org.address.line1">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label">Town/Suburb</label>
+                                    <div class="col-sm-6">
+                                        <input type="text" class="form-control" name="surburb" placeholder=""
+                                            v-model="org.address.locality">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label">State</label>
+                                    <div class="col-sm-2">
+                                        <input type="text" class="form-control" name="country" placeholder=""
+                                            v-model="org.address.state">
+                                    </div>
+                                    <label for="" class="col-sm-2 control-label">Postcode</label>
+                                    <div class="col-sm-2">
+                                        <input type="text" class="form-control" name="postcode" placeholder=""
+                                            v-model="org.address.postcode">
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label">Country</label>
+                                    <div class="col-sm-4">
+                                        <select class="form-control" name="country" v-model="org.address.country">
+                                            <option v-for="c in countries" :value="c.alpha2Code">{{
+                                                c.name }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <div class="col-sm-12">
+                                        <button v-if="!updatingAddress" class="float-end btn btn-primary"
+                                            @click.prevent="updateAddress()">Update</button>
+                                        <button v-else disabled class="float-end btn btn-primary"><i
+                                                class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </FormSection>
+                        <FormSection :formCollapse="true" label="Contacts" index="contacts">
+                            <div class="row">
+                                <div class="col">
+                                    <button @click.prevent="addContact()" style="margin-bottom:10px;"
+                                        class="btn btn-primary float-end">Add Contact</button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col">
+                                    <datatable @vue:mounted="addOrgContactEventListeners" ref="contacts_datatable"
+                                        id="organisation_contacts_datatable" :dtOptions="contacts_options"
+                                        :dtHeaders="contacts_headers" />
+                                </div>
+                            </div>
+                        </FormSection>
+                        <FormSection :formCollapse="true" label="Linked User Accounts" index="linkeduseraccounts">
+                            <form class="form-horizontal">
+                                <div class="col-sm-12">
+                                    <div class="row">
                                         <div class="col-sm-12">
-                                            <div class="row">
-                                                <div class="col-sm-12">
-                                                    <p class="fs-6">Users linked to this organisation:</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <ul v-if="org.delegates && org.delegates.length" class="ms-0 ps-0">
-                                                        <span @click="personRedirect(d.user)" v-for="d in org.delegates"
-                                                            :class="'organisation_admin' == d.user_role ? 'bg-primary' : 'bg-secondary'"
-                                                            class="badge me-1 fs-6" data-bs-toggle="tooltip"
-                                                            data-bs-html="true"
-                                                            data-bs-title="<em>Tooltip</em> <u>with</u> <b>HTML</b>">
-                                                            {{ d.full_name }}
-                                                            <span v-if="'organisation_admin' == d.user_role">
-                                                                (Admin)</span>
-                                                        </span>
+                                            <p class="fs-6">Users linked to this organisation:</p>
+                                        </div>
+                                        <div class="mb-3">
+                                            <ul v-if="org.delegates && org.delegates.length" class="ms-0 ps-0">
+                                                <span @click="personRedirect(d.user)" v-for="d in org.delegates"
+                                                    :class="'organisation_admin' == d.user_role ? 'bg-primary' : 'bg-secondary'"
+                                                    class="badge me-1 fs-6" data-bs-toggle="tooltip" data-bs-html="true"
+                                                    data-bs-title="<em>Tooltip</em> <u>with</u> <b>HTML</b>">
+                                                    {{ d.full_name }}
+                                                    <span v-if="'organisation_admin' == d.user_role">
+                                                        (Admin)</span>
+                                                </span>
 
-                                                    </ul>
-                                                    <div v-else class="col">
-                                                        <span class="badge bg-secondary fs-6">This organisation currently
-                                                            has no
-                                                            linked
-                                                            users.</span>
-                                                    </div>
-                                                </div>
-                                                <div class="row">
-                                                    <BootstrapAlert class="ms-2">
-                                                        Persons linked to the organisation are controlled by
-                                                        the organisation. <br />
-                                                        The Department cannot manage this
-                                                        list of people.
-                                                    </BootstrapAlert>
-                                                </div>
+                                            </ul>
+                                            <div v-else class="col">
+                                                <span class="badge bg-secondary fs-6">This organisation currently
+                                                    has no
+                                                    linked
+                                                    users.</span>
                                             </div>
                                         </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label fw-bold">
-                                                User Pin Code 1:</label>
-                                            <span class="col-sm-3 fw-light">
-                                                {{ org.pins.three }}
-                                            </span>
-                                            <label for="" class="col-sm-3 control-label fw-bold">
-                                                User Pin Code 2:</label>
-                                            <div class="col-sm-3 fw-light">
-                                                {{ org.pins.four }}
-                                            </div>
+                                        <div class="row">
+                                            <BootstrapAlert class="ms-2">
+                                                Persons linked to the organisation are controlled by
+                                                the organisation. <br />
+                                                The Department cannot manage this
+                                                list of people.
+                                            </BootstrapAlert>
                                         </div>
-                                        <div class="row mb-2">
-                                            <label for="" class="col-sm-3 control-label fw-bold">
-                                                Admin Pin Code 1:</label>
-                                            <span class="col-sm-3 fw-light">
-                                                {{ org.pins.one }}
-                                            </span>
-                                            <label for="" class="col-sm-3 control-label fw-bold">
-                                                Admin Pin Code 2:</label>
-                                            <div class="col-sm-3 fw-light">
-                                                {{ org.pins.two }}
-                                            </div>
-                                        </div>
-                                    </form>
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label fw-bold">
+                                        User Pin Code 1:</label>
+                                    <span class="col-sm-3 fw-light">
+                                        {{ org.pins.three }}
+                                    </span>
+                                    <label for="" class="col-sm-3 control-label fw-bold">
+                                        User Pin Code 2:</label>
+                                    <div class="col-sm-3 fw-light">
+                                        {{ org.pins.four }}
+                                    </div>
+                                </div>
+                                <div class="row mb-2">
+                                    <label for="" class="col-sm-3 control-label fw-bold">
+                                        Admin Pin Code 1:</label>
+                                    <span class="col-sm-3 fw-light">
+                                        {{ org.pins.one }}
+                                    </span>
+                                    <label for="" class="col-sm-3 control-label fw-bold">
+                                        Admin Pin Code 2:</label>
+                                    <div class="col-sm-3 fw-light">
+                                        {{ org.pins.two }}
+                                    </div>
+                                </div>
+                            </form>
 
-                                </FormSection>
-                            </div>
+                        </FormSection>
+                    </div>
 
-                            <div class="tab-pane" id="pills-other" role="tabpanel" aria-labelledby="pills-other-tab">
-                                <FormSection label="Applications" index="applications">
-                                    <ApplicationsTable ref="proposals_table" level="organisation_view"
-                                        :target_organisation_id="org.id" :url='proposals_url' />
-                                </FormSection>
+                    <div class="tab-pane" id="pills-other" role="tabpanel" aria-labelledby="pills-other-tab">
+                        <FormSection label="Applications" index="applications">
+                            <ApplicationsTable ref="proposals_table" level="organisation_view"
+                                :target_organisation_id="org.id" :url='proposals_url' />
+                        </FormSection>
 
-                                <FormSection label="Approvals" index="approvals">
-                                    <ApprovalsTable ref="approvals_table" level="organisation_view"
-                                        :target_organisation_id="org.id" :url='approvals_url' />
-                                </FormSection>
+                        <FormSection label="Approvals" index="approvals">
+                            <ApprovalsTable ref="approvals_table" level="organisation_view" :target_organisation_id="org.id"
+                                :url='approvals_url' />
+                        </FormSection>
 
-                                <FormSection label="Compliances" index="compliances">
-                                    <CompliancesTable ref="compliances_table" level='organisation_view'
-                                        :target_organisation_id="org.id" :url='compliances_url' />
-                                </FormSection>
-                            </div>
-                        </div>
+                        <FormSection label="Compliances" index="compliances">
+                            <CompliancesTable ref="compliances_table" level='organisation_view'
+                                :target_organisation_id="org.id" :url='compliances_url' />
+                        </FormSection>
                     </div>
                 </div>
-                <AddContact ref="add_contact" :org_id="org.id" />
             </div>
-            <div v-else>
-                <BootstrapSpinner class="text-primary" :isLoading="true" />
-            </div>
+            <AddContact ref="add_contact" :org_id="org.id" />
+        </div>
+        <div v-else>
+            <BootstrapSpinner class="text-primary" :isLoading="true" />
         </div>
     </div>
 </template>
