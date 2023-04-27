@@ -189,3 +189,9 @@ table.dataTable a:hover {
 .nav-pills .nav-link.active {
     background: gray;
 }
+
+/* Sweet alert 2 styles */
+
+.swal-wide{
+    width:650px !important;
+}
