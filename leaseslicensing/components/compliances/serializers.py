@@ -24,7 +24,6 @@ class ComplianceSerializer(serializers.ModelSerializer):
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
     # allowed_assessors = EmailUserSerializer(many=True)
     # assigned_to = serializers.CharField(source='assigned_to.get_full_name')
-    assigned_to = serializers.SerializerMethodField(read_only=True)
     requirement = serializers.CharField(
         source="requirement.requirement", required=False, allow_null=True
     )
@@ -32,6 +31,7 @@ class ComplianceSerializer(serializers.ModelSerializer):
     application_type = serializers.SerializerMethodField(read_only=True)
     due_date = serializers.SerializerMethodField(read_only=True)
     lodgement_date_display = serializers.SerializerMethodField(read_only=True)
+    assigned_to_name = serializers.CharField(read_only=True)
 
     class Meta:
         model = Compliance
@@ -46,7 +46,7 @@ class ComplianceSerializer(serializers.ModelSerializer):
             "title",
             "text",
             "holder",
-            "assigned_to",
+            "assigned_to_name",
             "approval",
             "documents",
             "requirement",
@@ -77,7 +77,7 @@ class ComplianceSerializer(serializers.ModelSerializer):
             "title",
             "text",
             "holder",
-            "assigned_to",
+            "assigned_to_name",
             "approval",
             "documents",
             "requirement",
@@ -114,11 +114,6 @@ class ComplianceSerializer(serializers.ModelSerializer):
 
     def get_approval_lodgement_number(self, obj):
         return obj.approval.lodgement_number
-
-    def get_assigned_to(self, obj):
-        if obj.assigned_to:
-            return retrieve_email_user(obj.assigned_to).get_full_name()
-        return None
 
     def get_submitter(self, obj):
         if obj.submitter:
