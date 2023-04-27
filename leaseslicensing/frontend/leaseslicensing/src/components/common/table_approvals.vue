@@ -301,10 +301,9 @@ export default {
                     'Id',
                     'Number',
                     'Type',
-                    'Site',
                     'Status',
-                    'Expiry Date',
                     'Document',
+                    'Expiry Date',
                     'Action',
                 ]
             } else if (this.is_external) {
@@ -546,10 +545,9 @@ export default {
                     vm.columnId,
                     vm.columnLodgementNumber,
                     vm.columnType,
-                    vm.columnSite,
                     vm.columnStatus,
-                    vm.columnExpiryDate,
                     vm.columnDocument,
+                    vm.columnExpiryDate,
                     vm.columnAction,
                 ]
             } else if (this.is_external) {
