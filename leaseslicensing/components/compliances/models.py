@@ -114,6 +114,13 @@ class Compliance(models.Model):
         return self.proposal.applicant_name
 
     @property
+    def assigned_to_name(self):
+        if self.assigned_to:
+            emailuser = retrieve_email_user(self.assigned_to)
+            return emailuser.get_full_name()
+        return "Unassigned"
+
+    @property
     def reference(self):
         # return 'C{0:06d}'.format(self.id)
         return self.lodgement_number
