@@ -30,14 +30,14 @@
                                         {{ member.first_name }} {{ member.last_name }}</option>
                                 </select>
                                 <a v-if="showAssignToMeButton && !canViewonly && check_assessor()"
-                                    @click.prevent="assignMyself()" class="btn btn-primary float-end mb-2">Assign to me</a>
+                                    @click.prevent="assignMyself()" class="btn btn-primary float-end mb-2">Assign to
+                                    me</a>
                             </div>
                             <div class="col-sm-12" v-if="!canViewonly && check_assessor()">
                                 <div class="mb-1"><strong>Actions</strong></div>
                                 <button class="btn btn-primary mb-2" @click.prevent="amendmentRequest()">Request
                                     Amendment</button>
                                 <button class="btn btn-primary" @click.prevent="acceptCompliance()">Approve</button><br />
-
                             </div>
                         </div>
                     </div>
@@ -45,41 +45,72 @@
             </div>
             <div class="col-md-9">
                 <div class="row">
-                    <FormSection :formCollapse="false" label="Compliance with Requirements"
-                        Index="compliance_with_requirements">
-                        <CollapsibleFilters component_title="Assessor comments" ref="collapsible_filters"
-                            @created="collapsible_component_mounted" class="mb-3">
-                            Todo: Populate with assessment data for this compliance
-                        </CollapsibleFilters>
+                    <div class="col">
+                        <ul class="nav nav-pills" id="pills-tab" role="tablist">
+                            <li class="nav-item">
+                                <a class="nav-link active" id="pills-compliance-tab" data-bs-toggle="pill"
+                                    href="#pills-compliance" role="tab" aria-controls="pills-compliance"
+                                    aria-selected="true" @click="tabClicked('compliance')">Compliance</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="pills-related-items-tab" data-bs-toggle="pill"
+                                    href="#pills-related-items" role="tab" aria-controls="pills-related-items"
+                                    aria-selected="true" @click="tabClicked('related-items')">Related
+                                    Items</a>
+                            </li>
+                        </ul>
 
-                        <div class="row mb-3">
-                            <label for="" class="col-sm-3 col-form-label">Requirement</label>
-                            <div class="col-sm-6">
-                                <input type="text" readonly :value="compliance.requirement" class="form-control">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <label for="details" class="col-sm-3 col-form-label">Details</label>
-                            <div class="col-sm-6">
-                                <textarea disabled class="form-control" name="details" v-model="compliance.text"></textarea>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <label for="" class="col-sm-3 col-form-label">Attachments</label>
-                            <div class="col-sm-6">
-                                <template v-if="compliance.documents && compliance.documents.length">
-                                    <div class="row" v-for="d in compliance.documents">
-                                        <a :href="d[1]" target="_blank" class="col-form-label">{{ d[0] }}</a>
+                        <div class="tab-content" id="pills-tabContent">
+                            <div class="tab-pane active" id="pills-compliance" role="tabpanel"
+                                aria-labelledby="pills-compliance-tab">
+                                <FormSection :formCollapse="false" label="Compliance with Requirements"
+                                    Index="compliance_with_requirements">
+                                    <CollapsibleFilters component_title="Assessor comments" ref="collapsible_filters"
+                                        @created="collapsible_component_mounted" class="mb-3">
+                                        Todo: Populate with assessment data for this compliance
+                                    </CollapsibleFilters>
+
+                                    <div class="row mb-3">
+                                        <label for="" class="col-sm-3 col-form-label">Requirement</label>
+                                        <div class="col-sm-6">
+                                            <input type="text" readonly :value="compliance.requirement"
+                                                class="form-control">
+                                        </div>
                                     </div>
-                                </template>
-                                <template v-else>
-                                    <div class="row">
-                                        <div class="col-form-label">No attachments</div>
+                                    <div class="row mb-3">
+                                        <label for="details" class="col-sm-3 col-form-label">Details</label>
+                                        <div class="col-sm-6">
+                                            <textarea disabled class="form-control" name="details"
+                                                v-model="compliance.text"></textarea>
+                                        </div>
                                     </div>
-                                </template>
+                                    <div class="row mb-3">
+                                        <label for="" class="col-sm-3 col-form-label">Attachments</label>
+                                        <div class="col-sm-6">
+                                            <template v-if="compliance.documents && compliance.documents.length">
+                                                <div class="row" v-for="d in compliance.documents">
+                                                    <a :href="d[1]" target="_blank" class="col-form-label">{{ d[0] }}</a>
+                                                </div>
+                                            </template>
+                                            <template v-else>
+                                                <div class="row">
+                                                    <div class="col-form-label">No attachments</div>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </FormSection>
+                            </div>
+                            <div class="tab-pane" id="pills-related-items" role="tabpanel"
+                                aria-labelledby="pills-related-items-tab">
+                                <FormSection v-if="loadRelatedItems" :formCollapse="false" label="Related Items"
+                                    Index="related-items">
+                                    <ApprovalsTable :target_compliance_id="compliance.id" ref="approvals_table"
+                                        level="internal" />
+                                </FormSection>
                             </div>
                         </div>
-                    </FormSection>
+                    </div>
                 </div>
             </div>
         </div>
@@ -87,12 +118,12 @@
     </div>
 </template>
 <script>
-import datatable from '@vue-utils/datatable.vue'
 import CommsLogs from '@common-utils/comms_logs.vue'
 import ComplianceAmendmentRequest from './compliance_amendment_request.vue'
 import FormSection from "@/components/forms/section_toggle.vue"
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
-//import ResponsiveDatatablesHelper from "@/utils/responsive_datatable_helper.js"
+import ApprovalsTable from "@/components/common/table_approvals.vue"
+
 import {
     api_endpoints,
     helpers,
@@ -105,6 +136,7 @@ export default {
         let vm = this;
         return {
             loading: [],
+            loadRelatedItems: false,
             profile: {},
             compliance: {
                 //requester: {}
@@ -158,7 +190,7 @@ export default {
             });
     },
     components: {
-        datatable,
+        ApprovalsTable,
         CommsLogs,
         ComplianceAmendmentRequest,
         FormSection,
@@ -182,7 +214,14 @@ export default {
         commaToNewline(s) {
             return s.replace(/[,;]/g, '\n');
         },
-
+        tabClicked: function (param) {
+            if (param == 'related-items') {
+                this.loadRelatedItems = true;
+                this.$nextTick(() => {
+                    this.$refs.approvals_table.adjust_table_width()
+                })
+            }
+        },
         assignMyself: async function () {
             let vm = this;
             /*
