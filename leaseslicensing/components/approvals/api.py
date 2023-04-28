@@ -32,6 +32,7 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalSuspensionSerializer,
     ApprovalUserActionSerializer,
 )
+from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
@@ -281,6 +282,18 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             qs = qs.exclude(org_applicant__isnull=True).filter(
                 org_applicant__id=target_organisation_id
             )
+
+        target_compliance_id = self.request.query_params.get(
+            "target_compliance_id", None
+        )
+        if (
+            target_compliance_id
+            and target_compliance_id.isnumeric()
+            and int(target_compliance_id) > 0
+        ):
+            compliance = Compliance.objects.get(id=target_compliance_id)
+
+            qs = qs.filter(id=compliance.approval_id)
 
         return qs
 
