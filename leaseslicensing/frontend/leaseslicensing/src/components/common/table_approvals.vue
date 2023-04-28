@@ -149,7 +149,12 @@ export default {
             type: Number,
             required: false,
             default: 0,
-        }
+        },
+        target_compliance_id: {
+            type: Number,
+            required: false,
+            default: 0,
+        },
     },
     data() {
         let vm = this;
@@ -616,7 +621,7 @@ export default {
                 searching: true,
                 ajax: {
                     "url": api_endpoints.approvals_paginated_list + '?format=datatables&target_email_user_id=' + vm.target_email_user_id +
-                        '&target_organisation_id=' + vm.target_organisation_id,
+                        '&target_organisation_id=' + vm.target_organisation_id + '&target_compliance_id=' + vm.target_compliance_id,
                     //"url": api_endpoints.approvals,
                     "dataSrc": 'data',
 
