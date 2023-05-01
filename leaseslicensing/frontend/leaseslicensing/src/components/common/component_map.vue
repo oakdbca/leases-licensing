@@ -154,7 +154,7 @@ import { Draw, Modify, Snap, Select } from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js'
-import { LineString, Point, Polygon, SimpleGeometry } from 'ol/geom';
+import { LineString, Point, Polygon } from 'ol/geom';
 import { Circle as CircleStyle, Fill, Stroke, Style, Text, RegularShape } from 'ol/style';
 import FileField from '@/components/forms/filefield_immediate.vue'
 import VueAlert from '@vue-utils/alert.vue'
@@ -580,10 +580,19 @@ export default {
                 type: 'Polygon',
                 //style: vm.styleFunctionForMeasurement,
                 geometryFunction: function (coordinates, geometry) {
-                    if (!geometry) {
-                        geometry = new Polygon(coordinates);
+                    if (geometry) {
+                        if (coordinates[0].length) {
+                            // Add a closing coordinate to match the first
+                            geometry.setCoordinates(
+                                [coordinates[0].concat([coordinates[0][0]])],
+                                this.geometryLayout_
+                            );
+                        } else {
+                            geometry.setCoordinates([], this.geometryLayout_);
+                        }
+
                     } else {
-                        geometry.setCoordinates(coordinates);
+                        geometry = new Polygon(coordinates, this.geometryLayout_);
                     }
                     vm.sketchCoordinates = coordinates[0].slice();
                     if (coordinates[0].length > vm.sketchCoordinatesHistory.length) {
@@ -591,6 +600,7 @@ export default {
                         // so we don't lose the history when the user undoes a point
                         vm.sketchCoordinatesHistory = coordinates[0].slice();
                     }
+
                     return geometry;
                 },
             })
