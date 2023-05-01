@@ -28,7 +28,10 @@
             <div class="col-md-9">
                 <!-- Main contents -->
                 <template v-if="display_approval_screen">
-                    <ApprovalScreen :proposal="proposal" />
+                    <ApprovalScreen
+                        :proposal="proposal"
+                        :readonly="readonly"
+                        />
                 </template>
 
                 <template v-if="display_requirements">

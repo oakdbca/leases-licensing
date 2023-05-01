@@ -8,10 +8,25 @@
                         <div class="form-group">
                             <div class="row modal-input-row">
                                 <div class="col-sm-3">
-                                    <label v-if="withApprover || readonly" class="control-label pull-left"  for="Name">Decision</label>
-                                    <label v-else class="control-label pull-left"  for="Name">Proposed Decision</label>
+                                    <label class="control-label pull-left" for="Name">{{ decisionLabel }}</label>
                                 </div>
-                                <div class="form-check col-sm-5">
+
+                                <div v-for="(text, key) in approvalDecisionText" :key="key">
+                                    <div class="form-check col-sm-12">
+                                        <input
+                                            type="radio"
+                                            class="form-check-input"
+                                            :name="key"
+                                            :id="key"
+                                            :value="key"
+                                            v-model="selectedDecision"
+                                            :disabled="readonly"
+                                        />
+                                        <label class="form-check-label" :for="key" style="font-weight:normal">{{ text }}</label>
+                                    </div>
+                                </div>
+
+                                <!-- <div class="form-check col-sm-5">
                                     <input 
                                     type="radio" 
                                     class="form-check-input"
@@ -35,6 +50,18 @@
                                     />
                                     <label class="form-check-label" for="approve_competitive_process" style="font-weight:normal">Start Competitive process</label>
                                 </div>
+                                <div class="form-check col-sm-4">
+                                    <input
+                                    type="radio"
+                                    class="form-check-input"
+                                    name="decline_application"
+                                    id="decline_application"
+                                    value="decline_application"
+                                    v-model="selectedDecision"
+                                    :disabled="readonly"
+                                    />
+                                    <label class="form-check-label" for="decline_application" style="font-weight:normal">Decline Application</label> -->
+                                <!-- </div> -->
                             </div>
                         </div>
 
@@ -47,13 +74,13 @@
                                 <div class="col-sm-9">
                                     <!--textarea name="approval_details" class="form-control" style="width:70%;" v-model="approval.details"></textarea-->
                                     <RichText
-                                    :proposalData="approval.details"
+                                    :proposalData="proposedDecisionDetails"
                                     ref="registration_of_interest_details"
                                     id="registration_of_interest_details"
                                     :can_view_richtext_src=true
                                     :key="proposedApprovalKey"
-                                    v-model="approval.details"
-                                    :readonly="readonly"
+                                    v-model="proposedDecisionDetails"
+                                    :readonly="withApprover? false: readonly"
                                     />
 
                                 </div>
@@ -94,14 +121,13 @@
                                     <label class="control-label pull-left" for="approvalType">Approval Type</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <select 
+                                    <select
                                         :disabled="withApprover || readonly"
-                                        ref="approvalType"
+                                        ref="select_approvaltype"
                                         class="form-control"
                                         v-model="selectedApprovalTypeId"
-                                        @change="handleApprovalTypeChangeEvent"
                                     >
-                                        <option value="null"></option>
+                                        <option></option>
                                         <option v-for="atype in approvalTypes" :value="atype.id" :key="atype.name">{{atype.name}}</option>
                                     </select>
                                 </div>
@@ -111,13 +137,13 @@
                                     <label class="control-label pull-left" for="approvalSubType">Approval Sub Type</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <select 
-                                        ref="approvalSubType"
+                                    <select
+                                        ref="select_approvalsubtype"
                                         class="form-control"
                                         v-model="selectedApprovalSubType"
                                         :disabled="readonly"
                                     >
-                                        <option value="null"></option>
+                                        <option></option>
                                         <option v-for="atype in approvalSubTypes" :value="atype" :key="atype.name">{{atype.name}}</option>
                                     </select>
                                 </div>
@@ -226,43 +252,19 @@
                                 </div>
                             </div>
                         </div>
-                        <hr>
-                        <div class="form-group" v-if="leaseLicence">
-                            <div v-if="!readonly" class="row modal-input-row">
-                                <div class="col-sm-12">
-                                Select zero or more documents that need to be attached as part of the approval of this application
-                                </div>
-                            </div>
-                            <div v-for="docType in selectedDocumentTypes">
-                                <div class="row modal-input-row">
-                                    <div class="col-sm-3">
-                                        <label class="control-label pull-left" for="selectedDocumentTypes">{{docType.name}}</label>
-                                    </div>
-                                    <div class="col-sm-9">
-                                        <FileField 
-                                            :readonly="withApprover || readonly"
-                                            :name="'lease_licence_approval_documents_' + docType.name + '_' + docType.id"
-                                            :id="'lease_licence_approval_documents_' + docType.name + '_' + docType.id"
-                                            :approval_type="selectedApprovalTypeId"
-                                            :approval_type_document_type="docType.id"
-                                            :isRepeatable="true"
-                                            :documentActionUrl="leaseLicenceApprovalDocumentsUrl"
-                                            :replace_button_by_text="true"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="form-group" v-if="leaseLicence && !readonly">
-                            <div class="row modal-input-row">
-                                <div class="col-sm-4">
-                                    <select 
-                                    class="form-control" id="documentTypeSelector" @change="updateSelectedDocumentTypes" @blur="documentTypeSelectorBlur">
-                                        <option :value="null"/>
-                                        <option v-for="docType in availableDocumentTypes" :value="docType.id">{{ docType.name }} </option>
-                                    </select>
-                                </div>
-                            </div>
+                        <div class="form-group" v-if="leaseLicence && !withApprover && !proposalIsApproved || alwaysShowDocuments">
+                            <hr>
+                            <ProposedApprovalDocuments
+                                v-if="proposal"
+                                ref="proposed_issuance_documents"
+                                :proposal="proposal"
+                                :proposal_id="proposal.id"
+                                :processing_status="proposal.processing_status"
+                                :availableDocumentTypes="availableDocumentTypes"
+                                :selectedDocumentTypes="selectedDocumentTypes"
+                                :readonly=false
+                                @updateSelectedDocumentTypes="updateSelectedDocumentTypes"
+                            />
                         </div>
                     </div>
                 </form>
@@ -280,16 +282,19 @@
 
 <script>
 //import $ from 'jquery'
+import { constants } from '@/utils/hooks'
 import VueAlert from '@vue-utils/alert.vue'
 import RichText from '@/components/forms/richtext.vue'
 import {helpers, api_endpoints} from "@/utils/hooks.js"
 import FileField from '@/components/forms/filefield_immediate.vue'
+import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue'
 export default {
     name:'ProposedApprovalForm',
     components:{
         VueAlert,
         RichText,
         FileField,
+        ProposedApprovalDocuments,
     },
     props:{
         proposal_id: {
@@ -304,13 +309,17 @@ export default {
             type: String,
             required: true
         },
+        proposalIsApproved: {
+            type: Boolean,
+            required: false
+        },
         // isApprovalLevelDocument: {
         //     type: Boolean,
         //     required: true
         // },
         readonly: {
             type: Boolean,
-            required: false
+            default: false
         },
         submitter_email: {
             type: String,
@@ -332,10 +341,14 @@ export default {
             type: Object,
             required: true,
         },
-        // assessment: {
-        //     type: Object,
-        //     required: true,
-        // },
+        decisionLabel: {
+            type: String,
+            default: 'Decision',
+        },
+        alwaysShowDocuments: {
+            type: Boolean,
+            default: false,
+        },
     },
     data:function () {
         return {
@@ -354,6 +367,11 @@ export default {
             selectedApprovalSubType: {},
             //state: 'proposed_approval',
             issuingApproval: false,
+            approvalDecisionText: {
+                    "approve_lease_licence": "Invite applicant to apply for a lease or licence",
+                    "approve_competitive_process": "Start Competitive process",
+                    "decline_application": "Decline Application"
+                },
             validation_form: null,
             errors: false,
             toDateError:false,
@@ -408,6 +426,20 @@ export default {
                 return this.selectedApprovalType.details_placeholder
             }
         },
+        proposedDecisionDetails: function() {
+            /** Returns proposed decision details depending on whether the proposed decision
+             *  by the assessor is an approval or a decline.
+             */
+
+            if (this.approval.decision) {
+                return this.approval.details;
+            }
+            else if (this.proposal.proposed_decline_status) {
+                return this.proposal.proposaldeclineddetails.reason;
+            } else {
+                return "";
+            }
+        },
         showError: function() {
             var vm = this;
             return vm.errors;
@@ -430,7 +462,10 @@ export default {
           return helpers.getCookie('csrftoken')
         },
         withApprover: function(){
-            return this.processing_status == 'With Approver' ? true : false;
+            return this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID ? true : false;
+        },
+        isApproved: function() {
+
         },
         can_preview: function(){
             return this.processing_status == 'With Approver' ? true : false;
@@ -450,10 +485,9 @@ export default {
         },
     },
     methods:{
-        handleApprovalTypeChangeEvent(evt) {
-            evt.preventDefault();
-            const id = parseInt(evt.target.value);
+        handleApprovalTypeChangeEvent(id) {
             this.updateSelectedApprovalType(id);
+            this.initSelectDocument();
         },
         updateSelectedApprovalType(id) {
             // console.log(id);
@@ -467,15 +501,26 @@ export default {
                     }
                 }
             }
+            this.selectedApprovalTypeId = id;
         },
-        documentTypeSelectorBlur() {
-            $('#'+'documentTypeSelector').val(null);
-        },
-        updateSelectedDocumentTypes(evt) {
-            evt.preventDefault();
-            if (!this.selectedDocumentTypes.find(element => element.id === parseInt(evt.target.value))) {
-                this.selectedDocumentTypes.push(this.availableDocumentTypes.find(element => element.id === parseInt(evt.target.value)));
+        updateSelectedDocumentTypes(value, remove) {
+            if (!remove) {
+                remove = false;
             }
+
+            let found = this.selectedDocumentTypes.find(element => element.id === parseInt(value));
+
+            if (!found) {
+                this.selectedDocumentTypes.push(
+                        this.availableDocumentTypes.find(element => element.id === parseInt(value))
+                    );
+                return true;
+            }
+
+            if (found && remove) {
+                this.selectedDocumentTypes = this.selectedDocumentTypes.filter(element => element.id !== parseInt(value));
+            }
+            return false;
         },
         preview:function () {
             let vm =this;
@@ -605,18 +650,72 @@ export default {
                 }
             });
         },
+        initSelectDocument: function() {
+            let vm = this;
+            vm.$refs.proposed_issuance_documents.initSelectDocument();
+        },
+        /**
+         * Initialise the select2 control for selecting the approval type of the application
+         */
+        initSelectApprovalType: function () {
+            let vm = this;
+
+            $(vm.$refs.select_approvaltype).select2({
+                "theme": "bootstrap-5",
+                allowClear: true,
+                placeholder: "Select an approval type",
+            }).on("select2:select", function (e) {
+                var selected = $(e.currentTarget);
+                vm.handleApprovalTypeChangeEvent(Number(selected.val()));
+            }).on("select2:unselecting", function (e) {
+                var self = $(this);
+                setTimeout(() => {
+                    self.select2('close');
+                }, 0);
+            }).on("select2:unselect", function (e) {
+                let unselected_id = e.params.data.id;
+            });
+        },
+        /**
+         * Initialise the select2 control for selecting the approval subtype of the application
+         * TODO: What exactly is the subtype?
+         */
+         initSelectApprovalSubType: function () {
+            let vm = this;
+
+            $(vm.$refs.select_approvalsubtype).select2({
+                "theme": "bootstrap-5",
+                allowClear: true,
+                placeholder: "Select an approval sub type",
+            }).on("select2:select", function (e) {
+                var selected = $(e.currentTarget);
+                // vm.handleApprovalSubTypeChangeEvent(Number(selected.val()));
+            }).on("select2:unselecting", function (e) {
+                var self = $(this);
+                setTimeout(() => {
+                    self.select2('close');
+                }, 0);
+            }).on("select2:unselect", function (e) {
+                let unselected_id = e.params.data.id;
+            });
+        },
    },
    created: async function () {
         let vm =this;
         vm.form = document.forms.approvalForm;
         this.approval = Object.assign({}, this.proposal.proposed_issuance_approval);
-        await this.fetchApprovalTypes();
-        await this.fetchApprovalSubTypes();
+        this.selectedApprovalTypeId = this.approval.approval_type;
+        this.selectedApprovalSubType = this.approval.approval_sub_type;
+        await vm.fetchApprovalTypes();
+        await vm.fetchApprovalSubTypes();
         //vm.addFormValidations();
         this.$nextTick(()=>{
             if (this.approval.decision) {
                 this.selectedDecision = this.approval.decision;
+            } else if (this.proposal.proposed_decline_status) {
+                this.selectedDecision = "decline_application";
             }
+
             // Approval Type
             if (this.approval.approval_type) {
                 this.selectedApprovalTypeId = this.approval.approval_type;
@@ -641,8 +740,11 @@ export default {
                     }
                 }
             }
+
+            this.initSelectApprovalType();
+            this.initSelectApprovalSubType();
         });
-   }
+   },
 }
 </script>
 

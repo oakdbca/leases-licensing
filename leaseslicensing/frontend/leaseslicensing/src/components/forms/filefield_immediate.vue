@@ -3,7 +3,15 @@
         <div v-if="numDocuments > 0">
             <div v-for="v in documents">
                 <div>
-                    File: <a :href="v.file" target="_blank">{{ v.name }}</a> &nbsp;
+                    <span v-if="v.name.endsWith('.pdf')" class="fa fa-file-pdf" style='color: red'>
+                        &nbsp;
+                    </span>
+                    <span v-else class="fa fa-file" style='color: red'>
+                        &nbsp;
+                    </span>
+                    <a :href="v.file" target="_blank">
+                        {{ v.name }}
+                    </a>
                     <span v-if="!readonly">
                         <a @click="delete_document(v)" class="bi bi-trash3" title="Remove file" :filename="v.name"
                             style="cursor: pointer; color:red;"></a>

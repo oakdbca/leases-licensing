@@ -381,6 +381,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     groups = ProposalGroupSerializer(many=True, read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
+    requirements = serializers.SerializerMethodField()
 
     class Meta:
         model = Proposal
@@ -1126,6 +1127,15 @@ class InternalProposalSerializer(BaseProposalSerializer):
 
     def get_readonly(self, obj):
         return True
+
+    def get_requirements(self, obj):
+        requirements = ProposalRequirementSerializer(
+            obj.get_requirements(),
+            many=True,
+            context={"request": self.context["request"]}
+        )
+
+        return requirements.data
 
     def get_requirements_completed(self, obj):
         return True

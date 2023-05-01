@@ -146,6 +146,7 @@
                                 v-if="configuration.function_to_show_hide()"
                                 class="btn btn-primary  w-75 my-1"
                                 @click.prevent="configuration.function_when_clicked"
+                                :disabled="configuration.function_to_disable()"
                             >{{ configuration.button_title }}</button>
                         </template>
                     </div>
@@ -199,6 +200,10 @@ export default {
                         let show = vm.check_role_conditions(condition_to_display)
 
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -226,6 +231,10 @@ export default {
                         }
 
                         return show1 && show2
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -243,24 +252,10 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
-                    }
-                },
-                {
-                    'key': 'propose_decline',
-                    'button_title': 'Propose Decline',
-                    'function_when_clicked': vm.proposedDecline,
-                    'function_to_show_hide': () => {
-                        let condition_to_display = {
-                            [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
-                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
-                            },
-                            [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
-                            }
-                        }
-                        let show = vm.check_role_conditions(condition_to_display)
-                        return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -286,6 +281,10 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -304,6 +303,34 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO: Propose Approve only available when DAS proposal has been approved or
+                        // when no DAS approval is required (047-1)
+                        return false;
+                    }
+                },
+                {
+                    'key': 'propose_decline',
+                    'button_title': 'Propose Decline',
+                    'function_when_clicked': vm.proposedDecline,
+                    'function_to_show_hide': () => {
+                        let condition_to_display = {
+                            [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
+                            },
+                            [APPLICATION_TYPE.LEASE_LICENCE]: {
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
+                            }
+                        }
+                        let show = vm.check_role_conditions(condition_to_display)
+                        return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -323,6 +350,10 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -340,6 +371,10 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -357,6 +392,10 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -371,6 +410,10 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO disable button under certain conditions
+                        return false;
                     }
                 },
                 {
@@ -385,6 +428,10 @@ export default {
                         }
                         let show = vm.check_role_conditions(condition_to_display)
                         return show
+                    },
+                    'function_to_disable': () => {
+                        // TODO
+                        return false;
                     }
                 },
             ],

@@ -2111,6 +2111,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     proposal=self, standard_requirement=req, due_date=due_date
                 )
 
+    def get_requirements(self):
+        # Get all requirements for Proposal
+        return ProposalRequirement.objects.filter(proposal=self)
+
     def move_to_status(self, request, status, approver_comment):
         if not self.can_assess(request.user) and not self.is_referrer(request.user):
             raise exceptions.ProposalNotAuthorized()
@@ -4017,7 +4021,11 @@ class Referral(RevisionedMixin):
         return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
     def can_process(self, user):
-        raise NotImplementedError("TODO: implement this")
+
+        referral_user = retrieve_email_user(self.referral)
+        # True if the request user is the referrer and the application is in referral status
+        return  referral_user.id == user.id and\
+                self.processing_status in ["with_referral", "with_referral_conditions"]
 
     def assign_officer(self, request, officer):
         with transaction.atomic():

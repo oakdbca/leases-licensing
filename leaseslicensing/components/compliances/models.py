@@ -23,6 +23,7 @@ from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
     UserAction,
+    RevisionedMixin,
 )
 from leaseslicensing.components.proposals.models import ProposalRequirement
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -41,7 +42,7 @@ class ComplianceManager(models.Manager):
         )
 
 
-class Compliance(models.Model):
+class Compliance(RevisionedMixin, models.Model):
     objects = ComplianceManager()
 
     PROCESSING_STATUS_CHOICES = (

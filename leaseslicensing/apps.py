@@ -52,6 +52,8 @@ class LeasesLicensingConfig(AppConfig):
                 ShapefileDocument,
             )
 
+            from leaseslicensing.components.compliances.models import Compliance
+
             # main
             reversion.register(ApplicationType, follow=[])
 
@@ -126,5 +128,13 @@ class LeasesLicensingConfig(AppConfig):
                 ],
             )
             reversion.register(ProposalGeometry, follow=["proposal"])
+
+            # compliance
+            reversion.register(Compliance,
+                follow=[
+                    "proposal",
+                    "approval",
+                    "requirement",
+                ])
 
         self.run_once = True
