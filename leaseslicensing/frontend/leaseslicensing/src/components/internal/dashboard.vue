@@ -21,18 +21,18 @@
             <div class="tab-pane active" id="pills-applications" role="tabpanel" aria-labelledby="pills-applications-tab">
                 <FormSection :formCollapse="false" label="Applications" Index="applications">
                     <ApplicationsTable ref="applications_table" level="internal"
-                        filterApplicationType_cache_name="filterApplicationTypeForApplicationTabley"
+                        filterApplicationType_cache_name="filterApplicationTypeForApplicationTable"
                         filterApplicationStatus_cache_name="filterApplicationStatusForApplicationTable"
-                        filterApplicationLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationTable"
-                        filterApplicationLodgedTo_cache_name="filterApplicationLodgedToForApplicationTable" />
+                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationTable"
+                        filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationTable" />
                 </FormSection>
                 <FormSection :formCollapse="false" label="Applications referred to me" Index="leases_and_licences">
                     <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" v-if="accessing_user"
                         level="internal" :email_user_id_assigned="accessing_user.id"
                         filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
                         filterApplicationStatus_cache_name="filterApplicationStatusForApplicationReferredToMeTable"
-                        filterApplicationLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
-                        filterApplicationLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
+                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
+                        filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
                 </FormSection>
             </div>
             <div class="tab-pane" id="pills-competitive-processes" role="tabpanel"
@@ -55,7 +55,7 @@ import FormSection from "@/components/forms/section_toggle.vue"
 import ApplicationsTable from "@/components/common/table_proposals"
 import ApplicationsReferredToMeTable from "@/components/common/table_proposals"
 import CompetitiveProcessesTable from "@/components/common/table_competitive_processes"
-import MapComponent from "@/components/common/component_map_with_filters"
+import MapComponent from "@/components/common/component_map_with_filters_v2"
 import { api_endpoints, helpers } from '@/utils/hooks'
 
 export default {
@@ -121,7 +121,7 @@ export default {
                 tab = new bootstrap.Tab(elem)
             tab.show()
         },
-        },
+    },
     mounted: async function () {
         const res = await fetch('/api/profile');
         const resData = await res.json();

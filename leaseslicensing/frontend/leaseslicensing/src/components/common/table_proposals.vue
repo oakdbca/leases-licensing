@@ -26,19 +26,17 @@
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for="">Lodged From</label>
+                        <label for="">Lodged From {{ filterProposalLodgedFrom }}</label>
                         <div class="input-group date" ref="proposalDateFromPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterProposalLodgedFrom">
+                            <input type="date" class="form-control" v-model="filterProposalLodgedFrom">
                         </div>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for="">Lodged To</label>
+                        <label for="">Lodged To {{ filterProposalLodgedTo }}</label>
                         <div class="input-group date" ref="proposalDateToPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterProposalLodgedTo">
+                            <input type="date" class="form-control" v-model="filterProposalLodgedTo">
                         </div>
                     </div>
                 </div>
@@ -101,12 +99,12 @@ export default {
             required: false,
             default: 'filterApplicationStatus',
         },
-        filterApplicationLodgedFrom_cache_name: {
+        filterProposalLodgedFrom_cache_name: {
             type: String,
             required: false,
             default: 'filterApplicationLodgedFrom',
         },
-        filterApplicationLodgedTo_cache_name: {
+        filterProposalLodgedTo_cache_name: {
             type: String,
             required: false,
             default: 'filterApplicationLodgedTo',
@@ -573,36 +571,6 @@ export default {
                 let id = $(this).attr('data-discard-proposal');
                 vm.discardProposal(id)
             });
-            /*
-            // update to bs5
-            // Lodged From
-            $(vm.$refs.proposalDateFromPicker).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.proposalDateFromPicker).on('dp.change',function (e) {
-                if ($(vm.$refs.proposalDateFromPicker).data('DateTimePicker').date()) {
-                    // DateFrom has been picked
-                    vm.filterProposalLodgedFrom = e.date.format('DD/MM/YYYY');
-                    $(vm.$refs.proposalDateToPicker).data("DateTimePicker").minDate(e.date);
-                }
-                else if ($(vm.$refs.proposalDateFromPicker).data('date') === "") {
-                    vm.filterProposalLodgedFrom = "";
-                    $(vm.$refs.proposalDateToPicker).data("DateTimePicker").minDate(false);
-                }
-            });
-
-            // Lodged To
-            $(vm.$refs.proposalDateToPicker).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.proposalDateToPicker).on('dp.change',function (e) {
-                if ($(vm.$refs.proposalDateToPicker).data('DateTimePicker').date()) {
-                    // DateTo has been picked
-                    vm.filterProposalLodgedTo = e.date.format('DD/MM/YYYY');
-                    $(vm.$refs.proposalDateFromPicker).data("DateTimePicker").maxDate(e.date);
-                }
-                else if ($(vm.$refs.proposalDateToPicker).data('date') === "") {
-                    vm.filterProposalLodgedTo = "";
-                    $(vm.$refs.proposalDateFromPicker).data("DateTimePicker").maxDate(false);
-                }
-            });
-            */
 
             // Listener for thr row
             vm.$refs.application_datatable.vmDataTable.on('click', 'td', function () {
