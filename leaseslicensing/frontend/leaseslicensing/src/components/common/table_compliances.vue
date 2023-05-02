@@ -84,7 +84,11 @@ export default {
             type: Number,
             required: false,
             default: 0,
-        }
+        },
+        compliances_referred_to_me: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         let vm = this;
@@ -373,7 +377,7 @@ export default {
 
                 ajax: {
                     "url": api_endpoints.compliances_paginated_external + '?format=datatables&target_email_user_id=' + vm.target_email_user_id +
-                        '&target_organisation_id=' + vm.target_organisation_id,
+                        '&target_organisation_id=' + vm.target_organisation_id + '&compliances_referred_to_me=' + vm.compliances_referred_to_me,
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering
