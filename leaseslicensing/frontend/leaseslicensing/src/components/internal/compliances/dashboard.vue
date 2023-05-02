@@ -1,6 +1,9 @@
 <template>
     <div class="container" id="compliancesDash">
-        <FormSection :formCollapse="false" label="Compliances" Index="compliances">
+        <FormSection :formCollapse="false" label="Compliances" index="compliances">
+            <CompliancesTable level="internal" />
+        </FormSection>
+        <FormSection :formCollapse="false" label="Compliances Referred to Me" index="compliances-referred-to-me">
             <CompliancesTable level="internal" />
         </FormSection>
     </div>
