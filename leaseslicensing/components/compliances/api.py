@@ -146,6 +146,14 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
                 approval__org_applicant__id=target_organisation_id
             )
 
+        compliances_referred_to_me = self.request.query_params.get(
+            "compliances_referred_to_me", False
+        )
+        if compliances_referred_to_me:
+            # Todo: Once compliance referrals are completed use this to filter
+            # compliances that are referred to the request user
+            pass
+
         return qs
 
     @list_route(
