@@ -525,14 +525,26 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         )
 
 
-class ListProposalMinimalSerializer(BaseProposalSerializer):
+class ListProposalMinimalSerializer(serializers.ModelSerializer):
+    proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
+    application_type_name_display = serializers.CharField(
+        read_only=True, source="application_type.name_display"
+    )
+    processing_status_display = serializers.CharField(
+        read_only=True, source="get_processing_status_display"
+    )
+    lodgement_date = serializers.DateTimeField(read_only=True, format="%d/%m/%Y")
+
     class Meta:
         model = Proposal
         fields = (
             "id",
             "processing_status",
+            "processing_status_display",
             "proposalgeometry",
-            "application_type",
+            "application_type_name_display",
+            "application_type_id",
+            "lodgement_number",
             "lodgement_date",
         )
 
