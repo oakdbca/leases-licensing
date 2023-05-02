@@ -571,6 +571,7 @@ def check_geometry(instance):
 
 
 def save_geometry(instance, request, viewset):
+    logger.debug("saving geometry")
     # geometry
     proposal_geometry_str = request.data.get("proposal_geometry")
     # geometry_list = []
