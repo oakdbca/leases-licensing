@@ -556,6 +556,31 @@ class ProposalViewSet(UserActionLoggingViewset):
         )
         return Response(data)
 
+    @list_route(methods=["GET"], detail=False)
+    def list_for_map(self, request, *args, **kwargs):
+        """Returns the proposals for the map"""
+        application_type = request.query_params.get("application_type", None)
+        processing_status = request.query_params.get("processing_status", None)
+        qs = self.get_queryset().exclude(proposalgeometry__isnull=True)
+
+        if (
+            application_type
+            and application_type.isnumeric()
+            and int(application_type) > 0
+        ):
+            logger.debug(f"Filtering by application_type: {application_type}")
+            qs = qs.filter(application_type_id=application_type)
+
+        if processing_status:
+            logger.debug(f"Filtering by processing_status: {processing_status}")
+            qs = qs.filter(processing_status=processing_status)
+
+        # qs = self.filter_queryset(qs)
+        serializer = ListProposalMinimalSerializer(
+            qs, context={"request": request}, many=True
+        )
+        return Response(serializer.data)
+
     @detail_route(
         methods=[
             "GET",
