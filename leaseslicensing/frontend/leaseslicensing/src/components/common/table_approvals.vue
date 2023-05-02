@@ -26,11 +26,7 @@
                     <div class="form-group">
                         <label for="">Expiry Date From</label>
                         <div class="input-group date" ref="approvalDateFromPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterApprovalExpiryDateFrom">
-                            <span class="input-group-addon">
-                                <span class="glyphicon glyphicon-calendar"></span>
-                            </span>
+                            <input type="date" class="form-control" v-model="filterApprovalExpiryDateFrom">
                         </div>
                     </div>
                 </div>
@@ -38,11 +34,7 @@
                     <div class="form-group">
                         <label for="">Expiry Date To</label>
                         <div class="input-group date" ref="approvalDateToPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterApprovalExpiryDateTo">
-                            <span class="input-group-addon">
-                                <span class="glyphicon glyphicon-calendar"></span>
-                            </span>
+                            <input type="date" class="form-control" v-model="filterApprovalExpiryDateTo">
                         </div>
                     </div>
                 </div>
