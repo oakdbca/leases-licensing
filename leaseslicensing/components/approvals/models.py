@@ -699,7 +699,7 @@ class Approval(RevisionedMixin):
                     send_approval_suspend_email_notification(self)
             else:
                 self.set_to_suspend = True
-            self.save()
+            self.save(version_comment="status_change: Approval suspended")
             # Log approval action
             self.log_user_action(
                 ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id), request
@@ -735,7 +735,7 @@ class Approval(RevisionedMixin):
 
             self.status = "current"
             # self.suspension_details = {}
-            self.save()
+            self.save(version_comment="status_change: Approval reinstated")
             send_approval_reinstate_email_notification(self, request)
             # Log approval action
             self.log_user_action(
@@ -782,7 +782,7 @@ class Approval(RevisionedMixin):
                     send_approval_surrender_email_notification(self)
             else:
                 self.set_to_surrender = True
-            self.save()
+            self.save(version_comment="status_change: Approval surrendered")
             # Log approval action
             self.log_user_action(
                 ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(self.id),
