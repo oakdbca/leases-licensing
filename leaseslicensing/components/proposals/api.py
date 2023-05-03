@@ -5,6 +5,7 @@ from collections import OrderedDict
 from datetime import datetime
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
@@ -561,7 +562,17 @@ class ProposalViewSet(UserActionLoggingViewset):
         """Returns the proposals for the map"""
         application_type = request.query_params.get("application_type", None)
         processing_status = request.query_params.get("processing_status", None)
-        qs = self.get_queryset().exclude(proposalgeometry__isnull=True)
+
+        cache_key = settings.CACHE_KEY_MAP_PROPOSALS
+        qs = cache.get(cache_key)
+        if qs is None:
+            qs = (
+                self.get_queryset()
+                .exclude(proposalgeometry__isnull=True)
+                .prefetch_related("proposalgeometry")
+            )
+            cache.set(cache_key, qs, settings.CACHE_TIMEOUT_2_HOURS)
+        logger.debug(f"{cache_key}:{qs}")
 
         if (
             application_type
