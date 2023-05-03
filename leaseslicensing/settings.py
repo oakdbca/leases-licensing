@@ -147,7 +147,7 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
             "LOCATION": os.path.join(BASE_DIR, "leaseslicensing", "cache"),
-        }
+        },
     }
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_ll")
@@ -413,6 +413,7 @@ CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
     "application_internal_statuses_dict_for_filter"
 )
 CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS = "dbca_legislated_lands_and_waters"
+CACHE_KEY_MAP_PROPOSALS = "map-proposals"
 
 # ---------- User Log Actions ----------
 
