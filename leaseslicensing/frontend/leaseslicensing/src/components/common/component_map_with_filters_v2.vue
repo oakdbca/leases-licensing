@@ -98,9 +98,9 @@
                                         <th scope="row">Processing Status</th>
                                         <td>{{ selectedProposal.processing_status_display }}</td>
                                     </tr>
-                                    <tr v-if="selectedProposal.lodgement_date">
+                                    <tr v-if="selectedProposal.lodgement_date_display">
                                         <th scope="row">Lodgement Date</th>
-                                        <td>{{ selectedProposal.lodgement_date
+                                        <td>{{ selectedProposal.lodgement_date_display
                                         }}</td>
                                     </tr>
                                 </tbody>
@@ -259,18 +259,11 @@ export default {
             sessionStorage.setItem(this.filterApplicationsMapProcessingStatus_cache_name, this.filterApplicationsMapProcessingStatus);
         },
         filterApplicationsMapLodgedFrom: function () {
-            let vm = this;
-            console.log('filterApplicationsMapLodgedFrom', vm.filterApplicationsMapLodgedFrom)
-            if ('' === vm.filterApplicationsMapLodgedFrom) {
-                vm.filteredProposals = [...vm.proposals];
-            } else {
-                let filterApplicationsMapLodgedFrom = moment(vm.filterApplicationsMapLodgedFrom).format('YYYY-MM-DD');
-                vm.filteredProposals = [...vm.proposals.filter(proposal => proposal.lodgement_date >= filterApplicationsMapLodgedFrom)]
-            }
-            vm.loadFeatures(vm.filteredProposals);
+            this.applyFiltersFrontEnd();
             sessionStorage.setItem('filterApplicationsMapLodgedFromForMap', this.filterApplicationsMapLodgedFrom);
         },
         filterApplicationsMapLodgedTo: function () {
+            this.applyFiltersFrontEnd();
             sessionStorage.setItem('filterApplicationsMapLodgedToForMap', this.filterApplicationsMapLodgedTo);
         },
         filterApplied: function () {
@@ -289,6 +282,12 @@ export default {
             }
             if ('all' != this.filterApplicationsMapProcessingStatus) {
                 this.filteredProposals = [...this.filteredProposals.filter(proposal => proposal.processing_status === this.filterApplicationsMapProcessingStatus)]
+            }
+            if ('' != this.filterApplicationsMapLodgedFrom) {
+                this.filteredProposals = [...this.filteredProposals.filter(proposal => new Date(proposal.lodgement_date) >= new Date(this.filterApplicationsMapLodgedFrom))]
+            }
+            if ('' != this.filterApplicationsMapLodgedTo) {
+                this.filteredProposals = [...this.filteredProposals.filter(proposal => new Date(proposal.lodgement_date) >= new Date(this.filterApplicationsMapLodgedTo))]
             }
             this.loadFeatures(this.filteredProposals);
         },
@@ -500,8 +499,20 @@ export default {
             vm.map.addLayer(vm.measurementLayer)
 
             vm.proposalQuerySource = new VectorSource({});
+
+            const style = new Style({
+                fill: new Fill({
+                    color: '#eeeeee',
+                }),
+            });
+
             vm.proposalQueryLayer = new VectorLayer({
                 source: vm.proposalQuerySource,
+                style: function (feature) {
+                    const color = feature.get('color') || '#eeeeee';
+                    style.getFill().setColor(color);
+                    return style;
+                },
             });
             vm.map.addLayer(vm.proposalQueryLayer);
 
@@ -510,13 +521,29 @@ export default {
         },
         initialisePointerMoveEvent: function () {
             let vm = this
+
+            const selectStyle = new Style({
+                fill: new Fill({
+                    color: 'rgba(255, 255, 255, 0.5)',
+                }),
+                stroke: new Stroke({
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    width: 1,
+                }),
+            });
+            let selected = null;
             vm.map.on('pointermove', function (evt) {
-                let feature = vm.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
-                    return feature;
-                });
-                if (feature) {
-                    let proposal = feature.getProperties().proposal
+                if (selected !== null) {
+                    selected.setStyle(undefined);
+                    selected = null;
+                }
+                vm.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
+                    selected = feature;
+                    let proposal = selected.getProperties().proposal
                     vm.selectedProposal = proposal
+                    selected.setStyle(selectStyle);
+                });
+                if (selected) {
                     vm.featureToast.show()
                 } else {
                     vm.featureToast.hide()
@@ -560,6 +587,7 @@ export default {
                         return Promise.reject(error)
                     }
                     vm.proposals = data
+                    vm.filteredProposals = [...vm.proposals]
                     vm.assignProposalFeatureColors(vm.proposals);
                     vm.loadFeatures(vm.proposals);
                 })
@@ -588,6 +616,8 @@ export default {
             let vm = this;
             proposals.forEach(function (proposal) {
                 proposal.color = vm.getRandomRGBAColor();
+                console.log(proposal.lodgement_date)
+                console.log(typeof proposal.lodgement_date)
             });
         },
         loadFeatures: function (proposals) {
@@ -609,7 +639,8 @@ export default {
                     let feature = new Feature({
                         geometry: new Polygon(featureData.geometry.coordinates),
                         name: proposal.id,
-                        label: proposal.application_type_name_display
+                        label: proposal.application_type_name_display,
+                        color: proposal.color,
                     });
                     feature.setStyle(style)
                     feature.setProperties({
