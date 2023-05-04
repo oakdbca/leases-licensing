@@ -39,6 +39,7 @@ from leaseslicensing.components.proposals.serializers import (
     SaveLeaseLicenceSerializer,
     SaveRegistrationOfInterestSerializer,
 )
+from leaseslicensing.components.tenure.models import SiteName
 from leaseslicensing.helpers import is_assessor
 
 logger = logging.getLogger(__name__)
@@ -436,6 +437,7 @@ def save_proponent_data(instance, request, viewset):
 def save_proponent_data_registration_of_interest(instance, request, viewset):
     # proposal
     proposal_data = request.data.get("proposal") if request.data.get("proposal") else {}
+    logger.debug("proposal_data = " + str(proposal_data))
     serializer = SaveRegistrationOfInterestSerializer(
         instance,
         data=proposal_data,
@@ -443,20 +445,13 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
             "action": viewset.action,
         },
     )
+    logger.debug("Validating SaveRegistrationOfInterestSerializer")
     serializer.is_valid(raise_exception=True)
     instance = serializer.save()
-    logger.debug("proposal_data = " + str(proposal_data))
-    groups_data = proposal_data["groups"]
-    if groups_data and len(groups_data) > 0:
-        group_ids = []
-        for group_data in groups_data:
-            logger.debug("group_data: %s", group_data)
-            group = group_data["group"]
-            ProposalGroup.objects.get_or_create(proposal=instance, group_id=group["id"])
-            group_ids.append(group["id"])
-        ProposalGroup.objects.filter(proposal=instance).exclude(
-            group_id__in=group_ids
-        ).delete()
+
+    logger.debug("Saving groups data.")
+    save_groups_data(instance, proposal_data["groups"])
+
     if request.data.get("proposal_geometry"):
         save_geometry(instance, request, viewset)
     if viewset.action == "submit":
@@ -466,6 +461,8 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
 def save_proponent_data_lease_licence(instance, request, viewset):
     # proposal
     proposal_data = request.data.get("proposal") if request.data.get("proposal") else {}
+    logger.debug(f"proposal_data = {proposal_data}")
+
     serializer = SaveLeaseLicenceSerializer(
         instance,
         data=proposal_data,
@@ -475,6 +472,9 @@ def save_proponent_data_lease_licence(instance, request, viewset):
     )
     serializer.is_valid(raise_exception=True)
     instance = serializer.save()
+
+    save_groups_data(instance, proposal_data["groups"])
+
     if request.data.get("proposal_geometry"):
         save_geometry(instance, request, viewset)
     if viewset.action == "submit":
@@ -528,6 +528,7 @@ def save_referral_data(proposal, request, referral_completed=False):
 
 
 def save_assessor_data(proposal, request, viewset):
+    logger.debug("save_assessor_data")
     with transaction.atomic():
         proposal_data = {}
         if request.data.get("proposal"):
@@ -536,6 +537,8 @@ def save_assessor_data(proposal, request, viewset):
         else:
             # request.data is a dictionary of the proposal {'id': ..., ...}
             proposal_data = request.data
+
+        save_groups_data(proposal, proposal_data["groups"])
 
         # Save checklist answers
         if is_assessor(request):
@@ -559,15 +562,11 @@ def save_assessor_data(proposal, request, viewset):
 
 
 def check_geometry(instance):
-    geom_ok = True
     for geom in instance.proposalgeometry.all():
         if not geom.intersects:
-            geom_ok = False
-
-    if not geom_ok:
-        raise ValidationError(
-            "One or more polygons does not intersect with a relevant layer"
-        )
+            raise ValidationError(
+                "One or more polygons does not intersect with a relevant layer"
+            )
 
 
 def save_geometry(instance, request, viewset):
@@ -801,3 +800,23 @@ def test_proposal_emails(request):
         booking_email.send_confirmation_tclass_email_notification(
             request.user, booking, bi, recipients, is_test=True
         )
+
+
+def save_site_name(instance, site_name):
+    if site_name:
+        site_name, created = SiteName.objects.get_or_create(name=site_name)
+        instance.site_name = site_name
+
+
+def save_groups_data(instance, groups_data):
+    logger.debug("groups_data = " + str(groups_data))
+    if groups_data and len(groups_data) > 0:
+        group_ids = []
+        for group_data in groups_data:
+            logger.debug("group_data: %s", group_data)
+            group = group_data["group"]
+            ProposalGroup.objects.get_or_create(proposal=instance, group_id=group["id"])
+            group_ids.append(group["id"])
+        ProposalGroup.objects.filter(proposal=instance).exclude(
+            group_id__in=group_ids
+        ).delete()
