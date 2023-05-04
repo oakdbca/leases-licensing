@@ -729,7 +729,6 @@ class SaveLeaseLicenceSerializer(BaseProposalSerializer):
             "key_milestones_text",
             "risk_factors_text",
             "legislative_requirements_text",
-            "groups",
         )
         read_only_fields = ("id",)
 
@@ -930,6 +929,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
     approved_by = serializers.SerializerMethodField()
+    groups = ProposalGroupSerializer(many=True, read_only=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
 
     class Meta:
@@ -1028,6 +1028,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "all_lodgement_versions",
             "approved_on",
             "approved_by",
+            "groups",
             "site_name",
             # "assessor_comment_map",
             # "deficiency_comment_map",
