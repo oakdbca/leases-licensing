@@ -69,38 +69,50 @@
                     <LeaseLicence :proposal="proposal" :readonly="readonly" ref="lease_licence" v-if="leaseLicence">
                     </LeaseLicence>
 
-                    <FormSection label="Tenure" Index="other_section">
+                    <FormSection label="Legal Act, Tenure and Category" Index="other_section">
                         <slot name="slot_other_checklist_questions"></slot>
 
-                        <div class="row question-row">
-                            <div class="col">
-                                <ul class="list-group">
-                                    <li class="list-group-item"><input class="me-2" type="checkbox" name="tenure"
-                                            checked><label>Forest Estate
-                                            S97</label>
-                                        <ul class="list-group mt-2">
-                                            <li class="list-group-item">
-                                                <input class="me-2" type="checkbox" name="tenure" checked><label>State
-                                                    Forest 5(a)</label>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <input class="me-2" type="checkbox" name="tenure"><label>Timber
-                                                    Reserve 5(b)</label>
-                                            </li>
-                                        </ul>
-                                    </li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Conservation
-                                            Estate S100</label></li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Freehold</label>
-                                    </li>
-                                    <li class="list-group-item"><input class="me-2" type="checkbox"
-                                            name="tenure"><label>Other</label>
-                                    </li>
-                                </ul>
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Legal Act</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <select ref="act" class="select2 form-select" multiple="multiple">
+                                    <option value="1" selected>CALM Act 1984 - Section 5(1)(d)</option>
+                                    <option value="2">CALM Act 1984 - Section 5(1)(ca)</option>
+                                    <option value="3" selected>CALM Act 1984 - Section 5(1)(c)</option>
+                                    <option value="4">etc..</option>
+                                </select>
                             </div>
                         </div>
+
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Tenure</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <select ref="tenure" class="select2 form-select" multiple="multiple">
+                                    <option value="1">Crown Land</option>
+                                    <option value="2">Unallocated Crown Land</option>
+                                    <option value="3">Freehold</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Category</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <select ref="category" class="select2 form-select" multiple="multiple">
+                                    <option value="1">Nature Reserve</option>
+                                    <option value="2">Conservation Park</option>
+                                    <option value="3">National Park</option>
+                                    <option value="4">etc..</option>
+                                </select>
+                            </div>
+                        </div>
+
                     </FormSection>
 
                     <FormSection label="Localities" Index="localities">
@@ -162,7 +174,7 @@
                                 <ul class="list-inline col-sm-9">
                                     <li class="list-inline-item">
                                         <input class="form-control" v-model="proposal.site_name" type="text"
-                                            name="exclusive_use_yes" id="exclusive_use_yes" :disabled="readonly" />
+                                            name="exclusive_use_yes" id="exclusive_use_yes" :disabled="is_external" />
                                     </li>
                                 </ul>
                             </div>
@@ -446,12 +458,21 @@ export default {
         this.localities = [
             Object.assign({}, this.defaultLocality)
         ]
+        this.$nextTick(() => {
+            $('.select2').each(function () {
+                $(this).select2();
+            });
+        });
     }
 
 }
 </script>
 
 <style lang="css" scoped>
+.select2 {
+    width: 500px;
+}
+
 .question-title {
     padding-left: 15px;
 }
