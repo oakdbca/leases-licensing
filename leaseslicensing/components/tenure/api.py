@@ -3,16 +3,51 @@ import logging
 from rest_framework import viewsets
 
 from leaseslicensing.components.main.api import KeyValueListMixin, NoPaginationListMixin
-from leaseslicensing.components.tenure.models import LGA, District, Group, Region
+from leaseslicensing.components.tenure.models import (
+    LGA,
+    Act,
+    Category,
+    District,
+    Group,
+    Region,
+    Tenure,
+)
 from leaseslicensing.components.tenure.serializers import (
+    ActSerializer,
+    CategorySerializer,
     DistrictKeyValueSerializer,
     DistrictSerializer,
     GroupSerializer,
     LGASerializer,
     RegionSerializer,
+    TenureSerializer,
 )
 
 logger = logging.getLogger(__name__)
+
+
+class ActViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
+    model = Act
+    serializer_class = ActSerializer
+    key_value_display_field = "name"
+    key_value_serializer_class = ActSerializer
+    queryset = Act.objects.all()
+
+
+class TenureViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
+    model = Tenure
+    serializer_class = TenureSerializer
+    key_value_display_field = "name"
+    key_value_serializer_class = TenureSerializer
+    queryset = Tenure.objects.all()
+
+
+class CategoryViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
+    model = Category
+    serializer_class = CategorySerializer
+    key_value_serializer_class = CategorySerializer
+    key_value_display_field = "name"
+    queryset = Category.objects.all()
 
 
 class RegionViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
