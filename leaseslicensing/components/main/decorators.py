@@ -1,7 +1,6 @@
 import functools
 import logging
 import time
-import traceback
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import connection, reset_queries
@@ -19,17 +18,16 @@ def basic_exception_handler(func):
         try:
             return func(*args, **kwargs)
 
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            logger.error(traceback.print_exc())
+        except serializers.ValidationError as e:
+            logger.error(str(e))
             raise
         except ValidationError as e:
             from leaseslicensing.components.main.utils import handle_validation_error
 
+            logger.error(str(e))
             handle_validation_error(e)
         except Exception as e:
-            print(traceback.print_exc())
-            logger.error(traceback.print_exc())
+            logger.error(str(e))
             raise serializers.ValidationError(str(e))
 
     return wrapper
