@@ -189,7 +189,7 @@
                                         <div class="form-check">
                                             <input class="form-check-input me-2" type="checkbox" :id="group.id" :value="{
                                                     'group': { 'id': group.id, 'name': group.name }
-                                                }" name="tenure" v-model="proposal.groups"><label
+                                                }" name="group" v-model="proposal.groups"><label
                                                 class="form-check-label" :for="group.id">{{
                                                     group.name }}</label>
                                         </div>
