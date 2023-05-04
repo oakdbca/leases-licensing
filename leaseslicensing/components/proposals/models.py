@@ -14,6 +14,7 @@ from django.contrib.gis.db.models.fields import PolygonField
 from django.contrib.gis.gdal import SpatialReference
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.postgres.fields import ArrayField
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
@@ -52,7 +53,7 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_decline_email_notification,
     send_referral_email_notification,
 )
-from leaseslicensing.components.tenure.models import LGA, District, Group
+from leaseslicensing.components.tenure.models import LGA, District, Group, SiteName
 from leaseslicensing.helpers import user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
@@ -1175,6 +1176,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     risk_factors_text = models.TextField(blank=True)
     legislative_requirements_text = models.TextField(blank=True)
     shapefile_json = JSONField(blank=True, null=True)
+    site_name = models.ForeignKey(
+        SiteName, blank=True, null=True, on_delete=models.PROTECT
+    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1188,7 +1192,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     # Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)  # Call parent `save` to create a Proposal id
-
+        # Clear out the cached
+        cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
         if self.lodgement_number == "":
             new_lodgment_id = f"A{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
