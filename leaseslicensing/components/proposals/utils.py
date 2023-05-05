@@ -17,7 +17,10 @@ from leaseslicensing.components.bookings import email as booking_email
 from leaseslicensing.components.bookings.models import ApplicationFee, Booking
 from leaseslicensing.components.compliances import email as compliance_email
 from leaseslicensing.components.compliances.models import Compliance
-from leaseslicensing.components.main.utils import get_dbca_lands_and_waters_geos
+from leaseslicensing.components.main.utils import (
+    get_dbca_lands_and_waters_geos,
+    get_gis_data_for_proposal,
+)
 from leaseslicensing.components.proposals import email as proposal_email
 from leaseslicensing.components.proposals.email import (
     send_external_submit_email_notification,
@@ -25,11 +28,14 @@ from leaseslicensing.components.proposals.email import (
 )
 from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
+    ProposalAct,
     ProposalAssessment,
     ProposalAssessmentAnswer,
+    ProposalCategory,
     ProposalDeclinedDetails,
     ProposalGeometry,
     ProposalGroup,
+    ProposalTenure,
     ProposalUserAction,
     Referral,
 )
@@ -39,7 +45,7 @@ from leaseslicensing.components.proposals.serializers import (
     SaveLeaseLicenceSerializer,
     SaveRegistrationOfInterestSerializer,
 )
-from leaseslicensing.components.tenure.models import SiteName
+from leaseslicensing.components.tenure.models import Act, Category, SiteName, Tenure
 from leaseslicensing.helpers import is_assessor
 
 logger = logging.getLogger(__name__)
@@ -820,3 +826,38 @@ def save_groups_data(instance, groups_data):
         ProposalGroup.objects.filter(proposal=instance).exclude(
             group_id__in=group_ids
         ).delete()
+
+
+def populate_gis_data(proposal):
+    properties = [
+        "leg_tenure",
+        "leg_act",
+        "category",
+    ]
+    gis_data = get_gis_data_for_proposal(proposal, properties)
+    if gis_data is None:
+        logger.warn("No GIS data found for proposal %s", proposal.lodgement_number)
+        return
+
+    logger.debug("gis_data = " + str(gis_data))
+
+    if gis_data["leg_tenure"]:
+        for tenure_name in gis_data["leg_tenure"]:
+            tenure, created = Tenure.objects.get_or_create(name=tenure_name)
+            if created:
+                logger.info(f"New Tenure created from GIS Data: {tenure}")
+            ProposalTenure.objects.get_or_create(proposal=proposal, tenure=tenure)
+
+    if gis_data["leg_act"]:
+        for act_name in gis_data["leg_act"]:
+            act, created = Act.objects.get_or_create(name=act_name)
+            if created:
+                logger.info(f"New Act created from GIS Data: {act}")
+            ProposalAct.objects.get_or_create(proposal=proposal, act=act)
+
+    if gis_data["category"]:
+        for category_name in gis_data["category"]:
+            category, created = Category.objects.get_or_create(name=category_name)
+            if created:
+                logger.info(f"New Category created from GIS Data: {category}")
+            ProposalCategory.objects.get_or_create(proposal=proposal, category=category)
