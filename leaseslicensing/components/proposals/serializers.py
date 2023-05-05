@@ -37,6 +37,7 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     SectionChecklist,
 )
+from leaseslicensing.components.tenure.models import Group
 from leaseslicensing.components.tenure.serializers import GroupSerializer
 from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
@@ -564,6 +565,7 @@ class ListProposalSerializer(BaseProposalSerializer):
     assigned_officer = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     accessing_user_can_process = serializers.SerializerMethodField()
+    groups = serializers.SerializerMethodField()
 
     class Meta:
         model = Proposal
@@ -594,6 +596,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "allowed_assessors",
             "proposal_type",
             "accessing_user_can_process",
+            "groups",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -616,6 +619,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "lodgement_number",
             "can_officer_process",
             "accessing_user_can_process",
+            "groups",
         )
 
     def get_accessing_user_can_process(self, proposal):
@@ -664,6 +668,28 @@ class ListProposalSerializer(BaseProposalSerializer):
             email_user = retrieve_email_user(obj.assigned_officer)
             return EmailUserSerializer(email_user).data
         return None
+
+    def get_groups(self, obj):
+        """
+            Returns the groups that have been selected for this proposal.
+            Picks up the groups from the assessor proposition or from the proposal groups
+            member.
+        """
+
+        group_ids = []
+        if obj.approval:
+            # Todo
+            return ProposalGroup.objects.none()
+        else:
+            # Get group ids either from the assessor proposition or from the proposal groups member
+            group_ids = obj.proposed_issuance_approval and obj.proposed_issuance_approval.get(
+                    "groups", []) or\
+                obj.groups and ProposalGroup.objects.filter(proposal=obj).values_list(
+                    "group", flat=True
+            )
+
+        group_qs = Group.objects.filter(id__in=group_ids)
+        return GroupSerializer(group_qs, many=True).data
 
 
 class ProposalSerializer(BaseProposalSerializer):
@@ -930,8 +956,12 @@ class InternalProposalSerializer(BaseProposalSerializer):
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
     approved_by = serializers.SerializerMethodField()
+<<<<<<< HEAD
     groups = ProposalGroupSerializer(many=True, read_only=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
+=======
+    requirements = serializers.SerializerMethodField()
+>>>>>>> 6c9bbd9 (Added handling of groups between assessor and approver)
 
     class Meta:
         model = Proposal

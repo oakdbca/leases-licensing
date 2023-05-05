@@ -80,7 +80,7 @@
                                     :can_view_richtext_src=true
                                     :key="proposedApprovalKey"
                                     v-model="proposedDecisionDetails"
-                                    :readonly="withApprover? false: readonly"
+                                    :readonly="readonly"
                                     />
 
                                 </div>
@@ -122,7 +122,7 @@
                                 </div>
                                 <div class="col-sm-9">
                                     <select
-                                        :disabled="withApprover || readonly"
+                                        :disabled="readonly"
                                         ref="select_approvaltype"
                                         class="form-control"
                                         v-model="selectedApprovalTypeId"
@@ -134,17 +134,17 @@
                             </div>
                             <div class="row modal-input-row">
                                 <div class="col-sm-3">
-                                    <label class="control-label pull-left" for="approvalSubType">Approval Sub Type</label>
+                                    <label class="control-label pull-left" for="approvalGroupNames">Group name</label>
                                 </div>
                                 <div class="col-sm-9">
                                     <select
-                                        ref="select_approvalsubtype"
+                                        ref="select_approvalgroupnames"
                                         class="form-control"
-                                        v-model="selectedApprovalSubType"
                                         :disabled="readonly"
+                                        v-model="selectedGroupsIds"
                                     >
                                         <option></option>
-                                        <option v-for="atype in approvalSubTypes" :value="atype" :key="atype.name">{{atype.name}}</option>
+                                        <option v-for="group in groups" :value="group.id" :key="group.name">{{ group.name }}</option>
                                     </select>
                                 </div>
                             </div>
@@ -157,7 +157,7 @@
                                 <div class="col-sm-9">
                                     <div class="input-group date" ref="start_date" style="width: 70%;">
                                         <input 
-                                        :disabled="withApprover || readonly"
+                                        :disabled="readonly"
                                         type="date" 
                                         class="form-control" 
                                         name="start_date" 
@@ -182,7 +182,7 @@
                                 <div class="col-sm-9">
                                     <div class="input-group date" ref="due_date" style="width: 70%;margin-bottom: 1rem">
                                         <input 
-                                        :disabled="withApprover || readonly"
+                                        :disabled="readonly"
                                         type="date" 
                                         class="form-control" 
                                         name="due_date" 
@@ -262,6 +262,8 @@
                                 :processing_status="proposal.processing_status"
                                 :availableDocumentTypes="availableDocumentTypes"
                                 :selectedDocumentTypes="selectedDocumentTypes"
+                                :selectedApprovalTypeId="selectedApprovalTypeId"
+                                :key="selectedApprovalTypeId"
                                 :readonly=false
                                 @updateSelectedDocumentTypes="updateSelectedDocumentTypes"
                             />
@@ -281,11 +283,15 @@
 </template>
 
 <script>
-//import $ from 'jquery'
 import { constants } from '@/utils/hooks'
 import VueAlert from '@vue-utils/alert.vue'
 import RichText from '@/components/forms/richtext.vue'
-import {helpers, api_endpoints} from "@/utils/hooks.js"
+import {
+    api_endpoints,
+    helpers,
+    utils
+}
+    from '@/utils/hooks'
 import FileField from '@/components/forms/filefield_immediate.vue'
 import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue'
 export default {
@@ -313,10 +319,6 @@ export default {
             type: Boolean,
             required: false
         },
-        // isApprovalLevelDocument: {
-        //     type: Boolean,
-        //     required: true
-        // },
         readonly: {
             type: Boolean,
             default: false
@@ -363,8 +365,8 @@ export default {
             availableDocumentTypes: [],
             selectedDocumentTypes: [],
             //
-            approvalSubTypes: [],
-            selectedApprovalSubType: {},
+            groups: [],
+            selectedGroups: [],
             //state: 'proposed_approval',
             issuingApproval: false,
             approvalDecisionText: {
@@ -440,6 +442,10 @@ export default {
                 return "";
             }
         },
+        selectedGroupsIds: function() {
+            // Return the ids of selected groups from the group name-dropdown
+            return this.selectedGroups.map(({id})=>id);
+        },
         showError: function() {
             var vm = this;
             return vm.errors;
@@ -503,24 +509,74 @@ export default {
             }
             this.selectedApprovalTypeId = id;
         },
-        updateSelectedDocumentTypes(value, remove) {
+        /**
+         * Updates a list of, e.g. selected items, with `id` .
+         * @param {int} id The id of the item to add or remove from the list.
+         * @param {Array} list The list to add to.
+         * @param {Array} available_items A list of available items of which `id` is a member.
+         * @param {Boolean} remove Whether to remove the item from the list. Default false.
+         */
+        updateIdListFromAvailable(id, list, available_items, remove) {
             if (!remove) {
                 remove = false;
             }
 
-            let found = this.selectedDocumentTypes.find(element => element.id === parseInt(value));
+            let found = list.find(element => element.id === parseInt(id));
 
             if (!found) {
-                this.selectedDocumentTypes.push(
-                        this.availableDocumentTypes.find(element => element.id === parseInt(value))
-                    );
-                return true;
+                let item = available_items.find(element => element.id === parseInt(id));
+                if (!item) {
+                    console.warn(`Selected item with id ${id} not found in available items.`)
+                    return false;
+                }
+                console.log(`Adding item with id ${id} to list of selected items.`);
+                list.push(item);
+                return list;
             }
 
             if (found && remove) {
-                this.selectedDocumentTypes = this.selectedDocumentTypes.filter(element => element.id !== parseInt(value));
+                console.log(`Removing item with id ${id} from list of selected items.`)
+                list = list.filter(element => element.id !== parseInt(id));
+                return list
             }
             return false;
+        },
+        /**
+         * Update selected items from multi-select group name-dropdown.
+         * @param {*} ids The group id
+         * @param {*} remove Whether to remove that group from the list of selected groups.
+         */
+        updateSelectedGroupsType(ids, remove) {
+            let list = this.selectedGroups;
+            for (let id of ids) {
+                if (!Number(id)) {
+                    continue;
+                }
+                let list_updated = this.updateIdListFromAvailable(
+                                        Number(id),
+                                        list,
+                                        this.groups,
+                                        remove);
+                list = list_updated? list_updated : list;
+            }
+
+            if (list) {
+                this.selectedGroups = list;
+            } else {
+                return false;
+            }
+        },
+        updateSelectedDocumentTypes(id, remove) {
+            let list = this.updateIdListFromAvailable(
+                            id,
+                            this.selectedDocumentTypes,
+                            this.availableDocumentTypes,
+                            remove);
+            if (list) {
+                this.selectedDocumentTypes = list;
+            } else {
+                return false;
+            }
         },
         preview:function () {
             let vm =this;
@@ -580,22 +636,6 @@ export default {
             this.contact = await response.json();
             this.isModalOpen = true;
         },
-        fetchApprovalTypes: async function(){
-            this.approvalTypes = []
-            const response = await fetch(api_endpoints.approval_types_dict);
-            const returnedApprovalTypes = await response.json()
-            for (let approvalType of returnedApprovalTypes) {
-                this.approvalTypes.push(approvalType)
-            }
-        },
-        fetchApprovalSubTypes: async function(){
-            this.approvalSubTypes = []
-            const response = await fetch(api_endpoints.approval_sub_types_dict);
-            const returnedApprovalSubTypes = await response.json()
-            for (let approvalSubType of returnedApprovalSubTypes) {
-                this.approvalSubTypes.push(approvalSubType)
-            }
-        },
         sendData: async function(){
             this.errors = false;
             this.issuingApproval = true;
@@ -609,7 +649,7 @@ export default {
                     this.approval.details = this.$refs.lease_licence_details.detailsText;
                     //this.approval.approval_type = this.selectedApprovalType ? this.selectedApprovalType.id : null;
                     this.approval.approval_type = this.selectedApprovalTypeId;
-                    this.approval.approval_sub_type = this.selectedApprovalSubType ? this.selectedApprovalSubType.id : null;
+                    this.approval.groups = this.selectedGroups ? this.selectedGroupsIds : null;
                     this.approval.selected_document_types = this.selectedDocumentTypes;
                 }
                 /*
@@ -683,13 +723,14 @@ export default {
          initSelectApprovalSubType: function () {
             let vm = this;
 
-            $(vm.$refs.select_approvalsubtype).select2({
+            $(vm.$refs.select_approvalgroupnames).select2({
                 "theme": "bootstrap-5",
                 allowClear: true,
                 placeholder: "Select an approval sub type",
+                multiple: true,
             }).on("select2:select", function (e) {
                 var selected = $(e.currentTarget);
-                // vm.handleApprovalSubTypeChangeEvent(Number(selected.val()));
+                vm.updateSelectedGroupsType(selected.val());
             }).on("select2:unselecting", function (e) {
                 var self = $(this);
                 setTimeout(() => {
@@ -697,6 +738,7 @@ export default {
                 }, 0);
             }).on("select2:unselect", function (e) {
                 let unselected_id = e.params.data.id;
+                vm.updateSelectedGroupsType(unselected_id, true);
             });
         },
    },
@@ -705,40 +747,43 @@ export default {
         vm.form = document.forms.approvalForm;
         this.approval = Object.assign({}, this.proposal.proposed_issuance_approval);
         this.selectedApprovalTypeId = this.approval.approval_type;
-        this.selectedApprovalSubType = this.approval.approval_sub_type;
-        await vm.fetchApprovalTypes();
-        await vm.fetchApprovalSubTypes();
-        //vm.addFormValidations();
+
+        let initialisers = [
+            utils.fetchApprovalTypes(),
+            utils.fetchGroupsKeyValueList(),
+        ]
+        Promise.all(initialisers).then(data => {
+            for (let approvalType of data[0]) {
+                vm.approvalTypes.push(approvalType)
+            }
+            vm.groups = data[1];
+
+            // Approval Type
+            if (vm.approval.approval_type) {
+                vm.selectedApprovalTypeId = vm.approval.approval_type;
+                vm.updateSelectedApprovalType(vm.selectedApprovalTypeId);
+            }
+
+            // Selected Document Types
+            if (vm.approval.selected_document_types) {
+                vm.selectedDocumentTypes = vm.approval.selected_document_types;
+            }
+
+            // Groups
+            if (vm.approval.groups) {
+                for (let group of vm.groups) {
+                    if (group && vm.approval.groups.includes(group.id)) {
+                        vm.selectedGroups.push(group);
+                    }
+                }
+            }
+        });
+
         this.$nextTick(()=>{
             if (this.approval.decision) {
                 this.selectedDecision = this.approval.decision;
             } else if (this.proposal.proposed_decline_status) {
                 this.selectedDecision = "decline_application";
-            }
-
-            // Approval Type
-            if (this.approval.approval_type) {
-                this.selectedApprovalTypeId = this.approval.approval_type;
-                this.updateSelectedApprovalType(this.selectedApprovalTypeId);
-                /*
-                for (let atype of this.approvalTypes) {
-                    if (atype.id === this.approval.approval_type) {
-                        this.selectedApprovalType = atype;
-                    }
-                }
-                */
-            }
-            // Selected Document Types
-            if (this.approval.selected_document_types) {
-                this.selectedDocumentTypes = this.approval.selected_document_types;
-            }
-            // Approval Sub Type
-            if (this.approval.approval_sub_type) {
-                for (let atype of this.approvalSubTypes) {
-                    if (atype.id === this.approval.approval_sub_type) {
-                        this.selectedApprovalSubType = atype;
-                    }
-                }
             }
 
             this.initSelectApprovalType();

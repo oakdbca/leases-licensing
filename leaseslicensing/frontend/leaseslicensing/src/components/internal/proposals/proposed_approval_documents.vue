@@ -14,7 +14,7 @@
                                     Select zero or more documents that need to be attached as part of the approval of this application
                                 </div>
                             </div>
-                            <div class="form-group" v-if="isLeaseLicence && !readonly && !withApprover">
+                            <div class="form-group" v-if="isLeaseLicence && !readonly">
                                 <div class="row modal-input-row">
                                     <div class="col-sm-4">
                                         <select
@@ -40,7 +40,7 @@
                                     </div>
                                     <div class="col-sm-9">
                                         <FileField
-                                            :readonly="withApprover || readonly"
+                                            :readonly="readonly"
                                             :name="'lease_licence_approval_documents_' + docType.name + '_' + docType.id"
                                             :id="'lease_licence_approval_documents_' + docType.name + '_' + docType.id"
                                             :approval_type="selectedApprovalTypeId"
@@ -83,6 +83,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        selectedApprovalTypeId: {
+            type: Number,
+            default: null,
+        },
         availableDocumentTypes: {
             type: Array,
             default: [],
@@ -98,7 +102,7 @@ export default {
     data: function() {
         let vm = this;
         return {
-            selectedApprovalTypeId: null,
+
         }
     },
     computed: {
@@ -208,7 +212,6 @@ export default {
     created: async function() {
         let vm = this;
         vm.approval = Object.assign({}, vm.proposal.proposed_issuance_approval);
-        vm.selectedApprovalTypeId = this.approval.approval_type;
 
         this.$nextTick(()=>{
             this.initSelectDocument();

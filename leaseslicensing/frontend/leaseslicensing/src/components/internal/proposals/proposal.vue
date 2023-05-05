@@ -1301,40 +1301,39 @@ export default {
                 unassign = this.proposal.assigned_officer != null && this.proposal.assigned_officer != 'undefined' ? false : true;
                 data = { 'assessor_id': this.proposal.assigned_officer };
             }
+
+            let endpoint = 'unassign';
+            let payload = {}
             if (!unassign) {
-                try {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (vm.proposal.id + '/assign_to')),
-                        {
-                            body: JSON.stringify(data),
-                            method: 'POST',
-                        })
-                    const resData = await response.json()
-                    this.proposal = Object.assign({}, resData);
-                    this.updateAssignedOfficerSelect();
-                } catch (error) {
-                    this.updateAssignedOfficerSelect();
-                    swal.fire(
-                        'Proposal Error',
-                        helpers.apiVueResourceError(error),
-                        'error'
-                    )
+                endpoint = 'assign_to';
+                payload = {
+                    body: JSON.stringify(data),
+                    method: 'POST',
                 }
             }
-            else {
-                try {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (vm.proposal.id + '/unassign')))
-                    const responseData = await response.json()
-                    this.proposal = Object.assign({}, responseData);
-                    this.updateAssignedOfficerSelect();
-                } catch (error) {
-                    this.updateAssignedOfficerSelect();
-                    swal.fire(
-                        'Proposal Error',
-                        helpers.apiVueResourceError(error),
-                        'error'
-                    )
-                }
-            }
+
+            fetch(helpers.add_endpoint_json(api_endpoints.proposal, (`${vm.proposal.id}/${endpoint}`)),
+                payload).then(
+                    async response => {
+                        if (!response.ok) {
+                            return await response.json().then(json => { throw new Error(json); });
+                        } else {
+                            return await response.json();
+                        }
+            })
+            .then(data => {
+                vm.proposal = Object.assign({}, data);
+                vm.updateAssignedOfficerSelect();
+            })
+            .catch(error => {
+                this.updateAssignedOfficerSelect();
+                console.log(error);
+                swal.fire({
+                    title: 'Proposal Error',
+                    text: error,
+                    icon: 'error'
+                })
+            })
         },
         switchStatus: async function (new_status) {
             let data = { 'status': new_status, 'approver_comment': this.approver_comment };

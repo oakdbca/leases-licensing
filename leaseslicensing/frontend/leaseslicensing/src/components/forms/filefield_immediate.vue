@@ -13,7 +13,7 @@
                         {{ v.name }}
                     </a>
                     <span v-if="!readonly">
-                        <a @click="delete_document(v)" class="bi bi-trash3" title="Remove file" :filename="v.name"
+                        &nbsp;<a @click="delete_document(v)" class="bi bi-trash3" title="Remove file" :filename="v.name"
                             style="cursor: pointer; color:red;"></a>
                     </span>
                 </div>
@@ -140,10 +140,14 @@ export default {
     methods: {
         button_clicked: function (value) {
             if (this.replace_button_by_text) {
-                $("#" + value).trigger('click');
+                // Input field id contains the document name which may contain
+                // special characters (e.g. !"#$%&'()*+,./:;<=>?@[]^`{|}~)
+                // Exact match treats values as strings.
+                $(`input[id='${value}']`).trigger('click');
             }
         },
         handleChange: async function (e) {
+            console.log("Change", e.target.files);
             let vm = this;
             if (e.target.files.length > 0) {
                 await this.save_document(e);
@@ -256,11 +260,27 @@ export default {
                 formData.append('filename', e.target.files[0].name);
                 formData.append('_file', this.uploadFile(e));
                 formData.append('csrfmiddlewaretoken', this.csrf_token);
-                const res = await fetch(this.document_action_url, { body: formData, method: 'POST' })
-                const resData = await res.json()
 
-                this.documents = resData.filedata;
-                this.commsLogId = resData.comms_instance_id;
+                await fetch(this.document_action_url,
+                    { body: formData, method: 'POST' })
+                    .then(async response => {
+                        if (!response.ok) {
+                            return await response.json().then(json => { throw new Error(json); });
+                        } else {
+                            return await response.json();
+                        }
+                    })
+                    .then(data => {
+                        this.documents = data.filedata;
+                        this.commsLogId = data.comms_instance_id;
+                    })
+                    .catch(error => {
+                        swal.fire({
+                        title: 'File Error',
+                        text: error,
+                        icon: 'error'
+                    })
+                    });
             } else {
             }
         },
