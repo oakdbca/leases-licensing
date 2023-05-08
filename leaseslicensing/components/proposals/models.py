@@ -2445,6 +2445,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 "details": details.get("details"),
                 "cc_email": details.get("cc_email"),
                 "decision": details.get("decision"),
+                "groups": details.get("groups"),
             }
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             # start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None

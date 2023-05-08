@@ -108,11 +108,16 @@ export default {
             vm.groups = data[0];
 
             // Groups
-            if (vm.approval.groups) {
-                for (let group of vm.groups) {
-                    if (group && vm.approval.groups.includes(group.id)) {
-                        vm.selectedGroups.push(group);
-                    }
+            // TODO: Currently, groups selected by the applicant are stored in the proposal's
+            // groups field. Groups proposed by the assessor are stored in the proposal's
+            // `proposed_issuance_approval` dictionary field.
+            // Eventually, this should be standardised into just the `groups` field.
+            let groups_source = vm.approval.groups? vm.approval.groups :
+                                vm.proposal.groups? vm.proposal.groups.map(({id})=>id) :
+                                [];
+            for (let group of vm.groups) {
+                if (group && groups_source.includes(group.id)) {
+                    vm.selectedGroups.push(group);
                 }
             }
         });

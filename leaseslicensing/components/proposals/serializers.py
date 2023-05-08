@@ -379,7 +379,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
     # groups = serializers.SerializerMethodField()
-    groups = ProposalGroupSerializer(many=True, read_only=True)
+    groups = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     requirements = serializers.SerializerMethodField()
@@ -467,9 +467,26 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         read_only_fields = ("supporting_documents",)
 
     def get_groups(self, obj):
-        return ProposalGroup.objects.filter(proposal=obj).values_list(
-            "group", flat=True
-        )
+        """
+            Returns the groups that have been selected for this proposal.
+            Picks up the groups from the assessor proposition or from the proposal groups
+            member.
+        """
+
+        group_ids = []
+        if obj.approval:
+            # TODO: Draw group ids from approval object
+            group_ids = obj.proposed_issuance_approval.get("groups", [])
+        else:
+            # Get group ids either from the assessor proposition or from the proposal groups member
+            group_ids = obj.proposed_issuance_approval and obj.proposed_issuance_approval.get(
+                    "groups", []) or\
+                obj.groups and ProposalGroup.objects.filter(proposal=obj).values_list(
+                    "group", flat=True
+            )
+
+        group_qs = Group.objects.filter(id__in=group_ids)
+        return GroupSerializer(group_qs, many=True).data
 
     def get_lodgement_date_display(self, obj):
         if obj.lodgement_date:
@@ -565,7 +582,6 @@ class ListProposalSerializer(BaseProposalSerializer):
     assigned_officer = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     accessing_user_can_process = serializers.SerializerMethodField()
-    groups = serializers.SerializerMethodField()
 
     class Meta:
         model = Proposal
@@ -668,29 +684,6 @@ class ListProposalSerializer(BaseProposalSerializer):
             email_user = retrieve_email_user(obj.assigned_officer)
             return EmailUserSerializer(email_user).data
         return None
-
-    def get_groups(self, obj):
-        """
-            Returns the groups that have been selected for this proposal.
-            Picks up the groups from the assessor proposition or from the proposal groups
-            member.
-        """
-
-        group_ids = []
-        if obj.approval:
-            # Todo
-            return ProposalGroup.objects.none()
-        else:
-            # Get group ids either from the assessor proposition or from the proposal groups member
-            group_ids = obj.proposed_issuance_approval and obj.proposed_issuance_approval.get(
-                    "groups", []) or\
-                obj.groups and ProposalGroup.objects.filter(proposal=obj).values_list(
-                    "group", flat=True
-            )
-
-        group_qs = Group.objects.filter(id__in=group_ids)
-        return GroupSerializer(group_qs, many=True).data
-
 
 class ProposalSerializer(BaseProposalSerializer):
     # submitter = serializers.CharField(source='submitter.get_full_name')
@@ -956,12 +949,9 @@ class InternalProposalSerializer(BaseProposalSerializer):
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
     approved_by = serializers.SerializerMethodField()
-<<<<<<< HEAD
     groups = ProposalGroupSerializer(many=True, read_only=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
-=======
     requirements = serializers.SerializerMethodField()
->>>>>>> 6c9bbd9 (Added handling of groups between assessor and approver)
 
     class Meta:
         model = Proposal
