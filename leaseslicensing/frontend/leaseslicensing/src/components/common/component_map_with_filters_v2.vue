@@ -152,6 +152,7 @@ import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common
 
 export default {
     name: 'MapComponentWithFiltersV2',
+    emits: ['filter-appied'],
     props: {
         level: {
             type: String,
@@ -259,18 +260,22 @@ export default {
             console.log('filterApplicationsMapApplicationType', this.filterApplicationsMapApplicationType)
             this.applyFiltersFrontEnd();
             sessionStorage.setItem(this.filterApplicationsMapApplicationType_cache_name, this.filterApplicationsMapApplicationType);
+            this.$emit('filter-appied');
         },
         filterApplicationsMapProcessingStatus: function () {
             this.applyFiltersFrontEnd();
             sessionStorage.setItem(this.filterApplicationsMapProcessingStatus_cache_name, this.filterApplicationsMapProcessingStatus);
+            this.$emit('filter-appied');
         },
         filterApplicationsMapLodgedFrom: function () {
             this.applyFiltersFrontEnd();
             sessionStorage.setItem('filterApplicationsMapLodgedFromForMap', this.filterApplicationsMapLodgedFrom);
+            this.$emit('filter-appied');
         },
         filterApplicationsMapLodgedTo: function () {
             this.applyFiltersFrontEnd();
             sessionStorage.setItem('filterApplicationsMapLodgedToForMap', this.filterApplicationsMapLodgedTo);
+            this.$emit('filter-appied');
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
