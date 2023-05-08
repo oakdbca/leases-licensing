@@ -3,63 +3,63 @@
         "model": "leaseslicensing.region",
         "pk": 1,
         "fields": {
-            "name": "Goldfields"
+            "name": "GOLDFIELDS"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 2,
         "fields": {
-            "name": "Kimberley"
+            "name": "KIMBERLEY"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 3,
         "fields": {
-            "name": "Midwest"
+            "name": "MIDWEST"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 4,
         "fields": {
-            "name": "Pilbara"
+            "name": "PILBARA"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 5,
         "fields": {
-            "name": "South Coast"
+            "name": "SOUTH COAST"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 6,
         "fields": {
-            "name": "South West"
+            "name": "SOUTH WEST"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 7,
         "fields": {
-            "name": "Swan"
+            "name": "SWAN"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 8,
         "fields": {
-            "name": "Warren"
+            "name": "WARREN"
         }
     },
     {
         "model": "leaseslicensing.region",
         "pk": 9,
         "fields": {
-            "name": "Wheatbelt"
+            "name": "WHEATBELT"
         }
     }
 ]
