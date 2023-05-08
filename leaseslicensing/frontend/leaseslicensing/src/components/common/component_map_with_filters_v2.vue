@@ -1,7 +1,7 @@
 <template>
     <div>
-        <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
-            class="mb-2">
+        <CollapsibleFilters :component_title="'Filters' + filterInformation" ref="collapsible_filters"
+            @created="collapsible_component_mounted" class="mb-2">
             <div class="row">
                 <div class="col-md-3">
                     <label for="">Type {{ filterApplicationsMapApplicationType }}</label>
@@ -110,6 +110,7 @@
                 </div>
 
             </div>
+            <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
             <BootstrapSpinner v-if="redirectingToProposalDetails" class="text-primary" />
 
@@ -122,9 +123,6 @@
                     <img src="" />
                 </div>
             </div>
-        </div>
-        <div class="debug">
-            <div v-if="filteredProposals">filtered proposals length: {{ filteredProposals.length }}</div>
         </div>
     </div>
 </template>
@@ -146,6 +144,7 @@ import VectorSource from 'ol/source/Vector';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { FullScreen as FullScreenControl } from 'ol/control';
 import { LineString, Point, Polygon } from 'ol/geom';
+import { fromLonLat, toLonLat, transform, Projection } from 'ol/proj';
 import GeoJSON from 'ol/format/GeoJSON';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js'
 import RangeSlider from '@/components/forms/range_slider.vue'
@@ -165,12 +164,12 @@ export default {
         filterApplicationsMapApplicationType_cache_name: {
             type: String,
             required: false,
-            default: 'filterApplicationsMapApplicationType',
+            default: 'filterApplicationType',
         },
         filterApplicationsMapProcessingStatus_cache_name: {
             type: String,
             required: false,
-            default: 'filterApplicationsMapProcessingStatus',
+            default: 'filterApplicationStatus',
         },
         filterApplicationsMapLodgedFrom_cache_name: {
             type: String,
@@ -217,7 +216,7 @@ export default {
             selectedFeature: null,
             selectedProposal: null,
             redirectingToProposalDetails: false,
-            proposals: null,
+            proposals: [],
             filteredProposals: [],
             proposalQuerySource: null,
             proposalQueryLayer: null,
@@ -242,6 +241,13 @@ export default {
         filterApplicationsMapLodgedToMoment: function () {
             return this.filterApplicationsMapLodgedTo ? moment(this.filterApplicationsMapLodgedTo) : null
         },
+        filterInformation: function () {
+            if (this.proposals.length === this.filteredProposals.length) {
+                return ' (Showing all Applications)'
+            } else {
+                return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`
+            }
+        }
     },
     components: {
         CollapsibleFilters,
@@ -275,13 +281,29 @@ export default {
 
     },
     methods: {
+        updateFilters: function () {
+            this.$nextTick(function () {
+                console.log('updateFilters')
+                this.filterApplicationsMapApplicationType = sessionStorage.getItem(this.filterApplicationsMapApplicationType_cache_name) ? sessionStorage.getItem(this.filterApplicationsMapApplicationType_cache_name) : 'all';
+                console.log('this.filterApplicationsMapApplicationType', this.filterApplicationsMapApplicationType)
+                console.log('sessionStorage.getItem(this.filterApplicationsMapProcessingStatus_cache_name)', sessionStorage.getItem(this.filterApplicationsMapProcessingStatus_cache_name))
+                this.filterApplicationsMapProcessingStatus = sessionStorage.getItem(this.filterApplicationsMapProcessingStatus_cache_name) ? sessionStorage.getItem(this.filterApplicationsMapProcessingStatus_cache_name) : 'all';
+                this.filterApplicationsMapLodgedFrom = sessionStorage.getItem(this.filterApplicationsMapLodgedFrom_cache_name) ? sessionStorage.getItem(this.filterApplicationsMapLodgedFrom_cache_name) : '';
+                this.filterApplicationsMapLodgedTo = sessionStorage.getItem(this.filterApplicationsMapLodgedTo_cache_name) ? sessionStorage.getItem(this.filterApplicationsMapLodgedTo_cache_name) : '';
+            })
+        },
         applyFiltersFrontEnd: function () {
             this.filteredProposals = [...this.proposals];
+            console.log('applyFiltersFrontEnd', this.filteredProposals)
+            console.log('this.filteredProposals', this.filteredProposals)
+            console.log('this.filterApplicationsMapApplicationType', this.filterApplicationsMapApplicationType)
+            console.log('this.filterApplicationsMapApplicationType typeof', typeof this.filterApplicationsMapApplicationType)
             if ('all' != this.filterApplicationsMapApplicationType) {
-                this.filteredProposals = [...this.filteredProposals.filter(proposal => proposal.application_type_id === this.filterApplicationsMapApplicationType)]
+                this.filteredProposals = [...this.filteredProposals.filter(proposal => proposal.application_type_id == this.filterApplicationsMapApplicationType)]
+                console.log('this.filteredProposals', this.filteredProposals)
             }
             if ('all' != this.filterApplicationsMapProcessingStatus) {
-                this.filteredProposals = [...this.filteredProposals.filter(proposal => proposal.processing_status === this.filterApplicationsMapProcessingStatus)]
+                this.filteredProposals = [...this.filteredProposals.filter(proposal => proposal.processing_status == this.filterApplicationsMapProcessingStatus)]
             }
             if ('' != this.filterApplicationsMapLodgedFrom) {
                 this.filteredProposals = [...this.filteredProposals.filter(proposal => new Date(proposal.lodgement_date) >= new Date(this.filterApplicationsMapLodgedFrom))]
@@ -590,6 +612,7 @@ export default {
                     vm.filteredProposals = [...vm.proposals]
                     vm.assignProposalFeatureColors(vm.proposals);
                     vm.loadFeatures(vm.proposals);
+                    vm.applyFiltersFrontEnd();
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
