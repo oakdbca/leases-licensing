@@ -14,7 +14,6 @@ class LeasesLicensingConfig(AppConfig):
             from leaseslicensing.components.approvals.models import (
                 Approval,
                 ApprovalDocument,
-                ApprovalSubType,
                 ApprovalType,
                 ApprovalTypeDocumentType,
                 ApprovalTypeDocumentTypeOnApprovalType,
@@ -52,6 +51,8 @@ class LeasesLicensingConfig(AppConfig):
                 ShapefileDocument,
             )
 
+            from leaseslicensing.components.compliances.models import Compliance
+
             # main
             reversion.register(ApplicationType, follow=[])
 
@@ -67,7 +68,6 @@ class LeasesLicensingConfig(AppConfig):
                     "org_applicant",
                 ],
             )
-            reversion.register(ApprovalSubType)
             reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])
             reversion.register(ApprovalTypeDocumentType)
             reversion.register(ApprovalTypeDocumentTypeOnApprovalType)
@@ -126,5 +126,13 @@ class LeasesLicensingConfig(AppConfig):
                 ],
             )
             reversion.register(ProposalGeometry, follow=["proposal"])
+
+            # compliance
+            reversion.register(Compliance,
+                follow=[
+                    "proposal",
+                    "approval",
+                    "requirement",
+                ])
 
         self.run_once = True

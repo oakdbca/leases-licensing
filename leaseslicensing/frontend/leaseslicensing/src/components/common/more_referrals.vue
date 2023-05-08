@@ -8,6 +8,7 @@
 <script>
 import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
+import { v4 as uuid } from 'uuid';
 
 export default {
     name: 'MoreReferrals',
@@ -32,6 +33,7 @@ export default {
     data() {
         let vm = this;
         return {
+            uuid: uuid(),
             table: null,
             dateFormat: 'DD/MM/YYYY HH:mm:ss',
             datatable_url: '',
@@ -138,8 +140,8 @@ export default {
             myDefaultAllowList.table = []
 
             let vm = this;
-            let table_id = 'more-referrals-table' + vm._uid;
-            let popover_name = 'popover-' + vm._uid;
+            let table_id = 'more-referrals-table' + vm.uuid;
+            let popover_name = 'popover-' + vm.uuid;
             let my_content = '<table id="' + table_id + '" class="hover table table-striped table-bordered dt-responsive" cellspacing="0" width="100%"></table>'
             let my_template = '<div class="popover ' + popover_name + '" role="tooltip"><div class="popover-arrow" style="top:110px;"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
             let popover_elem = $(vm.$refs.showRef)[0]

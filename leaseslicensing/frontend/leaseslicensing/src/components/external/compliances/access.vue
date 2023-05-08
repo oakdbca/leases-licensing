@@ -116,6 +116,8 @@ import {
   helpers
 }
 from '@/utils/hooks'
+import alert from '@vue-utils/alert.vue'
+
 export default {
   name: 'externalComplianceAccess',
   data() {
@@ -163,6 +165,7 @@ export default {
     datatable,
     CommsLogs,
     FormSection,
+    alert,
   },
   computed: {
     showError: function() {
@@ -291,7 +294,7 @@ export default {
                     vm.compliance = await Object.assign({}, response.json());
                 },(error)=>{
                     vm.errors = true;
-                    vm.errorString = helpers.apiVueResourceError(error);
+                    vm.errorString = error.message;
                 });
         }
     },
@@ -341,10 +344,10 @@ export default {
             .catch(error => {
                 this.errors = true;
                 this.addingCompliance = false;
-                this.errorString = helpers.apiVueResourceError(error);
+                this.errorString = error.message;
                 swal.fire({
                     title: 'Proposal Error',
-                    text: error,
+                    text: error.message,
                     icon: 'error'
                 });
             })

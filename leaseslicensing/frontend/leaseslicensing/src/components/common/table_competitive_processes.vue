@@ -397,7 +397,7 @@ export default {
                     });
                 })
                 .catch(error => {
-                    console.log(`Error fetching external approval data ${error}`);
+                    console.log(`Error fetching external approval data ${error.message}`);
                     throw error;
                 })
         },
