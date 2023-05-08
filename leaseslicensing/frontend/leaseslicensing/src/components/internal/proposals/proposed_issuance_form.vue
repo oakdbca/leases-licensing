@@ -41,43 +41,6 @@
                                         />
                                     </div>
                                 </div>
-
-                                <!-- <div class="form-check col-sm-5">
-                                    <input 
-                                    type="radio" 
-                                    class="form-check-input"
-                                    name="approve_lease_licence" 
-                                    id="approve_lease_licence" 
-                                    value="approve_lease_licence" 
-                                    v-model="selectedDecision"
-                                    :disabled="readonly"
-                                    />
-                                    <label class="form-check-label" for="approve_lease_licence" style="font-weight:normal">Invite applicant to apply for a lease or licence</label>
-                                </div>
-                                <div class="form-check col-sm-4">
-                                    <input 
-                                    type="radio" 
-                                    class="form-check-input"
-                                    name="approve_competitive_process" 
-                                    id="approve_competitive_process" 
-                                    value="approve_competitive_process" 
-                                    v-model="selectedDecision"
-                                    :disabled="readonly"
-                                    />
-                                    <label class="form-check-label" for="approve_competitive_process" style="font-weight:normal">Start Competitive process</label>
-                                </div>
-                                <div class="form-check col-sm-4">
-                                    <input
-                                    type="radio"
-                                    class="form-check-input"
-                                    name="decline_application"
-                                    id="decline_application"
-                                    value="decline_application"
-                                    v-model="selectedDecision"
-                                    :disabled="readonly"
-                                    />
-                                    <label class="form-check-label" for="decline_application" style="font-weight:normal">Decline Application</label> -->
-                                <!-- </div> -->
                             </div>
                         </div>
 
@@ -88,7 +51,6 @@
                                     <label v-else class="control-label pull-left"  for="Name">Proposed Details</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <!--textarea name="approval_details" class="form-control" style="width:70%;" v-model="approval.details"></textarea-->
                                     <RichText
                                     :proposalData="proposedDecisionDetails"
                                     ref="registration_of_interest_details"
@@ -98,7 +60,6 @@
                                     v-model="proposedDecisionDetails"
                                     :readonly="readonly"
                                     />
-
                                 </div>
                             </div>
                         </div>
@@ -109,12 +70,12 @@
                                     <label v-else class="control-label pull-left"  for="Name">Proposed BCC email</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <input 
-                                    type="text" 
-                                    class="form-control" 
-                                    name="approval_bcc" 
-                                    style="width:70%;" 
-                                    ref="bcc_email" 
+                                    <input
+                                    type="text"
+                                    class="form-control"
+                                    name="approval_bcc"
+                                    style="width:70%;"
+                                    ref="bcc_email"
                                     v-model="approval.bcc_email"
                                     :readonly="readonly"
                                     >
@@ -148,22 +109,6 @@
                                     </select>
                                 </div>
                             </div>
-                            <!-- <div class="row modal-input-row">
-                                <div class="col-sm-3">
-                                    <label class="control-label pull-left" for="approvalGroupNames">Group name</label>
-                                </div>
-                                <div class="col-sm-9">
-                                    <select
-                                        ref="select_approvalgroupnames"
-                                        class="form-control"
-                                        :disabled="readonly"
-                                        v-model="selectedGroupsIds"
-                                    >
-                                        <option></option>
-                                        <option v-for="group in groups" :value="group.id" :key="group.name">{{ group.name }}</option>
-                                    </select>
-                                </div>
-                            </div> -->
                             <div class="row modal-input-row">
                                 <div class="col-sm-3">
                                     <label class="control-label pull-left" for="approvalGroupNames">Group name</label>
@@ -187,18 +132,15 @@
                                 </div>
                                 <div class="col-sm-9">
                                     <div class="input-group date" ref="start_date" style="width: 70%;">
-                                        <input 
+                                        <input
                                         :disabled="readonly"
-                                        type="date" 
-                                        class="form-control" 
-                                        name="start_date" 
-                                        placeholder="DD/MM/YYYY" 
+                                        type="date"
+                                        class="form-control"
+                                        name="start_date"
+                                        placeholder="DD/MM/YYYY"
                                         v-model="approval.start_date"
                                         >
                                         <i class="bi bi-calendar3 ms-2" style="font-size: 2rem"></i>
-                                        <!--span class="input-group-addon">
-                                            <span class="glyphicon glyphicon-calendar"></span>
-                                        </span-->
                                     </div>
                                 </div>
                             </div>
@@ -212,18 +154,15 @@
                                 </div>
                                 <div class="col-sm-9">
                                     <div class="input-group date" ref="due_date" style="width: 70%;margin-bottom: 1rem">
-                                        <input 
+                                        <input
                                         :disabled="readonly"
-                                        type="date" 
-                                        class="form-control" 
-                                        name="due_date" 
-                                        placeholder="DD/MM/YYYY" 
+                                        type="date"
+                                        class="form-control"
+                                        name="due_date"
+                                        placeholder="DD/MM/YYYY"
                                         v-model="approval.expiry_date"
                                         >
                                         <i class="bi bi-calendar3 ms-2" style="font-size: 2rem"></i>
-                                        <!--span class="input-group-addon">
-                                            <span class="glyphicon glyphicon-calendar"></span>
-                                        </span-->
                                     </div>
                                 </div>
                             </div>
@@ -236,7 +175,6 @@
                                     <label v-else class="control-label pull-left"  for="Name">Details</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <!--textarea name="approval_details" class="form-control" style="width:70%;" v-model="approval.details"></textarea-->
                                     <RichText
                                     :proposalData="approval.details"
                                     ref="lease_licence_details"
@@ -254,7 +192,7 @@
                                     <label for="supporting_documents">File</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <FileField 
+                                    <FileField
                                         ref="proposed_approval_documents"
                                         name="proposed_approval_documents"
                                         id="proposed_approval_documents"
@@ -271,12 +209,12 @@
                                     <label v-else class="control-label pull-left"  for="Name">Proposed CC email</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <input 
-                                    type="text" 
-                                    class="form-control" 
-                                    name="approval_cc" 
-                                    style="width:70%;" 
-                                    ref="cc_email" 
+                                    <input
+                                    type="text"
+                                    class="form-control"
+                                    name="approval_cc"
+                                    style="width:70%;"
+                                    ref="cc_email"
                                     v-model="approval.cc_email"
                                     :disabled="readonly"
                                     >
@@ -304,9 +242,6 @@
         <p v-if="can_preview">Click <a href="#" @click.prevent="preview">here</a> to preview the approval letter.</p>
 
         <div slot="footer">
-            <!--button type="button" v-if="issuingApproval" disabled class="btn btn-light" @click="ok"><i class="fa fa-spinner fa-spin"></i> Processing</button>
-            <button type="button" v-else class="btn btn-light" @click="ok">Ok</button>
-            <button type="button" class="btn btn-light" @click="cancel">Cancel</button-->
         </div>
     </div>
 </template>
@@ -361,15 +296,12 @@ export default {
         },
         applicant_email: {
             type: String,
-            //default: ''
         },
         proposedApprovalKey: {
             type: String,
-            //default: ''
         },
         proposedApprovalState: {
             type: String,
-            //default: ''
         },
         proposal: {
             type: Object,
@@ -394,7 +326,6 @@ export default {
             selectedApprovalType: {},
             selectedApprovalTypeId: null,
             // Document Types arrays rely on selectedApprovalTypeId
-            //
             //state: 'proposed_approval',
             issuingApproval: false,
             approvalDecisionText: {
@@ -420,7 +351,6 @@ export default {
             },
             warningString: 'Please attach Level of Approval document before issuing Approval',
             uuid: 0,
-            //is_local: helpers.is_local(),
         }
     },
     computed: {
@@ -520,9 +450,7 @@ export default {
             this.initSelectDocument();
         },
         updateSelectedApprovalType(id) {
-            // console.log(id);
             // clear existing doc arrays
-
             if (this.approval) {
                 this.approval.selected_document_types = [];
             }
@@ -560,14 +488,6 @@ export default {
         },
         ok: async function() {
             await this.sendData();
-            //await this.$router.push({ path: '/internal' });
-            /*
-            let vm =this;
-            if($(vm.form).valid()){
-                vm.sendData();
-                //vm.$router.push({ path: '/internal' });
-            }
-            */
         },
         cancel:function () {
             this.close()
@@ -576,14 +496,6 @@ export default {
             this.isModalOpen = false;
             this.approval = {};
             this.errors = false;
-            /*
-            this.toDateError = false;
-            this.startDateError = false;
-            $('.has-error').removeClass('has-error');
-            $(this.$refs.due_date).data('DateTimePicker').clear();
-            $(this.$refs.start_date).data('DateTimePicker').clear();
-            this.validation_form.resetForm();
-            */
         },
         fetchContact: async function(id){
             const response = await fetch(api_endpoints.contact(id));
@@ -593,8 +505,8 @@ export default {
         sendData: async function(){
             this.errors = false;
             this.issuingApproval = true;
-            //let approval = JSON.parse(JSON.stringify(vm.approval));
             this.approval.assessment = this.assessment;
+
             this.$nextTick(async () => {
                 if (this.registrationOfInterest) {
                     this.approval.details = this.$refs.registration_of_interest_details.detailsText;
@@ -604,20 +516,13 @@ export default {
                         null;
                 } else if (this.leaseLicence) {
                     this.approval.details = this.$refs.lease_licence_details.detailsText;
-                    //this.approval.approval_type = this.selectedApprovalType ? this.selectedApprovalType.id : null;
                     this.approval.approval_type = this.selectedApprovalTypeId;
                     this.approval.groups = this.$refs.selected_groups.selectedGroups ?
                         this.$refs.selected_groups.selectedGroupsIds :
                         null;
                     this.approval.selected_document_types = this.$refs.proposed_issuance_documents.selectedDocumentTypes;
                 }
-                /*
-                // internal proposal save
-                await fetch(helpers.add_endpoint_json(api_endpoints.proposals,this.proposal_id+'/internal_save'),{
-                    body: JSON.stringify(this.proposal),
-                    method: 'POST',
-                })
-                */
+
                 if (this.proposedApprovalState == 'proposed_approval'){
                     const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposals,this.proposal_id+'/proposed_approval'),{
                         body: JSON.stringify(this.approval),
@@ -633,7 +538,7 @@ export default {
                         this.errorString = await helpers.parseFetchError(response)
                     }
                 } else if (this.proposedApprovalState == 'final_approval'){
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposals,this.proposal_id+'/final_approval'),{ 
+                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposals,this.proposal_id+'/final_approval'),{
                         body: JSON.stringify(this.approval),
                         method: 'POST',
                     })
