@@ -4,7 +4,7 @@
         "pk": 1,
         "fields": {
             "region": 1,
-            "name": "Goldfields Region"
+            "name": "GOLDFIELDS REGION"
         }
     },
     {
@@ -12,7 +12,7 @@
         "pk": 2,
         "fields": {
             "region": 2,
-            "name": "East Kimberley"
+            "name": "EAST KIMBERLEY"
         }
     },
     {
@@ -20,7 +20,7 @@
         "pk": 3,
         "fields": {
             "region": 2,
-            "name": "West Kimberley"
+            "name": "WEST KIMBERLEY"
         }
     },
     {
@@ -28,7 +28,7 @@
         "pk": 4,
         "fields": {
             "region": 3,
-            "name": "Geraldton"
+            "name": "GERALDTON"
         }
     },
     {
@@ -36,7 +36,7 @@
         "pk": 5,
         "fields": {
             "region": 3,
-            "name": "Moora"
+            "name": "MOORA"
         }
     },
     {
@@ -44,7 +44,7 @@
         "pk": 6,
         "fields": {
             "region": 3,
-            "name": "Shark Bay"
+            "name": "SHARK BAY"
         }
     },
     {
@@ -52,7 +52,7 @@
         "pk": 7,
         "fields": {
             "region": 4,
-            "name": "Exmouth"
+            "name": "EXMOUTH"
         }
     },
     {
@@ -60,7 +60,7 @@
         "pk": 8,
         "fields": {
             "region": 4,
-            "name": "Pilbara Region"
+            "name": "PILBARA REGION"
         }
     },
     {
@@ -68,7 +68,7 @@
         "pk": 9,
         "fields": {
             "region": 5,
-            "name": "Albany"
+            "name": "ALBANY"
         }
     },
     {
@@ -76,7 +76,7 @@
         "pk": 10,
         "fields": {
             "region": 5,
-            "name": "Esperance"
+            "name": "ESPERANCE"
         }
     },
     {
@@ -84,7 +84,7 @@
         "pk": 11,
         "fields": {
             "region": 6,
-            "name": "Blackwood"
+            "name": "BLACKWOOD"
         }
     },
     {
@@ -92,7 +92,7 @@
         "pk": 12,
         "fields": {
             "region": 6,
-            "name": "Wellington"
+            "name": "WELLINGTON"
         }
     },
     {
@@ -100,7 +100,7 @@
         "pk": 13,
         "fields": {
             "region": 7,
-            "name": "Perth Hills"
+            "name": "PERTH HILLS"
         }
     },
     {
@@ -108,7 +108,7 @@
         "pk": 14,
         "fields": {
             "region": 7,
-            "name": "Swan Coastal"
+            "name": "SWAN COASTAL"
         }
     },
     {
@@ -116,7 +116,7 @@
         "pk": 15,
         "fields": {
             "region": 8,
-            "name": "Donnelly"
+            "name": "DONNELLY"
         }
     },
     {
@@ -124,7 +124,7 @@
         "pk": 16,
         "fields": {
             "region": 8,
-            "name": "Frankland"
+            "name": "FRANKLAND"
         }
     },
     {
@@ -132,7 +132,7 @@
         "pk": 17,
         "fields": {
             "region": 9,
-            "name": "Central Wheatbelt"
+            "name": "CENTRAL WHEATBELT"
         }
     },
     {
@@ -140,7 +140,7 @@
         "pk": 18,
         "fields": {
             "region": 9,
-            "name": "Wheatbelt Region"
+            "name": "WHEATBELT REGION"
         }
     }
 ]
