@@ -43,7 +43,8 @@
             </div>
             <div class="tab-pane" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                 <FormSection :formCollapse="false" label="Map" Index="map">
-                    <MapComponent v-if="loadMap" ref="component_map_with_filters" level="internal" />
+                    <MapComponent v-if="loadMap" @filter-appied="filterAppliedMap" ref="component_map_with_filters"
+                        level="internal" />
                 </FormSection>
             </div>
         </div>
@@ -126,6 +127,9 @@ export default {
                 this.$refs.component_map_with_filters.updateFilters();
                 this.$refs.component_map_with_filters.applyFiltersFrontEnd();
             }
+        },
+        filterAppliedMap: function () {
+            this.$refs.applications_table.updateFilters();
         }
     },
     mounted: async function () {
