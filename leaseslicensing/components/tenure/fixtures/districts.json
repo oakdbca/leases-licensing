@@ -150,5 +150,13 @@
             "region": 3,
             "name": "TURQUOISE COAST"
         }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 22,
+        "fields": {
+            "region": 3,
+            "name": "MURCHISON"
+        }
     }
 ]
