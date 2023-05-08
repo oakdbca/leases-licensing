@@ -142,5 +142,13 @@
             "region": 9,
             "name": "WHEATBELT REGION"
         }
+    },
+    {
+        "model": "leaseslicensing.district",
+        "pk": 20,
+        "fields": {
+            "region": 3,
+            "name": "TURQUOISE COAST"
+        }
     }
 ]
