@@ -315,6 +315,8 @@ APPLICATION_TYPES = [
     (APPLICATION_TYPE_LEASE_LICENCE, "Lease Licence"),
 ]
 KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
+KMI_AUTH_USERNAME = env("KMI_AUTH_USERNAME")
+KMI_AUTH_PASSWORD = env("KMI_AUTH_PASSWORD")
 
 GROUP_NAME_ASSESSOR = "ProposalAssessorGroup"
 GROUP_NAME_APPROVER = "ProposalApproverGroup"
