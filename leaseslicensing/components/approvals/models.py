@@ -26,13 +26,14 @@ from leaseslicensing.components.main.models import (
 )
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.organisations.models import Organisation
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.models import (
     Proposal,
     ProposalType,
     ProposalUserAction,
     RequirementDocument,
 )
-from leaseslicensing.helpers import is_customer
+from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
 from leaseslicensing.utils import search_keys, search_multiple_keys
@@ -52,6 +53,30 @@ def update_approval_comms_log_filename(instance, filename):
     return "{}/proposals/{}/approvals/communications/{}".format(
         settings.MEDIA_APP_DIR,
         instance.log_entry.approval.current_proposal.id,
+        filename,
+    )
+
+
+def update_approval_cancellation_doc_filename(instance, filename):
+    return "{}/approvals/{}/cancellation_documents/{}".format(
+        settings.MEDIA_APP_DIR,
+        instance.id,
+        filename,
+    )
+
+
+def update_approval_surrender_doc_filename(instance, filename):
+    return "{}//approvals/{}/surrender_documents/{}".format(
+        settings.MEDIA_APP_DIR,
+        instance.id,
+        filename,
+    )
+
+
+def update_approval_suspension_doc_filename(instance, filename):
+    return "{}//approvals/{}/suspension_documents/{}".format(
+        settings.MEDIA_APP_DIR,
+        instance.id,
         filename,
     )
 
@@ -205,6 +230,10 @@ class Approval(RevisionedMixin):
     # application_type = models.ForeignKey(ApplicationType, null=True, blank=True)
     renewal_count = models.PositiveSmallIntegerField(
         "Number of times an Approval has been renewed", default=0
+    )
+    # For leases that are migrated
+    original_leaselicense_number = models.CharField(
+        max_length=255, blank=True, null=True
     )
     migrated = models.BooleanField(default=False)
     # for eclass licence as it can be extended/ renewed once
@@ -371,8 +400,23 @@ class Approval(RevisionedMixin):
         ) and self.can_action
 
     @property
+    def allowed_assessor_ids(self):
+        return user_ids_in_group(settings.GROUP_LEASE_LICENCE_ASSESSOR)
+
+    @property
     def allowed_assessors(self):
-        return self.current_proposal.allowed_assessors
+        emailusers = []
+        for id in self.allowed_assessor_ids():
+            emailuser = retrieve_email_user(id)
+            emailusers.append(
+                {
+                    "id": id,
+                    "first_name": emailuser.first_name,
+                    "last_name": emailuser.last_name,
+                    "email": emailuser.email,
+                }
+            )
+        return emailusers
 
     @property
     def is_issued(self):
@@ -556,7 +600,7 @@ class Approval(RevisionedMixin):
 
     def approval_extend(self, request, details):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to extend this approval")
             if not self.can_extend and self.can_action:
                 raise ValidationError("You cannot extend approval any further")
@@ -589,7 +633,7 @@ class Approval(RevisionedMixin):
 
     def approval_cancellation(self, request, details):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to cancel this approval")
             if not self.can_reissue and self.can_action:
                 raise ValidationError(
@@ -627,7 +671,7 @@ class Approval(RevisionedMixin):
 
     def approval_suspension(self, request, details):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to suspend this approval")
             if not self.can_reissue and self.can_action:
                 raise ValidationError(
@@ -655,7 +699,7 @@ class Approval(RevisionedMixin):
                     send_approval_suspend_email_notification(self)
             else:
                 self.set_to_suspend = True
-            self.save()
+            self.save(version_comment="status_change: Approval suspended")
             # Log approval action
             self.log_user_action(
                 ApprovalUserAction.ACTION_SUSPEND_APPROVAL.format(self.id), request
@@ -670,7 +714,7 @@ class Approval(RevisionedMixin):
 
     def reinstate_approval(self, request):
         with transaction.atomic():
-            if request.user not in self.allowed_assessors:
+            if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError(
                     "You do not have access to reinstate this approval"
                 )
@@ -691,7 +735,7 @@ class Approval(RevisionedMixin):
 
             self.status = "current"
             # self.suspension_details = {}
-            self.save()
+            self.save(version_comment="status_change: Approval reinstated")
             send_approval_reinstate_email_notification(self, request)
             # Log approval action
             self.log_user_action(
@@ -708,11 +752,11 @@ class Approval(RevisionedMixin):
 
     def approval_surrender(self, request, details):
         with transaction.atomic():
-            if not request.user.leaseslicensing_organisations.filter(
-                organisation_id=self.applicant_id
-            ):
-                if request.user not in self.allowed_assessors and not is_customer(
-                    request
+            orgs_for_user = get_organisation_ids_for_user(request.user.id)
+            if self.applicant_id not in orgs_for_user:
+                if (
+                    request.user.id not in self.allowed_assessor_ids
+                    and not is_customer(request)
                 ):
                     raise ValidationError(
                         "You do not have access to surrender this approval"
@@ -738,7 +782,7 @@ class Approval(RevisionedMixin):
                     send_approval_surrender_email_notification(self)
             else:
                 self.set_to_surrender = True
-            self.save()
+            self.save(version_comment="status_change: Approval surrendered")
             # Log approval action
             self.log_user_action(
                 ApprovalUserAction.ACTION_SURRENDER_APPROVAL.format(self.id),
@@ -812,6 +856,57 @@ class ApprovalLogDocument(Document):
         app_label = "leaseslicensing"
 
 
+class ApprovalCancellationDocument(Document):
+    approval = models.ForeignKey(
+        Approval,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approval_cancellation_documents",
+    )
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    _file = models.FileField(
+        upload_to=update_approval_cancellation_doc_filename, max_length=512
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+
+class ApprovalSurrenderDocument(Document):
+    approval = models.ForeignKey(
+        Approval,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approval_surrender_documents",
+    )
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    _file = models.FileField(
+        upload_to=update_approval_surrender_doc_filename, max_length=512
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+
+class ApprovalSuspensionDocument(Document):
+    approval = models.ForeignKey(
+        Approval,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="approval_suspension_documents",
+    )
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    _file = models.FileField(
+        upload_to=update_approval_suspension_doc_filename, max_length=512
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+
 class ApprovalUserAction(UserAction):
     ACTION_CREATE_APPROVAL = "Create licence {}"
     ACTION_UPDATE_APPROVAL = "Create licence {}"
@@ -830,7 +925,7 @@ class ApprovalUserAction(UserAction):
 
     @classmethod
     def log_action(cls, approval, action, user):
-        return cls.objects.create(approval=approval, who=user, what=str(action))
+        return cls.objects.create(approval=approval, who=user.id, what=str(action))
 
     approval = models.ForeignKey(
         Approval, related_name="action_logs", on_delete=models.CASCADE

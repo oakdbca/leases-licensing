@@ -1,10 +1,15 @@
+import logging
+
 import pytz
 import requests
 from django.conf import settings
 from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos.collections import MultiPolygon
 from django.core.cache import cache
 from ledger_api_client.models import EmailUser
 from rest_framework import serializers
+
+logger = logging.getLogger(__name__)
 
 
 def handle_validation_error(e):
@@ -31,7 +36,9 @@ def to_local_tz(_date):
     return _date.astimezone(local_tz)
 
 
-def _get_params(layer_name):
+def _get_params(
+    layer_name, bbox="112.920880404,-35.186088017,129.019915758,-13.5076197999999"
+):
     return {
         "SERVICE": "WFS",
         "VERSION": "1.0.0",
@@ -65,3 +72,87 @@ def get_dbca_lands_and_waters_geos():
         geos_geom = GEOSGeometry(f"{feature_geom}").prepared
         geoms.append(geos_geom)
     return geoms
+
+
+def get_features_by_multipolygon(
+    multipolygon,
+    layer_name="public:dbca_legislated_lands_and_waters",
+    properties="leg_name,leg_tenure,leg_act,category",
+):
+    response = requests.get(
+        f"{settings.KMI_SERVER_URL}/geoserver/public/ows",
+        params={
+            "service": "WFS",
+            "version": "1.0.0",
+            "request": "GetFeature",
+            "typeName": layer_name,
+            "maxFeatures": "5000",
+            "srsName": "EPSG:4326",
+            "outputFormat": "application/json",
+            "propertyName": properties,
+            "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
+        },
+    )
+    logger.debug(f"Request took: {response.elapsed.total_seconds()}")
+    return response.json()
+
+
+def get_gis_data_for_proposal(proposal, properties):
+    """Takes a proposal object and a list of property names and returns a dict of unique values for each property"""
+    if not proposal.proposalgeometry.exists():
+        logger.debug("ProposalGeometry does not exist for proposal: %s", proposal.id)
+        return None
+
+    multipolygon = MultiPolygon(
+        list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
+    )
+    features = get_features_by_multipolygon(
+        multipolygon, properties=",".join(properties)
+    )
+    if 0 == features["totalFeatures"]:
+        return None
+
+    logger.info(
+        "Found %s features for proposal: %s", features["totalFeatures"], proposal.id
+    )
+    data = {}
+    for prop in properties:
+        data[prop] = set()
+
+    for feature in features["features"]:
+        for prop in properties:
+            if prop not in feature["properties"]:
+                logger.error("Property %s not found in feature", prop)
+                raise AttributeError(f"Property {prop} not found in feature")
+
+            data[prop].add(feature["properties"][prop])
+
+    return data
+
+
+def polygon_intersects_with_layer(polygon, layer_name):
+    """Checks if a polygon intersects with a layer"""
+    return polygons_intersect_with_layer([polygon], layer_name)
+
+
+def polygons_intersect_with_layer(polygons, layer_name):
+    """Checks if a polygon intersects with a layer"""
+    multipolygon = MultiPolygon(polygons)
+    features = get_features_by_multipolygon(
+        multipolygon, layer_name=layer_name, properties="objectid"
+    )
+    if 0 == features["totalFeatures"]:
+        return False
+
+    return True
+
+
+def multipolygon_intersects_with_layer(multipolygon, layer_name):
+    """Checks if a multipolygon intersects with a layer"""
+    features = get_features_by_multipolygon(
+        multipolygon, layer_name=layer_name, properties="objectid"
+    )
+    if 0 == features["totalFeatures"]:
+        return False
+
+    return True

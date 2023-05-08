@@ -379,11 +379,14 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     applicant_obj = serializers.SerializerMethodField()
     # groups = serializers.SerializerMethodField()
     groups = ProposalGroupSerializer(many=True, read_only=True)
+    allowed_assessors = EmailUserSerializer(many=True)
+    site_name = serializers.CharField(source="site_name.name", read_only=True)
 
     class Meta:
         model = Proposal
         fields = (
             "id",
+            "allowed_assessors",
             "application_type",
             "applicant_type",
             "applicant_obj",
@@ -457,6 +460,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "lodgement_date_display",
             "shapefile_json",
             "groups",
+            "site_name",
         )
         read_only_fields = ("supporting_documents",)
 
@@ -523,15 +527,30 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         )
 
 
-class ListProposalMinimalSerializer(BaseProposalSerializer):
+class ListProposalMinimalSerializer(serializers.ModelSerializer):
+    proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
+    application_type_name_display = serializers.CharField(
+        read_only=True, source="application_type.name_display"
+    )
+    processing_status_display = serializers.CharField(
+        read_only=True, source="get_processing_status_display"
+    )
+    lodgement_date_display = serializers.DateTimeField(
+        read_only=True, format="%d/%m/%Y", source="lodgement_date"
+    )
+
     class Meta:
         model = Proposal
         fields = (
             "id",
             "processing_status",
+            "processing_status_display",
             "proposalgeometry",
-            "application_type",
+            "application_type_name_display",
+            "application_type_id",
+            "lodgement_number",
             "lodgement_date",
+            "lodgement_date_display",
         )
 
 
@@ -750,6 +769,7 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
             "native_title_consultation_text",
             "mining_tenement_text",
             "groups",
+            "site_name",
         )
         read_only_fields = ("id",)
 
@@ -909,6 +929,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
     approved_by = serializers.SerializerMethodField()
+    groups = ProposalGroupSerializer(many=True, read_only=True)
+    site_name = serializers.CharField(source="site_name.name", read_only=True)
 
     class Meta:
         model = Proposal
@@ -1006,6 +1028,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "all_lodgement_versions",
             "approved_on",
             "approved_by",
+            "groups",
+            "site_name",
             # "assessor_comment_map",
             # "deficiency_comment_map",
             # "assessor_comment_proposal_details",

@@ -17,23 +17,22 @@
                     aria-controls="pills-map" aria-selected="false" @click="mapTabClicked">Map</a>
             </li>
         </ul>
-
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane active" id="pills-applications" role="tabpanel" aria-labelledby="pills-applications-tab">
                 <FormSection :formCollapse="false" label="Applications" Index="applications">
-                    <ApplicationsTable ref="applications_table" level="internal"
-                        filterApplicationType_cache_name="filterApplicationTypeForApplicationTabley"
-                        filterApplicationStatus_cache_name="filterApplicationStatusForApplicationTable"
-                        filterApplicationLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationTable"
-                        filterApplicationLodgedTo_cache_name="filterApplicationLodgedToForApplicationTable" />
+                    <ApplicationsTable @filter-appied="filterAppliedApplications()" ref="applications_table"
+                        level="internal" filterApplicationType_cache_name="filterApplicationType"
+                        filterApplicationStatus_cache_name="filterApplicationStatus"
+                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFrom"
+                        filterProposalLodgedTo_cache_name="filterApplicationLodgedTo" />
                 </FormSection>
                 <FormSection :formCollapse="false" label="Applications referred to me" Index="leases_and_licences">
                     <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" v-if="accessing_user"
                         level="internal" :email_user_id_assigned="accessing_user.id"
                         filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
                         filterApplicationStatus_cache_name="filterApplicationStatusForApplicationReferredToMeTable"
-                        filterApplicationLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
-                        filterApplicationLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
+                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
+                        filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
                 </FormSection>
             </div>
             <div class="tab-pane" id="pills-competitive-processes" role="tabpanel"
@@ -44,7 +43,8 @@
             </div>
             <div class="tab-pane" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                 <FormSection :formCollapse="false" label="Map" Index="map">
-                    <MapComponent ref="component_map_with_filters" level="internal" />
+                    <MapComponent v-if="loadMap" @filter-appied="filterAppliedMap" ref="component_map_with_filters"
+                        level="internal" />
                 </FormSection>
             </div>
         </div>
@@ -52,12 +52,11 @@
 </template>
 
 <script>
-import datatable from '@/utils/vue/datatable.vue'
 import FormSection from "@/components/forms/section_toggle.vue"
 import ApplicationsTable from "@/components/common/table_proposals"
 import ApplicationsReferredToMeTable from "@/components/common/table_proposals"
 import CompetitiveProcessesTable from "@/components/common/table_competitive_processes"
-import MapComponent from "@/components/common/component_map_with_filters"
+import MapComponent from "@/components/common/component_map_with_filters_v2"
 import { api_endpoints, helpers } from '@/utils/hooks'
 
 export default {
@@ -67,6 +66,7 @@ export default {
         return {
             empty_list: '/api/empty_list',
             accessing_user: null,
+            loadMap: false,
             //proposals_url: helpers.add_endpoint_json(api_endpoints.proposals,'user_list'),
             //approvals_url: helpers.add_endpoint_json(api_endpoints.approvals,'user_list'),
             //compliances_url: helpers.add_endpoint_json(api_endpoints.compliances,'user_list'),
@@ -113,7 +113,7 @@ export default {
             }
         },
         mapTabClicked: function () {
-            this.$refs.component_map_with_filters.forceToRefreshMap()
+            this.loadMap = true;
         },
         set_active_tab: function (tab_href_name) {
             let elem = $('#pills-tab a[href="#' + tab_href_name + '"]')
@@ -122,32 +122,24 @@ export default {
                 tab = new bootstrap.Tab(elem)
             tab.show()
         },
-        /*
-        addEventListener: function(){
-            let elems = $('a[data-bs-toggle="pill"]')
-            console.log('---')
-            console.log(elems)
-            elems.on('click', function (e) {
-                console.log('click: ')
-                console.log(e.target);
-            })
+        filterAppliedApplications: function () {
+            if (this.$refs.component_map_with_filters) {
+                this.$refs.component_map_with_filters.updateFilters();
+                this.$refs.component_map_with_filters.applyFiltersFrontEnd();
+            }
+        },
+        filterAppliedMap: function () {
+            this.$refs.applications_table.updateFilters();
         }
-        */
     },
     mounted: async function () {
-        //let vm = this
-
         const res = await fetch('/api/profile');
         const resData = await res.json();
         this.accessing_user = resData
         this.$nextTick(function () {
-            //vm.addEventListener()
             chevron_toggle.init();
             this.set_active_tab('pills-applications')
         })
-    },
-    created: function () {
-
     },
 }
 </script>

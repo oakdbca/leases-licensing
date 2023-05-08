@@ -84,7 +84,11 @@ export default {
             type: Number,
             required: false,
             default: 0,
-        }
+        },
+        compliances_referred_to_me: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         let vm = this;
@@ -164,9 +168,9 @@ export default {
         compliancesHeaders: function () {
             let headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
             if (this.is_organisation_view) {
-                headers = ['Number', 'Type', 'Approval Number', 'Status', 'Due Date', 'Action'];
+                headers = ['Number', 'Type', 'Approval', 'Status', 'Due Date', 'Action'];
             } else if (this.level === 'internal') {
-                headers = ['Number', 'Type', 'Holder', 'Approval Number', 'Status', 'Due Date', 'Action'];
+                headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Assigned To', 'Action'];
             }
             return headers;
         },
@@ -222,23 +226,6 @@ export default {
                     //return full.id;
                 },
                 name: "approval__lodgement_number",
-            }
-        },
-        conditionColumn: function () {
-            return {
-                // 4. Condition
-                data: "id",
-                orderable: true,
-                searchable: true,
-                visible: true,
-                'render': function (row, type, full) {
-                    let requirement = '';
-                    if (full.requirement) {
-                        requirement = full.requirement.requirement;
-                    }
-                    //return requirement;
-                    return full.id;
-                }
             }
         },
         dueDateColumn: function () {
@@ -315,8 +302,7 @@ export default {
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
-                    //return full.assigned_to_name;
-                    return full.id;
+                    return full.assigned_to_name;
                 }
             }
         },
@@ -347,10 +333,9 @@ export default {
                     this.applicationTypeColumn,
                     this.holderColumn,
                     this.licenceNumberColumn,
-                    //this.conditionColumn,
                     this.statusColumn,
                     this.dueDateColumn,
-                    //this.assignedToNameColumn,
+                    this.assignedToNameColumn,
                     this.actionColumn,
                 ]
             }
@@ -392,7 +377,7 @@ export default {
 
                 ajax: {
                     "url": api_endpoints.compliances_paginated_external + '?format=datatables&target_email_user_id=' + vm.target_email_user_id +
-                        '&target_organisation_id=' + vm.target_organisation_id,
+                        '&target_organisation_id=' + vm.target_organisation_id + '&compliances_referred_to_me=' + vm.compliances_referred_to_me,
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering

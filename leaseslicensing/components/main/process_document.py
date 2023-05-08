@@ -1,11 +1,14 @@
-from django.core.files.storage import default_storage
 import os
-from django.core.files.base import ContentFile
 import traceback
-from django.conf import settings
 
-from leaseslicensing.components.proposals.models import Proposal
-from leaseslicensing.components.approvals.models import ApprovalType, ApprovalTypeDocumentType
+from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
+
+from leaseslicensing.components.approvals.models import (
+    ApprovalType,
+    ApprovalTypeDocumentType,
+)
 
 
 def process_generic_document(request, instance, document_type=None, *args, **kwargs):
@@ -114,15 +117,23 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
                 documents_qs = instance.shapefile_documents
             elif document_type == "proposed_decline_document":
                 documents_qs = instance.proposed_decline_documents
+            elif document_type == "approval_cancellation_document":
+                documents_qs = instance.approval_cancellation_documents
+            elif document_type == "approval_surrender_document":
+                documents_qs = instance.approval_surrender_documents
+            elif document_type == "approval_suspension_document":
+                documents_qs = instance.approval_suspension_documents
+
             elif document_type == "lease_licence_approval_document":
                 documents_qs = instance.lease_licence_approval_documents
+
                 returned_file_data = [
                     dict(
                         file=d._file.url,
                         id=d.id,
                         name=d.name,
                         approval_type=d.approval_type.id,
-                        approval_type_document_type=d.approval_type_document_type.id
+                        approval_type_document_type=d.approval_type_document_type.id,
                     )
                     for d in documents_qs.filter(input_name=input_name)
                     if d._file
@@ -229,6 +240,12 @@ def delete_document(request, instance, comms_instance, document_type, input_name
             document = instance.lease_licence_approval_documents.get(id=document_id)
         elif document_type == "competitive_process_document":
             document = instance.competitive_process_documents.get(id=document_id)
+        elif document_type == "approval_cancellation_document":
+            document = instance.approval_cancellation_documents.get(id=document_id)
+        elif document_type == "approval_surrender_document":
+            document = instance.approval_surrender_documents.get(id=document_id)
+        elif document_type == "approval_suspension_document":
+            document = instance.approval_suspension_documents.get(id=document_id)
 
     # comms_log doc store delete
     elif comms_instance and "document_id" in request.data:
@@ -264,7 +281,7 @@ def cancel_document(request, instance, comms_instance, document_type, input_name
         "aboriginal_site_document",
         "native_title_consultation_document",
         "mining_tenement_document",
-        ## additional form fields for lease_licence
+        # additional form fields for lease_licence
         "profit_and_loss_document",
         "cash_flow_document",
         "capital_investment_document",
@@ -276,12 +293,11 @@ def cancel_document(request, instance, comms_instance, document_type, input_name
         "key_milestones_document",
         "risk_factors_document",
         "legislative_requirements_document",
-        "lease_licence_approval_document"
-        "proposed_decline_document",
+        "lease_licence_approval_document" "proposed_decline_document",
         "competitive_process_document",
     ]:
         pass
-        #document_id = request.data.get("document_id")
+        # document_id = request.data.get("document_id")
     # TODO: check this logic
     if comms_instance:
         document_list = comms_instance.documents.all()
@@ -459,14 +475,37 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
             path_format_string = "{}/proposals/{}/proposed_decline_documents/{}"
         elif document_type == "lease_licence_approval_document":
             approval_type = request.data.get("approval_type")
-            approval_type_document_type = request.data.get("approval_type_document_type")
+            approval_type_document_type = request.data.get(
+                "approval_type_document_type"
+            )
             document = instance.lease_licence_approval_documents.get_or_create(
                 input_name=input_name,
                 name=filename,
                 approval_type=ApprovalType.objects.get(id=approval_type),
-                approval_type_document_type=ApprovalTypeDocumentType.objects.get(id=approval_type_document_type)
+                approval_type_document_type=ApprovalTypeDocumentType.objects.get(
+                    id=approval_type_document_type
+                ),
             )[0]
             path_format_string = "{}/proposals/{}/lease_licence_approval_documents/{}"
+
+        # -------------- Approval
+        elif document_type == "approval_cancellation_document":
+            document = instance.approval_cancellation_documents.get_or_create(
+                input_name=input_name, name=filename
+            )[0]
+            path_format_string = "{}/approvals/{}/cancellation_documents/{}"
+        elif document_type == "approval_surrender_document":
+            document = instance.approval_surrender_documents.get_or_create(
+                input_name=input_name, name=filename
+            )[0]
+            path_format_string = "{}/approvals/{}/surrender_documents/{}"
+        elif document_type == "approval_suspension_document":
+            document = instance.approval_suspension_documents.get_or_create(
+                input_name=input_name, name=filename
+            )[0]
+            path_format_string = "{}/approvals/{}/suspension_documents/{}"
+
+        # -------------- Competitive Process
         elif document_type == "competitive_process_document":
             document = instance.competitive_process_documents.get_or_create(
                 input_name=input_name, name=filename
@@ -530,4 +569,3 @@ def save_default_document_obj(instance, temp_document):
 
     document._file = path
     document.save()
-

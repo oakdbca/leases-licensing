@@ -313,6 +313,7 @@ export default {
                 payload.proposal.key_milestones_text = this.$refs.application_form.$refs.lease_licence.$refs.key_milestones_text.detailsText;
                 payload.proposal.risk_factors_text = this.$refs.application_form.$refs.lease_licence.$refs.risk_factors_text.detailsText;
                 payload.proposal.legislative_requirements_text = this.$refs.application_form.$refs.lease_licence.$refs.legislative_requirements_text.detailsText;
+                payload.proposal.groups = this.proposal.groups;
             }
             payload.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
 
@@ -340,6 +341,7 @@ export default {
                     icon: 'error'
                 });
                 vm.savingProposal = false;
+                throw new Error(err);
             }
         },
         save_exit: function () {
@@ -492,11 +494,7 @@ export default {
                         })
                     } catch (err) {
                         console.log(err)
-                        await swal.fire({
-                            title: 'Submit Error',
-                            html: helpers.apiVueResourceError(err),
-                            icon: 'error',
-                        })
+                        vm.submitting = false;
                         vm.savingProposal = false;
                         vm.paySubmitting = false;
                     }

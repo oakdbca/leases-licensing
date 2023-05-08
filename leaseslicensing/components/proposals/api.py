@@ -5,12 +5,15 @@ from collections import OrderedDict
 from datetime import datetime
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as detail_route
@@ -77,6 +80,7 @@ from leaseslicensing.components.proposals.utils import (
     save_assessor_data,
     save_proponent_data,
     save_referral_data,
+    save_site_name,
 )
 from leaseslicensing.helpers import is_approver, is_assessor, is_customer, is_internal
 from leaseslicensing.settings import APPLICATION_TYPES
@@ -106,6 +110,7 @@ class GetApplicationTypeDict(views.APIView):
         JSONRenderer,
     ]
 
+    @method_decorator(cache_page(60))
     def get(self, request, format=None):
         for_filter = request.query_params.get("for_filter", "")
         for_filter = True if for_filter == "true" else False
@@ -249,10 +254,7 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
                 filter_lodged_to = datetime.strptime(filter_lodged_to, "%Y-%m-%d")
                 queryset = queryset.filter(lodgement_date__lte=filter_lodged_to)
             if filter_application_type:
-                application_type = ApplicationType.get_application_type_by_name(
-                    filter_application_type
-                )
-                queryset = queryset.filter(application_type=application_type)
+                queryset = queryset.filter(application_type_id=filter_application_type)
             if filter_application_status:
                 queryset = queryset.filter(processing_status=filter_application_status)
         elif queryset.model is Compliance:
@@ -555,6 +557,41 @@ class ProposalViewSet(UserActionLoggingViewset):
             approval_status_choices=[i[1] for i in Approval.STATUS_CHOICES],
         )
         return Response(data)
+
+    @list_route(methods=["GET"], detail=False)
+    def list_for_map(self, request, *args, **kwargs):
+        """Returns the proposals for the map"""
+        application_type = request.query_params.get("application_type", None)
+        processing_status = request.query_params.get("processing_status", None)
+
+        cache_key = settings.CACHE_KEY_MAP_PROPOSALS
+        qs = cache.get(cache_key)
+        if qs is None:
+            qs = (
+                self.get_queryset()
+                .exclude(proposalgeometry__isnull=True)
+                .prefetch_related("proposalgeometry")
+            )
+            cache.set(cache_key, qs, settings.CACHE_TIMEOUT_2_HOURS)
+        logger.debug(f"{cache_key}:{qs}")
+
+        if (
+            application_type
+            and application_type.isnumeric()
+            and int(application_type) > 0
+        ):
+            logger.debug(f"Filtering by application_type: {application_type}")
+            qs = qs.filter(application_type_id=application_type)
+
+        if processing_status:
+            logger.debug(f"Filtering by processing_status: {processing_status}")
+            qs = qs.filter(processing_status=processing_status)
+
+        # qs = self.filter_queryset(qs)
+        serializer = ListProposalMinimalSerializer(
+            qs, context={"request": request}, many=True
+        )
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1614,6 +1651,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         # Was previously InternalSaveProposalSerializer however no such serializer exists
         serializer = SaveProposalSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
+        save_site_name(instance, request.data["site_name"])
         serializer.save()
 
         save_assessor_data(instance, request, self)
@@ -1841,24 +1879,14 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def draft(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            save_proponent_data(instance, request, self)
-            # return redirect(reverse('external'))
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            raise serializers.ValidationError(str(e))
+        logger.debug("proposal draft()")
+        instance = self.get_object()
+        save_proponent_data(instance, request, self)
+        # return redirect(reverse('external'))
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))

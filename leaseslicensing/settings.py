@@ -147,7 +147,7 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.filebased.FileBasedCache",
             "LOCATION": os.path.join(BASE_DIR, "leaseslicensing", "cache"),
-        }
+        },
     }
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles_ll")
@@ -389,7 +389,7 @@ ACTION_LOGGING_IDENTIFIER_FIELDS = [
 
 # ---------- Cache Timeouts ----------
 
-LOV_CACHE_TIMEOUT = 10800
+LOV_CACHE_TIMEOUT = 60 * 60 * 3  # 3 hours
 
 CACHE_TIMEOUT_1_MINUTE = 60
 CACHE_TIMEOUT_5_MINUTES = 60 * 5
@@ -413,6 +413,7 @@ CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
     "application_internal_statuses_dict_for_filter"
 )
 CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS = "dbca_legislated_lands_and_waters"
+CACHE_KEY_MAP_PROPOSALS = "map-proposals"
 
 # ---------- User Log Actions ----------
 

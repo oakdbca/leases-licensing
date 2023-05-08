@@ -29,11 +29,11 @@
                     </div>
                     <div class="tab-pane fade" id="pills-approvals" role="tabpanel" aria-labelledby="pills-approvals-tab">
                         <FormSection :formCollapse="true" label="Applications" subtitle="" Index="applications">
-                            <ApplicationsTable v-if="user" level="internal" :target_id="user.id" />
+                            <ApplicationsTable v-if="user" level="organisation_view" :target_id="user.id" />
                         </FormSection>
 
                         <FormSection :formCollapse="true" label="Approvals" subtitle="" Index="approvals">
-                            <AppprovalsTable v-if="user" level="internal" :target_id="user.id" />
+                            <AppprovalsTable v-if="user" level="organisation_view" :target_id="user.id" />
                         </FormSection>
 
                         <FormSection :formCollapse="true" label="Compliances with Requirements" subtitle=""

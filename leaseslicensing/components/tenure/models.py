@@ -1,30 +1,45 @@
 from django.db import models
 
 
-class Tenure(models.Model):
+class Act(models.Model):
+    """The legal Act for the land Eg: CALM Act 1984 - Section 5(1)(d), CALM Act 1984 - Section 5(1)(ca)
+    etc..."""
+
     name = models.CharField(max_length=200, unique=True)
 
     class Meta:
         app_label = "leaseslicensing"
-        ordering = ["name"]
+        ordering = ["id"]
 
     def __str__(self):
         return self.name
 
 
-class SubTenure(models.Model):
-    tenure = models.ForeignKey(
-        Tenure, related_name="subtenures", on_delete=models.PROTECT
-    )
+class Tenure(models.Model):
+    """The tenure for the land Eg: Crown Land, Unallocated Crown Land, Freehold, etc..."""
+
+    name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["id"]
+
+    def __str__(self):
+        return self.name
+
+
+class Category(models.Model):
+    """The category of the land Eg: Nature Reserve, National Park, Conservation Park, etc..."""
+
     name = models.CharField(max_length=200)
 
     class Meta:
         app_label = "leaseslicensing"
-        ordering = ["name"]
-        unique_together = ("tenure", "name")
+        ordering = ["id"]
+        verbose_name_plural = "Categories"
 
     def __str__(self):
-        return f"{self.name} (Tenure: {self.tenure.name})"
+        return self.name
 
 
 class Region(models.Model):
@@ -68,6 +83,17 @@ class LGA(models.Model):
 
 
 class Group(models.Model):
+    name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
+class SiteName(models.Model):
     name = models.CharField(max_length=200, unique=True)
 
     class Meta:

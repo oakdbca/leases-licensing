@@ -17,7 +17,10 @@ from leaseslicensing.components.bookings import email as booking_email
 from leaseslicensing.components.bookings.models import ApplicationFee, Booking
 from leaseslicensing.components.compliances import email as compliance_email
 from leaseslicensing.components.compliances.models import Compliance
-from leaseslicensing.components.main.utils import get_dbca_lands_and_waters_geos
+from leaseslicensing.components.main.utils import (
+    get_dbca_lands_and_waters_geos,
+    get_gis_data_for_proposal,
+)
 from leaseslicensing.components.proposals import email as proposal_email
 from leaseslicensing.components.proposals.email import (
     send_external_submit_email_notification,
@@ -25,11 +28,14 @@ from leaseslicensing.components.proposals.email import (
 )
 from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
+    ProposalAct,
     ProposalAssessment,
     ProposalAssessmentAnswer,
+    ProposalCategory,
     ProposalDeclinedDetails,
     ProposalGeometry,
     ProposalGroup,
+    ProposalTenure,
     ProposalUserAction,
     Referral,
 )
@@ -39,6 +45,7 @@ from leaseslicensing.components.proposals.serializers import (
     SaveLeaseLicenceSerializer,
     SaveRegistrationOfInterestSerializer,
 )
+from leaseslicensing.components.tenure.models import Act, Category, SiteName, Tenure
 from leaseslicensing.helpers import is_assessor
 
 logger = logging.getLogger(__name__)
@@ -436,6 +443,7 @@ def save_proponent_data(instance, request, viewset):
 def save_proponent_data_registration_of_interest(instance, request, viewset):
     # proposal
     proposal_data = request.data.get("proposal") if request.data.get("proposal") else {}
+    logger.debug("proposal_data = " + str(proposal_data))
     serializer = SaveRegistrationOfInterestSerializer(
         instance,
         data=proposal_data,
@@ -443,20 +451,13 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
             "action": viewset.action,
         },
     )
+    logger.debug("Validating SaveRegistrationOfInterestSerializer")
     serializer.is_valid(raise_exception=True)
     instance = serializer.save()
-    logger.debug("proposal_data = " + str(proposal_data))
-    groups_data = proposal_data["groups"]
-    if groups_data and len(groups_data) > 0:
-        group_ids = []
-        for group_data in groups_data:
-            logger.debug("group_data: %s", group_data)
-            group = group_data["group"]
-            ProposalGroup.objects.get_or_create(proposal=instance, group_id=group["id"])
-            group_ids.append(group["id"])
-        ProposalGroup.objects.filter(proposal=instance).exclude(
-            group_id__in=group_ids
-        ).delete()
+
+    logger.debug("Saving groups data.")
+    save_groups_data(instance, proposal_data["groups"])
+
     if request.data.get("proposal_geometry"):
         save_geometry(instance, request, viewset)
     if viewset.action == "submit":
@@ -466,6 +467,8 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
 def save_proponent_data_lease_licence(instance, request, viewset):
     # proposal
     proposal_data = request.data.get("proposal") if request.data.get("proposal") else {}
+    logger.debug(f"proposal_data = {proposal_data}")
+
     serializer = SaveLeaseLicenceSerializer(
         instance,
         data=proposal_data,
@@ -475,6 +478,9 @@ def save_proponent_data_lease_licence(instance, request, viewset):
     )
     serializer.is_valid(raise_exception=True)
     instance = serializer.save()
+
+    save_groups_data(instance, proposal_data["groups"])
+
     if request.data.get("proposal_geometry"):
         save_geometry(instance, request, viewset)
     if viewset.action == "submit":
@@ -528,6 +534,7 @@ def save_referral_data(proposal, request, referral_completed=False):
 
 
 def save_assessor_data(proposal, request, viewset):
+    logger.debug("save_assessor_data")
     with transaction.atomic():
         proposal_data = {}
         if request.data.get("proposal"):
@@ -536,6 +543,8 @@ def save_assessor_data(proposal, request, viewset):
         else:
             # request.data is a dictionary of the proposal {'id': ..., ...}
             proposal_data = request.data
+
+        save_groups_data(proposal, proposal_data["groups"])
 
         # Save checklist answers
         if is_assessor(request):
@@ -559,18 +568,15 @@ def save_assessor_data(proposal, request, viewset):
 
 
 def check_geometry(instance):
-    geom_ok = True
     for geom in instance.proposalgeometry.all():
         if not geom.intersects:
-            geom_ok = False
-
-    if not geom_ok:
-        raise ValidationError(
-            "One or more polygons does not intersect with a relevant layer"
-        )
+            raise ValidationError(
+                "One or more polygons does not intersect with a relevant layer"
+            )
 
 
 def save_geometry(instance, request, viewset):
+    logger.debug("saving geometry")
     # geometry
     proposal_geometry_str = request.data.get("proposal_geometry")
     # geometry_list = []
@@ -800,3 +806,58 @@ def test_proposal_emails(request):
         booking_email.send_confirmation_tclass_email_notification(
             request.user, booking, bi, recipients, is_test=True
         )
+
+
+def save_site_name(instance, site_name):
+    if site_name:
+        site_name, created = SiteName.objects.get_or_create(name=site_name)
+        instance.site_name = site_name
+
+
+def save_groups_data(instance, groups_data):
+    logger.debug("groups_data = " + str(groups_data))
+    if groups_data and len(groups_data) > 0:
+        group_ids = []
+        for group_data in groups_data:
+            logger.debug("group_data: %s", group_data)
+            group = group_data["group"]
+            ProposalGroup.objects.get_or_create(proposal=instance, group_id=group["id"])
+            group_ids.append(group["id"])
+        ProposalGroup.objects.filter(proposal=instance).exclude(
+            group_id__in=group_ids
+        ).delete()
+
+
+def populate_gis_data(proposal):
+    properties = [
+        "leg_tenure",
+        "leg_act",
+        "category",
+    ]
+    gis_data = get_gis_data_for_proposal(proposal, properties)
+    if gis_data is None:
+        logger.warn("No GIS data found for proposal %s", proposal.lodgement_number)
+        return
+
+    logger.debug("gis_data = " + str(gis_data))
+
+    if gis_data["leg_tenure"]:
+        for tenure_name in gis_data["leg_tenure"]:
+            tenure, created = Tenure.objects.get_or_create(name=tenure_name)
+            if created:
+                logger.info(f"New Tenure created from GIS Data: {tenure}")
+            ProposalTenure.objects.get_or_create(proposal=proposal, tenure=tenure)
+
+    if gis_data["leg_act"]:
+        for act_name in gis_data["leg_act"]:
+            act, created = Act.objects.get_or_create(name=act_name)
+            if created:
+                logger.info(f"New Act created from GIS Data: {act}")
+            ProposalAct.objects.get_or_create(proposal=proposal, act=act)
+
+    if gis_data["category"]:
+        for category_name in gis_data["category"]:
+            category, created = Category.objects.get_or_create(name=category_name)
+            if created:
+                logger.info(f"New Category created from GIS Data: {category}")
+            ProposalCategory.objects.get_or_create(proposal=proposal, category=category)

@@ -26,11 +26,7 @@
                     <div class="form-group">
                         <label for="">Expiry Date From</label>
                         <div class="input-group date" ref="approvalDateFromPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterApprovalExpiryDateFrom">
-                            <span class="input-group-addon">
-                                <span class="glyphicon glyphicon-calendar"></span>
-                            </span>
+                            <input type="date" class="form-control" v-model="filterApprovalExpiryDateFrom">
                         </div>
                     </div>
                 </div>
@@ -38,11 +34,7 @@
                     <div class="form-group">
                         <label for="">Expiry Date To</label>
                         <div class="input-group date" ref="approvalDateToPicker">
-                            <input type="date" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterApprovalExpiryDateTo">
-                            <span class="input-group-addon">
-                                <span class="glyphicon glyphicon-calendar"></span>
-                            </span>
+                            <input type="date" class="form-control" v-model="filterApprovalExpiryDateTo">
                         </div>
                     </div>
                 </div>
@@ -81,10 +73,10 @@
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for="filter-category">Category</label>
-                        <select id="filter-category" class="form-control" v-model="filterApprovalCategory">
+                        <label for="filter-group">Group</label>
+                        <select id="filter-group" class="form-control" v-model="filterApprovalGroup">
                             <option value="all">All</option>
-                            <option v-for="category in categories" :value="category.id">{{ category.name }}
+                            <option v-for="group in groups" :value="group.id">{{ group.name }}
                             </option>
                         </select>
                     </div>
@@ -98,12 +90,18 @@
                     :dtHeaders="datatable_headers" />
             </div>
         </div>
-        <ApprovalCancellation ref="approval_cancellation" @refreshFromResponse="refreshFromResponseApprovalModify">
+        <ApprovalCancellation ref="approval_cancellation" :approval_id="selectedApprovalId"
+            :approval_lodgement_number="selectedApprovalLodgementNumber"
+            @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalCancellation>
-        <ApprovalSuspension ref="approval_suspension" @refreshFromResponse="refreshFromResponseApprovalModify">
-        </ApprovalSuspension>
-        <ApprovalSurrender ref="approval_surrender" @refreshFromResponse="refreshFromResponseApprovalModify">
+        <ApprovalSurrender ref="approval_surrender" :approval_id="selectedApprovalId"
+            :approval_lodgement_number="selectedApprovalLodgementNumber"
+            @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalSurrender>
+        <ApprovalSuspension ref="approval_suspension" :approval_id="selectedApprovalId"
+            :approval_lodgement_number="selectedApprovalLodgementNumber"
+            @refreshFromResponse="refreshFromResponseApprovalModify">
+        </ApprovalSuspension>
         <div v-if="approvalHistoryId">
             <ApprovalHistory ref="approval_history" :key="approvalHistoryId" :approvalId="approvalHistoryId" />
         </div>
@@ -121,6 +119,7 @@ import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid';
 import { expandToggle } from '@/components/common/table_functions.js'
+import Swal from 'sweetalert2'
 
 export default {
     name: 'TableApprovals',
@@ -142,7 +141,12 @@ export default {
             type: Number,
             required: false,
             default: 0,
-        }
+        },
+        target_compliance_id: {
+            type: Number,
+            required: false,
+            default: 0,
+        },
     },
     data() {
         let vm = this;
@@ -161,8 +165,10 @@ export default {
             organisations: [],
             regions: [],
             districts: [],
-            categories: [],
+            groups: [],
             profile: {},
+            selectedApprovalId: null,
+            selectedApprovalLodgementNumber: null,
 
             // selected values for filtering
             filterApprovalType: sessionStorage.getItem('filterApprovalType') ? sessionStorage.getItem('filterApprovalType') : 'all',
@@ -173,7 +179,7 @@ export default {
             filterApprovalOrganisation: sessionStorage.getItem('filterApprovalOrganisation') ? sessionStorage.getItem('filterApprovalOrganisation') : 'all',
             filterApprovalRegion: sessionStorage.getItem('filterApprovalRegion') ? sessionStorage.getItem('filterApprovalRegion') : 'all',
             filterApprovalDistrict: sessionStorage.getItem('filterApprovalDistrict') ? sessionStorage.getItem('filterApprovalDistrict') : 'all',
-            filterApprovalCategory: sessionStorage.getItem('filterApprovalCategory') ? sessionStorage.getItem('filterApprovalCategory') : 'all',
+            filterApprovalGroup: sessionStorage.getItem('filterApprovalGroup') ? sessionStorage.getItem('filterApprovalGroup') : 'all',
 
 
             // filtering options
@@ -240,9 +246,9 @@ export default {
             this.$refs.approvals_datatable.vmDataTable.draw();
             sessionStorage.setItem('filterApprovalDistrict', this.filterApprovalDistrict);
         },
-        filterApprovalCategory: function () {
+        filterApprovalGroup: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
-            sessionStorage.setItem('filterApprovalCategory', this.filterApprovalCategory);
+            sessionStorage.setItem('filterApprovalGroup', this.filterApprovalGroup);
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
@@ -261,7 +267,7 @@ export default {
                 this.filterApprovalOrganisation === 'all' &&
                 this.filterApprovalRegion === 'all' &&
                 this.filterApprovalDistrict === 'all' &&
-                this.filterApprovalCategory === 'all'
+                this.filterApprovalGroup === 'all'
             ) {
                 filter_applied = false
             }
@@ -292,10 +298,9 @@ export default {
                     'Id',
                     'Number',
                     'Type',
-                    'Site',
                     'Status',
-                    'Expiry Date',
                     'Document',
+                    'Expiry Date',
                     'Action',
                 ]
             } else if (this.is_external) {
@@ -320,6 +325,9 @@ export default {
                     'Status',
                     'Expiry Date',
                     'Document',
+                    'Site Name',
+                    'Group(s)',
+                    'Original Lease/License Number',
                     'Action',
                 ]
             }
@@ -371,7 +379,18 @@ export default {
                 visible: true,
                 'render': function (row, type, full) {
                     // TODO Site
-                    return '(todo)'
+                    return 'Todo: static value'
+                }
+            }
+        },
+        columnGroups: function () {
+            return {
+                data: "id",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    return full.groups_comma_list
                 }
             }
         },
@@ -443,6 +462,20 @@ export default {
                 }
             }
         },
+        columnOriginalLeaseLicenseNumber: function () {
+            return {
+                data: "original_leaselicense_number",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    if (full.original_leaselicense_number) {
+                        return full.original_leaselicense_number
+                    }
+                    return 'N/A'
+                }
+            }
+        },
         columnAction: function () {
             let vm = this;
             return {
@@ -476,17 +509,21 @@ export default {
                         if (vm.is_internal && vm.wlaDash) {
                             links += full.offer_link;
                         }
-                        if (full.allowed_assessors_user) {
+                        if (full.is_assessor) {
                             if (full.can_reissue && full.can_action) {
-                                links += `<a href='#${full.id}' data-cancel-approval='${full.id}'>Cancel</a><br/>`;
-                                links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
+                                links += `<a href='#${full.id}' data-cancel-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Cancel</a><br/>`;
+                                links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                             }
                             if (full.status == 'Current' && full.can_action) {
-                                links += `<a href='#${full.id}' data-suspend-approval='${full.id}'>Suspend</a><br/>`;
+                                links += `<a href='#${full.id}' data-suspend-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Suspend</a><br/>`;
                             }
                             if (full.can_reinstate) {
                                 links += `<a href='#${full.id}' data-reinstate-approval='${full.id}'>Reinstate</a><br/>`;
                             }
+                            // Todo: Not yet sure under which circumstances these actions should be visible
+                            links += `<a href='#${full.id}' data-review-invoice-details-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
+                            links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
+
                         }
                         if (full.renewal_document && full.renewal_sent) {
                             links += `<a href='${full.renewal_document}' target='_blank'>Renewal Notice</a><br/>`;
@@ -505,10 +542,9 @@ export default {
                     vm.columnId,
                     vm.columnLodgementNumber,
                     vm.columnType,
-                    vm.columnSite,
                     vm.columnStatus,
-                    vm.columnExpiryDate,
                     vm.columnDocument,
+                    vm.columnExpiryDate,
                     vm.columnAction,
                 ]
             } else if (this.is_external) {
@@ -533,6 +569,9 @@ export default {
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
+                    vm.columnSite,
+                    vm.columnGroups,
+                    vm.columnOriginalLeaseLicenseNumber,
                     vm.columnAction,
                 ]
             }
@@ -574,7 +613,7 @@ export default {
                 searching: true,
                 ajax: {
                     "url": api_endpoints.approvals_paginated_list + '?format=datatables&target_email_user_id=' + vm.target_email_user_id +
-                        '&target_organisation_id=' + vm.target_organisation_id,
+                        '&target_organisation_id=' + vm.target_organisation_id + '&target_compliance_id=' + vm.target_compliance_id,
                     //"url": api_endpoints.approvals,
                     "dataSrc": 'data',
 
@@ -588,7 +627,7 @@ export default {
                         d.filter_approval_organisation = vm.filterApprovalOrganisation
                         d.filter_approval_region = vm.filterApprovalRegion
                         d.filter_approval_district = vm.filterApprovalDistrict
-                        d.filter_approval_category = vm.filterApprovalCategory
+                        d.filter_approval_group = vm.filterApprovalGroup
 
                         d.level = vm.level
                     }
@@ -608,6 +647,10 @@ export default {
         },
     },
     methods: {
+        number_of_columns: function () {
+            let num_cols = this.$refs.approvals_datatable.vmDataTable.columns(':visible').nodes().length;
+            return num_cols;
+        },
         adjust_table_width: function () {
             this.$refs.approvals_datatable.vmDataTable.columns.adjust()
             this.$refs.approvals_datatable.vmDataTable.responsive.recalc()
@@ -722,14 +765,16 @@ export default {
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-cancel-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-cancel-approval');
-                vm.cancelApproval(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.cancelApproval(id, lodgement_number);
             });
 
             //Internal Suspend listener
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-suspend-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-suspend-approval');
-                vm.suspendApproval(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.suspendApproval(id, lodgement_number);
             });
 
             // Internal Reinstate listener
@@ -743,7 +788,8 @@ export default {
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-surrender-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-surrender-approval');
-                vm.surrenderApproval(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.surrenderApproval(id, lodgement_number);
             });
 
             //External Request New Sticker listener
@@ -774,11 +820,21 @@ export default {
                 vm.approvalHistory(id);
             });
 
-            // Listener for thr row
-            vm.$refs.approvals_datatable.vmDataTable.on('click', 'td', function (e) {
-                expandToggle(vm, this);
-            })
+            // Internal review invoice details listener
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-review-invoice-details-approval]', function (e) {
+                e.preventDefault();
+                var id = $(this).attr('data-review-invoice-detail-approval');
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.approvalReviewInvoiceDetails(id, lodgement_number);
+            });
 
+            // Internal review renewal listener
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-review-renewal-approval]', function (e) {
+                e.preventDefault();
+                var id = $(this).attr('data-review-renewal-approval');
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.approvalReviewRenewal(id, lodgement_number);
+            });
         },
         fetchFilterLists: async function () {
             let vm = this;
@@ -863,7 +919,7 @@ export default {
                     console.error('There was an error!', error)
                 })
             // Category
-            fetch(api_endpoints.categories + 'key-value-list/')
+            fetch(api_endpoints.groups + 'key-value-list/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -872,8 +928,8 @@ export default {
                         console.log(error)
                         return Promise.reject(error)
                     }
-                    vm.categories = data
-                    console.log(vm.categories)
+                    vm.groups = data
+                    console.log(vm.groups)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
@@ -926,49 +982,60 @@ export default {
         reinstateApproval: async function (approval_id) {
             let vm = this;
             let status = 'with_approver'
-            //let data = {'status': status}
-            await swal.fire({
+            Swal.fire({
                 title: "Reinstate Approval",
                 text: "Are you sure you want to reinstate this approval?",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Reinstate approval',
-                //confirmButtonColor:'#d9534f'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const response = await fetch(helpers.add_endpoint_json(api_endpoints.approvals, (approval_id + '/approval_reinstate')),
+                            {
+                                method: 'POST',
+                            })
+                        Swal.fire(
+                            'Reinstate',
+                            'Your approval has been reinstated',
+                            'success'
+                        )
+                        vm.$refs.approvals_datatable.vmDataTable.ajax.reload();
+                    } catch (error) {
+                        console.log(error);
+                        Swal.fire(
+                            "Reinstate Approval",
+                            error.body,
+                            "error"
+                        )
+                    }
+                }
             })
-            try {
-                const response = fetch(helpers.add_endpoint_json(api_endpoints.approvals, (approval_id + '/approval_reinstate')),
-                    {
-                        method: 'POST',
-                    })
-                await swal(
-                    'Reinstate',
-                    'Your approval has been reinstated',
-                    'success'
-                )
-                vm.$refs.approvals_datatable.vmDataTable.ajax.reload();
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: "Reinstate Approval",
-                    text: error.body,
-                    type: "error",
-                })
-            }
+
         },
-        cancelApproval: function (approval_id) {
-            this.$refs.approval_cancellation.approval_id = approval_id;
+        cancelApproval: function (approval_id, approval_lodgement_number) {
+            this.selectedApprovalId = parseInt(approval_id);
+            this.selectedApprovalLodgementNumber = approval_lodgement_number;
             this.$refs.approval_cancellation.isModalOpen = true;
+            this.$nextTick(() => {
+                $(`#approvalCancellation${approval_id} textarea.cancellation-details`).focus();
+            });
         },
-
-        suspendApproval: function (approval_id) {
-            this.$refs.approval_suspension.approval = {};
-            this.$refs.approval_suspension.approval_id = approval_id;
+        suspendApproval: function (approval_id, approval_lodgement_number) {
+            this.selectedApprovalId = parseInt(approval_id);
+            this.selectedApprovalLodgementNumber = approval_lodgement_number;
             this.$refs.approval_suspension.isModalOpen = true;
+            this.$nextTick(() => {
+                $(`#approvalSuspension${approval_id} input#to_date`).focus();
+            });
         },
-
-        surrenderApproval: function (approval_id) {
-            this.$refs.approval_surrender.approval_id = approval_id;
+        surrenderApproval: function (approval_id, approval_lodgement_number) {
+            this.selectedApprovalId = parseInt(approval_id);
+            this.selectedApprovalLodgementNumber = approval_lodgement_number;
             this.$refs.approval_surrender.isModalOpen = true;
+            this.$nextTick(() => {
+                $(`#approvalSurrender${approval_id} textarea.surrender-details`).focus();
+            });
         },
         requestNewSticker: function (approval_id) {
             this.$refs.request_new_sticker_modal.approval_id = approval_id
@@ -981,7 +1048,12 @@ export default {
                 this.$refs.approval_history.isModalOpen = true;
             });
         },
-
+        approvalReviewInvoiceDetails: function (approval_id, approval_lodgement_number) {
+            alert('Will implement once we have completed the invoicing functionality.')
+        },
+        approvalReviewRenewal: function (approval_id, approval_lodgement_number) {
+            alert('Will implement when we have an idea what is supposed to happen here.')
+        },
         renewApproval: async function (proposal_id) {
             let vm = this;
             let status = 'with_approver'

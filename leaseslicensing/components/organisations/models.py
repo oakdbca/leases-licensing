@@ -686,7 +686,7 @@ class Organisation(models.Model):
 
     @property
     def email(self):
-        return self.organisation.ledger_organisation_email
+        return self.ledger_organisation_email
 
     @property
     def first_five(self):

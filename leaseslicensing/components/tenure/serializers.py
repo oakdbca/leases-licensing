@@ -1,6 +1,33 @@
 from rest_framework import serializers
 
-from leaseslicensing.components.tenure.models import LGA, District, Group, Region
+from leaseslicensing.components.tenure.models import (
+    LGA,
+    Act,
+    Category,
+    District,
+    Group,
+    Region,
+    SiteName,
+    Tenure,
+)
+
+
+class ActSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Act
+        fields = "__all__"
+
+
+class TenureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tenure
+        fields = "__all__"
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = "__all__"
 
 
 class RegionSerializer(serializers.ModelSerializer):
@@ -32,4 +59,10 @@ class LGASerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
+        fields = "__all__"
+
+
+class SiteNameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SiteName
         fields = "__all__"

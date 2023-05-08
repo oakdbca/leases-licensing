@@ -11,6 +11,7 @@ from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationLogEntry,
 )
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,7 @@ def send_approval_expire_email_notification(approval):
         cc_list = proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
-    msg = email.send(proposal.submitter.email, cc=all_ccs, context=context)
+    msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     try:
         sender_user = EmailUser.objects.get(email__icontains=sender)
@@ -184,10 +185,11 @@ def send_approval_cancel_email_notification(approval):
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
     if proposal.org_applicant and proposal.org_applicant.email:
-        cc_list = proposal.org_applicant.email
+        cc_list = proposal.org_applicant.ledger_organisation_email
         if cc_list:
             all_ccs = [cc_list]
-    msg = email.send(proposal.submitter.email, cc=all_ccs, context=context)
+    submitter_obj = retrieve_email_user(proposal.submitter)
+    msg = email.send(submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
@@ -229,7 +231,7 @@ def send_approval_suspend_email_notification(approval, request=None):
         cc_list = proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
-    msg = email.send(proposal.submitter.email, cc=all_ccs, context=context)
+    msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
@@ -268,7 +270,7 @@ def send_approval_surrender_email_notification(approval, request=None):
         cc_list = proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
-    msg = email.send(proposal.submitter.email, cc=all_ccs, context=context)
+    msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
     if approval.org_applicant:
@@ -315,7 +317,10 @@ def send_approval_renewal_email_notification(approval):
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(
-        proposal.submitter.email, cc=all_ccs, attachments=attachment, context=context
+        proposal.submitter_obj.email,
+        cc=all_ccs,
+        attachments=attachment,
+        context=context,
     )
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
@@ -408,7 +413,7 @@ def send_approval_reinstate_email_notification(approval, request):
         cc_list = proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
-    msg = email.send(proposal.submitter.email, cc=all_ccs, context=context)
+    msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender)
@@ -448,13 +453,13 @@ def _log_approval_email(email_message, approval, sender=None):
     else:
         text = smart_text(email_message)
         subject = ""
-        to = approval.current_proposal.submitter.email
+        to = approval.current_proposal.submitter_obj.email
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
     customer = approval.current_proposal.submitter
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
@@ -510,7 +515,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
 
     customer = customer
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
@@ -529,7 +534,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
 
 
 def _log_user_email(email_message, emailuser, customer, sender=None):
-    from ledger.accounts.models import EmailUserLogEntry
+    from leaseslicensing.components.users.models import EmailUserLogEntry
 
     if isinstance(
         email_message,
@@ -564,12 +569,12 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
 
     customer = customer
 
-    staff = sender
+    staff = sender.id
 
     kwargs = {
         "subject": subject,
         "text": text,
-        "emailuser": emailuser,
+        "email_user": emailuser,
         "customer": customer,
         "staff": staff,
         "to": to,
