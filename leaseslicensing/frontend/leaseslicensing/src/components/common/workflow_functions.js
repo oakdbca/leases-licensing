@@ -55,7 +55,7 @@ export async function recallReferral(_id, user){
             container: 'swal2-popover'
         }
     });
-    
+
     await fetch(helpers.add_endpoint_json(api_endpoints.referrals, _id + '/recall')).then(async response => {
         if (!response.ok) {
             return await response.json().then(json => { throw new Error(json); });
@@ -100,7 +100,7 @@ export async function resendReferral(_id, user) {
             return await response.json().then(json => { throw new Error(json); });
         } else {
             return response.json();
-        }        
+        }
     }).then(async response => {
         vm.switchStatus(response.processing_status_id); // 'with_referral'
         if (typeof(vm["table"]) !== 'undefined') {
@@ -125,4 +125,37 @@ export async function resendReferral(_id, user) {
             }
         });
     });
+}
+
+ /**
+ * Updates a list of, e.g. selected items, with `id` .
+ * @param {int} id The id of the item to add or remove from the list.
+ * @param {Array} list The list to add to.
+ * @param {Array} available_items A list of available items of which `id` is a member.
+ * @param {Boolean} remove Whether to remove the item from the list. Default false.
+ */
+ export function updateIdListFromAvailable(id, list, available_items, remove) {
+    if (!remove) {
+        remove = false;
+    }
+
+    let found = list.find(element => element.id === parseInt(id));
+
+    if (!found) {
+        let item = available_items.find(element => element.id === parseInt(id));
+        if (!item) {
+            console.warn(`Selected item with id ${id} not found in available items.`)
+            return false;
+        }
+        console.log(`Adding item with id ${id} to list of selected items.`);
+        list.push(item);
+        return list;
+    }
+
+    if (found && remove) {
+        console.log(`Removing item with id ${id} from list of selected items.`)
+        list = list.filter(element => element.id !== parseInt(id));
+        return list
+    }
+    return false;
 }

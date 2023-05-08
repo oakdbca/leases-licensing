@@ -21,7 +21,8 @@
                                             ref="select_document"
                                             class="form-control"
                                             id="documentTypeSelector"
-                                            :disabled="this.availableDocumentTypes.length == 0"
+                                            :v-model="selectedDocumentTypesIds"
+                                            :disabled="availableDocumentTypes.length == 0"
                                         >
                                             <option></option>
                                             <option v-for="docType in availableDocumentTypes" :value="docType.id">{{ docType.name }}</option>
@@ -67,6 +68,7 @@
 import { constants } from '@/utils/hooks';
 import { helpers, api_endpoints } from "@/utils/hooks.js"
 import FileField from '@/components/forms/filefield_immediate.vue'
+import { updateIdListFromAvailable } from '@/components/common/workflow_functions.js'
 
 export default {
     name: "ProposedApprovalDocuments",
@@ -83,26 +85,22 @@ export default {
             type: Boolean,
             default: false,
         },
+        approvalTypes: {
+            type: Array,
+            default: [],
+        },
         selectedApprovalTypeId: {
             type: Number,
             default: null,
-        },
-        availableDocumentTypes: {
-            type: Array,
-            default: [],
-        },
-        selectedDocumentTypes: {
-            type: Array,
-            default: [],
         },
     },
     components: {
         FileField,
     },
     data: function() {
-        let vm = this;
         return {
-
+            selectedDocumentTypes: [],
+            availableDocumentTypes: [],
         }
     },
     computed: {
@@ -140,11 +138,12 @@ export default {
 
             return with_assessor;
         },
+        selectedDocumentTypesIds: function() {
+            // Return the ids of selected document types from the document type-dropdown
+            return this.selectedDocumentTypes.map(({id})=>id);
+        },
     },
     methods: {
-        emitUpdateSelectedDocumentTypes: function(id, remove) {
-            this.$emit("update-selected-document-types", id, remove);
-        },
         documentTypeSelectorBlur() {
             $('#'+'documentTypeSelector').val(null).trigger("change");
         },
@@ -158,7 +157,7 @@ export default {
                 "theme": "bootstrap-5",
                 allowClear: true,
                 placeholder: "Add a document",
-                multiple: false, // TODO: Maybe there is a more elegant solution with mutliple selection
+                multiple: false,
                 templateSelection: function (data) {
                     // Add custom styling to the <option> tag for the selected option or placeholder
 
@@ -185,7 +184,7 @@ export default {
                 var selected = $(e.currentTarget);
                 // Check if user can add documents
                 if (vm.canChangeDocuments) {
-                    var added = vm.emitUpdateSelectedDocumentTypes(selected.val());
+                    var added = vm.updateSelectedDocumentTypes(selected.val());
                     if (added) {
                         // If a new item has been added, clear the select2 field. If an existing
                         // item has been selected, show it as selected so it can be deleted.
@@ -203,18 +202,51 @@ export default {
                 if (vm.canChangeDocuments) {
                     let unselected_id = e.params.data.id;
                     // Remove the unselected item from the list of selected items
-                    vm.emitUpdateSelectedDocumentTypes(unselected_id, true);
+                    vm.updateSelectedDocumentTypes(unselected_id, true);
                     vm.documentTypeSelectorBlur();
                 }
             });
-        }
+        },
+        /**
+         * Update selected items from multi-select document type-dropdown.
+         * @param {int} ids The group id
+         * @param {Boolean} remove Whether to remove that document type from the list of selected types.
+         */
+        updateSelectedDocumentTypes(id, remove) {
+            let list = updateIdListFromAvailable(
+                            id,
+                            this.selectedDocumentTypes,
+                            this.availableDocumentTypes,
+                            remove);
+            if (list) {
+                this.selectedDocumentTypes = list;
+            } else {
+                return false;
+            }
+        },
     },
     created: async function() {
         let vm = this;
         vm.approval = Object.assign({}, vm.proposal.proposed_issuance_approval);
+        vm.availableDocumentTypes = [];
+        vm.selectedDocumentTypes = [];
 
-        this.$nextTick(()=>{
-            this.initSelectDocument();
+        vm.$nextTick(()=>{
+            vm.initSelectDocument();
+
+            // Available Document Types
+            for (const approvalType of vm.approvalTypes) {
+                if (approvalType.id === vm.selectedApprovalTypeId) {
+                    for (const docType of approvalType.approval_type_document_types) {
+                        vm.availableDocumentTypes.push(docType);
+                    }
+                }
+            }
+
+            // Selected Document Types
+            if (vm.approval.selected_document_types) {
+                vm.selectedDocumentTypes = vm.approval.selected_document_types;
+            }
         });
     }
 }

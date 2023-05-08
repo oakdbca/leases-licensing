@@ -26,6 +26,22 @@
                                     </div>
                                 </div>
 
+                                <div class="row modal-input-row">
+                                    <div class="col-sm-3">
+                                        <label class="control-label pull-left" for="approvalGroupNames">Group name</label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <GroupsDropdown
+                                            ref="selected_groups"
+                                            name="selected_groups"
+                                            id="selected_groups"
+                                            :readonly="readonly"
+                                            :proposal="proposal"
+                                            :approval="approval"
+                                        />
+                                    </div>
+                                </div>
+
                                 <!-- <div class="form-check col-sm-5">
                                     <input 
                                     type="radio" 
@@ -132,7 +148,7 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="row modal-input-row">
+                            <!-- <div class="row modal-input-row">
                                 <div class="col-sm-3">
                                     <label class="control-label pull-left" for="approvalGroupNames">Group name</label>
                                 </div>
@@ -146,6 +162,21 @@
                                         <option></option>
                                         <option v-for="group in groups" :value="group.id" :key="group.name">{{ group.name }}</option>
                                     </select>
+                                </div>
+                            </div> -->
+                            <div class="row modal-input-row">
+                                <div class="col-sm-3">
+                                    <label class="control-label pull-left" for="approvalGroupNames">Group name</label>
+                                </div>
+                                <div class="col-sm-9">
+                                    <GroupsDropdown
+                                        ref="selected_groups"
+                                        name="selected_groups"
+                                        id="selected_groups"
+                                        :readonly="readonly"
+                                        :proposal="proposal"
+                                        :approval="approval"
+                                    />
                                 </div>
                             </div>
 
@@ -260,12 +291,10 @@
                                 :proposal="proposal"
                                 :proposal_id="proposal.id"
                                 :processing_status="proposal.processing_status"
-                                :availableDocumentTypes="availableDocumentTypes"
-                                :selectedDocumentTypes="selectedDocumentTypes"
+                                :approvalTypes="approvalTypes"
                                 :selectedApprovalTypeId="selectedApprovalTypeId"
                                 :key="selectedApprovalTypeId"
                                 :readonly=false
-                                @updateSelectedDocumentTypes="updateSelectedDocumentTypes"
                             />
                         </div>
                     </div>
@@ -294,6 +323,8 @@ import {
     from '@/utils/hooks'
 import FileField from '@/components/forms/filefield_immediate.vue'
 import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue'
+import GroupsDropdown from '@/components/common/component_groups_dropdown.vue'
+
 export default {
     name:'ProposedApprovalForm',
     components:{
@@ -301,6 +332,7 @@ export default {
         RichText,
         FileField,
         ProposedApprovalDocuments,
+        GroupsDropdown,
     },
     props:{
         proposal_id: {
@@ -362,11 +394,7 @@ export default {
             selectedApprovalType: {},
             selectedApprovalTypeId: null,
             // Document Types arrays rely on selectedApprovalTypeId
-            availableDocumentTypes: [],
-            selectedDocumentTypes: [],
             //
-            groups: [],
-            selectedGroups: [],
             //state: 'proposed_approval',
             issuingApproval: false,
             approvalDecisionText: {
@@ -442,10 +470,6 @@ export default {
                 return "";
             }
         },
-        selectedGroupsIds: function() {
-            // Return the ids of selected groups from the group name-dropdown
-            return this.selectedGroups.map(({id})=>id);
-        },
         showError: function() {
             var vm = this;
             return vm.errors;
@@ -498,85 +522,15 @@ export default {
         updateSelectedApprovalType(id) {
             // console.log(id);
             // clear existing doc arrays
-            this.availableDocumentTypes = [];
-            this.selectedDocumentTypes = [];
-            for (const approvalType of this.approvalTypes) {
-                if (approvalType.id === id) {
-                    for (const docType of approvalType.approval_type_document_types) {
-                        this.availableDocumentTypes.push(docType);
-                    }
-                }
+
+            if (this.approval) {
+                this.approval.selected_document_types = [];
             }
+            if (this.proposal.proposed_issuance_approval) {
+                this.proposal.proposed_issuance_approval.selected_document_types = [];
+            }
+
             this.selectedApprovalTypeId = id;
-        },
-        /**
-         * Updates a list of, e.g. selected items, with `id` .
-         * @param {int} id The id of the item to add or remove from the list.
-         * @param {Array} list The list to add to.
-         * @param {Array} available_items A list of available items of which `id` is a member.
-         * @param {Boolean} remove Whether to remove the item from the list. Default false.
-         */
-        updateIdListFromAvailable(id, list, available_items, remove) {
-            if (!remove) {
-                remove = false;
-            }
-
-            let found = list.find(element => element.id === parseInt(id));
-
-            if (!found) {
-                let item = available_items.find(element => element.id === parseInt(id));
-                if (!item) {
-                    console.warn(`Selected item with id ${id} not found in available items.`)
-                    return false;
-                }
-                console.log(`Adding item with id ${id} to list of selected items.`);
-                list.push(item);
-                return list;
-            }
-
-            if (found && remove) {
-                console.log(`Removing item with id ${id} from list of selected items.`)
-                list = list.filter(element => element.id !== parseInt(id));
-                return list
-            }
-            return false;
-        },
-        /**
-         * Update selected items from multi-select group name-dropdown.
-         * @param {*} ids The group id
-         * @param {*} remove Whether to remove that group from the list of selected groups.
-         */
-        updateSelectedGroupsType(ids, remove) {
-            let list = this.selectedGroups;
-            for (let id of ids) {
-                if (!Number(id)) {
-                    continue;
-                }
-                let list_updated = this.updateIdListFromAvailable(
-                                        Number(id),
-                                        list,
-                                        this.groups,
-                                        remove);
-                list = list_updated? list_updated : list;
-            }
-
-            if (list) {
-                this.selectedGroups = list;
-            } else {
-                return false;
-            }
-        },
-        updateSelectedDocumentTypes(id, remove) {
-            let list = this.updateIdListFromAvailable(
-                            id,
-                            this.selectedDocumentTypes,
-                            this.availableDocumentTypes,
-                            remove);
-            if (list) {
-                this.selectedDocumentTypes = list;
-            } else {
-                return false;
-            }
         },
         preview:function () {
             let vm =this;
@@ -645,12 +599,17 @@ export default {
                 if (this.registrationOfInterest) {
                     this.approval.details = this.$refs.registration_of_interest_details.detailsText;
                     this.approval.decision = this.selectedDecision;
+                    this.approval.groups = this.$refs.selected_groups.selectedGroups ?
+                        this.$refs.selected_groups.selectedGroupsIds :
+                        null;
                 } else if (this.leaseLicence) {
                     this.approval.details = this.$refs.lease_licence_details.detailsText;
                     //this.approval.approval_type = this.selectedApprovalType ? this.selectedApprovalType.id : null;
                     this.approval.approval_type = this.selectedApprovalTypeId;
-                    this.approval.groups = this.selectedGroups ? this.selectedGroupsIds : null;
-                    this.approval.selected_document_types = this.selectedDocumentTypes;
+                    this.approval.groups = this.$refs.selected_groups.selectedGroups ?
+                        this.$refs.selected_groups.selectedGroupsIds :
+                        null;
+                    this.approval.selected_document_types = this.$refs.proposed_issuance_documents.selectedDocumentTypes;
                 }
                 /*
                 // internal proposal save
@@ -716,67 +675,27 @@ export default {
                 let unselected_id = e.params.data.id;
             });
         },
-        /**
-         * Initialise the select2 control for selecting the approval subtype of the application
-         * TODO: What exactly is the subtype?
-         */
-         initSelectApprovalSubType: function () {
-            let vm = this;
-
-            $(vm.$refs.select_approvalgroupnames).select2({
-                "theme": "bootstrap-5",
-                allowClear: true,
-                placeholder: "Select an approval sub type",
-                multiple: true,
-            }).on("select2:select", function (e) {
-                var selected = $(e.currentTarget);
-                vm.updateSelectedGroupsType(selected.val());
-            }).on("select2:unselecting", function (e) {
-                var self = $(this);
-                setTimeout(() => {
-                    self.select2('close');
-                }, 0);
-            }).on("select2:unselect", function (e) {
-                let unselected_id = e.params.data.id;
-                vm.updateSelectedGroupsType(unselected_id, true);
-            });
-        },
    },
    created: async function () {
         let vm =this;
         vm.form = document.forms.approvalForm;
         this.approval = Object.assign({}, this.proposal.proposed_issuance_approval);
-        this.selectedApprovalTypeId = this.approval.approval_type;
 
         let initialisers = [
             utils.fetchApprovalTypes(),
-            utils.fetchGroupsKeyValueList(),
         ]
         Promise.all(initialisers).then(data => {
             for (let approvalType of data[0]) {
                 vm.approvalTypes.push(approvalType)
             }
-            vm.groups = data[1];
 
             // Approval Type
             if (vm.approval.approval_type) {
                 vm.selectedApprovalTypeId = vm.approval.approval_type;
-                vm.updateSelectedApprovalType(vm.selectedApprovalTypeId);
             }
 
-            // Selected Document Types
-            if (vm.approval.selected_document_types) {
-                vm.selectedDocumentTypes = vm.approval.selected_document_types;
-            }
+            this.selectedApprovalTypeId = this.approval.approval_type;
 
-            // Groups
-            if (vm.approval.groups) {
-                for (let group of vm.groups) {
-                    if (group && vm.approval.groups.includes(group.id)) {
-                        vm.selectedGroups.push(group);
-                    }
-                }
-            }
         });
 
         this.$nextTick(()=>{
@@ -787,7 +706,6 @@ export default {
             }
 
             this.initSelectApprovalType();
-            this.initSelectApprovalSubType();
         });
    },
 }
