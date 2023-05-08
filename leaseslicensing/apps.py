@@ -14,7 +14,6 @@ class LeasesLicensingConfig(AppConfig):
             from leaseslicensing.components.approvals.models import (
                 Approval,
                 ApprovalDocument,
-                ApprovalSubType,
                 ApprovalType,
                 ApprovalTypeDocumentType,
                 ApprovalTypeDocumentTypeOnApprovalType,
@@ -69,7 +68,6 @@ class LeasesLicensingConfig(AppConfig):
                     "org_applicant",
                 ],
             )
-            reversion.register(ApprovalSubType)
             reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])
             reversion.register(ApprovalTypeDocumentType)
             reversion.register(ApprovalTypeDocumentTypeOnApprovalType)

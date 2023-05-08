@@ -19,7 +19,6 @@ from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
-    ApprovalSubType,
     ApprovalType,
 )
 from leaseslicensing.components.approvals.serializers import (
@@ -98,23 +97,6 @@ class GetApprovalTypesDict(views.APIView):
         return Response(approval_types_dict)
 
 
-class GetApprovalSubTypesDict(views.APIView):
-    renderer_classes = [
-        JSONRenderer,
-    ]
-
-    def get(self, request, format=None):
-        approval_sub_types_dict = cache.get("approval_sub_types_dict")
-        if not approval_sub_types_dict:
-            approval_sub_types_dict = [
-                {"id": t.id, "name": t.name} for t in ApprovalSubType.objects.all()
-            ]
-            cache.set(
-                "approval_sub_types_dict",
-                approval_sub_types_dict,
-                settings.LOV_CACHE_TIMEOUT,
-            )
-        return Response(approval_sub_types_dict)
 
 
 class GetApprovalStatusesDict(views.APIView):

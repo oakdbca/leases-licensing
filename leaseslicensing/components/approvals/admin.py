@@ -3,9 +3,6 @@ from django import forms as django_forms
 from leaseslicensing.components.approvals import models
 
 
-@admin.register(models.ApprovalSubType)
-class ApprovalSubTypeAdmin(admin.ModelAdmin):
-    pass
 
 @admin.register(models.ApprovalTypeDocumentType)
 class ApprovalTypeDocumentTypeAdmin(admin.ModelAdmin):
