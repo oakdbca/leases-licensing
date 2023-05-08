@@ -20,11 +20,11 @@
         <div class="tab-content" id="pills-tabContent">
             <div class="tab-pane active" id="pills-applications" role="tabpanel" aria-labelledby="pills-applications-tab">
                 <FormSection :formCollapse="false" label="Applications" Index="applications">
-                    <ApplicationsTable ref="applications_table" level="internal"
-                        filterApplicationType_cache_name="filterApplicationTypeForApplicationTable"
-                        filterApplicationStatus_cache_name="filterApplicationStatusForApplicationTable"
-                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationTable"
-                        filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationTable" />
+                    <ApplicationsTable @filter-appied="filterAppliedApplications()" ref="applications_table"
+                        level="internal" filterApplicationType_cache_name="filterApplicationType"
+                        filterApplicationStatus_cache_name="filterApplicationStatus"
+                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFrom"
+                        filterProposalLodgedTo_cache_name="filterApplicationLodgedTo" />
                 </FormSection>
                 <FormSection :formCollapse="false" label="Applications referred to me" Index="leases_and_licences">
                     <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" v-if="accessing_user"
@@ -121,6 +121,12 @@ export default {
                 tab = new bootstrap.Tab(elem)
             tab.show()
         },
+        filterAppliedApplications: function () {
+            if (this.$refs.component_map_with_filters) {
+                this.$refs.component_map_with_filters.updateFilters();
+                this.$refs.component_map_with_filters.applyFiltersFrontEnd();
+            }
+        }
     },
     mounted: async function () {
         const res = await fetch('/api/profile');
