@@ -9,7 +9,7 @@
                         <select class="form-control" v-model="filterApplicationType">
                             <option value="all">All</option>
                             <option v-for="application_type in application_types" :value="application_type.id"
-                                :key="application_type.id">{{ application_type.text }}
+                                :key="application_type.id">{{ application_type.name_display }}
                             </option>
                         </select>
                     </div>
@@ -70,6 +70,7 @@ import { expandToggle } from '@/components/common/table_functions.js'
 
 export default {
     name: 'TableApplications',
+    emits: ['filter-appied'],
     props: {
         level: {
             type: String,
@@ -145,21 +146,25 @@ export default {
         CollapsibleFilters,
     },
     watch: {
-        filterApplicationStatus: function () {
-            this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
-            sessionStorage.setItem(this.filterApplicationStatus_cache_name, this.filterApplicationStatus);
-        },
         filterApplicationType: function () {
             this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(this.filterApplicationType_cache_name, this.filterApplicationType);
+            this.$emit('filter-appied');
+        },
+        filterApplicationStatus: function () {
+            this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            sessionStorage.setItem(this.filterApplicationStatus_cache_name, this.filterApplicationStatus);
+            this.$emit('filter-appied');
         },
         filterProposalLodgedFrom: function () {
             this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(this.filterProposalLodgedFrom_cache_name, this.filterProposalLodgedFrom);
+            this.$emit('filter-appied');
         },
         filterProposalLodgedTo: function () {
             this.$refs.application_datatable.vmDataTable.draw();  // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(this.filterProposalLodgedTo_cache_name, this.filterProposalLodgedTo);
+            this.$emit('filter-appied');
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
@@ -175,8 +180,8 @@ export default {
         },
         filterApplied: function () {
             let filter_applied = true
-            if (this.filterApplicationStatus.toLowerCase() === 'all' && this.filterApplicationType.toLowerCase() === 'all' &&
-                this.filterProposalLodgedFrom.toLowerCase() === '' && this.filterProposalLodgedTo.toLowerCase() === '') {
+            if (this.filterApplicationStatus === 'all' && this.filterApplicationType === 'all' &&
+                this.filterProposalLodgedFrom === '' && this.filterProposalLodgedTo === '') {
                 filter_applied = false
             }
             return filter_applied
@@ -477,6 +482,15 @@ export default {
         }
     },
     methods: {
+        updateFilters: function () {
+            this.$nextTick(() => {
+                this.filterApplicationType = sessionStorage.getItem(this.filterApplicationType_cache_name) ? sessionStorage.getItem(this.filterApplicationType_cache_name) : 'all';
+                this.filterApplicationStatus = sessionStorage.getItem(this.filterApplicationStatus_cache_name) ? sessionStorage.getItem(this.filterApplicationStatus_cache_name) : 'all';
+                this.filterProposalLodgedFrom = sessionStorage.getItem(this.filterProposalLodgedFrom_cache_name) ? sessionStorage.getItem(this.filterProposalLodgedFrom_cache_name) : '';
+                this.filterProposalLodgedTo = sessionStorage.getItem(this.filterProposalLodgedTo_cache_name) ? sessionStorage.getItem(this.filterProposalLodgedTo_cache_name) : '';
+                this.$refs.application_datatable.vmDataTable.draw()
+            })
+        },
         adjust_table_width: function () {
             this.$refs.application_datatable.vmDataTable.columns.adjust()
             this.$refs.application_datatable.vmDataTable.responsive.recalc()
@@ -550,14 +564,15 @@ export default {
             let vm = this;
 
             // Application Types
-            let res = await fetch(api_endpoints.application_types_dict + '?apply_page=False&for_filter=true')
-            let data = await res.json()
-            console.log({ data })
-            vm.application_types = data
+            fetch(api_endpoints.application_types + 'key-value-list/').then(async (response) => {
+                const resData = await response.json()
+                vm.application_types = resData
+            }, (error) => {
+            })
 
             // Application Statuses
-            res = await fetch(api_endpoints.application_statuses_dict)
-            data = await res.json()
+            const res = await fetch(api_endpoints.application_statuses_dict)
+            const data = await res.json()
             if (vm.is_internal) {
                 vm.application_statuses = data.internal_statuses
             } else {
