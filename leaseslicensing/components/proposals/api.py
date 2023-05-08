@@ -254,10 +254,7 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
                 filter_lodged_to = datetime.strptime(filter_lodged_to, "%Y-%m-%d")
                 queryset = queryset.filter(lodgement_date__lte=filter_lodged_to)
             if filter_application_type:
-                application_type = ApplicationType.get_application_type_by_name(
-                    filter_application_type
-                )
-                queryset = queryset.filter(application_type=application_type)
+                queryset = queryset.filter(application_type_id=filter_application_type)
             if filter_application_status:
                 queryset = queryset.filter(processing_status=filter_application_status)
         elif queryset.model is Compliance:
