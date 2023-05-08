@@ -53,7 +53,15 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_decline_email_notification,
     send_referral_email_notification,
 )
-from leaseslicensing.components.tenure.models import LGA, District, Group, SiteName
+from leaseslicensing.components.tenure.models import (
+    LGA,
+    Act,
+    Category,
+    District,
+    Group,
+    SiteName,
+    Tenure,
+)
 from leaseslicensing.helpers import user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
@@ -3257,6 +3265,48 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def groups_comma_list(self):
         return ", ".join([pg.group.name for pg in self.groups.all()])
+
+
+class ProposalAct(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="acts"
+    )
+    act = models.ForeignKey(Act, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "act")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land covered by legal act: {self.act}"
+
+
+class ProposalTenure(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="tenures"
+    )
+    tenure = models.ForeignKey(Tenure, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "tenure")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land of tenure: {self.tenure}"
+
+
+class ProposalCategory(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="categories"
+    )
+    category = models.ForeignKey(Category, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "category")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land categorised as: {self.category}"
 
 
 class ProposalGroup(models.Model):
