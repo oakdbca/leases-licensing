@@ -461,7 +461,7 @@ export default {
         $(this.$refs.act).select2({
             allowClear: true,
             multiple: true,
-            placeholder: 'Select Acts',
+            placeholder: 'Select Legal Acts',
             theme: 'bootstrap-5'
         });
         $(this.$refs.tenure).select2({
