@@ -118,8 +118,12 @@ def get_gis_data_for_proposal(proposal, layer_name, properties):
         list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
     )
     if len(properties) > 1:
-        properties = ",".join(properties)
-    features = get_features_by_multipolygon(multipolygon, layer_name, properties)
+        properties_comma_list = ",".join(properties)
+    else:
+        properties_comma_list = properties[0]
+    features = get_features_by_multipolygon(
+        multipolygon, layer_name, properties_comma_list
+    )
     if 0 == features["totalFeatures"]:
         return None
 
@@ -128,6 +132,7 @@ def get_gis_data_for_proposal(proposal, layer_name, properties):
     )
     data = {}
     for prop in properties:
+        logger.debug("Getting unique values for property: %s", prop)
         data[prop] = set()
 
     for feature in features["features"]:
