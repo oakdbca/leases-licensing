@@ -93,7 +93,38 @@ class Group(models.Model):
         return self.name
 
 
+class Vesting(models.Model):
+    """A class to represent the vesting for a land parcel
+    i.e. Conservation Commission Of WA, Marine Parks And Reserves Authority etc."""
+
+    vesting = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["vesting"]
+
+    def __str__(self):
+        return self.vesting
+
+
+class Name(models.Model):
+    """A class to represent the name for a land parcel
+    i.e. Stirling Range National Park, Dwellingup State Forest etc."""
+
+    name = models.CharField(max_length=200, unique=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+
 class SiteName(models.Model):
+    """A field assessors can use to identify a site (and or group together applications).
+    Keeping in it's own model to avoid data duplication"""
+
     name = models.CharField(max_length=200, unique=True)
 
     class Meta:

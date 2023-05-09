@@ -59,9 +59,11 @@ from leaseslicensing.components.tenure.models import (
     Category,
     District,
     Group,
+    Name,
     Region,
     SiteName,
     Tenure,
+    Vesting,
 )
 from leaseslicensing.helpers import user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -3366,6 +3368,36 @@ class ProposalLGA(models.Model):
 
     def __str__(self):
         return f"Proposal: {self.proposal.lodgement_number} includes land located in LGA: {self.lga}"
+
+
+class ProposalVesting(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="vestings"
+    )
+    vesting = models.ForeignKey(
+        Vesting, on_delete=models.PROTECT, null=True, blank=True
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "vesting")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land covered by Vesting: {self.vesting}"
+
+
+class ProposalName(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="names"
+    )
+    name = models.ForeignKey(Name, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "name")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land named: {self.name}"
 
 
 class ProposalAdditionalDocumentType(models.Model):

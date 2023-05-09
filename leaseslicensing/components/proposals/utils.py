@@ -37,9 +37,11 @@ from leaseslicensing.components.proposals.models import (
     ProposalGeometry,
     ProposalGroup,
     ProposalLGA,
+    ProposalName,
     ProposalRegion,
     ProposalTenure,
     ProposalUserAction,
+    ProposalVesting,
     Referral,
 )
 from leaseslicensing.components.proposals.serializers import (
@@ -53,9 +55,11 @@ from leaseslicensing.components.tenure.models import (
     Act,
     Category,
     District,
+    Name,
     Region,
     SiteName,
     Tenure,
+    Vesting,
 )
 from leaseslicensing.helpers import is_assessor
 
@@ -840,6 +844,8 @@ def save_groups_data(instance, groups_data):
 
 
 def populate_gis_data(proposal):
+    """Fetches required GIS data from KMI and saves it to the proposal
+    Todo: Will need to update this to use the new KB GIS modernisation API"""
     logger.debug("Populating GIS data for Proposal: " + proposal.lodgement_number)
     populate_gis_data_lands_and_waters(proposal)  # Covers Acts, Tenures, Categories
     populate_gis_data_regions(proposal)
@@ -850,6 +856,8 @@ def populate_gis_data(proposal):
 
 def populate_gis_data_lands_and_waters(proposal):
     properties = [
+        "leg_vesting",
+        "leg_name",
         "leg_tenure",
         "leg_act",
         "category",
@@ -866,22 +874,36 @@ def populate_gis_data_lands_and_waters(proposal):
 
     logger.debug("gis_data_lands_and_waters = " + str(gis_data_lands_and_waters))
 
-    if gis_data_lands_and_waters[properties[0]]:
-        for tenure_name in gis_data_lands_and_waters[properties[0]]:
+    if gis_data_lands_and_waters[properties[1]]:
+        for vesting_name in gis_data_lands_and_waters[properties[1]]:
+            vesting, created = Vesting.objects.get_or_create(name=vesting_name)
+            if created:
+                logger.info(f"New Vesting created from GIS Data: {vesting}")
+            ProposalVesting.objects.get_or_create(proposal=proposal, vesting=vesting)
+
+    if gis_data_lands_and_waters[properties[1]]:
+        for name_name in gis_data_lands_and_waters[properties[1]]:
+            name, created = Name.objects.get_or_create(name=name_name)
+            if created:
+                logger.info(f"New Name created from GIS Data: {name}")
+            ProposalName.objects.get_or_create(proposal=proposal, name=name)
+
+    if gis_data_lands_and_waters[properties[2]]:
+        for tenure_name in gis_data_lands_and_waters[properties[2]]:
             tenure, created = Tenure.objects.get_or_create(name=tenure_name)
             if created:
                 logger.info(f"New Tenure created from GIS Data: {tenure}")
             ProposalTenure.objects.get_or_create(proposal=proposal, tenure=tenure)
 
-    if gis_data_lands_and_waters[properties[1]]:
-        for act_name in gis_data_lands_and_waters[properties[1]]:
+    if gis_data_lands_and_waters[properties[3]]:
+        for act_name in gis_data_lands_and_waters[properties[3]]:
             act, created = Act.objects.get_or_create(name=act_name)
             if created:
                 logger.info(f"New Act created from GIS Data: {act}")
             ProposalAct.objects.get_or_create(proposal=proposal, act=act)
 
-    if gis_data_lands_and_waters[properties[2]]:
-        for category_name in gis_data_lands_and_waters[properties[2]]:
+    if gis_data_lands_and_waters[properties[4]]:
+        for category_name in gis_data_lands_and_waters[properties[4]]:
             category, created = Category.objects.get_or_create(name=category_name)
             if created:
                 logger.info(f"New Category created from GIS Data: {category}")
