@@ -2112,6 +2112,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     proposal=self, standard_requirement=req, due_date=due_date
                 )
 
+    def get_requirements(self):
+        # Get all requirements for Proposal
+        return ProposalRequirement.objects.filter(proposal=self)
+
     def move_to_status(self, request, status, approver_comment):
         if not self.can_assess(request.user) and not self.is_referrer(request.user):
             raise exceptions.ProposalNotAuthorized()
@@ -2442,13 +2446,15 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 "details": details.get("details"),
                 "cc_email": details.get("cc_email"),
                 "decision": details.get("decision"),
+                "groups": details.get("groups"),
             }
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             # start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None
             # expiry_date = details.get('expiry_date').strftime('%d/%m/%Y') if details.get('expiry_date') else None
             self.proposed_issuance_approval = {
                 "approval_type": details.get("approval_type"),
-                "approval_sub_type": details.get("approval_sub_type"),
+                # "approval_sub_type": details.get("approval_sub_type"),
+                "groups": details.get("groups"),
                 "selected_document_types": details.get("selected_document_types"),
                 # "approval_type_document_type": details.get("approval_type_document_type"),
                 "cc_email": details.get("cc_email"),
@@ -4042,7 +4048,11 @@ class Referral(RevisionedMixin):
         return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
     def can_process(self, user):
-        raise NotImplementedError("TODO: implement this")
+
+        referral_user = retrieve_email_user(self.referral)
+        # True if the request user is the referrer and the application is in referral status
+        return  referral_user.id == user.id and\
+                self.processing_status in ["with_referral", "with_referral_conditions"]
 
     def assign_officer(self, request, officer):
         with transaction.atomic():

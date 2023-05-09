@@ -1,0 +1,37 @@
+[
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 1,
+        "fields": {
+            "name": "License (97A)"
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 2,
+        "fields": {
+            "name": "License (101)"
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 3,
+        "fields": {
+            "name": "Lease (97)"
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 4,
+        "fields": {
+            "name": "Lease (100)"
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 5,
+        "fields": {
+            "name": "Sign-off sheet"
+        }
+    }
+]

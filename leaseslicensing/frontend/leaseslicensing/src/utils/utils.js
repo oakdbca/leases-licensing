@@ -193,4 +193,23 @@ export default {
                 });
         });
     },
+    fetchApprovalTypes: async function(){
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.approval_types_dict)
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        console.log(error)
+                        reject(error);
+                    }
+                    resolve(data)
+                    console.log("Approval type: ", data)
+                })
+                .catch(error => {
+                    console.error("There was an error!", error);
+                    reject(error)
+                });
+            });
+    },
 }

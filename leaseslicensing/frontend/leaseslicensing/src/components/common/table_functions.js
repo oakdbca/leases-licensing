@@ -49,9 +49,13 @@ export function expandToggle(vm, obj) {
 
     if(first_td.hasClass(vm.td_expand_class_name)){
         // Expand
+        // Get group names from the row data
+        let $row = vm.$refs.application_datatable.vmDataTable.row(tr)
+        let full_data = $row.data()
+        let groups = full_data.groups.map(({name})=>name);
 
         // If we don't need to retrieve the data from the server, follow the code below
-        let contents = '<div><strong>Site:</strong> (site name here)</div><div><strong>Group:</strong> (group name here)</div>'
+        let contents = `<div><strong>Site:</strong> (site name here)</div><div><strong>Group: </strong>${groups}</div>`
         let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
         details_elem.hide()
         details_elem.insertAfter(tr)

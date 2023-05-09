@@ -1,6 +1,6 @@
 <template id="proposal_approval">
     <div>
-        <div v-if="displayApprovedMsg" class="col-md-12 alert alert-success">
+        <div v-if="displayApprovedMessage" class="col-md-12 alert alert-success">
             <!--p>The {{ applicationTypeNameDisplay }} was approved to proceed to a full application on date by {{ proposal.assigned_approver.email }}</p-->
             <p>{{ applicationTypeNameDisplay }} {{ approveDecisionText }} on {{ proposalApprovedOn }} by {{ proposalApprovedBy }}.</p>
             <!--p>Expiry date: {{ approvalExpiryDate }}</p>
@@ -46,25 +46,37 @@
                 </div>
             </div>
         </div-->
-        <FormSection :formCollapse="false" label="Decision" Index="proposal_decision">
+        <FormSection :formCollapse="false" :label="decisionLabel" Index="proposal_decision">
             <ProposedIssuanceForm
                 v-if="proposal"
                 :proposal="proposal"
                 ref="proposed_approval_form"
+                :decisionLabel="decisionLabel"
                 :processing_status="proposal.processing_status"
                 :proposal_id="proposal.id"
                 :proposal_type="proposal.proposal_type? proposal.proposal_type.code: ''"
-                :submitter_email="proposal.submitter? proposal.submitter.email: ''"
+                :submitter_email="proposal.submitter && proposal.submitter.email? proposal.submitter.email: ''"
                 :applicant_email="proposal.applicant"
                 :key="proposedApprovalKey"
                 :proposedApprovalKey="proposedApprovalKey"
                 :proposedApprovalState="proposedApprovalState"
+                :proposalIsApproved="displayApprovedMessage"
                 :readonly=true
             />
         </FormSection>
 
-        <FormSection :formCollapse="false" label="Documents" Index="proposal_documents">
-            <!-- TODO -->
+        <!-- Can only have proposed documents (from the assessor) when applying for a lease/license -->
+        <FormSection v-if="proposal.application_type && proposal.application_type.name=='lease_licence'"
+                    :formCollapse="false" label="Documents" Index="proposal_documents">
+            <ProposedApprovalDocuments
+                v-if="proposal"
+                :proposal="proposal"
+                ref="proposed_issuance_documents"
+                :processing_status="proposal.processing_status"
+                :proposal_id="proposal.id"
+                :selectedDocumentTypes="proposal.proposed_issuance_approval? proposal.proposed_issuance_approval.selected_document_types: []"
+                :readonly=true
+            />
         </FormSection>
 
         <FormSection v-if="show_invoicing_details" :formCollapse="false" label="Invoicing Details" Index="proposal_invoicing_details">
@@ -82,6 +94,7 @@ import {
 from '@/utils/hooks'
 import { constants } from '@/utils/hooks'
 import ProposedIssuanceForm from '@/components/internal/proposals/proposed_issuance_form.vue'
+import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue'
 import FormSection from "@/components/forms/section_toggle.vue"
 import InvoicingDetails from "@/components/common/invoicing_details.vue"
 
@@ -90,7 +103,11 @@ export default {
     props: {
         proposal: Object,
         proposedApprovalState: "",
-        proposedApprovalKey: null
+        proposedApprovalKey: null,
+        readonly: {
+            type: Boolean,
+            default: false,
+        },
     },
     data: function() {
         let vm = this;
@@ -105,6 +122,7 @@ export default {
     },
     components:{
         ProposedIssuanceForm,
+        ProposedApprovalDocuments,
         FormSection,
         InvoicingDetails,
     },
@@ -142,9 +160,6 @@ export default {
                 show = true;
             }
             return show;
-        },
-        readonly: function() {
-            return true
         },
         contactsURL: function(){
             return this.proposal!= null ? helpers.add_endpoint_json(api_endpoints.organisations, this.proposal.applicant.id + '/contacts') : '';
@@ -271,14 +286,13 @@ export default {
             }
             return display
         },
-        displayApprovedMsg: function(){
-            let display = false
-            if (this.proposal.processing_status_id === constants.PROPOSAL_STATUS.APPROVED.ID ||
-                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
-                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID ){
-                display = true
-            }
-            return display
+        displayApprovedMessage: function(){
+            return [
+                constants.PROPOSAL_STATUS.APPROVED.ID,
+                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID,
+                constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID,
+                constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID,
+            ].includes(this.proposal.processing_status_id)
         },
         displayDeclinedMsg: function(){
             let display = false
@@ -302,6 +316,13 @@ export default {
         },
         isApprovalLevel:function(){
             return this.proposal.approval_level != null ? true : false;
+        },
+        decisionLabel: function(){
+            let decision_label = "Decision";
+            if (this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID) {
+                decision_label = "Proposed Decision";
+            }
+            return decision_label;
         },
 
     },
