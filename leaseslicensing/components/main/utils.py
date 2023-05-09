@@ -74,30 +74,41 @@ def get_dbca_lands_and_waters_geos():
     return geoms
 
 
-def get_features_by_multipolygon(
-    multipolygon,
-    layer_name="public:dbca_legislated_lands_and_waters",
-    properties="leg_name,leg_tenure,leg_act,category",
-):
-    response = requests.get(
-        f"{settings.KMI_SERVER_URL}/geoserver/public/ows",
-        params={
-            "service": "WFS",
-            "version": "1.0.0",
-            "request": "GetFeature",
-            "typeName": layer_name,
-            "maxFeatures": "5000",
-            "srsName": "EPSG:4326",
-            "outputFormat": "application/json",
-            "propertyName": properties,
-            "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
-        },
+def get_features_by_multipolygon(multipolygon, layer_name, properties):
+    namespace = layer_name.split(":")[0]
+    server_path = f"/geoserver/{namespace}/ows"
+    params = {
+        "service": "WFS",
+        "version": "1.0.0",
+        "request": "GetFeature",
+        "typeName": layer_name,
+        "maxFeatures": "5000",
+        "srsName": "EPSG:4326",
+        "outputFormat": "application/json",
+        "propertyName": properties,
+        "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
+    }
+    logger.debug(
+        f"Requesting features from {settings.KMI_SERVER_URL}{server_path} with params: {params}"
     )
+    if "public" != namespace:
+        logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
+        response = requests.get(
+            f"{settings.KMI_SERVER_URL}{server_path}",
+            params=params,
+            auth=(settings.KMI_AUTH_USERNAME, settings.KMI_AUTH_PASSWORD),
+        )
+    else:
+        response = requests.get(
+            f"{settings.KMI_SERVER_URL}{server_path}", params=params
+        )
+
     logger.debug(f"Request took: {response.elapsed.total_seconds()}")
+    logger.debug(f"Raw response: {response.text}")
     return response.json()
 
 
-def get_gis_data_for_proposal(proposal, properties):
+def get_gis_data_for_proposal(proposal, layer_name, properties):
     """Takes a proposal object and a list of property names and returns a dict of unique values for each property"""
     if not proposal.proposalgeometry.exists():
         logger.debug("ProposalGeometry does not exist for proposal: %s", proposal.id)
@@ -106,8 +117,12 @@ def get_gis_data_for_proposal(proposal, properties):
     multipolygon = MultiPolygon(
         list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
     )
+    if len(properties) > 1:
+        properties_comma_list = ",".join(properties)
+    else:
+        properties_comma_list = properties[0]
     features = get_features_by_multipolygon(
-        multipolygon, properties=",".join(properties)
+        multipolygon, layer_name, properties_comma_list
     )
     if 0 == features["totalFeatures"]:
         return None
@@ -117,6 +132,7 @@ def get_gis_data_for_proposal(proposal, properties):
     )
     data = {}
     for prop in properties:
+        logger.debug("Getting unique values for property: %s", prop)
         data[prop] = set()
 
     for feature in features["features"]:

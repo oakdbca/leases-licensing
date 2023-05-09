@@ -77,10 +77,10 @@
                                 <label class="col-form-label">Legal Act</label>
                             </div>
                             <div class="col-sm-9">
-                                <select ref="act" class="select2 form-select" multiple="multiple">
-                                    <option value="1" selected>CALM Act 1984 - Section 5(1)(d)</option>
+                                <select ref="act" class="form-select" multiple="multiple">
+                                    <option value="1">CALM Act 1984 - Section 5(1)(d)</option>
                                     <option value="2">CALM Act 1984 - Section 5(1)(ca)</option>
-                                    <option value="3" selected>CALM Act 1984 - Section 5(1)(c)</option>
+                                    <option value="3">CALM Act 1984 - Section 5(1)(c)</option>
                                     <option value="4">etc..</option>
                                 </select>
                             </div>
@@ -91,7 +91,7 @@
                                 <label class="col-form-label">Tenure</label>
                             </div>
                             <div class="col-sm-9">
-                                <select ref="tenure" class="select2 form-select" multiple="multiple">
+                                <select ref="tenure" class="form-select" multiple="multiple">
                                     <option value="1">Crown Land</option>
                                     <option value="2">Unallocated Crown Land</option>
                                     <option value="3">Freehold</option>
@@ -104,7 +104,7 @@
                                 <label class="col-form-label">Category</label>
                             </div>
                             <div class="col-sm-9">
-                                <select ref="category" class="select2 form-select" multiple="multiple">
+                                <select ref="category" class="form-select" multiple="multiple">
                                     <option value="1">Nature Reserve</option>
                                     <option value="2">Conservation Park</option>
                                     <option value="3">National Park</option>
@@ -188,9 +188,9 @@
                                     <li v-for="(group, index) in  groups " class="list-group-item">
                                         <div class="form-check">
                                             <input class="form-check-input me-2" type="checkbox" :id="group.id" :value="{
-                                                    'group': { 'id': group.id, 'name': group.name }
-                                                }" name="group" v-model="proposal.groups"><label
-                                                class="form-check-label" :for="group.id">{{
+                                                'group': { 'id': group.id, 'name': group.name }
+                                            }" name="group" v-model="proposal.groups"><label class="form-check-label"
+                                                :for="group.id">{{
                                                     group.name }}</label>
                                         </div>
                                     </li>
@@ -458,10 +458,26 @@ export default {
         this.localities = [
             Object.assign({}, this.defaultLocality)
         ]
+        $(this.$refs.act).select2({
+            allowClear: true,
+            multiple: true,
+            placeholder: 'Select Legal Acts',
+            theme: 'bootstrap-5'
+        });
+        $(this.$refs.tenure).select2({
+            allowClear: true,
+            multiple: true,
+            placeholder: 'Select Tenures',
+            theme: 'bootstrap-5'
+        });
+        $(this.$refs.category).select2({
+            allowClear: true,
+            multiple: true,
+            placeholder: 'Select Categories',
+            theme: 'bootstrap-5'
+        });
         this.$nextTick(() => {
-            $('.select2').each(function () {
-                $(this).select2();
-            });
+            $('.select2-search__field').attr('style', '100% !important');
         });
     }
 
@@ -469,8 +485,12 @@ export default {
 </script>
 
 <style lang="css" scoped>
-.select2 {
+#section_body_other_section .form-select {
     width: 500px;
+}
+
+.select2-search__field {
+    width: 100% !important;
 }
 
 .question-title {

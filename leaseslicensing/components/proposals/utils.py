@@ -33,8 +33,11 @@ from leaseslicensing.components.proposals.models import (
     ProposalAssessmentAnswer,
     ProposalCategory,
     ProposalDeclinedDetails,
+    ProposalDistrict,
     ProposalGeometry,
     ProposalGroup,
+    ProposalLGA,
+    ProposalRegion,
     ProposalTenure,
     ProposalUserAction,
     Referral,
@@ -45,7 +48,15 @@ from leaseslicensing.components.proposals.serializers import (
     SaveLeaseLicenceSerializer,
     SaveRegistrationOfInterestSerializer,
 )
-from leaseslicensing.components.tenure.models import Act, Category, SiteName, Tenure
+from leaseslicensing.components.tenure.models import (
+    LGA,
+    Act,
+    Category,
+    District,
+    Region,
+    SiteName,
+    Tenure,
+)
 from leaseslicensing.helpers import is_assessor
 
 logger = logging.getLogger(__name__)
@@ -829,35 +840,116 @@ def save_groups_data(instance, groups_data):
 
 
 def populate_gis_data(proposal):
+    logger.debug("Populating GIS data for Proposal: " + proposal.lodgement_number)
+    populate_gis_data_lands_and_waters(proposal)  # Covers Acts, Tenures, Categories
+    populate_gis_data_regions(proposal)
+    populate_gis_data_districts(proposal)
+    populate_gis_data_lgas(proposal)
+    logger.debug("Finished GIS data for Proposal: " + proposal.lodgement_number)
+
+
+def populate_gis_data_lands_and_waters(proposal):
     properties = [
         "leg_tenure",
         "leg_act",
         "category",
     ]
-    gis_data = get_gis_data_for_proposal(proposal, properties)
-    if gis_data is None:
-        logger.warn("No GIS data found for proposal %s", proposal.lodgement_number)
+    gis_data_lands_and_waters = get_gis_data_for_proposal(
+        proposal, "public:dbca_legislated_lands_and_waters", properties
+    )
+    if gis_data_lands_and_waters is None:
+        logger.warn(
+            "No GIS Lands and waters data found for proposal %s",
+            proposal.lodgement_number,
+        )
         return
 
-    logger.debug("gis_data = " + str(gis_data))
+    logger.debug("gis_data_lands_and_waters = " + str(gis_data_lands_and_waters))
 
-    if gis_data["leg_tenure"]:
-        for tenure_name in gis_data["leg_tenure"]:
+    if gis_data_lands_and_waters[properties[0]]:
+        for tenure_name in gis_data_lands_and_waters[properties[0]]:
             tenure, created = Tenure.objects.get_or_create(name=tenure_name)
             if created:
                 logger.info(f"New Tenure created from GIS Data: {tenure}")
             ProposalTenure.objects.get_or_create(proposal=proposal, tenure=tenure)
 
-    if gis_data["leg_act"]:
-        for act_name in gis_data["leg_act"]:
+    if gis_data_lands_and_waters[properties[1]]:
+        for act_name in gis_data_lands_and_waters[properties[1]]:
             act, created = Act.objects.get_or_create(name=act_name)
             if created:
                 logger.info(f"New Act created from GIS Data: {act}")
             ProposalAct.objects.get_or_create(proposal=proposal, act=act)
 
-    if gis_data["category"]:
-        for category_name in gis_data["category"]:
+    if gis_data_lands_and_waters[properties[2]]:
+        for category_name in gis_data_lands_and_waters[properties[2]]:
             category, created = Category.objects.get_or_create(name=category_name)
             if created:
                 logger.info(f"New Category created from GIS Data: {category}")
             ProposalCategory.objects.get_or_create(proposal=proposal, category=category)
+
+
+def populate_gis_data_regions(proposal):
+    properties = [
+        "drg_region_name",
+    ]
+    gis_data_regions = get_gis_data_for_proposal(
+        proposal, "cddp:dbca_regions", properties
+    )
+    if gis_data_regions is None:
+        logger.warn(
+            "No GIS Region data found for proposal %s", proposal.lodgement_number
+        )
+        return
+
+    logger.debug("gis_data_regions = " + str(gis_data_regions))
+
+    if gis_data_regions[properties[0]]:
+        for region_name in gis_data_regions[properties[0]]:
+            region, created = Region.objects.get_or_create(name=region_name)
+            if created:
+                logger.info(f"New Region created from GIS Data: {region}")
+            ProposalRegion.objects.get_or_create(proposal=proposal, region=region)
+
+
+def populate_gis_data_districts(proposal):
+    properties = [
+        "district",
+    ]
+    gis_data_districts = get_gis_data_for_proposal(
+        proposal, "cddp:dbca_districts", properties
+    )
+    if gis_data_districts is None:
+        logger.warn(
+            "No GIS District data found for proposal %s", proposal.lodgement_number
+        )
+        return
+
+    logger.debug("gis_data_districts = " + str(gis_data_districts))
+
+    if gis_data_districts[properties[0]]:
+        for district_name in gis_data_districts[properties[0]]:
+            district, created = District.objects.get_or_create(name=district_name)
+            if created:
+                logger.info(f"New Region created from GIS Data: {district}")
+            ProposalDistrict.objects.get_or_create(proposal=proposal, district=district)
+
+
+def populate_gis_data_lgas(proposal):
+    properties = [
+        "lga_label",
+    ]
+    gis_data_lgas = get_gis_data_for_proposal(
+        proposal, "cddp:local_gov_authority", properties
+    )
+    if gis_data_lgas is None:
+        logger.warn("No GIS LGA data found for proposal %s", proposal.lodgement_number)
+        return
+
+    logger.debug("gis_data_lgas = " + str(gis_data_lgas))
+
+    if gis_data_lgas[properties[0]]:
+        for lga_name in gis_data_lgas[properties[0]]:
+            lga, created = LGA.objects.get_or_create(name=lga_name)
+            if created:
+                logger.info(f"New LGA created from GIS Data: {lga}")
+            ProposalLGA.objects.get_or_create(proposal=proposal, lga=lga)

@@ -59,6 +59,7 @@ from leaseslicensing.components.tenure.models import (
     Category,
     District,
     Group,
+    Region,
     SiteName,
     Tenure,
 )
@@ -3329,24 +3330,48 @@ class ProposalGroup(models.Model):
         return f"Proposal: {self.proposal.lodgement_number} is in Group: {self.group}"
 
 
-class ProposalLocality(models.Model):
+class ProposalRegion(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="localities"
+        Proposal, on_delete=models.PROTECT, related_name="regions"
+    )
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "region")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land located in Region: {self.region}"
+
+
+class ProposalDistrict(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="districts"
     )
     district = models.ForeignKey(
         District, on_delete=models.PROTECT, null=True, blank=True
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "district")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land located in District: {self.district}"
+
+
+class ProposalLGA(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.PROTECT, related_name="lgas"
     )
     lga = models.ForeignKey(LGA, on_delete=models.PROTECT, null=True, blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
-        unique_together = ("proposal", "district", "lga")
+        unique_together = ("proposal", "lga")
 
     def __str__(self):
-        return (
-            f"Proposal: {self.proposal.lodgement_number} is located in Region: "
-            f"{self.district.region}, District: {self.district}, LGA: {self.lga}"
-        )
+        return f"Proposal: {self.proposal.lodgement_number} includes land located in LGA: {self.lga}"
 
 
 class ProposalAdditionalDocumentType(models.Model):
