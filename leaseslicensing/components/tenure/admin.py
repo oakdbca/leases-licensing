@@ -6,9 +6,11 @@ from leaseslicensing.components.tenure.models import (
     Category,
     District,
     Group,
+    Name,
     Region,
     SiteName,
     Tenure,
+    Vesting,
 )
 
 
@@ -49,4 +51,14 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(SiteName)
 class SiteNameAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Vesting)
+class VestingAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(Name)
+class NameAdmin(admin.ModelAdmin):
     pass

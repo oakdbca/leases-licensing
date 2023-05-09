@@ -9,8 +9,10 @@ from leaseslicensing.components.tenure.models import (
     Category,
     District,
     Group,
+    Name,
     Region,
     Tenure,
+    Vesting,
 )
 from leaseslicensing.components.tenure.serializers import (
     ActSerializer,
@@ -19,8 +21,10 @@ from leaseslicensing.components.tenure.serializers import (
     DistrictSerializer,
     GroupSerializer,
     LGASerializer,
+    NameSerializer,
     RegionSerializer,
     TenureSerializer,
+    VestingSerializer,
 )
 
 logger = logging.getLogger(__name__)
@@ -72,6 +76,22 @@ class LGAViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin
     key_value_display_field = "name"
     key_value_serializer_class = LGASerializer
     queryset = LGA.objects.all()
+
+
+class VestingViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
+    model = Vesting
+    serializer_class = VestingSerializer
+    key_value_display_field = "vesting"
+    key_value_serializer_class = VestingSerializer
+    queryset = Vesting.objects.all()
+
+
+class NameViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
+    model = Name
+    serializer_class = NameSerializer
+    key_value_display_field = "name"
+    key_value_serializer_class = NameSerializer
+    queryset = Name.objects.all()
 
 
 class GroupViewSet(viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin):
