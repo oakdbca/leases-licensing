@@ -123,20 +123,14 @@ export default {
                 )
         },
         canChangeDocuments: function() {
-            /** TODO: (53-1) Approval type, commencement and expiry and approval document
-             *  cannot be changed by the approver, _but_ can the approver add additional
-             *  documents? If so, requires more sophisticated logic to distinguish between
-             *  sources of proposed approval documents (e.g. in
-             *  `vm.proposal.proposed_issuance_approval`).
+            /** The assessor and the approver can change the documents
              */
 
-            let with_assessor = [constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
-            constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,].includes(
-                this.proposal.processing_status_id) ?
-                    true :
-                    false;
-
-            return with_assessor;
+            return [
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                    constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
+                ].includes(this.proposal.processing_status_id)
         },
         selectedDocumentTypesIds: function() {
             // Return the ids of selected document types from the document type-dropdown

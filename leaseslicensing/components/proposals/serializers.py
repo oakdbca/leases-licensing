@@ -382,7 +382,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     groups = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
-    requirements = serializers.SerializerMethodField()
 
     class Meta:
         model = Proposal

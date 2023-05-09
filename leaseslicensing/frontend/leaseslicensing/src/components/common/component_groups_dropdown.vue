@@ -56,7 +56,7 @@ export default {
             $(vm.$refs.select_approvalgroupnames).select2({
                 "theme": "bootstrap-5",
                 allowClear: true,
-                placeholder: "Select an approval sub type",
+                placeholder: "Select a group",
                 multiple: true,
             }).on("select2:select", function (e) {
                 var selected = $(e.currentTarget);
@@ -121,10 +121,11 @@ export default {
                 }
             }
         });
-
+    },
+    mounted: function() {
         this.$nextTick(() => {
             this.initSelectGroup();
         });
-    }
+    },
 }
 </script>
