@@ -69,7 +69,7 @@
                     <LeaseLicence :proposal="proposal" :readonly="readonly" ref="lease_licence" v-if="leaseLicence">
                     </LeaseLicence>
 
-                    <FormSection label="Legal Act, Tenure and Category" Index="other_section">
+                    <FormSection label="Geospatial Data" Index="other_section">
                         <slot name="slot_other_checklist_questions"></slot>
 
                         <div class="row mb-3">
@@ -78,10 +78,9 @@
                             </div>
                             <div class="col-sm-9">
                                 <select ref="act" class="form-select" multiple="multiple">
-                                    <option value="1">CALM Act 1984 - Section 5(1)(d)</option>
-                                    <option value="2">CALM Act 1984 - Section 5(1)(ca)</option>
-                                    <option value="3">CALM Act 1984 - Section 5(1)(c)</option>
-                                    <option value="4">etc..</option>
+                                    <option v-for="obj in proposal.acts" :value="obj.act.id" selected="selected">{{
+                                        obj.act.name }}
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -92,9 +91,9 @@
                             </div>
                             <div class="col-sm-9">
                                 <select ref="tenure" class="form-select" multiple="multiple">
-                                    <option value="1">Crown Land</option>
-                                    <option value="2">Unallocated Crown Land</option>
-                                    <option value="3">Freehold</option>
+                                    <option v-for="obj in proposal.tenures" :value="obj.tenure.id" selected="selected">{{
+                                        obj.tenure.name }}
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -105,10 +104,10 @@
                             </div>
                             <div class="col-sm-9">
                                 <select ref="category" class="form-select" multiple="multiple">
-                                    <option value="1">Nature Reserve</option>
-                                    <option value="2">Conservation Park</option>
-                                    <option value="3">National Park</option>
-                                    <option value="4">etc..</option>
+                                    <option v-for="obj in proposal.categories" :value="obj.category.id" selected="selected">
+                                        {{
+                                            obj.category.name }}
+                                    </option>
                                 </select>
                             </div>
                         </div>
@@ -446,15 +445,18 @@ export default {
             utils.fetchLGAsKeyValueList(),
             utils.fetchDistricts(),
             utils.fetchGroupsKeyValueList(),
+            utils.fetchActsKeyValueList(),
         ]
         Promise.all(initialisers).then(data => {
             vm.lgas = data[0];
             vm.districts = data[1];
             vm.groups = data[2];
+            vm.acts = data[3];
         });
     },
     mounted: function () {
         this.$emit('formMounted')
+        let vm = this;
         this.localities = [
             Object.assign({}, this.defaultLocality)
         ]
@@ -462,19 +464,54 @@ export default {
             allowClear: true,
             multiple: true,
             placeholder: 'Select Acts',
-            theme: 'bootstrap-5'
+            theme: 'bootstrap-5',
+            ajax: {
+                url: api_endpoints.acts + 'select2-list/',
+            },
+            templateResult: function (data, container) {
+                // Removes items that are already select from the results
+                // Would be more resource efficient to do this on the server
+                if (data && !$(vm.$refs.act).select2('data')
+                    .map(obj => obj.id).includes(Number(data.id).toString())) {
+                    return $('<span>' + data.text + '</span>');
+                }
+            }
         });
+
         $(this.$refs.tenure).select2({
             allowClear: true,
             multiple: true,
             placeholder: 'Select Tenures',
-            theme: 'bootstrap-5'
+            theme: 'bootstrap-5',
+            ajax: {
+                url: api_endpoints.tenures + 'select2-list/',
+            },
+            templateResult: function (data, container) {
+                // Removes items that are already select from the results
+                // Would be more resource efficient to do this on the server
+                if (data && !$(vm.$refs.tenure).select2('data')
+                    .map(obj => obj.id).includes(Number(data.id).toString())) {
+                    return $('<span>' + data.text + '</span>');
+                }
+            }
         });
+
         $(this.$refs.category).select2({
             allowClear: true,
             multiple: true,
             placeholder: 'Select Categories',
-            theme: 'bootstrap-5'
+            theme: 'bootstrap-5',
+            ajax: {
+                url: api_endpoints.categories + 'select2-list/',
+            },
+            templateResult: function (data, container) {
+                // Removes items that are already select from the results
+                // Would be more resource efficient to do this on the server
+                if (data && !$(vm.$refs.category).select2('data')
+                    .map(obj => obj.id).includes(Number(data.id).toString())) {
+                    return $('<span>' + data.text + '</span>');
+                }
+            }
         });
         this.$nextTick(() => {
             $('.select2-search__field').attr('style', '100% !important');
