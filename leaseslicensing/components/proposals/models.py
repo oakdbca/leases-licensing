@@ -52,6 +52,7 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_approver_sendback_email_notification,
     send_proposal_decline_email_notification,
     send_referral_email_notification,
+    send_proposal_approval_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
     LGA,
@@ -2593,9 +2594,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 logger.exception(e)
                 raise e
 
-    def test_create_approval_pdf(self, request):
+    def create_approval_pdf(self, request):
         """
-        Callback function to test this Proposal's approval PDF creation
+        Callback function to create this Proposal's approval PDF
+
+        TODO: Use proper template in `pdf.py::create_approval_doc` instead of the dummy one
         """
 
         try:
@@ -2605,7 +2608,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             self.approval.generate_doc(user)
 
         except Exception as e:
-            logger.exception("Error in `test_create_approval_pdf`")
+            logger.exception("Error in `create_approval_pdf`")
             raise serializers.ValidationError(e.args[0])
 
     def final_approval(self, request, details):
@@ -2764,14 +2767,21 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
                     # TODO: additional logic required for amendment, reissue, etc?
 
-                    # send Proposal approval email with attachment
-                    # TODO: generate doc, then email
-                    # send_proposal_approval_email_notification(self,request)
-                    # TODO: add reversion
-                    # self.save(version_comment='Final Approval: {}'.format(self.approval.lodgement_number))
-                    self.save()
+                    # Generate approval (license) document
+                    self.create_approval_pdf(request)
+                    # TODO: Send notification email to approver after the finance team
+                    # has created the invoice
+                    # send_license_ready_for_invoicing_notification(self, request)
+
+                    # Send notification email to applicant
+                    send_proposal_approval_email_notification(self,request)
+
+                    self.save(
+                        version_comment=f"Final Approval: {self.approval.lodgement_number}"
+                        )
                     if self.approval and self.approval.documents:
                         self.approval.documents.all().update(can_delete=False)
+
 
             except Exception as e:
                 logger.exception(e)
