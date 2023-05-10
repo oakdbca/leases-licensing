@@ -21,9 +21,11 @@ from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
     ChecklistQuestion,
     Proposal,
+    ProposalAct,
     ProposalApplicantDetails,
     ProposalAssessment,
     ProposalAssessmentAnswer,
+    ProposalCategory,
     ProposalDeclinedDetails,
     ProposalGeometry,
     ProposalGroup,
@@ -31,13 +33,19 @@ from leaseslicensing.components.proposals.models import (
     ProposalOtherDetails,
     ProposalRequirement,
     ProposalStandardRequirement,
+    ProposalTenure,
     ProposalType,
     ProposalUserAction,
     Referral,
     RequirementDocument,
     SectionChecklist,
 )
-from leaseslicensing.components.tenure.serializers import GroupSerializer
+from leaseslicensing.components.tenure.serializers import (
+    ActSerializer,
+    CategorySerializer,
+    GroupSerializer,
+    TenureSerializer,
+)
 from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
     UserSerializer,
@@ -358,6 +366,30 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         return ret_dict
 
 
+class ProposalActSerializer(serializers.ModelSerializer):
+    act = ActSerializer()
+
+    class Meta:
+        model = ProposalAct
+        fields = ["act"]
+
+
+class ProposalTenureSerializer(serializers.ModelSerializer):
+    tenure = TenureSerializer()
+
+    class Meta:
+        model = ProposalTenure
+        fields = ["tenure"]
+
+
+class ProposalCategorySerializer(serializers.ModelSerializer):
+    category = CategorySerializer()
+
+    class Meta:
+        model = ProposalCategory
+        fields = ["category"]
+
+
 class ProposalGroupSerializer(serializers.ModelSerializer):
     group = GroupSerializer()
 
@@ -378,6 +410,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
     # groups = serializers.SerializerMethodField()
+    acts = ProposalActSerializer(many=True, read_only=True)
     groups = ProposalGroupSerializer(many=True, read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
@@ -459,10 +492,14 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "legislative_requirements_text",
             "lodgement_date_display",
             "shapefile_json",
+            "acts",
             "groups",
             "site_name",
         )
         read_only_fields = ("supporting_documents",)
+
+    def get_acts(self, obj):
+        return ProposalAct.objects.filter(proposal=obj).values_list("act", flat=True)
 
     def get_groups(self, obj):
         return ProposalGroup.objects.filter(proposal=obj).values_list(
@@ -929,6 +966,9 @@ class InternalProposalSerializer(BaseProposalSerializer):
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
     approved_by = serializers.SerializerMethodField()
+    acts = ProposalActSerializer(many=True, read_only=True)
+    categories = ProposalCategorySerializer(many=True, read_only=True)
+    tenures = ProposalTenureSerializer(many=True, read_only=True)
     groups = ProposalGroupSerializer(many=True, read_only=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
 
@@ -1028,6 +1068,9 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "all_lodgement_versions",
             "approved_on",
             "approved_by",
+            "acts",
+            "categories",
+            "tenures",
             "groups",
             "site_name",
             # "assessor_comment_map",
