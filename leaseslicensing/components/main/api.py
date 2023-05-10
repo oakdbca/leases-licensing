@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from django.db import transaction
+from django.db.models import F
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
@@ -140,6 +141,31 @@ class KeyValueListMixin:
         return Response(serializer.data)
 
 
+class Select2ListMixin:
+    select2_search_case_sensitive = False
+    """ For simplicity, uses the key_value_display_field to display the text in the select2
+        Default behaviour is to be case insensitive.
+        If you want to be case sensitive, set select2_search_case_sensitive to True in the
+        viewset class
+    """
+
+    @action(detail=False, methods=["get"], url_path="select2-list")
+    def select2_list(self, request):
+        if not self.key_value_display_field:
+            raise AttributeError("key_value_display_field is not defined on viewset")
+        search_term = request.GET.get("term", "")
+        queryset = (
+            self.get_queryset()
+            .annotate(text=F(self.key_value_display_field))
+            .values("id", "text")
+        )
+        if self.select2_search_case_sensitive:
+            results = queryset.filter(text__contains=search_term)[:10]
+        else:
+            results = queryset.filter(text__icontains=search_term)[:10]
+        return Response({"results": results})
+
+
 class NoPaginationListMixin:
     def get_paginated_response(self, data):
         if "no_pagination" == self.action:
@@ -181,12 +207,12 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         response = super().create(request, *args, **kwargs)
         instance = response.data.serializer.instance
         instance.log_user_action(
-                settings.ACTION_CREATE.format(
-                    instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
-                    helpers.get_instance_identifier(instance),
-                ),
-                request,
-            )
+            settings.ACTION_CREATE.format(
+                instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
+                helpers.get_instance_identifier(instance),
+            ),
+            request,
+        )
         return response
 
     def update(self, request, *args, **kwargs):
