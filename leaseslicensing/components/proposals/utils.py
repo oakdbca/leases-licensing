@@ -36,6 +36,7 @@ from leaseslicensing.components.proposals.models import (
     ProposalDistrict,
     ProposalGeometry,
     ProposalGroup,
+    ProposalIdentifier,
     ProposalLGA,
     ProposalName,
     ProposalRegion,
@@ -55,6 +56,7 @@ from leaseslicensing.components.tenure.models import (
     Act,
     Category,
     District,
+    Identifier,
     Name,
     Region,
     SiteName,
@@ -856,6 +858,7 @@ def populate_gis_data(proposal):
 
 def populate_gis_data_lands_and_waters(proposal):
     properties = [
+        "leg_identifier",
         "leg_vesting",
         "leg_name",
         "leg_tenure",
@@ -874,17 +877,32 @@ def populate_gis_data_lands_and_waters(proposal):
 
     logger.debug("gis_data_lands_and_waters = " + str(gis_data_lands_and_waters))
 
-    if gis_data_lands_and_waters[properties[0]]:
-        for vesting_name in gis_data_lands_and_waters[properties[0]]:
+    # This part could be refactored to be more generic
+    index = 0
+    if gis_data_lands_and_waters[properties[index]]:
+        for identifier_name in gis_data_lands_and_waters[properties[index]]:
+            if not identifier_name.strip():
+                continue
+            identifier, created = Identifier.objects.get_or_create(name=identifier_name)
+            if created:
+                logger.info(f"New Identifier created from GIS Data: {identifier}")
+            ProposalIdentifier.objects.get_or_create(
+                proposal=proposal, identifier=identifier
+            )
+
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for vesting_name in gis_data_lands_and_waters[properties[index]]:
             if not vesting_name.strip():
                 continue
-            vesting, created = Vesting.objects.get_or_create(vesting=vesting_name)
+            vesting, created = Vesting.objects.get_or_create(name=vesting_name)
             if created:
                 logger.info(f"New Vesting created from GIS Data: {vesting}")
             ProposalVesting.objects.get_or_create(proposal=proposal, vesting=vesting)
 
-    if gis_data_lands_and_waters[properties[1]]:
-        for name_name in gis_data_lands_and_waters[properties[1]]:
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for name_name in gis_data_lands_and_waters[properties[index]]:
             # Yes, name_name is a pretty silly variable name, what would you call it?
             if not name_name.strip():
                 continue
@@ -893,8 +911,9 @@ def populate_gis_data_lands_and_waters(proposal):
                 logger.info(f"New Name created from GIS Data: {name}")
             ProposalName.objects.get_or_create(proposal=proposal, name=name)
 
-    if gis_data_lands_and_waters[properties[2]]:
-        for tenure_name in gis_data_lands_and_waters[properties[2]]:
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for tenure_name in gis_data_lands_and_waters[properties[index]]:
             if not tenure_name.strip():
                 continue
             tenure, created = Tenure.objects.get_or_create(name=tenure_name)
@@ -902,8 +921,9 @@ def populate_gis_data_lands_and_waters(proposal):
                 logger.info(f"New Tenure created from GIS Data: {tenure}")
             ProposalTenure.objects.get_or_create(proposal=proposal, tenure=tenure)
 
-    if gis_data_lands_and_waters[properties[3]]:
-        for act_name in gis_data_lands_and_waters[properties[3]]:
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for act_name in gis_data_lands_and_waters[properties[index]]:
             if not act_name.strip():
                 continue
             act, created = Act.objects.get_or_create(name=act_name)
@@ -911,8 +931,9 @@ def populate_gis_data_lands_and_waters(proposal):
                 logger.info(f"New Act created from GIS Data: {act}")
             ProposalAct.objects.get_or_create(proposal=proposal, act=act)
 
-    if gis_data_lands_and_waters[properties[4]]:
-        for category_name in gis_data_lands_and_waters[properties[4]]:
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for category_name in gis_data_lands_and_waters[properties[index]]:
             if not category_name.strip():
                 continue
             category, created = Category.objects.get_or_create(name=category_name)

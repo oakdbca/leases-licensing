@@ -27,14 +27,15 @@ from leaseslicensing.utils import are_migrations_running
 router = routers.DefaultRouter()
 router.register(r"organisations", org_api.OrganisationViewSet, basename="organisations")
 router.register(r"proposal", proposal_api.ProposalViewSet, basename="proposal")
+router.register(r"identifiers", tenure_api.IdentifierViewSet, basename="identifiers")
+router.register(r"vestings", tenure_api.VestingViewSet, basename="vestings")
+router.register(r"names", tenure_api.NameViewSet, basename="names")
 router.register(r"acts", tenure_api.ActViewSet, basename="acts")
 router.register(r"tenures", tenure_api.TenureViewSet, basename="tenures")
 router.register(r"categories", tenure_api.CategoryViewSet, basename="categories")
 router.register(r"regions", tenure_api.RegionViewSet, basename="regions")
 router.register(r"districts", tenure_api.DistrictViewSet, basename="districts")
 router.register(r"lgas", tenure_api.LGAViewSet, basename="lgas")
-router.register(r"vestings", tenure_api.VestingViewSet, basename="vestings")
-router.register(r"names", tenure_api.NameViewSet, basename="names")
 router.register(r"groups", tenure_api.GroupViewSet, basename="groups")
 router.register(
     r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"

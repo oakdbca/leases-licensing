@@ -13,6 +13,7 @@ from leaseslicensing.components.tenure.models import (
     Category,
     District,
     Group,
+    Identifier,
     Name,
     Region,
     Tenure,
@@ -24,6 +25,7 @@ from leaseslicensing.components.tenure.serializers import (
     DistrictKeyValueSerializer,
     DistrictSerializer,
     GroupSerializer,
+    IdentifierSerializer,
     LGASerializer,
     NameSerializer,
     RegionSerializer,
@@ -32,6 +34,36 @@ from leaseslicensing.components.tenure.serializers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class IdentifierViewSet(
+    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+):
+    model = Identifier
+    serializer_class = IdentifierSerializer
+    key_value_display_field = "name"
+    key_value_serializer_class = IdentifierSerializer
+    queryset = Identifier.objects.all()
+
+
+class VestingViewSet(
+    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+):
+    model = Vesting
+    serializer_class = VestingSerializer
+    key_value_display_field = "name"
+    key_value_serializer_class = VestingSerializer
+    queryset = Vesting.objects.all()
+
+
+class NameViewSet(
+    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
+):
+    model = Name
+    serializer_class = NameSerializer
+    key_value_display_field = "name"
+    key_value_serializer_class = NameSerializer
+    queryset = Name.objects.all()
 
 
 class ActViewSet(
@@ -93,26 +125,6 @@ class LGAViewSet(
     key_value_display_field = "name"
     key_value_serializer_class = LGASerializer
     queryset = LGA.objects.all()
-
-
-class VestingViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
-):
-    model = Vesting
-    serializer_class = VestingSerializer
-    key_value_display_field = "vesting"
-    key_value_serializer_class = VestingSerializer
-    queryset = Vesting.objects.all()
-
-
-class NameViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, NoPaginationListMixin, Select2ListMixin
-):
-    model = Name
-    serializer_class = NameSerializer
-    key_value_display_field = "name"
-    key_value_serializer_class = NameSerializer
-    queryset = Name.objects.all()
 
 
 class GroupViewSet(

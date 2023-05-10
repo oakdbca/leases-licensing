@@ -6,12 +6,31 @@ from leaseslicensing.components.tenure.models import (
     Category,
     District,
     Group,
+    Identifier,
     Name,
     Region,
     SiteName,
     Tenure,
     Vesting,
 )
+
+
+class IdentifierSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Identifier
+        fields = "__all__"
+
+
+class VestingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vesting
+        fields = "__all__"
+
+
+class NameSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Name
+        fields = "__all__"
 
 
 class ActSerializer(serializers.ModelSerializer):
@@ -61,18 +80,6 @@ class LGASerializer(serializers.ModelSerializer):
 class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
-        fields = "__all__"
-
-
-class VestingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Vesting
-        fields = "__all__"
-
-
-class NameSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Name
         fields = "__all__"
 
 
