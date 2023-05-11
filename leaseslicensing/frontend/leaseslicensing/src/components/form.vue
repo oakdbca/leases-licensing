@@ -74,41 +74,58 @@
 
                         <div class="row mb-3">
                             <div class="col-sm-3">
-                                <label class="col-form-label">Legal Act</label>
+                                <label class="col-form-label">Identifiers</label>
+                                <!-- {{ proposal.identifiers }} -->
                             </div>
                             <div class="col-sm-9">
-                                <select ref="act" class="form-select" multiple="multiple">
-                                    <option v-for="obj in proposal.acts" :value="obj.act.id" selected="selected">{{
-                                        obj.act.name }}
-                                    </option>
-                                </select>
+                                <Select2Multiple ref="identifiers" v-model="proposal.identifiers"
+                                    v-select="proposal.identifiers" placeholder="Select Identifiers"
+                                    :ajax="api_endpoints.identifiers + 'select2-list/'" />
+                                {{ proposal.identifiers }}
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-sm-3">
-                                <label class="col-form-label">Tenure</label>
+                                <label class="col-form-label">Feature Names</label>
                             </div>
                             <div class="col-sm-9">
-                                <select ref="tenure" class="form-select" multiple="multiple">
-                                    <option v-for="obj in proposal.tenures" :value="obj.tenure.id" selected="selected">{{
-                                        obj.tenure.name }}
-                                    </option>
-                                </select>
+                                <!-- <Select2Multiple ref="names" placeholder="Select Feature Names"
+                                    :selectedObjects="proposal.names.map((obj) => ({ id: obj.name.id, name: obj.name.name }))"
+                                    :ajax="api_endpoints.names + 'select2-list/'" /> -->
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-sm-3">
-                                <label class="col-form-label">Category</label>
+                                <label class="col-form-label">Legal Acts</label>
                             </div>
                             <div class="col-sm-9">
-                                <select ref="category" class="form-select" multiple="multiple">
-                                    <option v-for="obj in proposal.categories" :value="obj.category.id" selected="selected">
-                                        {{
-                                            obj.category.name }}
-                                    </option>
-                                </select>
+                                <!-- <Select2Multiple ref="acts" placeholder="Select Legal Acts"
+                                    :selectedObjects="proposal.acts.map((obj) => ({ id: obj.act.id, name: obj.act.name }))"
+                                    :ajax="api_endpoints.acts + 'select2-list/'" /> -->
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Tenures</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <!-- <Select2Multiple ref="tenures" placeholder="Select Tenures"
+                                    :selectedObjects="proposal.tenures.map((obj) => ({ id: obj.tenure.id, name: obj.tenure.name }))"
+                                    :ajax="api_endpoints.tenures + 'select2-list/'" /> -->
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Categories</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <!-- <Select2Multiple ref="categories" placeholder="Select Categories"
+                                    :selectedObjects="proposal.categories.map((obj) => ({ id: obj.category.id, name: obj.category.name }))"
+                                    :ajax="api_endpoints.categories + 'select2-list/'" /> -->
                             </div>
                         </div>
 
@@ -249,6 +266,8 @@ import FileField from '@/components/forms/filefield_immediate.vue'
 import ComponentMap from '@/components/common/component_map.vue'
 import RegistrationOfInterest from './form_registration_of_interest.vue'
 import LeaseLicence from './form_lease_licence.vue'
+import Select2Multiple from '@/components/common/Select2Multiple.vue'
+
 import {
     api_endpoints,
     helpers,
@@ -346,6 +365,7 @@ export default {
             districts: null,
             lgas: null,
             groups: null,
+            api_endpoints: api_endpoints,
         }
     },
     components: {
@@ -358,6 +378,7 @@ export default {
         RichText,
         FileField,
         ComponentMap,
+        Select2Multiple,
     },
     computed: {
         email_user_applicant: function () {
@@ -445,13 +466,11 @@ export default {
             utils.fetchLGAsKeyValueList(),
             utils.fetchDistricts(),
             utils.fetchGroupsKeyValueList(),
-            utils.fetchActsKeyValueList(),
         ]
         Promise.all(initialisers).then(data => {
             vm.lgas = data[0];
             vm.districts = data[1];
             vm.groups = data[2];
-            vm.acts = data[3];
         });
     },
     mounted: function () {
@@ -460,76 +479,12 @@ export default {
         this.localities = [
             Object.assign({}, this.defaultLocality)
         ]
-        $(this.$refs.act).select2({
-            allowClear: true,
-            multiple: true,
-            placeholder: 'Select Acts',
-            theme: 'bootstrap-5',
-            ajax: {
-                url: api_endpoints.acts + 'select2-list/',
-            },
-            templateResult: function (data, container) {
-                // Removes items that are already select from the results
-                // Would be more resource efficient to do this on the server
-                if (data && !$(vm.$refs.act).select2('data')
-                    .map(obj => obj.id).includes(Number(data.id).toString())) {
-                    return $('<span>' + data.text + '</span>');
-                }
-            }
-        });
-
-        $(this.$refs.tenure).select2({
-            allowClear: true,
-            multiple: true,
-            placeholder: 'Select Tenures',
-            theme: 'bootstrap-5',
-            ajax: {
-                url: api_endpoints.tenures + 'select2-list/',
-            },
-            templateResult: function (data, container) {
-                // Removes items that are already select from the results
-                // Would be more resource efficient to do this on the server
-                if (data && !$(vm.$refs.tenure).select2('data')
-                    .map(obj => obj.id).includes(Number(data.id).toString())) {
-                    return $('<span>' + data.text + '</span>');
-                }
-            }
-        });
-
-        $(this.$refs.category).select2({
-            allowClear: true,
-            multiple: true,
-            placeholder: 'Select Categories',
-            theme: 'bootstrap-5',
-            ajax: {
-                url: api_endpoints.categories + 'select2-list/',
-            },
-            templateResult: function (data, container) {
-                // Removes items that are already select from the results
-                // Would be more resource efficient to do this on the server
-                if (data && !$(vm.$refs.category).select2('data')
-                    .map(obj => obj.id).includes(Number(data.id).toString())) {
-                    return $('<span>' + data.text + '</span>');
-                }
-            }
-        });
-        this.$nextTick(() => {
-            $('.select2-search__field').attr('style', '100% !important');
-        });
     }
 
 }
 </script>
 
 <style lang="css" scoped>
-#section_body_other_section .form-select {
-    width: 500px;
-}
-
-.select2-search__field {
-    width: 100% !important;
-}
-
 .question-title {
     padding-left: 15px;
 }
