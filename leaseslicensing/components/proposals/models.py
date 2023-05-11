@@ -1191,6 +1191,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     site_name = models.ForeignKey(
         SiteName, blank=True, null=True, on_delete=models.PROTECT
     )
+    # datetime_gis_data_first_fetched = models.DateTimeField(blank=True, null=True)
+    # datetime_gis_data_last_fetched = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         app_label = "leaseslicensing"
