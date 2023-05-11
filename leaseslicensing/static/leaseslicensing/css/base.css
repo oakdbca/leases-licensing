@@ -195,3 +195,25 @@ table.dataTable a:hover {
 .swal-wide{
     width:650px !important;
 }
+
+/* Vue3 Multiselect styles */
+
+.multiselect__spinner::after {
+    border-color: #226fbb transparent transparent !important;
+}
+
+.multiselect__tag {
+    background: #226fbb !important;
+}
+
+.multiselect__tag-icon::after {
+    color: #eee !important;
+}
+
+.multiselect__option--highlight {
+    background: #226fbb !important;
+}
+
+.multiselect__option--highlight::after {
+    background: #226fbb !important;
+}
