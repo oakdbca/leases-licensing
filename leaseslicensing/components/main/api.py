@@ -135,9 +135,13 @@ class KeyValueListMixin:
         if not self.key_value_serializer_class:
             raise AttributeError("key_value_serializer_class is not defined on viewset")
 
-        serializer = self.key_value_serializer_class(
-            self.get_queryset().only("id", self.key_value_display_field), many=True
-        )
+        queryset = self.get_queryset().only("id", self.key_value_display_field)
+        search_term = request.GET.get("term", "")
+        if search_term:
+            queryset = queryset.filter(
+                **{f"{self.key_value_display_field}__icontains": search_term}
+            )[:30]
+        serializer = self.key_value_serializer_class(queryset, many=True)
         return Response(serializer.data)
 
 
