@@ -255,8 +255,6 @@ import FileField from '@/components/forms/filefield_immediate.vue'
 import ComponentMap from '@/components/common/component_map.vue'
 import RegistrationOfInterest from './form_registration_of_interest.vue'
 import LeaseLicence from './form_lease_licence.vue'
-import Select2Multiple from '@/components/common/Select2Multiple.vue'
-
 import Multiselect from 'vue-multiselect'
 
 import {
@@ -392,7 +390,6 @@ export default {
         RichText,
         FileField,
         ComponentMap,
-        Select2Multiple,
         Multiselect,
     },
     computed: {
