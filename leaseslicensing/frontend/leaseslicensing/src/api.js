@@ -45,15 +45,17 @@ module.exports = {
 
     // ------------------- GIS Data Endpoints -------------------
 
+    identifiers: '/api/identifiers/',
+    vestings: '/api/vestings/',
+    names: '/api/names/',
+    acts: '/api/acts/',
+    tenures: '/api/tenures/',
+    categories: '/api/categories/',
+
     regions: '/api/regions/',
     districts: '/api/districts/',
     lgas: '/api/lgas/',
     groups: '/api/groups/',
-    acts: '/api/acts/',
-    tenures: '/api/tenures/',
-    categories: '/api/categories/',
-    names: '/api/names/',
-    vestings: '/api/vestings/',
 
 
     lookupApprovalDetails: function (id) {
