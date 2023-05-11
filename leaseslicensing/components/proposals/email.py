@@ -1,3 +1,4 @@
+import re
 import logging
 from datetime import datetime
 
@@ -141,8 +142,9 @@ def send_referral_complete_email_notification(referral, request):
         )
     )
 
+    email_user = retrieve_email_user(referral.referral)
     context = {
-        "completed_by": retrieve_email_user(referral.referral),
+        "completed_by": f"{email_user.first_name} {email_user.last_name}",
         "proposal": referral.proposal,
         "url": url,
         "referral_comments": referral.referral_text,
@@ -292,7 +294,10 @@ def send_approver_decline_email_notification(reason, request, proposal):
     )
     context = {"proposal": proposal, "reason": reason, "url": url}
 
-    msg = email.send(proposal.approver_recipients, context=context)
+    cc_email_str = request.data.get("cc_email", None)
+    cc_emails = re.split("[\s,;]+",  cc_email_str) if cc_email_str else []
+
+    msg = email.send(proposal.approver_recipients, cc=cc_emails, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, proposal, sender=sender)
     if proposal.org_applicant:

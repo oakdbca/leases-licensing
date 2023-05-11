@@ -53,6 +53,7 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_decline_email_notification,
     send_referral_email_notification,
     send_proposal_approval_email_notification,
+    send_referral_complete_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
     LGA,
@@ -4255,7 +4256,7 @@ class Referral(RevisionedMixin):
                 # .format(request.user.get_full_name(), self.id,self.proposal.id,'{}'
                 # .format(self.referral_group.name)),request)
 
-                # send_referral_complete_email_notification(self, request)
+                send_referral_complete_email_notification(self, request)
             except Exception as e:
                 logger.exception(e)
                 raise e
