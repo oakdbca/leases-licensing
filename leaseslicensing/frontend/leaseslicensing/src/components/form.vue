@@ -8,7 +8,7 @@
         <div class="">
             <ul class="nav nav-pills" id="pills-tab" role="tablist">
                 <li class="nav-item mr-1" role="presentation">
-                    <button class="nav-link active" id="pills-applicant-tab" data-bs-toggle="pill"
+                    <button class="nav-link" id="pills-applicant-tab" data-bs-toggle="pill"
                         data-bs-target="#pills-applicant" role="tab" aria-controls="pills-applicant" aria-selected="true">
                         Applicant
                     </button>
@@ -20,8 +20,8 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="pills-details-tab" data-bs-toggle="pill" data-bs-target="#pills-details"
-                        role="tab" aria-controls="pills-details" aria-selected="false">
+                    <button class="nav-link active" id="pills-details-tab" data-bs-toggle="pill"
+                        data-bs-target="#pills-details" role="tab" aria-controls="pills-details" aria-selected="false">
                         Details
                     </button>
                 </li>
@@ -36,8 +36,7 @@
                 </template>
             </ul>
             <div class="tab-content" id="pills-tabContent">
-                <div class="tab-pane fade show active" id="pills-applicant" role="tabpanel"
-                    aria-labelledby="pills-applicant-tab">
+                <div class="tab-pane fade" id="pills-applicant" role="tabpanel" aria-labelledby="pills-applicant-tab">
                     <Applicant v-if="'individual' == proposal.applicant_type" :email_user="email_user_applicant"
                         id="proposalStartApplicant" :readonly="readonly" :collapseFormSections="false"
                         :proposalId="proposal.id" />
@@ -54,7 +53,8 @@
 
                     </FormSection>
                 </div>
-                <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab">
+                <div class="tab-pane fade show active" id="pills-details" role="tabpanel"
+                    aria-labelledby="pills-details-tab">
                     <RegistrationOfInterest :proposal="proposal" :readonly="readonly" ref="registration_of_interest"
                         v-if="registrationOfInterest">
                         <template v-slot:slot_proposal_details_checklist_questions>
@@ -75,13 +75,24 @@
                         <div class="row mb-3">
                             <div class="col-sm-3">
                                 <label class="col-form-label">Identifiers</label>
-                                <!-- {{ proposal.identifiers }} -->
                             </div>
                             <div class="col-sm-9">
-                                <Select2Multiple ref="identifiers" v-model="proposal.identifiers"
-                                    v-select="proposal.identifiers" placeholder="Select Identifiers"
-                                    :ajax="api_endpoints.identifiers + 'select2-list/'" />
-                                {{ proposal.identifiers }}
+                                <Multiselect v-model="proposal.identifiers" label="name" track-by="id"
+                                    placeholder="Start typing to search Identifiers" :options="identifiers"
+                                    :hide-selected="true" :multiple="true" :searchable="true" :loading="loadingIdentifiers"
+                                    @search-change="ajaxLookupIdentifiers" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Vestings</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <Multiselect v-model="proposal.vestings" label="name" track-by="id"
+                                    placeholder="Start typing to search Vestings" :options="vestings" :hide-selected="true"
+                                    :multiple="true" :searchable="true" :loading="loadingVestings"
+                                    @search-change="ajaxLookupVestings" />
                             </div>
                         </div>
 
@@ -90,9 +101,10 @@
                                 <label class="col-form-label">Feature Names</label>
                             </div>
                             <div class="col-sm-9">
-                                <!-- <Select2Multiple ref="names" placeholder="Select Feature Names"
-                                    :selectedObjects="proposal.names.map((obj) => ({ id: obj.name.id, name: obj.name.name }))"
-                                    :ajax="api_endpoints.names + 'select2-list/'" /> -->
+                                <Multiselect v-model="proposal.names" label="name" track-by="id"
+                                    placeholder="Start typing to search Feature Names" :options="names"
+                                    :hide-selected="true" :multiple="true" :searchable="true" :loading="loadingNames"
+                                    @search-change="ajaxLookupNames" />
                             </div>
                         </div>
 
@@ -101,9 +113,10 @@
                                 <label class="col-form-label">Legal Acts</label>
                             </div>
                             <div class="col-sm-9">
-                                <!-- <Select2Multiple ref="acts" placeholder="Select Legal Acts"
-                                    :selectedObjects="proposal.acts.map((obj) => ({ id: obj.act.id, name: obj.act.name }))"
-                                    :ajax="api_endpoints.acts + 'select2-list/'" /> -->
+                                <Multiselect v-model="proposal.acts" label="name" track-by="id"
+                                    placeholder="Start typing to search Legal Acts" :options="acts" :hide-selected="true"
+                                    :multiple="true" :searchable="true" :loading="loadingActs"
+                                    @search-change="ajaxLookupActs" />
                             </div>
                         </div>
 
@@ -112,9 +125,10 @@
                                 <label class="col-form-label">Tenures</label>
                             </div>
                             <div class="col-sm-9">
-                                <!-- <Select2Multiple ref="tenures" placeholder="Select Tenures"
-                                    :selectedObjects="proposal.tenures.map((obj) => ({ id: obj.tenure.id, name: obj.tenure.name }))"
-                                    :ajax="api_endpoints.tenures + 'select2-list/'" /> -->
+                                <Multiselect v-model="proposal.tenures" label="name" track-by="id"
+                                    placeholder="Start typing to search Tenures" :options="tenures" :hide-selected="true"
+                                    :multiple="true" :searchable="true" :loading="loadingTenures"
+                                    @search-change="ajaxLookupTenures" />
                             </div>
                         </div>
 
@@ -123,94 +137,69 @@
                                 <label class="col-form-label">Categories</label>
                             </div>
                             <div class="col-sm-9">
-                                <!-- <Select2Multiple ref="categories" placeholder="Select Categories"
-                                    :selectedObjects="proposal.categories.map((obj) => ({ id: obj.category.id, name: obj.category.name }))"
-                                    :ajax="api_endpoints.categories + 'select2-list/'" /> -->
+                                <Multiselect v-model="proposal.categories" label="name" track-by="id"
+                                    placeholder="Start typing to search Categories" :options="categories"
+                                    :hide-selected="true" :multiple="true" :searchable="true" :loading="loadingCategories"
+                                    @search-change="ajaxLookupCategories" />
                             </div>
                         </div>
 
-                    </FormSection>
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Regions</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <Multiselect v-model="proposal.regions" label="name" track-by="id"
+                                    placeholder="Start typing to search Regions" :options="regions" :hide-selected="true"
+                                    :multiple="true" :searchable="true" :loading="loadingRegions"
+                                    @search-change="ajaxLookupRegions" />
+                            </div>
+                        </div>
 
-                    <FormSection label="Localities" Index="localities">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th scope="col" class="w-25">Local Goverment Area</th>
-                                    <th scope="col" class="w-25">District</th>
-                                    <th scope="col" class="w-25">Region</th>
-                                    <th scope="col" class="w-25">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(locality, index) in localities">
-                                    <td>
-                                        <!-- {{ locality }} -->
-                                        <input type="hidden" name="locality_id" v-model="locality.id" />
-                                        <select class="form-select" id="local_government_area" name="local_government_area"
-                                            v-model="locality.lga">
-                                            <option value="" selected>Select the LGA</option>
-                                            <option v-for="lga in lgas" :value="lga.id">{{ lga.name }}</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select class="form-select" id="district" name="district"
-                                            v-model="locality.district">
-                                            <option :value="null">Select the District</option>
-                                            <option v-for="district in districts" :value="district">{{ district.name }}
-                                            </option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select :disabled="true" class="form-select" id="region" name="region">
-                                            <option v-if="locality.district">{{ locality.district.region.name }}</option>
-                                            <option v-else>Select the District</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-danger me-1"
-                                            @click="removeLocality(locality, index)" :disabled="1 == localities.length"><i
-                                                class="fa fa-trash"></i>
-                                            Remove</button>
-                                        <button v-if="index == (localities.length - 1)" type="button"
-                                            class="btn btn-primary" @click="addAnotherLocality"><i class="fa fa-plus"></i>
-                                            Add
-                                            Another</button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Districts</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <Multiselect v-model="proposal.districts" label="name" track-by="id"
+                                    placeholder="Start typing to search Districts" :options="districts"
+                                    :hide-selected="true" :multiple="true" :searchable="true" :loading="loadingDistricts"
+                                    @search-change="ajaxLookupDistricts" />
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">LGAs</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <Multiselect v-model="proposal.lgas" label="name" track-by="id"
+                                    placeholder="Start typing to search LGAs" :options="lgas" :hide-selected="true"
+                                    :multiple="true" :searchable="true" :loading="loadingLGAs"
+                                    @search-change="ajaxLookupLGAs" />
+                            </div>
+                        </div>
                     </FormSection>
 
                     <FormSection label="Categorisation" Index="categorisation">
-                        <div class="row question-row">
+                        <div v-if="proposal.site_name" class="row mb-3">
                             <div class="col-sm-3">
                                 <label class="col-form-label">Site Name</label>
                             </div>
                             <div class="col-sm-9">
-                                <ul class="list-inline col-sm-9">
-                                    <li class="list-inline-item">
-                                        <input class="form-control" v-model="proposal.site_name" type="text"
-                                            name="exclusive_use_yes" id="exclusive_use_yes" :disabled="is_external" />
-                                    </li>
-                                </ul>
+                                <input class="form-control" v-model="proposal.site_name" type="text" name="site_name"
+                                    id="site_name" :disabled="is_external" />
                             </div>
                         </div>
-                        <div class="row question-row">
+                        <div class="row mb-3">
                             <div class="col-sm-3">
-                                <label class="col-form-label">Group(s)</label>
+                                <label class="col-form-label">Groups</label>
                             </div>
                             <div class="col-sm-9">
-                                <ul v-if="groups" class="list-group">
-                                    <li v-for="(group, index) in  groups " class="list-group-item">
-                                        <div class="form-check">
-                                            <input class="form-check-input me-2" type="checkbox" :id="group.id" :value="{
-                                                'group': { 'id': group.id, 'name': group.name }
-                                            }" name="group" v-model="proposal.groups"><label class="form-check-label"
-                                                :for="group.id">{{
-                                                    group.name }}</label>
-                                        </div>
-                                    </li>
-                                </ul>
+                                <Multiselect v-model="proposal.groups" label="name" track-by="id"
+                                    placeholder="Select Groups" :options="groups" :hide-selected="true" :multiple="true"
+                                    :searchable="true" :loading="loadingGroups" />
+
                             </div>
                         </div>
                     </FormSection>
@@ -267,6 +256,8 @@ import ComponentMap from '@/components/common/component_map.vue'
 import RegistrationOfInterest from './form_registration_of_interest.vue'
 import LeaseLicence from './form_lease_licence.vue'
 import Select2Multiple from '@/components/common/Select2Multiple.vue'
+
+import Multiselect from 'vue-multiselect'
 
 import {
     api_endpoints,
@@ -361,11 +352,34 @@ export default {
                 district: null,
                 lga: '',
             },
-            localities: [],
             districts: null,
             lgas: null,
             groups: null,
             api_endpoints: api_endpoints,
+
+            // data for the multiselects
+            identifiers: [],
+            names: [],
+            vestings: [],
+            acts: [],
+            tenures: [],
+            categories: [],
+            regions: [],
+            districts: [],
+            lgas: [],
+            groups: [],
+
+            // Loaders for the multiselects
+            loadingIdentifiers: false,
+            loadingVestings: false,
+            loadingNames: false,
+            loadingActs: false,
+            loadingTenures: false,
+            loadingCategories: false,
+            loadingRegions: false,
+            loadingDistricts: false,
+            loadingLGAs: false,
+            loadingGroups: false,
         }
     },
     components: {
@@ -379,6 +393,7 @@ export default {
         FileField,
         ComponentMap,
         Select2Multiple,
+        Multiselect,
     },
     computed: {
         email_user_applicant: function () {
@@ -459,26 +474,77 @@ export default {
         populateProfile: function (profile) {
             this.profile = Object.assign({}, profile);
         },
+        ajaxLookupIdentifiers: function (query) {
+            this.loadingIdentifiers = true;
+            utils.fetchKeyValueLookup(api_endpoints.identifiers, query).then(data => {
+                this.loadingIdentifiers = false;
+                this.identifiers = data;
+            });
+        },
+        ajaxLookupVestings: function (query) {
+            this.loadingVestings = true;
+            utils.fetchKeyValueLookup(api_endpoints.vestings, query).then(data => {
+                this.loadingVestings = false;
+                this.vestings = data;
+            });
+        },
+        ajaxLookupNames: function (query) {
+            this.loadingNames = true;
+            utils.fetchKeyValueLookup(api_endpoints.names, query).then(data => {
+                this.loadingNames = false;
+                this.names = data;
+            });
+        },
+        ajaxLookupActs: function (query) {
+            this.loadingActs = true;
+            utils.fetchKeyValueLookup(api_endpoints.acts, query).then(data => {
+                this.loadingActs = false;
+                this.acts = data;
+            });
+        },
+        ajaxLookupTenures: function (query) {
+            this.loadingTenures = true;
+            utils.fetchKeyValueLookup(api_endpoints.tenures, query).then(data => {
+                this.loadingTenures = false;
+                this.tenures = data;
+            });
+        },
+        ajaxLookupCategories: function (query) {
+            this.loadingCategories = true;
+            utils.fetchKeyValueLookup(api_endpoints.categories, query).then(data => {
+                this.loadingCategories = false;
+                this.categories = data;
+            });
+        },
+        ajaxLookupRegions: function (query) {
+            this.loadingRegions = true;
+            utils.fetchKeyValueLookup(api_endpoints.regions, query).then(data => {
+                this.loadingRegions = false;
+                this.regions = data;
+            });
+        },
+        ajaxLookupDistricts: function (query) {
+            this.loadingDistricts = true;
+            utils.fetchKeyValueLookup(api_endpoints.districts, query).then(data => {
+                this.loadingDistricts = false;
+                this.districts = data;
+            });
+        },
+        ajaxLookupLGAs: function (query) {
+            this.loadingLGAs = true;
+            utils.fetchKeyValueLookup(api_endpoints.lgas, query).then(data => {
+                this.loadingLGAs = false;
+                this.lgas = data;
+            });
+        },
     },
     created: function () {
-        let vm = this;
-        let initialisers = [
-            utils.fetchLGAsKeyValueList(),
-            utils.fetchDistricts(),
-            utils.fetchGroupsKeyValueList(),
-        ]
-        Promise.all(initialisers).then(data => {
-            vm.lgas = data[0];
-            vm.districts = data[1];
-            vm.groups = data[2];
+        utils.fetchKeyValueLookup(api_endpoints.groups, '').then(data => {
+            this.groups = data;
         });
     },
     mounted: function () {
         this.$emit('formMounted')
-        let vm = this;
-        this.localities = [
-            Object.assign({}, this.defaultLocality)
-        ]
     }
 
 }
