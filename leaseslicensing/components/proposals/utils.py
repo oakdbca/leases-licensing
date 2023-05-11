@@ -475,8 +475,8 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
     logger.debug("Saving groups data.")
     save_groups_data(instance, proposal_data["groups"])
 
-    if request.data.get("proposal_geometry"):
-        save_geometry(instance, request, viewset)
+    save_geometry(instance, request, viewset)
+
     if viewset.action == "submit":
         check_geometry(instance)
 
@@ -498,8 +498,8 @@ def save_proponent_data_lease_licence(instance, request, viewset):
 
     save_groups_data(instance, proposal_data["groups"])
 
-    if request.data.get("proposal_geometry"):
-        save_geometry(instance, request, viewset)
+    save_geometry(instance, request, viewset)
+
     if viewset.action == "submit":
         check_geometry(instance)
 
@@ -578,10 +578,7 @@ def save_assessor_data(proposal, request, viewset):
                         # Not yet sure what the intention for answer_ob is but just printing as it wasn't accessed.
                         print(answer_obj)
         # Save geometry
-        if request.data.get(
-            "proposal_geometry"
-        ):  # To save geometry, it should be named 'proposal_geometry'
-            save_geometry(proposal, request, viewset)
+        save_geometry(proposal, request, viewset)
 
 
 def check_geometry(instance):
@@ -594,6 +591,15 @@ def check_geometry(instance):
 
 def save_geometry(instance, request, viewset):
     logger.debug("saving geometry")
+    proposal_geometry = request.data.get("proposal_geometry", None)
+    if not proposal_geometry:
+        logger.debug("No proposal_geometry to save")
+        return
+    proposal_geometry = json.loads(proposal_geometry)
+    if 0 == len(proposal_geometry["features"]):
+        logger.debug("proposal_geometry has no features to save")
+        return
+
     # geometry
     proposal_geometry_str = request.data.get("proposal_geometry")
     # geometry_list = []
@@ -835,9 +841,8 @@ def save_groups_data(instance, groups_data):
     logger.debug("groups_data = " + str(groups_data))
     if groups_data and len(groups_data) > 0:
         group_ids = []
-        for group_data in groups_data:
-            logger.debug("group_data: %s", group_data)
-            group = group_data["group"]
+        for group in groups_data:
+            logger.debug("group: %s", group)
             ProposalGroup.objects.get_or_create(proposal=instance, group_id=group["id"])
             group_ids.append(group["id"])
         ProposalGroup.objects.filter(proposal=instance).exclude(
