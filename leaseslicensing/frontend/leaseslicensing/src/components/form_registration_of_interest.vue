@@ -1,7 +1,7 @@
 <template lang="html">
     <div>
         <div v-if="debug">components/form_registration_of_interest.vue</div>
-        <FormSection label="Proposal Details" Index="application_details" v-if="proposal">
+        <FormSection :formCollapse="true" label="Proposal Details" Index="application_details" v-if="proposal">
             <slot name="slot_proposal_details_checklist_questions"></slot>
 
             <div class="row mb-3">
@@ -207,7 +207,7 @@
         </FormSection>
 
 
-        <FormSection label="Proposal Impact" Index="proposal_impact" v-if="proposal">
+        <FormSection :formCollapse="true" label="Proposal Impact" Index="proposal_impact" v-if="proposal">
             <slot name="slot_proposal_impact_checklist_questions"></slot>
             <div class="row mb-3">
                 <div class="col-sm-8">
