@@ -29,7 +29,9 @@ from leaseslicensing.components.proposals.models import (
     ProposalDeclinedDetails,
     ProposalGeometry,
     ProposalGroup,
+    ProposalIdentifier,
     ProposalLogEntry,
+    ProposalName,
     ProposalOtherDetails,
     ProposalRequirement,
     ProposalStandardRequirement,
@@ -40,10 +42,13 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     SectionChecklist,
 )
+from leaseslicensing.components.tenure.models import Identifier
 from leaseslicensing.components.tenure.serializers import (
     ActSerializer,
     CategorySerializer,
     GroupSerializer,
+    IdentifierSerializer,
+    NameSerializer,
     TenureSerializer,
 )
 from leaseslicensing.components.users.serializers import (
@@ -366,6 +371,22 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         return ret_dict
 
 
+class ProposalIdentifierSerializer(serializers.ModelSerializer):
+    identifier = IdentifierSerializer()
+
+    class Meta:
+        model = ProposalIdentifier
+        fields = ["identifier"]
+
+
+class ProposalNameSerializer(serializers.ModelSerializer):
+    name = NameSerializer()
+
+    class Meta:
+        model = ProposalName
+        fields = ["name"]
+
+
 class ProposalActSerializer(serializers.ModelSerializer):
     act = ActSerializer()
 
@@ -410,7 +431,11 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
     # groups = serializers.SerializerMethodField()
+    identifiers = serializers.SerializerMethodField()
+    names = ProposalNameSerializer(many=True, read_only=True)
     acts = ProposalActSerializer(many=True, read_only=True)
+    tenures = ProposalTenureSerializer(many=True, read_only=True)
+    categories = ProposalCategorySerializer(many=True, read_only=True)
     groups = ProposalGroupSerializer(many=True, read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
@@ -492,11 +517,21 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "legislative_requirements_text",
             "lodgement_date_display",
             "shapefile_json",
+            "identifiers",
+            "names",
             "acts",
+            "tenures",
+            "categories",
             "groups",
             "site_name",
         )
         read_only_fields = ("supporting_documents",)
+
+    def get_identifiers(self, obj):
+        ids = ProposalIdentifier.objects.filter(proposal=obj).values_list(
+            "identifier__id", flat=True
+        )
+        return Identifier.objects.filter(id__in=ids).values("id", "name")
 
     def get_acts(self, obj):
         return ProposalAct.objects.filter(proposal=obj).values_list("act", flat=True)
@@ -1068,6 +1103,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "all_lodgement_versions",
             "approved_on",
             "approved_by",
+            "identifiers",
+            "names",
             "acts",
             "categories",
             "tenures",
