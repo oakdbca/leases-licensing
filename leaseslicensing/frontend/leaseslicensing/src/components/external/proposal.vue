@@ -489,7 +489,7 @@ export default {
                             const lodgementDate = new Date(vm.proposal.lodgement_date)
                             vm.$router.push({
                                 name: 'submit-proposal',
-                                params: vm.proposal,
+                                params: { proposal_id: vm.proposal.id }
                             });
                         })
                     } catch (err) {

@@ -102,14 +102,6 @@ class ApprovalDocument(Document):
         app_label = "leaseslicensing"
 
 
-class ApprovalSubType(RevisionedMixin):
-    name = models.CharField(max_length=200, unique=True)
-
-    class Meta:
-        app_label = "leaseslicensing"
-
-    def __str__(self):
-        return self.name
 
 
 class ApprovalType(RevisionedMixin):

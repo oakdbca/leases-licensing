@@ -237,11 +237,6 @@ urlpatterns = (
             name="get-approval-statuses-dict",
         ),
         url(
-            r"^api/approval_sub_types_dict$",
-            approval_api.GetApprovalSubTypesDict.as_view(),
-            name="get-approval-sub-types-dict",
-        ),
-        url(
             r"^api/approval_types_dict$",
             approval_api.GetApprovalTypesDict.as_view(),
             name="get-approval-types-dict",
