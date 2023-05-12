@@ -524,9 +524,9 @@ class Approval(RevisionedMixin):
         # TODO Do we need versioning? Commented `version_comment` out for now.
         # Needs `Proposal` to inherit from `RevisionedMixin`?
         self.current_proposal.save(
-            # version_comment="Created Approval PDF: {}".format(
-            #     self.licence_document.name
-            # )
+            version_comment="Created Approval PDF: {}".format(
+                self.licence_document.name
+            )
         )
 
     def generate_renewal_doc(self):

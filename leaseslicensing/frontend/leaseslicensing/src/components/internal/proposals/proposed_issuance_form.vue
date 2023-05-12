@@ -11,9 +11,10 @@
                                     <label class="control-label pull-left" for="Name">{{ decisionLabel }}</label>
                                 </div>
 
-                                <div v-for="(text, key) in approvalDecisionText" :key="key">
+                                <div v-for="(obj, key) in approvalDecisionText" :key="key">
                                     <div class="form-check col-sm-12">
                                         <input
+                                            v-if="obj.show"
                                             type="radio"
                                             class="form-check-input"
                                             :name="key"
@@ -22,7 +23,7 @@
                                             v-model="selectedDecision"
                                             :disabled="readonly"
                                         />
-                                        <label class="form-check-label" :for="key" style="font-weight:normal">{{ text }}</label>
+                                        <label v-if="obj.show" class="form-check-label" :for="key" style="font-weight:normal">{{ obj.text }}</label>
                                     </div>
                                 </div>
 
@@ -329,9 +330,17 @@ export default {
             //state: 'proposed_approval',
             issuingApproval: false,
             approvalDecisionText: {
-                    "approve_lease_licence": "Invite applicant to apply for a lease or licence",
-                    "approve_competitive_process": "Start Competitive process",
-                    "decline_application": "Decline Application"
+                    "approve_lease_licence": {
+                        text: "Invite applicant to apply for a lease or licence",
+                        show: true},
+                    "approve_competitive_process": {
+                        text: "Start Competitive process",
+                        show: true},
+                    "decline_application": {
+                        text: "Decline Application",
+                        // Hide the decline radio button when approving the proposal.
+                        // There is a separate decline button.
+                        show: !this.proposedApprovalState},
                 },
             validation_form: null,
             errors: false,

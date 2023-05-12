@@ -1719,7 +1719,7 @@ class ProposalViewSet(UserActionLoggingViewset):
 
         instance = self.get_object()
         try:
-            instance.test_create_approval_pdf(request)
+            instance.create_approval_pdf(request)
         except ValidationError:
             raise ValidationError
 

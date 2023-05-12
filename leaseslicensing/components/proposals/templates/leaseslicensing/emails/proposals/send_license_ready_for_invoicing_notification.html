@@ -1,0 +1,12 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+	A lease or license application {{ proposal.lodgement_number }} has been approved and invoicing details can now be entered.
+
+    <p>
+    You can access this Application using the following link:
+    </p>
+    <a href="{{url}}">Access Application</a>
+
+
+{%  endblock %}

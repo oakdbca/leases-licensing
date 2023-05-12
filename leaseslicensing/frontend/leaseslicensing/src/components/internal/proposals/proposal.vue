@@ -1074,6 +1074,12 @@ export default {
                             },
                         }
                     )
+                    // Get the id of the referral popover and hide it
+                    let modal_id = $(
+                        vm.$refs.workflow.$refs.more_referrals.$refs.showRef).attr(
+                            "aria-describedby");
+                    $(`#${modal_id}`).hide();
+
                     this.$router.push({ name: 'internal-dashboard' })
                 }
             }).catch(err => {
