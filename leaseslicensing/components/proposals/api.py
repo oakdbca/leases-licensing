@@ -76,6 +76,7 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     SendReferralSerializer,
 )
 from leaseslicensing.components.proposals.utils import (
+    populate_gis_data,
     proposal_submit,
     save_assessor_data,
     save_proponent_data,
@@ -1419,8 +1420,10 @@ class ProposalViewSet(UserActionLoggingViewset):
     def validate_map_files(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            instance.validate_map_files(request)
+            valid_geometry_saved = instance.validate_map_files(request)
             instance.save()
+            if valid_geometry_saved:
+                populate_gis_data(instance)
             serializer = self.get_serializer(instance)
             return Response(serializer.data)
             # return redirect(reverse('external'))
