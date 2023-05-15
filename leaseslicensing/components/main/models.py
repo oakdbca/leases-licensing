@@ -1,6 +1,7 @@
 import logging
 import os
 
+from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django.db.models import Q
 from django.forms import ValidationError
@@ -451,3 +452,14 @@ class TemporaryDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
+
+
+upload_protected_files_storage = FileSystemStorage(
+    location=settings.PROTECTED_MEDIA_ROOT, base_url="/protected_media"
+)
+
+
+class SecureFileField(models.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs["storage"] = upload_protected_files_storage
+        super().__init__(*args, **kwargs)

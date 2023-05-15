@@ -275,8 +275,6 @@ class CommunicationLogEntrySerializer(serializers.ModelSerializer):
 
 
 class EmailUserLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = EmailUserLogEntry
         fields = "__all__"
@@ -284,6 +282,3 @@ class EmailUserLogEntrySerializer(CommunicationLogEntrySerializer):
             "customer",
             "documents",
         )
-
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]

@@ -307,7 +307,7 @@ class ApprovalSurrenderSerializer(serializers.Serializer):
 
 
 class ApprovalUserActionSerializer(serializers.ModelSerializer):
-    who = serializers.CharField(source="who.get_full_name")
+    who = serializers.CharField(source="who_full_name")
 
     class Meta:
         model = ApprovalUserAction
@@ -315,12 +315,7 @@ class ApprovalUserActionSerializer(serializers.ModelSerializer):
 
 
 class ApprovalLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = ApprovalLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
-
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]

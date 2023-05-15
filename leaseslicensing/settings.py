@@ -209,6 +209,10 @@ CRON_CLASSES = [
     "leaseslicensing.cron.OracleIntegrationCronJob",
 ]
 
+PROTECTED_MEDIA_ROOT = env(
+    "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
+)
+
 
 BASE_URL = env("BASE_URL")
 

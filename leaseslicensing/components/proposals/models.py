@@ -37,6 +37,7 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
     CommunicationsLogEntry,
     Document,
     RevisionedMixin,
+    SecureFileField,
     UserAction,
 )
 from leaseslicensing.components.main.related_item import RelatedItem
@@ -115,9 +116,7 @@ def update_requirement_doc_filename(instance, filename):
 
 
 def update_proposal_comms_log_filename(instance, filename):
-    return "{}/proposals/{}/communications/{}".format(
-        settings.MEDIA_APP_DIR, instance.log_entry.proposal.id, filename
-    )
+    return f"proposals/{instance.log_entry.proposal.id}/{filename}"
 
 
 def update_filming_park_doc_filename(instance, filename):
@@ -3501,7 +3500,7 @@ class ProposalLogDocument(Document):
     log_entry = models.ForeignKey(
         "ProposalLogEntry", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_proposal_comms_log_filename, max_length=512
     )
 

@@ -397,27 +397,17 @@ class OrganisationCommsSerializer(serializers.ModelSerializer):
 
 
 class OrganisationRequestLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = OrganisationRequestLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
 
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
-
 
 class OrganisationLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = OrganisationLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
-
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
 
 
 class OrganisationUnlinkUserSerializer(serializers.Serializer):

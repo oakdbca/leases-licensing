@@ -1,38 +1,41 @@
 import logging
 import uuid
-from django.db import models
-from django.db.models import Q
-from django.db import transaction
+
 from django.contrib.gis.db.models.fields import PolygonField
 from django.core.exceptions import ValidationError
-
-from ledger_api_client.ledger_models import EmailUserRO
+from django.db import models, transaction
+from django.db.models import Q
 from ledger_api_client.managed_models import SystemGroup
 
 from leaseslicensing import settings
-from leaseslicensing.components import competitive_processes
-from leaseslicensing.components.main.models import CommunicationsLogEntry, Document, UserAction, ApplicationType
-
+from leaseslicensing.components.competitive_processes.email import (
+    send_winner_notification,
+)
+from leaseslicensing.components.main.models import (
+    ApplicationType,
+    CommunicationsLogEntry,
+    Document,
+    SecureFileField,
+    UserAction,
+)
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.organisations.models import Organisation
-from leaseslicensing.components.competitive_processes.email import send_winner_notification
 from leaseslicensing.helpers import is_internal
 from leaseslicensing.ledger_api_utils import retrieve_email_user
-from leaseslicensing import settings
 
 logger = logging.getLogger("leaseslicensing")
 
-class CompetitiveProcessManager(models.Manager):
 
+class CompetitiveProcessManager(models.Manager):
     def get_queryset(self):
         return (
             super()
             .get_queryset()
             .select_related(
-                'originating_proposal',
+                "originating_proposal",
             )
             .prefetch_related(
-                'competitive_process_parties',
+                "competitive_process_parties",
             )
         )
 
@@ -42,7 +45,7 @@ class CompetitiveProcess(models.Model):
 
     objects = CompetitiveProcessManager()
 
-    prefix = 'CP'
+    prefix = "CP"
 
     # For status
     STATUS_IN_PROGRESS = "in_progress"
@@ -50,32 +53,38 @@ class CompetitiveProcess(models.Model):
     STATUS_COMPLETED_APPLICATION = "completed_application"
     STATUS_COMPLETED_DECLINED = "completed_declined"
     STATUS_CHOICES = (
-        (STATUS_IN_PROGRESS, "In Progress"), 
+        (STATUS_IN_PROGRESS, "In Progress"),
         (STATUS_DISCARDED, "Discarded"),
         (STATUS_COMPLETED_APPLICATION, "Completed (Application)"),
         (STATUS_COMPLETED_DECLINED, "Completed (Declined)"),
     )
 
     lodgement_number = models.CharField(max_length=9, blank=True, default="")
-    status = models.CharField("Status", max_length=30, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0],)
+    status = models.CharField(
+        "Status",
+        max_length=30,
+        choices=STATUS_CHOICES,
+        default=STATUS_CHOICES[0][0],
+    )
     assigned_officer_id = models.IntegerField(null=True, blank=True)  # EmailUserRO
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, null=True)
-    winner = models.ForeignKey("CompetitiveProcessParty", null=True, blank=True, on_delete=models.CASCADE)
+    winner = models.ForeignKey(
+        "CompetitiveProcessParty", null=True, blank=True, on_delete=models.CASCADE
+    )
     details = models.TextField(blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
         verbose_name = "Competitive Process"
         verbose_name_plural = "Competitive Processes"
-        ordering = ("modified_at", )
+        ordering = ("modified_at",)
 
     def __str__(self):
         return self.lodgement_number
 
     def create_lease_licence_from_competitive_process(self):
-        from leaseslicensing.components.proposals.models import Proposal
-        from leaseslicensing.components.proposals.models import ProposalType
+        from leaseslicensing.components.proposals.models import Proposal, ProposalType
 
         lease_licence = None
         with transaction.atomic():
@@ -86,10 +95,13 @@ class CompetitiveProcess(models.Model):
                 submitter=None,
                 ind_applicant=self.winner.person_id,
                 org_applicant=self.winner.organisation,
-                proposal_type_id=ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW).id,
+                proposal_type_id=ProposalType.objects.get(
+                    code=settings.PROPOSAL_TYPE_NEW
+                ).id,
             )
             # add geometry
             from copy import deepcopy
+
             for geo in self.competitive_process_geometries.all():
                 new_geo = deepcopy(geo)
                 new_geo.proposal = lease_licence
@@ -120,21 +132,23 @@ class CompetitiveProcess(models.Model):
 
     def unlock(self, request):
         """Unlock the competitive process and make it available for editing again.
-           Unlock action changes status back to In Progress, allowing to change the
-           Outcome.
-           The outcome can only be changes if the application from the prvious winner
-           has not been approved yet.
-           TODO Changing the outcome will discard the application of the previous winner
-           and allow the user to select another winner (or no winner).
+        Unlock action changes status back to In Progress, allowing to change the
+        Outcome.
+        The outcome can only be changes if the application from the prvious winner
+        has not been approved yet.
+        TODO Changing the outcome will discard the application of the previous winner
+        and allow the user to select another winner (or no winner).
 
         """
 
         from leaseslicensing.components.proposals.models import Proposal
 
         # Get the winning party
-        winning_party = CompetitiveProcessParty.objects.get(pk=self.winner_id)\
-            if self.winner_id\
+        winning_party = (
+            CompetitiveProcessParty.objects.get(pk=self.winner_id)
+            if self.winner_id
             else None
+        )
 
         # Get the generated proposals for the winning party or an empty Proposal queryset
         # when there is no winning party
@@ -142,10 +156,12 @@ class CompetitiveProcess(models.Model):
             generated_proposals = Proposal.objects.none()
         elif winning_party.is_person:
             generated_proposals = self.generated_proposal.filter(
-                ind_applicant=winning_party.person_id)
+                ind_applicant=winning_party.person_id
+            )
         elif winning_party.is_organisation:
             generated_proposals = self.generated_proposal.filter(
-                org_applicant=winning_party.organisation_id)
+                org_applicant=winning_party.organisation_id
+            )
         else:
             raise ValidationError(
                 "Winning party is neither a person nor an organisation."
@@ -159,11 +175,12 @@ class CompetitiveProcess(models.Model):
         # Get the generated lease/license application / generated proposal
         # that is still active (not discarded)
         generated_proposal = generated_proposals.filter(
-            ~Q(processing_status=Proposal.PROCESSING_STATUS_DISCARDED))
+            ~Q(processing_status=Proposal.PROCESSING_STATUS_DISCARDED)
+        )
         if len(generated_proposal) > 1:
-                raise ValidationError(
-                    "There are more than one proposals that have not been discarded for the winning party."
-                )
+            raise ValidationError(
+                "There are more than one proposals that have not been discarded for the winning party."
+            )
         # There might be no valid application, because the applicant or an officer
         # might have discarded the application
         if not generated_proposal.exists():
@@ -174,11 +191,9 @@ class CompetitiveProcess(models.Model):
         # Cannot unlock if the application has been approved
         if generated_proposal and generated_proposal.processing_status in [
             Proposal.PROCESSING_STATUS_APPROVED_APPLICATION,
-            Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
-            ]:
-            raise ValidationError(
-                "The generated proposal has already been approved."
-            )
+            Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
+        ]:
+            raise ValidationError("The generated proposal has already been approved.")
 
         with transaction.atomic():
             # Set the generated proposal's processing status to discarded
@@ -186,7 +201,9 @@ class CompetitiveProcess(models.Model):
             # done when saving the competitive process only after unlocking
             # and changing the outcome.
             if generated_proposal:
-                generated_proposal.processing_status = Proposal.PROCESSING_STATUS_DISCARDED
+                generated_proposal.processing_status = (
+                    Proposal.PROCESSING_STATUS_DISCARDED
+                )
                 generated_proposal.save()
 
             # Set the status of the competitive process to in progress
@@ -198,18 +215,17 @@ class CompetitiveProcess(models.Model):
             self.competitive_process_documents.all().delete()
             self.save()
 
-
     @property
     def site(self):
-        return 'site_name'
+        return "site_name"
 
     @property
     def group(self):
-        return 'group_name'
+        return "group_name"
 
     @property
     def generated_from_registration_of_interest(self):
-        if hasattr(self, 'originating_proposal'):
+        if hasattr(self, "originating_proposal"):
             if self.originating_proposal:
                 return True
         return False
@@ -229,22 +245,31 @@ class CompetitiveProcess(models.Model):
     @property
     def next_lodgement_number(self):
         try:
-            ids = [int(i.lstrip(self.prefix)) for i in CompetitiveProcess.objects.all().values_list('lodgement_number', flat=True) if i]
+            ids = [
+                int(i.lstrip(self.prefix))
+                for i in CompetitiveProcess.objects.all().values_list(
+                    "lodgement_number", flat=True
+                )
+                if i
+            ]
             return max(ids) + 1 if ids else 1
         except Exception as e:
             print(e)
 
     def save(self, *args, **kwargs):
-        super(CompetitiveProcess, self).save(*args, **kwargs)
-        if self.lodgement_number == '':
-            self.lodgement_number = self.prefix + '{:07d}'.format(self.next_lodgement_number)
+        super().save(*args, **kwargs)
+        if self.lodgement_number == "":
+            self.lodgement_number = self.prefix + f"{self.next_lodgement_number:07d}"
             self.save()
 
     def get_related_items(self, **kwargs):
         return_list = []
         # count = 0
         # field_competitive_process = None
-        related_field_names = ['originating_proposal', 'generated_proposal',]
+        related_field_names = [
+            "originating_proposal",
+            "generated_proposal",
+        ]
         all_fields = self._meta.get_fields()
         for a_field in all_fields:
             if a_field.name in related_field_names:
@@ -253,12 +278,18 @@ class CompetitiveProcess(models.Model):
                     if a_field.many_to_many:
                         pass
                     elif a_field.many_to_one:  # foreign key
-                        field_objects = [getattr(self, a_field.name),]
+                        field_objects = [
+                            getattr(self, a_field.name),
+                        ]
                     elif a_field.one_to_many:  # reverse foreign key
-                        field_objects = a_field.related_model.objects.filter(**{a_field.remote_field.name: self})
+                        field_objects = a_field.related_model.objects.filter(
+                            **{a_field.remote_field.name: self}
+                        )
                     elif a_field.one_to_one:
                         if hasattr(self, a_field.name):
-                            field_objects = [getattr(self, a_field.name),]
+                            field_objects = [
+                                getattr(self, a_field.name),
+                            ]
                 for field_object in field_objects:
                     if field_object:
                         related_item = field_object.as_related_item
@@ -274,8 +305,8 @@ class CompetitiveProcess(models.Model):
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
-            action_url='<a href=/internal/competitive_process/{} target="_blank">Open</a>'.format(self.id),
-            type="competitive_process"
+            action_url=f'<a href=/internal/competitive_process/{self.id} target="_blank">Open</a>',
+            type="competitive_process",
         )
         return related_item
 
@@ -286,7 +317,7 @@ class CompetitiveProcess(models.Model):
     @property
     def related_item_descriptor(self):
         """
-            Returns this competitive process' status as item description
+        Returns this competitive process' status as item description
         """
 
         return self.status
@@ -305,7 +336,6 @@ class CompetitiveProcess(models.Model):
         with transaction.atomic():
             self.assigned_officer_id = user_id
             self.save()
-            email_user = retrieve_email_user(user_id)
 
     def unassign(self, request):
         with transaction.atomic():
@@ -321,7 +351,9 @@ class CompetitiveProcess(models.Model):
         if self.status in [
             CompetitiveProcess.STATUS_IN_PROGRESS,
         ]:
-            group = SystemGroup.objects.get(name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR)
+            group = SystemGroup.objects.get(
+                name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR
+            )
 
         users = (
             list(
@@ -338,14 +370,14 @@ class CompetitiveProcess(models.Model):
 
 class CompetitiveProcessGeometry(models.Model):
     competitive_process = models.ForeignKey(
-        CompetitiveProcess, 
-        on_delete=models.CASCADE, 
-        related_name="competitive_process_geometries"
+        CompetitiveProcess,
+        on_delete=models.CASCADE,
+        related_name="competitive_process_geometries",
     )
     polygon = PolygonField(srid=4326, blank=True, null=True)
     intersects = models.BooleanField(default=False)
     # copied_from = models.ForeignKey(
-        # "self", on_delete=models.SET_NULL, blank=True, null=True
+    # "self", on_delete=models.SET_NULL, blank=True, null=True
     # )
 
     class Meta:
@@ -353,8 +385,8 @@ class CompetitiveProcessGeometry(models.Model):
 
 
 def update_competitive_process_doc_filename(instance, filename):
-    return '{}/competitive_process/{}/{}'.format(
-        settings.MEDIA_APP_DIR, 
+    return "{}/competitive_process/{}/{}".format(
+        settings.MEDIA_APP_DIR,
         instance.competitive_process.id,
         filename,
     )
@@ -362,26 +394,28 @@ def update_competitive_process_doc_filename(instance, filename):
 
 class CompetitiveProcessDocument(Document):
     competitive_process = models.ForeignKey(
-        CompetitiveProcess, 
-        null=True, 
+        CompetitiveProcess,
+        null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='competitive_process_documents'
+        related_name="competitive_process_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(upload_to=update_competitive_process_doc_filename, max_length=512)
-    
+    _file = models.FileField(
+        upload_to=update_competitive_process_doc_filename, max_length=512
+    )
+
     class Meta:
         app_label = "leaseslicensing"
 
 
 class CompetitiveProcessParty(models.Model):
     competitive_process = models.ForeignKey(
-        CompetitiveProcess, 
+        CompetitiveProcess,
         blank=True,
         null=True,
-        on_delete=models.CASCADE, 
-        related_name="competitive_process_parties"
+        on_delete=models.CASCADE,
+        related_name="competitive_process_parties",
     )
     person_id = models.IntegerField(null=True, blank=True)  # EmailUserRO
     organisation = models.ForeignKey(
@@ -397,21 +431,22 @@ class CompetitiveProcessParty(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
-        ordering = ['invited_at']
+        ordering = ["invited_at"]
         constraints = [
             models.CheckConstraint(
                 # Either party_person or party_organisation must be None
-                check=Q(person_id=None, organisation__isnull=False) | Q(person_id__isnull=False, organisation=None),
-                name='either_one_null',
+                check=Q(person_id=None, organisation__isnull=False)
+                | Q(person_id__isnull=False, organisation=None),
+                name="either_one_null",
             )
         ]
-    
+
     @property
     def is_person(self):
         if self.person_id:
             return True
         return False
-    
+
     @property
     def person(self):
         if self.person_id:
@@ -435,11 +470,11 @@ class CompetitiveProcessParty(models.Model):
 
 class PartyDetail(models.Model):
     competitive_process_party = models.ForeignKey(
-        CompetitiveProcessParty, 
+        CompetitiveProcessParty,
         blank=True,
         null=True,
         on_delete=models.CASCADE,
-        related_name="party_details"
+        related_name="party_details",
     )
     detail = models.TextField(blank=True)
     created_by_id = models.IntegerField(null=True, blank=True)  # EmailUserRO
@@ -448,7 +483,7 @@ class PartyDetail(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
-        ordering = ['created_at']
+        ordering = ["created_at"]
 
     @property
     def created_by(self):
@@ -459,23 +494,23 @@ class PartyDetail(models.Model):
 
 
 def update_party_detail_doc_filename(instance):
-    return '{}/competitive_process/{}/party_detail/{}'.format(
-        settings.MEDIA_APP_DIR, 
+    return "{}/competitive_process/{}/party_detail/{}".format(
+        settings.MEDIA_APP_DIR,
         instance.party_detail.competitive_process_party.competitive_process.id,
-        uuid.uuid4()
+        uuid.uuid4(),
     )
 
 
 class PartyDetailDocument(Document):
     party_detail = models.ForeignKey(
-        PartyDetail, 
-        null=True, 
+        PartyDetail,
+        null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='party_detail_documents'
+        related_name="party_detail_documents",
     )
     _file = models.FileField(upload_to=update_party_detail_doc_filename, max_length=512)
-    
+
     class Meta:
         app_label = "leaseslicensing"
 
@@ -485,16 +520,18 @@ def update_competitive_process_comms_log_filename(instance, filename):
         settings.MEDIA_APP_DIR, instance.log_entry.competitive_process.id, filename
     )
 
+
 class CompetitiveProcessLogDocument(Document):
     log_entry = models.ForeignKey(
         "CompetitiveProcessLogEntry", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_competitive_process_comms_log_filename, max_length=512
     )
 
     class Meta:
         app_label = "leaseslicensing"
+
 
 class CompetitiveProcessLogEntry(CommunicationsLogEntry):
     competitive_process = models.ForeignKey(
@@ -502,7 +539,7 @@ class CompetitiveProcessLogEntry(CommunicationsLogEntry):
     )
 
     def __str__(self):
-        return "{} - {}".format(self.reference, self.subject)
+        return f"{self.reference} - {self.subject}"
 
     class Meta:
         app_label = "leaseslicensing"
@@ -530,7 +567,6 @@ class CompetitiveProcessUserAction(UserAction):
 
     @classmethod
     def log_action(cls, competitive_process, action, user):
-        return cls.objects.create(competitive_process=competitive_process,
-                                  who=user,
-                                  what=str(action))
-
+        return cls.objects.create(
+            competitive_process=competitive_process, who=user, what=str(action)
+        )

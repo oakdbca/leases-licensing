@@ -22,6 +22,7 @@ from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
     RevisionedMixin,
+    SecureFileField,
     UserAction,
 )
 from leaseslicensing.components.main.related_item import RelatedItem
@@ -50,9 +51,9 @@ def update_approval_doc_filename(instance, filename):
 
 
 def update_approval_comms_log_filename(instance, filename):
-    return "{}/proposals/{}/approvals/communications/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "proposals/{}/approvals/{}/communications/{}".format(
         instance.log_entry.approval.current_proposal.id,
+        instance.log_entry.approval.id,
         filename,
     )
 
@@ -100,8 +101,6 @@ class ApprovalDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
-
-
 
 
 class ApprovalType(RevisionedMixin):
@@ -840,7 +839,7 @@ class ApprovalLogDocument(Document):
         null=True,
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_comms_log_filename, null=True, max_length=512
     )
 

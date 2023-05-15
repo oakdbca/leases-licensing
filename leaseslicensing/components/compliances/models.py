@@ -22,8 +22,9 @@ from leaseslicensing.components.compliances.email import (
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
-    UserAction,
     RevisionedMixin,
+    SecureFileField,
+    UserAction,
 )
 from leaseslicensing.components.proposals.models import ProposalRequirement
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -399,8 +400,8 @@ class ComplianceLogEntry(CommunicationsLogEntry):
 
 
 def update_compliance_comms_log_filename(instance, filename):
-    return "{}/proposals/{}/compliance/communications/{}".format(
-        settings.MEDIA_APP_DIR, instance.log_entry.compliance.proposal.id, filename
+    return "proposals/{}/compliance/communications/{}".format(
+        instance.log_entry.compliance.proposal.id, filename
     )
 
 
@@ -408,7 +409,7 @@ class ComplianceLogDocument(Document):
     log_entry = models.ForeignKey(
         "ComplianceLogEntry", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_compliance_comms_log_filename, max_length=512
     )
 

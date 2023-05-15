@@ -82,6 +82,7 @@ router.register(r"map_layers", main_api.MapLayerViewSet)
 # router.register(r'payment', main_api.PaymentViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
 
+
 api_patterns = [
     url(
         r"^api/account/$",
@@ -154,6 +155,11 @@ api_patterns = [
         r"^api/search_reference",
         proposal_api.SearchReferenceView.as_view(),
         name="search_reference",
+    ),
+    url(
+        r"^api/main/secure_document/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<document_id>\d+)/$",
+        main_api.SecureDocumentAPIView.as_view(),
+        name="secure_document",
     ),
     # url(r'^api/applicants_dict$', proposal_api.GetApplicantsDict.as_view(),
     # name='get-applicants-dict'),

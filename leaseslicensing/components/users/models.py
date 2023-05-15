@@ -5,6 +5,7 @@ from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
+    SecureFileField,
     UserAction,
 )
 
@@ -29,7 +30,7 @@ class EmailUserLogDocument(Document):
     log_entry = models.ForeignKey(
         EmailUserLogEntry, related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=email_user_comms_log_document_upload_location, max_length=512
     )
 

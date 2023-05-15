@@ -1322,15 +1322,10 @@ class ProposalUserActionSerializer(serializers.ModelSerializer):
 
 
 class ProposalLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = ProposalLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
-
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
 
 
 class SendReferralSerializer(serializers.Serializer):

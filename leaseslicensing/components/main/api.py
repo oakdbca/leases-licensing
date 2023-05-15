@@ -1,9 +1,11 @@
 import logging
 
+from django.apps import apps
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
-from rest_framework import viewsets
+from django.http import FileResponse, Http404
+from rest_framework import views, viewsets
 from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
@@ -35,6 +37,7 @@ from leaseslicensing.components.main.serializers import (
     TemporaryDocumentCollectionSerializer,
 )
 from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.permissions import IsInternalAPIView
 
 logger = logging.getLogger(__name__)
 
@@ -240,3 +243,24 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
             request,
         )
         return super().destroy(request, *args, **kwargs)
+
+
+class SecureDocumentAPIView(views.APIView):
+    """ """
+
+    permission_classes = [IsInternalAPIView]
+
+    def get(self, request, *args, **kwargs):
+        model, instance_id, document_id = (
+            kwargs["model"],
+            kwargs["instance_id"],
+            kwargs["document_id"],
+        )
+        instance = apps.get_model(
+            app_label="leaseslicensing", model_name=model
+        ).objects.get(id=instance_id)
+        document = instance.documents.get(id=document_id)
+        file = getattr(document, "_file")
+        if not file:
+            raise Http404
+        return FileResponse(file)

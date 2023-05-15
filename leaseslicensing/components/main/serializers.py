@@ -21,6 +21,7 @@ class CommunicationLogEntrySerializer(serializers.ModelSerializer):
         queryset=EmailUser.objects.all(), required=False
     )
     documents = serializers.SerializerMethodField()
+    document_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = CommunicationsLogEntry
@@ -37,10 +38,18 @@ class CommunicationLogEntrySerializer(serializers.ModelSerializer):
             "staff",
             "proposal",
             "documents",
+            "document_urls",
         )
+        datatables_always_serialize = ("documents", "document_urls")
 
     def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
+        return [[d.name] for d in obj.documents.all()]
+
+    def get_document_urls(self, obj):
+        return [
+            f"/api/main/secure_document/{self.Meta.model._meta.model.__name__}/{obj.id}/{d.id}/"
+            for d in obj.documents.all()
+        ]
 
 
 class ApplicationTypeSerializer(serializers.ModelSerializer):
@@ -175,12 +184,11 @@ class EmailUserSerializer(serializers.ModelSerializer):
             "organisation",
             "fullname",
             "phone_number",
-            "mobile_number"
+            "mobile_number",
         )
 
     def get_fullname(self, obj):
         return f"{obj.first_name} {obj.last_name}"
-
 
 
 class TemporaryDocumentCollectionSerializer(serializers.ModelSerializer):

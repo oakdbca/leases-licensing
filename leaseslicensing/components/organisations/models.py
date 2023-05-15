@@ -16,6 +16,7 @@ from rest_framework import status
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
+    SecureFileField,
     UserAction,
 )
 from leaseslicensing.components.organisations.emails import (  # send_organisation_request_accept_email_notification,
@@ -897,7 +898,7 @@ class OrganisationLogDocument(Document):
     log_entry = models.ForeignKey(
         "OrganisationLogEntry", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_organisation_comms_log_filename, max_length=512
     )
 
@@ -1179,7 +1180,7 @@ class OrganisationRequestLogDocument(Document):
         related_name="documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_organisation_request_comms_log_filename, max_length=512
     )
 
