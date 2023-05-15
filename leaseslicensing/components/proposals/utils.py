@@ -3,8 +3,7 @@ import logging
 import re
 
 from django.conf import settings
-from django.contrib.gis.gdal import SpatialReference
-from django.contrib.gis.geos import GEOSGeometry, LinearRing, Polygon
+from django.contrib.gis.geos import Polygon
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -18,8 +17,8 @@ from leaseslicensing.components.bookings.models import ApplicationFee, Booking
 from leaseslicensing.components.compliances import email as compliance_email
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.utils import (
-    get_dbca_lands_and_waters_geos,
     get_gis_data_for_proposal,
+    polygon_intersects_with_layer,
 )
 from leaseslicensing.components.proposals import email as proposal_email
 from leaseslicensing.components.proposals.email import (
@@ -477,6 +476,8 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
 
     save_geometry(instance, request, viewset)
 
+    populate_gis_data(instance)
+
     if viewset.action == "submit":
         check_geometry(instance)
 
@@ -579,6 +580,7 @@ def save_assessor_data(proposal, request, viewset):
                         print(answer_obj)
         # Save geometry
         save_geometry(proposal, request, viewset)
+        populate_gis_data(proposal)
 
 
 def check_geometry(instance):
@@ -590,70 +592,75 @@ def check_geometry(instance):
 
 
 def save_geometry(instance, request, viewset):
-    logger.debug("saving geometry")
-    proposal_geometry = request.data.get("proposal_geometry", None)
-    if not proposal_geometry:
+    logger.debug("\n\n\nsaving geometry")
+
+    proposal_geometry_str = request.data.get("proposal_geometry", None)
+    if not proposal_geometry_str:
         logger.debug("No proposal_geometry to save")
         return
-    proposal_geometry = json.loads(proposal_geometry)
+
+    proposal_geometry = json.loads(proposal_geometry_str)
     if 0 == len(proposal_geometry["features"]):
         logger.debug("proposal_geometry has no features to save")
         return
 
-    # geometry
-    proposal_geometry_str = request.data.get("proposal_geometry")
-    # geometry_list = []
-    proposal_geometry = json.loads(proposal_geometry_str)
-    lands_geos_data = get_dbca_lands_and_waters_geos()
-    e4283 = SpatialReference("EPSG:4283")  # EPSG string
-    polygons_to_delete = list(instance.proposalgeometry.all())
+    proposal_geometry_ids = []
     for feature in proposal_geometry.get("features"):
-        polygon = None
-        intersects = False
-        if feature.get("geometry").get("type") == "Polygon":
-            feature_dict = feature.get("geometry")
-            geos_repr = GEOSGeometry(f"{feature_dict}")
-            geos_repr_transform = geos_repr.transform(e4283, clone=True)
-            for geom in lands_geos_data:
-                if geom.intersects(geos_repr_transform):
-                    intersects = True
-                    break
-            linear_ring = LinearRing(feature_dict.get("coordinates")[0])
-            polygon = Polygon(linear_ring)
-        if proposal_geometry and feature.get("id"):
-            proposalgeometry = ProposalGeometry.objects.get(id=feature.get("id"))
-            polygons_to_delete.remove(proposalgeometry)
-            serializer = ProposalGeometrySaveSerializer(
-                proposalgeometry,
-                data={
-                    "proposal_id": instance.id,
-                    "polygon": polygon,
-                    "intersects": intersects,
-                },
-                context={
-                    "action": viewset.action,
-                },
+        logger.debug("feature = " + str(feature))
+        # check if feature is a polygon, continue if not
+        if feature.get("geometry").get("type") != "Polygon":
+            logger.warn(
+                f"Proposal: {instance} contains a feature is not a polygon: {feature}"
             )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        elif proposal_geometry:
-            print("new polygon")
-            serializer = ProposalGeometrySaveSerializer(
-                data={
-                    "proposal_id": instance.id,
-                    "polygon": polygon,
-                    "intersects": intersects,
-                },
-                context={
-                    "action": viewset.action,
-                },
+            continue
+
+        # Create a Polygon object from the open layers feature
+        polygon = Polygon(feature.get("geometry").get("coordinates")[0])
+
+        # check if it intersects with any of the lands geos
+        if not polygon_intersects_with_layer(
+            polygon, "public:dbca_legislated_lands_and_waters"
+        ):
+            # if it doesn't, raise a validation error (this should be prevented in the front end
+            # and is here just in case
+            raise ValidationError(
+                "One or more polygons do not intersect with the DBCA Lands and Waters layer"
             )
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-    print("polygons_to_delete")
-    print(polygons_to_delete)
-    # delete polygons not returned from the front end
-    [poly.delete() for poly in polygons_to_delete]
+
+        # If it does intersect, save it and set intersects to true
+        proposal_geometry_data = {
+            "proposal_id": instance.id,
+            "polygon": polygon,
+            "intersects": True,  # probably redunant now that we are not allowing non-intersecting geometries
+        }
+        if feature.get("id"):
+            logger.info(
+                f"Updating existing proposal geometry: {feature.get('id')} for Proposal: {instance}"
+            )
+            try:
+                proposalgeometry = ProposalGeometry.objects.get(id=feature.get("id"))
+            except ProposalGeometry.DoesNotExist:
+                logger.warn(f"Proposal geometry does not exist: {feature.get('id')}")
+                continue
+            serializer = ProposalGeometrySaveSerializer(
+                proposalgeometry, data=proposal_geometry_data
+            )
+        else:
+            logger.info(f"Creating new proposal geometry for Proposal: {instance}")
+            serializer = ProposalGeometrySaveSerializer(data=proposal_geometry_data)
+
+        serializer.is_valid(raise_exception=True)
+        proposalgeometry_instance = serializer.save()
+        logger.debug(f"Saved proposal geometry: {proposalgeometry_instance}")
+        proposal_geometry_ids.append(proposalgeometry_instance.id)
+
+    # Remove any proposal geometries from the db that are no longer in the proposal_geometry that was submitted
+    deleted_proposal_geometries = (
+        ProposalGeometry.objects.filter(proposal=instance)
+        .exclude(id__in=proposal_geometry_ids)
+        .delete()
+    )
+    logger.debug(f"Deleted proposal geometries: {deleted_proposal_geometries}\n\n\n")
 
 
 def proposal_submit(proposal, request):
@@ -853,12 +860,16 @@ def save_groups_data(instance, groups_data):
 def populate_gis_data(proposal):
     """Fetches required GIS data from KMI and saves it to the proposal
     Todo: Will need to update this to use the new KB GIS modernisation API"""
-    logger.debug("Populating GIS data for Proposal: " + proposal.lodgement_number)
-    populate_gis_data_lands_and_waters(proposal)  # Covers Acts, Tenures, Categories
+    logger.debug("-> Populating GIS data for Proposal: " + proposal.lodgement_number)
+    populate_gis_data_lands_and_waters(
+        proposal
+    )  # Covers Identifiers, Names, Acts, Tenures and Categories
     populate_gis_data_regions(proposal)
     populate_gis_data_districts(proposal)
     populate_gis_data_lgas(proposal)
-    logger.debug("Finished GIS data for Proposal: " + proposal.lodgement_number)
+    logger.debug(
+        "-> Finished populating GIS data for Proposal: " + proposal.lodgement_number
+    )
 
 
 def populate_gis_data_lands_and_waters(proposal):
