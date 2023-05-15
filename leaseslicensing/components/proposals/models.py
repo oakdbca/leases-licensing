@@ -41,8 +41,8 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
 )
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.main.utils import (
-    get_dbca_lands_and_waters_geos,
     get_department_user,
+    polygon_intersects_with_layer,
 )
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
@@ -1757,6 +1757,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         # Shapefiles are valid when the shp, shx, and dbf extensions are provided
         # and when they intersect with DBCA legislated land or water polygons
 
+        valid_geometry_saved = False
         try:
             # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
             shp_file_qs = self.shapefile_documents.filter(
@@ -1766,68 +1767,69 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 | Q(name__endswith=".prj")
             )
             # Validate shapefile and all the other related files are present
-            if shp_file_qs:
-                if (
-                    not shp_file_qs.filter(
-                        Q(name__endswith=".shp")
-                        | Q(name__endswith=".shx")
-                        | Q(name__endswith=".dbf")
-                    ).count()
-                    % 3
-                    == 0
-                ):
-                    raise ValidationError(
-                        "Shapefile needs at least the shp, shx, and dbf extensions"
-                    )
+            if not shp_file_qs:
+                raise ValidationError("Please upload a valid shapefile")
 
-                # A list of all uploaded shapefiles
-                shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
-                shp_gdfs = []
+            shp_files = shp_file_qs.filter(name__endswith=".shp").count()
+            shx_files = shp_file_qs.filter(name__endswith=".shx").count()
+            dbf_files = shp_file_qs.filter(name__endswith=".dbf").count()
 
-                # List of DBCA legislated land and water geometries
-                lands_geos_data = get_dbca_lands_and_waters_geos()
-                # FIXME is there a better way to get the SRID of the layer?
-                srid_dbca = list({g._base_geom.srid for g in lands_geos_data})[0]
+            if shp_files != 1 or shx_files != 1 or dbf_files != 1:
+                raise ValidationError(
+                    "Please upload a valid shapefile with at least .shp, .shx, and .dbf extensions"
+                )
 
-                for shp_file_obj in shp_file_objs:
-                    gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
-                    geometries = gdf.geometry  # GeoSeries
-                    # Only accept polygons
-                    geom_type = geometries.geom_type.values[0]
-                    if geom_type not in ("Polygon", "MultiPolygon"):
+            # A list of all uploaded shapefiles
+            shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
+            shp_gdfs = []
+
+            for shp_file_obj in shp_file_objs:
+                gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
+
+                # If no prj file assume WGS-84 datum
+                if not gdf.crs:
+                    gdf_transform = gdf.set_crs("epsg:4326", inplace=True)
+                else:
+                    gdf_transform = gdf.to_crs("epsg:4326")
+
+                geometries = gdf.geometry  # GeoSeries
+
+                # Only accept polygons
+                geom_type = geometries.geom_type.values[0]
+                if geom_type not in ("Polygon", "MultiPolygon"):
+                    raise ValidationError(f"Geometry of type {geom_type} not allowed")
+
+                # Check for intersection with DBCA geometries
+                gdf_transform["valid"] = False
+                for geom in geometries:
+                    srid = SpatialReference(
+                        geometries.crs.srs
+                    ).srid  # spatial reference identifier
+
+                    logger.debug(f"geom.srid = {srid}")
+
+                    polygon = GEOSGeometry(geom.wkt, srid=srid)
+
+                    # Add the file name as identifier to the geojson for use in the frontend
+                    if "source_" not in gdf_transform:
+                        gdf_transform["source_"] = shp_file_obj.name
+
+                    # Imported geometry is valid if it intersects with any one of the DBCA geometries
+                    if not polygon_intersects_with_layer(
+                        polygon, "public:dbca_legislated_lands_and_waters"
+                    ):
                         raise ValidationError(
-                            f"Geometry of type {geom_type} not allowed"
+                            "One or more polygons does not intersect with a relevant layer"
                         )
 
-                    # If no prj file assume WGS-84 datum
-                    if not gdf.crs:
-                        gdf_transform = gdf.set_crs(crs=4326)
-                    else:
-                        gdf_transform = gdf.to_crs(crs=4326)
+                    gdf_transform["valid"] = True
 
-                    # Check for intersection with DBCA geometries
-                    gdf_transform["valid"] = False
-                    for geom in geometries:
-                        srid = SpatialReference(
-                            geometries.crs.srs
-                        ).srid  # spatial reference identifier
-                        geos_repr = GEOSGeometry(geom.wkt, srid=srid)
-                        if srid != srid_dbca:
-                            # Transform the imported geometry to the SRID of the DBCA geometries
-                            geos_repr = geos_repr.transform(srid_dbca, clone=True)
-                        # Add the file name as identifier to the geojson for use in the frontend
-                        if "source_" not in gdf_transform:
-                            gdf_transform["source_"] = shp_file_obj.name
-                        # Imported geometry is valid if it intersects with any one of the DBCA geometries
-                        if any(
-                            [
-                                lw_geom.intersects(geos_repr)
-                                for lw_geom in lands_geos_data
-                            ]
-                        ):
-                            gdf_transform["valid"] = True
+                    ProposalGeometry.objects.create(
+                        proposal=self, polygon=polygon, intersects=True
+                    )
+                    logger.debug(f"{self.shapefile_json}")
 
-                    shp_gdfs.append(gdf_transform)
+                shp_gdfs.append(gdf_transform)
 
                 # Merge all GeoDataFrames into a single one
                 gdf_merged = gpd.GeoDataFrame(
@@ -1836,24 +1838,22 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
                 # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
                 shp_json = gdf_merged.to_json()
-                import json
 
                 if type(shp_json) == str:
                     self.shapefile_json = json.loads(shp_json)
                 else:
                     self.shapefile_json = shp_json
 
-                # self.save(version_comment="New Shapefile JSON saved.") # No new sequence on shapefile upload
                 self.save()
-                # else:
-                #     raise ValidationError('Please upload a valid shapefile')
-            else:
-                raise ValidationError("Please upload a valid shapefile")
+                valid_geometry_saved = True
+
         except ValidationError:
             raise
         except Exception as e:
             logger.exception(e)
             raise ValidationError("Please upload a valid shapefile")
+
+        return valid_geometry_saved
 
     def make_questions_ready(self, referral=None):
         """
