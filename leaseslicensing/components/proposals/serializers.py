@@ -86,14 +86,14 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
         from reversion import revisions
 
         if kwargs.pop("no_revision", False):
-            super().save(**kwargs)
+            return super().save(**kwargs)
         else:
             with revisions.create_revision():
                 if "version_user" in kwargs:
                     revisions.set_user(kwargs.pop("version_user", None))
                 if "version_comment" in kwargs:
                     revisions.set_comment(kwargs.pop("version_comment", ""))
-                super().save(**kwargs)
+                return super().save(**kwargs)
 
 
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
@@ -1135,10 +1135,14 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "approved_on",
             "approved_by",
             "identifiers",
+            "vestings",
             "names",
             "acts",
-            "categories",
             "tenures",
+            "categories",
+            "regions",
+            "districts",
+            "lgas",
             "groups",
             "site_name",
             # "assessor_comment_map",
