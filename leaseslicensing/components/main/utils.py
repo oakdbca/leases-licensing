@@ -83,7 +83,7 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         "request": "GetFeature",
         "typeName": layer_name,
         "maxFeatures": "5000",
-        "srsName": "EPSG:4326",
+        "srsName": "EPSG:4326",  # using the default projection for open layers and geodjango
         "outputFormat": "application/json",
         "propertyName": properties,
         "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
@@ -117,6 +117,7 @@ def get_gis_data_for_proposal(proposal, layer_name, properties):
     multipolygon = MultiPolygon(
         list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
     )
+
     if len(properties) > 1:
         properties_comma_list = ",".join(properties)
     else:
