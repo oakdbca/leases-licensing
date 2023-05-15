@@ -45,11 +45,11 @@
                 <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                     <FormSection :formCollapse="false" label="Map" Index="proposal_geometry">
                         <slot name="slot_map_checklist_questions"></slot>
-                        <ComponentMap ref="component_map" :is_internal="is_internal" :is_external="is_external"
-                            @featuresDisplayed="updateTableByFeatures" :can_modify="can_modify"
+                        <ComponentMap ref="component_map" :key="componentMapKey" :is_internal="is_internal"
+                            :is_external="is_external" @featuresDisplayed="updateTableByFeatures" :can_modify="can_modify"
                             :display_at_time_of_submitted="show_col_status_when_submitted"
                             @featureGeometryUpdated="featureGeometryUpdated" @popupClosed="popupClosed" :proposal="proposal"
-                            :readonly="readonly" />
+                            :readonly="readonly" @refreshFromResponse="refreshFromResponse" />
 
                     </FormSection>
                 </div>
@@ -268,6 +268,7 @@ import Confirmation from '@/components/common/confirmation.vue'
 */
 export default {
     name: 'ApplicationForm',
+    emits: ["refreshFromResponse"],
     props: {
         show_related_items_tab: {
             type: Boolean,
@@ -333,9 +334,8 @@ export default {
         return {
             can_modify: true,
             show_col_status_when_submitted: true,
-            //component_map_key: '',
-            /*
             componentMapKey: 0,
+            /*
             componentMapOn: false,
             */
             values: null,
@@ -534,6 +534,9 @@ export default {
                 this.lgas = data;
             });
         },
+        refreshFromResponse: function (data) {
+            this.$emit('refreshFromResponse', data);
+        }
     },
     created: function () {
         utils.fetchKeyValueLookup(api_endpoints.groups, '').then(data => {

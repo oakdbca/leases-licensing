@@ -36,7 +36,8 @@
         </div>
         <ApplicationForm v-if="proposal" :proposal="proposal" :is_external="true" ref="application_form"
             :readonly="readonly" :submitterId="submitterId" @updateSubmitText="updateSubmitText"
-            :registrationOfInterest="registrationOfInterest" :leaseLicence="leaseLicence" />
+            :registrationOfInterest="registrationOfInterest" :leaseLicence="leaseLicence"
+            @refreshFromResponse="refreshFromResponse" />
         <div v-else>
             <BootstrapSpinner :isLoading="true" class="text-primary opacity-50" />
         </div>
@@ -91,8 +92,8 @@ export default {
     name: 'ExternalProposal',
     data: function () {
         return {
-            "proposal": null,
-            "loading": [],
+            proposal: null,
+            loading: [],
             loadingProposal: false,
             amendment_request: [],
             proposal_readonly: true,
@@ -332,6 +333,9 @@ export default {
                 this.$nextTick(async () => {
                     this.$refs.application_form.incrementComponentMapKey();
                 });
+                // Debugging issue with proposal geometry id not being set
+                // After saving the proposal
+                console.log('----> proposal_geometry', this.proposal.proposalgeometry);
                 return resData;
             } else {
                 const err = await res.json()
@@ -522,6 +526,9 @@ export default {
                 .catch((error) => {
                     console.error('There was an error!', error)
                 })
+        },
+        refreshFromResponse: function (data) {
+            this.proposal = Object.assign({}, data);
         }
     },
     beforeRouteEnter(to, from, next) {
