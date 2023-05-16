@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
+from django.forms import ValidationError
 from django.http import FileResponse, Http404
 from rest_framework import views, viewsets
 from rest_framework.decorators import action
@@ -277,8 +278,9 @@ class SecureFileAPIView(views.APIView):
 
 class SecureDocumentAPIView(views.APIView):
     """Allows permissioned access to documents that are attached to a model instance
-    The documents queryset must have a related name of 'documents' and the file
-    field on the document must be named '_file'
+    By default, this api view will ook for the documents with a related name of 'documents'
+    you can override this by passing a related_name in the url kwargs
+    the file field on the document must be named '_file'
     """
 
     permission_classes = [IsInternalAPIView]
@@ -296,8 +298,18 @@ class SecureDocumentAPIView(views.APIView):
         except ObjectDoesNotExist:
             raise Http404
 
+        if kwargs["related_name"]:
+            try:
+                documents = getattr(instance, kwargs["related_name"])
+            except AttributeError:
+                raise ValidationError(
+                    f"Related name {kwargs['related_name']} not found on {model}"
+                )
+        else:
+            documents = instance.documents
+
         try:
-            document = instance.documents.get(id=document_id)
+            document = documents.get(id=document_id)
         except ObjectDoesNotExist:
             raise Http404
 

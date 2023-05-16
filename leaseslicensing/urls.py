@@ -162,6 +162,14 @@ api_patterns = [
         name="secure_file",
     ),
     url(
+        (
+            r"^api/main/secure_document/"
+            r"(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<related_name>\w+)/(?P<document_id>\d+)/$"
+        ),
+        main_api.SecureDocumentAPIView.as_view(),
+        name="secure_document",
+    ),
+    url(
         r"^api/main/secure_document/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<document_id>\d+)/$",
         main_api.SecureDocumentAPIView.as_view(),
         name="secure_document",

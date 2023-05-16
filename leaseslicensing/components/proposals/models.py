@@ -182,7 +182,7 @@ class ShapefileDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="shapefile_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=500)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=500)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -212,7 +212,7 @@ class DeedPollDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="deed_poll_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -235,7 +235,7 @@ class LegislativeRequirementsDocument(Document):
         related_name="legislative_requirements_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -256,7 +256,7 @@ class RiskFactorsDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="risk_factors_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -277,7 +277,7 @@ class KeyMilestonesDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="key_milestones_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -298,7 +298,7 @@ class KeyPersonnelDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="key_personnel_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -319,7 +319,7 @@ class StaffingDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="staffing_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -340,7 +340,7 @@ class MarketAnalysisDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="market_analysis_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -363,7 +363,7 @@ class AvailableActivitiesDocument(Document):
         related_name="available_activities_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -386,7 +386,7 @@ class FinancialCapacityDocument(Document):
         related_name="financial_capacity_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -409,7 +409,7 @@ class CapitalInvestmentDocument(Document):
         related_name="capital_investment_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -430,7 +430,7 @@ class CashFlowDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="cash_flow_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -451,7 +451,7 @@ class ProfitAndLossDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="profit_and_loss_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -472,7 +472,7 @@ class MiningTenementDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="mining_tenement_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -495,7 +495,7 @@ class NativeTitleConsultationDocument(Document):
         related_name="native_title_consultation_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -516,7 +516,7 @@ class AboriginalSiteDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="aboriginal_site_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -539,7 +539,7 @@ class SignificantChangeDocument(Document):
         related_name="significant_change_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -560,7 +560,7 @@ class BuildingRequiredDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="building_required_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -581,7 +581,7 @@ class WetlandsImpactDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="wetlands_impact_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -604,7 +604,7 @@ class EnvironmentallySensitiveDocument(Document):
         related_name="environmentally_sensitive_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -625,7 +625,7 @@ class HeritageSiteDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="heritage_site_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -648,7 +648,7 @@ class GroundDisturbingWorksDocument(Document):
         related_name="ground_disturbing_works_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -671,7 +671,7 @@ class ClearingVegetationDocument(Document):
         related_name="clearing_vegetation_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -692,7 +692,7 @@ class ConsistentPlanDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="consistent_plan_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -715,7 +715,7 @@ class ConsistentPurposeDocument(Document):
         related_name="consistent_purpose_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -736,7 +736,7 @@ class LongTermUseDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="long_term_use_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -757,7 +757,7 @@ class ExclusiveUseDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="exclusive_use_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -778,7 +778,7 @@ class ProposedDeclineDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="proposed_decline_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -799,7 +799,7 @@ class ProposedApprovalDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="proposed_approval_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -820,7 +820,7 @@ class ProposalDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="supporting_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -841,7 +841,7 @@ class ReferralDocument(Document):
     referral = models.ForeignKey(
         "Referral", related_name="referral_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_referral_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_referral_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -867,7 +867,7 @@ class RequirementDocument(Document):
         related_name="requirement_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_requirement_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_requirement_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -897,7 +897,7 @@ class LeaseLicenceApprovalDocument(Document):
         related_name="lease_licence_approval_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -3433,7 +3433,7 @@ class ProposalAdditionalDocumentType(models.Model):
 
 
 class AdditionalDocument(Document):
-    _file = models.FileField(upload_to=update_additional_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_additional_doc_filename, max_length=512)
     proposal_additional_document_type = models.ForeignKey(
         ProposalAdditionalDocumentType, null=True, blank=True, on_delete=models.SET_NULL
     )

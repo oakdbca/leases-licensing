@@ -1,5 +1,4 @@
 import logging
-import uuid
 
 from django.contrib.gis.db.models.fields import PolygonField
 from django.core.exceptions import ValidationError
@@ -385,9 +384,8 @@ class CompetitiveProcessGeometry(models.Model):
 
 
 def update_competitive_process_doc_filename(instance, filename):
-    return "{}/competitive_process/{}/{}".format(
-        settings.MEDIA_APP_DIR,
-        instance.competitive_process.id,
+    return "competitive_process_documents/{}/{}".format(
+        instance.id,
         filename,
     )
 
@@ -401,7 +399,7 @@ class CompetitiveProcessDocument(Document):
         related_name="competitive_process_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_competitive_process_doc_filename, max_length=512
     )
 
@@ -493,12 +491,8 @@ class PartyDetail(models.Model):
         return None
 
 
-def update_party_detail_doc_filename(instance):
-    return "{}/competitive_process/{}/party_detail/{}".format(
-        settings.MEDIA_APP_DIR,
-        instance.party_detail.competitive_process_party.competitive_process.id,
-        uuid.uuid4(),
-    )
+def update_party_detail_doc_filename(instance, filename):
+    return f"/party_detail_documents/{instance.id}/{filename}"
 
 
 class PartyDetailDocument(Document):
@@ -509,7 +503,7 @@ class PartyDetailDocument(Document):
         on_delete=models.SET_NULL,
         related_name="party_detail_documents",
     )
-    _file = models.FileField(upload_to=update_party_detail_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_party_detail_doc_filename, max_length=512)
 
     class Meta:
         app_label = "leaseslicensing"

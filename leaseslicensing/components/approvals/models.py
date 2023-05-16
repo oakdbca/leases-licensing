@@ -45,9 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 def update_approval_doc_filename(instance, filename):
-    return "{}/proposals/{}/approvals/{}".format(
-        settings.MEDIA_APP_DIR, instance.approval.current_proposal.id, filename
-    )
+    return f"approval_documents/{instance.id}/{filename}"
 
 
 def update_approval_comms_log_filename(instance, filename):
@@ -59,24 +57,21 @@ def update_approval_comms_log_filename(instance, filename):
 
 
 def update_approval_cancellation_doc_filename(instance, filename):
-    return "{}/approvals/{}/cancellation_documents/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "/approval_cancellation_documents/{}/{}".format(
         instance.id,
         filename,
     )
 
 
 def update_approval_surrender_doc_filename(instance, filename):
-    return "{}//approvals/{}/surrender_documents/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "approval_surrender_documents/{}/{}".format(
         instance.id,
         filename,
     )
 
 
 def update_approval_suspension_doc_filename(instance, filename):
-    return "{}//approvals/{}/suspension_documents/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "approval_suspension_documents/{}/{}".format(
         instance.id,
         filename,
     )
@@ -86,7 +81,7 @@ class ApprovalDocument(Document):
     approval = models.ForeignKey(
         "Approval", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_approval_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_approval_doc_filename, max_length=512)
     can_delete = models.BooleanField(
         default=True
     )  # after initial submit prevent document from being deleted
@@ -856,7 +851,7 @@ class ApprovalCancellationDocument(Document):
         related_name="approval_cancellation_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_cancellation_doc_filename, max_length=512
     )
 
@@ -873,7 +868,7 @@ class ApprovalSurrenderDocument(Document):
         related_name="approval_surrender_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_surrender_doc_filename, max_length=512
     )
 
@@ -890,7 +885,7 @@ class ApprovalSuspensionDocument(Document):
         related_name="approval_suspension_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_suspension_doc_filename, max_length=512
     )
 

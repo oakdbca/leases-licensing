@@ -1,7 +1,6 @@
 import datetime
 import logging
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
@@ -328,18 +327,16 @@ class Compliance(RevisionedMixin, models.Model):
         return self.lodgement_number
 
 
-def update_proposal_complaince_filename(instance, filename):
-    return "{}/proposals/{}/compliance/{}".format(
-        settings.MEDIA_APP_DIR, instance.compliance.proposal.id, filename
-    )
+def update_proposal_compliance_filename(instance, filename):
+    return f"compliance_documents/{instance.id}/{filename}"
 
 
 class ComplianceDocument(Document):
     compliance = models.ForeignKey(
         "Compliance", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
-        upload_to=update_proposal_complaince_filename, max_length=512
+    _file = SecureFileField(
+        upload_to=update_proposal_compliance_filename, max_length=512
     )
     can_delete = models.BooleanField(
         default=True

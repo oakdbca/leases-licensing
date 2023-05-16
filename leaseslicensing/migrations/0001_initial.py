@@ -2239,7 +2239,7 @@ class Migration(migrations.Migration):
                     "_file",
                     models.FileField(
                         max_length=512,
-                        upload_to=leaseslicensing.components.compliances.models.update_proposal_complaince_filename,
+                        upload_to=leaseslicensing.components.compliances.models.update_proposal_compliance_filename,
                     ),
                 ),
                 ("can_delete", models.BooleanField(default=True)),
