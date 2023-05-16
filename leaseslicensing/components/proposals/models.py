@@ -80,38 +80,28 @@ logger = logging.getLogger(__name__)
 
 
 def update_proposal_doc_filename(instance, filename):
-    return "{}/proposals/{}/documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/documents/{filename}"
 
 
 def update_onhold_doc_filename(instance, filename):
-    return "{}/proposals/{}/on_hold/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/on_hold/{filename}"
 
 
 def update_qaofficer_doc_filename(instance, filename):
-    return "{}/proposals/{}/qaofficer/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/qaofficer/{filename}"
 
 
 def update_referral_doc_filename(instance, filename):
-    return "{}/proposals/{}/referral/{}".format(
-        settings.MEDIA_APP_DIR, instance.referral.proposal.id, filename
-    )
+    return f"proposals/{instance.referral.proposal.id}/referral/{filename}"
 
 
 def update_proposal_required_doc_filename(instance, filename):
-    return "{}/proposals/{}/required_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/required_documents/{filename}"
 
 
 def update_requirement_doc_filename(instance, filename):
-    return "{}/proposals/{}/requirement_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.requirement.proposal.id, filename
+    return "proposals/{}/requirement_documents/{}".format(
+        instance.requirement.proposal.id, filename
     )
 
 
@@ -120,26 +110,25 @@ def update_proposal_comms_log_filename(instance, filename):
 
 
 def update_filming_park_doc_filename(instance, filename):
-    return "{}/proposals/{}/filming_park_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.filming_park.proposal.id, filename
+    return "proposals/{}/filming_park_documents/{}".format(
+        instance.filming_park.proposal.id, filename
     )
 
 
 def update_events_park_doc_filename(instance, filename):
-    return "{}/proposals/{}/events_park_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.events_park.proposal.id, filename
+    return "proposals/{}/events_park_documents/{}".format(
+        instance.events_park.proposal.id, filename
     )
 
 
 def update_pre_event_park_doc_filename(instance, filename):
-    return "{}/proposals/{}/pre_event_park_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.pre_event_park.proposal.id, filename
+    return "proposals/{}/pre_event_park_documents/{}".format(
+        instance.pre_event_park.proposal.id, filename
     )
 
 
 def update_additional_doc_filename(instance, filename):
-    return "{}/proposals/{}/additional_documents/{}/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "proposals/{}/additional_documents/{}/{}".format(
         instance.proposal.id,
         instance.proposal_additional_document_type.additional_document_type.name,
         filename,
@@ -3004,8 +2993,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         requirement_document.requirement = requirement
                         requirement_document.id = None
                         requirement_document._file.name = (
-                            "{}/proposals/{}/requirement_documents/{}".format(
-                                settings.MEDIA_APP_DIR,
+                            "proposals/{}/requirement_documents/{}".format(
                                 proposal.id,
                                 requirement_document.name,
                             )
@@ -3090,8 +3078,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         requirement_document.requirement = requirement
                         requirement_document.id = None
                         requirement_document._file.name = (
-                            "{}/proposals/{}/requirement_documents/{}".format(
-                                settings.MEDIA_APP_DIR,
+                            "proposals/{}/requirement_documents/{}".format(
                                 proposal.id,
                                 requirement_document.name,
                             )
@@ -4875,54 +4862,27 @@ def clone_proposal_with_status_reset(original_proposal):
 
 def clone_documents(proposal, original_proposal, media_prefix):
     for proposal_document in ProposalDocument.objects.filter(proposal_id=proposal.id):
-        proposal_document._file.name = "{}/proposals/{}/documents/{}".format(
-            settings.MEDIA_APP_DIR, proposal.id, proposal_document.name
+        proposal_document._file.name = "proposals/{}/documents/{}".format(
+            proposal.id, proposal_document.name
         )
         proposal_document.can_delete = True
         proposal_document.save()
 
-    # for proposal_required_document in ProposalRequiredDocument.objects.filter(
-    #     proposal_id=proposal.id
-    # ):
-    #     proposal_required_document._file.name = (
-    #         "{}/proposals/{}/required_documents/{}".format(
-    #             settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-    #         )
-    #     )
-    #     proposal_required_document.can_delete = True
-    #     proposal_required_document.save()
-
     for referral in proposal.referrals.all():
         for referral_document in ReferralDocument.objects.filter(referral=referral):
-            referral_document._file.name = "{}/proposals/{}/referral/{}".format(
-                settings.MEDIA_APP_DIR, proposal.id, referral_document.name
+            referral_document._file.name = "proposals/{}/referral/{}".format(
+                proposal.id, referral_document.name
             )
             referral_document.can_delete = True
             referral_document.save()
-
-    # for qa_officer_document in QAOfficerDocument.objects.filter(
-    #     proposal_id=proposal.id
-    # ):
-    #     qa_officer_document._file.name = "{}/proposals/{}/qaofficer/{}".format(
-    #         settings.MEDIA_APP_DIR, proposal.id, qa_officer_document.name
-    #     )
-    #     qa_officer_document.can_delete = True
-    #     qa_officer_document.save()
-
-    # for onhold_document in OnHoldDocument.objects.filter(proposal_id=proposal.id):
-    #     onhold_document._file.name = "{}/proposals/{}/on_hold/{}".format(
-    #         settings.MEDIA_APP_DIR, proposal.id, onhold_document.name
-    #     )
-    #     onhold_document.can_delete = True
-    #     onhold_document.save()
 
     for requirement in proposal.requirements.all():
         for requirement_document in RequirementDocument.objects.filter(
             requirement=requirement
         ):
             requirement_document._file.name = (
-                "{}/proposals/{}/requirement_documents/{}".format(
-                    settings.MEDIA_APP_DIR, proposal.id, requirement_document.name
+                "proposals/{}/requirement_documents/{}".format(
+                    proposal.id, requirement_document.name
                 )
             )
             requirement_document.can_delete = True
@@ -4938,6 +4898,7 @@ def clone_documents(proposal, original_proposal, media_prefix):
         log_entry_document.save()
 
     # copy documents on file system and reset can_delete flag
+    # Not 100% sure this will work after implementing the secure file storage
     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
     subprocess.call(
         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
@@ -4953,26 +4914,14 @@ def _clone_documents(proposal, original_proposal, media_prefix):
     ):
         proposal_document.proposal = proposal
         proposal_document.id = None
-        proposal_document._file.name = "{}/proposals/{}/documents/{}".format(
-            settings.MEDIA_APP_DIR, proposal.id, proposal_document.name
+        proposal_document._file.name = "proposals/{}/documents/{}".format(
+            proposal.id, proposal_document.name
         )
         proposal_document.can_delete = True
         proposal_document.save()
 
-    # for proposal_required_document in ProposalRequiredDocument.objects.filter(
-    #     proposal=original_proposal.id
-    # ):
-    #     proposal_required_document.proposal = proposal
-    #     proposal_required_document.id = None
-    #     proposal_required_document._file.name = (
-    #         "{}/proposals/{}/required_documents/{}".format(
-    #             settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-    #         )
-    #     )
-    #     proposal_required_document.can_delete = True
-    #     proposal_required_document.save()
-
     # copy documents on file system and reset can_delete flag
+    # Not 100% sure this will work after implementing the secure file storage
     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
     subprocess.call(
         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
@@ -4980,30 +4929,6 @@ def _clone_documents(proposal, original_proposal, media_prefix):
         ),
         shell=True,
     )
-
-
-# def _clone_requirement_documents(proposal, original_proposal, media_prefix):
-#     for proposal_required_document in ProposalRequiredDocument.objects.filter(
-#         proposal=original_proposal.id
-#     ):
-#         proposal_required_document.proposal = proposal
-#         proposal_required_document.id = None
-#         proposal_required_document._file.name = (
-#             "{}/proposals/{}/required_documents/{}".format(
-#                 settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-#             )
-#         )
-#         proposal_required_document.can_delete = True
-#         proposal_required_document.save()
-
-#     # copy documents on file system and reset can_delete flag
-#     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
-#     subprocess.call(
-#         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
-#             media_dir, original_proposal.id, proposal.id
-#         ),
-#         shell=True,
-#     )
 
 
 def duplicate_object(self):
