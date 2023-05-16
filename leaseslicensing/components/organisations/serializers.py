@@ -292,6 +292,7 @@ class OrgRequestRequesterSerializer(serializers.ModelSerializer):
 
 class OrganisationRequestSerializer(serializers.ModelSerializer):
     identification = serializers.FileField()
+    identification_url = serializers.SerializerMethodField()
     requester_name = serializers.SerializerMethodField(read_only=True)
     lodgement_date = serializers.DateTimeField(format="%d/%m/%Y", read_only=True)
     status = serializers.SerializerMethodField()
@@ -330,6 +331,14 @@ class OrganisationRequestSerializer(serializers.ModelSerializer):
         email_user = EmailUser.objects.filter(id=obj.assigned_officer).first()
         if email_user:
             return email_user.get_full_name()
+        return None
+
+    def get_identification_url(self, obj):
+        if obj.identification:
+            return (
+                f"/api/main/secure_file/{self.Meta.model._meta.model.__name__}/{obj.id}/identification/",
+            )
+
         return None
 
 

@@ -6,6 +6,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
+from django.utils.text import slugify
 from ledger_api_client.utils import (
     create_organisation,
     get_organisation,
@@ -921,6 +922,20 @@ class OrganisationLogEntry(CommunicationsLogEntry):
         app_label = "leaseslicensing"
 
 
+def organisation_request_identification_upload_path(instance, filename):
+    if instance.id:
+        return "organisation_requests/{}/{}".format(
+            instance.id,
+            filename,
+        )
+    # For the first organisation request, the instance.id is None
+    # So we need to use the name to generate the path
+    return "organisation_requests/{}/{}".format(
+        slugify(instance.name),
+        filename,
+    )
+
+
 class OrganisationRequest(models.Model):
     STATUS_CHOICES = (
         ("with_assessor", "With Assessor"),
@@ -940,8 +955,8 @@ class OrganisationRequest(models.Model):
     abn = models.CharField(max_length=50, null=True, blank=True, verbose_name="ABN")
     requester = models.IntegerField()  # EmailUserRO
     assigned_officer = models.IntegerField(null=True, blank=True)  # EmailUserRO
-    identification = models.FileField(
-        upload_to="organisation/requests/%Y/%m/%d",
+    identification = SecureFileField(
+        upload_to=organisation_request_identification_upload_path,
         max_length=512,
         null=True,
         blank=True,

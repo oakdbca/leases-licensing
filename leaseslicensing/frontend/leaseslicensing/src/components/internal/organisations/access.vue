@@ -85,7 +85,7 @@
                                     <label for="" class="col-sm-3 control-label">Letter</label>
                                     <div class="col-sm-9">
                                         <i class="fa-solid fa-file-pdf fa-lg ps-1"></i>&nbsp;
-                                        <a target="_blank" :href="access.identification">Letter</a>
+                                        <a target="_blank" :href="access.identification_url">Letter</a>
                                     </div>
                                 </div>
                                 <div class="row mb-3">

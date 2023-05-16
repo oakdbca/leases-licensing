@@ -2,6 +2,7 @@ import logging
 
 from django.apps import apps
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import F
 from django.http import FileResponse, Http404
@@ -245,8 +246,40 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
 
+class SecureFileAPIView(views.APIView):
+    """Allows permissioned access to a file field on a model instance"""
+
+    permission_classes = [IsInternalAPIView]
+
+    def get(self, request, *args, **kwargs):
+        model, instance_id, file_field_name = (
+            kwargs["model"],
+            kwargs["instance_id"],
+            kwargs["file_field_name"],
+        )
+        try:
+            instance = apps.get_model(
+                app_label="leaseslicensing", model_name=model
+            ).objects.get(id=instance_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        try:
+            file = getattr(instance, file_field_name)
+        except AttributeError:
+            raise Http404
+
+        if not file:
+            raise Http404
+
+        return FileResponse(file)
+
+
 class SecureDocumentAPIView(views.APIView):
-    """ """
+    """Allows permissioned access to documents that are attached to a model instance
+    The documents queryset must have a related name of 'documents' and the file
+    field on the document must be named '_file'
+    """
 
     permission_classes = [IsInternalAPIView]
 
@@ -256,11 +289,23 @@ class SecureDocumentAPIView(views.APIView):
             kwargs["instance_id"],
             kwargs["document_id"],
         )
-        instance = apps.get_model(
-            app_label="leaseslicensing", model_name=model
-        ).objects.get(id=instance_id)
-        document = instance.documents.get(id=document_id)
-        file = getattr(document, "_file")
+        try:
+            instance = apps.get_model(
+                app_label="leaseslicensing", model_name=model
+            ).objects.get(id=instance_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        try:
+            document = instance.documents.get(id=document_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        try:
+            file = getattr(document, "_file")
+        except AttributeError:
+            raise Http404
+
         if not file:
             raise Http404
         return FileResponse(file)
