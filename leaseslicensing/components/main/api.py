@@ -36,10 +36,14 @@ from leaseslicensing.components.main.serializers import (
     MapLayerSerializer,
     QuestionSerializer,
     RequiredDocumentSerializer,
+    SecureDocumentSerializer,
     TemporaryDocumentCollectionSerializer,
 )
 from leaseslicensing.helpers import is_customer, is_internal
-from leaseslicensing.permissions import IsInternalAPIView
+from leaseslicensing.permissions import (
+    IsInternalAPIViewPermission,
+    IsInternalOrHasObjectPermissionAPIViewPermission,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -250,7 +254,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
 class SecureFileAPIView(views.APIView):
     """Allows permissioned access to a file field on a model instance"""
 
-    permission_classes = [IsInternalAPIView]
+    permission_classes = [IsInternalAPIViewPermission]
 
     def get(self, request, *args, **kwargs):
         model, instance_id, file_field_name = (
@@ -277,15 +281,16 @@ class SecureFileAPIView(views.APIView):
 
 
 class SecureDocumentAPIView(views.APIView):
-    """Allows permissioned access to documents that are attached to a model instance
-    By default, this api view will ook for the documents with a related name of 'documents'
+    """Allows permissioned access to a document that is attached to a model instance
+    By default, this api view will look for the documents with a related name of 'documents'
     you can override this by passing a related_name in the url kwargs
     the file field on the document must be named '_file'
     """
 
-    permission_classes = [IsInternalAPIView]
+    permission_classes = [IsInternalOrHasObjectPermissionAPIViewPermission]
 
     def get(self, request, *args, **kwargs):
+        logger.info("SecureDocumentAPIView")
         model, instance_id, document_id = (
             kwargs["model"],
             kwargs["instance_id"],
@@ -297,6 +302,8 @@ class SecureDocumentAPIView(views.APIView):
             ).objects.get(id=instance_id)
         except ObjectDoesNotExist:
             raise Http404
+
+        self.check_object_permissions(request, instance)
 
         if kwargs["related_name"]:
             try:
@@ -321,3 +328,53 @@ class SecureDocumentAPIView(views.APIView):
         if not file:
             raise Http404
         return FileResponse(file)
+
+
+class SecureDocumentsAPIView(views.APIView):
+    """Allows permissioned access to documents that are attached to a model instance
+    By default, this api view will look for the documents with a related name of 'documents'
+    you can override this by passing a related_name in the url kwargs
+    the file field on the document must be named '_file'
+    """
+
+    permission_classes = [IsInternalOrHasObjectPermissionAPIViewPermission]
+    serializer_class = SecureDocumentSerializer
+
+    def get(self, request, *args, **kwargs):
+        model, instance_id = (
+            kwargs["model"],
+            kwargs["instance_id"],
+        )
+        try:
+            instance = apps.get_model(
+                app_label="leaseslicensing", model_name=model
+            ).objects.get(id=instance_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        self.check_object_permissions(request, instance)
+
+        related_name = kwargs.get("related_name", None)
+        if related_name:
+            try:
+                documents = getattr(instance, related_name)
+            except AttributeError:
+                raise ValidationError(
+                    f"Related name {related_name} not found on {model}"
+                )
+        else:
+            documents = instance.documents
+            related_name = "documents"
+
+        for d in documents.all():
+            logger.debug(d)
+
+        data = self.serializer_class(
+            documents.all(),
+            many=True,
+            model=model,
+            instance_id=instance_id,
+            related_name=related_name,
+        ).data
+
+        return Response(data)

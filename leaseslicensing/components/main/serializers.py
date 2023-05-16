@@ -1,3 +1,4 @@
+from django.conf import settings
 from ledger_api_client.ledger_models import EmailUserRO
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
@@ -12,6 +13,7 @@ from leaseslicensing.components.main.models import (
     RequiredDocument,
     TemporaryDocumentCollection,
 )
+from leaseslicensing.components.main.utils import get_secure_document_url
 
 # from leaseslicensing.components.proposals.serializers import ProposalTypeSerializer
 
@@ -47,8 +49,7 @@ class CommunicationLogEntrySerializer(serializers.ModelSerializer):
 
     def get_document_urls(self, obj):
         return [
-            f"/api/main/secure_document/{self.Meta.model._meta.model.__name__}/{obj.id}/{d.id}/"
-            for d in obj.documents.all()
+            get_secure_document_url(obj, "documents", d.id) for d in obj.documents.all()
         ]
 
 
@@ -195,3 +196,36 @@ class TemporaryDocumentCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TemporaryDocumentCollection
         fields = ("id",)
+
+
+class SecureDocumentSerializer(serializers.Serializer):
+    id = serializers.IntegerField(read_only=True)
+    description = serializers.CharField()
+    name = serializers.CharField(read_only=True)
+    uploaded_date = serializers.DateTimeField(read_only=True)
+    url = serializers.SerializerMethodField()
+    hyperlink = serializers.SerializerMethodField()
+    model = None
+    instance_id = None
+    related_name = None
+
+    def __init__(self, instance=None, data=..., **kwargs):
+        model, instance_id, related_name = (
+            kwargs.pop("model"),
+            kwargs.pop("instance_id"),
+            kwargs.pop("related_name"),
+        )
+        if not model or not instance_id or not related_name:
+            raise ValueError(
+                "model, instance_id and related_name are required to build a secure document url"
+            )
+        self.model = model
+        self.instance_id = instance_id
+        self.related_name = related_name
+        super().__init__(instance, data, **kwargs)
+
+    def get_url(self, obj):
+        return f"{settings.SECURE_DOCUMENT_API_BASE_PATH}{self.model}/{self.instance_id}/{self.related_name}/{obj.id}/"
+
+    def get_hyperlink(self, obj):
+        return f"<a href='{self.get_url(obj)}'>{obj.name}</a>"

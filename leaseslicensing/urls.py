@@ -164,7 +164,7 @@ api_patterns = [
     url(
         (
             r"^api/main/secure_document/"
-            r"(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<related_name>\w+)/(?P<document_id>\d+)/$"
+            r"(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<related_name>[\w-]+)/(?P<document_id>\d+)/$"
         ),
         main_api.SecureDocumentAPIView.as_view(),
         name="secure_document",
@@ -173,6 +173,11 @@ api_patterns = [
         r"^api/main/secure_document/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<document_id>\d+)/$",
         main_api.SecureDocumentAPIView.as_view(),
         name="secure_document",
+    ),
+    url(
+        r"^api/main/secure_documents/(?P<model>[\w-]+)/(?P<instance_id>\d+)/(?P<related_name>[\w-]+)/$",
+        main_api.SecureDocumentsAPIView.as_view(),
+        name="secure_documents",
     ),
     # url(r'^api/applicants_dict$', proposal_api.GetApplicantsDict.as_view(),
     # name='get-applicants-dict'),

@@ -8,6 +8,7 @@ from leaseslicensing.components.approvals.models import (
     ApprovalTypeDocumentType,
 )
 from leaseslicensing.components.main.models import upload_protected_files_storage
+from leaseslicensing.components.main.utils import get_secure_document_url
 
 
 def process_generic_document(request, instance, document_type=None, *args, **kwargs):
@@ -128,7 +129,9 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
 
                 returned_file_data = [
                     dict(
-                        file=d._file.url,
+                        file=get_secure_document_url(
+                            instance, document_type + "s", d.id
+                        ),
                         id=d.id,
                         name=d.name,
                         approval_type=d.approval_type.id,
@@ -144,7 +147,7 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
             # default file attributes
             returned_file_data = [
                 dict(
-                    file=d._file.url,
+                    file=get_secure_document_url(instance, document_type + "s", d.id),
                     id=d.id,
                     name=d.name,
                 )

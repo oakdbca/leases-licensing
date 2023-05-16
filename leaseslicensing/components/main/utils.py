@@ -173,3 +173,10 @@ def multipolygon_intersects_with_layer(multipolygon, layer_name):
         return False
 
     return True
+
+
+def get_secure_document_url(instance, related_name, document_id=None):
+    base_path = settings.SECURE_DOCUMENT_API_BASE_PATH
+    if document_id:
+        return f"{base_path}{instance._meta.model.__name__}/{instance.id}/{related_name}/{document_id}/"
+    return f"{base_path}{instance._meta.model.__name__}/{instance.id}/{related_name}/"
