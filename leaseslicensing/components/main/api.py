@@ -41,8 +41,8 @@ from leaseslicensing.components.main.serializers import (
 )
 from leaseslicensing.helpers import is_customer, is_internal
 from leaseslicensing.permissions import (
-    IsInternalAPIViewPermission,
-    IsInternalOrHasObjectPermissionAPIViewPermission,
+    IsInternalAPIView,
+    IsInternalOrHasObjectDocumentsPermission,
 )
 
 logger = logging.getLogger(__name__)
@@ -254,7 +254,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
 class SecureFileAPIView(views.APIView):
     """Allows permissioned access to a file field on a model instance"""
 
-    permission_classes = [IsInternalAPIViewPermission]
+    permission_classes = [IsInternalAPIView]
 
     def get(self, request, *args, **kwargs):
         model, instance_id, file_field_name = (
@@ -287,7 +287,7 @@ class SecureDocumentAPIView(views.APIView):
     the file field on the document must be named '_file'
     """
 
-    permission_classes = [IsInternalOrHasObjectPermissionAPIViewPermission]
+    permission_classes = [IsInternalOrHasObjectDocumentsPermission]
 
     def get(self, request, *args, **kwargs):
         logger.info("SecureDocumentAPIView")
@@ -337,7 +337,7 @@ class SecureDocumentsAPIView(views.APIView):
     the file field on the document must be named '_file'
     """
 
-    permission_classes = [IsInternalOrHasObjectPermissionAPIViewPermission]
+    permission_classes = [IsInternalOrHasObjectDocumentsPermission]
     serializer_class = SecureDocumentSerializer
 
     def get(self, request, *args, **kwargs):

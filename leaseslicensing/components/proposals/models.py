@@ -46,7 +46,10 @@ from leaseslicensing.components.main.utils import (
     polygon_intersects_with_layer,
 )
 from leaseslicensing.components.organisations.models import Organisation
-from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
+from leaseslicensing.components.organisations.utils import (
+    can_admin_org,
+    get_organisation_ids_for_user,
+)
 from leaseslicensing.components.proposals.email import (
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
@@ -1458,6 +1461,17 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         :return: True if the application is in one of the approved status.
         """
         return self.processing_status in self.CUSTOMER_VIEWABLE_STATE
+
+    def can_user_view_documents(self, user_id):
+        """Used by the secure documents api to determine if the user can view the documents"""
+        if self.ind_applicant:
+            return user_id in [
+                self.applicant,
+                self.submitter,
+                self.proxy_applicant,
+            ]
+        if self.org_applicant:
+            return can_admin_org(self.org_applicant, user_id)
 
     @property
     def is_discardable(self):
