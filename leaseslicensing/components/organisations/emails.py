@@ -203,7 +203,7 @@ def send_organisation_request_link_email_notification(org_request, request, cont
 
     msg = email.send(contact, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, org_request, request.user, sender=sender)
+    _log_org_email(msg, org_request, request.user.id, sender=sender)
 
 
 def send_organisation_reinstate_email_notification(
