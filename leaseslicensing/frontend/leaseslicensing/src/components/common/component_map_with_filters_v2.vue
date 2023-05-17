@@ -1,6 +1,6 @@
 <template>
     <div>
-        <CollapsibleFilters :component_title="'Filters' + filterInformation" ref="collapsible_filters"
+        <CollapsibleFilters v-if="filterable" :component_title="'Filters' + filterInformation" ref="collapsible_filters"
             @created="collapsible_component_mounted" class="mb-2">
             <div class="row">
                 <div class="col-md-3">
@@ -57,6 +57,13 @@
                             <img class="svg-icon" src="../../assets/ruler.svg" />
                         </div>
                     </div>
+                    <div v-if="drawable" class="optional-layers-button-wrapper">
+                        <div :class="[
+                                mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
+                            ]" @click="set_mode.bind(this)('draw')">
+                            <img class="svg-icon" src="../../assets/pen-icon.svg" />
+                        </div>
+                    </div>
                     <div style="position:relative">
                         <transition v-if="optionalLayers.length">
                             <div class="optional-layers-button-wrapper">
@@ -78,6 +85,23 @@
                                 </template>
                             </div>
                         </transition>
+                    </div>
+                    <div v-if="selectedFeatureIds.length>0" class="optional-layers-button-wrapper">
+                        <div class="optional-layers-button">
+                            <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash"
+                                @click="removeProposalFeatures()" />
+                            <span class='badge badge-warning' id='selectedFeatureCount'>{{ selectedFeatureIds.length }}</span>
+                        </div>
+                    </div>
+                    <div v-if="showUndoButton" class="optional-layers-button-wrapper">
+                        <div class="optional-layers-button" @click="undoLeaseLicensePoint()">
+                            <img class="svg-icon" src="../../assets/undo.svg" />
+                        </div>
+                    </div>
+                    <div v-if="showRedoButton" class="optional-layers-button-wrapper">
+                        <div class="optional-layers-button" @click="redoLeaseLicensePoint()">
+                            <img class="svg-icon" src="../../assets/redo.svg" />
+                        </div>
                     </div>
                 </div>
 
@@ -101,6 +125,11 @@
                                     <tr v-if="selectedProposal.lodgement_date_display">
                                         <th scope="row">Lodgement Date</th>
                                         <td>{{ selectedProposal.lodgement_date_display
+                                        }}</td>
+                                    </tr>
+                                    <tr v-if="selectedProposal.polygon_source">
+                                        <th scope="row">Polygon Source</th>
+                                        <td>{{ selectedProposal.polygon_source
                                         }}</td>
                                     </tr>
                                 </tbody>
@@ -132,12 +161,13 @@ import { v4 as uuid } from 'uuid';
 import { api_endpoints, helpers, constants } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 
+import { toRaw } from 'vue';
 import 'ol/ol.css';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
-import { Draw } from 'ol/interaction';
+import { Draw, Select } from 'ol/interaction';
 import Feature from 'ol/Feature'
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -148,7 +178,7 @@ import { fromLonLat, toLonLat, transform, Projection } from 'ol/proj';
 import GeoJSON from 'ol/format/GeoJSON';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js'
 import RangeSlider from '@/components/forms/range_slider.vue'
-import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
+import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/components/common/map_functions.js'
 
 export default {
     name: 'MapComponentWithFiltersV2',
@@ -182,6 +212,63 @@ export default {
             required: false,
             default: 'filterApplicationLodgedTo',
         },
+        proposalIds: {
+            type: Array,
+            required: false,
+            default: [],
+        },
+        styleBy: {
+            type: String,
+            required: false,
+            default: 'proposal',
+            validator: function (val) {
+                let options = ['proposal', 'assessor'];
+                return options.indexOf(val) != -1 ? true : false;
+            }
+        },
+        featureColors: {
+            type: Object,
+            required: false,
+            default: () => {
+                return {
+                    "unknown": "#9999", // greyish
+                    "applicant": "#00FF0077",
+                    "assessor": "#0000FF77",
+                }
+            },
+            validator: function (val) {
+                let options = ['unknown', 'applicant', 'assessor'];
+                Object.keys(val).forEach(key => {
+                    if (!options.includes(key.toLowerCase())) {
+                        console.error('Invalid feature color key: ' + key);
+                        return false;
+                    }
+                    // Invalid color values will avaluate to an empty string
+                    let test = new Option().style
+                    test.color = val[key];
+                    if (test.color === '') {
+                        console.error(`Invalid ${key} color value: ${val[key]}`);
+                        return false;
+                    }
+                });
+                return true;
+            }
+        },
+        filterable: {
+            type: Boolean,
+            required: false,
+            default: true,
+        },
+        drawable: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
+        selectable: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
     },
     data() {
         let vm = this;
@@ -207,6 +294,8 @@ export default {
             hover: false,
             mode: 'normal',
             drawForMeasure: null,
+            drawForProposal: null,
+            newFeatureId: 0,
             measurementLayer: null,
             style: MeasureStyles.defaultStyle,
             segmentStyle: MeasureStyles.segmentStyle,
@@ -221,6 +310,19 @@ export default {
             filteredProposals: [],
             proposalQuerySource: null,
             proposalQueryLayer: null,
+            selectedFeatureIds: [],
+            defaultColor: '#eeeeee',
+            clickSelectStroke: new Stroke({
+                    color: 'rgba(255, 0, 0, 0.7)',
+                    width: 2,
+                }),
+            hoverFill: new Fill({
+                    color: 'rgba(255, 255, 255, 0.5)',
+                }),
+            hoverStroke: new Stroke({
+                    color: 'rgba(255, 255, 255, 0.5)',
+                    width: 1,
+                }),
             set_mode: set_mode
         }
     },
@@ -248,7 +350,21 @@ export default {
             } else {
                 return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`
             }
-        }
+        },
+        showUndoButton: function () {
+            return this.mode == 'draw' &&
+                this.drawForProposal &&
+                this.drawForProposal.getActive() &&
+                this.sketchCoordinates.length > 1
+        },
+        showRedoButton: function () {
+            return false;
+            // Todo: The redo button is partially implemented so it is disabled for now.
+            return this.mode == 'draw' &&
+                this.drawForProposal &&
+                this.drawForProposal.getActive() &&
+                this.sketchCoordinatesHistory.length > this.sketchCoordinates.length
+        },
     },
     components: {
         CollapsibleFilters,
@@ -440,7 +556,7 @@ export default {
 
             return styles
         },
-        initMap: function () {
+        initialiseMap: function () {
             let vm = this;
 
             let satelliteTileWms = new TileWMS({
@@ -495,6 +611,21 @@ export default {
             let fullScreenControl = new FullScreenControl()
             vm.map.addControl(fullScreenControl)
 
+            vm.initialiseMeasurementLayer()
+            vm.initialiseQueryLayer()
+            vm.initialiseDrawLayer()
+
+            // update map extent when new features added
+            vm.map.on('rendercomplete', vm.fitToLayer);
+
+            vm.initialisePointerMoveEvent();
+            vm.initialiseSelectFeatureEvent();
+            vm.initialiseSingleClickEvent();
+            vm.initialiseDoubleClickEvent();
+        },
+        initialiseMeasurementLayer: function () {
+            let vm = this;
+
             // Measure tool
             let draw_source = new VectorSource({ wrapX: false })
             vm.drawForMeasure = new Draw({
@@ -507,10 +638,10 @@ export default {
             vm.drawForMeasure.on('change:escKey', function (evt) {
             })
             vm.drawForMeasure.on('drawstart', function (evt) {
-                vm.measuring = true
+                // Set measuring to true on mode change (fn `set_mode`), not drawstart
             })
             vm.drawForMeasure.on('drawend', function (evt) {
-                vm.measuring = false
+                // Set measuring to false on mode change
             })
 
             // Create a layer to retain the measurement
@@ -524,56 +655,176 @@ export default {
             });
             vm.map.addInteraction(vm.drawForMeasure)
             vm.map.addLayer(vm.measurementLayer)
+        },
+        initialiseQueryLayer: function () {
+            let vm = this;
 
             vm.proposalQuerySource = new VectorSource({});
-
             const style = new Style({
                 fill: new Fill({
-                    color: '#eeeeee',
+                    color: vm.defaultColor,
                 }),
             });
 
             vm.proposalQueryLayer = new VectorLayer({
+                title: "Proposal Area of Interest",
                 source: vm.proposalQuerySource,
                 style: function (feature) {
-                    const color = feature.get('color') || '#eeeeee';
+                    const color = feature.get('color') || vm.defaultColor;
                     style.getFill().setColor(color);
                     return style;
                 },
             });
+            // Add the layer
             vm.map.addLayer(vm.proposalQueryLayer);
+            // Set zIndex to some layers to be rendered over the other layers
+            vm.proposalQueryLayer.setZIndex(10);
+        },
+        initialiseDrawLayer: function () {
+            let vm = this;
+            if (!vm.drawable){
+                return;
+            }
 
-            vm.initialisePointerMoveEvent();
-            vm.initialiseDoubleClickEvent();
+            vm.drawForProposal = new Draw({
+                source: vm.proposalQuerySource,
+                type: 'Polygon',
+                geometryFunction: function (coordinates, geometry) {
+                    if (geometry) {
+                        if (coordinates[0].length) {
+                            // Add a closing coordinate to match the first
+                            geometry.setCoordinates(
+                                [coordinates[0].concat([coordinates[0][0]])],
+                                this.geometryLayout_
+                            );
+                        } else {
+                            geometry.setCoordinates([], this.geometryLayout_);
+                        }
+
+                    } else {
+                        geometry = new Polygon(coordinates, this.geometryLayout_);
+                    }
+                    vm.sketchCoordinates = coordinates[0].slice();
+                    if (coordinates[0].length > vm.sketchCoordinatesHistory.length) {
+                        // Only reassign the sketchCoordinatesHistory if the new coordinates are longer than the previous
+                        // so we don't lose the history when the user undoes a point
+                        vm.sketchCoordinatesHistory = coordinates[0].slice();
+                    }
+
+                    return geometry;
+                },
+                finishCondition: function (evt) {
+                    if (vm.lastPoint) {
+                        // If the last point is set, we're finishing the feature
+                        return true;
+                    }
+                    return false;
+                },
+            })
+            vm.drawForProposal.on('drawstart', function (evt) {
+                vm.lastPoint = null;
+            });
+            vm.drawForProposal.on('click'), function (evt) {
+                console.log(evt);
+            }
+            vm.drawForProposal.on('drawend', function (evt) {
+                console.log(evt);
+                console.log(evt.feature.values_.geometry.flatCoordinates);
+                evt.feature.setProperties({ "id": vm.newFeatureId })
+                vm.newFeatureId++;
+                console.log('newFeatureId = ' + vm.newFeatureId);
+                vm.lastPoint = evt.feature;
+                vm.sketchCoordinates = [[]];
+                vm.sketchCoordinatesHistory = [[]];
+            });
+            vm.map.addInteraction(vm.drawForProposal);
         },
         initialisePointerMoveEvent: function () {
             let vm = this
 
-            const selectStyle = new Style({
-                fill: new Fill({
-                    color: 'rgba(255, 255, 255, 0.5)',
-                }),
-                stroke: new Stroke({
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    width: 1,
-                }),
+            const hoverStyle = new Style({
+                fill: vm.hoverFill,
+                stroke: vm.hoverStroke,
             });
+            // Cache the hover fill so we don't have to create a new one every time
+            // Also prevent overwriting property `hoverFill` color
+            let _hoverFill = null;
+            function hoverSelect(feature) {
+                const color = feature.get('color') || vm.defaultColor;
+                _hoverFill = new Fill({color: color});
+
+                // If the feature is already selected, use the select stroke when hovering
+                if (vm.selectedFeatureIds.includes(feature.getProperties().id)) {
+                    hoverStyle.setFill(_hoverFill);
+                    hoverStyle.setStroke(vm.clickSelectStroke);
+                } else {
+                    hoverStyle.setFill(vm.hoverFill);
+                    hoverStyle.setStroke(vm.hoverStroke);
+                }
+                return hoverStyle;
+            }
+
             let selected = null;
             vm.map.on('pointermove', function (evt) {
+                if (vm.measuring || vm.drawing) {
+                    // Don't highlight features when measuring or drawing
+                    return;
+                }
                 if (selected !== null) {
-                    selected.setStyle(undefined);
+                    if (vm.selectedFeatureIds.includes(selected.getProperties().id)) {
+                        console.log("ignoring hover on selected feature");
+                    } else {
+                        selected.setStyle(undefined);
+                    }
                     selected = null;
                 }
                 vm.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
                     selected = feature;
                     let proposal = selected.getProperties().proposal
+                    proposal.polygon_source = selected.getProperties().polygon_source
                     vm.selectedProposal = proposal
-                    selected.setStyle(selectStyle);
+                    selected.setStyle(hoverSelect);
                 });
                 if (selected) {
                     vm.featureToast.show()
                 } else {
                     vm.featureToast.hide()
+                }
+            });
+        },
+        initialiseSingleClickEvent: function () {
+            let vm = this;
+            vm.map.on('singleclick', function(evt) {
+                if (vm.drawing || vm.measuring) {
+                    console.log(evt);
+                    // TODO: must be a feature
+                    vm.lastPoint = new Point(evt.coordinate);
+                    return;
+                }
+
+                let feature = vm.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
+                    return feature;
+                });
+                if (feature) {
+                    vm.map.getInteractions().forEach((interaction) => {
+                        if (interaction instanceof Select) {
+                            let selected = [];
+                            let deselected = [];
+                            let feature_id = feature.get("id");
+                            if (vm.selectedFeatureIds.includes(feature_id)) {
+                                // already selected, so deselect
+                                deselected.push(feature);
+                            } else {
+                                // not selected, so select
+                                selected.push(feature);
+                            }
+                            interaction.dispatchEvent({
+                                type: 'select',
+                                selected: selected,
+                                deselected: deselected,
+                            });
+                        }
+                    });
                 }
             });
         },
@@ -588,9 +839,81 @@ export default {
                 });
                 if (feature) {
                     let proposal = feature.getProperties().proposal
-                    window.location = '/internal/proposal/' + proposal.id
+                    if (!proposal) {
+                        vm.redirectingToProposalDetails = false;
+                        return;
+                    }
+
+                    let proposal_path = '/internal/proposal/' + proposal.id
+                    if (window.location.pathname == proposal_path) {
+                        console.log('already on proposal page');
+                        vm.redirectingToProposalDetails = false;
+                    } else {
+                        window.location = proposal_path;
+                    }
+                } else {
+                    vm.redirectingToProposalDetails = false;
                 }
             });
+        },
+        initialiseSelectFeatureEvent: function () {
+            let vm = this;
+            if (!vm.selectable) {
+                return;
+            }
+
+            const clickSelectStyle = new Style({
+                fill: new Fill({
+                    color: '#000000',
+                }),
+                stroke: vm.clickSelectStroke,
+            });
+
+            function clickSelect(feature) {
+                // Keep feature fill color but change stroke color
+                const color = feature.get('color') || vm.defaultColor;
+                clickSelectStyle.getFill().setColor(color);
+                return clickSelectStyle;
+            }
+
+            // select interaction working on "singleclick"
+            const selectSingleClick = new Select({
+                style: clickSelect,
+                layers: [vm.proposalQueryLayer,],
+            });
+            vm.map.addInteraction(selectSingleClick);
+            selectSingleClick.on('select', (evt) => {
+                $.each(evt.selected, function (idx, feature) {
+                    console.log(`Selected feature ${feature.getProperties().id}`,
+                        toRaw(feature));
+                    feature.setStyle(clickSelect);
+                    vm.selectedFeatureIds.push(feature.getProperties().id);
+                });
+
+                $.each(evt.deselected, function (idx, feature) {
+                    console.log(`Unselected feature ${feature.getProperties().id}`);
+                    feature.setStyle(undefined);
+                    vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
+                        id => id != feature.getProperties().id);
+                });
+            });
+        },
+        removeProposalFeatures: function () {
+            let vm = this;
+            const features = vm.proposalQuerySource.getFeatures().filter((feature) => {
+                if (vm.selectedFeatureIds.includes(feature.getProperties().id)) {
+                    return feature;
+                }
+            });
+
+            for (let feature of features) {
+                vm.proposalQuerySource.removeFeature(feature);
+            }
+            // Remove selected features (mapped by id) from `selectedFeatureIds`
+            vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
+                id => !features.map(
+                    feature => feature.getProperties().id
+                    ).includes(id));
         },
         collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
@@ -598,6 +921,9 @@ export default {
         fetchProposals: async function () {
             let vm = this
             let url = api_endpoints.proposal + 'list_for_map/'
+            if (vm.proposalIds.length > 0) {
+                url += '?proposal_ids=' + vm.proposalIds.toString();
+            }
             if (vm.filterApplicationsMapApplicationType != 'all') {
                 url += '?application_type=' + vm.filterApplicationsMapApplicationType
             }
@@ -654,27 +980,42 @@ export default {
             // Remove all features from the layer
             vm.proposalQuerySource.clear();
             proposals.forEach(function (proposal) {
-                let style = new Style({
-                    stroke: new Stroke({
-                        color: proposal.color,
-                        width: 1,
-                    }),
-                    fill: new Fill({
-                        color: proposal.color,
-                    }),
-                });
                 proposal.proposalgeometry.features.forEach(function (featureData) {
+                    let color = proposal.color; // styleBy = 'proposal'
+                    let style = new Style({
+                        stroke: new Stroke({
+                            color: color,
+                            width: 1,
+                        }),
+                        fill: new Fill({
+                            color: color,
+                        }),
+                    });
+                    if (vm.styleBy === 'assessor') {
+                        color = vm.featureColors[featureData.properties.polygon_source.toLowerCase()] ||
+                            vm.featureColors["Unknown"] ||
+                            "#999999";
+                    }
+                    style.getFill().setColor(color);
+                    style.getStroke().setColor(color);
+
                     let feature = new Feature({
+                        id: vm.newFeatureId, // Incrementing-id of the polygon/feature on the map
                         geometry: new Polygon(featureData.geometry.coordinates),
                         name: proposal.id,
                         label: proposal.application_type_name_display,
-                        color: proposal.color,
+                        color: color,
+                        polygon_source: featureData.properties.polygon_source
                     });
+                    // Id of the model object (https://datatracker.ietf.org/doc/html/rfc7946#section-3.2)
+                    feature.setId(featureData.id)
+
                     feature.setStyle(style)
                     feature.setProperties({
                         proposal: proposal,
                     })
                     vm.proposalQuerySource.addFeature(feature);
+                    vm.newFeatureId++;
                 });
             });
         },
@@ -694,6 +1035,17 @@ export default {
             var o = Math.round, r = Math.random, s = 255;
             return [o(r() * s), o(r() * s), o(r() * s), 0.5];
         },
+        getJSONFeatures: function () {
+            const format = new GeoJSON();
+            const features = this.proposalQuerySource.getFeatures();
+
+            features.forEach(function (feature) {
+                console.log(feature.getProperties());
+                feature.unset("proposal")
+            });
+
+            return format.writeFeatures(features);
+        },
     },
     created: function () {
         console.log('created()')
@@ -705,7 +1057,7 @@ export default {
         let vm = this;
 
         this.$nextTick(() => {
-            vm.initMap()
+            vm.initialiseMap()
             set_mode.bind(this)("layer")
             vm.setBaseLayer('osm')
             addOptionalLayers(this)
@@ -831,5 +1183,26 @@ export default {
 
 .dataTables_filter {
     display: none !important;
+}
+
+.badge {
+  padding-left: 9px;
+  padding-right: 9px;
+  -webkit-border-radius: 9px;
+  -moz-border-radius: 9px;
+  border-radius: 9px;
+}
+
+.label-warning[href],
+.badge-warning[href] {
+  background-color: #c67605;
+}
+#selectedFeatureCount {
+    font-size: 12px;
+    background: #ff0000;
+    color: #fff;
+    padding: 0 5px;
+    vertical-align: top;
+    margin-left: -10px;
 }
 </style>

@@ -86,6 +86,10 @@ export function set_mode(mode) {
     } else {
         this.mode = mode
     }
+
+    this.drawing = false;
+    this.measuring = false;
+
     if (this.mode === 'layer') {
         this.clearMeasurementLayer()
         _helper.toggle_draw_measure_license.bind(this)(false, false)
@@ -94,8 +98,10 @@ export function set_mode(mode) {
         this.sketchCoordinates = [[]]
         this.sketchCoordinatesHistory = [[]]
         _helper.toggle_draw_measure_license.bind(this)(false, true)
+        this.drawing = true;
     } else if (this.mode === 'measure') {
         _helper.toggle_draw_measure_license.bind(this)(true, false)
+        this.measuring = true;
     } else {
         console.error(`Cannot set mode ${mode}`)
     }
@@ -137,14 +143,14 @@ const _helper = {
     /**
      * Toggles measure and polygon layer active or inactive
      * @param {boolean} drawForMeasure Whether to set the measure layer active or inactive
-     * @param {boolean} drawForLeaselicence Whether to set the polygon layer active or inactive
+     * @param {boolean} drawForProposal Whether to set the polygon layer active or inactive
      */
-    toggle_draw_measure_license: function (drawForMeasure, drawForLeaselicence) {
+    toggle_draw_measure_license: function (drawForMeasure, drawForProposal) {
         if (this.drawForMeasure) {
             this.drawForMeasure.setActive(drawForMeasure)
         }
-        if (this.drawForLeaselicence) {
-            this.drawForLeaselicence.setActive(drawForLeaselicence)
+        if (this.drawForProposal) {
+            this.drawForProposal.setActive(drawForProposal)
         }
     }
 }

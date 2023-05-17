@@ -78,6 +78,7 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
             "proposal_id",
             "polygon",
             "intersects",
+            "drawn_by",
         )
         read_only_fields = ("id",)
 
@@ -97,6 +98,7 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
 
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
     proposal_id = serializers.IntegerField(write_only=True, required=False)
+    polygon_source = serializers.SerializerMethodField()
 
     class Meta:
         model = ProposalGeometry
@@ -106,8 +108,27 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
             "proposal_id",
             "polygon",
             "intersects",
+            "polygon_source",
         )
         read_only_fields = ("id",)
+
+    def get_polygon_source(self, obj):
+
+        source = ""
+
+        if not obj.drawn_by:
+            source = "Unknown"
+        elif obj.drawn_by in [obj.proposal.ind_applicant, obj.proposal.org_applicant]:
+            source = "Applicant"
+        else:
+            # System group names, e.g. lease_license_assessor
+            system_groups = SystemGroup.objects.filter(name__in=[x for x in zip(*GROUP_NAME_CHOICES)][0])
+            # System groups member ids
+            system_group_member = list(set([itm for group in system_groups for itm in group.get_system_group_member_ids()]))
+            if obj.drawn_by in system_group_member:
+                source = "Assessor"
+
+        return source
 
 
 class ProposalTypeSerializer(serializers.ModelSerializer):

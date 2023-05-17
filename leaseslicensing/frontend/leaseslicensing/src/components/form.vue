@@ -45,11 +45,15 @@
                 <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                     <FormSection :formCollapse="false" label="Map" Index="proposal_geometry">
                         <slot name="slot_map_checklist_questions"></slot>
-                        <ComponentMap ref="component_map" :key="componentMapKey" :is_internal="is_internal"
-                            :is_external="is_external" @featuresDisplayed="updateTableByFeatures" :can_modify="can_modify"
-                            :display_at_time_of_submitted="show_col_status_when_submitted"
-                            @featureGeometryUpdated="featureGeometryUpdated" @popupClosed="popupClosed" :proposal="proposal"
-                            :readonly="readonly" @refreshFromResponse="refreshFromResponse" />
+                        <MapComponent ref="component_map"
+                            :key="componentMapKey"
+                            :proposalIds="[proposal.id]"
+                            styleBy="assessor"
+                            :filterable="false"
+                            :drawable="true"
+                            :selectable="true"
+                            level="internal"
+                        />
 
                     </FormSection>
                 </div>
@@ -253,7 +257,7 @@ import OrganisationApplicant from '@/components/common/organisation_applicant.vu
 import FormSection from '@/components/forms/section_toggle.vue'
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
-import ComponentMap from '@/components/common/component_map.vue'
+import MapComponent from "@/components/common/component_map_with_filters_v2"
 import RegistrationOfInterest from './form_registration_of_interest.vue'
 import LeaseLicence from './form_lease_licence.vue'
 import Multiselect from 'vue-multiselect'
@@ -460,7 +464,7 @@ export default {
             //this.incrementComponentMapKey()
             //this.componentMapOn = true;
             this.$nextTick(() => {
-                this.$refs.component_map.forceMapRefresh();
+                this.$refs.component_map.forceToRefreshMap();
             });
         },
         updateTableByFeatures: function () {

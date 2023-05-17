@@ -375,9 +375,7 @@ class CompetitiveProcessGeometry(models.Model):
     )
     polygon = PolygonField(srid=4326, blank=True, null=True)
     intersects = models.BooleanField(default=False)
-    # copied_from = models.ForeignKey(
-    # "self", on_delete=models.SET_NULL, blank=True, null=True
-    # )
+    drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
 
     class Meta:
         app_label = "leaseslicensing"
