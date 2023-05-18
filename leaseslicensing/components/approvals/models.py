@@ -94,6 +94,10 @@ class ApprovalDocument(Document):
             f"(including document submitted before Application pushback to status Draft): {self.name}"
         )
 
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
+        return self.approval.user_has_object_permission(user_id)
+
     class Meta:
         app_label = "leaseslicensing"
 
@@ -481,6 +485,10 @@ class Approval(RevisionedMixin):
                 f"Approval {self.lodgement_number} does not have current_proposal"
             )
         return None
+
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
+        return self.current_proposal.user_has_object_permission(user_id)
 
     #    @property
     #    def approved_by(self):
