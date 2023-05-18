@@ -40,10 +40,7 @@ from leaseslicensing.components.main.serializers import (
     TemporaryDocumentCollectionSerializer,
 )
 from leaseslicensing.helpers import is_customer, is_internal
-from leaseslicensing.permissions import (
-    IsInternalAPIView,
-    IsInternalOrHasObjectDocumentsPermission,
-)
+from leaseslicensing.permissions import IsInternalOrHasObjectDocumentsPermission
 
 logger = logging.getLogger(__name__)
 
@@ -254,7 +251,7 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
 class SecureFileAPIView(views.APIView):
     """Allows permissioned access to a file field on a model instance"""
 
-    permission_classes = [IsInternalAPIView]
+    permission_classes = [IsInternalOrHasObjectDocumentsPermission]
 
     def get(self, request, *args, **kwargs):
         model, instance_id, file_field_name = (
@@ -268,6 +265,8 @@ class SecureFileAPIView(views.APIView):
             ).objects.get(id=instance_id)
         except ObjectDoesNotExist:
             raise Http404
+
+        self.check_object_permissions(request, instance)
 
         try:
             file = getattr(instance, file_field_name)
