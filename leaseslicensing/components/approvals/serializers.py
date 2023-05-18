@@ -11,6 +11,7 @@ from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
+from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.users.serializers import UserSerializer
@@ -124,9 +125,7 @@ class _ApprovalPaymentSerializer(serializers.ModelSerializer):
 class ApprovalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
-    licence_document = serializers.CharField(
-        source="licence_document._file.url", allow_blank=True, allow_null=True
-    )
+    licence_document = serializers.SerializerMethodField()
     # renewal_document = serializers.SerializerMethodField(read_only=True)
     status = serializers.CharField(source="get_status_display")
     application_type = serializers.SerializerMethodField(read_only=True)
@@ -218,6 +217,11 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "submitter",
             "groups_comma_list",
         )
+
+    def get_licence_document(self, obj):
+        if not obj.licence_document or not obj.licence_document._file:
+            return None
+        return get_secure_file_url(obj.licence_document, "_file")
 
     def get_submitter(self, obj):
         user = EmailUser.objects.get(id=obj.submitter)
