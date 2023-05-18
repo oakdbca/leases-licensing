@@ -212,6 +212,7 @@ CRON_CLASSES = [
 PROTECTED_MEDIA_ROOT = env(
     "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
 )
+SECURE_FILE_API_BASE_PATH = "/api/main/secure_file/"
 SECURE_DOCUMENT_API_BASE_PATH = "/api/main/secure_document/"
 
 BASE_URL = env("BASE_URL")
