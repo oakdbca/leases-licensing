@@ -333,8 +333,8 @@ class SecureDocumentAPIView(views.APIView):
 class SecureDocumentsAPIView(views.APIView):
     """Allows permissioned access to documents that are attached to a model instance
     By default, this api view will look for the documents with a related name of 'documents'
-    you can override this by passing a related_name in the url kwargs
-    the file field on the document must be named '_file'
+    you can override this by passing a related_name in the url kwargs (see: urls.py)
+    the file field on the document must be named '_file' which is our standard
     """
 
     permission_classes = [IsInternalOrHasObjectDocumentsPermission]
