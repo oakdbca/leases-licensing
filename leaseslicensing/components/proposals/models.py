@@ -1462,8 +1462,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         """
         return self.processing_status in self.CUSTOMER_VIEWABLE_STATE
 
-    def can_user_view_documents(self, user_id):
-        """Used by the secure documents api to determine if the user can view the documents"""
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         if self.ind_applicant:
             return user_id in [
                 self.applicant,
