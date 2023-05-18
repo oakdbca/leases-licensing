@@ -232,18 +232,19 @@ export default {
             default: () => {
                 return {
                     "unknown": "#9999", // greyish
+                    "draw": "#00FFFF", // cyan
                     "applicant": "#00FF0077",
                     "assessor": "#0000FF77",
                 }
             },
             validator: function (val) {
-                let options = ['unknown', 'applicant', 'assessor'];
+                let options = ['unknown', 'draw', 'applicant', 'assessor'];
                 Object.keys(val).forEach(key => {
                     if (!options.includes(key.toLowerCase())) {
                         console.error('Invalid feature color key: ' + key);
                         return false;
                     }
-                    // Invalid color values will avaluate to an empty string
+                    // Invalid color values will evaluate to an empty string
                     let test = new Option().style
                     test.color = val[key];
                     if (test.color === '') {
@@ -311,6 +312,9 @@ export default {
             proposalQuerySource: null,
             proposalQueryLayer: null,
             selectedFeatureIds: [],
+            lastPoint: null,
+            sketchCoordinates: [[]],
+            sketchCoordinatesHistory: [[]],
             defaultColor: '#eeeeee',
             clickSelectStroke: new Stroke({
                     color: 'rgba(255, 0, 0, 0.7)',
@@ -713,13 +717,47 @@ export default {
 
                     return geometry;
                 },
+                condition: function(evt) {
+                    if (evt.originalEvent.buttons === 1) {
+                        // Only allow drawing when the left mouse button is pressed
+                        return true;
+                    } else if (evt.originalEvent.buttons === 2) {
+                        // If the right mouse button is pressed, undo the last point
+                        if (vm.showUndoButton) {
+                            vm.undoLeaseLicensePoint();
+                        } else {
+                            vm.set_mode('layer');
+                        }
+                    } else {
+                        return false;
+                    }
+                },
                 finishCondition: function (evt) {
                     if (vm.lastPoint) {
+
+                        // Validate
+                        vm.sketchCoordinates
+                        let coordinates = vm.sketchCoordinates.slice();
+                        coordinates.push(coordinates[0]);
+                        let feature = new Feature({
+                            id: -1,
+                            geometry: new Polygon([coordinates]),
+                            label: "validation",
+                            color: vm.defaultColor,
+                            polygon_source: "validation",
+                        });
+
+                        vm.optionalLayers[0]
+
                         // If the last point is set, we're finishing the feature
                         return true;
                     }
                     return false;
                 },
+            })
+            vm.drawForProposal.set('escKey', '')
+            vm.drawForProposal.on('change:escKey', function (evt) {
+                console.log("ESC key pressed");
             })
             vm.drawForProposal.on('drawstart', function (evt) {
                 vm.lastPoint = null;
@@ -730,7 +768,22 @@ export default {
             vm.drawForProposal.on('drawend', function (evt) {
                 console.log(evt);
                 console.log(evt.feature.values_.geometry.flatCoordinates);
-                evt.feature.setProperties({ "id": vm.newFeatureId })
+                let proposal = {};
+                if (vm.proposals.length>0) {
+                    proposal = vm.proposals[vm.proposals.length-1]
+                }
+                let color = vm.featureColors["draw"] ||
+                            vm.featureColors["Unknown"] ||
+                            "#999999";
+                evt.feature.setProperties({
+                                            id: vm.newFeatureId,
+                                            proposal: proposal,
+                                            polygon_source: "Draw",
+                                            name: proposal.id || -1,
+                                            label: proposal.application_type_name_display || "Draw",
+                                            label: "Draw",
+                                            color: color,
+                                        })
                 vm.newFeatureId++;
                 console.log('newFeatureId = ' + vm.newFeatureId);
                 vm.lastPoint = evt.feature;
@@ -897,6 +950,26 @@ export default {
                         id => id != feature.getProperties().id);
                 });
             });
+        },
+        undoLeaseLicensePoint: function () {
+            let vm = this;
+            console.log(vm.drawForProposal.sketchCoords_)
+            if (vm.lastPoint) {
+                vm.proposalQuerySource.removeFeature(vm.lastPoint);
+                vm.lastPoint = null;
+                vm.sketchCoordinates = [[]]
+                vm.sketchCoordinatesHistory = [[]]
+                this.selectedFeatureId = null;
+            } else {
+                vm.drawForProposal.removeLastPoint();
+            }
+        },
+        redoLeaseLicensePoint: function () {
+            let vm = this;
+            if (vm.sketchCoordinatesHistory.length > vm.sketchCoordinates.length) {
+                let nextCoordinate = vm.sketchCoordinatesHistory.slice(vm.sketchCoordinates.length, vm.sketchCoordinates.length + 1);
+                vm.drawForLeaselicence.appendCoordinates([nextCoordinate[0]]);
+            }
         },
         removeProposalFeatures: function () {
             let vm = this;
