@@ -1,12 +1,12 @@
 import logging
 
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.utils.text import slugify
+from ledger_api_client.managed_models import SystemGroupPermission
 from ledger_api_client.utils import (
     create_organisation,
     get_organisation,
@@ -38,6 +38,7 @@ from leaseslicensing.components.organisations.exceptions import (
     UnableToRetrieveLedgerOrganisation,
 )
 from leaseslicensing.components.organisations.utils import random_generator
+from leaseslicensing.helpers import belongs_to_by_user_id
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 # @python_2_unicode_compatible
@@ -978,6 +979,10 @@ class OrganisationRequest(models.Model):
             self.lodgement_number = new_lodgment_id
             self.save()
 
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the documents"""
+        return belongs_to_by_user_id(user_id, settings.GROUP_NAME_ORGANISATION_ACCESS)
+
     def accept(self, request):
         # Todo: imlmenent for segregation system
         with transaction.atomic():
@@ -1071,11 +1076,16 @@ class OrganisationRequest(models.Model):
     def send_org_access_group_request_notification(self, request):
         # user submits a new organisation request
         # send email to organisation access group
-        org_access_recipients = [
-            i.email for i in OrganisationAccessGroup.objects.last().all_members
+        org_access_recipient_emails = []
+        org_access_recipients = SystemGroupPermission.objects.filter(
+            system_group__name=settings.GROUP_NAME_ORGANISATION_ACCESS
+        ).only("emailuser")
+        [
+            org_access_recipient_emails.append(recipient.emailuser.email)
+            for recipient in org_access_recipients
         ]
         send_org_access_group_request_accept_email_notification(
-            self, request, org_access_recipients
+            self, request, org_access_recipient_emails
         )
 
     def assign_to(self, user_id, request):
@@ -1115,40 +1125,18 @@ class OrganisationRequest(models.Model):
     def send_organisation_request_email_notification(self, request):
         # user submits a new organisation request
         # send email to organisation access group
-        group = OrganisationAccessGroup.objects.first()
-        if group and group.filtered_members:
-            org_access_recipients = [m.email for m in group.filtered_members]
-            send_organisation_request_email_notification(
-                self, request, org_access_recipients
-            )
+        permissions = SystemGroupPermission.objects.filter(
+            system_group__name=settings.GROUP_NAME_ORGANISATION_ACCESS
+        ).only("emailuser")
+        org_access_recipients = [
+            permission.emailuser.email for permission in permissions
+        ]
+        send_organisation_request_email_notification(
+            self, request, org_access_recipients
+        )
 
     def log_user_action(self, action, request):
         return OrganisationRequestUserAction.log_action(self, action, request.user.id)
-
-
-class OrganisationAccessGroup(models.Model):
-    # site = models.OneToOneField(Site, default='1', on_delete=models.CASCADE)
-    # members = models.ManyToManyField(EmailUser)
-    members = ArrayField(models.IntegerField(), blank=True)  # EmailUserRO
-
-    def __str__(self):
-        return "Organisation Access Group"
-
-    @property
-    def all_members(self):
-        all_members = []
-        all_members.extend(self.members.all())
-        # member_ids = [m.id for m in self.members.all()]
-        # all_members.extend(EmailUser.objects.filter(is_superuser=True,is_staff=True,is_active=True).exclude(id__in=member_ids))
-        return all_members
-
-    @property
-    def filtered_members(self):
-        return self.members.all()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Organisation access group"
 
 
 class OrganisationRequestUserAction(UserAction):
@@ -1228,7 +1216,6 @@ class OrganisationRequestLogEntry(CommunicationsLogEntry):
 # reversion.register(OrganisationLogDocument)
 # reversion.register(OrganisationRequest, follow=['action_logs',
 # 'organisationrequestdeclineddetails_set', 'comms_logs'])
-# reversion.register(OrganisationAccessGroup)
 # reversion.register(OrganisationRequestUserAction)
 # reversion.register(OrganisationRequestDeclinedDetails)
 # reversion.register(OrganisationRequestLogDocument)

@@ -1,14 +1,17 @@
 import logging
 import traceback
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import CharField, IntegerField, Q, Value
 from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from ledger_api_client.managed_models import SystemGroupPermission
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
@@ -24,7 +27,6 @@ from leaseslicensing.components.main.decorators import (
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.organisations.models import (  # ledger_organisation,
     Organisation,
-    OrganisationAccessGroup,
     OrganisationContact,
     OrganisationRequest,
     OrganisationRequestUserAction,
@@ -995,17 +997,21 @@ class OrganisationAccessGroupMembers(views.APIView):
     ]
 
     def get(self, request, format=None):
+        if not is_internal(request):
+            raise PermissionDenied()
+
         members = []
-        if is_internal(request):
-            group = OrganisationAccessGroup.objects.first()
-            if group:
-                for m in group.all_members:
-                    members.append({"name": m.get_full_name(), "id": m.id})
-            else:
-                for m in EmailUser.objects.filter(
-                    is_superuser=True, is_staff=True, is_active=True
-                ):
-                    members.append({"name": m.get_full_name(), "id": m.id})
+        permissions = SystemGroupPermission.objects.filter(
+            system_group__name=settings.GROUP_NAME_ORGANISATION_ACCESS
+        )
+        for permission in permissions:
+            members.append(
+                {
+                    "name": permission.emailuser.get_full_name(),
+                    "id": permission.emailuser.id,
+                }
+            )
+
         return Response(members)
 
 

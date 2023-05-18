@@ -1,9 +1,6 @@
 from django.contrib import admin
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.organisations import models
-
-# Register your models here.
 
 
 class UserDelegationInline(admin.TabularInline):
@@ -90,25 +87,6 @@ class OrganisationRequestAdmin(admin.ModelAdmin):
             return obj.organisation.ledger_organisation_name
         if obj.name:
             return obj.name
-
-
-@admin.register(models.OrganisationAccessGroup)
-class OrganisationAccessGroupAdmin(admin.ModelAdmin):
-    # filter_horizontal = ('members',)
-    exclude = ("site",)
-    actions = None
-
-    def formfield_for_manytomany(self, db_field, request, **kwargs):
-        if db_field.name == "members":
-            # kwargs["queryset"] = EmailUser.objects.filter(email__icontains='@dbca.wa.gov.au')
-            kwargs["queryset"] = EmailUser.objects.filter(is_staff=True)
-        return super().formfield_for_manytomany(db_field, request, **kwargs)
-
-    def has_add_permission(self, request):
-        return True if models.OrganisationAccessGroup.objects.count() == 0 else False
-
-    def has_delete_permission(self, request, obj=None):
-        return False
 
 
 @admin.register(models.OrganisationContact)
