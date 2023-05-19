@@ -42,7 +42,7 @@
                 Get GeoJSON</button>
         </div>
 
-        <VueAlert :show.sync="errorMessage != null" type="danger" style="color: red"><strong> {{ errorMessage }} </strong></VueAlert>
+        <VueAlert :show.sync="_errorMessage != null" type="danger" style="color: red"><strong> {{ _errorMessage }} </strong></VueAlert>
 
         <div :id="map_container_id" style="position: relative;">
             <div :id="elem_id" class="map">
@@ -357,7 +357,7 @@ export default {
                     width: 1,
                 }),
             set_mode: set_mode,
-            errorMessage: null,
+            _errorMessage: null,
         }
     },
     computed: {
@@ -765,7 +765,22 @@ export default {
                 },
                 finishCondition: function (evt) {
                     if (vm.lastPoint) {
-                        return true;
+                        // Validate the feature before adding it to the layer
+                        vm.validateFeature().then(async (features) => {
+                            if (features.length === 0) {
+                                console.warn("New feature is not valid");
+                                vm.queryingGeoserver = false;
+
+                                if (vm._errorMessage === null) {
+                                    vm._errorMessage = "The polygon you have drawn does not intersect with any DBCA lands or water.";
+                                }
+                            } else {
+                                console.log("New feature is valid", features);
+                                vm.drawForProposal.finishDrawing()
+                                vm.queryingGeoserver = false;
+                                vm._errorMessage = null;
+                            }
+                        });
                     }
                     return false;
                 },
@@ -775,37 +790,7 @@ export default {
                 console.log("ESC key pressed");
             })
             vm.drawForProposal.on('drawstart', function () {
-                vm.errorMessage = null;
-                vm.proposalQuerySource.once('addfeature', (evt) => {
-                    // Validate the feature after adding it to the layer
-                    vm.validateFeature(evt.feature).then((features) => {
-                        if (features.length === 0) {
-                            // Remove the feature if it is not valid
-                            console.warn("New feature is not valid");
-                            // Style invalid feature red
-                            let style = new Style({
-                                stroke: new Stroke({
-                                    color: "red",
-                                    width: 1,
-                                }),
-                                fill: new Fill({
-                                    color: "red",
-                                }),
-                            });
-                            evt.feature.setStyle(style);
-                            vm.queryingGeoserver = false;
-                            // Remove the feature after a 1 second delay
-                            const delay = t => new Promise(resolve => setTimeout(resolve, t));
-                            delay(1000).then(() => vm.proposalQuerySource.removeFeature(evt.feature));
-                            if (vm.errorMessage === null) {
-                                vm.errorMessage = "The polygon you have drawn is not valid. Please try again.";
-                            }
-                        } else {
-                            console.log("New feature is valid", features);
-                            vm.queryingGeoserver = false;
-                        }
-                    });
-                });
+                vm._errorMessage = null;
                 vm.lastPoint = null;
             });
             vm.drawForProposal.on('click'), function (evt) {
@@ -1211,8 +1196,7 @@ export default {
                 "maxFeatures":"5000",
                 "srsName":vm.owsLandWaterSrsName,
                 "outputFormat": "application/json",
-                "propertyName": vm.owsLandWaterPropertyName, // TODO: better name
-                // "propertyName": "objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting",
+                "propertyName": vm.owsLandWaterPropertyName,
                 "CQL_FILTER":`INTERSECTS(${vm.owsLandWaterGeometryName},${polygon_wkt})`,
                 }
             // Turn params dict into a param query string
@@ -1229,7 +1213,7 @@ export default {
                 features = new GeoJSON().readFeatures(data[0]);
             }).catch((error) => {
                 console.log(error.message);
-                vm.errorMessage = error.message;
+                vm._errorMessage = error.message;
             });
 
             return features;
