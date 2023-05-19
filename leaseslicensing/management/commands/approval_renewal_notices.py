@@ -1,76 +1,70 @@
-from django.core.management.base import BaseCommand
-from django.utils import timezone
+""" This command should be run as a daily cron job to send renewal notices for approvals
+that are due to expire in x days (defined in settings.APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY)  """
+
+import logging
+from datetime import timedelta
+
 from django.conf import settings
-from leaseslicensing.components.approvals.models import Approval
-from leaseslicensing.components.main.models import ApplicationType
-from datetime import date, timedelta
+from django.core.management.base import BaseCommand
+from django.db import transaction
+from django.db.models import Q
+from django.utils import timezone
+
 from leaseslicensing.components.approvals.email import (
     send_approval_renewal_email_notification,
 )
-
-import itertools
-
-import logging
+from leaseslicensing.components.approvals.models import Approval
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Send Approval renewal notice when approval is due to expire in 90 days (Excludes E Class licences)"
+    help = (
+        f"Send Approval renewal notice when approval is due to expire in "
+        f"{settings.APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY} days"
+    )
 
     def handle(self, *args, **options):
-        # try:
-        #    user = EmailUser.objects.get(email=settings.CRON_EMAIL)
-        # except:
-        #    user = EmailUser.objects.create(email=settings.CRON_EMAIL, password="")
-
         errors = []
         updates = []
         today = timezone.localtime(timezone.now()).date()
-        expiry_notification_date = today + timedelta(days=90)
+        expiry_notification_date = today + timedelta(
+            days=settings.APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY
+        )
         renewal_conditions = {
             "expiry_date__lte": expiry_notification_date,
             "renewal_sent": False,
             "replaced_by__isnull": True,
         }
-        logger.info("Running command {}".format(__name__))
+        logger.info(f"Running command {__name__}")
+        approvals = Approval.objects.filter(
+            Q(status="current") | Q(status="suspended")
+        ).filter(**renewal_conditions)
 
-        # 2 month licences cannot be renewed
-        exclude_application_types = [
-            ApplicationType.FILMING,
-            ApplicationType.EVENT,
-            ApplicationType.ECLASS,
-        ]
-        # qs=Approval.objects.filter(**renewal_conditions).exclude(current_proposal__other_details__preferred_licence_period='2_months').exclude(current_proposal__application_type__name='E Class')
-        qs = (
-            Approval.objects.filter(**renewal_conditions)
-            .exclude(
-                current_proposal__other_details__preferred_licence_period="2_months"
-            )
-            .exclude(
-                current_proposal__application_type__name__in=exclude_application_types
-            )
-        )
-        logger.info("{}".format(qs))
-        for a in qs:
-            if a.status == "current" or a.status == "suspended":
-                try:
-                    a.generate_renewal_doc()
-                    send_approval_renewal_email_notification(a)
-                    a.renewal_sent = True
-                    a.save()
-                    logger.info("Renewal notice sent for Approval {}".format(a.id))
-                    updates.append(a.lodgement_number)
-                except Exception as e:
-                    err_msg = "Error sending renewal notice for Approval {}".format(
-                        a.lodgement_number
-                    )
-                    logger.error("{}\n{}".format(err_msg, str(e)))
-                    errors.append(err_msg)
+        if not approvals or 0 == len(approvals):
+            logger.info("No approvals found that need renewal notices sent today.")
+            return
+
+        logger.info(f"{approvals}")
+        for approval in approvals:
+            try:
+                with transaction.atomic():
+                    approval.generate_renewal_doc()
+                    send_approval_renewal_email_notification(approval)
+                    approval.renewal_sent = True
+                    approval.save()
+                logger.info(f"Renewal notice sent for Approval {approval.id}")
+                updates.append(approval.lodgement_number)
+            except Exception as e:
+                err_msg = "Error sending renewal notice for Approval {}".format(
+                    approval.lodgement_number
+                )
+                logger.error(f"{err_msg}\n{str(e)}")
+                errors.append(err_msg)
 
         cmd_name = __name__.split(".")[-1].replace("_", " ").upper()
         err_str = (
-            '<strong style="color: red;">Errors: {}</strong>'.format(len(errors))
+            f'<strong style="color: red;">Errors: {len(errors)}</strong>'
             if len(errors) > 0
             else '<strong style="color: green;">Errors: 0</strong>'
         )
