@@ -42,6 +42,8 @@
                 Get GeoJSON</button>
         </div>
 
+        <VueAlert :show.sync="errorMessage != null" type="danger" style="color: red"><strong> {{ errorMessage }} </strong></VueAlert>
+
         <div :id="map_container_id" style="position: relative;">
             <div :id="elem_id" class="map">
                 <div class="basemap-button">
@@ -160,6 +162,7 @@
 import { v4 as uuid } from 'uuid';
 import { api_endpoints, helpers, constants, utils } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
+import VueAlert from '@vue-utils/alert.vue'
 
 import { toRaw } from 'vue';
 import 'ol/ol.css';
@@ -328,7 +331,8 @@ export default {
                     color: 'rgba(255, 255, 255, 0.5)',
                     width: 1,
                 }),
-            set_mode: set_mode
+            set_mode: set_mode,
+            errorMessage: null,
         }
     },
     computed: {
@@ -374,6 +378,7 @@ export default {
     components: {
         CollapsibleFilters,
         RangeSlider,
+        VueAlert,
         helpers,
     },
     watch: {
@@ -745,6 +750,7 @@ export default {
                 console.log("ESC key pressed");
             })
             vm.drawForProposal.on('drawstart', function () {
+                vm.errorMessage = null;
                 vm.proposalQuerySource.once('addfeature', (evt) => {
                     // Validate the feature after adding it to the layer
                     vm.validateFeature(evt.feature).then((features) => {
@@ -762,11 +768,14 @@ export default {
                                 }),
                             });
                             evt.feature.setStyle(style);
+                            vm.queryingGeoserver = false;
                             // Remove the feature after a 1 second delay
                             const delay = t => new Promise(resolve => setTimeout(resolve, t));
                             delay(1000).then(() => vm.proposalQuerySource.removeFeature(evt.feature));
+                            vm.errorMessage = "The polygon you have drawn is not valid. Please try again.";
                         } else {
                             console.log("New feature is valid", features);
+                            vm.queryingGeoserver = false;
                         }
                     });
                 });
@@ -1182,9 +1191,9 @@ export default {
             let params = new URLSearchParams(paramsDict).toString();
 
             let features = [];
-            vm.queryingGeoserver = true;
-            // Query the WFS
 
+            // Query the WFS
+            vm.queryingGeoserver = true;
             var urls = [`${url}${params}`];
 
             var requests = urls.map(url => utils.fetchUrl(url).then(response => response));
@@ -1194,7 +1203,6 @@ export default {
                 console.log(error.message);
             });
 
-            vm.queryingGeoserver = false;
             return features;
         }
     },
