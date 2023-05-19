@@ -23,6 +23,7 @@ from leaseslicensing.components.approvals.models import (
 )
 from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
+    ApprovalDocumentHistorySerializer,
     ApprovalExtendSerializer,
     ApprovalLogEntrySerializer,
     ApprovalPaymentSerializer,
@@ -95,8 +96,6 @@ class GetApprovalTypesDict(views.APIView):
                 settings.LOV_CACHE_TIMEOUT,
             )
         return Response(approval_types_dict)
-
-
 
 
 class GetApprovalStatusesDict(views.APIView):
@@ -788,6 +787,25 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
+
+    @list_route(
+        methods=[
+            "GET",
+        ]
+    )
+    @basic_exception_handler
+    def approval_history(self, request, *args, **kwargs):
+        approval_history_id = request.query_params["approval_id"]
+        if not approval_history_id:
+            raise serializers.ValidationError("Approval ID is required")
+
+        instance = Approval.objects.get(id=approval_history_id)
+        approval_documents = ApprovalDocument.objects.filter(
+            approval__lodgement_number=instance.lodgement_number,
+            name__icontains="approval",
+        ).order_by("-uploaded_date")
+        serializer = ApprovalDocumentHistorySerializer(approval_documents, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
