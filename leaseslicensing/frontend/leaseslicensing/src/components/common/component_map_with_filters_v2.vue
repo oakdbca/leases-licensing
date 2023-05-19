@@ -141,7 +141,7 @@
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
-            <BootstrapSpinner v-if="redirectingToProposalDetails" class="text-primary" />
+            <BootstrapSpinner v-if="redirectingToProposalDetails || queryingGeoserver" class="text-primary" />
 
         </div>
         <div class="row">
@@ -158,7 +158,7 @@
 
 <script>
 import { v4 as uuid } from 'uuid';
-import { api_endpoints, helpers, constants } from '@/utils/hooks'
+import { api_endpoints, helpers, constants, utils } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 
 import { toRaw } from 'vue';
@@ -307,6 +307,7 @@ export default {
             selectedFeature: null,
             selectedProposal: null,
             redirectingToProposalDetails: false,
+            queryingGeoserver: false,
             proposals: [],
             filteredProposals: [],
             proposalQuerySource: null,
@@ -734,22 +735,6 @@ export default {
                 },
                 finishCondition: function (evt) {
                     if (vm.lastPoint) {
-
-                        // Validate
-                        vm.sketchCoordinates
-                        let coordinates = vm.sketchCoordinates.slice();
-                        coordinates.push(coordinates[0]);
-                        let feature = new Feature({
-                            id: -1,
-                            geometry: new Polygon([coordinates]),
-                            label: "validation",
-                            color: vm.defaultColor,
-                            polygon_source: "validation",
-                        });
-
-                        vm.optionalLayers[0]
-
-                        // If the last point is set, we're finishing the feature
                         return true;
                     }
                     return false;
@@ -759,7 +744,32 @@ export default {
             vm.drawForProposal.on('change:escKey', function (evt) {
                 console.log("ESC key pressed");
             })
-            vm.drawForProposal.on('drawstart', function (evt) {
+            vm.drawForProposal.on('drawstart', function () {
+                vm.proposalQuerySource.once('addfeature', (evt) => {
+                    // Validate the feature after adding it to the layer
+                    vm.validateFeature(evt.feature).then((features) => {
+                        if (features.length === 0) {
+                            // Remove the feature if it is not valid
+                            console.warn("New feature is not valid");
+                            // Style invalid feature red
+                            let style = new Style({
+                                stroke: new Stroke({
+                                    color: "red",
+                                    width: 1,
+                                }),
+                                fill: new Fill({
+                                    color: "red",
+                                }),
+                            });
+                            evt.feature.setStyle(style);
+                            // Remove the feature after a 1 second delay
+                            const delay = t => new Promise(resolve => setTimeout(resolve, t));
+                            delay(1000).then(() => vm.proposalQuerySource.removeFeature(evt.feature));
+                        } else {
+                            console.log("New feature is valid", features);
+                        }
+                    });
+                });
                 vm.lastPoint = null;
             });
             vm.drawForProposal.on('click'), function (evt) {
@@ -834,6 +844,9 @@ export default {
                 vm.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
                     selected = feature;
                     let proposal = selected.getProperties().proposal
+                    if (!proposal) {
+                        console.error("No proposal found for feature");
+                    }
                     proposal.polygon_source = selected.getProperties().polygon_source
                     vm.selectedProposal = proposal
                     selected.setStyle(hoverSelect);
@@ -1119,6 +1132,71 @@ export default {
 
             return format.writeFeatures(features);
         },
+        /**
+         * Validates an openlayers feature against the geoserver.
+         * @param {*} feature A feature to validate
+         * @returns {Promise} A promise that resolves to a list of intersected features
+         */
+        validateFeature: async function (feature) {
+            let vm = this;
+
+            if (feature === undefined) {
+                // If no feature is provided, create a feature from the current sketch
+                let coordinates = vm.sketchCoordinates.slice();
+                coordinates.push(coordinates[0]);
+                feature = new Feature({
+                    id: -1,
+                    geometry: new Polygon([coordinates]),
+                    label: "validation",
+                    color: vm.defaultColor,
+                    polygon_source: "validation",
+                });
+            }
+
+            // Prepare a WFS feature intersection request
+            var url = `${env['kmi_server_url']}/geoserver/public/ows/?`;
+            let flatCoordinates = feature.values_.geometry.flatCoordinates;
+
+            // Transform list of flat coordinates into a list of coordinate pairs,
+            // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
+            let flatCoordinateStringPairs = flatCoordinates.map((coord, index) => index % 2 == 0 ?
+                    [flatCoordinates[index], flatCoordinates[index + 1]].join(" ") :
+                        "")
+                    .filter(item => item != "")
+
+            // Create a Well-Known-Text polygon string from the coordinate pairs
+            let polygon_wkt = `POLYGON ((${flatCoordinateStringPairs.join(", ")}))`
+            // Create a params dict for the WFS request
+            let paramsDict = {
+                "service":"WFS",
+                "version":"1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported
+                "request":"GetFeature",
+                "typeName":"public:dbca_legislated_lands_and_waters",
+                "maxFeatures":"5000",
+                "srsName":"EPSG:4326",
+                "outputFormat": "application/json",
+                // "propertyName": "leg_name,leg_tenure,leg_act,category",
+                "CQL_FILTER":`INTERSECTS(wkb_geometry,${polygon_wkt})`,
+                }
+            // Turn params dict into a param query string
+            let params = new URLSearchParams(paramsDict).toString();
+
+            let features = [];
+            vm.queryingGeoserver = true;
+            // Query the WFS
+
+            var urls = [`${url}${params}`];
+
+            var requests = urls.map(url => utils.fetchUrl(url).then(response => response));
+            await Promise.all(requests).then((data) => {
+                features = new GeoJSON().readFeatures(data[0]);
+            }).catch((error) => {
+                console.log(error.message);
+            });
+
+            vm.queryingGeoserver = false;
+            return features;
+        }
     },
     created: function () {
         console.log('created()')
