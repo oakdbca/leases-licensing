@@ -1,9 +1,11 @@
 from django.conf import settings
+from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
 from leaseslicensing.components.approvals.models import (
     Approval,
+    ApprovalDocument,
     ApprovalLogEntry,
     ApprovalUserAction,
 )
@@ -335,3 +337,26 @@ class ApprovalLogEntrySerializer(CommunicationLogEntrySerializer):
         model = ApprovalLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
+
+
+class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
+    history_date = serializers.SerializerMethodField()
+    history_document_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApprovalDocument
+        fields = (
+            "history_date",
+            "history_document_url",
+        )
+
+    def get_history_date(self, obj):
+        date_format_loc = timezone.localtime(obj.uploaded_date)
+        history_date = date_format_loc.strftime("%d/%m/%Y %H:%M:%S.%f")
+
+        return history_date
+
+    def get_history_document_url(self, obj):
+        # Todo: Change to secure file / document url
+        url = obj._file.url
+        return url
