@@ -323,6 +323,8 @@ KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
 KMI_AUTH_USERNAME = env("KMI_AUTH_USERNAME")
 KMI_AUTH_PASSWORD = env("KMI_AUTH_PASSWORD")
 
+APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY = 90
+
 template_title = "Leases and Licensing"
 template_group = "parkswildlife"
 
