@@ -220,6 +220,7 @@ export default {
             lastPoint: null,
             sketchCoordinates: [[]],
             sketchCoordinatesHistory: [[]],
+            featurePriorToDrawEnd: null,
         }
     },
 
@@ -616,6 +617,14 @@ export default {
 
                     return geometry;
                 },
+                finishCondition: function (evt) {
+                    console.log(JSON.stringify(evt));
+                    // if (evt.feature.getGeometry().getCoordinates()[0].length > 5) {
+                    vm.drawForLeaselicence.removeLastPoint();
+                    //     return false;
+                    // }
+                    return false;
+                }
             })
             vm.drawForLeaselicence.on('drawstart', function (evt) {
                 vm.lastPoint = null;
@@ -624,8 +633,17 @@ export default {
                 console.log(evt);
             }
             vm.drawForLeaselicence.on('drawend', function (evt) {
+                let nonintersecting = true;
+                alert('drawend')
+                if (nonintersecting) {
+                    evt.preventDefault();
+                    alert('Polygong not intersecting')
+                    // vm.featurePriorToDrawEnd = { ... }
+                    // evt.feature = { ...evt.feature.removeLastPoint() }
+
+                }
                 console.log(evt);
-                console.log(evt.feature.values_.geometry.flatCoordinates);
+                alert(evt.feature.values_.geometry.flatCoordinates);
                 //evt.feature.setId(vm.newFeatureId)
                 evt.feature.setProperties({ "id": vm.newFeatureId })
                 vm.newFeatureId++;
