@@ -431,16 +431,11 @@ class Approval(RevisionedMixin):
 
     @property
     def can_renew(self):
-        try:
-            renew_conditions = {
-                "previous_application": self.current_proposal,
-                "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
-            }
-            proposal = Proposal.objects.get(**renew_conditions)
-            if proposal:
-                return False
-        except Proposal.DoesNotExist:
-            return True
+        renewal_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
+        }
+        return not Proposal.objects.filter(**renewal_conditions).exists()
 
     # copy amend_renew() from ML?
     @property
