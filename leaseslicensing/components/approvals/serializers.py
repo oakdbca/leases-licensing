@@ -139,6 +139,15 @@ class ApprovalSerializer(serializers.ModelSerializer):
     holder = serializers.SerializerMethodField()
     holder_obj = serializers.SerializerMethodField()
     groups_comma_list = serializers.SerializerMethodField(read_only=True)
+    site_name = serializers.CharField(
+        source="current_proposal.site_name.name", allow_null=True, read_only=True
+    )
+    groups_names_list = serializers.ListField(
+        source="current_proposal.groups_names_list", read_only=True
+    )
+    categories_list = serializers.ListField(
+        source="current_proposal.categories_list", read_only=True
+    )
 
     class Meta:
         model = Approval
@@ -183,6 +192,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "requirement_docs",
             "submitter",
             "groups_comma_list",
+            "groups_names_list",
+            "categories_list",
+            "site_name",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We

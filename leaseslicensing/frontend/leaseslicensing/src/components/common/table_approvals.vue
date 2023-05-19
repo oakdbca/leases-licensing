@@ -325,10 +325,11 @@ export default {
                     'Status',
                     'Expiry Date',
                     'Document',
-                    'Site Name',
-                    'Group(s)',
-                    'Original Lease/License Number',
                     'Action',
+                    'Original Lease/License Number',
+                    'Site Name',
+                    'Groups',
+                    'Categories',
                 ]
             }
         },
@@ -373,24 +374,47 @@ export default {
         },
         columnSite: function () {
             return {
-                data: "id",
+                data: "site_name",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
                     // TODO Site
-                    return 'Todo: static value'
+                    return full.site_name;
                 }
             }
         },
         columnGroups: function () {
             return {
-                data: "id",
+                data: "groups_names_list",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
-                    return full.groups_comma_list
+                    let html = '';
+                    if (full.groups_names_list) {
+                        for (let i = 0; i < full.groups_names_list.length; i++) {
+                            html += `<span class="badge bg-primary">${full.groups_names_list[i]}</span>&nbsp;`;
+                        }
+                    }
+                    return html
+                }
+            }
+        },
+        columnCategories: function () {
+            return {
+                data: "categories_list",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    let html = '';
+                    if (full.categories_list) {
+                        for (let i = 0; i < full.categories_list.length; i++) {
+                            html += `<span class="badge bg-primary">${full.categories_list[i]}</span>&nbsp;`;
+                        }
+                    }
+                    return html
                 }
             }
         },
@@ -569,10 +593,11 @@ export default {
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
+                    vm.columnAction,
+                    vm.columnOriginalLeaseLicenseNumber,
                     vm.columnSite,
                     vm.columnGroups,
-                    vm.columnOriginalLeaseLicenseNumber,
-                    vm.columnAction,
+                    vm.columnCategories,
                 ]
             }
             let buttons = []

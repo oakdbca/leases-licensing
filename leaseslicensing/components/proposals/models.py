@@ -3278,6 +3278,14 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def groups_comma_list(self):
         return ", ".join([pg.group.name for pg in self.groups.all()])
 
+    @property
+    def groups_names_list(self):
+        return self.groups.values_list("group__name", flat=True)
+
+    @property
+    def categories_list(self):
+        return self.categories.values_list("category__name", flat=True)
+
 
 class ProposalIdentifier(models.Model):
     proposal = models.ForeignKey(
