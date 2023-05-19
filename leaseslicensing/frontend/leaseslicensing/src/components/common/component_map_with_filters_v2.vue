@@ -258,6 +258,31 @@ export default {
                 return true;
             }
         },
+        owsVersion: {
+            type: String,
+            required: false,
+            default: "1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported by Geoserver
+        },
+        owsLandWaterSrsName: {
+            type: String,
+            required: false,
+            default: "EPSG:4326",
+        },
+        owsLandWaterTypeName: {
+            type: String,
+            required: false,
+            default: "public:dbca_legislated_lands_and_waters",
+        },
+        owsLandWaterGeometryName: {
+            type: String,
+            required: false,
+            default: "wkb_geometry",
+        },
+        owsLandWaterPropertyName: {
+            type: String,
+            required: false,
+            default: "wkb_geometry",
+        },
         filterable: {
             type: Boolean,
             required: false,
@@ -772,7 +797,9 @@ export default {
                             // Remove the feature after a 1 second delay
                             const delay = t => new Promise(resolve => setTimeout(resolve, t));
                             delay(1000).then(() => vm.proposalQuerySource.removeFeature(evt.feature));
-                            vm.errorMessage = "The polygon you have drawn is not valid. Please try again.";
+                            if (vm.errorMessage === null) {
+                                vm.errorMessage = "The polygon you have drawn is not valid. Please try again.";
+                            }
                         } else {
                             console.log("New feature is valid", features);
                             vm.queryingGeoserver = false;
@@ -1143,7 +1170,7 @@ export default {
         },
         /**
          * Validates an openlayers feature against the geoserver.
-         * @param {*} feature A feature to validate
+         * @param {Feature} feature A feature to validate
          * @returns {Promise} A promise that resolves to a list of intersected features
          */
         validateFeature: async function (feature) {
@@ -1178,14 +1205,15 @@ export default {
             // Create a params dict for the WFS request
             let paramsDict = {
                 "service":"WFS",
-                "version":"1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported
+                "version":vm.owsVersion,
                 "request":"GetFeature",
-                "typeName":"public:dbca_legislated_lands_and_waters",
+                "typeName": vm.owsLandWaterTypeName,
                 "maxFeatures":"5000",
-                "srsName":"EPSG:4326",
+                "srsName":vm.owsLandWaterSrsName,
                 "outputFormat": "application/json",
-                // "propertyName": "leg_name,leg_tenure,leg_act,category",
-                "CQL_FILTER":`INTERSECTS(wkb_geometry,${polygon_wkt})`,
+                "propertyName": vm.owsLandWaterPropertyName, // TODO: better name
+                // "propertyName": "objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting",
+                "CQL_FILTER":`INTERSECTS(${vm.owsLandWaterGeometryName},${polygon_wkt})`,
                 }
             // Turn params dict into a param query string
             let params = new URLSearchParams(paramsDict).toString();
@@ -1201,6 +1229,7 @@ export default {
                 features = new GeoJSON().readFeatures(data[0]);
             }).catch((error) => {
                 console.log(error.message);
+                vm.errorMessage = error.message;
             });
 
             return features;

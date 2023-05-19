@@ -48,6 +48,7 @@
                         <MapComponent ref="component_map"
                             :key="componentMapKey"
                             :proposalIds="[proposal.id]"
+                            owsLandWaterPropertyName="objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting"
                             styleBy="assessor"
                             :filterable="false"
                             :drawable="true"
