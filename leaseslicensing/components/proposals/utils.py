@@ -474,7 +474,7 @@ def save_proponent_data_registration_of_interest(instance, request, viewset):
     logger.debug("Saving groups data.")
     save_groups_data(instance, proposal_data["groups"])
 
-    save_geometry(instance, request, viewset)
+    save_geometry(instance, request)
 
     populate_gis_data(instance)
 
@@ -499,7 +499,7 @@ def save_proponent_data_lease_licence(instance, request, viewset):
 
     save_groups_data(instance, proposal_data["groups"])
 
-    save_geometry(instance, request, viewset)
+    save_geometry(instance, request)
 
     if viewset.action == "submit":
         check_geometry(instance)
@@ -579,7 +579,7 @@ def save_assessor_data(proposal, request, viewset):
                         # Not yet sure what the intention for answer_ob is but just printing as it wasn't accessed.
                         print(answer_obj)
         # Save geometry
-        save_geometry(proposal, request, viewset)
+        save_geometry(proposal, request)
         populate_gis_data(proposal)
 
 
@@ -591,7 +591,7 @@ def check_geometry(instance):
             )
 
 
-def save_geometry(instance, request, viewset):
+def save_geometry(instance, request):
     logger.debug("\n\n\nsaving geometry")
 
     proposal_geometry_str = request.data.get("proposal_geometry", None)
