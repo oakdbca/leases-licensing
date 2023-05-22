@@ -185,7 +185,10 @@ import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/co
 
 export default {
     name: 'MapComponentWithFiltersV2',
-    emits: ['filter-appied'],
+    emits: [
+            'filter-appied',
+            'validate-feature',
+            ],
     props: {
         level: {
             type: String,
@@ -258,30 +261,20 @@ export default {
                 return true;
             }
         },
-        owsVersion: {
-            type: String,
+        owsQuery: {
+            type: Object,
             required: false,
-            default: "1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported by Geoserver
-        },
-        owsLandWaterSrsName: {
-            type: String,
-            required: false,
-            default: "EPSG:4326",
-        },
-        owsLandWaterTypeName: {
-            type: String,
-            required: false,
-            default: "public:dbca_legislated_lands_and_waters",
-        },
-        owsLandWaterGeometryName: {
-            type: String,
-            required: false,
-            default: "wkb_geometry",
-        },
-        owsLandWaterPropertyName: {
-            type: String,
-            required: false,
-            default: "wkb_geometry",
+            default: () => {
+                return {
+                    "version": "1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported by the geoserver
+                    "landwater": {
+                        "typeName": "public:dbca_legislated_lands_and_waters",
+                        "srsName": "EPSG:4326",
+                        "propertyName": "wkb_geometry", // Default to query for feature geometries only
+                        "geometry": "wkb_geometry", // Geometry name (not `the_geom`)
+                    },
+                }
+            }
         },
         filterable: {
             type: Boolean,
@@ -765,22 +758,7 @@ export default {
                 },
                 finishCondition: function (evt) {
                     if (vm.lastPoint) {
-                        // Validate the feature before adding it to the layer
-                        vm.validateFeature().then(async (features) => {
-                            if (features.length === 0) {
-                                console.warn("New feature is not valid");
-                                vm.queryingGeoserver = false;
-
-                                if (vm._errorMessage === null) {
-                                    vm._errorMessage = "The polygon you have drawn does not intersect with any DBCA lands or water.";
-                                }
-                            } else {
-                                console.log("New feature is valid", features);
-                                vm.drawForProposal.finishDrawing()
-                                vm.queryingGeoserver = false;
-                                vm._errorMessage = null;
-                            }
-                        });
+                        vm.$emit('validate-feature');
                     }
                     return false;
                 },
@@ -1154,11 +1132,33 @@ export default {
             return format.writeFeatures(features);
         },
         /**
-         * Validates an openlayers feature against the geoserver.
-         * @param {Feature} feature A feature to validate
-         * @returns {Promise} A promise that resolves to a list of intersected features
+         * Returns a dictionary of query parameters for a given layer
+         * @param {String} layerStr The dictionary key containing the layer information
          */
-        validateFeature: async function (feature) {
+        queryParamsDict: function(layerStr) {
+            let vm = this;
+
+            if (!layerStr in vm.owsQuery) {
+                console.error(`Layer ${layerStr} not found in OWS query`);
+                return {};
+            }
+
+            return {
+                "service":"WFS",
+                "version":vm.owsQuery.version,
+                "request":"GetFeature",
+                "typeName": vm.owsQuery[layerStr].typeName,
+                "maxFeatures":"5000",
+                "srsName":vm.owsQuery[layerStr].srsName,
+                "outputFormat": "application/json",
+                "propertyName": vm.owsQuery[layerStr].propertyName,
+            }
+        },
+        /**
+         * Returns a Well-known-text (WKT) representation of a feature
+         * @param {Feature} feature A feature to validate
+         */
+        featureToWKT: function (feature) {
             let vm = this;
 
             if (feature === undefined) {
@@ -1175,7 +1175,6 @@ export default {
             }
 
             // Prepare a WFS feature intersection request
-            var url = `${env['kmi_server_url']}/geoserver/public/ows/?`;
             let flatCoordinates = feature.values_.geometry.flatCoordinates;
 
             // Transform list of flat coordinates into a list of coordinate pairs,
@@ -1186,27 +1185,21 @@ export default {
                     .filter(item => item != "")
 
             // Create a Well-Known-Text polygon string from the coordinate pairs
-            let polygon_wkt = `POLYGON ((${flatCoordinateStringPairs.join(", ")}))`
-            // Create a params dict for the WFS request
-            let paramsDict = {
-                "service":"WFS",
-                "version":vm.owsVersion,
-                "request":"GetFeature",
-                "typeName": vm.owsLandWaterTypeName,
-                "maxFeatures":"5000",
-                "srsName":vm.owsLandWaterSrsName,
-                "outputFormat": "application/json",
-                "propertyName": vm.owsLandWaterPropertyName,
-                "CQL_FILTER":`INTERSECTS(${vm.owsLandWaterGeometryName},${polygon_wkt})`,
-                }
-            // Turn params dict into a param query string
-            let params = new URLSearchParams(paramsDict).toString();
+            return `POLYGON ((${flatCoordinateStringPairs.join(", ")}))`;
+        },
+        /**
+         * Validates an openlayers feature against a geoserver `url`.
+         * @param {Feature} feature A feature to validate
+         * @returns {Promise} A promise that resolves to a list of intersected features
+         */
+        validateFeatureQuery: async function (query) {
+            let vm = this;
 
             let features = [];
-
             // Query the WFS
             vm.queryingGeoserver = true;
-            var urls = [`${url}${params}`];
+            // var urls = [`${url}${params}`];
+            var urls = [query];
 
             var requests = urls.map(url => utils.fetchUrl(url).then(response => response));
             await Promise.all(requests).then((data) => {
@@ -1217,7 +1210,32 @@ export default {
             });
 
             return features;
-        }
+        },
+        /**
+         * Finish drawing of the current feature sketch.
+         */
+        finishDrawing: function () {
+            let vm = this;
+            vm.queryingGeoserver = false;
+            vm._errorMessage = null;
+            vm.drawForProposal.finishDrawing()
+        },
+        /**
+         * Returns the current error message or sets it to the provided message.
+         * @param {String} message The new error message
+         */
+        errorMessage: function (message) {
+            if (message === undefined) {
+                return this._errorMessage;
+            }
+
+            let vm = this;
+            vm.queryingGeoserver = false;
+
+            if (vm._errorMessage === null) {
+                vm._errorMessage = message;
+            }
+        },
     },
     created: function () {
         console.log('created()')
