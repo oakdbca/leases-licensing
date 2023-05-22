@@ -549,27 +549,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         return LGA.objects.filter(id__in=ids).values("id", "name")
 
     def get_groups(self, obj):
-        """
-        Returns the groups that have been selected for this proposal.
-        Picks up the groups from the assessor proposition or from the proposal groups
-        member.
-        """
-
-        group_ids = []
-        if obj.approval:
-            # TODO: Draw group ids from approval object
-            group_ids = obj.proposed_issuance_approval.get("groups", [])
-        else:
-            # Get group ids either from the assessor proposition or from the proposal groups member
-            group_ids = (
-                obj.proposed_issuance_approval
-                and obj.proposed_issuance_approval.get("groups", [])
-                or obj.groups
-                and ProposalGroup.objects.filter(proposal=obj).values_list(
-                    "group", flat=True
-                )
-            )
-
+        group_ids = [group.id for group in ProposalGroup.objects.filter(proposal=obj)]
         group_qs = Group.objects.filter(id__in=group_ids).values("id", "name")
         return GroupSerializer(group_qs, many=True).data
 
