@@ -791,15 +791,12 @@ class ApprovalViewSet(viewsets.ModelViewSet):
     @list_route(
         methods=[
             "GET",
-        ]
+        ],
+        detail=True,
     )
     @basic_exception_handler
     def approval_history(self, request, *args, **kwargs):
-        approval_history_id = request.query_params["approval_id"]
-        if not approval_history_id:
-            raise serializers.ValidationError("Approval ID is required")
-
-        instance = Approval.objects.get(id=approval_history_id)
+        instance = self.get_object()
         approval_documents = ApprovalDocument.objects.filter(
             approval__lodgement_number=instance.lodgement_number,
             name__icontains="approval",
