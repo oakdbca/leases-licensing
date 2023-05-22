@@ -3244,7 +3244,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
 class ProposalIdentifier(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="identifiers"
+        Proposal, on_delete=models.CASCADE, related_name="identifiers"
     )
     identifier = models.ForeignKey(Identifier, on_delete=models.PROTECT)
 
@@ -3258,7 +3258,7 @@ class ProposalIdentifier(models.Model):
 
 class ProposalVesting(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="vestings"
+        Proposal, on_delete=models.CASCADE, related_name="vestings"
     )
     vesting = models.ForeignKey(
         Vesting, on_delete=models.PROTECT, null=True, blank=True
@@ -3274,7 +3274,7 @@ class ProposalVesting(models.Model):
 
 class ProposalName(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="names"
+        Proposal, on_delete=models.CASCADE, related_name="names"
     )
     name = models.ForeignKey(Name, on_delete=models.PROTECT, null=True, blank=True)
 
@@ -3288,7 +3288,7 @@ class ProposalName(models.Model):
 
 class ProposalAct(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="acts"
+        Proposal, on_delete=models.CASCADE, related_name="acts"
     )
     act = models.ForeignKey(Act, on_delete=models.PROTECT)
 
@@ -3302,7 +3302,7 @@ class ProposalAct(models.Model):
 
 class ProposalTenure(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="tenures"
+        Proposal, on_delete=models.CASCADE, related_name="tenures"
     )
     tenure = models.ForeignKey(Tenure, on_delete=models.PROTECT)
 
@@ -3316,7 +3316,7 @@ class ProposalTenure(models.Model):
 
 class ProposalCategory(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="categories"
+        Proposal, on_delete=models.CASCADE, related_name="categories"
     )
     category = models.ForeignKey(Category, on_delete=models.PROTECT)
 
@@ -3330,7 +3330,7 @@ class ProposalCategory(models.Model):
 
 class ProposalGroup(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="groups"
+        Proposal, on_delete=models.CASCADE, related_name="groups"
     )
     group = models.ForeignKey(Group, on_delete=models.PROTECT)
 
@@ -3344,7 +3344,7 @@ class ProposalGroup(models.Model):
 
 class ProposalRegion(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="regions"
+        Proposal, on_delete=models.CASCADE, related_name="regions"
     )
     region = models.ForeignKey(Region, on_delete=models.PROTECT, null=True, blank=True)
 
@@ -3358,7 +3358,7 @@ class ProposalRegion(models.Model):
 
 class ProposalDistrict(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="districts"
+        Proposal, on_delete=models.CASCADE, related_name="districts"
     )
     district = models.ForeignKey(
         District, on_delete=models.PROTECT, null=True, blank=True
@@ -3374,7 +3374,7 @@ class ProposalDistrict(models.Model):
 
 class ProposalLGA(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="lgas"
+        Proposal, on_delete=models.CASCADE, related_name="lgas"
     )
     lga = models.ForeignKey(LGA, on_delete=models.PROTECT, null=True, blank=True)
 
