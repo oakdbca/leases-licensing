@@ -6,12 +6,11 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
 from leaseslicensing.components.approvals.email import (
-    send_approval_renewal_email_notification,
+    send_approval_renewal_review_email_notification,
 )
 from leaseslicensing.components.approvals.models import Approval
 
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = (
-        f"Send Approval renewal notice when approval is due to expire in "
+        f"Send Approval renewal review notification to assessors when approval is due to expire in "
         f"{settings.APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY} days"
     )
 
@@ -33,7 +32,7 @@ class Command(BaseCommand):
         )
         renewal_conditions = {
             "expiry_date__lte": expiry_notification_date,
-            "renewal_sent": False,
+            "renewal_review_notification_sent_to_assessors": False,
             "replaced_by__isnull": True,
         }
         logger.info(f"Running command {__name__}")
@@ -42,18 +41,23 @@ class Command(BaseCommand):
         ).filter(**renewal_conditions)
 
         if not approvals or 0 == len(approvals):
-            logger.info("No approvals found that need renewal notices sent today.")
+            logger.info(
+                "No approvals found that need renewal review notifications sent today."
+            )
             return
 
         logger.info(f"{approvals}")
         for approval in approvals:
             try:
-                with transaction.atomic():
-                    approval.generate_renewal_doc()
-                    send_approval_renewal_email_notification(approval)
-                    approval.renewal_sent = True
-                    approval.save()
-                logger.info(f"Renewal notice sent for Approval {approval.id}")
+                send_approval_renewal_review_email_notification(approval)
+                approval.renewal_review_notification_sent_to_assessors = True
+                approval.status = (
+                    Approval.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW
+                )
+                approval.save()
+                logger.info(
+                    f"Renewal review notification sent for Approval {approval.id}"
+                )
                 updates.append(approval.lodgement_number)
             except Exception as e:
                 err_msg = "Error sending renewal notice for Approval {}".format(
