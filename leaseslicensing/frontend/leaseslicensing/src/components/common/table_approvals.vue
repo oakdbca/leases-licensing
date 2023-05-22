@@ -103,14 +103,14 @@
             @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalSuspension>
         <div v-if="approvalHistoryId">
-            <ApprovalHistory ref="approval_history" :key="approvalHistoryId" :approvalId="approvalHistoryId" />
+            <ApprovalHistory ref="approval_history" :key="approvalHistoryId" :approvalId="approvalHistoryId"
+                :approvalLodgementNumber="selectedApprovalLodgementNumber" />
         </div>
     </div>
 </template>
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
-import OfferMooringLicence from '@/components/internal/approvals/offer_mooring_licence.vue'
 import ApprovalCancellation from '../internal/approvals/approval_cancellation.vue'
 import ApprovalSuspension from '../internal/approvals/approval_suspension.vue'
 import ApprovalSurrender from '../internal/approvals/approval_surrender.vue'
@@ -118,7 +118,6 @@ import ApprovalHistory from '../internal/approvals/approval_history.vue'
 import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid';
-import { expandToggle } from '@/components/common/table_functions.js'
 import Swal from 'sweetalert2'
 
 export default {
@@ -152,7 +151,6 @@ export default {
         let vm = this;
         return {
             datatable_id: 'approvals-datatable-' + uuid(),
-            //approvalTypesToDisplay: ['wla'],
             show_expired_surrendered: false,
             selectedWaitingListAllocationId: null,
             approvalHistoryId: null,
@@ -206,7 +204,6 @@ export default {
     },
     components: {
         datatable,
-        OfferMooringLicence,
         ApprovalCancellation,
         ApprovalSuspension,
         ApprovalSurrender,
@@ -526,7 +523,7 @@ export default {
                         }
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
-                        links += `<a href='#${full.id}' data-history-approval='${full.id}'>History</a><br/>`;
+                        links += `<a href='#${full.id}' data-history-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">History</a><br/>`;
                         if (full.can_reissue && full.current_proposal_id && full.is_approver && full.current_proposal_approved) {
                             links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal_id}'>Reissue</a><br/>`;
                         }
@@ -549,7 +546,7 @@ export default {
                             links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
 
                         }
-                        if (full.renewal_document && full.renewal_sent) {
+                        if (full.renewal_document && full.renewal_notification_sent_to_holder) {
                             links += `<a href='${full.renewal_document}' target='_blank'>Renewal Notice</a><br/>`;
                         }
                     }
@@ -842,7 +839,8 @@ export default {
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-history-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-history-approval');
-                vm.approvalHistory(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.approvalHistory(id, lodgement_number);
             });
 
             // Internal review invoice details listener
@@ -1066,8 +1064,9 @@ export default {
             this.$refs.request_new_sticker_modal.approval_id = approval_id
             this.$refs.request_new_sticker_modal.isModalOpen = true
         },
-        approvalHistory: function (id) {
+        approvalHistory: function (id, approvalLodgementNumber) {
             this.approvalHistoryId = parseInt(id);
+            this.selectedApprovalLodgementNumber = approvalLodgementNumber;
             this.uuid++;
             this.$nextTick(() => {
                 this.$refs.approval_history.isModalOpen = true;
