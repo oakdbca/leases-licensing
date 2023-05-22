@@ -77,6 +77,8 @@ from leaseslicensing.settings import (
     APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
     GROUP_NAME_APPROVER,
     GROUP_NAME_ASSESSOR,
+    PROPOSAL_TYPE_AMENDMENT,
+    PROPOSAL_TYPE_RENEWAL,
 )
 
 logger = logging.getLogger(__name__)
@@ -1445,7 +1447,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def is_temporary(self):
-        # return self.customer_status == 'temp' and self.processing_status == 'temp'
         return self.processing_status == "temp"
 
     @property
@@ -1480,7 +1481,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         1 - It is a draft
         2- or if the application has been pushed back to the user
         """
-        # return self.customer_status == 'draft' or self.processing_status == 'awaiting_applicant_response'
         return (
             self.processing_status == "draft"
             or self.processing_status == "awaiting_applicant_response"
@@ -1492,7 +1492,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         An application can be deleted only if it is a draft and it hasn't been lodged yet
         :return:
         """
-        # return self.customer_status == 'draft' and not self.lodgement_number
         return self.processing_status == "draft" and not self.lodgement_number
 
     @property
@@ -1576,7 +1575,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def is_amendment_proposal(self):
-        if self.proposal_type == "amendment":
+        if self.proposal_type == ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT):
             return True
         return False
 
@@ -2261,7 +2260,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 )
                 self.proposed_decline_status = True
                 self.processing_status = "declined"
-                # self.customer_status = 'declined'
                 self.save()
                 # Log proposal action
                 self.log_user_action(
@@ -2827,7 +2825,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         if r.is_deleted:
                             for c in cs:
                                 c.processing_status = "discarded"
-                                # c.customer_status = 'discarded'
                                 c.reminder_sent = True
                                 c.post_reminder_sent = True
                                 c.save()
@@ -2909,11 +2906,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             try:
                 renew_conditions = {
                     "previous_application": previous_proposal,
-                    "customer_status": "with_assessor",
+                    "processing_status": "with_assessor",
                 }
-                # proposal=Proposal.objects.get(previous_application = previous_proposal)
                 proposal = Proposal.objects.get(**renew_conditions)
-                # if proposal.customer_status=='with_assessor':
                 if proposal:
                     raise ValidationError(
                         "A renewal/ amendment for this licence has already been lodged and is awaiting review."
@@ -2921,68 +2916,21 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             except Proposal.DoesNotExist:
                 previous_proposal = Proposal.objects.get(id=self.id)
                 proposal = clone_proposal_with_status_reset(previous_proposal)
-                proposal.proposal_type = "renewal"
-                proposal.training_completed = False
-                # proposal.schema = ProposalType.objects.first().schema
-                ptype = ProposalType.objects.filter(
-                    name=proposal.application_type
-                ).latest("version")
-                proposal.schema = ptype.schema
-                proposal.submitter = request.user
+                proposal.proposal_type = ProposalType.objects.get(
+                    code=PROPOSAL_TYPE_RENEWAL
+                )
+                proposal.submitter = request.user.id
                 proposal.previous_application = self
                 proposal.proposed_issuance_approval = None
 
-                if proposal.application_type.name == ApplicationType.TCLASS:
-                    # require user to re-enter mandatory info in 'Other Details' tab, when renewing
-                    proposal.other_details.insurance_expiry = None
-                    proposal.other_details.preferred_licence_period = None
-                    proposal.other_details.nominated_start_date = None
-
-                    # ProposalAccreditation.objects.filter(
-                    #     proposal_other_details__proposal=proposal
-                    # ).delete()
-
-                    proposal.documents.filter(
-                        input_name__in=["deed_poll", "currency_certificate"]
-                    ).delete()
-
-                    # require  user to pay Application and Licence Fee again
-                    proposal.fee_invoice_reference = None
-
-                    try:
-                        ProposalOtherDetails.objects.get(proposal=proposal)
-                    except ProposalOtherDetails.DoesNotExist:
-                        ProposalOtherDetails.objects.create(proposal=proposal)
-                    # Create a log entry for the proposal
-                    proposal.other_details.nominated_start_date = (
-                        self.approval.expiry_date + datetime.timedelta(days=1)
+                # copy any proposal geometry from the previous proposal
+                for pg in previous_proposal.proposalgeometry.all():
+                    ProposalGeometry.objects.create(
+                        proposal=proposal,
+                        polygon=pg.polygon,
+                        intersects=pg.intersects,
+                        copied_from=pg,
                     )
-                    proposal.other_details.save()
-                if proposal.application_type.name == ApplicationType.FILMING:
-                    proposal.filming_other_details.insurance_expiry = None
-                    proposal.filming_other_details.save()
-                    proposal.filming_activity.commencement_date = None
-                    proposal.filming_activity.completion_date = None
-                    proposal.filming_activity.save()
-                    proposal.documents.filter(
-                        input_name__in=["deed_poll", "currency_certificate"]
-                    ).delete()
-
-                    # require  user to pay Application and Licence Fee again
-                    proposal.fee_invoice_reference = None
-
-                if proposal.application_type.name == ApplicationType.EVENT:
-                    proposal.event_other_details.insurance_expiry = None
-                    proposal.event_other_details.save()
-                    proposal.event_activity.commencement_date = None
-                    proposal.event_activity.completion_date = None
-                    proposal.event_activity.save()
-                    proposal.documents.filter(
-                        input_name__in=["deed_poll", "currency_certificate"]
-                    ).delete()
-
-                    # require  user to pay Application and Licence Fee again
-                    proposal.fee_invoice_reference = None
 
                 req = self.requirements.all().exclude(is_deleted=True)
                 from copy import deepcopy
@@ -2999,6 +2947,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         new_r.id = None
                         new_r.district_proposal = None
                         new_r.save()
+
                 # copy all the requirement documents from previous proposal
                 for requirement in proposal.requirements.all():
                     for requirement_document in RequirementDocument.objects.filter(
@@ -3014,15 +2963,18 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         )
                         requirement_document.can_delete = True
                         requirement_document.save()
-                        # Create a log entry for the proposal
+
+                # Create a log entry for the proposal
                 self.log_user_action(
                     ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id), request
                 )
                 # Create a log entry for the organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id), request
-                )
+                if self.org_applicant:
+                    self.org_applicant.log_user_action(
+                        ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id),
+                        request,
+                    )
+
                 # Log entry for approval
                 from leaseslicensing.components.approvals.models import (
                     ApprovalUserAction,
@@ -3037,7 +2989,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         proposal.previous_application_id
                     )
                 )
-                # proposal.save()
+                from leaseslicensing.components.proposals.utils import populate_gis_data
+
+                # fetch gis data
+                populate_gis_data(proposal)
+
             return proposal
 
     def amend_approval(self, request):
@@ -3049,7 +3005,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     "proposal_type": "amendment",
                 }
                 proposal = Proposal.objects.get(**amend_conditions)
-                # if proposal.customer_status=='with_assessor':
                 if proposal.processing_status in ("with_assessor",):
                     raise ValidationError(
                         "An amendment for this licence has already been lodged and is awaiting review."
@@ -3693,7 +3648,6 @@ class AmendmentRequest(ProposalRequest):
                     proposal = self.proposal
                     if proposal.processing_status != "draft":
                         proposal.processing_status = "draft"
-                        proposal.customer_status = "draft"
                         proposal.save(
                             version_comment=f"Proposal amendment requested {request.data.get('reason', '')}"
                         )
