@@ -133,7 +133,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
     can_renew = serializers.SerializerMethodField()
-    can_extend = serializers.SerializerMethodField()
     is_assessor = serializers.SerializerMethodField()
     is_approver = serializers.SerializerMethodField()
     requirement_docs = serializers.SerializerMethodField()
@@ -183,7 +182,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "set_to_surrender",
             "set_to_suspend",
             "can_renew",
-            "can_extend",
             "can_amend",
             "can_reinstate",
             "application_type",
@@ -217,7 +215,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_reinstate",
             "can_amend",
             "can_renew",
-            "can_extend",
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
@@ -281,9 +278,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     def get_can_renew(self, obj):
         return obj.can_renew
-
-    def get_can_extend(self, obj):
-        return obj.can_extend
 
     def get_is_assessor(self, obj):
         request = self.context["request"]
