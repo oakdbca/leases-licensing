@@ -515,17 +515,17 @@ export default {
                         links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                         if (full.can_action || vm.debug) {
                             if (full.amend_or_renew === 'amend' || vm.debug) {
-                                links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal_id}'>Amend</a><br/>`;
-                            } else if (full.amend_or_renew === 'renew' || vm.debug) {
-                                links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal_id}'>Renew</a><br/>`;
+                                links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal}'>Amend</a><br/>`;
+                            } else if (full.can_renew) {
+                                links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
                             }
                             links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
                         }
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">History</a><br/>`;
-                        if (full.can_reissue && full.current_proposal_id && full.is_approver && full.current_proposal_approved) {
-                            links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal_id}'>Reissue</a><br/>`;
+                        if (full.can_reissue && full.current_proposal && full.is_approver && full.current_proposal_approved) {
+                            links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal}'>Reissue</a><br/>`;
                         }
                         if (vm.is_internal && vm.wlaDash) {
                             links += full.offer_link;
@@ -543,6 +543,10 @@ export default {
                             }
                             // Todo: Not yet sure under which circumstances these actions should be visible
                             links += `<a href='#${full.id}' data-review-invoice-details-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
+                            if ('current_pending_renewal_review' == full.status) {
+                                links += `<a href='#${full.id}' data-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Renew</a><br/>`;
+
+                            }
                             links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
 
                         }
@@ -1081,30 +1085,41 @@ export default {
         renewApproval: async function (proposal_id) {
             let vm = this;
             let status = 'with_approver'
-            swal({
+            Swal.fire({
                 title: "Renew Approval",
                 text: "Are you sure you want to renew this approval?",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Renew approval',
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const requestOptions = {
+                        method: "POST",
+                    };
+                    fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/renew_approval')), requestOptions)
+                        .then(async response => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error = (data && data.message) || response.statusText;
+                                console.log(error)
+                                return Promise.reject(error);
+                            }
+                            vm.$router.push({
+                                name: "draft_proposal",
+                                params: { proposal_id: data.id }
+                            });
+
+                        }, (error) => {
+                            console.log(error);
+                            Swal.fire({
+                                title: "Renew Approval",
+                                text: error.body,
+                                icon: "error",
+                            })
+                        });
+                }
             })
-            try {
-                const response = fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/renew_amend_approval_wrapper')) + '?debug=' + vm.debug + '&type=renew',
-                    {
-                        method: 'POST',
-                    })
-                vm.$router.push({
-                    name: "draft_proposal",
-                    params: { proposal_id: proposal.id }
-                });
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: "Renew Approval",
-                    text: error.body,
-                    icon: "error",
-                })
-            }
+
         },
 
         amendApproval: async function (proposal_id) {
