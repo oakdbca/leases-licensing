@@ -1,0 +1,15 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+
+This is a reminder that your <insert_approval_type> <strong> {{ approval.lodgement_number}}</strong> expires on <strong>{{approval.expiry_date}}</strong>.
+
+To renew your <insert_approval_type> please visit the following url: {{url}}
+
+If you intend to apply for renewal, please do so as soon as possible so that we can process it before expiry.
+
+If you would like to continue operating within WA's national parks and other conservation reserves you need a current lease or licence under the Conservation and Land Management Act 1984 (CALM Act).
+
+If you have any questions about how to renew your lease or licence please call a Licencing Officer on {{settings.DEP_PHONE}} or email {{settings.SUPPORT_EMAIL}}.
+
+{%  endblock %}
