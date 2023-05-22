@@ -38,7 +38,7 @@ from leaseslicensing.components.main.process_document import process_generic_doc
 from leaseslicensing.components.organisations.models import OrganisationContact
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
-from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.helpers import is_assessor, is_customer, is_internal
 
 logger = logging.getLogger(__name__)
 
@@ -677,7 +677,32 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @list_route(
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def review_renewal(self, request, *args, **kwargs):
+        if not is_assessor(request):
+            raise serializers.ValidationError(
+                "You do not have permission to perform this action."
+            )
+
+        instance = self.get_object()
+
+        can_be_renewed = request.data.get("can_be_renewed", None)
+        if can_be_renewed is None:
+            raise serializers.ValidationError(
+                "Expecting a boolean value can_be_renewed in POST"
+            )
+
+        instance.review_renewal(can_be_renewed)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
         methods=[
             "GET",
         ],
