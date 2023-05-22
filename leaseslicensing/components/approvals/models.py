@@ -141,6 +141,8 @@ class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
 # class Approval(models.Model):
 class Approval(RevisionedMixin):
     APPROVAL_STATUS_CURRENT = "current"
+    APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW = "current_pending_renewal_review"
+    APPROVAL_STATUS_CURRENT_PENDING_RENEWAL = "current_pending_renewal"
     APPROVAL_STATUS_EXPIRED = "expired"
     APPROVAL_STATUS_CANCELLED = "cancelled"
     APPROVAL_STATUS_SURRENDERED = "surrendered"
@@ -150,6 +152,11 @@ class Approval(RevisionedMixin):
 
     STATUS_CHOICES = (
         (APPROVAL_STATUS_CURRENT, "Current"),
+        (
+            APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
+            "Current (Pending Renewal Review)",
+        ),
+        (APPROVAL_STATUS_CURRENT_PENDING_RENEWAL, "Current (Pending Renewal)"),
         (APPROVAL_STATUS_EXPIRED, "Expired"),
         (APPROVAL_STATUS_CANCELLED, "Cancelled"),
         (APPROVAL_STATUS_SURRENDERED, "Surrendered"),
@@ -178,14 +185,9 @@ class Approval(RevisionedMixin):
     replaced_by = models.ForeignKey(
         "self", blank=True, null=True, on_delete=models.SET_NULL
     )
-    # current_proposal = models.ForeignKey(Proposal,related_name = '+')
     current_proposal = models.ForeignKey(
         Proposal, related_name="approvals", null=True, on_delete=models.SET_NULL
     )
-    #    activity = models.CharField(max_length=255)
-    #    region = models.CharField(max_length=255) # type: ignore
-    #    tenure = models.CharField(max_length=255,null=True)
-    #    title = models.CharField(max_length=255)
     renewal_document = models.ForeignKey(
         ApprovalDocument,
         blank=True,
@@ -193,7 +195,8 @@ class Approval(RevisionedMixin):
         related_name="renewal_document",
         on_delete=models.SET_NULL,
     )
-    renewal_sent = models.BooleanField(default=False)
+    renewal_review_notification_sent_to_assessors = models.BooleanField(default=False)
+    renewal_notification_sent_to_holder = models.BooleanField(default=False)
     issue_date = models.DateTimeField()
     original_issue_date = models.DateField(auto_now_add=True)
     start_date = models.DateField()
@@ -441,7 +444,7 @@ class Approval(RevisionedMixin):
     @property
     def can_amend(self):
         # try:
-        if self.renewal_document and self.renewal_sent:
+        if self.renewal_document and self.renewal_notification_sent_to_holder:
             # amend_renew = 'renew'
             return False
         else:
