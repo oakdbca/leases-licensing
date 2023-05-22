@@ -205,6 +205,11 @@ urlpatterns = (
             views.InternalView.as_view(),
             name="internal-approval-detail",
         ),
+        url(
+            r"^external/approval/(?P<approval_pk>\d+)/$",
+            views.ExternalView.as_view(),
+            name="external-approval-detail",
+        ),
         url(r"^external/", views.ExternalView.as_view(), name="external"),
         url(r"^firsttime/$", views.first_time, name="first_time"),
         url(r"^account/", views.ExternalView.as_view(), name="manage-account"),
