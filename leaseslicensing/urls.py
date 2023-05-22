@@ -106,17 +106,11 @@ api_patterns = [
         users_api.GetRepetitionTypes.as_view(),
         name="get-repetition-types",
     ),
-    # url(
-    #     r"^api/department_users$",
-    #     users_api.DepartmentUserList.as_view(),
-    #     name="department-users-list",
-    # ),
     url(
         r"^api/filtered_users$",
         users_api.UserListFilterView.as_view(),
         name="filtered_users",
     ),
-    # url(r'^api/filtered_organisations$', org_api.OrganisationListFilterView.as_view(), name='filtered_organisations'),
     url(
         r"^api/filtered_payments$",
         approval_api.ApprovalPaymentFilterViewSet.as_view(),
@@ -179,22 +173,12 @@ api_patterns = [
         main_api.SecureDocumentsAPIView.as_view(),
         name="secure_documents",
     ),
-    # url(r'^api/applicants_dict$', proposal_api.GetApplicantsDict.as_view(),
-    # name='get-applicants-dict'),
-    # url(r'^api/oracle_job$',main_api.OracleJob.as_view(), name='get-oracle'),
-    # url(r'^api/reports/booking_settlements$', main_api.BookingSettlementReportView.as_view(),
-    # name='booking-settlements-report'),
 ]
 
 # URL Patterns
 urlpatterns = (
     [
-        # url(r'^admin/', include(leaseslicensing_admin_site.urls)),
-        # url(r'^admin/', leaseslicensing_admin_site.urls),
         path(r"admin/", admin.site.urls),
-        # url(r'^login/', LoginView.as_view(),name='login'),
-        # path('login/', login, name='login'),
-        # url(r'^logout/$', LogoutView.as_view(), {'next_page': '/'}, name='logout'),
         url(r"", include(api_patterns)),
         url(r"^$", views.LeasesLicensingRoutingView.as_view(), name="home"),
         url(
@@ -210,6 +194,16 @@ urlpatterns = (
             r"^internal/proposal/(?P<proposal_pk>\d+)/referral/(?P<referral_pk>\d+)/$",
             views.ReferralView.as_view(),
             name="internal-referral-detail",
+        ),
+        url(
+            r"^internal/approvals/$",
+            views.InternalView.as_view(),
+            name="internal-approvals",
+        ),
+        url(
+            r"^internal/approval/(?P<approval_pk>\d+)/$",
+            views.InternalView.as_view(),
+            name="internal-approval-detail",
         ),
         url(r"^external/", views.ExternalView.as_view(), name="external"),
         url(r"^firsttime/$", views.first_time, name="first_time"),
