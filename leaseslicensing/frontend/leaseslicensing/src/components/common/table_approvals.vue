@@ -544,10 +544,8 @@ export default {
                             // Todo: Not yet sure under which circumstances these actions should be visible
                             links += `<a href='#${full.id}' data-review-invoice-details-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
                             if ('current_pending_renewal_review' == full.status) {
-                                links += `<a href='#${full.id}' data-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Renew</a><br/>`;
-
+                                links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
                             }
-                            links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
 
                         }
                         if (full.renewal_document && full.renewal_notification_sent_to_holder) {
