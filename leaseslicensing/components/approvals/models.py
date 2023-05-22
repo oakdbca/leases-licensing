@@ -15,6 +15,7 @@ from leaseslicensing.components.approvals.email import (
     send_approval_cancel_email_notification,
     send_approval_expire_email_notification,
     send_approval_reinstate_email_notification,
+    send_approval_renewal_email_notification,
     send_approval_surrender_email_notification,
     send_approval_suspend_email_notification,
 )
@@ -382,7 +383,11 @@ class Approval(RevisionedMixin):
 
     @property
     def can_reissue(self):
-        return self.status == "current" or self.status == "suspended"
+        return (
+            self.status == self.APPROVAL_STATUS_CURRENT
+            or self.status == self.APPROVAL_STATUS_SUSPENDED
+            or self.status == self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
+        )
 
     @property
     def can_reinstate(self):
@@ -421,16 +426,6 @@ class Approval(RevisionedMixin):
             return True
         else:
             return False
-
-    @property
-    def can_extend(self):
-        if self.current_proposal:
-            if self.current_proposal.application_type.name == "E Class":
-                return (
-                    self.current_proposal.application_type.max_renewals
-                    > self.renewal_count
-                )
-        return False
 
     @property
     def can_renew(self):
@@ -529,6 +524,19 @@ class Approval(RevisionedMixin):
             # )
         )
 
+    def review_renewal(self, can_be_renewed):
+        if not can_be_renewed:
+            # The approval will be left in current status to expire naturally
+            self.status = "current"
+            self.save()
+            return
+
+        # Send email to holder letting them know that the approval is able to be renewed
+        send_approval_renewal_email_notification(self)
+        self.status = self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
+        self.renewal_notification_sent_to_holder = True
+        self.save()
+
     def generate_renewal_doc(self):
         from leaseslicensing.components.approvals.pdf import create_renewal_doc
 
@@ -594,8 +602,6 @@ class Approval(RevisionedMixin):
         with transaction.atomic():
             if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to extend this approval")
-            if not self.can_extend and self.can_action:
-                raise ValidationError("You cannot extend approval any further")
             self.renewal_count += 1
             self.extend_details = details.get("extend_details")
             self.expiry_date = datetime.date(
