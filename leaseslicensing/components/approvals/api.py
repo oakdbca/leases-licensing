@@ -7,7 +7,6 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import filters, generics, serializers, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -36,10 +35,7 @@ from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
-from leaseslicensing.components.organisations.models import (
-    Organisation,
-    OrganisationContact,
-)
+from leaseslicensing.components.organisations.models import OrganisationContact
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_customer, is_internal
@@ -547,113 +543,6 @@ class ApprovalViewSet(viewsets.ModelViewSet):
     #             if d._file
     #         ]
     #     )
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    @renderer_classes((JSONRenderer,))
-    def add_eclass_licence(self, request, *args, **kwargs):
-        def raiser(exception):
-            raise serializers.ValidationError(exception)
-
-        try:
-            with transaction.atomic():
-                # keys = request.data.keys()
-                # file_keys = [key for key in keys if 'file-upload' in i]
-                org_applicant = None
-                proxy_applicant = None
-
-                _file = (
-                    request.data.get("file-upload-0")
-                    if request.data.get("file-upload-0")
-                    else raiser("Licence File is required")
-                )
-                if request.data.get("applicant_type") == "org":
-                    no_license_holder_msg = "Licence holder is required"
-                    try:
-                        org_applicant = Organisation.objects.get(
-                            organisation_id=request.data.get("holder-selected")
-                        )
-                    except Organisation.DoesNotExist:
-                        raise serializers.ValidationError(no_license_holder_msg)
-                else:
-                    try:
-                        proxy_applicant = EmailUser.objects.get(
-                            id=request.data.get("holder-selected")
-                        )
-                    except EmailUser.DoesNotExist:
-                        raise serializers.ValidationError(no_license_holder_msg)
-
-                start_date = (
-                    datetime.strptime(request.data.get("start_date"), "%d/%m/%Y")
-                    if request.data.get("start_date")
-                    else raiser("Start Date is required")
-                )
-                issue_date = (
-                    datetime.strptime(request.data.get("issue_date"), "%d/%m/%Y")
-                    if request.data.get("issue_date")
-                    else raiser("Issue Date is required")
-                )
-                expiry_date = (
-                    datetime.strptime(request.data.get("expiry_date"), "%d/%m/%Y")
-                    if request.data.get("expiry_date")
-                    else raiser("Expiry Date is required")
-                )
-
-                (
-                    application_type,
-                    app_type_created,
-                ) = ApplicationType.objects.get_or_create(
-                    name="E Class",
-                    defaults={
-                        "visible": False,
-                        "max_renewals": 1,
-                        "max_renewal_period": 5,
-                    },
-                )
-
-                (
-                    proposal,
-                    proposal_created,
-                ) = Proposal.objects.get_or_create(  # Dummy 'E Class' proposal
-                    id=0,
-                    defaults={
-                        "application_type": application_type,
-                        "submitter": request.user,
-                        "schema": [],
-                    },
-                )
-
-                approval = Approval.objects.create(
-                    issue_date=issue_date,
-                    expiry_date=expiry_date,
-                    start_date=start_date,
-                    org_applicant=org_applicant,
-                    proxy_applicant=proxy_applicant,
-                    current_proposal=proposal,
-                )
-
-                doc = ApprovalDocument.objects.create(approval=approval, _file=_file)
-                approval.licence_document = doc
-                approval.save()
-
-                return Response({"approval": approval.lodgement_number})
-
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
 
     @detail_route(
         methods=[
