@@ -40,6 +40,25 @@
 
                 <StatusPanel :status="approval.status" />
 
+                <div v-if="'Current (Pending Renewal Review)' == approval.status && approval.can_renew"
+                    class="row mt-2 mb-2">
+                    <div class="col">
+                        <div class="card card-default">
+                            <div class="card-header">
+                                Review Renewal
+                            </div>
+                            <div class="card-body card-collapse">
+                                <div class="mb-2"><button @click="renewalRevew(true)"
+                                        class="btn btn-primary licensing-btn">Allow
+                                        Renewal</button></div>
+                                <div><button @click="renewalRevew(false)" class="btn btn-danger licensing-btn">Disallow
+                                        Renewal</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             <div class="col-md-9">
 
@@ -161,6 +180,7 @@ import Applicant from '@/components/common/applicant.vue'
 import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
 import FormSection from "@/components/forms/section_toggle.vue"
 import { api_endpoints, helpers } from '@/utils/hooks'
+import Swal from 'sweetalert2'
 //import OnSiteInformation from '@/components/common/apiary/section_on_site_information.vue'
 //import TemporaryUse from '@/components/common/apiary/section_temporary_use.vue'
 //import ComponentSiteSelection from '@/components/common/apiary/component_site_selection.vue'
@@ -420,6 +440,48 @@ export default {
                     console.log(error);
                 });
             window.open(media_link, '_blank');
+        },
+        renewalRevew: function (canBeRenewed) {
+            let vm = this;
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'You are about to ' + (canBeRenewed ? "allow" : "disallow") + ' renewal of approval ' + vm.approval.lodgement_number + '.',
+                icon: 'warning',
+                reverseButtons: true,
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                confirmButtonText: (canBeRenewed ? 'Allow' : 'Disallow') + ' Renewal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let vm = this;
+                    const requestOptions = {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ can_be_renewed: canBeRenewed })
+                    };
+                    fetch(helpers.add_endpoint_json(api_endpoints.approvals, (vm.approval.id + '/review_renewal')), requestOptions)
+                        .then(async response => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error = (data && data.message) || response.statusText;
+                                console.log(error)
+                                return Promise.reject(error);
+                            }
+                            let successMessage = 'The approval status has been reset to Current and will expire without being renewed.'
+                            if (canBeRenewed) {
+                                successMessage = 'The approval holder has been notified that they may renew the approval.';
+                            }
+                            Swal.fire(
+                                'Renewal Review Complete',
+                                successMessage,
+                                'success'
+                            )
+                            vm.approval = Object.assign({}, data);
+                        }, (error) => {
+                            console.log(error);
+                        });
+                }
+            })
         },
         debug_createApprovalPDF: async function () {
             /** Quick and dirty test function to test creating an Approval PDF document
