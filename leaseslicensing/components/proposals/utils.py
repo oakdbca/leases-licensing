@@ -802,7 +802,7 @@ def test_proposal_emails(request):
         approval_email.send_approval_cancel_email_notification(approval)
         approval_email.send_approval_suspend_email_notification(approval, request)
         approval_email.send_approval_surrender_email_notification(approval, request)
-        approval_email.send_approval_renewal_email_notification(approval)
+        approval_email.send_approval_renewal_review_email_notification(approval)
         approval_email.send_approval_reinstate_email_notification(approval, request)
 
         compliance_email.send_amendment_email_notification(
