@@ -1,0 +1,11 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+
+    <strong>The approval {{ approval.lodgement_number}}</strong> expires on <strong>{{approval.expiry_date}}</strong>.</p>
+
+    <p>An assessor must decide if this approval can be renewed or not.</p>
+
+    <p>Please review the renewal for this lease/license by clicking <a href="{{url}}">here</a>.</p>
+
+{%  endblock %}
