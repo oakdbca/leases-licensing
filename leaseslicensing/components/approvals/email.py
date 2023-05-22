@@ -109,41 +109,16 @@ class ApprovalRenewalReviewNotificationEmail(TemplateEmailBase):
         )
 
 
-class ApprovalEclassRenewalNotificationEmail(TemplateEmailBase):
+class ApprovalRenewalNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "{} - Commercial Operations E class licence renewal.".format(
-            settings.DEP_NAME
-        )
-        self.html_template = (
-            "leaseslicensing/emails/approval_eclass_renewal_notification.html"
-        )
-        self.txt_template = (
-            "leaseslicensing/emails/approval_eclass_renewal_notification.txt"
-        )
-
-
-class ApprovalEclassExpiryNotificationEmail(TemplateEmailBase):
-    def __init__(self):
-        super().__init__()
-        self.subject = "{} - Commercial Operations E class licence expiry.".format(
-            settings.DEP_NAME
-        )
-        self.html_template = (
-            "leaseslicensing/emails/approval_eclass_expiry_notification.html"
-        )
-        self.txt_template = (
-            "leaseslicensing/emails/approval_eclass_expiry_notification.txt"
-        )
+        self.subject = f"{settings.DEP_NAME} - {settings.SYSTEM_NAME} lease / licence renewal update."
+        self.html_template = "leaseslicensing/emails/approval_renewal_notification.html"
+        self.txt_template = "leaseslicensing/emails/approval_renewal_notification.txt"
 
 
 def send_approval_expire_email_notification(approval):
-    if approval.is_lawful_authority:
-        email = FilmingLawfulAuthorityApprovalExpireNotificationEmail()
-    if approval.is_filming_licence:
-        email = FilmingLicenceApprovalExpireNotificationEmail()
-    else:
-        email = ApprovalExpireNotificationEmail()
+    email = ApprovalExpireNotificationEmail()
     proposal = approval.current_proposal
 
     url = settings.SITE_URL if settings.SITE_URL else ""
@@ -305,6 +280,36 @@ def send_approval_renewal_review_email_notification(approval):
         emails_list_for_group(settings.GROUP_LEASE_LICENCE_ASSESSOR),
         context=context,
     )
+
+    _log_approval_email(msg, approval, sender=sender_user)
+
+
+def send_approval_renewal_email_notification(approval):
+    email = ApprovalRenewalNotificationEmail()
+    url = settings.SITE_URL
+    url += reverse("external-approval-detail", kwargs={"approval_pk": approval.pk})
+
+    context = {
+        "approval": approval,
+        "proposal": approval.current_proposal,
+        "url": url,
+    }
+    sender = settings.DEFAULT_FROM_EMAIL
+    sender_user = EmailUser.objects.get(email=sender)
+
+    if approval.org_applicant:
+        # For organisations also cc in all the active organisation contacts
+        msg = email.send(
+            approval.org_applicant.email,
+            cc_list=approval.org_applicant.contact_emails,
+            context=context,
+        )
+    else:
+        emailuser = retrieve_email_user(approval.current_proposal.ind_applicant)
+        msg = email.send(
+            emailuser.email,
+            context=context,
+        )
 
     _log_approval_email(msg, approval, sender=sender_user)
 
