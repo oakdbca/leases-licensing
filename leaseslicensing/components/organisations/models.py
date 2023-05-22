@@ -692,6 +692,14 @@ class Organisation(models.Model):
         return self.ledger_organisation_email
 
     @property
+    def contact_emails(self):
+        return list(
+            self.contacts.filter(
+                user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE
+            ).values_list("email", flat=True)
+        )
+
+    @property
     def first_five(self):
         first_five_delegates = self.delegates.filter(
             organisation__contacts__user_status="active",
@@ -723,15 +731,23 @@ class Organisation(models.Model):
 
 
 class OrganisationContact(models.Model):
+    USER_STATUS_CHOICE_DRAFT = "draft"
+    USER_STATUS_CHOICE_PENDING = "pending"
+    USER_STATUS_CHOICE_ACTIVE = "active"
+    USER_STATUS_CHOICE_DECLINED = "declined"
+    USER_STATUS_CHOICE_UNLINKED = "unlinked"
+    USER_STATUS_CHOICE_SUSPENDED = "suspended"
+    USER_STATUS_CHOICE_CONTACT_FORM = "contact_form"
+
     USER_STATUS_CHOICES = (
-        ("draft", "Draft"),
-        ("pending", "Pending"),
-        ("active", "Active"),
-        ("declined", "Declined"),
-        ("unlinked", "Unlinked"),
-        ("suspended", "Suspended"),
+        (USER_STATUS_CHOICE_DRAFT, "Draft"),
+        (USER_STATUS_CHOICE_PENDING, "Pending"),
+        (USER_STATUS_CHOICE_ACTIVE, "Active"),
+        (USER_STATUS_CHOICE_DECLINED, "Declined"),
+        (USER_STATUS_CHOICE_UNLINKED, "Unlinked"),
+        (USER_STATUS_CHOICE_SUSPENDED, "Suspended"),
         (
-            "contact_form",
+            USER_STATUS_CHOICE_CONTACT_FORM,
             "ContactForm",
         ),  # status 'contact_form' if org contact was added via 'Contact Details'
         # section in manage.vue (allows Org Contact to be distinguished from Org Delegate)
@@ -1144,8 +1160,6 @@ class OrganisationRequestUserAction(UserAction):
     ACTION_ASSIGN_TO = "Assign to {}"
     ACTION_UNASSIGN = "Unassign"
     ACTION_DECLINE_REQUEST = "Decline request {}"
-    # Assessors
-
     ACTION_ACCEPT_REQUEST = "Accept request {}"
 
     @classmethod
@@ -1204,20 +1218,3 @@ class OrganisationRequestLogEntry(CommunicationsLogEntry):
 
     class Meta:
         app_label = "leaseslicensing"
-
-
-# import reversion
-# reversion.register(ledger_organisation, follow=['organisation_set'])
-# reversion.register(Organisation, follow=['org_approvals',
-# 'contacts', 'userdelegation_set', 'action_logs', 'comms_logs'])
-# reversion.register(OrganisationContact)
-# reversion.register(OrganisationAction)
-# reversion.register(OrganisationLogEntry, follow=['documents'])
-# reversion.register(OrganisationLogDocument)
-# reversion.register(OrganisationRequest, follow=['action_logs',
-# 'organisationrequestdeclineddetails_set', 'comms_logs'])
-# reversion.register(OrganisationRequestUserAction)
-# reversion.register(OrganisationRequestDeclinedDetails)
-# reversion.register(OrganisationRequestLogDocument)
-# reversion.register(OrganisationRequestLogEntry, follow=['documents'])
-# reversion.register(UserDelegation)
