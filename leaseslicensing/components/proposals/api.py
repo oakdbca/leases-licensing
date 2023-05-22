@@ -1609,20 +1609,16 @@ class ProposalViewSet(UserActionLoggingViewset):
 
     @detail_route(
         methods=[
-            "GET",
+            "POST",
         ],
         detail=True,
     )
+    @basic_exception_handler
     def renew_approval(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance = instance.renew_approval(request)
-            serializer = SaveProposalSerializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except Exception as e:
-            print(traceback.print_exc())
-            if hasattr(e, "message"):
-                raise serializers.ValidationError(e.message)
+        instance = self.get_object()
+        instance = instance.renew_approval(request)
+        serializer = SaveProposalSerializer(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
