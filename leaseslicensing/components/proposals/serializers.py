@@ -494,6 +494,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             # Categorisation fields
             "groups",
             "site_name",
+            "proponent_reference_number",
         )
         read_only_fields = ("supporting_documents",)
 
@@ -814,6 +815,7 @@ class SaveLeaseLicenceSerializer(BaseProposalSerializer):
             "key_milestones_text",
             "risk_factors_text",
             "legislative_requirements_text",
+            "proponent_reference_number",
         )
         read_only_fields = ("id",)
 
@@ -1123,6 +1125,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "districts",
             "lgas",
             "groups",
+            "proponent_reference_number",
             "site_name",
             # "assessor_comment_map",
             # "deficiency_comment_map",

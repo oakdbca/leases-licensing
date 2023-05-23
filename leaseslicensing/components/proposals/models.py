@@ -1184,6 +1184,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     site_name = models.ForeignKey(
         SiteName, blank=True, null=True, on_delete=models.PROTECT
     )
+    proponent_reference_number = models.CharField(null=True, blank=True, max_length=50)
     # datetime_gis_data_first_fetched = models.DateTimeField(blank=True, null=True)
     # datetime_gis_data_last_fetched = models.DateTimeField(blank=True, null=True)
 

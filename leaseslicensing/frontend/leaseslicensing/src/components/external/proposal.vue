@@ -314,6 +314,7 @@ export default {
                 payload.proposal.key_milestones_text = this.$refs.application_form.$refs.lease_licence.$refs.key_milestones_text.detailsText;
                 payload.proposal.risk_factors_text = this.$refs.application_form.$refs.lease_licence.$refs.risk_factors_text.detailsText;
                 payload.proposal.legislative_requirements_text = this.$refs.application_form.$refs.lease_licence.$refs.legislative_requirements_text.detailsText;
+                payload.proposal.proponent_reference_number = this.proposal.proponent_reference_number;
                 payload.proposal.groups = this.proposal.groups;
             }
             payload.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
@@ -333,9 +334,6 @@ export default {
                 this.$nextTick(async () => {
                     this.$refs.application_form.incrementComponentMapKey();
                 });
-                // Debugging issue with proposal geometry id not being set
-                // After saving the proposal
-                console.log('----> proposal_geometry', this.proposal.proposalgeometry);
                 return resData;
             } else {
                 const err = await res.json()

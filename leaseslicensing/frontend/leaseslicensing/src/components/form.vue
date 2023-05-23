@@ -66,7 +66,8 @@
                         </template>
                     </RegistrationOfInterest>
 
-                    <LeaseLicence :proposal="proposal" :readonly="readonly" ref="lease_licence" v-if="leaseLicence">
+                    <LeaseLicence :proposal="proposal" :is_internal="is_internal" :readonly="readonly" ref="lease_licence"
+                        v-if="leaseLicence">
                     </LeaseLicence>
 
                     <FormSection label="Geospatial Data" Index="other_section">
