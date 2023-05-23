@@ -562,6 +562,7 @@ def save_assessor_data(proposal, request, viewset):
             # request.data is a dictionary of the proposal {'id': ..., ...}
             proposal_data = request.data
 
+        save_site_name(proposal, proposal_data["site_name"])
         save_groups_data(proposal, proposal_data["groups"])
 
         # Save checklist answers
@@ -842,6 +843,8 @@ def save_site_name(instance, site_name):
     if site_name:
         site_name, created = SiteName.objects.get_or_create(name=site_name)
         instance.site_name = site_name
+        instance.save()
+        logger.debug("Created new site name: " + str(site_name))
 
 
 def save_groups_data(instance, groups_data):
@@ -851,6 +854,7 @@ def save_groups_data(instance, groups_data):
         for group in groups_data:
             logger.debug("group: %s", group)
             ProposalGroup.objects.get_or_create(proposal=instance, group_id=group["id"])
+            logger.debug("group created")
             group_ids.append(group["id"])
         ProposalGroup.objects.filter(proposal=instance).exclude(
             group_id__in=group_ids
