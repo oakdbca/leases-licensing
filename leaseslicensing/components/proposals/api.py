@@ -19,6 +19,7 @@ from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
@@ -45,6 +46,7 @@ from leaseslicensing.components.proposals.models import (
     ProposalRequirement,
     ProposalStandardRequirement,
     ProposalType,
+    ProposalUserAction,
     Referral,
     ReferralRecipientGroup,
     RequirementDocument,
@@ -1574,38 +1576,24 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def reissue_approval(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            status = request.data.get("status")
-            if not status:
-                raise serializers.ValidationError("Status is required")
-            else:
-                # if instance.application_type.name==ApplicationType.FILMING
-                # and instance.filming_approval_type=='lawful_authority':
-                #   status='with_assessor'
-                # else:
-                if status not in ["with_approver"]:
-                    raise serializers.ValidationError(
-                        "The status provided is not allowed"
-                    )
-            instance.reissue_approval(request, status)
-            serializer = InternalProposalSerializer(
-                instance, context={"request": request}
+        logger.debug("reissue_approval()")
+        instance = self.get_object()
+        if not is_assessor(request):
+            raise PermissionDenied(
+                "Assessor permissions are required to reissue approval"
             )
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+
+        logger.debug("instance.reissue_approval()")
+        instance.reissue_approval()
+        logger.debug("instance.log_user_action()")
+        instance.log_user_action(
+            ProposalUserAction.ACTION_REISSUE_APPROVAL.format(instance.id), request
+        )
+        serializer = InternalProposalSerializer(instance, context={"request": request})
+        logger.debug("return Response(serializer.data)")
+        return Response(serializer.data)
 
     @detail_route(
         methods=[

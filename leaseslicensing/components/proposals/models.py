@@ -2170,29 +2170,29 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         else:
             raise ValidationError("The provided status cannot be found.")
 
-    def reissue_approval(self, request, status):
+    def reissue_approval(self):
         if not self.processing_status == "approved":
-            raise ValidationError("You cannot change the current status at this time")
-        elif self.approval and self.approval.can_reissue:
-            if (
-                self.get_approver_group()
-                in request.user.proposalapprovergroup_set.all()
-            ):
-                self.processing_status = status
-                # self.save()
-                self.save(
-                    version_comment="Reissue Approval: {}".format(
-                        self.approval.lodgement_number
-                    )
-                )
-                # Create a log entry for the proposal
-                self.log_user_action(
-                    ProposalUserAction.ACTION_REISSUE_APPROVAL.format(self.id), request
-                )
-            else:
-                raise ValidationError("Cannot reissue Approval. User not permitted.")
-        else:
-            raise ValidationError("Cannot reissue Approval")
+            raise ValidationError(
+                f"You cannot reissue Proposal: {self.lodgement_number} because it is not approved."
+            )
+
+        if not self.approval:
+            raise ValidationError(
+                f"You cannot reissue Proposal: {self.lodgement_number} because it has no approval attached."
+            )
+
+        if not self.approval.can_reissue:
+            raise ValidationError(
+                f"You cannot reissue Proposal: {self.lodgement_number}"
+                f"because the can_renew method on the attached Approval: {self.approval} returns False."
+            )
+
+        self.processing_status = self.PROCESSING_STATUS_WITH_APPROVER
+        self.save(
+            version_comment="Reissue Approval: {}".format(
+                self.approval.lodgement_number
+            )
+        )
 
     def proposed_decline(self, request, details):
         with transaction.atomic():

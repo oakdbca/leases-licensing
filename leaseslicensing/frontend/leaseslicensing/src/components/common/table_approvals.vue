@@ -524,7 +524,7 @@ export default {
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">History</a><br/>`;
-                        if (full.can_reissue && full.current_proposal && full.is_approver && full.current_proposal_approved) {
+                        if (full.is_approver && full.can_reissue && full.current_proposal) {
                             links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal}'>Reissue</a><br/>`;
                         }
                         if (vm.is_internal && vm.wlaDash) {
@@ -973,35 +973,43 @@ export default {
         },
         reissueApproval: async function (proposal_id) {
             let vm = this;
-            let status = 'with_approver'
-            let data = { 'status': status }
             await swal.fire({
                 title: "Reissue Approval",
                 text: "Are you sure you want to reissue this approval?",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: 'Reissue approval',
-                //confirmButtonColor:'#d9534f'
-            })
-            try {
-                const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/reissue_approval')),
-                    {
-                        body: JSON.stringify(data),
-                        method: 'POST',
-                    })
+                reverseButtons: true,
+                confirmButtonText: 'Reissue Approval',
+                confirmButtonColor: '#226fbb'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const requestOptions = {
+                        method: "POST",
+                    };
+                    fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/reissue_approval')), requestOptions)
+                        .then(async response => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error = (data && data.message) || response.statusText;
+                                console.log(error)
+                                Promise.reject(error);
+                            }
+                            vm.$router.push({
+                                name: "internal-proposal",
+                                params: { proposal_id: data.id }
+                            });
 
-                vm.$router.push({
-                    name: "internal-proposal",
-                    params: { proposal_id: proposal_id }
-                });
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: "Reissue Approval",
-                    text: error.body,
-                    icon: "error",
-                })
-            }
+                        }, (error) => {
+                            console.log(error);
+                            Swal.fire({
+                                title: "Reissue Approval",
+                                text: error.body,
+                                icon: "error",
+                            })
+                        });
+                }
+            })
+
         },
 
         reinstateApproval: async function (approval_id) {
