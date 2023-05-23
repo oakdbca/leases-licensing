@@ -677,6 +677,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "allowed_assessors",
             "proposal_type",
             "accessing_user_can_process",
+            "site_name",
             "groups",
         )
         # the serverSide functionality of datatables is such that only columns that have
@@ -700,6 +701,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "lodgement_number",
             "can_officer_process",
             "accessing_user_can_process",
+            "site_name",
             "groups",
         )
 

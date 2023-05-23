@@ -10,7 +10,7 @@ import CustomRow from '@/components/common/custom_row.vue'
  */
 function tr_first_td(vm, obj) {
     let td_link = $(obj);
-    if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))){
+    if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))) {
         // This row is not configured as expandable row (at the rowCallback)
         return []
     }
@@ -30,9 +30,9 @@ function tr_first_td(vm, obj) {
 function collapse_row(vm, tr, first_td) {
     let nextElem = tr.next()
     // Collapse
-    if(nextElem.is('tr') & nextElem.hasClass(vm.expandable_row_class_name)){
+    if (nextElem.is('tr') & nextElem.hasClass(vm.expandable_row_class_name)) {
         // Sticker details row is already shown.  Remove it.
-        nextElem.fadeOut(500, function(){
+        nextElem.fadeOut(500, function () {
             nextElem.remove()
         })
     }
@@ -43,20 +43,33 @@ function collapse_row(vm, tr, first_td) {
 
 export function expandToggle(vm, obj) {
     let [tr, first_td] = tr_first_td(vm, obj);
-    if (typeof(tr) === 'undefined' || typeof(first_td) === 'undefined') {
+    if (typeof (tr) === 'undefined' || typeof (first_td) === 'undefined') {
         return;
     }
 
-    if(first_td.hasClass(vm.td_expand_class_name)){
+    if (first_td.hasClass(vm.td_expand_class_name)) {
         // Expand
         // Get group names from the row data
         let $row = vm.$refs.application_datatable.vmDataTable.row(tr)
         let full_data = $row.data()
-        let groups = full_data.groups.map(({name})=>name);
+        let site_name = full_data.site_name;
+        let groups = full_data.groups.map(({ name }) => name);
+
+        if (!site_name) {
+            site_name = 'N/A'
+        }
+
+        let groups_html = 'N/A';
+        if (groups && groups.length > 0) {
+            groups_html = '';
+            for (let i = 0; i < groups.length; i++) {
+                groups_html += '<span class="badge bg-primary">' + groups[i] + '</span>&nbsp;'
+            }
+        }
 
         // If we don't need to retrieve the data from the server, follow the code below
-        let contents = `<div><strong>Site:</strong> (site name here)</div><div><strong>Group: </strong>${groups}</div>`
-        let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
+        let contents = `<div><strong>Site Name: </strong>${site_name}</div><div><strong>Groups: </strong>${groups_html}</div>`
+        let details_elem = $('<tr class="' + vm.expandable_row_class_name + '"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
         details_elem.hide()
         details_elem.insertAfter(tr)
         details_elem.fadeIn(1000)
@@ -71,23 +84,23 @@ export function expandToggle(vm, obj) {
 // used by competitive process
 export function expandToggleCP(vm, obj) {
     let [tr, first_td] = tr_first_td(vm, obj);
-    if (typeof(tr) === 'undefined' || typeof(first_td) === 'undefined') {
+    if (typeof (tr) === 'undefined' || typeof (first_td) === 'undefined') {
         return;
     }
 
     let $row = vm.$refs.competitive_process_datatable.vmDataTable.row(tr)
     let full_data = $row.data()
-    if(first_td.hasClass(vm.td_expand_class_name)){
+    if (first_td.hasClass(vm.td_expand_class_name)) {
         // Expand
         // If we don't need to retrieve the data from the server, follow the code below
         let elem_group = '<div>Group: ' + full_data.group + '</div>'
         let elem_site = '<div>Site: ' + full_data.site + '</div>'
         let elem_applicant = ''
-        if (full_data.registration_of_interest){
+        if (full_data.registration_of_interest) {
             elem_applicant = '<div>Applicant: ' + full_data.registration_of_interest.relevant_applicant_name + '</div>'
         }
         let contents = elem_group + elem_site + elem_applicant
-        let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
+        let details_elem = $('<tr class="' + vm.expandable_row_class_name + '"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
         details_elem.hide()
         details_elem.insertAfter(tr)
         details_elem.fadeIn(1000)
@@ -102,7 +115,7 @@ export function expandToggleCP(vm, obj) {
 // used by `table_parties.vue`
 export function expandToggleParties(vm, obj) {
     let td_link = $(obj)
-    if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))){
+    if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))) {
         // This row is not configured as expandable row (at the rowCallback)
         return
     }
@@ -113,10 +126,10 @@ export function expandToggleParties(vm, obj) {
     let $row = vm.$refs.parties_datatable.vmDataTable.row(tr)
     let full_data = $row.data()
 
-    if(full_data.expanded){
+    if (full_data.expanded) {
         // Collapse
         let siblings = tr.next('tr.' + vm.expandable_row_class_name)
-        siblings.fadeOut(500, function(){
+        siblings.fadeOut(500, function () {
             siblings.remove()
             // Change icon
             first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
@@ -126,7 +139,7 @@ export function expandToggleParties(vm, obj) {
             full_data.expanded = false
 
 
-            if (full_data.id in vm.custom_row_apps){
+            if (full_data.id in vm.custom_row_apps) {
                 vm.custom_row_apps[full_data.id].unmount()
                 vm.custom_row_apps[full_data.id] = undefined
             }
@@ -138,7 +151,7 @@ export function expandToggleParties(vm, obj) {
         })
     } else {
         // Expand
-        let details_elem = $('<tr class="' + vm.expandable_row_class_name +'"><td id="custom_row_' + full_data.id + '"></td></tr>')
+        let details_elem = $('<tr class="' + vm.expandable_row_class_name + '"><td id="custom_row_' + full_data.id + '"></td></tr>')
         details_elem.hide()
         details_elem.insertAfter(tr)
         vm.updateCustomRowColSpan()
@@ -169,14 +182,15 @@ export function expandToggleParties(vm, obj) {
             created() {
                 // Get a reference to this custom row instance
                 instance = this;
-              },
+            },
             // Render the dynamically added custom row and catch
             // events of newly added details and emit them to the
             // `competitive_process` vue files
             render: () => h(CustomRow,
-                        {...react,
-                            onAddDetail: e => vm.$emit("add-detail", e)
-                        })
+                {
+                    ...react,
+                    onAddDetail: e => vm.$emit("add-detail", e)
+                })
 
         })
         custom_row_app.mount('#custom_row_' + full_data.id)
