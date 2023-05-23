@@ -311,6 +311,10 @@ export default {
                     'Expiry Date',
                     'Document',
                     'Action',
+                    'Original Lease/License Number',
+                    'Site Name',
+                    'Groups',
+                    'Categories',
                 ]
             } else if (this.is_internal) {
                 return [
@@ -581,6 +585,10 @@ export default {
                     vm.columnExpiryDate,
                     vm.columnDocument,
                     vm.columnAction,
+                    vm.columnOriginalLeaseLicenseNumber,
+                    vm.columnSite,
+                    vm.columnGroups,
+                    vm.columnCategories,
                 ]
             } else if (vm.is_internal) {
                 selectedColumns = [

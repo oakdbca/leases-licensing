@@ -429,6 +429,9 @@ class Approval(RevisionedMixin):
 
     @property
     def can_renew(self):
+        if not self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL == self.status:
+            return False
+
         renewal_conditions = {
             "previous_application": self.current_proposal,
             "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
