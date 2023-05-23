@@ -182,7 +182,7 @@
                     </FormSection>
 
                     <FormSection label="Categorisation" Index="categorisation">
-                        <div v-if="proposal.site_name" class="row mb-3">
+                        <div v-if="proposal.site_name || is_internal" class="row mb-3">
                             <div class="col-sm-3">
                                 <label class="col-form-label">Site Name</label>
                             </div>
