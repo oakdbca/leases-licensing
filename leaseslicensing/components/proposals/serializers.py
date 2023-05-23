@@ -29,7 +29,6 @@ from leaseslicensing.components.proposals.models import (
     ProposalDeclinedDetails,
     ProposalDistrict,
     ProposalGeometry,
-    ProposalGroup,
     ProposalIdentifier,
     ProposalLGA,
     ProposalLogEntry,
@@ -549,7 +548,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         return LGA.objects.filter(id__in=ids).values("id", "name")
 
     def get_groups(self, obj):
-        group_ids = [group.id for group in ProposalGroup.objects.filter(proposal=obj)]
+        group_ids = obj.groups.values_list("group__id", flat=True)
         group_qs = Group.objects.filter(id__in=group_ids).values("id", "name")
         return GroupSerializer(group_qs, many=True).data
 
