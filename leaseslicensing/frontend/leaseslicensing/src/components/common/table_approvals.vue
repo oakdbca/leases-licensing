@@ -523,7 +523,7 @@ export default {
                             } else if (full.can_renew) {
                                 links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
                             }
-                            links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
+                            links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                         }
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
