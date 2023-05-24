@@ -511,9 +511,9 @@ class Invoice(RevisionedMixin, models.Model):
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     inc_gst = models.BooleanField(default=True)
-    date_issued = models.DateTimeField(auto_now_add=True, null=True)
-    date_updated = models.DateTimeField(auto_now=True, null=True)
-    date_due = models.DateField(null=True, blank=True)
+    date_issued = models.DateTimeField(auto_now_add=True, null=False)
+    date_updated = models.DateTimeField(auto_now=True, null=False)
+    date_due = models.DateField(null=True, blank=False)
 
     invoice_pdf = SecureFileField(
         upload_to=invoice_pdf_upload_path, null=True, blank=True
@@ -521,6 +521,7 @@ class Invoice(RevisionedMixin, models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ["-date_issued", "approval"]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
