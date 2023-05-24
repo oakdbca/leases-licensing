@@ -162,6 +162,8 @@ if DEV_STATIC and not DEV_STATIC_URL:
     raise ImproperlyConfigured("If running in DEV_STATIC, DEV_STATIC_URL has to be set")
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
 
+DATABASES["test"] = dj_database_url.config(env="TEST_DATABASE_URL")
+
 # Department details
 SYSTEM_NAME = env("SYSTEM_NAME", "Leases and Licensing")
 SYSTEM_NAME_SHORT = env("SYSTEM_NAME_SHORT", "LALS")
