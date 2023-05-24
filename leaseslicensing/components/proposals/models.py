@@ -114,12 +114,6 @@ def update_proposal_comms_log_filename(instance, filename):
     return f"proposals/{instance.log_entry.proposal.id}/{filename}"
 
 
-def update_filming_park_doc_filename(instance, filename):
-    return "proposals/{}/filming_park_documents/{}".format(
-        instance.filming_park.proposal.id, filename
-    )
-
-
 def update_events_park_doc_filename(instance, filename):
     return "proposals/{}/events_park_documents/{}".format(
         instance.events_park.proposal.id, filename
@@ -2545,74 +2539,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 raise e
 
     def preview_approval(self, request, details):
-        from leaseslicensing.components.approvals.models import PreviewTempApproval
-
-        with transaction.atomic():
-            try:
-                # if self.processing_status != 'with_assessor_conditions' or self.processing_status != 'with_approver':
-                if not (
-                    self.processing_status == "with_assessor_conditions"
-                    or self.processing_status == "with_approver"
-                ):
-                    raise ValidationError(
-                        "Licence preview only available when processing status is with_approver. "
-                        "Current status {}".format(self.processing_status)
-                    )
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                # if not self.applicant.organisation.postal_address:
-                if not self.applicant_address:
-                    raise ValidationError(
-                        "The applicant needs to have set their postal address before approving this proposal."
-                    )
-
-                lodgement_number = (
-                    self.previous_application.approval.lodgement_number
-                    if self.proposal_type in ["renewal", "amendment"]
-                    else None
-                )  # renewals/amendments keep same licence number
-                preview_approval = PreviewTempApproval.objects.create(
-                    current_proposal=self,
-                    issue_date=timezone.now(),
-                    expiry_date=datetime.datetime.strptime(
-                        details.get("due_date"), "%d/%m/%Y"
-                    ).date(),
-                    start_date=datetime.datetime.strptime(
-                        details.get("start_date"), "%d/%m/%Y"
-                    ).date(),
-                    submitter=self.submitter,
-                    org_applicant=self.org_applicant,
-                    proxy_applicant=self.proxy_applicant,
-                    lodgement_number=lodgement_number,
-                )
-
-                # Generate the preview document - get the value of the BytesIO buffer
-                licence_buffer = preview_approval.generate_doc(
-                    request.user, preview=True
-                )
-
-                # clean temp preview licence object
-                transaction.set_rollback(True)
-
-                return licence_buffer
-            except Exception as e:
-                logger.exception(e)
-                raise e
-
-    def test_create_approval_pdf(self, request):
-        """
-        Callback function to test this Proposal's approval PDF creation
-        """
-
-        try:
-            # Get a user
-            user = self.relevant_applicant
-            # Generate the Approval document
-            self.approval.generate_doc(user)
-
-        except Exception as e:
-            logger.exception("Error in `test_create_approval_pdf`")
-            raise serializers.ValidationError(e.args[0])
+        # I don't think we need this now that approvals are uploaded from hard copy scans?
+        pass
 
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
@@ -3022,13 +2950,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 proposal.schema = ptype.schema
                 proposal.submitter = request.user
                 proposal.previous_application = self
-                if proposal.application_type.name == ApplicationType.TCLASS:
-                    try:
-                        ProposalOtherDetails.objects.get(proposal=proposal)
-                    except ProposalOtherDetails.DoesNotExist:
-                        ProposalOtherDetails.objects.create(proposal=proposal)
-                # copy all the requirements from the previous proposal
-                # req=self.requirements.all()
                 req = self.requirements.all().exclude(is_deleted=True)
                 from copy import deepcopy
 
@@ -3879,14 +3800,6 @@ class ProposalUserAction(UserAction):
     ACTION_ISSUE_APPROVAL_DISTRICT = (
         "Issue Licence by district application {} of application {}"
     )
-
-    # Event
-    ACTION_CREATE_EVENT_PARK = "Create Event Park {}"
-    ACTION_EDIT_EVENT_PARK = "Edit Event Park {}"
-    ACTION_CREATE_PRE_EVENT_PARK = "Create Pre Event Park {}"
-    ACTION_EDIT_PRE_EVENT_PARK = "Edit Pre Event Park {}"
-    ACTION_CREATE_ABSEILING_CLIMBING_ACTIVITY = "Create Abseiling Climbing Activity {}"
-    ACTION_EDIT_ABSEILING_CLIMBING_ACTIVITY = "Edit Abseiling Climbing Activity {}"
 
     # monthly invoicing by cron
     ACTION_SEND_BPAY_INVOICE = "Send BPAY invoice {} for application {} to {}"
@@ -5012,15 +4925,10 @@ def searchKeyWords(
     from leaseslicensing.utils import search, search_approval, search_compliance
 
     qs = []
-    application_types = [
-        ApplicationType.TCLASS,
-        ApplicationType.EVENT,
-        ApplicationType.FILMING,
-    ]
     if is_internal:
-        proposal_list = Proposal.objects.filter(
-            application_type__name__in=application_types
-        ).exclude(processing_status__in=["discarded", "draft"])
+        proposal_list = Proposal.objects.exclude(
+            processing_status__in=["discarded", "draft"]
+        )
         approval_list = (
             Approval.objects.all()
             .order_by("lodgement_number", "-issue_date")

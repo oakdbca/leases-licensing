@@ -486,47 +486,6 @@ class Approval(RevisionedMixin):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.current_proposal.user_has_object_permission(user_id)
 
-    #    @property
-    #    def approved_by(self):
-    #        try:
-    #            proposal = self.proposal_set.all().order_by('-id')[0]
-    #            if proposal.application_type.name == ApplicationType.FILMING:
-    #                return proposal.action_logs.filter(what__contains='Awaiting Payment').last().who
-    #            return proposal.action_logs.filter(what__contains='Issue Licence').last().who
-    #        except:
-    #            return None
-
-    def generate_doc(self, user, preview=False):
-        from leaseslicensing.components.approvals.pdf import (
-            create_approval_doc,
-            create_approval_pdf_bytes,
-        )
-
-        # Seems this functionality is not needed in leases
-        # copied_to_permit = self.copiedToPermit_fields(
-        #     self.current_proposal
-        # )  # Get data related to isCopiedToPermit tag
-        copied_to_permit = "not_needed_in_leases"
-
-        if preview:
-            return create_approval_pdf_bytes(
-                self, self.current_proposal, copied_to_permit, user
-            )
-
-        self.licence_document = create_approval_doc(self)
-        self.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.licence_document.name
-            )
-        )
-        # TODO Do we need versioning? Commented `version_comment` out for now.
-        # Needs `Proposal` to inherit from `RevisionedMixin`?
-        self.current_proposal.save(
-            # version_comment="Created Approval PDF: {}".format(
-            #     self.licence_document.name
-            # )
-        )
-
     def review_renewal(self, can_be_renewed):
         if not can_be_renewed:
             # The approval will be left in current status to expire naturally
@@ -539,21 +498,6 @@ class Approval(RevisionedMixin):
         self.status = self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
         self.renewal_notification_sent_to_holder = True
         self.save()
-
-    def generate_renewal_doc(self):
-        from leaseslicensing.components.approvals.pdf import create_renewal_doc
-
-        self.renewal_document = create_renewal_doc(self, self.current_proposal)
-        self.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.renewal_document.name
-            )
-        )
-        self.current_proposal.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.renewal_document.name
-            )
-        )
 
     def copiedToPermit_fields(self, proposal):
         p = proposal

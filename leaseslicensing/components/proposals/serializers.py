@@ -8,7 +8,6 @@ from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
-from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeSerializer,
     CommunicationLogEntrySerializer,
@@ -598,17 +597,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
 
     def get_customer_status(self, obj):
         return obj.get_processing_status_display()
-
-    # def get_is_qa_officer(self,obj):
-    #     return True
-
-    def get_allow_full_discount(self, obj):
-        return (
-            True
-            if obj.application_type.name == ApplicationType.TCLASS
-            and obj.allow_full_discount
-            else False
-        )
 
 
 class ListProposalMinimalSerializer(serializers.ModelSerializer):

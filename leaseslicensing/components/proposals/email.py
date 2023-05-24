@@ -9,9 +9,6 @@ from django.urls import reverse
 from django.utils.encoding import smart_text
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
-from leaseslicensing.components.bookings.awaiting_payment_invoice_pdf import (
-    create_awaiting_payment_invoice_pdf_bytes,
-)
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
@@ -77,12 +74,6 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
 def send_referral_email_notification(referral, recipients, request, reminder=False):
-    # if referral.proposal.is_filming_application:
-    #     email = ReferralFilmingSendNotificationEmail()
-    #     proposed_start_date= referral.proposal.filming_activity.commencement_date
-    # else:
-    #     email = ReferralSendNotificationEmail()
-    # email = ReferralSendNotificationEmail()
     application_type = referral.proposal.application_type.name_display
     email = TemplateEmailBase(
         subject=f"A referral for a {application_type} has been sent to you.",
@@ -96,15 +87,12 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
         )
     )
 
-    # filming_handbook_url= settings.COLS_FILMING_HANDBOOK_URL
     context = {
         "proposal": referral.proposal,
         "url": url,
         "reminder": reminder,
         "comments": referral.text,
-        # 'filming_handbook_url': filming_handbook_url,
         # 'proposed_start_date': proposed_start_date,
-        "filming_handbook_url": "",
         "proposed_start_date": "",
     }
 
@@ -470,7 +458,10 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
         url = "".join(url.split("-internal"))
 
     filename = "confirmation.pdf"
-    doc = create_awaiting_payment_invoice_pdf_bytes(filename, proposal)
+
+    # Commenting out as removing bookings component
+    doc = None  # create_awaiting_payment_invoice_pdf_bytes(filename, proposal)
+
     attachment = (filename, doc, "application/pdf")
 
     context = {

@@ -1547,15 +1547,8 @@ class ProposalViewSet(UserActionLoggingViewset):
                         "The status provided is not allowed"
                     )
             instance.move_to_status(request, status, approver_comment)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
             serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
-            # if instance.application_type.name==ApplicationType.TCLASS:
-            #     serializer = InternalProposalSerializer(instance,context={'request':request})
-            # elif instance.application_type.name==ApplicationType.FILMING:
-            #     serializer = InternalFilmingProposalSerializer(instance,context={'request':request})
-            # elif instance.application_type.name==ApplicationType.EVENT:
-            #     serializer = InternalProposalSerializer(instance,context={'request':request})
             return Response(serializer.data)
         except serializers.ValidationError:
             print(traceback.print_exc())
@@ -1692,27 +1685,6 @@ class ProposalViewSet(UserActionLoggingViewset):
         except Exception as e:
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    def test_create_approval_pdf(self, request, **kwargs):
-        """
-        API endpoint to test the creation of this Proposal's approval PDF
-        """
-
-        instance = self.get_object()
-        try:
-            instance.test_create_approval_pdf(request)
-        except ValidationError:
-            raise ValidationError
-
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(instance, context={"request": request})
-        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1972,19 +1944,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     def update(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            if instance.application_type.name == ApplicationType.TCLASS:
-                serializer = SaveProposalSerializer(instance, data=request.data)
-
-            # Commenting out as no such seralizer exists, maybe this isn't needed and was taken from apiary?
-            # elif instance.application_type.name == ApplicationType.FILMING:
-            #     serializer = ProposalFilmingOtherDetailsSerializer(
-            #         data=other_details_data
-            #     )
-            # elif instance.application_type.name == ApplicationType.EVENT:
-            #     serializer = ProposalEventOtherDetailsSerializer(
-            #         data=other_details_data
-            #     )
-
+            serializer = SaveProposalSerializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data)

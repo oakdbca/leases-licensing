@@ -1,30 +1,28 @@
+from django.conf.urls import url
 from django.contrib import admin
 from django.db.models import TextField
 from django.forms import Textarea
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from leaseslicensing.components.proposals import models
-from leaseslicensing.components.bookings.models import ApplicationFeeInvoice
-from leaseslicensing.components.proposals import forms
+from django.http import HttpResponseRedirect
+
 from leaseslicensing.components.main.models import (
-    SystemMaintenance,
     ApplicationType,
+    GlobalSettings,
     OracleCode,
     RequiredDocument,
-    Question,
-    GlobalSettings,
+    SystemMaintenance,
 )
-from django.conf.urls import url
-from django.template.response import TemplateResponse
-from django.http import HttpResponse, HttpResponseRedirect
-
+from leaseslicensing.components.proposals import forms, models
 from leaseslicensing.components.proposals.forms import SectionChecklistForm
 from leaseslicensing.components.proposals.models import ChecklistQuestion
 from leaseslicensing.utils import create_helppage_object
 
 # Register your models here.
 
-# Commented since COLS does not use schema - so will not require direct editing by user in Admin (although a ProposalType is still required for ApplicationType)
+# Commented since COLS does not use schema - so will not require direct editing by user in Admin
+# (although a ProposalType is still required for ApplicationType)
 # @admin.register(models.ProposalType)
+
+
 class ProposalTypeAdmin(admin.ModelAdmin):
     list_display = ["name", "description", "version"]
     ordering = ("name", "-version")
@@ -98,7 +96,7 @@ class HelpPageAdmin(admin.ModelAdmin):
     list_filter = ("application_type", "help_type")
 
     def get_urls(self):
-        urls = super(HelpPageAdmin, self).get_urls()
+        urls = super().get_urls()
         my_urls = [
             url(
                 "create_leaseslicensing_help/",

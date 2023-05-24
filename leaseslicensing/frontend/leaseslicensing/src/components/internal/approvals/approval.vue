@@ -1,9 +1,5 @@
 <template>
     <div v-if="approval" class="container" id="internalApproval">
-        <div v-if="debug">
-            <div>internal/proposals/approval.vue</div>
-            <button type="button" class="btn btn-light" @click="debug_createApprovalPDF">create Approval.PDF</button>
-        </div>
         <div class="row">
             <h3>{{ approvalLabel }}: {{ approval.lodgement_number }}</h3>
             <div class="col-md-3">
@@ -483,34 +479,6 @@ export default {
                 }
             })
         },
-        debug_createApprovalPDF: async function () {
-            /** Quick and dirty test function to test creating an Approval PDF document
-             * from inside the Approval View.
-            */
-
-            let vm = this;
-
-            await fetch(helpers.add_endpoint_json(api_endpoints.proposals,
-                this.approval.current_proposal + '/test_create_approval_pdf'),
-                {
-                    body: JSON.stringify(this.approval),
-                    method: 'POST',
-                    'content-type': 'application/json'
-                }).then(async response => {
-                    if (!response.ok) {
-                        return await response.json().then(json => { throw new Error(json); });
-                    } else {
-                        return response.json();
-                    }
-                })
-                .then(data => {
-                    // Update the linked document in the View
-                    vm.approval.licence_document = data.permit;
-                })
-                .catch(error => {
-                    console.log(error);
-                });
-        }
     },
     created: async function () {
         const response = await fetch(helpers.add_endpoint_json(api_endpoints.approvals, this.$route.params.approval_id))

@@ -52,7 +52,6 @@ INSTALLED_APPS += [
     "leaseslicensing.components.proposals",
     "leaseslicensing.components.approvals",
     "leaseslicensing.components.compliances",
-    "leaseslicensing.components.bookings",
     "leaseslicensing.components.competitive_processes",
     "leaseslicensing.components.invoicing",
     "leaseslicensing.components.tenure",
@@ -94,7 +93,6 @@ REST_FRAMEWORK = {
 
 
 MIDDLEWARE_CLASSES += [
-    # 'leaseslicensing.middleware.BookingTimerMiddleware',
     # 'leaseslicensing.middleware.FirstTimeNagScreenMiddleware',
     # 'leaseslicensing.middleware.RevisionOverrideMiddleware',
     "leaseslicensing.middleware.CacheControlMiddleware",
@@ -168,7 +166,6 @@ SYSTEM_NAME_SHORT = env("SYSTEM_NAME_SHORT", "LALS")
 SITE_PREFIX = env("SITE_PREFIX")
 SITE_DOMAIN = env("SITE_DOMAIN")
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", "licensing@" + SITE_DOMAIN).lower()
-SUPPORT_EMAIL_FILMING = env("SUPPORT_EMAIL_FILMING", "filming@" + SITE_DOMAIN).lower()
 DEP_URL = env("DEP_URL", "www." + SITE_DOMAIN)
 DEP_PHONE = env("DEP_PHONE", "(08) 9219 9978")
 DEP_PHONE_FILMING = env("DEP_PHONE_FILMING", "(08) 9219 8411")

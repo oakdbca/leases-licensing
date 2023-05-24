@@ -8,12 +8,9 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser  # , Document
-from ledger_api_client.ledger_models import Invoice
 
 from leaseslicensing.components.approvals import email as approval_email
 from leaseslicensing.components.approvals.models import Approval
-from leaseslicensing.components.bookings import email as booking_email
-from leaseslicensing.components.bookings.models import ApplicationFee, Booking
 from leaseslicensing.components.compliances import email as compliance_email
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.utils import (
@@ -764,14 +761,6 @@ def test_proposal_emails(request):
         proposal_decline = ProposalDeclinedDetails.objects.last()
         compliance = Compliance.objects.last()
 
-        application_fee = ApplicationFee.objects.last()
-        api = Invoice.objects.get(
-            reference=application_fee.application_fee_invoices.last().invoice_reference
-        )
-
-        booking = Booking.objects.last()
-        bi = Invoice.objects.get(reference=booking.invoices.last().invoice_reference)
-
         proposal_email.send_qaofficer_email_notification(
             proposal, recipients, request, reminder=False
         )
@@ -823,19 +812,6 @@ def test_proposal_emails(request):
         )
         compliance_email.send_submit_email_notification(
             request, compliance, is_test=True
-        )
-
-        booking_email.send_application_fee_invoice_tclass_email_notification(
-            request, proposal, api, recipients, is_test=True
-        )
-        booking_email.send_application_fee_confirmation_tclass_email_notification(
-            request, application_fee, api, recipients, is_test=True
-        )
-        booking_email.send_invoice_tclass_email_notification(
-            request.user, booking, bi, recipients, is_test=True
-        )
-        booking_email.send_confirmation_tclass_email_notification(
-            request.user, booking, bi, recipients, is_test=True
         )
 
 

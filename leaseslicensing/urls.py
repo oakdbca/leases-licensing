@@ -9,7 +9,6 @@ from rest_framework import routers
 from leaseslicensing import views
 from leaseslicensing.admin import admin
 from leaseslicensing.components.approvals import api as approval_api
-from leaseslicensing.components.bookings import api as booking_api
 from leaseslicensing.components.competitive_processes import (
     api as competitive_process_api,
 )
@@ -49,12 +48,9 @@ router.register(r"approval_paginated", approval_api.ApprovalPaginatedViewSet)
 router.register(
     r"competitive_process", competitive_process_api.CompetitiveProcessViewSet
 )
-router.register(r"booking_paginated", booking_api.BookingPaginatedViewSet)
 router.register(r"compliance_paginated", compliances_api.CompliancePaginatedViewSet)
 router.register(r"referrals", proposal_api.ReferralViewSet)
 router.register(r"approvals", approval_api.ApprovalViewSet)
-router.register(r"bookings", booking_api.BookingViewSet)
-router.register(r"overdue_invoices", booking_api.OverdueBookingInvoiceViewSet)
 router.register(r"compliances", compliances_api.ComplianceViewSet)
 router.register(r"proposal_requirements", proposal_api.ProposalRequirementViewSet)
 router.register(

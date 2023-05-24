@@ -398,65 +398,6 @@ export default {
                 $("#" + missing_field.id).css("color", 'red');
             }
         },
-        can_submit: function () {
-            let vm = this;
-            let blank_fields = []
-
-            if (vm.proposal.application_type == vm.application_type_tclass) {
-                if (vm.$refs.proposal_tclass.$refs.other_details.selected_accreditations.length == 0) {
-                    blank_fields.push(' Level of Accreditation is required')
-                }
-                else {
-                    for (var i = 0; i < vm.proposal.other_details.accreditations.length; i++) {
-                        if (!vm.proposal.other_details.accreditations[i].is_deleted && vm.proposal.other_details.accreditations[i].accreditation_type != 'no') {
-                            if (vm.proposal.other_details.accreditations[i].accreditation_expiry == null || vm.proposal.other_details.accreditations[i].accreditation_expiry == '') {
-                                blank_fields.push('Expiry date for accreditation type ' + vm.proposal.other_details.accreditations[i].accreditation_type_value + ' is required')
-                            }
-                            // var acc_doc_ref='accreditation_file'+vm.proposal.other_details.accreditations[i].accreditation_type;
-                            var acc_ref = vm.proposal.other_details.accreditations[i].accreditation_type;
-                            // console.log(acc_doc_ref, acc_ref);
-                            if (vm.$refs.proposal_tclass.$refs.other_details.$refs[acc_ref][0].$refs.accreditation_file.documents.length == 0) {
-                                blank_fields.push('Accreditation Certificate for accreditation type ' + vm.proposal.other_details.accreditations[i].accreditation_type_value + ' is required')
-                            }
-
-                        }
-                    }
-                }
-
-                if (vm.proposal.other_details.preferred_licence_period == '' || vm.proposal.other_details.preferred_licence_period == null) {
-                    blank_fields.push(' Preferred Licence Period is required')
-                }
-                if (vm.proposal.other_details.nominated_start_date == '' || vm.proposal.other_details.nominated_start_date == null) {
-                    blank_fields.push(' Licence Nominated Start Date is required')
-                }
-
-                if (vm.$refs.proposal_tclass.$refs.other_details.$refs.deed_poll_doc.documents.length == 0) {
-                    blank_fields.push(' Deed poll document is missing')
-                }
-
-                if (vm.$refs.proposal_tclass.$refs.other_details.$refs.currency_doc.documents.length == 0) {
-                    blank_fields.push(' Certificate of currency document is missing')
-                }
-                if (vm.proposal.other_details.insurance_expiry == '' || vm.proposal.other_details.insurance_expiry == null) {
-                    blank_fields.push(' Certificate of currency expiry date is missing')
-                }
-
-            } else if (vm.proposal.application_type == vm.application_type_filming) {
-                blank_fields = vm.can_submit_filming()
-
-            } else if (vm.proposal.application_type == vm.application_type_event) {
-                blank_fields = vm.can_submit_event();
-
-            }
-
-            if (blank_fields.length == 0) {
-                return true;
-            }
-            else {
-                return blank_fields;
-            }
-
-        },
         submit: async function () {
             console.log('in submit()')
             let vm = this;

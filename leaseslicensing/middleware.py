@@ -1,21 +1,15 @@
-from django.urls import reverse
-from django.shortcuts import redirect
-from django.utils.http import urlquote_plus
-
 import re
-import datetime
 
-from django.http import HttpResponseRedirect
-from django.utils import timezone
-from leaseslicensing.components.bookings.models import ApplicationFee
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.http import urlquote_plus
 from reversion.middleware import RevisionMiddleware
 from reversion.views import _request_creates_revision
-
 
 CHECKOUT_PATH = re.compile("^/ledger/checkout/checkout")
 
 
-class FirstTimeNagScreenMiddleware(object):
+class FirstTimeNagScreenMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
@@ -39,24 +33,6 @@ class FirstTimeNagScreenMiddleware(object):
                     )
 
 
-class BookingTimerMiddleware(object):
-    def __init__(self, get_response):
-        self.get_response = get_response
-
-    def __call__(self, request):
-        if "lals_app_invoice" in request.session:
-            try:
-                application_fee = ApplicationFee.objects.get(
-                    pk=request.session["lals_app_invoice"]
-                )
-            except:
-                del request.session["lals_app_invoice"]
-                return
-            if application_fee.payment_type != ApplicationFee.PAYMENT_TYPE_TEMPORARY:
-                del request.session["lals_app_invoice"]
-        return
-
-
 class RevisionOverrideMiddleware(RevisionMiddleware):
 
     """
@@ -65,7 +41,8 @@ class RevisionOverrideMiddleware(RevisionMiddleware):
     override venv/lib/python2.7/site-packages/reversion/middleware.py
     """
 
-    # exclude ledger payments/checkout from revision - hack to overcome basket (lagging status) issue/conflict with reversion
+    # exclude ledger payments/checkout from revision - hack
+    # to overcome basket (lagging status) issue/conflict with reversion
     def request_creates_revision(self, request):
         return (
             _request_creates_revision(request)
@@ -73,18 +50,15 @@ class RevisionOverrideMiddleware(RevisionMiddleware):
         )
 
 
-class CacheControlMiddleware(object):
+class CacheControlMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         response = self.get_response(request)
 
-        if request.path[:5] == '/api/' or request.path == '/':
-            response['Cache-Control'] = 'private, no-store'
-        elif request.path[:8] == '/static/':
-            response['Cache-Control'] = 'public, max-age=86400'
+        if request.path[:5] == "/api/" or request.path == "/":
+            response["Cache-Control"] = "private, no-store"
+        elif request.path[:8] == "/static/":
+            response["Cache-Control"] = "public, max-age=86400"
         return response
-
-    #def process_response(self, request, response):
-

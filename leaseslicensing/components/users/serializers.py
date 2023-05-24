@@ -1,21 +1,15 @@
-from datetime import timedelta
-
 from django.conf import settings
-from django.utils import timezone
 from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
-from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.main.models import (
-    ApplicationType,
     CommunicationsLogEntry,
     Document,
     UserSystemSettings,
 )
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
-from leaseslicensing.components.proposals.models import Proposal
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.helpers import in_dbca_domain, is_leaseslicensing_admin
 
@@ -71,45 +65,6 @@ class UserOrganisationSerializer(serializers.ModelSerializer):
     def get_email(self, obj):
         email = EmailUser.objects.get(id=self.context.get("user_id")).email
         return email
-
-    def get_active_proposals(self, obj):
-        _list = []
-        # for application_type in ['T Class', 'Filming', 'Event']:
-        for application_type in [
-            ApplicationType.TCLASS,
-            ApplicationType.FILMING,
-            ApplicationType.EVENT,
-        ]:
-            qs = (
-                Proposal.objects.filter(
-                    application_type__name=application_type, org_applicant=obj
-                )
-                .exclude(processing_status__in=["approved", "declined", "discarded"])
-                .values_list("lodgement_number", flat=True)
-            )
-            _list.append(dict(application_type=application_type, proposals=qs))
-        return _list
-
-    def get_current_event_proposals(self, obj):
-        today = timezone.localtime(timezone.now()).date()
-        # Only return the Approvals in last 12 months
-        year_date = today - timedelta(days=365)
-        _list = []
-        # for application_type in ['T Class', 'Filming', 'Event']:
-        qs = (
-            Approval.objects.filter(
-                expiry_date__lte=today,
-                expiry_date__gte=year_date,
-                current_proposal__application_type__name=ApplicationType.EVENT,
-                current_proposal__org_applicant=obj,
-            )
-            .values(
-                "id", "current_proposal", "current_proposal__event_activity__event_name"
-            )
-            .order_by("id")
-        )
-        _list.append(dict(application_type=ApplicationType.EVENT, proposals=qs))
-        return _list
 
 
 class UserFilterSerializer(serializers.ModelSerializer):
