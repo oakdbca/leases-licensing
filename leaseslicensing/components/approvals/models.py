@@ -15,6 +15,7 @@ from leaseslicensing.components.approvals.email import (
     send_approval_cancel_email_notification,
     send_approval_expire_email_notification,
     send_approval_reinstate_email_notification,
+    send_approval_renewal_email_notification,
     send_approval_surrender_email_notification,
     send_approval_suspend_email_notification,
 )
@@ -22,6 +23,7 @@ from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
     RevisionedMixin,
+    SecureFileField,
     UserAction,
 )
 from leaseslicensing.components.main.related_item import RelatedItem
@@ -44,38 +46,33 @@ logger = logging.getLogger(__name__)
 
 
 def update_approval_doc_filename(instance, filename):
-    return "{}/proposals/{}/approvals/{}".format(
-        settings.MEDIA_APP_DIR, instance.approval.current_proposal.id, filename
-    )
+    return f"approval_documents/{instance.id}/{filename}"
 
 
 def update_approval_comms_log_filename(instance, filename):
-    return "{}/proposals/{}/approvals/communications/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "proposals/{}/approvals/{}/communications/{}".format(
         instance.log_entry.approval.current_proposal.id,
+        instance.log_entry.approval.id,
         filename,
     )
 
 
 def update_approval_cancellation_doc_filename(instance, filename):
-    return "{}/approvals/{}/cancellation_documents/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "/approval_cancellation_documents/{}/{}".format(
         instance.id,
         filename,
     )
 
 
 def update_approval_surrender_doc_filename(instance, filename):
-    return "{}//approvals/{}/surrender_documents/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "approval_surrender_documents/{}/{}".format(
         instance.id,
         filename,
     )
 
 
 def update_approval_suspension_doc_filename(instance, filename):
-    return "{}//approvals/{}/suspension_documents/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "approval_suspension_documents/{}/{}".format(
         instance.id,
         filename,
     )
@@ -85,7 +82,7 @@ class ApprovalDocument(Document):
     approval = models.ForeignKey(
         "Approval", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_approval_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_approval_doc_filename, max_length=512)
     can_delete = models.BooleanField(
         default=True
     )  # after initial submit prevent document from being deleted
@@ -98,10 +95,12 @@ class ApprovalDocument(Document):
             f"(including document submitted before Application pushback to status Draft): {self.name}"
         )
 
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
+        return self.approval.user_has_object_permission(user_id)
+
     class Meta:
         app_label = "leaseslicensing"
-
-
 
 
 class ApprovalType(RevisionedMixin):
@@ -143,6 +142,8 @@ class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
 # class Approval(models.Model):
 class Approval(RevisionedMixin):
     APPROVAL_STATUS_CURRENT = "current"
+    APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW = "current_pending_renewal_review"
+    APPROVAL_STATUS_CURRENT_PENDING_RENEWAL = "current_pending_renewal"
     APPROVAL_STATUS_EXPIRED = "expired"
     APPROVAL_STATUS_CANCELLED = "cancelled"
     APPROVAL_STATUS_SURRENDERED = "surrendered"
@@ -152,6 +153,11 @@ class Approval(RevisionedMixin):
 
     STATUS_CHOICES = (
         (APPROVAL_STATUS_CURRENT, "Current"),
+        (
+            APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
+            "Current (Pending Renewal Review)",
+        ),
+        (APPROVAL_STATUS_CURRENT_PENDING_RENEWAL, "Current (Pending Renewal)"),
         (APPROVAL_STATUS_EXPIRED, "Expired"),
         (APPROVAL_STATUS_CANCELLED, "Cancelled"),
         (APPROVAL_STATUS_SURRENDERED, "Surrendered"),
@@ -180,14 +186,9 @@ class Approval(RevisionedMixin):
     replaced_by = models.ForeignKey(
         "self", blank=True, null=True, on_delete=models.SET_NULL
     )
-    # current_proposal = models.ForeignKey(Proposal,related_name = '+')
     current_proposal = models.ForeignKey(
         Proposal, related_name="approvals", null=True, on_delete=models.SET_NULL
     )
-    #    activity = models.CharField(max_length=255)
-    #    region = models.CharField(max_length=255) # type: ignore
-    #    tenure = models.CharField(max_length=255,null=True)
-    #    title = models.CharField(max_length=255)
     renewal_document = models.ForeignKey(
         ApprovalDocument,
         blank=True,
@@ -195,7 +196,8 @@ class Approval(RevisionedMixin):
         related_name="renewal_document",
         on_delete=models.SET_NULL,
     )
-    renewal_sent = models.BooleanField(default=False)
+    renewal_review_notification_sent_to_assessors = models.BooleanField(default=False)
+    renewal_notification_sent_to_holder = models.BooleanField(default=False)
     issue_date = models.DateTimeField()
     original_issue_date = models.DateField(auto_now_add=True)
     start_date = models.DateField()
@@ -381,7 +383,11 @@ class Approval(RevisionedMixin):
 
     @property
     def can_reissue(self):
-        return self.status == "current" or self.status == "suspended"
+        return (
+            self.status == self.APPROVAL_STATUS_CURRENT
+            or self.status == self.APPROVAL_STATUS_SUSPENDED
+            or self.status == self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
+        )
 
     @property
     def can_reinstate(self):
@@ -422,33 +428,21 @@ class Approval(RevisionedMixin):
             return False
 
     @property
-    def can_extend(self):
-        if self.current_proposal:
-            if self.current_proposal.application_type.name == "E Class":
-                return (
-                    self.current_proposal.application_type.max_renewals
-                    > self.renewal_count
-                )
-        return False
-
-    @property
     def can_renew(self):
-        try:
-            renew_conditions = {
-                "previous_application": self.current_proposal,
-                "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
-            }
-            proposal = Proposal.objects.get(**renew_conditions)
-            if proposal:
-                return False
-        except Proposal.DoesNotExist:
-            return True
+        if not self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL == self.status:
+            return False
+
+        renewal_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
+        }
+        return not Proposal.objects.filter(**renewal_conditions).exists()
 
     # copy amend_renew() from ML?
     @property
     def can_amend(self):
         # try:
-        if self.renewal_document and self.renewal_sent:
+        if self.renewal_document and self.renewal_notification_sent_to_holder:
             # amend_renew = 'renew'
             return False
         else:
@@ -487,6 +481,10 @@ class Approval(RevisionedMixin):
                 f"Approval {self.lodgement_number} does not have current_proposal"
             )
         return None
+
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
+        return self.current_proposal.user_has_object_permission(user_id)
 
     #    @property
     #    def approved_by(self):
@@ -528,6 +526,19 @@ class Approval(RevisionedMixin):
                 self.licence_document.name
             )
         )
+
+    def review_renewal(self, can_be_renewed):
+        if not can_be_renewed:
+            # The approval will be left in current status to expire naturally
+            self.status = "current"
+            self.save()
+            return
+
+        # Send email to holder letting them know that the approval is able to be renewed
+        send_approval_renewal_email_notification(self)
+        self.status = self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
+        self.renewal_notification_sent_to_holder = True
+        self.save()
 
     def generate_renewal_doc(self):
         from leaseslicensing.components.approvals.pdf import create_renewal_doc
@@ -594,8 +605,6 @@ class Approval(RevisionedMixin):
         with transaction.atomic():
             if request.user.id not in self.allowed_assessor_ids:
                 raise ValidationError("You do not have access to extend this approval")
-            if not self.can_extend and self.can_action:
-                raise ValidationError("You cannot extend approval any further")
             self.renewal_count += 1
             self.extend_details = details.get("extend_details")
             self.expiry_date = datetime.date(
@@ -840,7 +849,7 @@ class ApprovalLogDocument(Document):
         null=True,
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_comms_log_filename, null=True, max_length=512
     )
 
@@ -857,7 +866,7 @@ class ApprovalCancellationDocument(Document):
         related_name="approval_cancellation_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_cancellation_doc_filename, max_length=512
     )
 
@@ -874,7 +883,7 @@ class ApprovalSurrenderDocument(Document):
         related_name="approval_surrender_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_surrender_doc_filename, max_length=512
     )
 
@@ -891,7 +900,7 @@ class ApprovalSuspensionDocument(Document):
         related_name="approval_suspension_documents",
     )
     input_name = models.CharField(max_length=255, null=True, blank=True)
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_approval_suspension_doc_filename, max_length=512
     )
 

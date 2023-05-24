@@ -203,7 +203,7 @@ def send_organisation_request_link_email_notification(org_request, request, cont
 
     msg = email.send(contact, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
-    _log_org_email(msg, org_request, request.user, sender=sender)
+    _log_org_email(msg, org_request, request.user.id, sender=sender)
 
 
 def send_organisation_reinstate_email_notification(
@@ -406,7 +406,7 @@ def send_org_access_group_request_accept_email_notification(
     _log_org_request_email(msg, org_request, sender=sender)
 
     # commenting out because Organisation does not yet exist - only OrganisationRequest exists
-    # _log_org_email(msg, organisation, org_request.requester, sender=sender)
+    _log_org_email(msg, org_request.organisation, org_request.requester, sender=sender)
 
 
 def send_organisation_request_decline_email_notification(org_request, request):

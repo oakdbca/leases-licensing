@@ -41,10 +41,22 @@ module.exports = {
     proposal_requirements: '/api/proposal_requirements.json',
     proposal_by_uuid: '/api/proposal_by_uuid/',
     temporary_document: '/api/temporary_document/',
+
+    // ------------------- GIS Data Endpoints -------------------
+
+    identifiers: '/api/identifiers/',
+    vestings: '/api/vestings/',
+    names: '/api/names/',
+    acts: '/api/acts/',
+    tenures: '/api/tenures/',
+    categories: '/api/categories/',
+
     regions: '/api/regions/',
     districts: '/api/districts/',
     lgas: '/api/lgas/',
     groups: '/api/groups/',
+
+
     lookupApprovalDetails: function (id) {
         return `/api/approvals/${id}/lookup_approval.json`;
     },

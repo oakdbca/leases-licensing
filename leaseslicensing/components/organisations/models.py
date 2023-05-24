@@ -1,11 +1,12 @@
 import logging
 
 from django.conf import settings
-from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
+from django.utils.text import slugify
+from ledger_api_client.managed_models import SystemGroupPermission
 from ledger_api_client.utils import (
     create_organisation,
     get_organisation,
@@ -16,6 +17,7 @@ from rest_framework import status
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
+    SecureFileField,
     UserAction,
 )
 from leaseslicensing.components.organisations.emails import (  # send_organisation_request_accept_email_notification,
@@ -36,6 +38,7 @@ from leaseslicensing.components.organisations.exceptions import (
     UnableToRetrieveLedgerOrganisation,
 )
 from leaseslicensing.components.organisations.utils import random_generator
+from leaseslicensing.helpers import belongs_to_by_user_id
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 # @python_2_unicode_compatible
@@ -689,6 +692,14 @@ class Organisation(models.Model):
         return self.ledger_organisation_email
 
     @property
+    def contact_emails(self):
+        return list(
+            self.contacts.filter(
+                user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE
+            ).values_list("email", flat=True)
+        )
+
+    @property
     def first_five(self):
         first_five_delegates = self.delegates.filter(
             organisation__contacts__user_status="active",
@@ -720,15 +731,23 @@ class Organisation(models.Model):
 
 
 class OrganisationContact(models.Model):
+    USER_STATUS_CHOICE_DRAFT = "draft"
+    USER_STATUS_CHOICE_PENDING = "pending"
+    USER_STATUS_CHOICE_ACTIVE = "active"
+    USER_STATUS_CHOICE_DECLINED = "declined"
+    USER_STATUS_CHOICE_UNLINKED = "unlinked"
+    USER_STATUS_CHOICE_SUSPENDED = "suspended"
+    USER_STATUS_CHOICE_CONTACT_FORM = "contact_form"
+
     USER_STATUS_CHOICES = (
-        ("draft", "Draft"),
-        ("pending", "Pending"),
-        ("active", "Active"),
-        ("declined", "Declined"),
-        ("unlinked", "Unlinked"),
-        ("suspended", "Suspended"),
+        (USER_STATUS_CHOICE_DRAFT, "Draft"),
+        (USER_STATUS_CHOICE_PENDING, "Pending"),
+        (USER_STATUS_CHOICE_ACTIVE, "Active"),
+        (USER_STATUS_CHOICE_DECLINED, "Declined"),
+        (USER_STATUS_CHOICE_UNLINKED, "Unlinked"),
+        (USER_STATUS_CHOICE_SUSPENDED, "Suspended"),
         (
-            "contact_form",
+            USER_STATUS_CHOICE_CONTACT_FORM,
             "ContactForm",
         ),  # status 'contact_form' if org contact was added via 'Contact Details'
         # section in manage.vue (allows Org Contact to be distinguished from Org Delegate)
@@ -897,7 +916,7 @@ class OrganisationLogDocument(Document):
     log_entry = models.ForeignKey(
         "OrganisationLogEntry", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_organisation_comms_log_filename, max_length=512
     )
 
@@ -920,6 +939,20 @@ class OrganisationLogEntry(CommunicationsLogEntry):
         app_label = "leaseslicensing"
 
 
+def organisation_request_identification_upload_path(instance, filename):
+    if instance.id:
+        return "organisation_requests/{}/{}".format(
+            instance.id,
+            filename,
+        )
+    # For the first organisation request, the instance.id is None
+    # So we need to use the name to generate the path
+    return "organisation_requests/{}/{}".format(
+        slugify(instance.name),
+        filename,
+    )
+
+
 class OrganisationRequest(models.Model):
     STATUS_CHOICES = (
         ("with_assessor", "With Assessor"),
@@ -939,8 +972,8 @@ class OrganisationRequest(models.Model):
     abn = models.CharField(max_length=50, null=True, blank=True, verbose_name="ABN")
     requester = models.IntegerField()  # EmailUserRO
     assigned_officer = models.IntegerField(null=True, blank=True)  # EmailUserRO
-    identification = models.FileField(
-        upload_to="organisation/requests/%Y/%m/%d",
+    identification = SecureFileField(
+        upload_to=organisation_request_identification_upload_path,
         max_length=512,
         null=True,
         blank=True,
@@ -961,6 +994,10 @@ class OrganisationRequest(models.Model):
             new_lodgment_id = f"OAR{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
+
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the documents"""
+        return belongs_to_by_user_id(user_id, settings.GROUP_NAME_ORGANISATION_ACCESS)
 
     def accept(self, request):
         # Todo: imlmenent for segregation system
@@ -1055,11 +1092,16 @@ class OrganisationRequest(models.Model):
     def send_org_access_group_request_notification(self, request):
         # user submits a new organisation request
         # send email to organisation access group
-        org_access_recipients = [
-            i.email for i in OrganisationAccessGroup.objects.last().all_members
+        org_access_recipient_emails = []
+        org_access_recipients = SystemGroupPermission.objects.filter(
+            system_group__name=settings.GROUP_NAME_ORGANISATION_ACCESS
+        ).only("emailuser")
+        [
+            org_access_recipient_emails.append(recipient.emailuser.email)
+            for recipient in org_access_recipients
         ]
         send_org_access_group_request_accept_email_notification(
-            self, request, org_access_recipients
+            self, request, org_access_recipient_emails
         )
 
     def assign_to(self, user_id, request):
@@ -1099,40 +1141,18 @@ class OrganisationRequest(models.Model):
     def send_organisation_request_email_notification(self, request):
         # user submits a new organisation request
         # send email to organisation access group
-        group = OrganisationAccessGroup.objects.first()
-        if group and group.filtered_members:
-            org_access_recipients = [m.email for m in group.filtered_members]
-            send_organisation_request_email_notification(
-                self, request, org_access_recipients
-            )
+        permissions = SystemGroupPermission.objects.filter(
+            system_group__name=settings.GROUP_NAME_ORGANISATION_ACCESS
+        ).only("emailuser")
+        org_access_recipients = [
+            permission.emailuser.email for permission in permissions
+        ]
+        send_organisation_request_email_notification(
+            self, request, org_access_recipients
+        )
 
     def log_user_action(self, action, request):
         return OrganisationRequestUserAction.log_action(self, action, request.user.id)
-
-
-class OrganisationAccessGroup(models.Model):
-    # site = models.OneToOneField(Site, default='1', on_delete=models.CASCADE)
-    # members = models.ManyToManyField(EmailUser)
-    members = ArrayField(models.IntegerField(), blank=True)  # EmailUserRO
-
-    def __str__(self):
-        return "Organisation Access Group"
-
-    @property
-    def all_members(self):
-        all_members = []
-        all_members.extend(self.members.all())
-        # member_ids = [m.id for m in self.members.all()]
-        # all_members.extend(EmailUser.objects.filter(is_superuser=True,is_staff=True,is_active=True).exclude(id__in=member_ids))
-        return all_members
-
-    @property
-    def filtered_members(self):
-        return self.members.all()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Organisation access group"
 
 
 class OrganisationRequestUserAction(UserAction):
@@ -1140,8 +1160,6 @@ class OrganisationRequestUserAction(UserAction):
     ACTION_ASSIGN_TO = "Assign to {}"
     ACTION_UNASSIGN = "Unassign"
     ACTION_DECLINE_REQUEST = "Decline request {}"
-    # Assessors
-
     ACTION_ACCEPT_REQUEST = "Accept request {}"
 
     @classmethod
@@ -1179,7 +1197,7 @@ class OrganisationRequestLogDocument(Document):
         related_name="documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_organisation_request_comms_log_filename, max_length=512
     )
 
@@ -1200,21 +1218,3 @@ class OrganisationRequestLogEntry(CommunicationsLogEntry):
 
     class Meta:
         app_label = "leaseslicensing"
-
-
-# import reversion
-# reversion.register(ledger_organisation, follow=['organisation_set'])
-# reversion.register(Organisation, follow=['org_approvals',
-# 'contacts', 'userdelegation_set', 'action_logs', 'comms_logs'])
-# reversion.register(OrganisationContact)
-# reversion.register(OrganisationAction)
-# reversion.register(OrganisationLogEntry, follow=['documents'])
-# reversion.register(OrganisationLogDocument)
-# reversion.register(OrganisationRequest, follow=['action_logs',
-# 'organisationrequestdeclineddetails_set', 'comms_logs'])
-# reversion.register(OrganisationAccessGroup)
-# reversion.register(OrganisationRequestUserAction)
-# reversion.register(OrganisationRequestDeclinedDetails)
-# reversion.register(OrganisationRequestLogDocument)
-# reversion.register(OrganisationRequestLogEntry, follow=['documents'])
-# reversion.register(UserDelegation)

@@ -37,15 +37,19 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
     CommunicationsLogEntry,
     Document,
     RevisionedMixin,
+    SecureFileField,
     UserAction,
 )
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.main.utils import (
-    get_dbca_lands_and_waters_geos,
     get_department_user,
+    polygon_intersects_with_layer,
 )
 from leaseslicensing.components.organisations.models import Organisation
-from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
+from leaseslicensing.components.organisations.utils import (
+    can_admin_org,
+    get_organisation_ids_for_user,
+)
 from leaseslicensing.components.proposals.email import (
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
@@ -61,9 +65,12 @@ from leaseslicensing.components.tenure.models import (
     Category,
     District,
     Group,
+    Identifier,
+    Name,
     Region,
     SiteName,
     Tenure,
+    Vesting,
 )
 from leaseslicensing.helpers import user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -72,74 +79,63 @@ from leaseslicensing.settings import (
     APPLICATION_TYPE_REGISTRATION_OF_INTEREST,
     GROUP_NAME_APPROVER,
     GROUP_NAME_ASSESSOR,
+    PROPOSAL_TYPE_AMENDMENT,
+    PROPOSAL_TYPE_RENEWAL,
 )
 
 logger = logging.getLogger(__name__)
 
 
 def update_proposal_doc_filename(instance, filename):
-    return "{}/proposals/{}/documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/documents/{filename}"
 
 
 def update_onhold_doc_filename(instance, filename):
-    return "{}/proposals/{}/on_hold/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/on_hold/{filename}"
 
 
 def update_qaofficer_doc_filename(instance, filename):
-    return "{}/proposals/{}/qaofficer/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/qaofficer/{filename}"
 
 
 def update_referral_doc_filename(instance, filename):
-    return "{}/proposals/{}/referral/{}".format(
-        settings.MEDIA_APP_DIR, instance.referral.proposal.id, filename
-    )
+    return f"proposals/{instance.referral.proposal.id}/referral/{filename}"
 
 
 def update_proposal_required_doc_filename(instance, filename):
-    return "{}/proposals/{}/required_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.proposal.id, filename
-    )
+    return f"proposals/{instance.proposal.id}/required_documents/{filename}"
 
 
 def update_requirement_doc_filename(instance, filename):
-    return "{}/proposals/{}/requirement_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.requirement.proposal.id, filename
+    return "proposals/{}/requirement_documents/{}".format(
+        instance.requirement.proposal.id, filename
     )
 
 
 def update_proposal_comms_log_filename(instance, filename):
-    return "{}/proposals/{}/communications/{}".format(
-        settings.MEDIA_APP_DIR, instance.log_entry.proposal.id, filename
-    )
+    return f"proposals/{instance.log_entry.proposal.id}/{filename}"
 
 
 def update_filming_park_doc_filename(instance, filename):
-    return "{}/proposals/{}/filming_park_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.filming_park.proposal.id, filename
+    return "proposals/{}/filming_park_documents/{}".format(
+        instance.filming_park.proposal.id, filename
     )
 
 
 def update_events_park_doc_filename(instance, filename):
-    return "{}/proposals/{}/events_park_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.events_park.proposal.id, filename
+    return "proposals/{}/events_park_documents/{}".format(
+        instance.events_park.proposal.id, filename
     )
 
 
 def update_pre_event_park_doc_filename(instance, filename):
-    return "{}/proposals/{}/pre_event_park_documents/{}".format(
-        settings.MEDIA_APP_DIR, instance.pre_event_park.proposal.id, filename
+    return "proposals/{}/pre_event_park_documents/{}".format(
+        instance.pre_event_park.proposal.id, filename
     )
 
 
 def update_additional_doc_filename(instance, filename):
-    return "{}/proposals/{}/additional_documents/{}/{}".format(
-        settings.MEDIA_APP_DIR,
+    return "proposals/{}/additional_documents/{}/{}".format(
         instance.proposal.id,
         instance.proposal_additional_document_type.additional_document_type.name,
         filename,
@@ -182,7 +178,7 @@ class ShapefileDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="shapefile_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=500)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=500)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -212,7 +208,7 @@ class DeedPollDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="deed_poll_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -235,7 +231,7 @@ class LegislativeRequirementsDocument(Document):
         related_name="legislative_requirements_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -256,7 +252,7 @@ class RiskFactorsDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="risk_factors_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -277,7 +273,7 @@ class KeyMilestonesDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="key_milestones_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -298,7 +294,7 @@ class KeyPersonnelDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="key_personnel_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -319,7 +315,7 @@ class StaffingDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="staffing_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -340,7 +336,7 @@ class MarketAnalysisDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="market_analysis_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -363,7 +359,7 @@ class AvailableActivitiesDocument(Document):
         related_name="available_activities_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -386,7 +382,7 @@ class FinancialCapacityDocument(Document):
         related_name="financial_capacity_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -409,7 +405,7 @@ class CapitalInvestmentDocument(Document):
         related_name="capital_investment_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -430,7 +426,7 @@ class CashFlowDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="cash_flow_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -451,7 +447,7 @@ class ProfitAndLossDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="profit_and_loss_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -472,7 +468,7 @@ class MiningTenementDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="mining_tenement_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -495,7 +491,7 @@ class NativeTitleConsultationDocument(Document):
         related_name="native_title_consultation_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -516,7 +512,7 @@ class AboriginalSiteDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="aboriginal_site_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -539,7 +535,7 @@ class SignificantChangeDocument(Document):
         related_name="significant_change_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -560,7 +556,7 @@ class BuildingRequiredDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="building_required_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -581,7 +577,7 @@ class WetlandsImpactDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="wetlands_impact_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -604,7 +600,7 @@ class EnvironmentallySensitiveDocument(Document):
         related_name="environmentally_sensitive_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -625,7 +621,7 @@ class HeritageSiteDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="heritage_site_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -648,7 +644,7 @@ class GroundDisturbingWorksDocument(Document):
         related_name="ground_disturbing_works_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -671,7 +667,7 @@ class ClearingVegetationDocument(Document):
         related_name="clearing_vegetation_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -692,7 +688,7 @@ class ConsistentPlanDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="consistent_plan_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -715,7 +711,7 @@ class ConsistentPurposeDocument(Document):
         related_name="consistent_purpose_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -736,7 +732,7 @@ class LongTermUseDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="long_term_use_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -757,7 +753,7 @@ class ExclusiveUseDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="exclusive_use_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -778,7 +774,7 @@ class ProposedDeclineDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="proposed_decline_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -799,7 +795,7 @@ class ProposedApprovalDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="proposed_approval_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -820,7 +816,7 @@ class ProposalDocument(Document):
     proposal = models.ForeignKey(
         "Proposal", related_name="supporting_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -841,7 +837,7 @@ class ReferralDocument(Document):
     referral = models.ForeignKey(
         "Referral", related_name="referral_documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(upload_to=update_referral_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_referral_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -867,7 +863,7 @@ class RequirementDocument(Document):
         related_name="requirement_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_requirement_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_requirement_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -897,7 +893,7 @@ class LeaseLicenceApprovalDocument(Document):
         related_name="lease_licence_approval_documents",
         on_delete=models.CASCADE,
     )
-    _file = models.FileField(upload_to=update_proposal_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_proposal_doc_filename, max_length=512)
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -1190,6 +1186,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     site_name = models.ForeignKey(
         SiteName, blank=True, null=True, on_delete=models.PROTECT
     )
+    proponent_reference_number = models.CharField(null=True, blank=True, max_length=50)
+    # datetime_gis_data_first_fetched = models.DateTimeField(blank=True, null=True)
+    # datetime_gis_data_last_fetched = models.DateTimeField(blank=True, null=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1451,7 +1450,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def is_temporary(self):
-        # return self.customer_status == 'temp' and self.processing_status == 'temp'
         return self.processing_status == "temp"
 
     @property
@@ -1468,6 +1466,17 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         """
         return self.processing_status in self.CUSTOMER_VIEWABLE_STATE
 
+    def user_has_object_permission(self, user_id):
+        """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
+        if self.ind_applicant:
+            return user_id in [
+                self.applicant,
+                self.submitter,
+                self.proxy_applicant,
+            ]
+        if self.org_applicant:
+            return can_admin_org(self.org_applicant, user_id)
+
     @property
     def is_discardable(self):
         """
@@ -1475,7 +1484,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         1 - It is a draft
         2- or if the application has been pushed back to the user
         """
-        # return self.customer_status == 'draft' or self.processing_status == 'awaiting_applicant_response'
         return (
             self.processing_status == "draft"
             or self.processing_status == "awaiting_applicant_response"
@@ -1487,7 +1495,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         An application can be deleted only if it is a draft and it hasn't been lodged yet
         :return:
         """
-        # return self.customer_status == 'draft' and not self.lodgement_number
         return self.processing_status == "draft" and not self.lodgement_number
 
     @property
@@ -1571,7 +1578,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def is_amendment_proposal(self):
-        if self.proposal_type == "amendment":
+        if self.proposal_type == ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT):
             return True
         return False
 
@@ -1754,6 +1761,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         # Shapefiles are valid when the shp, shx, and dbf extensions are provided
         # and when they intersect with DBCA legislated land or water polygons
 
+        valid_geometry_saved = False
         try:
             # Shapefile extensions shp (geometry), shx (index between shp and dbf), dbf (data) are essential
             shp_file_qs = self.shapefile_documents.filter(
@@ -1763,68 +1771,69 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 | Q(name__endswith=".prj")
             )
             # Validate shapefile and all the other related files are present
-            if shp_file_qs:
-                if (
-                    not shp_file_qs.filter(
-                        Q(name__endswith=".shp")
-                        | Q(name__endswith=".shx")
-                        | Q(name__endswith=".dbf")
-                    ).count()
-                    % 3
-                    == 0
-                ):
-                    raise ValidationError(
-                        "Shapefile needs at least the shp, shx, and dbf extensions"
-                    )
+            if not shp_file_qs:
+                raise ValidationError("Please upload a valid shapefile")
 
-                # A list of all uploaded shapefiles
-                shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
-                shp_gdfs = []
+            shp_files = shp_file_qs.filter(name__endswith=".shp").count()
+            shx_files = shp_file_qs.filter(name__endswith=".shx").count()
+            dbf_files = shp_file_qs.filter(name__endswith=".dbf").count()
 
-                # List of DBCA legislated land and water geometries
-                lands_geos_data = get_dbca_lands_and_waters_geos()
-                # FIXME is there a better way to get the SRID of the layer?
-                srid_dbca = list({g._base_geom.srid for g in lands_geos_data})[0]
+            if shp_files != 1 or shx_files != 1 or dbf_files != 1:
+                raise ValidationError(
+                    "Please upload a valid shapefile with at least .shp, .shx, and .dbf extensions"
+                )
 
-                for shp_file_obj in shp_file_objs:
-                    gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
-                    geometries = gdf.geometry  # GeoSeries
-                    # Only accept polygons
-                    geom_type = geometries.geom_type.values[0]
-                    if geom_type not in ("Polygon", "MultiPolygon"):
+            # A list of all uploaded shapefiles
+            shp_file_objs = shp_file_qs.filter(Q(name__endswith=".shp"))
+            shp_gdfs = []
+
+            for shp_file_obj in shp_file_objs:
+                gdf = gpd.read_file(shp_file_obj.path)  # Shapefile to GeoDataFrame
+
+                # If no prj file assume WGS-84 datum
+                if not gdf.crs:
+                    gdf_transform = gdf.set_crs("epsg:4326", inplace=True)
+                else:
+                    gdf_transform = gdf.to_crs("epsg:4326")
+
+                geometries = gdf.geometry  # GeoSeries
+
+                # Only accept polygons
+                geom_type = geometries.geom_type.values[0]
+                if geom_type not in ("Polygon", "MultiPolygon"):
+                    raise ValidationError(f"Geometry of type {geom_type} not allowed")
+
+                # Check for intersection with DBCA geometries
+                gdf_transform["valid"] = False
+                for geom in geometries:
+                    srid = SpatialReference(
+                        geometries.crs.srs
+                    ).srid  # spatial reference identifier
+
+                    logger.debug(f"geom.srid = {srid}")
+
+                    polygon = GEOSGeometry(geom.wkt, srid=srid)
+
+                    # Add the file name as identifier to the geojson for use in the frontend
+                    if "source_" not in gdf_transform:
+                        gdf_transform["source_"] = shp_file_obj.name
+
+                    # Imported geometry is valid if it intersects with any one of the DBCA geometries
+                    if not polygon_intersects_with_layer(
+                        polygon, "public:dbca_legislated_lands_and_waters"
+                    ):
                         raise ValidationError(
-                            f"Geometry of type {geom_type} not allowed"
+                            "One or more polygons does not intersect with a relevant layer"
                         )
 
-                    # If no prj file assume WGS-84 datum
-                    if not gdf.crs:
-                        gdf_transform = gdf.set_crs(crs=4326)
-                    else:
-                        gdf_transform = gdf.to_crs(crs=4326)
+                    gdf_transform["valid"] = True
 
-                    # Check for intersection with DBCA geometries
-                    gdf_transform["valid"] = False
-                    for geom in geometries:
-                        srid = SpatialReference(
-                            geometries.crs.srs
-                        ).srid  # spatial reference identifier
-                        geos_repr = GEOSGeometry(geom.wkt, srid=srid)
-                        if srid != srid_dbca:
-                            # Transform the imported geometry to the SRID of the DBCA geometries
-                            geos_repr = geos_repr.transform(srid_dbca, clone=True)
-                        # Add the file name as identifier to the geojson for use in the frontend
-                        if "source_" not in gdf_transform:
-                            gdf_transform["source_"] = shp_file_obj.name
-                        # Imported geometry is valid if it intersects with any one of the DBCA geometries
-                        if any(
-                            [
-                                lw_geom.intersects(geos_repr)
-                                for lw_geom in lands_geos_data
-                            ]
-                        ):
-                            gdf_transform["valid"] = True
+                    ProposalGeometry.objects.create(
+                        proposal=self, polygon=polygon, intersects=True
+                    )
+                    logger.debug(f"{self.shapefile_json}")
 
-                    shp_gdfs.append(gdf_transform)
+                shp_gdfs.append(gdf_transform)
 
                 # Merge all GeoDataFrames into a single one
                 gdf_merged = gpd.GeoDataFrame(
@@ -1833,24 +1842,22 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
                 # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
                 shp_json = gdf_merged.to_json()
-                import json
 
                 if type(shp_json) == str:
                     self.shapefile_json = json.loads(shp_json)
                 else:
                     self.shapefile_json = shp_json
 
-                # self.save(version_comment="New Shapefile JSON saved.") # No new sequence on shapefile upload
                 self.save()
-                # else:
-                #     raise ValidationError('Please upload a valid shapefile')
-            else:
-                raise ValidationError("Please upload a valid shapefile")
+                valid_geometry_saved = True
+
         except ValidationError:
             raise
         except Exception as e:
             logger.exception(e)
             raise ValidationError("Please upload a valid shapefile")
+
+        return valid_geometry_saved
 
     def make_questions_ready(self, referral=None):
         """
@@ -2166,29 +2173,29 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         else:
             raise ValidationError("The provided status cannot be found.")
 
-    def reissue_approval(self, request, status):
+    def reissue_approval(self):
         if not self.processing_status == "approved":
-            raise ValidationError("You cannot change the current status at this time")
-        elif self.approval and self.approval.can_reissue:
-            if (
-                self.get_approver_group()
-                in request.user.proposalapprovergroup_set.all()
-            ):
-                self.processing_status = status
-                # self.save()
-                self.save(
-                    version_comment="Reissue Approval: {}".format(
-                        self.approval.lodgement_number
-                    )
-                )
-                # Create a log entry for the proposal
-                self.log_user_action(
-                    ProposalUserAction.ACTION_REISSUE_APPROVAL.format(self.id), request
-                )
-            else:
-                raise ValidationError("Cannot reissue Approval. User not permitted.")
-        else:
-            raise ValidationError("Cannot reissue Approval")
+            raise ValidationError(
+                f"You cannot reissue Proposal: {self.lodgement_number} because it is not approved."
+            )
+
+        if not self.approval:
+            raise ValidationError(
+                f"You cannot reissue Proposal: {self.lodgement_number} because it has no approval attached."
+            )
+
+        if not self.approval.can_reissue:
+            raise ValidationError(
+                f"You cannot reissue Proposal: {self.lodgement_number}"
+                f"because the can_renew method on the attached Approval: {self.approval} returns False."
+            )
+
+        self.processing_status = self.PROCESSING_STATUS_WITH_APPROVER
+        self.save(
+            version_comment="Reissue Approval: {}".format(
+                self.approval.lodgement_number
+            )
+        )
 
     def proposed_decline(self, request, details):
         with transaction.atomic():
@@ -2256,7 +2263,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 )
                 self.proposed_decline_status = True
                 self.processing_status = "declined"
-                # self.customer_status = 'declined'
                 self.save()
                 # Log proposal action
                 self.log_user_action(
@@ -2831,7 +2837,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         if r.is_deleted:
                             for c in cs:
                                 c.processing_status = "discarded"
-                                # c.customer_status = 'discarded'
                                 c.reminder_sent = True
                                 c.post_reminder_sent = True
                                 c.save()
@@ -2913,11 +2918,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             try:
                 renew_conditions = {
                     "previous_application": previous_proposal,
-                    "customer_status": "with_assessor",
+                    "processing_status": "with_assessor",
                 }
-                # proposal=Proposal.objects.get(previous_application = previous_proposal)
                 proposal = Proposal.objects.get(**renew_conditions)
-                # if proposal.customer_status=='with_assessor':
                 if proposal:
                     raise ValidationError(
                         "A renewal/ amendment for this licence has already been lodged and is awaiting review."
@@ -2925,68 +2928,21 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             except Proposal.DoesNotExist:
                 previous_proposal = Proposal.objects.get(id=self.id)
                 proposal = clone_proposal_with_status_reset(previous_proposal)
-                proposal.proposal_type = "renewal"
-                proposal.training_completed = False
-                # proposal.schema = ProposalType.objects.first().schema
-                ptype = ProposalType.objects.filter(
-                    name=proposal.application_type
-                ).latest("version")
-                proposal.schema = ptype.schema
-                proposal.submitter = request.user
+                proposal.proposal_type = ProposalType.objects.get(
+                    code=PROPOSAL_TYPE_RENEWAL
+                )
+                proposal.submitter = request.user.id
                 proposal.previous_application = self
                 proposal.proposed_issuance_approval = None
 
-                if proposal.application_type.name == ApplicationType.TCLASS:
-                    # require user to re-enter mandatory info in 'Other Details' tab, when renewing
-                    proposal.other_details.insurance_expiry = None
-                    proposal.other_details.preferred_licence_period = None
-                    proposal.other_details.nominated_start_date = None
-
-                    # ProposalAccreditation.objects.filter(
-                    #     proposal_other_details__proposal=proposal
-                    # ).delete()
-
-                    proposal.documents.filter(
-                        input_name__in=["deed_poll", "currency_certificate"]
-                    ).delete()
-
-                    # require  user to pay Application and Licence Fee again
-                    proposal.fee_invoice_reference = None
-
-                    try:
-                        ProposalOtherDetails.objects.get(proposal=proposal)
-                    except ProposalOtherDetails.DoesNotExist:
-                        ProposalOtherDetails.objects.create(proposal=proposal)
-                    # Create a log entry for the proposal
-                    proposal.other_details.nominated_start_date = (
-                        self.approval.expiry_date + datetime.timedelta(days=1)
+                # copy any proposal geometry from the previous proposal
+                for pg in previous_proposal.proposalgeometry.all():
+                    ProposalGeometry.objects.create(
+                        proposal=proposal,
+                        polygon=pg.polygon,
+                        intersects=pg.intersects,
+                        copied_from=pg,
                     )
-                    proposal.other_details.save()
-                if proposal.application_type.name == ApplicationType.FILMING:
-                    proposal.filming_other_details.insurance_expiry = None
-                    proposal.filming_other_details.save()
-                    proposal.filming_activity.commencement_date = None
-                    proposal.filming_activity.completion_date = None
-                    proposal.filming_activity.save()
-                    proposal.documents.filter(
-                        input_name__in=["deed_poll", "currency_certificate"]
-                    ).delete()
-
-                    # require  user to pay Application and Licence Fee again
-                    proposal.fee_invoice_reference = None
-
-                if proposal.application_type.name == ApplicationType.EVENT:
-                    proposal.event_other_details.insurance_expiry = None
-                    proposal.event_other_details.save()
-                    proposal.event_activity.commencement_date = None
-                    proposal.event_activity.completion_date = None
-                    proposal.event_activity.save()
-                    proposal.documents.filter(
-                        input_name__in=["deed_poll", "currency_certificate"]
-                    ).delete()
-
-                    # require  user to pay Application and Licence Fee again
-                    proposal.fee_invoice_reference = None
 
                 req = self.requirements.all().exclude(is_deleted=True)
                 from copy import deepcopy
@@ -3003,6 +2959,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         new_r.id = None
                         new_r.district_proposal = None
                         new_r.save()
+
                 # copy all the requirement documents from previous proposal
                 for requirement in proposal.requirements.all():
                     for requirement_document in RequirementDocument.objects.filter(
@@ -3011,23 +2968,25 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         requirement_document.requirement = requirement
                         requirement_document.id = None
                         requirement_document._file.name = (
-                            "{}/proposals/{}/requirement_documents/{}".format(
-                                settings.MEDIA_APP_DIR,
+                            "proposals/{}/requirement_documents/{}".format(
                                 proposal.id,
                                 requirement_document.name,
                             )
                         )
                         requirement_document.can_delete = True
                         requirement_document.save()
-                        # Create a log entry for the proposal
+
+                # Create a log entry for the proposal
                 self.log_user_action(
                     ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id), request
                 )
                 # Create a log entry for the organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id), request
-                )
+                if self.org_applicant:
+                    self.org_applicant.log_user_action(
+                        ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id),
+                        request,
+                    )
+
                 # Log entry for approval
                 from leaseslicensing.components.approvals.models import (
                     ApprovalUserAction,
@@ -3042,7 +3001,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         proposal.previous_application_id
                     )
                 )
-                # proposal.save()
+                from leaseslicensing.components.proposals.utils import populate_gis_data
+
+                # fetch gis data
+                populate_gis_data(proposal)
+
             return proposal
 
     def amend_approval(self, request):
@@ -3054,7 +3017,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     "proposal_type": "amendment",
                 }
                 proposal = Proposal.objects.get(**amend_conditions)
-                # if proposal.customer_status=='with_assessor':
                 if proposal.processing_status in ("with_assessor",):
                     raise ValidationError(
                         "An amendment for this licence has already been lodged and is awaiting review."
@@ -3097,8 +3059,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         requirement_document.requirement = requirement
                         requirement_document.id = None
                         requirement_document._file.name = (
-                            "{}/proposals/{}/requirement_documents/{}".format(
-                                settings.MEDIA_APP_DIR,
+                            "proposals/{}/requirement_documents/{}".format(
                                 proposal.id,
                                 requirement_document.name,
                             )
@@ -3284,10 +3245,62 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def groups_comma_list(self):
         return ", ".join([pg.group.name for pg in self.groups.all()])
 
+    @property
+    def groups_names_list(self):
+        return self.groups.values_list("group__name", flat=True)
+
+    @property
+    def categories_list(self):
+        return self.categories.values_list("category__name", flat=True)
+
+
+class ProposalIdentifier(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.CASCADE, related_name="identifiers"
+    )
+    identifier = models.ForeignKey(Identifier, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "identifier")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land covered by legal act: {self.identifier}"
+
+
+class ProposalVesting(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.CASCADE, related_name="vestings"
+    )
+    vesting = models.ForeignKey(
+        Vesting, on_delete=models.PROTECT, null=True, blank=True
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "vesting")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land covered by Vesting: {self.vesting}"
+
+
+class ProposalName(models.Model):
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.CASCADE, related_name="names"
+    )
+    name = models.ForeignKey(Name, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("proposal", "name")
+
+    def __str__(self):
+        return f"Proposal: {self.proposal.lodgement_number} includes land named: {self.name}"
+
 
 class ProposalAct(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="acts"
+        Proposal, on_delete=models.CASCADE, related_name="acts"
     )
     act = models.ForeignKey(Act, on_delete=models.PROTECT)
 
@@ -3301,7 +3314,7 @@ class ProposalAct(models.Model):
 
 class ProposalTenure(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="tenures"
+        Proposal, on_delete=models.CASCADE, related_name="tenures"
     )
     tenure = models.ForeignKey(Tenure, on_delete=models.PROTECT)
 
@@ -3315,7 +3328,7 @@ class ProposalTenure(models.Model):
 
 class ProposalCategory(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="categories"
+        Proposal, on_delete=models.CASCADE, related_name="categories"
     )
     category = models.ForeignKey(Category, on_delete=models.PROTECT)
 
@@ -3329,7 +3342,7 @@ class ProposalCategory(models.Model):
 
 class ProposalGroup(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="groups"
+        Proposal, on_delete=models.CASCADE, related_name="groups"
     )
     group = models.ForeignKey(Group, on_delete=models.PROTECT)
 
@@ -3343,7 +3356,7 @@ class ProposalGroup(models.Model):
 
 class ProposalRegion(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="regions"
+        Proposal, on_delete=models.CASCADE, related_name="regions"
     )
     region = models.ForeignKey(Region, on_delete=models.PROTECT, null=True, blank=True)
 
@@ -3357,7 +3370,7 @@ class ProposalRegion(models.Model):
 
 class ProposalDistrict(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="districts"
+        Proposal, on_delete=models.CASCADE, related_name="districts"
     )
     district = models.ForeignKey(
         District, on_delete=models.PROTECT, null=True, blank=True
@@ -3373,7 +3386,7 @@ class ProposalDistrict(models.Model):
 
 class ProposalLGA(models.Model):
     proposal = models.ForeignKey(
-        Proposal, on_delete=models.PROTECT, related_name="lgas"
+        Proposal, on_delete=models.CASCADE, related_name="lgas"
     )
     lga = models.ForeignKey(LGA, on_delete=models.PROTECT, null=True, blank=True)
 
@@ -3396,7 +3409,7 @@ class ProposalAdditionalDocumentType(models.Model):
 
 
 class AdditionalDocument(Document):
-    _file = models.FileField(upload_to=update_additional_doc_filename, max_length=512)
+    _file = SecureFileField(upload_to=update_additional_doc_filename, max_length=512)
     proposal_additional_document_type = models.ForeignKey(
         ProposalAdditionalDocumentType, null=True, blank=True, on_delete=models.SET_NULL
     )
@@ -3463,7 +3476,7 @@ class ProposalLogDocument(Document):
     log_entry = models.ForeignKey(
         "ProposalLogEntry", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_proposal_comms_log_filename, max_length=512
     )
 
@@ -3647,7 +3660,6 @@ class AmendmentRequest(ProposalRequest):
                     proposal = self.proposal
                     if proposal.processing_status != "draft":
                         proposal.processing_status = "draft"
-                        proposal.customer_status = "draft"
                         proposal.save(
                             version_comment=f"Proposal amendment requested {request.data.get('reason', '')}"
                         )
@@ -4059,11 +4071,12 @@ class Referral(RevisionedMixin):
         return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
     def can_process(self, user):
-
         referral_user = retrieve_email_user(self.referral)
         # True if the request user is the referrer and the application is in referral status
-        return  referral_user.id == user.id and\
-                self.processing_status in ["with_referral", "with_referral_conditions"]
+        return referral_user.id == user.id and self.processing_status in [
+            "with_referral",
+            "with_referral_conditions",
+        ]
 
     def assign_officer(self, request, officer):
         with transaction.atomic():
@@ -4837,54 +4850,27 @@ def clone_proposal_with_status_reset(original_proposal):
 
 def clone_documents(proposal, original_proposal, media_prefix):
     for proposal_document in ProposalDocument.objects.filter(proposal_id=proposal.id):
-        proposal_document._file.name = "{}/proposals/{}/documents/{}".format(
-            settings.MEDIA_APP_DIR, proposal.id, proposal_document.name
+        proposal_document._file.name = "proposals/{}/documents/{}".format(
+            proposal.id, proposal_document.name
         )
         proposal_document.can_delete = True
         proposal_document.save()
 
-    # for proposal_required_document in ProposalRequiredDocument.objects.filter(
-    #     proposal_id=proposal.id
-    # ):
-    #     proposal_required_document._file.name = (
-    #         "{}/proposals/{}/required_documents/{}".format(
-    #             settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-    #         )
-    #     )
-    #     proposal_required_document.can_delete = True
-    #     proposal_required_document.save()
-
     for referral in proposal.referrals.all():
         for referral_document in ReferralDocument.objects.filter(referral=referral):
-            referral_document._file.name = "{}/proposals/{}/referral/{}".format(
-                settings.MEDIA_APP_DIR, proposal.id, referral_document.name
+            referral_document._file.name = "proposals/{}/referral/{}".format(
+                proposal.id, referral_document.name
             )
             referral_document.can_delete = True
             referral_document.save()
-
-    # for qa_officer_document in QAOfficerDocument.objects.filter(
-    #     proposal_id=proposal.id
-    # ):
-    #     qa_officer_document._file.name = "{}/proposals/{}/qaofficer/{}".format(
-    #         settings.MEDIA_APP_DIR, proposal.id, qa_officer_document.name
-    #     )
-    #     qa_officer_document.can_delete = True
-    #     qa_officer_document.save()
-
-    # for onhold_document in OnHoldDocument.objects.filter(proposal_id=proposal.id):
-    #     onhold_document._file.name = "{}/proposals/{}/on_hold/{}".format(
-    #         settings.MEDIA_APP_DIR, proposal.id, onhold_document.name
-    #     )
-    #     onhold_document.can_delete = True
-    #     onhold_document.save()
 
     for requirement in proposal.requirements.all():
         for requirement_document in RequirementDocument.objects.filter(
             requirement=requirement
         ):
             requirement_document._file.name = (
-                "{}/proposals/{}/requirement_documents/{}".format(
-                    settings.MEDIA_APP_DIR, proposal.id, requirement_document.name
+                "proposals/{}/requirement_documents/{}".format(
+                    proposal.id, requirement_document.name
                 )
             )
             requirement_document.can_delete = True
@@ -4900,6 +4886,7 @@ def clone_documents(proposal, original_proposal, media_prefix):
         log_entry_document.save()
 
     # copy documents on file system and reset can_delete flag
+    # Not 100% sure this will work after implementing the secure file storage
     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
     subprocess.call(
         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
@@ -4915,26 +4902,14 @@ def _clone_documents(proposal, original_proposal, media_prefix):
     ):
         proposal_document.proposal = proposal
         proposal_document.id = None
-        proposal_document._file.name = "{}/proposals/{}/documents/{}".format(
-            settings.MEDIA_APP_DIR, proposal.id, proposal_document.name
+        proposal_document._file.name = "proposals/{}/documents/{}".format(
+            proposal.id, proposal_document.name
         )
         proposal_document.can_delete = True
         proposal_document.save()
 
-    # for proposal_required_document in ProposalRequiredDocument.objects.filter(
-    #     proposal=original_proposal.id
-    # ):
-    #     proposal_required_document.proposal = proposal
-    #     proposal_required_document.id = None
-    #     proposal_required_document._file.name = (
-    #         "{}/proposals/{}/required_documents/{}".format(
-    #             settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-    #         )
-    #     )
-    #     proposal_required_document.can_delete = True
-    #     proposal_required_document.save()
-
     # copy documents on file system and reset can_delete flag
+    # Not 100% sure this will work after implementing the secure file storage
     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
     subprocess.call(
         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
@@ -4942,30 +4917,6 @@ def _clone_documents(proposal, original_proposal, media_prefix):
         ),
         shell=True,
     )
-
-
-# def _clone_requirement_documents(proposal, original_proposal, media_prefix):
-#     for proposal_required_document in ProposalRequiredDocument.objects.filter(
-#         proposal=original_proposal.id
-#     ):
-#         proposal_required_document.proposal = proposal
-#         proposal_required_document.id = None
-#         proposal_required_document._file.name = (
-#             "{}/proposals/{}/required_documents/{}".format(
-#                 settings.MEDIA_APP_DIR, proposal.id, proposal_required_document.name
-#             )
-#         )
-#         proposal_required_document.can_delete = True
-#         proposal_required_document.save()
-
-#     # copy documents on file system and reset can_delete flag
-#     media_dir = f"{media_prefix}/{settings.MEDIA_APP_DIR}"
-#     subprocess.call(
-#         "cp -pr {0}/proposals/{1} {0}/proposals/{2}".format(
-#             media_dir, original_proposal.id, proposal.id
-#         ),
-#         shell=True,
-#     )
 
 
 def duplicate_object(self):

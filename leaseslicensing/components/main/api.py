@@ -1,8 +1,13 @@
 import logging
 
+from django.apps import apps
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from rest_framework import viewsets
+from django.db.models import F
+from django.forms import ValidationError
+from django.http import FileResponse, Http404
+from rest_framework import views, viewsets
 from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
@@ -31,9 +36,11 @@ from leaseslicensing.components.main.serializers import (
     MapLayerSerializer,
     QuestionSerializer,
     RequiredDocumentSerializer,
+    SecureDocumentSerializer,
     TemporaryDocumentCollectionSerializer,
 )
 from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.permissions import IsInternalOrHasObjectDocumentsPermission
 
 logger = logging.getLogger(__name__)
 
@@ -134,10 +141,39 @@ class KeyValueListMixin:
         if not self.key_value_serializer_class:
             raise AttributeError("key_value_serializer_class is not defined on viewset")
 
-        serializer = self.key_value_serializer_class(
-            self.get_queryset().only("id", self.key_value_display_field), many=True
-        )
+        queryset = self.get_queryset().only("id", self.key_value_display_field)
+        search_term = request.GET.get("term", "")
+        if search_term:
+            queryset = queryset.filter(
+                **{f"{self.key_value_display_field}__icontains": search_term}
+            )[:30]
+        serializer = self.key_value_serializer_class(queryset, many=True)
         return Response(serializer.data)
+
+
+class Select2ListMixin:
+    select2_search_case_sensitive = False
+    """ For simplicity, uses the key_value_display_field to display the text in the select2
+        Default behaviour is to be case insensitive.
+        If you want to be case sensitive, set select2_search_case_sensitive to True in the
+        viewset class
+    """
+
+    @action(detail=False, methods=["get"], url_path="select2-list")
+    def select2_list(self, request):
+        if not self.key_value_display_field:
+            raise AttributeError("key_value_display_field is not defined on viewset")
+        search_term = request.GET.get("term", "")
+        queryset = (
+            self.get_queryset()
+            .annotate(text=F(self.key_value_display_field))
+            .values("id", "text")
+        )
+        if self.select2_search_case_sensitive:
+            results = queryset.filter(text__contains=search_term)[:10]
+        else:
+            results = queryset.filter(text__icontains=search_term)[:10]
+        return Response({"results": results})
 
 
 class NoPaginationListMixin:
@@ -181,12 +217,12 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
         response = super().create(request, *args, **kwargs)
         instance = response.data.serializer.instance
         instance.log_user_action(
-                settings.ACTION_CREATE.format(
-                    instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
-                    helpers.get_instance_identifier(instance),
-                ),
-                request,
-            )
+            settings.ACTION_CREATE.format(
+                instance._meta.verbose_name.title(),  # pylint: disable=protected-acces
+                helpers.get_instance_identifier(instance),
+            ),
+            request,
+        )
         return response
 
     def update(self, request, *args, **kwargs):
@@ -210,3 +246,134 @@ class UserActionLoggingViewset(viewsets.ModelViewSet):
             request,
         )
         return super().destroy(request, *args, **kwargs)
+
+
+class SecureFileAPIView(views.APIView):
+    """Allows permissioned access to a file field on a model instance"""
+
+    permission_classes = [IsInternalOrHasObjectDocumentsPermission]
+
+    def get(self, request, *args, **kwargs):
+        model, instance_id, file_field_name = (
+            kwargs["model"],
+            kwargs["instance_id"],
+            kwargs["file_field_name"],
+        )
+        try:
+            instance = apps.get_model(
+                app_label="leaseslicensing", model_name=model
+            ).objects.get(id=instance_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        self.check_object_permissions(request, instance)
+
+        try:
+            file = getattr(instance, file_field_name)
+        except AttributeError:
+            raise Http404
+
+        if not file:
+            raise Http404
+
+        return FileResponse(file)
+
+
+class SecureDocumentAPIView(views.APIView):
+    """Allows permissioned access to a document that is attached to a model instance
+    By default, this api view will look for the documents with a related name of 'documents'
+    you can override this by passing a related_name in the url kwargs
+    the file field on the document must be named '_file'
+    """
+
+    permission_classes = [IsInternalOrHasObjectDocumentsPermission]
+
+    def get(self, request, *args, **kwargs):
+        logger.info("SecureDocumentAPIView")
+        model, instance_id, document_id = (
+            kwargs["model"],
+            kwargs["instance_id"],
+            kwargs["document_id"],
+        )
+        try:
+            instance = apps.get_model(
+                app_label="leaseslicensing", model_name=model
+            ).objects.get(id=instance_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        self.check_object_permissions(request, instance)
+
+        if kwargs["related_name"]:
+            try:
+                documents = getattr(instance, kwargs["related_name"])
+            except AttributeError:
+                raise ValidationError(
+                    f"Related name {kwargs['related_name']} not found on {model}"
+                )
+        else:
+            documents = instance.documents
+
+        try:
+            document = documents.get(id=document_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        try:
+            file = getattr(document, "_file")
+        except AttributeError:
+            raise Http404
+
+        if not file:
+            raise Http404
+        return FileResponse(file)
+
+
+class SecureDocumentsAPIView(views.APIView):
+    """Allows permissioned access to documents that are attached to a model instance
+    By default, this api view will look for the documents with a related name of 'documents'
+    you can override this by passing a related_name in the url kwargs (see: urls.py)
+    the file field on the document must be named '_file' which is our standard
+    """
+
+    permission_classes = [IsInternalOrHasObjectDocumentsPermission]
+    serializer_class = SecureDocumentSerializer
+
+    def get(self, request, *args, **kwargs):
+        model, instance_id = (
+            kwargs["model"],
+            kwargs["instance_id"],
+        )
+        try:
+            instance = apps.get_model(
+                app_label="leaseslicensing", model_name=model
+            ).objects.get(id=instance_id)
+        except ObjectDoesNotExist:
+            raise Http404
+
+        self.check_object_permissions(request, instance)
+
+        related_name = kwargs.get("related_name", None)
+        if related_name:
+            try:
+                documents = getattr(instance, related_name)
+            except AttributeError:
+                raise ValidationError(
+                    f"Related name {related_name} not found on {model}"
+                )
+        else:
+            documents = instance.documents
+            related_name = "documents"
+
+        for d in documents.all():
+            logger.debug(d)
+
+        data = self.serializer_class(
+            documents.all(),
+            many=True,
+            model=model,
+            instance_id=instance_id,
+            related_name=related_name,
+        ).data
+
+        return Response(data)

@@ -228,17 +228,11 @@ class SaveComplianceSerializer(serializers.ModelSerializer):
 
 
 class ComplianceActionSerializer(serializers.ModelSerializer):
-    # who = serializers.CharField(source="who.get_full_name")
-    who = serializers.SerializerMethodField()
+    who = serializers.CharField(source="who_full_name")
 
     class Meta:
         model = ComplianceUserAction
         fields = "__all__"
-
-    def get_who(self, obj):
-        user = retrieve_email_user(obj.id)
-        # return user.first_name + " " + user.last_name
-        return f"{user.first_name} {user.last_name}"
 
 
 class ComplianceCommsSerializer(serializers.ModelSerializer):

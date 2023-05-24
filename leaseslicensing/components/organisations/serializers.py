@@ -292,6 +292,7 @@ class OrgRequestRequesterSerializer(serializers.ModelSerializer):
 
 class OrganisationRequestSerializer(serializers.ModelSerializer):
     identification = serializers.FileField()
+    identification_url = serializers.SerializerMethodField()
     requester_name = serializers.SerializerMethodField(read_only=True)
     lodgement_date = serializers.DateTimeField(format="%d/%m/%Y", read_only=True)
     status = serializers.SerializerMethodField()
@@ -330,6 +331,14 @@ class OrganisationRequestSerializer(serializers.ModelSerializer):
         email_user = EmailUser.objects.filter(id=obj.assigned_officer).first()
         if email_user:
             return email_user.get_full_name()
+        return None
+
+    def get_identification_url(self, obj):
+        if obj.identification:
+            return (
+                f"/api/main/secure_file/{self.Meta.model._meta.model.__name__}/{obj.id}/identification/",
+            )
+
         return None
 
 
@@ -397,27 +406,17 @@ class OrganisationCommsSerializer(serializers.ModelSerializer):
 
 
 class OrganisationRequestLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = OrganisationRequestLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
 
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
-
 
 class OrganisationLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = OrganisationLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
-
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
 
 
 class OrganisationUnlinkUserSerializer(serializers.Serializer):

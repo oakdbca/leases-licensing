@@ -1,7 +1,6 @@
 import datetime
 import logging
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
@@ -22,8 +21,9 @@ from leaseslicensing.components.compliances.email import (
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
-    UserAction,
     RevisionedMixin,
+    SecureFileField,
+    UserAction,
 )
 from leaseslicensing.components.proposals.models import ProposalRequirement
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -327,18 +327,16 @@ class Compliance(RevisionedMixin, models.Model):
         return self.lodgement_number
 
 
-def update_proposal_complaince_filename(instance, filename):
-    return "{}/proposals/{}/compliance/{}".format(
-        settings.MEDIA_APP_DIR, instance.compliance.proposal.id, filename
-    )
+def update_proposal_compliance_filename(instance, filename):
+    return f"compliance_documents/{instance.id}/{filename}"
 
 
 class ComplianceDocument(Document):
     compliance = models.ForeignKey(
         "Compliance", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
-        upload_to=update_proposal_complaince_filename, max_length=512
+    _file = SecureFileField(
+        upload_to=update_proposal_compliance_filename, max_length=512
     )
     can_delete = models.BooleanField(
         default=True
@@ -399,8 +397,8 @@ class ComplianceLogEntry(CommunicationsLogEntry):
 
 
 def update_compliance_comms_log_filename(instance, filename):
-    return "{}/proposals/{}/compliance/communications/{}".format(
-        settings.MEDIA_APP_DIR, instance.log_entry.compliance.proposal.id, filename
+    return "proposals/{}/compliance/communications/{}".format(
+        instance.log_entry.compliance.proposal.id, filename
     )
 
 
@@ -408,7 +406,7 @@ class ComplianceLogDocument(Document):
     log_entry = models.ForeignKey(
         "ComplianceLogEntry", related_name="documents", on_delete=models.CASCADE
     )
-    _file = models.FileField(
+    _file = SecureFileField(
         upload_to=update_compliance_comms_log_filename, max_length=512
     )
 

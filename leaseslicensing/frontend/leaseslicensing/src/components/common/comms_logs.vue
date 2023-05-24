@@ -296,34 +296,15 @@ export default {
                     {
                         title: 'Documents',
                         data: 'documents',
-                        'render': function (documents) {
-                            if (!documents || !documents.length) {
+                        'render': function (row, type, full) {
+                            if (!full.documents || !full.documents.length) {
                                 return 'No documents'
                             }
-
                             var result = '<ul class="list-group list-group-numbered">';
-                            _.forEach(documents, function (_document) {
-                                // Not sure why this stuff is necessary but leaving it here for now
-                                // We expect an array [docName, url]
-                                // if it's a string it is the url
-                                var docName = '',
-                                    url = '';
-                                if (_.isArray(_document) && _document.length > 1) {
-                                    docName = _document[0];
-                                    url = _document[1];
-                                }
-                                if (typeof s === 'string') {
-                                    url = _document;
-                                    // display the first  chars of the filename
-                                    docName = _.last(_document.split('/'));
-                                    docName = _.truncate(docName, {
-                                        length: 18,
-                                        omission: '...',
-                                        separator: ' '
-                                    });
-                                }
-                                result += '<li class="list-group-item"><a href="' + url + '" target="_blank"> ' + docName + '</a></li>';
-                            });
+
+                            for (let i = 0; i < full.documents.length; i++) {
+                                result += '<li class="list-group-item"><a href="' + full.document_urls[i] + '" target="_blank"> ' + full.documents[i][0] + '</a></li>';
+                            }
                             result += '</ul>';
                             return result;
                         }

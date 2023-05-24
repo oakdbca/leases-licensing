@@ -83,7 +83,7 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         "request": "GetFeature",
         "typeName": layer_name,
         "maxFeatures": "5000",
-        "srsName": "EPSG:4326",
+        "srsName": "EPSG:4326",  # using the default projection for open layers and geodjango
         "outputFormat": "application/json",
         "propertyName": properties,
         "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
@@ -117,6 +117,7 @@ def get_gis_data_for_proposal(proposal, layer_name, properties):
     multipolygon = MultiPolygon(
         list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
     )
+
     if len(properties) > 1:
         properties_comma_list = ",".join(properties)
     else:
@@ -172,3 +173,17 @@ def multipolygon_intersects_with_layer(multipolygon, layer_name):
         return False
 
     return True
+
+
+def get_secure_file_url(instance, file_field_name):
+    base_path = settings.SECURE_FILE_API_BASE_PATH
+    return (
+        f"{base_path}{instance._meta.model.__name__}/{instance.id}/{file_field_name}/"
+    )
+
+
+def get_secure_document_url(instance, related_name="documents", document_id=None):
+    base_path = settings.SECURE_DOCUMENT_API_BASE_PATH
+    if document_id:
+        return f"{base_path}{instance._meta.model.__name__}/{instance.id}/{related_name}/{document_id}/"
+    return f"{base_path}{instance._meta.model.__name__}/{instance.id}/{related_name}/"

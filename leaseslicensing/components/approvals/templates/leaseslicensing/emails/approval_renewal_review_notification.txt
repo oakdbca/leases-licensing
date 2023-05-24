@@ -1,0 +1,11 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+
+The approval {{ approval.lodgement_number}} expires on {{approval.expiry_date}}.
+
+An assessor must decide if this approval can be renewed or not.
+
+Please review the renewal for this lease/license by navigating to the following url: {{url}}.
+
+{%  endblock %}

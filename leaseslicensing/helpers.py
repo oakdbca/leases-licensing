@@ -2,7 +2,7 @@ import logging
 
 from django.conf import settings
 from django.core.cache import cache
-from ledger_api_client.managed_models import SystemGroup
+from ledger_api_client.managed_models import SystemGroup, SystemGroupPermission
 from ledger_api_client.utils import get_all_organisation
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,13 @@ def user_ids_in_group(group_name):
 def belongs_to_by_user_id(user_id, group_name):
     system_group = SystemGroup.objects.filter(name=group_name).first()
     return system_group and user_id in system_group.get_system_group_member_ids()
+
+
+def emails_list_for_group(group_name):
+    sgp = SystemGroupPermission.objects.filter(system_group__name=group_name).only(
+        "emailuser"
+    )
+    return [sgp.emailuser.email for sgp in sgp]
 
 
 def belongs_to(request, group_name):

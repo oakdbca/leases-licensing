@@ -11,6 +11,7 @@ from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationLogEntry,
 )
+from leaseslicensing.helpers import emails_list_for_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
@@ -94,49 +95,30 @@ class ApprovalReinstateNotificationEmail(TemplateEmailBase):
         self.txt_template = "leaseslicensing/emails/approval_reinstate_notification.txt"
 
 
+class ApprovalRenewalReviewNotificationEmail(TemplateEmailBase):
+    def __init__(self):
+        super().__init__()
+        self.subject = (
+            f"{settings.DEP_NAME} - {settings.SYSTEM_NAME} lease / licence renewal."
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_renewal_review_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/approval_renewal_review_notification.txt"
+        )
+
+
 class ApprovalRenewalNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = f"{settings.DEP_NAME} - Commercial Operations licence renewal."
+        self.subject = f"{settings.DEP_NAME} - {settings.SYSTEM_NAME} lease / licence renewal update."
         self.html_template = "leaseslicensing/emails/approval_renewal_notification.html"
         self.txt_template = "leaseslicensing/emails/approval_renewal_notification.txt"
 
 
-class ApprovalEclassRenewalNotificationEmail(TemplateEmailBase):
-    def __init__(self):
-        super().__init__()
-        self.subject = "{} - Commercial Operations E class licence renewal.".format(
-            settings.DEP_NAME
-        )
-        self.html_template = (
-            "leaseslicensing/emails/approval_eclass_renewal_notification.html"
-        )
-        self.txt_template = (
-            "leaseslicensing/emails/approval_eclass_renewal_notification.txt"
-        )
-
-
-class ApprovalEclassExpiryNotificationEmail(TemplateEmailBase):
-    def __init__(self):
-        super().__init__()
-        self.subject = "{} - Commercial Operations E class licence expiry.".format(
-            settings.DEP_NAME
-        )
-        self.html_template = (
-            "leaseslicensing/emails/approval_eclass_expiry_notification.html"
-        )
-        self.txt_template = (
-            "leaseslicensing/emails/approval_eclass_expiry_notification.txt"
-        )
-
-
 def send_approval_expire_email_notification(approval):
-    if approval.is_lawful_authority:
-        email = FilmingLawfulAuthorityApprovalExpireNotificationEmail()
-    if approval.is_filming_licence:
-        email = FilmingLicenceApprovalExpireNotificationEmail()
-    else:
-        email = ApprovalExpireNotificationEmail()
+    email = ApprovalExpireNotificationEmail()
     proposal = approval.current_proposal
 
     url = settings.SITE_URL if settings.SITE_URL else ""
@@ -281,16 +263,10 @@ def send_approval_surrender_email_notification(approval, request=None):
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
 
-# approval renewal notice
-def send_approval_renewal_email_notification(approval):
-    email = ApprovalRenewalNotificationEmail()
-    proposal = approval.current_proposal
-    url = settings.SITE_URL if settings.SITE_URL else ""
-    url += reverse("external")
-
-    if "-internal" in url:
-        # remove '-internal'. This email is for external submitters
-        url = "".join(url.split("-internal"))
+def send_approval_renewal_review_email_notification(approval):
+    email = ApprovalRenewalReviewNotificationEmail()
+    url = settings.SITE_URL
+    url += reverse("internal-approval-detail", kwargs={"approval_pk": approval.pk})
 
     context = {
         "approval": approval,
@@ -298,107 +274,44 @@ def send_approval_renewal_email_notification(approval):
         "url": url,
     }
     sender = settings.DEFAULT_FROM_EMAIL
-    try:
-        sender_user = EmailUser.objects.get(email__icontains=sender)
-    except EmailUser.DoesNotExist:
-        EmailUser.objects.create(email=sender, password="")
-        sender_user = EmailUser.objects.get(email__icontains=sender)
-    # attach renewal notice
-    if approval.renewal_document and approval.renewal_document._file is not None:
-        renewal_document = approval.renewal_document._file
-        file_name = approval.renewal_document.name
-        attachment = (file_name, renewal_document.file.read(), "application/pdf")
-        attachment = [attachment]
-    else:
-        attachment = []
-    all_ccs = []
-    if proposal.org_applicant and proposal.org_applicant.email:
-        cc_list = proposal.org_applicant.email
-        if cc_list:
-            all_ccs = [cc_list]
+    sender_user = EmailUser.objects.get(email=sender)
+
     msg = email.send(
-        proposal.submitter_obj.email,
-        cc=all_ccs,
-        attachments=attachment,
+        emails_list_for_group(settings.GROUP_LEASE_LICENCE_ASSESSOR),
         context=context,
     )
-    sender = settings.DEFAULT_FROM_EMAIL
+
     _log_approval_email(msg, approval, sender=sender_user)
-    # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
-    if approval.org_applicant:
-        _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
-        )
-    else:
-        _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
 
-# approval renewal notice for eclass licence
-def send_approval_eclass_renewal_email_notification(approval):
-    email = ApprovalEclassRenewalNotificationEmail()
-    proposal = approval.current_proposal
+def send_approval_renewal_email_notification(approval):
+    email = ApprovalRenewalNotificationEmail()
+    url = settings.SITE_URL
+    url += reverse("external-approval-detail", kwargs={"approval_pk": approval.pk})
 
     context = {
         "approval": approval,
         "proposal": approval.current_proposal,
+        "url": url,
     }
     sender = settings.DEFAULT_FROM_EMAIL
-    try:
-        sender_user = EmailUser.objects.get(email__icontains=sender)
-    except EmailUser.DoesNotExist:
-        EmailUser.objects.create(email=sender, password="")
-        sender_user = EmailUser.objects.get(email__icontains=sender)
+    sender_user = EmailUser.objects.get(email=sender)
 
-    all_ccs = []
-    # cc list commented below 15-Jul-2021 --> eclass renewal emails should only go to assessors
-    #    if proposal.org_applicant and proposal.org_applicant.email:
-    #        cc_list = proposal.org_applicant.email
-    #        if cc_list:
-    #            all_ccs = [cc_list]
-    msg = email.send(proposal.assessor_recipients, cc=all_ccs, context=context)
-    sender = settings.DEFAULT_FROM_EMAIL
-    _log_approval_email(msg, approval, sender=sender_user)
-    # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     if approval.org_applicant:
-        _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+        # For organisations also cc in all the active organisation contacts
+        msg = email.send(
+            approval.org_applicant.email,
+            cc_list=approval.org_applicant.contact_emails,
+            context=context,
         )
     else:
-        _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
-
-
-# approval expiry notice for eclass licence (18 months prior to expiry)
-def send_approval_eclass_expiry_email_notification(approval):
-    email = ApprovalEclassExpiryNotificationEmail()
-    proposal = approval.current_proposal
-
-    context = {
-        "approval": approval,
-        "proposal": approval.current_proposal,
-    }
-    sender = settings.DEFAULT_FROM_EMAIL
-    try:
-        sender_user = EmailUser.objects.get(email__icontains=sender)
-    except EmailUser.DoesNotExist:
-        EmailUser.objects.create(email=sender, password="")
-        sender_user = EmailUser.objects.get(email__icontains=sender)
-
-    all_ccs = []
-    # cc list commented below 15-Jul-2021 --> eclass expiry emails should only go to assessors
-    #    if proposal.org_applicant and proposal.org_applicant.email:
-    #        cc_list = proposal.org_applicant.email
-    #        if cc_list:
-    #            all_ccs = [cc_list]
-    msg = email.send(proposal.assessor_recipients, cc=all_ccs, context=context)
-    sender = settings.DEFAULT_FROM_EMAIL
-    _log_approval_email(msg, approval, sender=sender_user)
-    # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
-    if approval.org_applicant:
-        _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+        emailuser = retrieve_email_user(approval.current_proposal.ind_applicant)
+        msg = email.send(
+            emailuser.email,
+            context=context,
         )
-    else:
-        _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
+
+    _log_approval_email(msg, approval, sender=sender_user)
 
 
 def send_approval_reinstate_email_notification(approval, request):

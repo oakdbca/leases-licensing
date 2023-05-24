@@ -1,12 +1,13 @@
 import random
 import string
 
+from django.conf import settings
+
+from leaseslicensing.helpers import belongs_to_by_user_id
+
 
 def can_manage_org(organisation, user):
-    from leaseslicensing.components.organisations.models import (
-        OrganisationAccessGroup,
-        UserDelegation,
-    )
+    from leaseslicensing.components.organisations.models import UserDelegation
 
     if user.is_anonymous:
         return False
@@ -18,13 +19,7 @@ def can_manage_org(organisation, user):
         UserDelegation.objects.get(organisation=organisation, user=user.id)
         return can_admin_org(organisation, user.id)
     except UserDelegation.DoesNotExist:
-        try:
-            group = OrganisationAccessGroup.objects.first()
-            if group:
-                group.members.get(id=user.id)
-            return True
-        except OrganisationAccessGroup.DoesNotExist:
-            return False
+        return belongs_to_by_user_id(user.id, settings.GROUP_NAME_ORGANISATION_ACCESS)
 
 
 def is_last_admin(organisation, user):

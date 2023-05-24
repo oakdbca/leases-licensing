@@ -1,9 +1,11 @@
 from django.conf import settings
+from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
 from leaseslicensing.components.approvals.models import (
     Approval,
+    ApprovalDocument,
     ApprovalLogEntry,
     ApprovalUserAction,
 )
@@ -11,6 +13,7 @@ from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
+from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.users.serializers import UserSerializer
@@ -124,15 +127,12 @@ class _ApprovalPaymentSerializer(serializers.ModelSerializer):
 class ApprovalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
-    licence_document = serializers.CharField(
-        source="licence_document._file.url", allow_blank=True, allow_null=True
-    )
+    licence_document = serializers.SerializerMethodField()
     # renewal_document = serializers.SerializerMethodField(read_only=True)
     status = serializers.CharField(source="get_status_display")
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
     can_renew = serializers.SerializerMethodField()
-    can_extend = serializers.SerializerMethodField()
     is_assessor = serializers.SerializerMethodField()
     is_approver = serializers.SerializerMethodField()
     requirement_docs = serializers.SerializerMethodField()
@@ -140,6 +140,15 @@ class ApprovalSerializer(serializers.ModelSerializer):
     holder = serializers.SerializerMethodField()
     holder_obj = serializers.SerializerMethodField()
     groups_comma_list = serializers.SerializerMethodField(read_only=True)
+    site_name = serializers.CharField(
+        source="current_proposal.site_name.name", allow_null=True, read_only=True
+    )
+    groups_names_list = serializers.ListField(
+        source="current_proposal.groups_names_list", read_only=True
+    )
+    categories_list = serializers.ListField(
+        source="current_proposal.categories_list", read_only=True
+    )
 
     class Meta:
         model = Approval
@@ -151,7 +160,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "replaced_by",
             "current_proposal",
             "tenure",
-            "renewal_sent",
+            "renewal_notification_sent_to_holder",
             "issue_date",
             "original_issue_date",
             "start_date",
@@ -173,7 +182,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "set_to_surrender",
             "set_to_suspend",
             "can_renew",
-            "can_extend",
             "can_amend",
             "can_reinstate",
             "application_type",
@@ -184,6 +192,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "requirement_docs",
             "submitter",
             "groups_comma_list",
+            "groups_names_list",
+            "categories_list",
+            "site_name",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -204,12 +215,11 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_reinstate",
             "can_amend",
             "can_renew",
-            "can_extend",
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
             "current_proposal",
-            "renewal_sent",
+            "renewal_notification_sent_to_holder",
             "application_type",
             "migrated",
             "is_assessor",
@@ -218,6 +228,11 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "submitter",
             "groups_comma_list",
         )
+
+    def get_licence_document(self, obj):
+        if not obj.licence_document or not obj.licence_document._file:
+            return None
+        return get_secure_file_url(obj.licence_document, "_file")
 
     def get_submitter(self, obj):
         user = EmailUser.objects.get(id=obj.submitter)
@@ -264,9 +279,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
     def get_can_renew(self, obj):
         return obj.can_renew
 
-    def get_can_extend(self, obj):
-        return obj.can_extend
-
     def get_is_assessor(self, obj):
         request = self.context["request"]
         return is_assessor(request)
@@ -307,7 +319,7 @@ class ApprovalSurrenderSerializer(serializers.Serializer):
 
 
 class ApprovalUserActionSerializer(serializers.ModelSerializer):
-    who = serializers.CharField(source="who.get_full_name")
+    who = serializers.CharField(source="who_full_name")
 
     class Meta:
         model = ApprovalUserAction
@@ -315,12 +327,30 @@ class ApprovalUserActionSerializer(serializers.ModelSerializer):
 
 
 class ApprovalLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = ApprovalLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
 
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
+
+class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
+    history_date = serializers.SerializerMethodField()
+    history_document_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ApprovalDocument
+        fields = (
+            "history_date",
+            "history_document_url",
+        )
+
+    def get_history_date(self, obj):
+        date_format_loc = timezone.localtime(obj.uploaded_date)
+        history_date = date_format_loc.strftime("%d/%m/%Y %H:%M:%S.%f")
+
+        return history_date
+
+    def get_history_document_url(self, obj):
+        # Todo: Change to secure file / document url
+        url = obj._file.url
+        return url

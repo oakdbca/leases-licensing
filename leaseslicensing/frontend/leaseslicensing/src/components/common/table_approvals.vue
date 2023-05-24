@@ -103,14 +103,14 @@
             @refreshFromResponse="refreshFromResponseApprovalModify">
         </ApprovalSuspension>
         <div v-if="approvalHistoryId">
-            <ApprovalHistory ref="approval_history" :key="approvalHistoryId" :approvalId="approvalHistoryId" />
+            <ApprovalHistory ref="approval_history" :key="approvalHistoryId" :approvalId="approvalHistoryId"
+                :approvalLodgementNumber="selectedApprovalLodgementNumber" />
         </div>
     </div>
 </template>
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
-import OfferMooringLicence from '@/components/internal/approvals/offer_mooring_licence.vue'
 import ApprovalCancellation from '../internal/approvals/approval_cancellation.vue'
 import ApprovalSuspension from '../internal/approvals/approval_suspension.vue'
 import ApprovalSurrender from '../internal/approvals/approval_surrender.vue'
@@ -118,7 +118,6 @@ import ApprovalHistory from '../internal/approvals/approval_history.vue'
 import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { v4 as uuid } from 'uuid';
-import { expandToggle } from '@/components/common/table_functions.js'
 import Swal from 'sweetalert2'
 
 export default {
@@ -152,7 +151,6 @@ export default {
         let vm = this;
         return {
             datatable_id: 'approvals-datatable-' + uuid(),
-            //approvalTypesToDisplay: ['wla'],
             show_expired_surrendered: false,
             selectedWaitingListAllocationId: null,
             approvalHistoryId: null,
@@ -206,7 +204,6 @@ export default {
     },
     components: {
         datatable,
-        OfferMooringLicence,
         ApprovalCancellation,
         ApprovalSuspension,
         ApprovalSurrender,
@@ -314,6 +311,10 @@ export default {
                     'Expiry Date',
                     'Document',
                     'Action',
+                    'Original Lease/License Number',
+                    'Site Name',
+                    'Groups',
+                    'Categories',
                 ]
             } else if (this.is_internal) {
                 return [
@@ -325,10 +326,11 @@ export default {
                     'Status',
                     'Expiry Date',
                     'Document',
-                    'Site Name',
-                    'Group(s)',
-                    'Original Lease/License Number',
                     'Action',
+                    'Original Lease/License Number',
+                    'Site Name',
+                    'Groups',
+                    'Categories',
                 ]
             }
         },
@@ -373,24 +375,47 @@ export default {
         },
         columnSite: function () {
             return {
-                data: "id",
+                data: "site_name",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
                     // TODO Site
-                    return 'Todo: static value'
+                    return full.site_name;
                 }
             }
         },
         columnGroups: function () {
             return {
-                data: "id",
+                data: "groups_names_list",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
-                    return full.groups_comma_list
+                    let html = '';
+                    if (full.groups_names_list) {
+                        for (let i = 0; i < full.groups_names_list.length; i++) {
+                            html += `<span class="badge bg-primary">${full.groups_names_list[i]}</span>&nbsp;`;
+                        }
+                    }
+                    return html
+                }
+            }
+        },
+        columnCategories: function () {
+            return {
+                data: "categories_list",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                'render': function (row, type, full) {
+                    let html = '';
+                    if (full.categories_list) {
+                        for (let i = 0; i < full.categories_list.length; i++) {
+                            html += `<span class="badge bg-primary">${full.categories_list[i]}</span>&nbsp;`;
+                        }
+                    }
+                    return html
                 }
             }
         },
@@ -494,17 +519,17 @@ export default {
                         links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                         if (full.can_action || vm.debug) {
                             if (full.amend_or_renew === 'amend' || vm.debug) {
-                                links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal_id}'>Amend</a><br/>`;
-                            } else if (full.amend_or_renew === 'renew' || vm.debug) {
-                                links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal_id}'>Renew</a><br/>`;
+                                links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal}'>Amend</a><br/>`;
+                            } else if (full.can_renew) {
+                                links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
                             }
-                            links += `<a href='#${full.id}' data-surrender-approval='${full.id}'>Surrender</a><br/>`;
+                            links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                         }
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
-                        links += `<a href='#${full.id}' data-history-approval='${full.id}'>History</a><br/>`;
-                        if (full.can_reissue && full.current_proposal_id && full.is_approver && full.current_proposal_approved) {
-                            links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal_id}'>Reissue</a><br/>`;
+                        links += `<a href='#${full.id}' data-history-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">History</a><br/>`;
+                        if (full.is_approver && full.can_reissue && full.current_proposal) {
+                            links += `<a href='#${full.id}' data-reissue-approval='${full.current_proposal}'>Reissue</a><br/>`;
                         }
                         if (vm.is_internal && vm.wlaDash) {
                             links += full.offer_link;
@@ -522,10 +547,12 @@ export default {
                             }
                             // Todo: Not yet sure under which circumstances these actions should be visible
                             links += `<a href='#${full.id}' data-review-invoice-details-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
-                            links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
+                            if ('current_pending_renewal_review' == full.status) {
+                                links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
+                            }
 
                         }
-                        if (full.renewal_document && full.renewal_sent) {
+                        if (full.renewal_document && full.renewal_notification_sent_to_holder) {
                             links += `<a href='${full.renewal_document}' target='_blank'>Renewal Notice</a><br/>`;
                         }
                     }
@@ -558,6 +585,10 @@ export default {
                     vm.columnExpiryDate,
                     vm.columnDocument,
                     vm.columnAction,
+                    vm.columnOriginalLeaseLicenseNumber,
+                    vm.columnSite,
+                    vm.columnGroups,
+                    vm.columnCategories,
                 ]
             } else if (vm.is_internal) {
                 selectedColumns = [
@@ -569,10 +600,11 @@ export default {
                     vm.columnStatus,
                     vm.columnExpiryDate,
                     vm.columnDocument,
+                    vm.columnAction,
+                    vm.columnOriginalLeaseLicenseNumber,
                     vm.columnSite,
                     vm.columnGroups,
-                    vm.columnOriginalLeaseLicenseNumber,
-                    vm.columnAction,
+                    vm.columnCategories,
                 ]
             }
             let buttons = []
@@ -817,7 +849,8 @@ export default {
             vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-history-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-history-approval');
-                vm.approvalHistory(id);
+                var lodgement_number = $(this).attr('data-approval-lodgement-number');
+                vm.approvalHistory(id, lodgement_number);
             });
 
             // Internal review invoice details listener
@@ -948,35 +981,43 @@ export default {
         },
         reissueApproval: async function (proposal_id) {
             let vm = this;
-            let status = 'with_approver'
-            let data = { 'status': status }
             await swal.fire({
                 title: "Reissue Approval",
                 text: "Are you sure you want to reissue this approval?",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: 'Reissue approval',
-                //confirmButtonColor:'#d9534f'
-            })
-            try {
-                const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/reissue_approval')),
-                    {
-                        body: JSON.stringify(data),
-                        method: 'POST',
-                    })
+                reverseButtons: true,
+                confirmButtonText: 'Reissue Approval',
+                confirmButtonColor: '#226fbb'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const requestOptions = {
+                        method: "POST",
+                    };
+                    fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/reissue_approval')), requestOptions)
+                        .then(async response => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error = (data && data.message) || response.statusText;
+                                console.log(error)
+                                Promise.reject(error);
+                            }
+                            vm.$router.push({
+                                name: "internal-proposal",
+                                params: { proposal_id: data.id }
+                            });
 
-                vm.$router.push({
-                    name: "internal-proposal",
-                    params: { proposal_id: proposal_id }
-                });
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: "Reissue Approval",
-                    text: error.body,
-                    icon: "error",
-                })
-            }
+                        }, (error) => {
+                            console.log(error);
+                            Swal.fire({
+                                title: "Reissue Approval",
+                                text: error.body,
+                                icon: "error",
+                            })
+                        });
+                }
+            })
+
         },
 
         reinstateApproval: async function (approval_id) {
@@ -1041,8 +1082,9 @@ export default {
             this.$refs.request_new_sticker_modal.approval_id = approval_id
             this.$refs.request_new_sticker_modal.isModalOpen = true
         },
-        approvalHistory: function (id) {
+        approvalHistory: function (id, approvalLodgementNumber) {
             this.approvalHistoryId = parseInt(id);
+            this.selectedApprovalLodgementNumber = approvalLodgementNumber;
             this.uuid++;
             this.$nextTick(() => {
                 this.$refs.approval_history.isModalOpen = true;
@@ -1057,30 +1099,41 @@ export default {
         renewApproval: async function (proposal_id) {
             let vm = this;
             let status = 'with_approver'
-            swal({
+            Swal.fire({
                 title: "Renew Approval",
                 text: "Are you sure you want to renew this approval?",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Renew approval',
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    const requestOptions = {
+                        method: "POST",
+                    };
+                    fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/renew_approval')), requestOptions)
+                        .then(async response => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error = (data && data.message) || response.statusText;
+                                console.log(error)
+                                return Promise.reject(error);
+                            }
+                            vm.$router.push({
+                                name: "draft_proposal",
+                                params: { proposal_id: data.id }
+                            });
+
+                        }, (error) => {
+                            console.log(error);
+                            Swal.fire({
+                                title: "Renew Approval",
+                                text: error.body,
+                                icon: "error",
+                            })
+                        });
+                }
             })
-            try {
-                const response = fetch(helpers.add_endpoint_json(api_endpoints.proposal, (proposal_id + '/renew_amend_approval_wrapper')) + '?debug=' + vm.debug + '&type=renew',
-                    {
-                        method: 'POST',
-                    })
-                vm.$router.push({
-                    name: "draft_proposal",
-                    params: { proposal_id: proposal.id }
-                });
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: "Renew Approval",
-                    text: error.body,
-                    icon: "error",
-                })
-            }
+
         },
 
         amendApproval: async function (proposal_id) {

@@ -36,7 +36,8 @@
         </div>
         <ApplicationForm v-if="proposal" :proposal="proposal" :is_external="true" ref="application_form"
             :readonly="readonly" :submitterId="submitterId" @updateSubmitText="updateSubmitText"
-            :registrationOfInterest="registrationOfInterest" :leaseLicence="leaseLicence" />
+            :registrationOfInterest="registrationOfInterest" :leaseLicence="leaseLicence"
+            @refreshFromResponse="refreshFromResponse" />
         <div v-else>
             <BootstrapSpinner :isLoading="true" class="text-primary opacity-50" />
         </div>
@@ -91,8 +92,8 @@ export default {
     name: 'ExternalProposal',
     data: function () {
         return {
-            "proposal": null,
-            "loading": [],
+            proposal: null,
+            loading: [],
             loadingProposal: false,
             amendment_request: [],
             proposal_readonly: true,
@@ -313,6 +314,7 @@ export default {
                 payload.proposal.key_milestones_text = this.$refs.application_form.$refs.lease_licence.$refs.key_milestones_text.detailsText;
                 payload.proposal.risk_factors_text = this.$refs.application_form.$refs.lease_licence.$refs.risk_factors_text.detailsText;
                 payload.proposal.legislative_requirements_text = this.$refs.application_form.$refs.lease_licence.$refs.legislative_requirements_text.detailsText;
+                payload.proposal.proponent_reference_number = this.proposal.proponent_reference_number;
                 payload.proposal.groups = this.proposal.groups;
             }
             payload.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
@@ -522,6 +524,9 @@ export default {
                 .catch((error) => {
                     console.error('There was an error!', error)
                 })
+        },
+        refreshFromResponse: function (data) {
+            this.proposal = Object.assign({}, data);
         }
     },
     beforeRouteEnter(to, from, next) {

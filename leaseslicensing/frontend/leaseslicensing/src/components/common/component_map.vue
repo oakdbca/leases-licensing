@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div class="map-wrapper row col-sm-12">
+        <div class="map-wrapper row col-sm-12 mb-1">
             <!--div id='popup-container'>
                 <p id='popup-coordinates'></p>
             </div-->
@@ -14,15 +14,15 @@
                 <div class="optional-layers-wrapper">
                     <div class="optional-layers-button-wrapper">
                         <div :class="[
-                                mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
-                            ]" @click="set_mode.bind(this)('measure')">
+                            mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('measure')">
                             <img class="svg-icon" src="../../assets/ruler.svg" />
                         </div>
                     </div>
                     <div class="optional-layers-button-wrapper">
                         <div :class="[
-                                mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
-                            ]" @click="set_mode.bind(this)('draw')">
+                            mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('draw')">
                             <img class="svg-icon" src="../../assets/pen-icon.svg" />
                         </div>
                     </div>
@@ -94,14 +94,41 @@
             </a>
             <div :id="popup_content_id"></div>
         </div-->
-        <div class="row">
-            <div class="col-sm-3">
-                <label for="shapefile_document">Upload shapefile</label>
-            </div>
-            <div class="col-sm-3">
-                <FileField :readonly="false" ref="shapefile_document" name="shapefile_document"
-                    id="shapefile_document_document" :isRepeatable="true" :documentActionUrl="shapefileDocumentUrl"
-                    :replace_button_by_text="true" fileTypes=".dbf,.prj,.shp,.shx," />
+        <div class="row shapefile-row">
+            <div class="col-sm-6 border p-2">
+                <div class="row mb-2">
+                    <div class="col"><label for="shapefile_document" class="fw-bold">Upload Shapefile </label></div>
+                    <div class="col">
+                        <FileField :readonly="false" ref="shapefile_document" name="shapefile_document"
+                            id="shapefile_document_document" :isRepeatable="true" :documentActionUrl="shapefileDocumentUrl"
+                            :replace_button_by_text="true" fileTypes=".dbf, .prj, .shp, .shx" text_string="Attach File (.prj .dbf .shp
+                            .shx)" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <BootstrapAlert>If you do not upload a .prj file, we will use <a
+                                href="https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84" target="_blank">WGS 84</a>
+                            / 'EPSG:4326'
+                        </BootstrapAlert>
+                    </div>
+
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <button type="button" v-if="is_validating" disabled class="btn btn-primary">
+                            <div class="row">
+                                <div class="col-sm-12 text-nowrap text-truncate"><i class="fa fa-spinner fa-spin"></i>
+                                </div>
+                            </div>
+                        </button>
+                        <button type="button" v-else class="btn btn-primary" @click="validate_map_docs">
+                            <div class="row">
+                                <div class="col-sm-12 text-nowrap text-truncate">Process Files</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="col-sm-6">
                 <div id="legend_title"></div>
@@ -110,29 +137,8 @@
                 </div>
             </div>
         </div>
-        <VueAlert :show.sync="showError" type="danger" style="color: red"><strong>{{ errorString }}</strong></VueAlert>
-        <div class="container">
-            <div class="row">
-                newFeatureId = {{ newFeatureId }}
-                showUndoButton = {{ showUndoButton }}
-            </div>
-            <div class="row">
-                <div class="col-sm-3 pull-right">
-                    <button type="button" v-if="is_validating" disabled class="btn btn-primary w-100 mh-100">
-                        <div class="row">
-                            <div class="col-sm-12 text-nowrap text-truncate">Validate <i class="fa fa-spinner fa-spin"></i>
-                            </div>
-                        </div>
-                    </button>
-                    <button type="button" v-else class="btn btn-primary w-100 mh-100 text-nowrap"
-                        @click="validate_map_docs">
-                        <div class="row">
-                            <div class="col-sm-12 text-nowrap text-truncate">Validate</div>
-                        </div>
-                    </button>
-                </div>
-            </div>
-        </div>
+        <VueAlert v-if="errorString && errorString.length" type="danger" style="color: red"><strong>{{ errorString
+        }}</strong></VueAlert>
     </div>
 </template>
 
@@ -162,9 +168,11 @@ import { api_endpoints, helpers } from '@/utils/hooks'
 import RangeSlider from '@/components/forms/range_slider.vue'
 //import { getDisplayNameFromStatus, getDisplayNameOfCategory, getStatusForColour, getApiaryFeatureStyle } from '@/components/common/site_colours.js'
 import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/components/common/map_functions.js'
+import Swal from 'sweetalert2'
 
 export default {
     name: 'ComponentMap',
+    emits: ['refreshFromResponse'],
     props: {
         proposal: {
             type: Object,
@@ -207,7 +215,6 @@ export default {
             selectedFeatureId: null,
             newFeatureId: 1,
             errorString: '',
-            showError: false,
             set_mode: set_mode,
             is_validating: false,
             lastPoint: null,
@@ -369,7 +376,6 @@ export default {
         validate_map_docs: function () {
             let vm = this;
             vm.is_validating = true;
-            vm.showError = false;
             vm.errorString = '';
             let endpoint = api_endpoints.proposals
             const options = {
@@ -387,15 +393,22 @@ export default {
                 }
             })
                 .then(data => {
-                    // vm.$emit('refreshFromResponse', data);
-                    // vm.proposal = data;
-                    vm.shapefile_json = data.shapefile_json;
-                    vm.updateShape();
+                    vm.$emit('refreshFromResponse', data);
+                    vm.$nextTick(() => {
+                        vm.loadLeaseLicenceGeometry();
+                        vm.fitToLayer();
+                        Swal.fire(
+                            'Success',
+                            'Shapefile processed successfully',
+                            'success'
+                        )
+                    });
+                    // vm.shapefile_json = data.shapefile_json;
+                    // vm.updateShape();
                     vm.is_validating = false;
                 })
                 .catch(error => {
                     console.log(error);
-                    vm.showError = true;
                     vm.errorString = helpers.apiVueResourceError(error);
                     vm.is_validating = false;
                     swal.fire({
@@ -1064,6 +1077,11 @@ export default {
 
 <style lang="css" scoped>
 @import '../../../../../static/leaseslicensing/css/map.css';
+
+
+.shapefile-row {
+    margin-left: 1px;
+}
 
 .close-icon:hover {
     filter: brightness(80%);

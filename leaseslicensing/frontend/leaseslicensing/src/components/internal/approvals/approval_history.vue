@@ -1,10 +1,10 @@
 <template lang="html">
     <div id="approvalHistory">
-        <modal transition="modal fade" @ok="ok()" @cancel="cancel()" :title="title" :extraLarge="true" cancelText="Close"
-            okText="">
+        <modal transition="modal fade" @cancel="close()" :title="'History for Approval ' + approvalLodgementNumber"
+            :extraLarge="true" cancelText="Close" okText="">
             <div class="container-fluid">
                 <div class="row">
-                    <alert :show.sync="showError" type="danger"><strong>{{ errorString }}</strong></alert>
+                    <alert v-if="errorString" type="danger"><strong>{{ errorString }}</strong></alert>
                     <div class="col-sm-12">
                         <div class="form-group">
                             <div class="row">
@@ -17,11 +17,9 @@
                     </div>
                 </div>
             </div>
-
         </modal>
     </div>
 </template>
-
 <script>
 import modal from '@vue-utils/bootstrap-modal.vue'
 import alert from '@vue-utils/alert.vue'
@@ -40,6 +38,10 @@ export default {
             type: Number,
             required: true,
         },
+        approvalLodgementNumber: {
+            type: String,
+            required: true,
+        },
     },
     data: function () {
         let vm = this;
@@ -48,34 +50,22 @@ export default {
             approvalDetails: {
                 approvalLodgementNumber: null,
             },
+            isModalOpen: false,
             messageDetails: '',
             ccEmail: '',
             isModalOpen: false,
             validation_form: null,
-            errors: false,
             errorString: '',
             successString: '',
             success: false,
         }
     },
     computed: {
-        showError: function () {
-            var vm = this;
-            return vm.errors;
-        },
-        title: function () {
-            let title = "History for ";
-            if (this.approvalDetails && this.approvalDetails.approvalLodgementNumber) {
-                title += this.approvalDetails.approvalType + ' ';
-                title += this.approvalDetails.approvalLodgementNumber;
-            }
-            return title;
-        },
         csrf_token: function () {
             return helpers.getCookie('csrftoken')
         },
         datatable_headers: function () {
-            return ['id', 'Lodgement Number', 'Type', 'Sticker Number/s', 'Holder', 'Status', 'Issue Date', 'Reason', 'Approval Letter']
+            return ['id', 'Number', 'Type', 'Holder', 'Application', 'Reason', 'Expiry Date', 'Document', 'Action']
         },
         column_id: function () {
             return {
@@ -123,7 +113,6 @@ export default {
                 }
             }
         },
-
         column_holder: function () {
             return {
                 data: "id",
@@ -179,7 +168,6 @@ export default {
                 }
             }
         },
-
         datatable_options: function () {
             let vm = this
             let columns = [
@@ -220,21 +208,12 @@ export default {
                 },
             }
         }
-
     },
     methods: {
-        ok: async function () {
-            //await this.sendData();
-            this.close()
-        },
-        cancel: function () {
-            this.close()
-        },
         close: function () {
+            this.errorString = '';
             this.isModalOpen = false;
-            this.errors = false;
             $('.has-error').removeClass('has-error');
-            //this.validation_form.resetForm();
         },
         fetchApprovalDetails: async function () {
             const res = await fetch(api_endpoints.lookupApprovalDetails(this.approvalId));
@@ -244,9 +223,7 @@ export default {
         },
     },
     created: function () {
-        this.$nextTick(() => {
-            this.fetchApprovalDetails();
-        });
+        this.fetchApprovalDetails();
     },
 }
 </script>

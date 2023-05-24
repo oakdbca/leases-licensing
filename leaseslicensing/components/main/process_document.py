@@ -1,14 +1,14 @@
 import os
 import traceback
 
-from django.conf import settings
 from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 
 from leaseslicensing.components.approvals.models import (
     ApprovalType,
     ApprovalTypeDocumentType,
 )
+from leaseslicensing.components.main.models import upload_protected_files_storage
+from leaseslicensing.components.main.utils import get_secure_document_url
 
 
 def process_generic_document(request, instance, document_type=None, *args, **kwargs):
@@ -129,7 +129,9 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
 
                 returned_file_data = [
                     dict(
-                        file=d._file.url,
+                        file=get_secure_document_url(
+                            instance, document_type + "s", d.id
+                        ),
                         id=d.id,
                         name=d.name,
                         approval_type=d.approval_type.id,
@@ -145,7 +147,7 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
             # default file attributes
             returned_file_data = [
                 dict(
-                    file=d._file.url,
+                    file=get_secure_document_url(instance, document_type + "s", d.id),
                     id=d.id,
                     name=d.name,
                 )
@@ -323,156 +325,152 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
             document = instance.deed_poll_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/deed_poll_documents/{}"
+            path_format_string = "proposals/{}/deed_poll_documents/{}"
         elif document_type == "supporting_document":
             document = instance.supporting_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/proposed_approval_documents/{}"
+            path_format_string = "proposals/{}/proposed_approval_documents/{}"
         elif document_type == "proposed_approval_document":
             document = instance.proposed_approval_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/supporting_documents/{}"
+            path_format_string = "proposals/{}/supporting_documents/{}"
         elif document_type == "exclusive_use_document":
             document = instance.exclusive_use_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/exclusive_use_documents/{}"
+            path_format_string = "proposals/{}/exclusive_use_documents/{}"
         elif document_type == "long_term_use_document":
             document = instance.long_term_use_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/long_term_use_documents/{}"
+            path_format_string = "proposals/{}/long_term_use_documents/{}"
         elif document_type == "consistent_purpose_document":
             document = instance.consistent_purpose_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/consistent_purpose_documents/{}"
+            path_format_string = "proposals/{}/consistent_purpose_documents/{}"
         elif document_type == "consistent_plan_document":
             document = instance.consistent_plan_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/consistent_plan_documents/{}"
+            path_format_string = "proposals/{}/consistent_plan_documents/{}"
         elif document_type == "clearing_vegetation_document":
             document = instance.clearing_vegetation_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/clearing_vegetation_documents/{}"
+            path_format_string = "proposals/{}/clearing_vegetation_documents/{}"
         elif document_type == "ground_disturbing_works_document":
             document = instance.ground_disturbing_works_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/ground_disturbing_works_documents/{}"
+            path_format_string = "proposals/{}/ground_disturbing_works_documents/{}"
         elif document_type == "heritage_site_document":
             document = instance.heritage_site_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/heritage_site_documents/{}"
+            path_format_string = "proposals/{}/heritage_site_documents/{}"
         elif document_type == "environmentally_sensitive_document":
             document = instance.environmentally_sensitive_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = (
-                "{}/proposals/{}/environmentally_sensitive_documents/{}"
-            )
+            path_format_string = "proposals/{}/environmentally_sensitive_documents/{}"
         elif document_type == "wetlands_impact_document":
             document = instance.wetlands_impact_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/wetlands_impact_documents/{}"
+            path_format_string = "proposals/{}/wetlands_impact_documents/{}"
         elif document_type == "building_required_document":
             document = instance.building_required_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/building_required_documents/{}"
+            path_format_string = "proposals/{}/building_required_documents/{}"
         elif document_type == "significant_change_document":
             document = instance.significant_change_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/significant_change_documents/{}"
+            path_format_string = "proposals/{}/significant_change_documents/{}"
         elif document_type == "aboriginal_site_document":
             document = instance.aboriginal_site_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/aboriginal_site_documents/{}"
+            path_format_string = "proposals/{}/aboriginal_site_documents/{}"
         elif document_type == "native_title_consultation_document":
             document = instance.native_title_consultation_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = (
-                "{}/proposals/{}/native_title_consultation_documents/{}"
-            )
+            path_format_string = "proposals/{}/native_title_consultation_documents/{}"
         elif document_type == "mining_tenement_document":
             document = instance.mining_tenement_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/mining_tenement_documents/{}"
+            path_format_string = "proposals/{}/mining_tenement_documents/{}"
         elif document_type == "profit_and_loss_document":
             document = instance.profit_and_loss_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/profit_and_loss_documents/{}"
+            path_format_string = "proposals/{}/profit_and_loss_documents/{}"
         elif document_type == "cash_flow_document":
             document = instance.cash_flow_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/cash_flow_documents/{}"
+            path_format_string = "proposals/{}/cash_flow_documents/{}"
         elif document_type == "capital_investment_document":
             document = instance.capital_investment_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/capital_investment_documents/{}"
+            path_format_string = "proposals/{}/capital_investment_documents/{}"
         elif document_type == "financial_capacity_document":
             document = instance.financial_capacity_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/financial_capacity_documents/{}"
+            path_format_string = "proposals/{}/financial_capacity_documents/{}"
         elif document_type == "available_activities_document":
             document = instance.available_activities_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/available_activities_documents/{}"
+            path_format_string = "proposals/{}/available_activities_documents/{}"
         elif document_type == "market_analysis_document":
             document = instance.market_analysis_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/market_analysis_documents/{}"
+            path_format_string = "proposals/{}/market_analysis_documents/{}"
         elif document_type == "staffing_document":
             document = instance.staffing_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/staffing_documents/{}"
+            path_format_string = "proposals/{}/staffing_documents/{}"
         elif document_type == "key_personnel_document":
             document = instance.key_personnel_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/key_personnel_documents/{}"
+            path_format_string = "proposals/{}/key_personnel_documents/{}"
         elif document_type == "key_milestones_document":
             document = instance.key_milestones_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/key_milestones_documents/{}"
+            path_format_string = "proposals/{}/key_milestones_documents/{}"
         elif document_type == "risk_factors_document":
             document = instance.risk_factors_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/risk_factors_documents/{}"
+            path_format_string = "proposals/{}/risk_factors_documents/{}"
         elif document_type == "legislative_requirements_document":
             document = instance.legislative_requirements_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/legislative_requirements_documents/{}"
+            path_format_string = "proposals/{}/legislative_requirements_documents/{}"
         elif document_type == "shapefile_document":
             document = instance.shapefile_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/shapefile_documents/{}"
+            path_format_string = "proposals/{}/shapefile_documents/{}"
         elif document_type == "proposed_decline_document":
             document = instance.proposed_decline_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/proposals/{}/proposed_decline_documents/{}"
+            path_format_string = "proposals/{}/proposed_decline_documents/{}"
         elif document_type == "lease_licence_approval_document":
             approval_type = request.data.get("approval_type")
             approval_type_document_type = request.data.get(
@@ -486,39 +484,39 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
                     id=approval_type_document_type
                 ),
             )[0]
-            path_format_string = "{}/proposals/{}/lease_licence_approval_documents/{}"
+            path_format_string = "proposals/{}/lease_licence_approval_documents/{}"
 
         # -------------- Approval
         elif document_type == "approval_cancellation_document":
             document = instance.approval_cancellation_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/approvals/{}/cancellation_documents/{}"
+            path_format_string = "approvals/{}/cancellation_documents/{}"
         elif document_type == "approval_surrender_document":
             document = instance.approval_surrender_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/approvals/{}/surrender_documents/{}"
+            path_format_string = "approvals/{}/surrender_documents/{}"
         elif document_type == "approval_suspension_document":
             document = instance.approval_suspension_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/approvals/{}/suspension_documents/{}"
+            path_format_string = "approvals/{}/suspension_documents/{}"
 
         # -------------- Competitive Process
         elif document_type == "competitive_process_document":
             document = instance.competitive_process_documents.get_or_create(
                 input_name=input_name, name=filename
             )[0]
-            path_format_string = "{}/competitive_process/{}/{}"
+            path_format_string = "competitive_process/{}/{}"
             # return '{}/competitive_process/{}/{}'.format(
             #     settings.MEDIA_APP_DIR,
             #     instance.competitive_process.id,
             #     filename,
             # )
 
-        path = default_storage.save(
-            path_format_string.format(settings.MEDIA_APP_DIR, instance.id, filename),
+        path = upload_protected_files_storage.save(
+            path_format_string.format(instance.id, filename),
             ContentFile(_file.read()),
         )
         document._file = path
@@ -530,7 +528,7 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
         _file = request.data.get("_file")
 
         document = comms_instance.documents.get_or_create(name=filename)[0]
-        path = default_storage.save(
+        path = upload_protected_files_storage.save(
             "{}/{}/communications/{}/documents/{}".format(
                 instance._meta.model_name, instance.id, comms_instance.id, filename
             ),
@@ -546,7 +544,7 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
         _file = request.data.get("_file")
 
         document = instance.documents.get_or_create(name=filename)[0]
-        path = default_storage.save(
+        path = upload_protected_files_storage.save(
             "{}/{}/documents/{}".format(
                 instance._meta.model_name, instance.id, filename
             ),
@@ -560,7 +558,7 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
 # For transferring files from temp doc objs to default doc objs
 def save_default_document_obj(instance, temp_document):
     document = instance.documents.get_or_create(name=temp_document.name)[0]
-    path = default_storage.save(
+    path = upload_protected_files_storage.save(
         "{}/{}/documents/{}".format(
             instance._meta.model_name, instance.id, temp_document.name
         ),

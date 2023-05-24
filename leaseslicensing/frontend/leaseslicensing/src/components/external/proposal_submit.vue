@@ -7,10 +7,10 @@
                 </div>
                 <div class="form-para">
                     Your application for a <span class="fw-bolder">{{
-                            applicationType }}</span>
-                        has been
-                        successfully
-                        submitted.
+                        applicationType }}</span>
+                    has been
+                    successfully
+                    submitted.
                 </div>
                 <div class="form-para">
                     <table>
@@ -21,7 +21,6 @@
                             </tr>
                             <tr>
                                 <th scope="row">Date / Time:</th>
-                                <td><strong>Date / Time:</strong></td>
                                 <td> {{ formatDate(proposal.lodgement_date) }}</td>
                             </tr>
                         </tbody>
@@ -44,45 +43,45 @@ import {
 }
     from '@/utils/hooks'
 export default {
-  data: function() {
-    return {
-        "proposal": {},
-    }
-  },
-  computed: {
-    applicationType: function() {
-      return this.proposal && this.proposal.application_type?
-        this.proposal.application_type.name_display:
-        '';
-    },
-    isProposal: function(){
-      return this.proposal && this.proposal.id ? true : false;
-    },
-    lodgementDateDisplay: function () {
-        if (this.proposal) {
-            return new Date(this.proposal.lodgement_date).toLocaleString('en-AU');
+    data: function () {
+        return {
+            "proposal": {},
         }
     },
-  },
-  methods: {
-    formatDate: function(data, format='DD/MM/YYYY HH:mm:ss') {
-      return data ? moment(data).format(format): '';
+    computed: {
+        applicationType: function () {
+            return this.proposal && this.proposal.application_type ?
+                this.proposal.application_type.name_display :
+                '';
+        },
+        isProposal: function () {
+            return this.proposal && this.proposal.id ? true : false;
+        },
+        lodgementDateDisplay: function () {
+            if (this.proposal) {
+                return new Date(this.proposal.lodgement_date).toLocaleString('en-AU');
+            }
+        },
     },
-  },
-  beforeRouteEnter: function(to, from, next) {
-    if (to.params.proposal_id) {
-      fetch(`/api/proposal/${to.params.proposal_id}.json`).then(res => {
-          next(async (vm) => {
-              console.log(vm)
-              const proposalData = await res.json()
-              console.log(proposalData)
-              vm.proposal = proposalData;
-              });
-          },
-        err => {
-          console.log(err);
-        });
-    }
+    methods: {
+        formatDate: function (data, format = 'DD/MM/YYYY HH:mm:ss') {
+            return data ? moment(data).format(format) : '';
+        },
+    },
+    beforeRouteEnter: function (to, from, next) {
+        if (to.params.proposal_id) {
+            fetch(`/api/proposal/${to.params.proposal_id}.json`).then(res => {
+                next(async (vm) => {
+                    console.log(vm)
+                    const proposalData = await res.json()
+                    console.log(proposalData)
+                    vm.proposal = proposalData;
+                });
+            },
+                err => {
+                    console.log(err);
+                });
+        }
 
     },
 }

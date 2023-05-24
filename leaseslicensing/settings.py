@@ -209,6 +209,11 @@ CRON_CLASSES = [
     "leaseslicensing.cron.OracleIntegrationCronJob",
 ]
 
+PROTECTED_MEDIA_ROOT = env(
+    "PROTECTED_MEDIA_ROOT", os.path.join(BASE_DIR, "protected_media")
+)
+SECURE_FILE_API_BASE_PATH = "/api/main/secure_file/"
+SECURE_DOCUMENT_API_BASE_PATH = "/api/main/secure_document/"
 
 BASE_URL = env("BASE_URL")
 
@@ -318,8 +323,7 @@ KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
 KMI_AUTH_USERNAME = env("KMI_AUTH_USERNAME")
 KMI_AUTH_PASSWORD = env("KMI_AUTH_PASSWORD")
 
-GROUP_NAME_ASSESSOR = "ProposalAssessorGroup"
-GROUP_NAME_APPROVER = "ProposalApproverGroup"
+APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY = 90
 
 template_title = "Leases and Licensing"
 template_group = "parkswildlife"
@@ -333,6 +337,9 @@ LEDGER_TEMPLATE = "bootstrap5"
 #    {'mobile_number': {'options': {'view': True, 'edit': True}}},
 # ]
 
+GROUP_NAME_ASSESSOR = "proposal_assessor_group"
+GROUP_NAME_APPROVER = "proposal_approver_group"
+GROUP_NAME_ORGANISATION_ACCESS = "organisation_access_group"
 GROUP_REGISTRATION_OF_INTEREST_ASSESSOR = "registration_of_interest_assessor"
 GROUP_REGISTRATION_OF_INTEREST_APPROVER = "registration_of_interest_approver"
 GROUP_LEASE_LICENCE_ASSESSOR = "lease_licence_assessor"
@@ -340,6 +347,9 @@ GROUP_LEASE_LICENCE_APPROVER = "lease_licence_approver"
 GROUP_COMPETITIVE_PROCESS_EDITOR = "competitive_process_editor"
 GROUP_FINANCE = "finance"
 GROUP_NAME_CHOICES = (
+    (GROUP_NAME_ASSESSOR, "Proposal Assessor Group"),
+    (GROUP_NAME_APPROVER, "Proposal Approver Group"),
+    (GROUP_NAME_ORGANISATION_ACCESS, "Organisation Access Group"),
     (GROUP_REGISTRATION_OF_INTEREST_ASSESSOR, "Registration of Interest Assessor"),
     (GROUP_REGISTRATION_OF_INTEREST_APPROVER, "Registration of Interest Approver"),
     (GROUP_LEASE_LICENCE_ASSESSOR, "Lease Licence Assessor"),

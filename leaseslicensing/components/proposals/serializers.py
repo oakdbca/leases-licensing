@@ -21,23 +21,42 @@ from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
     ChecklistQuestion,
     Proposal,
+    ProposalAct,
     ProposalApplicantDetails,
     ProposalAssessment,
     ProposalAssessmentAnswer,
+    ProposalCategory,
     ProposalDeclinedDetails,
+    ProposalDistrict,
     ProposalGeometry,
-    ProposalGroup,
+    ProposalIdentifier,
+    ProposalLGA,
     ProposalLogEntry,
+    ProposalName,
     ProposalOtherDetails,
+    ProposalRegion,
     ProposalRequirement,
     ProposalStandardRequirement,
+    ProposalTenure,
     ProposalType,
     ProposalUserAction,
+    ProposalVesting,
     Referral,
     RequirementDocument,
     SectionChecklist,
 )
-from leaseslicensing.components.tenure.models import Group
+from leaseslicensing.components.tenure.models import (
+    LGA,
+    Act,
+    Category,
+    District,
+    Group,
+    Identifier,
+    Name,
+    Region,
+    Tenure,
+    Vesting,
+)
 from leaseslicensing.components.tenure.serializers import GroupSerializer
 from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
@@ -66,14 +85,14 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
         from reversion import revisions
 
         if kwargs.pop("no_revision", False):
-            super().save(**kwargs)
+            return super().save(**kwargs)
         else:
             with revisions.create_revision():
                 if "version_user" in kwargs:
                     revisions.set_user(kwargs.pop("version_user", None))
                 if "version_comment" in kwargs:
                     revisions.set_comment(kwargs.pop("version_comment", ""))
-                super().save(**kwargs)
+                return super().save(**kwargs)
 
 
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
@@ -359,14 +378,6 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         return ret_dict
 
 
-class ProposalGroupSerializer(serializers.ModelSerializer):
-    group = GroupSerializer()
-
-    class Meta:
-        model = ProposalGroup
-        fields = ["group"]
-
-
 class BaseProposalSerializer(serializers.ModelSerializer):
     readonly = serializers.SerializerMethodField(read_only=True)
     documents_url = serializers.SerializerMethodField()
@@ -378,10 +389,20 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     lodgement_date_display = serializers.SerializerMethodField()
     applicant_type = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
-    # groups = serializers.SerializerMethodField()
     groups = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
+
+    # Gis data fields
+    identifiers = serializers.SerializerMethodField()
+    vestings = serializers.SerializerMethodField()
+    names = serializers.SerializerMethodField()
+    acts = serializers.SerializerMethodField()
+    tenures = serializers.SerializerMethodField()
+    categories = serializers.SerializerMethodField()
+    regions = serializers.SerializerMethodField()
+    districts = serializers.SerializerMethodField()
+    lgas = serializers.SerializerMethodField()
 
     class Meta:
         model = Proposal
@@ -460,31 +481,76 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "legislative_requirements_text",
             "lodgement_date_display",
             "shapefile_json",
+            # Gis data fields
+            "identifiers",
+            "vestings",
+            "names",
+            "acts",
+            "tenures",
+            "categories",
+            "regions",
+            "districts",
+            "lgas",
+            # Categorisation fields
             "groups",
             "site_name",
+            "proponent_reference_number",
         )
         read_only_fields = ("supporting_documents",)
 
+    def get_identifiers(self, obj):
+        ids = ProposalIdentifier.objects.filter(proposal=obj).values_list(
+            "identifier__id", flat=True
+        )
+        return Identifier.objects.filter(id__in=ids).values("id", "name")
+
+    def get_vestings(self, obj):
+        ids = ProposalVesting.objects.filter(proposal=obj).values_list(
+            "vesting__id", flat=True
+        )
+        return Vesting.objects.filter(id__in=ids).values("id", "name")
+
+    def get_names(self, obj):
+        ids = ProposalName.objects.filter(proposal=obj).values_list(
+            "name__id", flat=True
+        )
+        return Name.objects.filter(id__in=ids).values("id", "name")
+
+    def get_acts(self, obj):
+        ids = ProposalAct.objects.filter(proposal=obj).values_list("act__id", flat=True)
+        return Act.objects.filter(id__in=ids).values("id", "name")
+
+    def get_tenures(self, obj):
+        ids = ProposalTenure.objects.filter(proposal=obj).values_list(
+            "tenure__id", flat=True
+        )
+        return Tenure.objects.filter(id__in=ids).values("id", "name")
+
+    def get_categories(self, obj):
+        ids = ProposalCategory.objects.filter(proposal=obj).values_list(
+            "category__id", flat=True
+        )
+        return Category.objects.filter(id__in=ids).values("id", "name")
+
+    def get_regions(self, obj):
+        ids = ProposalRegion.objects.filter(proposal=obj).values_list(
+            "region__id", flat=True
+        )
+        return Region.objects.filter(id__in=ids).values("id", "name")
+
+    def get_districts(self, obj):
+        ids = ProposalDistrict.objects.filter(proposal=obj).values_list(
+            "district__id", flat=True
+        )
+        return District.objects.filter(id__in=ids).values("id", "name")
+
+    def get_lgas(self, obj):
+        ids = ProposalLGA.objects.filter(proposal=obj).values_list("lga__id", flat=True)
+        return LGA.objects.filter(id__in=ids).values("id", "name")
+
     def get_groups(self, obj):
-        """
-            Returns the groups that have been selected for this proposal.
-            Picks up the groups from the assessor proposition or from the proposal groups
-            member.
-        """
-
-        group_ids = []
-        if obj.approval:
-            # TODO: Draw group ids from approval object
-            group_ids = obj.proposed_issuance_approval.get("groups", [])
-        else:
-            # Get group ids either from the assessor proposition or from the proposal groups member
-            group_ids = obj.proposed_issuance_approval and obj.proposed_issuance_approval.get(
-                    "groups", []) or\
-                obj.groups and ProposalGroup.objects.filter(proposal=obj).values_list(
-                    "group", flat=True
-            )
-
-        group_qs = Group.objects.filter(id__in=group_ids)
+        group_ids = obj.groups.values_list("group__id", flat=True)
+        group_qs = Group.objects.filter(id__in=group_ids).values("id", "name")
         return GroupSerializer(group_qs, many=True).data
 
     def get_lodgement_date_display(self, obj):
@@ -611,6 +677,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "allowed_assessors",
             "proposal_type",
             "accessing_user_can_process",
+            "site_name",
             "groups",
         )
         # the serverSide functionality of datatables is such that only columns that have
@@ -634,6 +701,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "lodgement_number",
             "can_officer_process",
             "accessing_user_can_process",
+            "site_name",
             "groups",
         )
 
@@ -683,6 +751,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             email_user = retrieve_email_user(obj.assigned_officer)
             return EmailUserSerializer(email_user).data
         return None
+
 
 class ProposalSerializer(BaseProposalSerializer):
     # submitter = serializers.CharField(source='submitter.get_full_name')
@@ -748,6 +817,7 @@ class SaveLeaseLicenceSerializer(BaseProposalSerializer):
             "key_milestones_text",
             "risk_factors_text",
             "legislative_requirements_text",
+            "proponent_reference_number",
         )
         read_only_fields = ("id",)
 
@@ -948,7 +1018,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
     approved_by = serializers.SerializerMethodField()
-    groups = ProposalGroupSerializer(many=True, read_only=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     requirements = serializers.SerializerMethodField()
 
@@ -1048,7 +1117,17 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "all_lodgement_versions",
             "approved_on",
             "approved_by",
+            "identifiers",
+            "vestings",
+            "names",
+            "acts",
+            "tenures",
+            "categories",
+            "regions",
+            "districts",
+            "lgas",
             "groups",
+            "proponent_reference_number",
             "site_name",
             # "assessor_comment_map",
             # "deficiency_comment_map",
@@ -1151,7 +1230,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
         requirements = ProposalRequirementSerializer(
             obj.get_requirements(),
             many=True,
-            context={"request": self.context["request"]}
+            context={"request": self.context["request"]},
         )
 
         return requirements.data
@@ -1227,15 +1306,10 @@ class ProposalUserActionSerializer(serializers.ModelSerializer):
 
 
 class ProposalLogEntrySerializer(CommunicationLogEntrySerializer):
-    documents = serializers.SerializerMethodField()
-
     class Meta:
         model = ProposalLogEntry
         fields = "__all__"
         read_only_fields = ("customer",)
-
-    def get_documents(self, obj):
-        return [[d.name, d._file.url] for d in obj.documents.all()]
 
 
 class SendReferralSerializer(serializers.Serializer):

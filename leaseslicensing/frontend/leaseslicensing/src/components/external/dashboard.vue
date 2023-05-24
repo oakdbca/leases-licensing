@@ -6,12 +6,12 @@
         </FormSection>
 
         <FormSection :formCollapse="false" label="Leases and Licences"
-            subtitle="- View existing licences / permits and renew them" Index="licences_and_permits">
+            subtitle="- View existing leases / licences and renew them" Index="licences_and_permits">
             <ApprovalsTable level="external" :approvalTypeFilter="allApprovalTypeFilter" />
         </FormSection>
 
-        <FormSection :formCollapse="false" label="Compliances" subtitle="- View submitted Compliances and submit new ones"
-            Index="compliances">
+        <FormSection :formCollapse="false" label="Compliances"
+            subtitle="- The obligations you must comply by to keep your lease / licence valid" Index="compliances">
             <CompliancesTable level="external" />
         </FormSection>
     </div>
