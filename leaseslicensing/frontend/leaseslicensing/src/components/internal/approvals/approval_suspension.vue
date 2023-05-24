@@ -41,7 +41,7 @@
                             <div class="row mb-3">
                                 <label class="col-sm-3 col-form-label" for="files">Files</label>
                                 <div class="col-sm-9">
-                                    <FileField v-if="approval_id" ref="approval_suspension_documents"
+                                    <FileField v-if="approval_id" ref="approval_suspension_documents" :key="approval_id"
                                         name="approval_suspension_documents" id="approval_suspension_documents"
                                         :isRepeatable="true" :documentActionUrl="approvalSuspensionDocumentsUrl"
                                         :replace_button_by_text="true" />
