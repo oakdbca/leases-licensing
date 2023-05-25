@@ -50,6 +50,10 @@ def is_approver(request):
     return belongs_to(request, settings.GROUP_NAME_APPROVER)
 
 
+def is_finance_officer(request):
+    return belongs_to(request, settings.GROUP_FINANCE)
+
+
 def in_dbca_domain(request):
     return request.user.is_staff
 

@@ -78,6 +78,26 @@ export default {
                 });
         });
     },
+    fetchOrganisations: function () {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.organisations)
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        reject(error)
+                    }
+                    console.log('organisations: ', data)
+                    resolve(data)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                    reject(error)
+                })
+        });
+    },
     fetchOrganisation: function (id) {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations + id + '/')
@@ -267,6 +287,26 @@ export default {
                     console.error("There was an error!", error);
                     reject(error)
                 });
+        });
+    },
+    fetchInvoiceTransactions: function (invoice_id) {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.invoices + `/${invoice_id}/transactions/`)
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        reject(error)
+                    }
+                    console.log('transactions: ', data)
+                    resolve(data)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                    reject(error)
+                })
         });
     },
 }

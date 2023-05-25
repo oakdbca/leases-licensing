@@ -1,11 +1,16 @@
+import logging
 from datetime import datetime
+from decimal import Decimal
 
 import pytz
 from dateutil.relativedelta import relativedelta
 from django.db import models
+from django.db.models.functions import Coalesce
 from ledger_api_client import settings_base
 
 from leaseslicensing.components.main.models import RevisionedMixin, SecureFileField
+
+logger = logging.getLogger(__name__)
 
 
 class BaseModel(models.Model):
@@ -493,7 +498,18 @@ def invoice_pdf_upload_path(instance, filename):
     return f"approvals/{instance.approval.id}/invoices/{instance.id}/{filename}"
 
 
+class InvoiceManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .select_related("approval")
+            .prefetch_related("transactions")
+        )
+
+
 class Invoice(RevisionedMixin, models.Model):
+    objects = InvoiceManager()
     INVOICE_STATUS_UNPAID = "unpaid"
     INVOICE_STATUS_PAID = "paid"
     INVOICE_STATUS_VOID = "void"
@@ -515,9 +531,11 @@ class Invoice(RevisionedMixin, models.Model):
     date_updated = models.DateTimeField(auto_now=True, null=False)
     date_due = models.DateField(null=True, blank=False)
 
+    # Not sure if we will need this, the invoice file may exist within ledger
     invoice_pdf = SecureFileField(
         upload_to=invoice_pdf_upload_path, null=True, blank=True
     )
+    oracle_invoice_number = models.CharField(max_length=50, null=True, blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -534,3 +552,41 @@ class Invoice(RevisionedMixin, models.Model):
             f"Invoice: {self.lodgement_number} for Approval: {self.approval} "
             f"of Amount: {self.amount} with Status: {self.status}"
         )
+
+    def user_has_object_permission(self, user_id):
+        self.approval.user_has_object_permission(user_id)
+
+    @property
+    def balance(self):
+        credit_debit_sums = self.transactions.aggregate(
+            credit=Coalesce(models.Sum("credit"), Decimal("0.00")),
+            debit=Coalesce(models.Sum("debit"), Decimal("0.00")),
+        )
+        balance = self.amount + credit_debit_sums["credit"] - credit_debit_sums["debit"]
+        logger.debug(f"Balance for Invoice: {self} is {balance}")
+        return balance
+
+
+class InvoiceTransaction(RevisionedMixin, models.Model):
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.PROTECT,
+        related_name="transactions",
+        null=False,
+        blank=False,
+    )
+    credit = models.DecimalField(
+        max_digits=9, decimal_places=2, blank=False, null=False, default=Decimal("0.00")
+    )
+    debit = models.DecimalField(
+        max_digits=9, decimal_places=2, blank=False, null=False, default=Decimal("0.00")
+    )
+    datetime_created = models.DateTimeField(auto_now_add=True)
+    datetime_updated = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["-datetime_created"]
+
+    def __str__(self):
+        return f"Transaction: {self.id} for Invoice: {self.invoice} Credit: {self.credit}, Debit: {self.debit}"

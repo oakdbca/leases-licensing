@@ -1,15 +1,15 @@
 <template>
     <div>
-        <CollapsibleComponent component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
+        <CollapsibleComponent componentTitle="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
             class="mb-2">
             <div class="row">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Organisation</label>
-                        <select class="form-control" v-model="filterOrganisation">
+                        <select class="form-control" v-model="filterInvoiceOrganisation">
                             <option value="all">All</option>
                             <option v-for="organisation in organisations" :value="organisation.id">
-                                {{ organisation.name }}
+                                {{ organisation.ledger_organisation_name }}
                             </option>
                         </select>
                     </div>
@@ -19,18 +19,18 @@
                         <label for="">Payment Status</label>
                         <select class="form-control" v-model="filterInvoiceStatus">
                             <option value="all">All</option>
-                            <option v-for="payment_status in invoice_payment_statuses" :value="status.code">
-                                {{ status.description }}
+                            <option v-for="status in invoice_statuses" :value="status.id">
+                                {{ status.name }}
                             </option>
+                            <option value="overdue">Overdue</option>
                         </select>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for="">Invoice Date From</label>
+                        <label for="">Invoice Due Date From</label>
                         <div class="input-group date" ref="invoiceDateFromPicker">
-                            <input type="text" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterInvoiceDueDateFrom" />
+                            <input type="date" class="form-control" v-model="filterInvoiceDueDateFrom" />
                             <span class="input-group-addon">
                                 <span class="glyphicon glyphicon-calendar"></span>
                             </span>
@@ -39,10 +39,9 @@
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for="">Invoice Date To</label>
+                        <label for="">Invoice Due Date To</label>
                         <div class="input-group date" ref="invoiceDateToPicker">
-                            <input type="text" class="form-control" placeholder="DD/MM/YYYY"
-                                v-model="filterInvoiceDueDateTo" />
+                            <input type="date" class="form-control" v-model="filterInvoiceDueDateTo" />
                             <span class="input-group-addon">
                                 <span class="glyphicon glyphicon-calendar"></span>
                             </span>
@@ -52,23 +51,26 @@
             </div>
         </CollapsibleComponent>
 
-        <div class="d-flex justify-content-center">
-            <div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div>
-        </div>
-
         <div class="row">
             <div class="col-lg-12">
                 <datatable ref="invoices_datatable" :id="datatable_id" :dtOptions="invoicesOptions"
                     :dtHeaders="invoicesHeaders" />
             </div>
         </div>
+
+        <InvoiceViewTransactions ref="invoice_view_transactions" :invoice_id="selectedInvoiceId"
+            :invoice_lodgement_number="selectedInvoiceLodgementNumber">
+        </InvoiceViewTransactions>
+
     </div>
 </template>
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
+import InvoiceViewTransactions from '../internal/approvals/approval_cancellation.vue'
+
 import { v4 as uuid } from 'uuid';
-import { api_endpoints, constants, helpers } from '@/utils/hooks'
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
 
 export default {
     name: 'TableInvoices',
@@ -93,8 +95,8 @@ export default {
             datatable_id: 'invoices-datatable-' + uuid(),
 
             // selected values for filtering
-            filterOrganisation: sessionStorage.getItem('filterOrganisation')
-                ? sessionStorage.getItem('filterOrganisation')
+            filterInvoiceOrganisation: sessionStorage.getItem('filterInvoiceOrganisation')
+                ? sessionStorage.getItem('filterInvoiceOrganisation')
                 : 'all',
             filterInvoiceStatus: sessionStorage.getItem('filterInvoiceStatus')
                 ? sessionStorage.getItem('filterInvoiceStatus')
@@ -111,6 +113,7 @@ export default {
                 : '',
 
             // filtering options
+            organisations: [],
             invoice_types: [],
             invoice_statuses: [],
 
@@ -129,20 +132,21 @@ export default {
     },
     components: {
         datatable,
+        InvoiceViewTransactions,
     },
     watch: {
+        filterInvoiceOrganisation: function () {
+            this.$refs.invoices_datatable.vmDataTable.draw()
+            sessionStorage.setItem(
+                'filterInvoiceOrganisation',
+                this.filterInvoiceOrganisation
+            )
+        },
         filterInvoiceStatus: function () {
             this.$refs.invoices_datatable.vmDataTable.draw()
             sessionStorage.setItem(
                 'filterInvoiceStatus',
                 this.filterInvoiceStatus
-            )
-        },
-        filterOrganisation: function () {
-            this.$refs.invoices_datatable.vmDataTable.draw()
-            sessionStorage.setItem(
-                'filterOrganisation',
-                this.filterOrganisation
             )
         },
         filterInvoiceDueDateFrom: function () {
@@ -162,7 +166,7 @@ export default {
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
-                this.$refs.collapsible_filters.show_warning_icon(
+                this.$refs.collapsible_filters.showWarningIcon(
                     this.filterApplied
                 )
             }
@@ -172,7 +176,7 @@ export default {
         filterApplied: function () {
             if (
                 this.filterInvoiceStatus.toLowerCase() === 'all' &&
-                this.filterOrganisation.toLowerCase() === 'all' &&
+                this.filterInvoiceOrganisation === 'all' &&
                 this.filterInvoiceDueDateFrom.toLowerCase() === '' &&
                 this.filterInvoiceDueDateTo.toLowerCase() === ''
             ) {
@@ -189,6 +193,7 @@ export default {
         },
         invoicesHeaders: function () {
             return [
+                'ID',
                 'Number',
                 'Approval',
                 'Type',
@@ -196,8 +201,11 @@ export default {
                 'Status',
                 'Invoice',
                 'Amount',
-                'GST',
-                'Invoice Date',
+                'Inc GST',
+                'Date Due',
+                'Date Issued',
+                'Action',
+                'Oracle Invoice Number',
             ]
         },
         idColumn: function () {
@@ -205,42 +213,43 @@ export default {
                 data: 'id',
                 orderable: true,
                 searchable: true,
-                visible: true,
+                visible: false,
                 render: function (row, type, full) {
-                    return full.holder
+                    return full.id
                 },
             }
         },
-        invoiceNumberColumn: function () {
+        lodgementNumberColumn: function () {
             return {
-                data: 'invoice_number',
+                data: 'lodgement_number',
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.invoice_number
+                    return full.lodgement_number
                 },
             }
         },
-        approvalNumberColumn: function () {
+        approvalColumn: function () {
             return {
-                data: 'approval_number',
+                data: 'approval_lodgement_number',
                 orderable: true,
                 searchable: true,
                 visible: true,
+                name: 'approval.lodgement_number',
                 render: function (row, type, full) {
-                    return full.approval_number
+                    return full.approval_lodgement_number
                 },
             }
         },
-        typeColumn: function () {
+        approvalTypeColumn: function () {
             return {
-                data: 'type',
+                data: 'approval_type',
                 orderable: true,
-                searchable: true,
+                searchable: false, // TODO: Change this once approvals have a proper approval type field
                 visible: true,
                 render: function (row, type, full) {
-                    return full.type
+                    return full.approval_type
                 },
             }
         },
@@ -248,7 +257,7 @@ export default {
             return {
                 data: 'holder',
                 orderable: true,
-                searchable: true,
+                searchable: false,
                 visible: true,
                 render: function (row, type, full) {
                     return full.holder
@@ -257,24 +266,36 @@ export default {
         },
         statusColumn: function () {
             return {
-                data: 'processing_status',
+                data: 'status_display',
                 orderable: true,
                 searchable: true,
                 visible: true,
+                name: 'status',
                 render: function (row, type, full) {
-                    return full.processing_status
+                    let status_html = '';
+                    if ('unpaid' == full.status) {
+                        if (new Date(full.date_due) < new Date()) {
+                            return `<span class="badge bg-danger">${full.status_display} (Overdue)</span>`
+                        }
+                        return `<span class="badge bg-warning">${full.status_display}</span>`
+                    }
+                    if ('paid' == full.status) {
+                        return `<span class="badge bg-success">${full.status_display}</span>`
+                    }
+                    if ('void' == full.status) {
+                        return `<span class="badge bg-secondary">${full.status_display}</span>`
+                    }
                 },
             }
         },
-
-        invoiceColumn: function () {
+        invoicePDFColumn: function () {
             return {
-                data: 'invoice',
+                data: 'invoice_pdf_secure_url',
                 orderable: true,
-                searchable: true,
+                searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.invoice
+                    return `<a href="${full.invoice_pdf_secure_url}" target="_blank">Invoice <i class="fa-solid fa-file-pdf fa-lg ps-1" style="color:red;"></i></a>`
                 },
             }
         },
@@ -285,29 +306,44 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.amount
+                    return `$${full.amount}`
                 },
             }
         },
-        gstColumn: function () {
+        incGSTColumn: function () {
             return {
-                data: 'gst',
+                data: 'inc_gst',
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.gst
+                    if (full.inc_gst) {
+                        return '<i class="fa fa-check" aria-hidden="true" style="color:green;"></i>';
+                    } else {
+                        return '<i class="fa fa-times" aria-hidden="true" style="color:red;"></i>';
+                    }
                 },
             }
         },
-        invoiceDateColumn: function () {
+        dateIssuedColumn: function () {
             return {
-                data: 'invoice_date',
+                data: 'date_issued',
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.invoice_date
+                    return new Date(full.date_issued).toLocaleDateString('en-AU')
+                },
+            }
+        },
+        dateDueColumn: function () {
+            return {
+                data: 'date_due',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return new Date(full.date_due).toLocaleDateString('en-AU')
                 },
             }
         },
@@ -320,41 +356,61 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     let links = ''
-                    links += `<a href='${full.id}'>Record Payment</a><br/><a href='${full.id}'>Edit Oracle</a><br /><a href='${full.id}'>Invoice Number</a>`
+                    if (full.transaction_count > 0) {
+                        links += `<a href="${full.id}">View Transactions</a><br />`;
+                    }
+                    // In the case that an invoice is overpaid we will want to allow recording a transaction to correct the balance
+                    if ('unpaid' === full.status || full.balance != '0.00') {
+                        links += `<a href="${full.id}">Record Transaction</a><br />`;
+                    }
+                    if (full.is_finance_officer) {
+                        links += `<a href='${full.id}'>Edit Oracle Invoice Number</a>`;
+                    }
                     return links
                 },
             }
         },
-        assignedToNameColumn: function () {
+        oracleInvoiceNumberColumn: function () {
             return {
-                // 7. Action
-                data: 'id',
+                data: 'oracle_invoice_number',
                 orderable: true,
-                searchable: true,
+                searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.id
+                    return full.oracle_invoice_number
                 },
             }
         },
-
         applicableColumns: function () {
             let columns = [
+                this.idColumn,
                 this.lodgementNumberColumn,
-                this.licenceNumberColumn,
-                this.conditionColumn,
-                this.dueDateColumn,
+                this.approvalColumn,
+                this.approvalTypeColumn,
+                this.holderColumn,
                 this.statusColumn,
+                this.invoicePDFColumn,
+                this.amountColumn,
+                this.incGSTColumn,
+                this.dateDueColumn,
+                this.dateIssuedColumn,
                 this.actionColumn,
             ]
             if (this.level === 'internal') {
                 columns = [
-                    this.lodgementNumberColumn,
-                    this.applicationTypeColumn,
                     this.idColumn,
-                    this.licenceNumberColumn, this.statusColumn,
-                    this.dueDateColumn,
+                    this.lodgementNumberColumn,
+                    this.approvalColumn,
+                    this.approvalTypeColumn,
+                    this.holderColumn,
+                    this.statusColumn,
+                    this.invoicePDFColumn,
+                    this.amountColumn,
+                    this.incGSTColumn,
+                    this.dateDueColumn,
+                    this.dateIssuedColumn,
                     this.actionColumn,
+                    this.oracleInvoiceNumberColumn,
                 ]
             }
             return columns
@@ -384,7 +440,7 @@ export default {
             }
 
             return {
-                searching: false,
+                searching: true,
                 autoWidth: false,
                 language: {
                     processing: constants.DATATABLE_PROCESSING_HTML,
@@ -394,16 +450,17 @@ export default {
 
                 ajax: {
                     url:
-                        api_endpoints.invoices_paginated_internal +
+                        api_endpoints.invoices +
                         '?format=datatables',
                     dataSrc: 'data',
 
                     // adding extra GET params for Custom filtering
                     data: function (d) {
                         // Add filters selected
+                        d.filter_invoice_organisation = vm.filterInvoiceOrganisation
                         d.filter_invoice_status = vm.filterInvoiceStatus
-                        d.filter_lodged_from = vm.filterProposalLodgedFrom
-                        d.filter_lodged_to = vm.filterProposalLodgedTo
+                        d.filter_invoice_due_date_from = vm.filterInvoiceDueDateFrom
+                        d.filter_invoice_due_date_to = vm.filterInvoiceDueDateTo
                     },
                 },
                 dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
@@ -420,16 +477,15 @@ export default {
     },
     methods: {
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            this.$refs.collapsible_filters.showWarningIcon(this.filterApplied)
         },
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded
         },
-        fetchFilterLists: function () {
+        fetchFilterLists: async function () {
             let vm = this
 
-            // Statuses
-            fetch(api_endpoints.invoice_statuses_dict).then(
+            fetch(api_endpoints.invoices + 'statuses/').then(
                 async (response) => {
                     vm.invoice_statuses = await response.json()
                 },
@@ -437,6 +493,24 @@ export default {
                     console.log(error)
                 }
             )
+
+            fetch(api_endpoints.organisations + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        reject(error)
+                    }
+                    console.log('organisations: ', data)
+                    vm.organisations = data;
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                    reject(error)
+                })
+
         },
         addEventListeners: function () {
             let vm = this
@@ -452,5 +526,3 @@ export default {
     },
 }
 </script>
-
-<style scoped></style>

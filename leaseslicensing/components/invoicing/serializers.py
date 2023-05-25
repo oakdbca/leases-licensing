@@ -7,10 +7,12 @@ from leaseslicensing.components.invoicing.models import (
     FixedAnnualIncrementAmount,
     FixedAnnualIncrementPercentage,
     Invoice,
+    InvoiceTransaction,
     InvoicingDetails,
     PercentageOfGrossTurnover,
     RepetitionType,
 )
+from leaseslicensing.helpers import is_finance_officer
 
 
 class ChargeMethodSerializer(serializers.ModelSerializer):
@@ -581,25 +583,66 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
-    approval = serializers.CharField(source="approval.lodgement_number", read_only=True)
+    approval_lodgement_number = serializers.CharField(
+        source="approval.lodgement_number", read_only=True
+    )
     # update this once we have a proper approval_type field on the approval object
     approval_type = serializers.SerializerMethodField()
     holder = serializers.CharField(source="approval.holder", read_only=True)
+    invoice_pdf_secure_url = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
+    is_finance_officer = serializers.SerializerMethodField()
+    transaction_count = serializers.IntegerField(
+        source="transactions.count", read_only=True
+    )
+    balance = serializers.DecimalField(max_digits=9, decimal_places=2, read_only=True)
 
     class Meta:
         model = Invoice
         fields = [
+            "id",
             "lodgement_number",
             "approval",
+            "approval_lodgement_number",
             "approval_type",
             "holder",
             "status",
-            "invoice",
+            "status_display",
+            "invoice_pdf_secure_url",
+            "oracle_invoice_number",
             "amount",
+            "transaction_count",
+            "balance",
             "inc_gst",
             "date_issued",
             "date_due",
+            "is_finance_officer",
+        ]
+        datatables_always_serialize = [
+            "status",
+            "transaction_count",
+            "balance",
+            "is_finance_officer",
         ]
 
     def get_approval_type(self, obj):
-        return "update this once we have a proper approval_type field on the approval object"
+        # update this once we have a proper approval_type field on the approval object
+        return "update this"
+
+    def get_invoice_pdf_secure_url(self, obj):
+        if obj.invoice_pdf:
+            return (
+                f"/api/main/secure_file/{self.Meta.model._meta.model.__name__}/{obj.id}/invoice_pdf/",
+            )
+
+        return None
+
+    def get_is_finance_officer(self, obj):
+        request = self.context.get("request")
+        return is_finance_officer(request)
+
+
+class InvoiceTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = InvoiceTransaction
+        fields = "__all__"

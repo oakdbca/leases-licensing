@@ -13,6 +13,7 @@ from leaseslicensing.components.competitive_processes import (
     api as competitive_process_api,
 )
 from leaseslicensing.components.compliances import api as compliances_api
+from leaseslicensing.components.invoicing import api as invoicing_api
 from leaseslicensing.components.main import api as main_api
 from leaseslicensing.components.organisations import api as org_api
 from leaseslicensing.components.proposals import api as proposal_api
@@ -24,18 +25,26 @@ from leaseslicensing.utils import are_migrations_running
 
 # API patterns
 router = routers.DefaultRouter()
-router.register(r"organisations", org_api.OrganisationViewSet, basename="organisations")
-router.register(r"proposal", proposal_api.ProposalViewSet, basename="proposal")
-router.register(r"identifiers", tenure_api.IdentifierViewSet, basename="identifiers")
-router.register(r"vestings", tenure_api.VestingViewSet, basename="vestings")
-router.register(r"names", tenure_api.NameViewSet, basename="names")
-router.register(r"acts", tenure_api.ActViewSet, basename="acts")
-router.register(r"tenures", tenure_api.TenureViewSet, basename="tenures")
-router.register(r"categories", tenure_api.CategoryViewSet, basename="categories")
-router.register(r"regions", tenure_api.RegionViewSet, basename="regions")
-router.register(r"districts", tenure_api.DistrictViewSet, basename="districts")
-router.register(r"lgas", tenure_api.LGAViewSet, basename="lgas")
-router.register(r"groups", tenure_api.GroupViewSet, basename="groups")
+router.register("organisations", org_api.OrganisationViewSet, basename="organisations")
+router.register("proposal", proposal_api.ProposalViewSet, basename="proposal")
+router.register("identifiers", tenure_api.IdentifierViewSet, basename="identifiers")
+router.register("vestings", tenure_api.VestingViewSet, basename="vestings")
+router.register("names", tenure_api.NameViewSet, basename="names")
+router.register("acts", tenure_api.ActViewSet, basename="acts")
+router.register("tenures", tenure_api.TenureViewSet, basename="tenures")
+router.register("categories", tenure_api.CategoryViewSet, basename="categories")
+router.register("regions", tenure_api.RegionViewSet, basename="regions")
+router.register("districts", tenure_api.DistrictViewSet, basename="districts")
+router.register("lgas", tenure_api.LGAViewSet, basename="lgas")
+router.register("groups", tenure_api.GroupViewSet, basename="groups")
+
+router.register("invoices", invoicing_api.InvoiceViewSet, basename="invoices")
+router.register(
+    "invoice_transactions",
+    invoicing_api.InvoiceTransactionViewSet,
+    basename="invoice_transactions",
+)
+
 router.register(
     r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
 )
