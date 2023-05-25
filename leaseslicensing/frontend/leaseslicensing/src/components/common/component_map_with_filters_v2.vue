@@ -91,7 +91,7 @@
                     <div v-if="selectedFeatureIds.length>0" class="optional-layers-button-wrapper">
                         <div class="optional-layers-button">
                             <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash"
-                                @click="removeProposalFeatures()" />
+                                @click="removeModelFeatures()" />
                             <span class='badge badge-warning' id='selectedFeatureCount'>{{ selectedFeatureIds.length }}</span>
                         </div>
                     </div>
@@ -108,11 +108,11 @@
                 </div>
 
                 <div id="featureToast" class="toast" style="z-index:9999">
-                    <template v-if="selectedProposal">
+                    <template v-if="selectedModel">
                         <div class="toast-header">
                             <img src="" class="rounded me-2" alt="">
                             <!-- FIXME: Can this be standardised into the same field name? -->
-                            <strong class="me-auto">{{ selectedProposal.label || selectedProposal.application_type_name_display || selectedProposal.application_type.name_display }}: {{ selectedProposal.lodgement_number }}</strong>
+                            <strong class="me-auto">{{ selectedModel.label || selectedModel.application_type_name_display || selectedModel.application_type.name_display }}: {{ selectedModel.lodgement_number }}</strong>
                         </div>
                         <div class="toast-body">
                             <table class="table table-sm">
@@ -120,18 +120,18 @@
                                     <tr>
                                         <th scope="row">Processing Status</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td>{{ selectedProposal.status || selectedProposal.processing_status_display || selectedProposal.processing_status }}</td>
+                                        <td>{{ selectedModel.status || selectedModel.processing_status_display || selectedModel.processing_status }}</td>
                                     </tr>
                                     <!-- TODO: `created_at` is not formatted to DD/MM/YYYY -->
-                                    <tr v-if="selectedProposal.lodgement_date_display || selectedProposal.lodgement_date || selectedProposal.created_at">
+                                    <tr v-if="selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at">
                                         <th scope="row">Lodgement Date</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td>{{ selectedProposal.lodgement_date_display || selectedProposal.lodgement_date || selectedProposal.created_at
+                                        <td>{{ selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at
                                         }}</td>
                                     </tr>
-                                    <tr v-if="selectedProposal.polygon_source">
+                                    <tr v-if="selectedModel.polygon_source">
                                         <th scope="row">Polygon Source</th>
-                                        <td>{{ selectedProposal.polygon_source
+                                        <td>{{ selectedModel.polygon_source
                                         }}</td>
                                     </tr>
                                 </tbody>
@@ -143,7 +143,7 @@
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
-            <BootstrapSpinner v-if="redirectingToProposalDetails || queryingGeoserver" class="text-primary" />
+            <BootstrapSpinner v-if="redirectingToModelDetails || queryingGeoserver" class="text-primary" />
 
         </div>
         <div class="row">
@@ -252,16 +252,16 @@ export default {
         },
         /**
          * A classifier to style the features by.
-         * `proposal` displays all features belonging to the same model by the same (randomly generated) color
+         * `model` displays all features belonging to the same model by the same (randomly generated) color
          * `assessor` displays all features by same color depending on the role of the user who created the feature
-         * @values proposal, assessor
+         * @values model, assessor
          */
         styleBy: {
             type: String,
             required: false,
-            default: 'proposal',
+            default: 'model',
             validator: function (val) {
-                let options = ['proposal', 'assessor'];
+                let options = ['model', 'assessor'];
                 return options.indexOf(val) != -1 ? true : false;
             }
         },
@@ -366,7 +366,7 @@ export default {
             hover: false,
             mode: 'normal',
             drawForMeasure: null,
-            drawForProposal: null,
+            drawForModel: null,
             newFeatureId: 0,
             measurementLayer: null,
             style: MeasureStyles.defaultStyle,
@@ -376,13 +376,13 @@ export default {
             content_element: null,
             featureToast: null,
             selectedFeature: null,
-            selectedProposal: null,
-            redirectingToProposalDetails: false,
+            selectedModel: null,
+            redirectingToModelDetails: false,
             queryingGeoserver: false,
             proposals: [],
             filteredProposals: [],
-            proposalQuerySource: null,
-            proposalQueryLayer: null,
+            modelQuerySource: null,
+            modelQueryLayer: null,
             selectedFeatureIds: [],
             lastPoint: null,
             sketchCoordinates: [[]],
@@ -430,16 +430,16 @@ export default {
         },
         showUndoButton: function () {
             return this.mode == 'draw' &&
-                this.drawForProposal &&
-                this.drawForProposal.getActive() &&
+                this.drawForModel &&
+                this.drawForModel.getActive() &&
                 this.sketchCoordinates.length > 1
         },
         showRedoButton: function () {
             return false;
             // Todo: The redo button is partially implemented so it is disabled for now.
             return this.mode == 'draw' &&
-                this.drawForProposal &&
-                this.drawForProposal.getActive() &&
+                this.drawForModel &&
+                this.drawForModel.getActive() &&
                 this.sketchCoordinatesHistory.length > this.sketchCoordinates.length
         },
     },
@@ -524,16 +524,16 @@ export default {
         },
         geoJsonButtonClicked: function () {
             let vm = this
-            let json = new GeoJSON().writeFeatures(vm.proposalQuerySource.getFeatures(), {})
+            let json = new GeoJSON().writeFeatures(vm.modelQuerySource.getFeatures(), {})
             vm.download_content(json, 'leases_and_licensing_layers.geojson', 'text/plain');
         },
         displayAllFeatures: function () {
             console.log('in displayAllFeatures()')
             let vm = this
             if (vm.map) {
-                if (vm.proposalQuerySource.getFeatures().length > 0) {
+                if (vm.modelQuerySource.getFeatures().length > 0) {
                     let view = vm.map.getView()
-                    let ext = vm.proposalQuerySource.getExtent()
+                    let ext = vm.modelQuerySource.getExtent()
                     let centre = [(ext[0] + ext[2]) / 2.0, (ext[1] + ext[3]) / 2.0]
                     let resolution = view.getResolutionForExtent(ext);
                     let z = view.getZoomForResolution(resolution) - 1
@@ -587,19 +587,19 @@ export default {
         },
         /**
          * Returns a color for a feature based on the styleBy property
-         * and either the feature or proposal object
+         * and either the feature or model object
          * @param {dict} featureData A feature object
-         * @param {Proxy} proposal A proposal object
+         * @param {Proxy} model A model object
          */
-        styleByColor: function(featureData, proposal) {
+        styleByColor: function(featureData, model) {
             let vm = this;
 
             if (vm.styleBy === 'assessor') {
                 // Assume the object is a feature containing a polygon_source property
                 return vm.featureColors[featureData.properties.polygon_source.toLowerCase()];
-            } else if (vm.styleBy === 'proposal') {
-                // Assume the object is a proposal containing a color field
-                return proposal.color;
+            } else if (vm.styleBy === 'model') {
+                // Assume the object is a model containing a color field
+                return model.color;
             } else {
                 return vm.featureColors["unknown"] || vm.defaultColor;
             }
@@ -774,16 +774,16 @@ export default {
         initialiseQueryLayer: function () {
             let vm = this;
 
-            vm.proposalQuerySource = new VectorSource({});
+            vm.modelQuerySource = new VectorSource({});
             const style = new Style({
                 fill: new Fill({
                     color: vm.defaultColor,
                 }),
             });
 
-            vm.proposalQueryLayer = new VectorLayer({
-                title: "Proposal Area of Interest",
-                source: vm.proposalQuerySource,
+            vm.modelQueryLayer = new VectorLayer({
+                title: "Model Area of Interest",
+                source: vm.modelQuerySource,
                 style: function (feature) {
                     const color = feature.get('color') || vm.defaultColor;
                     style.getFill().setColor(color);
@@ -791,9 +791,9 @@ export default {
                 },
             });
             // Add the layer
-            vm.map.addLayer(vm.proposalQueryLayer);
+            vm.map.addLayer(vm.modelQueryLayer);
             // Set zIndex to some layers to be rendered over the other layers
-            vm.proposalQueryLayer.setZIndex(10);
+            vm.modelQueryLayer.setZIndex(10);
         },
         initialiseDrawLayer: function () {
             let vm = this;
@@ -801,8 +801,8 @@ export default {
                 return;
             }
 
-            vm.drawForProposal = new Draw({
-                source: vm.proposalQuerySource,
+            vm.drawForModel = new Draw({
+                source: vm.modelQuerySource,
                 type: 'Polygon',
                 geometryFunction: function (coordinates, geometry) {
                     if (geometry) {
@@ -850,32 +850,32 @@ export default {
                     return false;
                 },
             })
-            vm.drawForProposal.set('escKey', '')
-            vm.drawForProposal.on('change:escKey', function (evt) {
+            vm.drawForModel.set('escKey', '')
+            vm.drawForModel.on('change:escKey', function (evt) {
                 console.log("ESC key pressed");
             })
-            vm.drawForProposal.on('drawstart', function () {
+            vm.drawForModel.on('drawstart', function () {
                 vm._errorMessage = null;
                 vm.lastPoint = null;
             });
-            vm.drawForProposal.on('click'), function (evt) {
+            vm.drawForModel.on('click'), function (evt) {
                 console.log(evt);
             }
-            vm.drawForProposal.on('drawend', function (evt) {
+            vm.drawForModel.on('drawend', function (evt) {
                 console.log(evt);
                 console.log(evt.feature.values_.geometry.flatCoordinates);
-                let proposal = vm.context || {};
+                let model = vm.context || {};
 
                 let color = vm.featureColors["draw"] ||
                             vm.featureColors["unknown"] ||
                             vm.defaultColor;
                 evt.feature.setProperties({
                     id: vm.newFeatureId,
-                    proposal: proposal,
+                    model: model,
                     polygon_source: "New",
-                    name: proposal.id || -1,
+                    name: model.id || -1,
                     // FIXME: Can this be standardised into the same field name?
-                    label: proposal.label || proposal.application_type_name_display || (proposal.application_type? proposal.application_type.name_display: undefined) || "Draw",
+                    label: model.label || model.application_type_name_display || (model.application_type? model.application_type.name_display: undefined) || "Draw",
                     color: color,
                 })
                 vm.newFeatureId++;
@@ -884,7 +884,7 @@ export default {
                 vm.sketchCoordinates = [[]];
                 vm.sketchCoordinatesHistory = [[]];
             });
-            vm.map.addInteraction(vm.drawForProposal);
+            vm.map.addInteraction(vm.drawForModel);
         },
         initialisePointerMoveEvent: function () {
             let vm = this
@@ -929,13 +929,13 @@ export default {
                 }
                 vm.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
                     selected = feature;
-                    let proposal = selected.getProperties().proposal
-                    if (!proposal) {
-                        console.error("No proposal found for feature");
+                    let model = selected.getProperties().model
+                    if (!model) {
+                        console.error("No model found for feature");
                     } else {
-                        proposal.polygon_source = selected.getProperties().polygon_source;
+                        model.polygon_source = selected.getProperties().polygon_source;
                     }
-                    vm.selectedProposal = proposal
+                    vm.selectedModel = model
                     selected.setStyle(hoverSelect);
                 });
                 if (selected) {
@@ -984,28 +984,29 @@ export default {
         initialiseDoubleClickEvent: function () {
             let vm = this
             vm.map.on('dblclick', function (evt) {
-                vm.redirectingToProposalDetails = true;
+                vm.redirectingToModelDetails = true;
                 evt.stopPropagation();
 
                 let feature = vm.map.forEachFeatureAtPixel(evt.pixel, function (feature, layer) {
                     return feature;
                 });
                 if (feature) {
-                    let proposal = feature.getProperties().proposal
-                    if (!proposal) {
-                        vm.redirectingToProposalDetails = false;
+                    let model = feature.getProperties().model
+                    if (!model) {
+                        vm.redirectingToModelDetails = false;
                         return;
                     }
 
-                    let proposal_path = '/internal/proposal/' + proposal.id
-                    if (window.location.pathname == proposal_path) {
-                        console.log('already on proposal page');
-                        vm.redirectingToProposalDetails = false;
+                    // TODO: Return path from serializer
+                    let model_path = '/internal/proposal/' + model.id
+                    if (window.location.pathname == model_path) {
+                        console.log('already on model details page');
+                        vm.redirectingToModelDetails = false;
                     } else {
-                        window.location = proposal_path;
+                        window.location = model_path;
                     }
                 } else {
-                    vm.redirectingToProposalDetails = false;
+                    vm.redirectingToModelDetails = false;
                 }
             });
         },
@@ -1032,7 +1033,7 @@ export default {
             // select interaction working on "singleclick"
             const selectSingleClick = new Select({
                 style: clickSelect,
-                layers: [vm.proposalQueryLayer,],
+                layers: [vm.modelQueryLayer,],
             });
             vm.map.addInteraction(selectSingleClick);
             selectSingleClick.on('select', (evt) => {
@@ -1053,15 +1054,15 @@ export default {
         },
         undoLeaseLicensePoint: function () {
             let vm = this;
-            console.log(vm.drawForProposal.sketchCoords_)
+            console.log(vm.drawForModel.sketchCoords_)
             if (vm.lastPoint) {
-                vm.proposalQuerySource.removeFeature(vm.lastPoint);
+                vm.modelQuerySource.removeFeature(vm.lastPoint);
                 vm.lastPoint = null;
                 vm.sketchCoordinates = [[]]
                 vm.sketchCoordinatesHistory = [[]]
                 this.selectedFeatureId = null;
             } else {
-                vm.drawForProposal.removeLastPoint();
+                vm.drawForModel.removeLastPoint();
             }
         },
         redoLeaseLicensePoint: function () {
@@ -1071,16 +1072,16 @@ export default {
                 vm.drawForLeaselicence.appendCoordinates([nextCoordinate[0]]);
             }
         },
-        removeProposalFeatures: function () {
+        removeModelFeatures: function () {
             let vm = this;
-            const features = vm.proposalQuerySource.getFeatures().filter((feature) => {
+            const features = vm.modelQuerySource.getFeatures().filter((feature) => {
                 if (vm.selectedFeatureIds.includes(feature.getProperties().id)) {
                     return feature;
                 }
             });
 
             for (let feature of features) {
-                vm.proposalQuerySource.removeFeature(feature);
+                vm.modelQuerySource.removeFeature(feature);
             }
             // Remove selected features (mapped by id) from `selectedFeatureIds`
             vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
@@ -1146,9 +1147,9 @@ export default {
             }
 
             for (let featureData of vm.featureCollection["features"]) {
-                let feature = vm.featureFromDict(featureData, featureData.proposal);
+                let feature = vm.featureFromDict(featureData, featureData.model);
 
-                vm.proposalQuerySource.addFeature(feature);
+                vm.modelQuerySource.addFeature(feature);
                 vm.newFeatureId++;
             };
         },
@@ -1164,12 +1165,12 @@ export default {
             let vm = this;
             console.log(proposals)
             // Remove all features from the layer
-            vm.proposalQuerySource.clear();
+            vm.modelQuerySource.clear();
             proposals.forEach(function (proposal) {
                 proposal.proposalgeometry.features.forEach(function (featureData) {
 
                     let feature = vm.featureFromDict(featureData, proposal);
-                    vm.proposalQuerySource.addFeature(feature);
+                    vm.modelQuerySource.addFeature(feature);
                     vm.newFeatureId++;
                 });
             });
@@ -1179,22 +1180,22 @@ export default {
         /**
          * Creates a styled feature object from a feature dictionary
          * @param {dict} featureData A feature dictionary
-         * @param {Proxy} proposal A proposal object
+         * @param {Proxy} model A model object
          */
-        featureFromDict: function (featureData, proposal) {
+        featureFromDict: function (featureData, model) {
             let vm = this;
-            if (proposal == null) {
-                proposal = {};
+            if (model == null) {
+                model = {};
             }
 
-            let color = vm.styleByColor(featureData, proposal);
+            let color = vm.styleByColor(featureData, model);
             let style = vm.createStyle(color);
 
             let feature = new Feature({
                 id: vm.newFeatureId, // Incrementing-id of the polygon/feature on the map
                 geometry: new Polygon(featureData.geometry.coordinates),
-                name: proposal.id,
-                label: proposal.label || proposal.application_type_name_display,
+                name: model.id,
+                label: model.label || model.application_type_name_display,
                 color: color,
                 source: featureData.properties.source,
                 polygon_source: featureData.properties.polygon_source
@@ -1203,7 +1204,7 @@ export default {
             feature.setId(featureData.id);
 
             feature.setProperties({
-                proposal: proposal,
+                model: model,
             });
             feature.setStyle(style);
 
@@ -1227,11 +1228,11 @@ export default {
         },
         getJSONFeatures: function () {
             const format = new GeoJSON();
-            const features = this.proposalQuerySource.getFeatures();
+            const features = this.modelQuerySource.getFeatures();
 
             features.forEach(function (feature) {
                 console.log(feature.getProperties());
-                feature.unset("proposal")
+                // feature.unset("model")
             });
 
             return format.writeFeatures(features);
@@ -1327,7 +1328,7 @@ export default {
             let vm = this;
             vm.queryingGeoserver = false;
             vm._errorMessage = null;
-            vm.drawForProposal.finishDrawing()
+            vm.drawForModel.finishDrawing()
         },
         /**
          * Returns the current error message or sets it to the provided message.

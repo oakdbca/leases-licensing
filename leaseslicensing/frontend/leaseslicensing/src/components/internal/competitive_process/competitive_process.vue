@@ -377,7 +377,15 @@ export default {
             let featureCollection = { ...vm.competitive_process.competitive_process_geometries };
             Object.keys(featureCollection["features"]).forEach(function (key, _) {
                 featureCollection["features"][key]["properties"]["source"] = "competitive_process";
-                featureCollection["features"][key]["proposal"] = vm.competitive_process;
+                // Create competitive process model object using the same field names as for proposal
+                let model = {
+                    id: vm.competitive_process.id,
+                    application_type_name_display: vm.competitive_process.label,
+                    lodgement_number: vm.competitive_process.lodgement_number,
+                    lodgement_date_display: vm.competitive_process.created_at,
+                    processing_status_display: vm.competitive_process.status,
+                };
+                featureCollection["features"][key]["model"] = model;
             });
 
             // Append proposal geometries to competitive process geometries
@@ -386,9 +394,9 @@ export default {
 
                 for (let feature of proposalgeometries["features"]) {
                     feature["properties"]["source"] = "registration_of_interest";
-                    // Build proposal context object for geometry feature (i.e. the proposal that this geometry belongs to)
-                    // Have to omit proposalgeometry from context object to avoid circular reference in the form `a.features[i].b = a`
-                    let context = {
+                    // Build proposal model object for geometry feature (i.e. the proposal that this geometry belongs to)
+                    // Have to omit proposalgeometry from model object to avoid circular reference in the form `a.features[i].b = a`
+                    let model = {
                         id: vm.competitive_process.registration_of_interest.id,
                         application_type_name_display: vm.competitive_process.registration_of_interest.application_type_name_display,
                         lodgement_number: vm.competitive_process.registration_of_interest.lodgement_number,
@@ -396,7 +404,7 @@ export default {
                         processing_status_display: vm.competitive_process.registration_of_interest.processing_status_display,
                     };
 
-                    feature["proposal"] = context;
+                    feature["model"] = model;
                     featureCollection["features"].push(feature);
                 }
             }

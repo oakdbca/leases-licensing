@@ -188,14 +188,14 @@ const _helper = {
     /**
      * Toggles measure and polygon layer active or inactive
      * @param {boolean} drawForMeasure Whether to set the measure layer active or inactive
-     * @param {boolean} drawForProposal Whether to set the polygon layer active or inactive
+     * @param {boolean} drawForModel Whether to set the model's polygon layer active or inactive
      */
-    toggle_draw_measure_license: function (drawForMeasure, drawForProposal) {
+    toggle_draw_measure_license: function (drawForMeasure, drawForModel) {
         if (this.drawForMeasure) {
             this.drawForMeasure.setActive(drawForMeasure)
         }
-        if (this.drawForProposal) {
-            this.drawForProposal.setActive(drawForProposal)
+        if (this.drawForModel) {
+            this.drawForModel.setActive(drawForModel)
         }
     }
 }
