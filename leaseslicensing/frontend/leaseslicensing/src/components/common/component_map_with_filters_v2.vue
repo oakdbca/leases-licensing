@@ -111,22 +111,22 @@
                     <template v-if="selectedProposal">
                         <div class="toast-header">
                             <img src="" class="rounded me-2" alt="">
-                            <strong class="me-auto">Application: {{ selectedProposal.lodgement_number }}</strong>
+                            <!-- FIXME: Can this be standardised into the same field name? -->
+                            <strong class="me-auto">{{ selectedProposal.label || selectedProposal.application_type_name_display || selectedProposal.application_type.name_display }}: {{ selectedProposal.lodgement_number }}</strong>
                         </div>
                         <div class="toast-body">
                             <table class="table table-sm">
                                 <tbody>
                                     <tr>
-                                        <th scope="row">Application Type</th>
-                                        <td>{{ selectedProposal.application_type_name_display }}</td>
-                                    </tr>
-                                    <tr>
                                         <th scope="row">Processing Status</th>
-                                        <td>{{ selectedProposal.processing_status_display }}</td>
+                                        <!-- FIXME: Can this be standardised into the same field name? -->
+                                        <td>{{ selectedProposal.status || selectedProposal.processing_status_display || selectedProposal.processing_status }}</td>
                                     </tr>
-                                    <tr v-if="selectedProposal.lodgement_date_display">
+                                    <!-- TODO: `created_at` is not formatted to DD/MM/YYYY -->
+                                    <tr v-if="selectedProposal.lodgement_date_display || selectedProposal.lodgement_date || selectedProposal.created_at">
                                         <th scope="row">Lodgement Date</th>
-                                        <td>{{ selectedProposal.lodgement_date_display
+                                        <!-- FIXME: Can this be standardised into the same field name? -->
+                                        <td>{{ selectedProposal.lodgement_date_display || selectedProposal.lodgement_date || selectedProposal.created_at
                                         }}</td>
                                     </tr>
                                     <tr v-if="selectedProposal.polygon_source">
@@ -218,11 +218,44 @@ export default {
             required: false,
             default: 'filterApplicationLodgedTo',
         },
+        /**
+         * The context of the map. This is used to determine which layers to show on the map.
+         * The context should be a model object, e.g. a Proposal, Application, etc.
+         * Used to allocate ids, labels, etc to new features
+        */
+        context: {
+            type: Object,
+            required: false,
+            default: null,
+        },
+        /**
+         * Ids of porposals to be fetched by the map componment and displayed on the map.
+         * Negative values fetch no proposals
+         * Positive values fetch proposals with those ids
+         * Empty list `[]` fetches all proposals
+         */
         proposalIds: {
             type: Array,
             required: false,
             default: [],
         },
+        /**
+         * A geojson feature collection of features (possibvly related to the context) to display on the map.
+         */
+        featureCollection: {
+            type: Object,
+            required: false,
+            default: {"features": [], "type": "FeatureCollection"},
+            validator: function (val) {
+                return val.type == 'FeatureCollection' ? true : false;
+            }
+        },
+        /**
+         * A classifier to style the features by.
+         * `proposal` displays all features belonging to the same model by the same (randomly generated) color
+         * `assessor` displays all features by same color depending on the role of the user who created the feature
+         * @values proposal, assessor
+         */
         styleBy: {
             type: String,
             required: false,
@@ -232,6 +265,10 @@ export default {
                 return options.indexOf(val) != -1 ? true : false;
             }
         },
+        /**
+         * Color definitions for the features to be used when styling by `assessor`
+         * @values unknown, draw, applicant, assessor
+         */
         featureColors: {
             type: Object,
             required: false,
@@ -261,12 +298,16 @@ export default {
                 return true;
             }
         },
+        /**
+         * A dictionary of query parameters to pass to the WFS geoserver
+         * The parent component needs to add the `cql_filter` parameter to filter the features by a spatial opration
+         */
         owsQuery: {
             type: Object,
             required: false,
             default: () => {
                 return {
-                    "version": "1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported by the geoserver
+                    "version": "1.0.0", // WFS version
                     "landwater": {
                         "typeName": "public:dbca_legislated_lands_and_waters",
                         "srsName": "EPSG:4326",
@@ -276,16 +317,25 @@ export default {
                 }
             }
         },
+        /**
+         * Whether to display a filter component above the map
+         */
         filterable: {
             type: Boolean,
             required: false,
             default: true,
         },
+        /**
+         * Whether to enable drawing of new features
+         */
         drawable: {
             type: Boolean,
             required: false,
             default: false,
         },
+        /**
+         * Whether to enable selecting existing features (e.g. for deletion)
+         */
         selectable: {
             type: Boolean,
             required: false,
@@ -535,6 +585,43 @@ export default {
 
             return styles
         },
+        /**
+         * Returns a color for a feature based on the styleBy property
+         * and either the feature or proposal object
+         * @param {dict} featureData A feature object
+         * @param {Proxy} proposal A proposal object
+         */
+        styleByColor: function(featureData, proposal) {
+            let vm = this;
+
+            if (vm.styleBy === 'assessor') {
+                // Assume the object is a feature containing a polygon_source property
+                return vm.featureColors[featureData.properties.polygon_source.toLowerCase()];
+            } else if (vm.styleBy === 'proposal') {
+                // Assume the object is a proposal containing a color field
+                return proposal.color;
+            } else {
+                return vm.featureColors["unknown"] || vm.defaultColor;
+            }
+        },
+        createStyle: function(color) {
+            let vm = this;
+            if (!color) {
+                color = vm.defaultColor;
+            }
+
+            let style = new Style({
+                stroke: new Stroke({
+                    color: color,
+                    width: 1,
+                }),
+                fill: new Fill({
+                    color: color,
+                }),
+            });
+
+            return style;
+        },
         styleFunctionForMeasurement: function (feature, resolution) {
             let vm = this
             let for_layer = feature.get('for_layer', false)
@@ -777,22 +864,20 @@ export default {
             vm.drawForProposal.on('drawend', function (evt) {
                 console.log(evt);
                 console.log(evt.feature.values_.geometry.flatCoordinates);
-                let proposal = {};
-                if (vm.proposals.length>0) {
-                    proposal = vm.proposals[vm.proposals.length-1]
-                }
+                let proposal = vm.context || {};
+
                 let color = vm.featureColors["draw"] ||
-                            vm.featureColors["Unknown"] ||
-                            "#999999";
+                            vm.featureColors["unknown"] ||
+                            vm.defaultColor;
                 evt.feature.setProperties({
-                                            id: vm.newFeatureId,
-                                            proposal: proposal,
-                                            polygon_source: "Draw",
-                                            name: proposal.id || -1,
-                                            label: proposal.application_type_name_display || "Draw",
-                                            label: "Draw",
-                                            color: color,
-                                        })
+                    id: vm.newFeatureId,
+                    proposal: proposal,
+                    polygon_source: "New",
+                    name: proposal.id || -1,
+                    // FIXME: Can this be standardised into the same field name?
+                    label: proposal.label || proposal.application_type_name_display || (proposal.application_type? proposal.application_type.name_display: undefined) || "Draw",
+                    color: color,
+                })
                 vm.newFeatureId++;
                 console.log('newFeatureId = ' + vm.newFeatureId);
                 vm.lastPoint = evt.feature;
@@ -834,9 +919,11 @@ export default {
                 }
                 if (selected !== null) {
                     if (vm.selectedFeatureIds.includes(selected.getProperties().id)) {
+                        // Don't alter style of click-selected features
                         console.log("ignoring hover on selected feature");
                     } else {
                         selected.setStyle(undefined);
+                        selected.setStyle(vm.createStyle(selected.values_.color));
                     }
                     selected = null;
                 }
@@ -845,8 +932,9 @@ export default {
                     let proposal = selected.getProperties().proposal
                     if (!proposal) {
                         console.error("No proposal found for feature");
+                    } else {
+                        proposal.polygon_source = selected.getProperties().polygon_source;
                     }
-                    proposal.polygon_source = selected.getProperties().polygon_source
                     vm.selectedProposal = proposal
                     selected.setStyle(hoverSelect);
                 });
@@ -1051,6 +1139,19 @@ export default {
             }, (error) => {
             })
         },
+        addFeatureCollectionToMap: function(featureCollection) {
+            let vm = this;
+            if (featureCollection == null) {
+                featureCollection = vm.featureCollection;
+            }
+
+            for (let featureData of vm.featureCollection["features"]) {
+                let feature = vm.featureFromDict(featureData, featureData.proposal);
+
+                vm.proposalQuerySource.addFeature(feature);
+                vm.newFeatureId++;
+            };
+        },
         assignProposalFeatureColors: function (proposals) {
             let vm = this;
             proposals.forEach(function (proposal) {
@@ -1066,43 +1167,47 @@ export default {
             vm.proposalQuerySource.clear();
             proposals.forEach(function (proposal) {
                 proposal.proposalgeometry.features.forEach(function (featureData) {
-                    let color = proposal.color; // styleBy = 'proposal'
-                    let style = new Style({
-                        stroke: new Stroke({
-                            color: color,
-                            width: 1,
-                        }),
-                        fill: new Fill({
-                            color: color,
-                        }),
-                    });
-                    if (vm.styleBy === 'assessor') {
-                        color = vm.featureColors[featureData.properties.polygon_source.toLowerCase()] ||
-                            vm.featureColors["Unknown"] ||
-                            "#999999";
-                    }
-                    style.getFill().setColor(color);
-                    style.getStroke().setColor(color);
 
-                    let feature = new Feature({
-                        id: vm.newFeatureId, // Incrementing-id of the polygon/feature on the map
-                        geometry: new Polygon(featureData.geometry.coordinates),
-                        name: proposal.id,
-                        label: proposal.application_type_name_display,
-                        color: color,
-                        polygon_source: featureData.properties.polygon_source
-                    });
-                    // Id of the model object (https://datatracker.ietf.org/doc/html/rfc7946#section-3.2)
-                    feature.setId(featureData.id)
-
-                    feature.setStyle(style)
-                    feature.setProperties({
-                        proposal: proposal,
-                    })
+                    let feature = vm.featureFromDict(featureData, proposal);
                     vm.proposalQuerySource.addFeature(feature);
                     vm.newFeatureId++;
                 });
             });
+
+            vm.addFeatureCollectionToMap();
+        },
+        /**
+         * Creates a styled feature object from a feature dictionary
+         * @param {dict} featureData A feature dictionary
+         * @param {Proxy} proposal A proposal object
+         */
+        featureFromDict: function (featureData, proposal) {
+            let vm = this;
+            if (proposal == null) {
+                proposal = {};
+            }
+
+            let color = vm.styleByColor(featureData, proposal);
+            let style = vm.createStyle(color);
+
+            let feature = new Feature({
+                id: vm.newFeatureId, // Incrementing-id of the polygon/feature on the map
+                geometry: new Polygon(featureData.geometry.coordinates),
+                name: proposal.id,
+                label: proposal.label || proposal.application_type_name_display,
+                color: color,
+                source: featureData.properties.source,
+                polygon_source: featureData.properties.polygon_source
+            });
+            // Id of the model object (https://datatracker.ietf.org/doc/html/rfc7946#section-3.2)
+            feature.setId(featureData.id);
+
+            feature.setProperties({
+                proposal: proposal,
+            });
+            feature.setStyle(style);
+
+            return feature;
         },
         getProposalById: function (id) {
             return this.proposals.find(proposal => proposal.id === id);
@@ -1142,16 +1247,20 @@ export default {
                 console.error(`Layer ${layerStr} not found in OWS query`);
                 return {};
             }
+            if (!vm.owsQuery[layerStr].typeName) {
+                console.error(`Layer ${layerStr} needs a typeName`);
+                return {};
+            }
 
             return {
-                "service":"WFS",
-                "version":vm.owsQuery.version,
-                "request":"GetFeature",
+                "service": vm.owsQuery.service || "WFS",
+                "version": vm.owsQuery.version || "1.0.0",
+                "request": vm.owsQuery[layerStr].request || "GetFeature",
                 "typeName": vm.owsQuery[layerStr].typeName,
-                "maxFeatures":"5000",
-                "srsName":vm.owsQuery[layerStr].srsName,
-                "outputFormat": "application/json",
-                "propertyName": vm.owsQuery[layerStr].propertyName,
+                "maxFeatures": vm.owsQuery[layerStr].maxFeatures || "5000",
+                "srsName": vm.owsQuery[layerStr].srsName || "EPSG:4326",
+                "outputFormat": vm.owsQuery[layerStr].outputFormat || "application/json",
+                "propertyName": vm.owsQuery[layerStr].propertyName || "wkb_geometry",
             }
         },
         /**
@@ -1225,11 +1334,11 @@ export default {
          * @param {String} message The new error message
          */
         errorMessage: function (message) {
+            let vm = this;
             if (message === undefined) {
-                return this._errorMessage;
+                return vm._errorMessage;
             }
 
-            let vm = this;
             vm.queryingGeoserver = false;
 
             if (vm._errorMessage === null) {

@@ -566,7 +566,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         """Returns the proposals for the map"""
         proposal_ids = [
             int(id) for id in request.query_params.get("proposal_ids", "").
-            split(",") if id.isnumeric()
+            split(",") if id.lstrip("-").isnumeric()
             ]
         application_type = request.query_params.get("application_type", None)
         processing_status = request.query_params.get("processing_status", None)

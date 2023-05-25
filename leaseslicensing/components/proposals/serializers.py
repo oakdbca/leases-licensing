@@ -14,6 +14,9 @@ from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
+from leaseslicensing.components.main.utils import (
+    get_polygon_source,
+)
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.proposals.models import (
@@ -113,23 +116,7 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
         read_only_fields = ("id",)
 
     def get_polygon_source(self, obj):
-
-        source = ""
-
-        if not obj.drawn_by:
-            source = "Unknown"
-        elif obj.drawn_by in [obj.proposal.ind_applicant, obj.proposal.org_applicant]:
-            source = "Applicant"
-        else:
-            # System group names, e.g. lease_license_assessor
-            system_groups = SystemGroup.objects.filter(name__in=[x for x in zip(*GROUP_NAME_CHOICES)][0])
-            # System groups member ids
-            system_group_member = list(set([itm for group in system_groups for itm in group.get_system_group_member_ids()]))
-            if obj.drawn_by in system_group_member:
-                source = "Assessor"
-
-        return source
-
+        return get_polygon_source(obj)
 
 class ProposalTypeSerializer(serializers.ModelSerializer):
     class Meta:
