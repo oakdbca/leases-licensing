@@ -1,9 +1,6 @@
 from django.core.files.storage import default_storage
-<<<<<<< HEAD
 from ledger_api_client.managed_models import SystemGroup
-=======
 from django.urls import reverse
->>>>>>> 541b97e (Added details_url field to various model serializers)
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
