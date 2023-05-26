@@ -804,6 +804,7 @@ export default {
 
             vm.modelQueryLayer = new VectorLayer({
                 title: "Model Area of Interest",
+                name: "query_layer",
                 source: vm.modelQuerySource,
                 style: function (feature) {
                     const color = feature.get('color') || vm.defaultColor;
@@ -958,6 +959,9 @@ export default {
                     }
                     vm.selectedModel = model
                     selected.setStyle(hoverSelect);
+                }, {layerFilter: function (layer) {
+                        return layer.get('name') != 'query_layer';
+                    }
                 });
                 if (selected) {
                     vm.featureToast.show()
