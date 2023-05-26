@@ -5,6 +5,7 @@ from decimal import Decimal
 import pytz
 from dateutil.relativedelta import relativedelta
 from django.db import models
+from django.db.models import F, Sum, Window
 from django.db.models.functions import Coalesce
 from ledger_api_client import settings_base
 
@@ -567,7 +568,26 @@ class Invoice(RevisionedMixin, models.Model):
         return balance
 
 
+class InvoiceTransactionManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .annotate(
+                cumulative_balance=Window(
+                    expression=Sum("debit"),
+                    order_by=F("datetime_created").asc(),
+                )
+                - Window(
+                    expression=Sum("credit"),
+                    order_by=F("datetime_created").asc(),
+                )
+            )
+        )
+
+
 class InvoiceTransaction(RevisionedMixin, models.Model):
+    objects = InvoiceTransactionManager()
     invoice = models.ForeignKey(
         Invoice,
         on_delete=models.PROTECT,
@@ -586,7 +606,7 @@ class InvoiceTransaction(RevisionedMixin, models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
-        ordering = ["-datetime_created"]
+        ordering = ["datetime_created"]
 
     def __str__(self):
         return f"Transaction: {self.id} for Invoice: {self.invoice} Credit: {self.credit}, Debit: {self.debit}"

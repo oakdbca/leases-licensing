@@ -291,7 +291,7 @@ export default {
     },
     fetchInvoiceTransactions: function (invoice_id) {
         return new Promise((resolve, reject) => {
-            fetch(api_endpoints.invoices + `/${invoice_id}/transactions/`)
+            fetch(api_endpoints.invoices + `${invoice_id}/transactions/`)
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {

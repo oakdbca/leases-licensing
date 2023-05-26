@@ -59,7 +59,7 @@
         </div>
 
         <InvoiceViewTransactions ref="invoice_view_transactions" :invoice_id="selectedInvoiceId"
-            :invoice_lodgement_number="selectedInvoiceLodgementNumber">
+            :invoice_lodgement_number="selectedInvoiceLodgementNumber" :invoice_amount="selectedInvoiceAmount">
         </InvoiceViewTransactions>
 
     </div>
@@ -67,7 +67,7 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
-import InvoiceViewTransactions from '../internal/approvals/approval_cancellation.vue'
+import InvoiceViewTransactions from '../internal/invoices/invoice_view_transactions.vue'
 
 import { v4 as uuid } from 'uuid';
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
@@ -119,6 +119,10 @@ export default {
 
             // Filters toggle
             filters_expanded: false,
+
+            selectedInvoiceId: null,
+            selectedInvoiceLodgementNumber: null,
+            selectedInvoiceAmount: null,
 
             dateFormat: 'DD/MM/YYYY',
             datepickerOptions: {
@@ -357,14 +361,14 @@ export default {
                 render: function (row, type, full) {
                     let links = ''
                     if (full.transaction_count > 0) {
-                        links += `<a href="${full.id}">View Transactions</a><br />`;
+                        links += `<a href="#${full.id}" data-view-transactions="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-invoice-amount="${full.amount}">View Transactions</a><br />`;
                     }
                     // In the case that an invoice is overpaid we will want to allow recording a transaction to correct the balance
                     if ('unpaid' === full.status || full.balance != '0.00') {
-                        links += `<a href="${full.id}">Record Transaction</a><br />`;
+                        links += `<a href="#${full.id}">Record Transaction</a><br />`;
                     }
                     if (full.is_finance_officer) {
-                        links += `<a href='${full.id}'>Edit Oracle Invoice Number</a>`;
+                        links += `<a href='#${full.id}'>Edit Oracle Invoice Number</a>`;
                     }
                     return links
                 },
@@ -510,10 +514,25 @@ export default {
                     console.error('There was an error!', error)
                     reject(error)
                 })
-
+        },
+        viewTransactions: function (id, lodgement_number, amount) {
+            let vm = this;
+            vm.selectedInvoiceId = parseInt(id);
+            vm.selectedInvoiceLodgementNumber = lodgement_number;
+            console.log('amount: ', amount)
+            vm.selectedInvoiceAmount = Number(amount);
+            vm.$refs.invoice_view_transactions.isModalOpen = true;
         },
         addEventListeners: function () {
-            let vm = this
+            let vm = this;
+
+            vm.$refs.invoices_datatable.vmDataTable.on('click', 'a[data-view-transactions]', function (e) {
+                e.preventDefault();
+                var lodgement_number = $(this).attr('data-invoice-lodgement-number');
+                var amount = $(this).attr('data-invoice-amount');
+                var id = $(this).attr('data-view-transactions');
+                vm.viewTransactions(id, lodgement_number, amount);
+            });
         },
     },
     created: function () {

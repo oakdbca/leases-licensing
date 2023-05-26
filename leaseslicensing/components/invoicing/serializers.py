@@ -643,6 +643,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
 
 class InvoiceTransactionSerializer(serializers.ModelSerializer):
+    cumulative_balance = serializers.DecimalField(
+        read_only=True, max_digits=9, decimal_places=2
+    )
+
     class Meta:
         model = InvoiceTransaction
         fields = "__all__"
