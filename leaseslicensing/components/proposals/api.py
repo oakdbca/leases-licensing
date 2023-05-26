@@ -1900,7 +1900,10 @@ class ProposalViewSet(UserActionLoggingViewset):
     def referral_save(self, request, *args, **kwargs):
         instance = self.get_object()
         save_referral_data(instance, request, False)
-        return Response({})
+
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))

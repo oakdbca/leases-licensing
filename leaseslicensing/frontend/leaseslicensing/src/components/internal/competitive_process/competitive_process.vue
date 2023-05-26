@@ -380,6 +380,7 @@ export default {
                 // Create competitive process model object using the same field names as for proposal
                 let model = {
                     id: vm.competitive_process.id,
+                    details_url: vm.competitive_process.details_url,
                     application_type_name_display: vm.competitive_process.label,
                     lodgement_number: vm.competitive_process.lodgement_number,
                     lodgement_date_display: vm.competitive_process.created_at,
@@ -398,6 +399,7 @@ export default {
                     // Have to omit proposalgeometry from model object to avoid circular reference in the form `a.features[i].b = a`
                     let model = {
                         id: vm.competitive_process.registration_of_interest.id,
+                        details_url: vm.competitive_process.registration_of_interest.details_url,
                         application_type_name_display: vm.competitive_process.registration_of_interest.application_type_name_display,
                         lodgement_number: vm.competitive_process.registration_of_interest.lodgement_number,
                         lodgement_date_display: vm.competitive_process.registration_of_interest.lodgement_date_display,

@@ -1,4 +1,20 @@
 <template>
+    <!--
+        TODOs (and ideas):
+        - populate tenure, locality, and categorisation from geoserver response (see: map_functions::validateFeature for response values and owsQuery prop for query paramerters)
+        - prevent polygon delete after save (or save + status change)
+        - polygon redo button
+        - polygon edit button (move and add/remove vertices)
+        - pass in map tab filterable proposals as prop (see: prop featureCollection)
+        - standardise feature tooltip fields (lodgement_date formatting, application_type, processing_status, etc.) across models
+        - hide feature tooltip on save as it might overlap the save response modal
+        - solve click-select and hover-select for overlapping polygons (cannot click-select a feature for delete if it is under another feature)
+        - prevent referrals from creating/editing polygons in the frontend (does not save in backend anyway)
+        - disable draw tool for external when model is not in draft status
+        - disable draw tool for referral when model is not in with referral status
+        - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
+        - mouse-over control tooltips (zoom-in, -out, toggle-fullscreen have tooltips by default, custom controls should as well)
+     -->
     <div>
         <CollapsibleFilters v-if="filterable" :component_title="'Filters' + filterInformation" ref="collapsible_filters"
             @created="collapsible_component_mounted" class="mb-2">
@@ -998,8 +1014,19 @@ export default {
                     }
 
                     // TODO: Return path from serializer
-                    let model_path = '/internal/proposal/' + model.id
-                    if (window.location.pathname == model_path) {
+                    let model_path = model.details_url;
+                    // Remove trailing slash from urls
+                    let pathnames = [window.location.pathname, model.details_url]
+                    for (let i = 0; i < pathnames.length; i++) {
+                        let path_name = pathnames[i];
+                        if (path_name[path_name.length - 1] === '/') {
+                            path_name = path_name.slice(0, -1);
+                        }
+                        pathnames[i] = path_name;
+                    }
+                    // array remove duplicates
+                    pathnames = [...new Set(pathnames)];
+                    if (pathnames.length === 1) {
                         console.log('already on model details page');
                         vm.redirectingToModelDetails = false;
                     } else {
