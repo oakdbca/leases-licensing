@@ -1,6 +1,6 @@
 <template>
     <!--
-        TODOs (and ideas):
+        TODO tasks (and ideas):
         - populate tenure, locality, and categorisation from geoserver response (see: map_functions::validateFeature for response values and owsQuery prop for query paramerters)
         - prevent polygon delete after save (or save + status change)
         - polygon redo button
@@ -12,8 +12,13 @@
         - prevent referrals from creating/editing polygons in the frontend (does not save in backend anyway)
         - disable draw tool for external when model is not in draft status
         - disable draw tool for referral when model is not in with referral status
+        - display polygons of approved application on new license application (external 017, internal 041)
+        - display polygons from the competitive process of an application that proceeded to a competitive process on the application page
+        - implement map on approval details page and map tab
         - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
         - mouse-over control tooltips (zoom-in, -out, toggle-fullscreen have tooltips by default, custom controls should as well)
+        - delete old map files
+        - rename this file
      -->
     <div>
         <CollapsibleFilters v-if="filterable" :component_title="'Filters' + filterInformation" ref="collapsible_filters"
