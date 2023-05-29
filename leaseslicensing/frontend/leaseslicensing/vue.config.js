@@ -1,5 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
+// Useful plugin to find out what is making the bundle so big
+// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const port = process.env.PORT ? parseInt(process.env.PORT) : 9072;
 
 module.exports = {
@@ -13,13 +15,14 @@ module.exports = {
     },
     configureWebpack: {
         devtool: 'source-map',
-        plugins:[
+        plugins: [
             new webpack.ProvidePlugin({
                 $: 'jquery',
                 moment: 'moment',
                 swal: 'sweetalert2',
                 _: 'lodash',
-            })
+            }),
+            // new BundleAnalyzerPlugin(),
         ],
         devServer: {
             host: '0.0.0.0',
@@ -29,7 +32,7 @@ module.exports = {
                 writeToDisk: true,
             },
             client: {
-                webSocketURL: 'ws://0.0.0.0:'+port+'/ws',
+                webSocketURL: 'ws://0.0.0.0:' + port + '/ws',
             },
         },
         module: {
