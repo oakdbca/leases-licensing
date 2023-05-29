@@ -120,7 +120,7 @@ export default {
     },
     fetchOrganisationRequests: function () {
         return new Promise((resolve, reject) => {
-            fetch(api_endpoints.organisation_requests)
+            fetch(api_endpoints.organisation_requests + 'no-pagination/')
                 .then(async response => {
                     const data = await response.json();
                     if (!response.ok) {
