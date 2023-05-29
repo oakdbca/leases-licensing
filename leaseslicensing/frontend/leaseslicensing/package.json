@@ -47,6 +47,7 @@
     "devDependencies": {
         "eslint": "^8.15.0",
         "prettier": "2.8.4",
-        "vls": "^0.7.6"
+        "vls": "^0.7.6",
+        "webpack-bundle-analyzer": "^4.8.0"
     }
 }
