@@ -18,6 +18,7 @@ from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
+    NoPaginationListMixin,
     UserActionLoggingViewset,
 )
 from leaseslicensing.components.main.decorators import (
@@ -577,7 +578,7 @@ class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
     serializer_class = OrganisationRequestSerializer
 
 
-class OrganisationRequestsViewSet(UserActionLoggingViewset):
+class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixin):
     queryset = OrganisationRequest.objects.all()
     serializer_class = OrganisationRequestSerializer
 
