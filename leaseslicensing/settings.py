@@ -120,6 +120,8 @@ if SHOW_DEBUG_TOOLBAR:
         "INTERCEPT_REDIRECTS": False,
     }
 
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
+
 TEMPLATES[0]["DIRS"].append(os.path.join(BASE_DIR, "leaseslicensing", "templates"))
 TEMPLATES[0]["DIRS"].append(
     os.path.join(
