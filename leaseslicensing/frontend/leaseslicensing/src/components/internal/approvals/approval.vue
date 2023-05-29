@@ -1,7 +1,10 @@
 <template>
     <div v-if="approval" class="container" id="internalApproval">
         <div class="row">
-            <h3>{{ approvalLabel }}: {{ approval.lodgement_number }}</h3>
+            <h3>{{ approvalLabel }}: {{ approval.lodgement_number }} <small v-if="approval.original_leaselicense_number"
+                    class="text-muted"> (Migrated from: {{
+                        approval.original_leaselicense_number
+                    }})</small></h3>
             <div class="col-md-3">
                 <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
                     :disable_add_entry="false" />
@@ -111,6 +114,13 @@
                                         <div class="col-sm-6">
                                             <input class="form-control" type="text" :value="approval.lodgement_number"
                                                 readonly />
+                                        </div>
+                                    </div>
+                                    <div v-if="approval.original_leaselicense_number" class="row mb-3">
+                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Migrated from</label>
+                                        <div class="col-sm-6">
+                                            <input class="form-control" type="text"
+                                                :value="approval.original_leaselicense_number" readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
