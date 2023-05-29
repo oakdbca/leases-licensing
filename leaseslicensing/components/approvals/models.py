@@ -99,8 +99,9 @@ class ApprovalDocument(Document):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.approval.user_has_object_permission(user_id)
 
-    class Meta:
-        app_label = "leaseslicensing"
+
+class Meta:
+    app_label = "leaseslicensing"
 
 
 class ApprovalType(RevisionedMixin):
@@ -230,6 +231,7 @@ class Approval(RevisionedMixin):
         max_length=255, blank=True, null=True
     )
     migrated = models.BooleanField(default=False)
+    record_management_number = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         app_label = "leaseslicensing"
