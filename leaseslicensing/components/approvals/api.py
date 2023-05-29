@@ -23,7 +23,6 @@ from leaseslicensing.components.approvals.models import (
 from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
     ApprovalDocumentHistorySerializer,
-    ApprovalExtendSerializer,
     ApprovalLogEntrySerializer,
     ApprovalPaymentSerializer,
     ApprovalSerializer,
@@ -478,98 +477,6 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             return Response(returned_data)
         else:
             return Response()
-
-    # Commenting this out for now. Not sure if we need this
-    # @detail_route(methods=["POST"], detail=True)
-    # @renderer_classes((JSONRenderer,))
-    # def process_document(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     action = request.POST.get("action")
-    #     section = request.POST.get("input_name")
-    #     if action == "list" and "input_name" in request.POST:
-    #         pass
-
-    #     elif action == "delete" and "document_id" in request.POST:
-    #         document_id = request.POST.get("document_id")
-    #         document = instance.qaofficer_documents.get(id=document_id)
-
-    #         document.visible = False
-    #         document.save()
-    #         instance.save(
-    #             version_comment=f"Licence ({section}): {document.name}"
-    #         )  # to allow revision to be added to reversion history
-
-    #     elif (
-    #         action == "save"
-    #         and "input_name" in request.POST
-    #         and "filename" in request.POST
-    #     ):
-    #         proposal_id = request.POST.get("proposal_id")
-    #         filename = request.POST.get("filename")
-    #         _file = request.POST.get("_file")
-    #         if not _file:
-    #             _file = request.FILES.get("_file")
-
-    #         document = instance.qaofficer_documents.get_or_create(
-    #             input_name=section, name=filename
-    #         )[0]
-    #         path = default_storage.save(
-    #             "{}/proposals/{}/approvals/{}".format(
-    #                 settings.MEDIA_APP_DIR, proposal_id, filename
-    #             ),
-    #             ContentFile(_file.read()),
-    #         )
-
-    #         document._file = path
-    #         document.save()
-    #         instance.save(
-    #             version_comment=f"Licence ({section}): {filename}"
-    #         )  # to allow revision to be added to reversion history
-    #         # instance.current_proposal.save(version_comment='File Added: {}'.format(filename))
-    #         # # to allow revision to be added to reversion history
-
-    #     return Response(
-    #         [
-    #             dict(
-    #                 input_name=d.input_name,
-    #                 name=d.name,
-    #                 file=d._file.url,
-    #                 id=d.id,
-    #                 can_delete=d.can_delete,
-    #             )
-    #             for d in instance.qaofficer_documents.filter(
-    #                 input_name=section, visible=True
-    #             )
-    #             if d._file
-    #         ]
-    #     )
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    def approval_extend(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            serializer = ApprovalExtendSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            instance.approval_extend(request, serializer.validated_data)
-            serializer = ApprovalSerializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
 
     @detail_route(
         methods=[
