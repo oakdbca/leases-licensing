@@ -81,10 +81,10 @@ export default {
         }
     },
     watch: {
-        invoice_id: async function (newVal, oldVal) {
-            let vm = this;
-            vm.transactions = await utils.fetchInvoiceTransactions(vm.invoice_id);
-            console.log(' ---> amount: ' + vm.invoice_amount);
+        isModalOpen: async function (newVal, oldVal) {
+            if (newVal) {
+                this.transactions = await utils.fetchInvoiceTransactions(this.invoice_id);
+            }
         },
     },
     computed: {

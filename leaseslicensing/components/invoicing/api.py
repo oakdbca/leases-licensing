@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from decimal import Decimal
 
@@ -8,10 +9,13 @@ from rest_framework_datatables.filters import DatatablesFilterBackend
 
 from leaseslicensing.components.invoicing.models import Invoice, InvoiceTransaction
 from leaseslicensing.components.invoicing.serializers import (
+    InvoiceEditOracleInvoiceNumberSerializer,
     InvoiceSerializer,
     InvoiceTransactionSerializer,
 )
 from leaseslicensing.helpers import is_finance_officer
+
+logger = logging.getLogger(__name__)
 
 
 class InvoiceFilterBackend(DatatablesFilterBackend):
@@ -80,7 +84,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"])
+    @action(detail=True, methods=["POST"])
     def record_transaction(self, request, *args, **kwargs):
         if not is_finance_officer(request):
             return Response(
@@ -94,35 +98,43 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         credit = request.data.get("credit", Decimal("0.00"))
         debit = request.data.get("debit", Decimal("0.00"))
 
-        invoice_transaction = InvoiceTransaction(
-            invoice=instance, credit=credit, debit=debit
+        serializer = InvoiceTransactionSerializer(
+            data={
+                "invoice": instance.id,
+                "credit": credit,
+                "debit": debit,
+            }
         )
-
-        serializer = InvoiceTransactionSerializer(invoice_transaction)
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)
 
-        serializer.save()
+        invoice_transaction = serializer.save()
+
+        if Decimal("0.00") == invoice_transaction.invoice.balance:
+            invoice_transaction.invoice.status = Invoice.INVOICE_STATUS_PAID
+            invoice_transaction.invoice.save()
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @action(detail=True, methods=["get"])
-    def enter_oracle_invoice_number(self, request, *args, **kwargs):
+    @action(detail=True, methods=["PATCH"])
+    def edit_oracle_invoice_number(self, request, *args, **kwargs):
         if not is_finance_officer(request):
             return Response(
                 {
-                    "message": "You do not have permission to enter an Oracle Invoice Number"
+                    "message": "You do not have permission to edit an Oracle Invoice Number"
                 }
             )
 
         instance = self.get_object()
+        logger.debug(instance.__dict__)
         oracle_invoice_number = request.data.get("oracle_invoice_number", None)
         if not oracle_invoice_number:
             return Response({"message": "Oracle Invoice Number is required"})
 
-        instance.oracle_invoice_number = oracle_invoice_number
-        serializer = self.get_serializer(instance)
+        serializer = InvoiceEditOracleInvoiceNumberSerializer(
+            instance, data={"oracle_invoice_number": oracle_invoice_number}
+        )
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)

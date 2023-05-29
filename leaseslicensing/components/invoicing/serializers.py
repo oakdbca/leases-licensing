@@ -642,6 +642,15 @@ class InvoiceSerializer(serializers.ModelSerializer):
         return is_finance_officer(request)
 
 
+class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Invoice
+        fields = [
+            "id",
+            "oracle_invoice_number",
+        ]
+
+
 class InvoiceTransactionSerializer(serializers.ModelSerializer):
     cumulative_balance = serializers.DecimalField(
         read_only=True, max_digits=9, decimal_places=2

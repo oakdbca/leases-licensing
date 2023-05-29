@@ -521,7 +521,7 @@ class Invoice(RevisionedMixin, models.Model):
     )
     lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     approval = models.ForeignKey(
-        "Approval", blank=True, null=True, on_delete=models.PROTECT
+        "Approval", blank=False, null=False, on_delete=models.PROTECT
     )
     status = models.CharField(
         max_length=40, choices=INVOICE_STATUS_CHOICES, null=True, blank=True
@@ -565,7 +565,7 @@ class Invoice(RevisionedMixin, models.Model):
         )
         balance = self.amount + credit_debit_sums["credit"] - credit_debit_sums["debit"]
         logger.debug(f"Balance for Invoice: {self} is {balance}")
-        return balance
+        return Decimal(balance).quantize(Decimal("0.01"))
 
 
 class InvoiceTransactionManager(models.Manager):

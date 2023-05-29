@@ -61,13 +61,23 @@
         <InvoiceViewTransactions ref="invoice_view_transactions" :invoice_id="selectedInvoiceId"
             :invoice_lodgement_number="selectedInvoiceLodgementNumber" :invoice_amount="selectedInvoiceAmount">
         </InvoiceViewTransactions>
-
+        <EditOracleInvoiceNumber ref="invoice_edit_oracle_invoice_number" :invoice_id="selectedInvoiceId"
+            :invoice_lodgement_number="selectedInvoiceLodgementNumber"
+            :oracle_invoice_number="selectedInvoiceOracleInvoiceNumber"
+            @oracleInvoiceNumberUpdated="oracleInvoiceNumberUpdated">
+        </EditOracleInvoiceNumber>
+        <InvoiceRecordTransaction ref="invoice_record_transaction" :invoice_id="selectedInvoiceId"
+            :invoice_lodgement_number="selectedInvoiceLodgementNumber" :balance_remaining="selectedInvoiceBalanceRemaining"
+            @transactionRecorded="transactionRecorded">
+        </InvoiceRecordTransaction>
     </div>
 </template>
 
 <script>
 import datatable from '@/utils/vue/datatable.vue'
 import InvoiceViewTransactions from '../internal/invoices/invoice_view_transactions.vue'
+import InvoiceRecordTransaction from '../internal/invoices/invoice_record_transaction.vue'
+import EditOracleInvoiceNumber from '../internal/invoices/invoice_edit_oracle_invoice_number.vue'
 
 import { v4 as uuid } from 'uuid';
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
@@ -123,6 +133,8 @@ export default {
             selectedInvoiceId: null,
             selectedInvoiceLodgementNumber: null,
             selectedInvoiceAmount: null,
+            selectedInvoiceOracleInvoiceNumber: null,
+            selectedInvoiceBalanceRemaining: null,
 
             dateFormat: 'DD/MM/YYYY',
             datepickerOptions: {
@@ -137,6 +149,8 @@ export default {
     components: {
         datatable,
         InvoiceViewTransactions,
+        EditOracleInvoiceNumber,
+        InvoiceRecordTransaction,
     },
     watch: {
         filterInvoiceOrganisation: function () {
@@ -365,10 +379,10 @@ export default {
                     }
                     // In the case that an invoice is overpaid we will want to allow recording a transaction to correct the balance
                     if ('unpaid' === full.status || full.balance != '0.00') {
-                        links += `<a href="#${full.id}">Record Transaction</a><br />`;
+                        links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`;
                     }
                     if (full.is_finance_officer) {
-                        links += `<a href='#${full.id}'>Edit Oracle Invoice Number</a>`;
+                        links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Edit Oracle Invoice Number</a><br />`;
                     }
                     return links
                 },
@@ -381,7 +395,11 @@ export default {
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.oracle_invoice_number
+                    let oracleInvoiceNumber = 'Not Yet Entered';
+                    if (full.oracle_invoice_number) {
+                        oracleInvoiceNumber = full.oracle_invoice_number;
+                    }
+                    return oracleInvoiceNumber;
                 },
             }
         },
@@ -523,15 +541,59 @@ export default {
             vm.selectedInvoiceAmount = Number(amount);
             vm.$refs.invoice_view_transactions.isModalOpen = true;
         },
+        editOracleInvoiceNumber: function (id, lodgement_number, oracle_invoice_number) {
+            let vm = this;
+            vm.selectedInvoiceId = parseInt(id);
+            vm.selectedInvoiceLodgementNumber = lodgement_number;
+            console.log(typeof (oracle_invoice_number))
+            vm.selectedInvoiceOracleInvoiceNumber = oracle_invoice_number;
+            vm.$refs.invoice_edit_oracle_invoice_number.isModalOpen = true;
+        },
+        oracleInvoiceNumberUpdated: function (oracle_invoice_number) {
+            let vm = this;
+            vm.$refs.invoice_edit_oracle_invoice_number.isModalOpen = false;
+            vm.$refs.invoices_datatable.vmDataTable.draw();
+        },
+        recordTransaction: function (id, lodgement_number, balance_remaining) {
+            let vm = this;
+            vm.selectedInvoiceId = parseInt(id);
+            vm.selectedInvoiceLodgementNumber = lodgement_number;
+            vm.selectedInvoiceBalanceRemaining = Number(balance_remaining);
+            vm.$refs.invoice_record_transaction.isModalOpen = true;
+        },
+        transactionRecorded: function () {
+            let vm = this;
+            vm.$refs.invoice_record_transaction.isModalOpen = false;
+            vm.$refs.invoices_datatable.vmDataTable.draw();
+        },
         addEventListeners: function () {
             let vm = this;
 
             vm.$refs.invoices_datatable.vmDataTable.on('click', 'a[data-view-transactions]', function (e) {
                 e.preventDefault();
+                var id = $(this).attr('data-view-transactions');
                 var lodgement_number = $(this).attr('data-invoice-lodgement-number');
                 var amount = $(this).attr('data-invoice-amount');
-                var id = $(this).attr('data-view-transactions');
                 vm.viewTransactions(id, lodgement_number, amount);
+            });
+
+            vm.$refs.invoices_datatable.vmDataTable.on('click', 'a[data-edit-oracle-invoice-number]', function (e) {
+                e.preventDefault();
+                var id = $(this).attr('data-edit-oracle-invoice-number');
+                var lodgement_number = $(this).attr('data-invoice-lodgement-number');
+                var oracle_invoice_number = $(this).attr('data-oracle-invoice-number');
+                if (oracle_invoice_number == 'null') {
+                    oracle_invoice_number = null;
+                }
+                vm.editOracleInvoiceNumber(id, lodgement_number, oracle_invoice_number);
+            });
+
+            vm.$refs.invoices_datatable.vmDataTable.on('click', 'a[data-record-transaction]', function (e) {
+                e.preventDefault();
+                var id = $(this).attr('data-record-transaction');
+                var lodgement_number = $(this).attr('data-invoice-lodgement-number');
+                var balance_remaining = $(this).attr('data-balance-remaining');
+                vm.recordTransaction(id, lodgement_number, balance_remaining);
             });
         },
     },
