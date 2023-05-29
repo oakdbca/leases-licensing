@@ -35,6 +35,10 @@ class ExternalView(LoginRequiredMixin, TemplateView):
         return super().get(*args, **kwargs)
 
 
+class AccountView(LoginRequiredMixin, TemplateView):
+    template_name = "leaseslicensing/dash/index.html"
+
+
 class ReferralView(ReferralOwnerMixin, DetailView):
     model = Referral
     template_name = "leaseslicensing/dash/index.html"
