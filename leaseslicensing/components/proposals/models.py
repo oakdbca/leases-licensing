@@ -2446,7 +2446,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 "details": details.get("details"),
                 "cc_email": details.get("cc_email"),
                 "decision": details.get("decision"),
-                "groups": details.get("groups"),
+                "record_management_number": details.get("record_management_number"),
             }
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             # start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None
@@ -2454,11 +2454,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             self.proposed_issuance_approval = {
                 "approval_type": details.get("approval_type"),
                 # "approval_sub_type": details.get("approval_sub_type"),
-                "groups": details.get("groups"),
                 "selected_document_types": details.get("selected_document_types"),
                 # "approval_type_document_type": details.get("approval_type_document_type"),
                 "cc_email": details.get("cc_email"),
                 "details": details.get("details"),
+                "record_management_number": details.get("record_management_number"),
                 "start_date": details.get("start_date"),
                 "expiry_date": details.get("expiry_date"),
             }
@@ -2549,6 +2549,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             try:
                 self.proposed_decline_status = False
 
+                record_management_number = self.proposed_issuance_approval.get(
+                    "record_management_number", None
+                )
+
                 # if (self.processing_status==Proposal.PROCESSING_STATUS_AWAITING_PAYMENT
                 # and self.fee_paid) or (self.proposal_type=='amendment'):
                 if self.proposal_type == "amendment":
@@ -2600,6 +2604,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                                 "org_applicant": self.org_applicant,
                                 "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
+                                "record_management_number": record_management_number,
                             },
                         )
                         if created:
@@ -2625,6 +2630,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                                 "org_applicant": self.org_applicant,
                                 "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
+                                "record_management_number": record_management_number,
                             },
                         )
                         if created:
@@ -2684,6 +2690,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                                 "submitter": self.submitter,
                                 "org_applicant": self.org_applicant,
                                 "proxy_applicant": self.proxy_applicant,
+                                "record_management_number": record_management_number,
                             },
                         )
 
