@@ -109,43 +109,52 @@
                             <div v-if="loading.length == 0" class="card-body" :id="oBody">
                                 <form class="form-horizontal" action="index.html" method="post">
                                     <div class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Lodgement
+                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Lodgement
                                             Number</label>
-                                        <div class="col-sm-6">
+                                        <div class="col-sm-8">
                                             <input class="form-control" type="text" :value="approval.lodgement_number"
                                                 readonly />
                                         </div>
                                     </div>
                                     <div v-if="approval.original_leaselicense_number" class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Migrated from</label>
-                                        <div class="col-sm-6">
+                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Migrated from</label>
+                                        <div class="col-sm-8">
                                             <input class="form-control" type="text"
                                                 :value="approval.original_leaselicense_number" readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Approval Type</label>
-                                        <div class="col-sm-6">
+                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Approval Type</label>
+                                        <div class="col-sm-8">
                                             <input class="form-control" type="text" :value="approval.application_type"
                                                 readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="start_date" class="col-sm-3 col-form-label">Commencement</label>
-                                        <div class="col-sm-6">
+                                        <label for="start_date" class="col-sm-4 col-form-label">Commencement</label>
+                                        <div class="col-sm-8">
                                             <input class="form-control" id="issue_date" type="text"
                                                 :value="formatDate(approval.start_date)" readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="expiry_date" class="col-sm-3 col-form-label">Expiry</label>
-                                        <div class="col-sm-6">
+                                        <label for="expiry_date" class="col-sm-4 col-form-label">Expiry</label>
+                                        <div class="col-sm-8">
                                             <input class="form-control" id="issue_date" type="text"
                                                 :value="formatDate(approval.expiry_date)" readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="" class="col-sm-3 col-form-label">{{ approvalLabel }}</label>
+                                        <label for="record_management_number" class="col-sm-4 col-form-label">Record
+                                            Management
+                                            Number</label>
+                                        <div class="col-sm-8">
+                                            <input class="form-control" type="text" id="record_management_number"
+                                                :value="approval.record_management_number" readonly />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <label for="" class="col-sm-4 col-form-label">{{ approvalLabel }}</label>
                                         <div class="col-sm-4">
                                             <p><a target="_blank" :href="approval.licence_document"
                                                     class="form-label pull-left">Licence.pdf</a></p>
