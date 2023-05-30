@@ -195,6 +195,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "groups_names_list",
             "categories_list",
             "site_name",
+            "record_management_number",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
