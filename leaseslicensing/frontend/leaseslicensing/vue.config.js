@@ -1,5 +1,7 @@
 const path = require('path');
 const webpack = require('webpack');
+const MomentLocalesPlugin = require('moment-locales-webpack-plugin');
+
 // Useful plugin to find out what is making the bundle so big
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const port = process.env.PORT ? parseInt(process.env.PORT) : 9072;
@@ -22,6 +24,7 @@ module.exports = {
                 swal: 'sweetalert2',
                 _: 'lodash',
             }),
+            new MomentLocalesPlugin(),
             // new BundleAnalyzerPlugin(),
         ],
         devServer: {
