@@ -38,9 +38,6 @@ export default {
             editor: ClassicEditor,
         }
     },
-    components: {
-        ckeditor: ClassicEditor.component
-    },
     watch: {
         detailsText: function () {
             // Parent component can subscribe this event in order to update text
