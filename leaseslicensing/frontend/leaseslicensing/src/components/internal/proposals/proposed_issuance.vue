@@ -39,21 +39,11 @@ export default {
             type: String,
             required: true
         },
-        // submitter_email: {
-        //     type: String,
-        //     required: true
-        // },
-        // applicant_email: {
-        //     type: String,
-        //     //default: ''
-        // },
         proposedApprovalKey: {
             type: String,
-            //default: ''
         },
         proposedApprovalState: {
             type: String,
-            //default: ''
         },
         proposal: {
             type: Object,
@@ -65,6 +55,15 @@ export default {
             isModalOpen: false,
             title: "",
         }
+    },
+    watch: {
+        isModalOpen: function (newVal, oldVal) {
+            if (newVal) {
+                this.$nextTick(() => {
+                    this.$refs.proposed_approval_form.focus();
+                });
+            }
+        },
     },
     computed: {
         submitter_email: function () {
@@ -80,7 +79,7 @@ export default {
     },
     methods: {
         ok: async function () {
-            await this.$refs.proposed_approval_form.sendData();
+            await this.$refs.proposed_approval_form.validateForm();
         },
         cancel: function () {
             this.close()
@@ -97,17 +96,5 @@ export default {
             this.title = this.$refs.proposed_approval_form.title;
         });
     },
-    created: async function () {
-    }
 }
 </script>
-
-<style lang="css">
-.modal-input-row {
-    margin-bottom: 20px;
-}
-
-.btn-light:hover {
-    background-color: lightgrey;
-}
-</style>
