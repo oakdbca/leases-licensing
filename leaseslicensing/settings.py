@@ -248,6 +248,7 @@ if DEBUG:
             "console": {
                 "class": "logging.StreamHandler",
                 "level": "DEBUG",
+                "formatter": "verbose",
             },
             "leaseslicensing_rotating_file": {
                 "level": "INFO",
