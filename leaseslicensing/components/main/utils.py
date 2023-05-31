@@ -7,7 +7,10 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.gis.geos.collections import MultiPolygon
 from django.core.cache import cache
 from ledger_api_client.models import EmailUser
+from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
+from leaseslicensing.components.competitive_processes.models import CompetitiveProcessParty
+from leaseslicensing.settings import GROUP_NAME_CHOICES
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +50,41 @@ def _get_params(
         "maxFeatures": 50000,
         "outputFormat": "application/json",
     }
+
+
+def get_polygon_source(geometry_obj):
+    from leaseslicensing.components.competitive_processes.models import CompetitiveProcessGeometry
+    from leaseslicensing.components.proposals.models import ProposalGeometry
+
+    source = ""
+
+    if not geometry_obj.drawn_by:
+        source = "Unknown"
+    elif isinstance(geometry_obj, ProposalGeometry) and geometry_obj.drawn_by in [
+            geometry_obj.proposal.ind_applicant,
+        ]:
+        # TODO: What about an applicant on behalf of an organisation (org_applicant)?
+
+        source = "Applicant"
+    elif isinstance(geometry_obj, CompetitiveProcessGeometry) and geometry_obj.drawn_by in (
+        CompetitiveProcessParty.objects
+            .filter(
+                competitive_process_id=geometry_obj.competitive_process.id)
+            .exclude(person_id__isnull=True)
+            .values_list("person_id", flat=True)
+        ):
+        # TODO: Check if this is correct. Can an applicant draw a CP geometry?
+
+        source = "Applicant"
+    else:
+        # System group names, e.g. lease_license_assessor
+        system_groups = SystemGroup.objects.filter(name__in=[x for x in zip(*GROUP_NAME_CHOICES)][0])
+        # System groups member ids
+        system_group_member = list(set([itm for group in system_groups for itm in group.get_system_group_member_ids()]))
+        if geometry_obj.drawn_by in system_group_member:
+            source = "Assessor"
+
+    return source
 
 
 def get_dbca_lands_and_waters_geojson():
@@ -102,6 +140,8 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         response = requests.get(
             f"{settings.KMI_SERVER_URL}{server_path}", params=params
         )
+    if not response.ok:
+        logger.error(f"Error getting features from KMI: {response.text}")
 
     logger.debug(f"Request took: {response.elapsed.total_seconds()}")
     logger.debug(f"Raw response: {response.text}")
@@ -117,6 +157,14 @@ def get_gis_data_for_proposal(proposal, layer_name, properties):
     multipolygon = MultiPolygon(
         list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
     )
+    if not multipolygon.valid:
+        from shapely import wkt
+        from shapely.validation import make_valid, explain_validity
+
+        logger.debug(f"Invalid multipolygon for proposal: {proposal.id}: {multipolygon.valid_reason}")
+
+        multipolygon = make_valid(wkt.loads(multipolygon.wkt))
+        logger.debug(f"Running MakeValid. New validity: {explain_validity(multipolygon)}")
 
     if len(properties) > 1:
         properties_comma_list = ",".join(properties)

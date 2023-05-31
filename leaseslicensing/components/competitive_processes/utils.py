@@ -19,7 +19,7 @@ def format_data(competitive_process):
     return competitive_process
 
 
-def save_geometry(instance, geometry, action_name):
+def save_geometry(request, instance, geometry, action_name):
     # geometry
     geometry = json.loads(geometry) if isinstance(geometry, str) else geometry
     lands_geos_data = get_dbca_lands_and_waters_geos()
@@ -64,6 +64,8 @@ def save_geometry(instance, geometry, action_name):
                 raise serializers.ValidationError(
                     f"Error fetching geometry for source {source}")
 
+            data["drawn_by"] = geom.drawn_by if geom.drawn_by else request.user.id
+
             polygons_to_delete.remove(geom)
             serializer = CompetitiveProcessGeometrySerializer(
                 geom,
@@ -73,6 +75,7 @@ def save_geometry(instance, geometry, action_name):
             serializer.is_valid(raise_exception=True)
             serializer.save()
         elif geometry:
+            data["drawn_by"] = request.user.id
             # Create new polygon
             serializer = CompetitiveProcessGeometrySerializer(
                 data=data,

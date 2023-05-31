@@ -86,6 +86,10 @@ export function set_mode(mode) {
     } else {
         this.mode = mode
     }
+
+    this.drawing = false;
+    this.measuring = false;
+
     if (this.mode === 'layer') {
         this.clearMeasurementLayer()
         _helper.toggle_draw_measure_license.bind(this)(false, false)
@@ -94,8 +98,10 @@ export function set_mode(mode) {
         this.sketchCoordinates = [[]]
         this.sketchCoordinatesHistory = [[]]
         _helper.toggle_draw_measure_license.bind(this)(false, true)
+        this.drawing = true;
     } else if (this.mode === 'measure') {
         _helper.toggle_draw_measure_license.bind(this)(true, false)
+        this.measuring = true;
     } else {
         console.error(`Cannot set mode ${mode}`)
     }
@@ -129,6 +135,51 @@ export function polygon_style(feature) {
     });
 }
 
+/**
+* Validate feature callback function. Calls `finnishDrawing` on the map component
+* when the feature is valid. A feature is condidered valid when it intersects with
+* the DBCS legislated land-water layer.
+*/
+export function validateFeature () {
+   let vm = this;
+   console.log("Validate feature");
+   // Get the WKT representation of the drawn polygon
+   let polygon_wkt = vm.$refs.component_map.featureToWKT();
+
+   // The geoserver url
+   var owsUrl = `${env['kmi_server_url']}/geoserver/public/ows/?`;
+   // Create a params dict for the WFS request to the land-water layer
+   let paramsDict = vm.$refs.component_map.queryParamsDict("landwater");
+   let geometry_name = vm.$refs.component_map.owsQuery.landwater.geometry;
+   paramsDict["CQL_FILTER"] = `INTERSECTS(${geometry_name},${polygon_wkt})`;
+
+   // Turn params dict into a param query string
+   let params = new URLSearchParams(paramsDict).toString();
+   let query = `${owsUrl}${params}`;
+
+   vm.$refs.component_map.validateFeatureQuery(query).then(async (features) => {
+       if (features.length === 0) {
+           console.warn("New feature is not valid");
+           vm.$refs.component_map.errorMessage(
+               "The polygon you have drawn does not intersect with any DBCA lands or water.");
+
+       } else {
+           console.log("New feature is valid", features);
+           vm.$refs.component_map.finishDrawing();
+       }
+   });
+}
+
+export var owsQuery = {
+    "version": "1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported by the geoserver
+    "landwater": {
+        "typeName": "public:dbca_legislated_lands_and_waters",
+        "srsName": "EPSG:4326",
+        "propertyName": "objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting",
+        "geometry": "wkb_geometry",
+    },
+}
+
 
 /**
  * Module with map related helper functions
@@ -137,14 +188,14 @@ const _helper = {
     /**
      * Toggles measure and polygon layer active or inactive
      * @param {boolean} drawForMeasure Whether to set the measure layer active or inactive
-     * @param {boolean} drawForLeaselicence Whether to set the polygon layer active or inactive
+     * @param {boolean} drawForModel Whether to set the model's polygon layer active or inactive
      */
-    toggle_draw_measure_license: function (drawForMeasure, drawForLeaselicence) {
+    toggle_draw_measure_license: function (drawForMeasure, drawForModel) {
         if (this.drawForMeasure) {
             this.drawForMeasure.setActive(drawForMeasure)
         }
-        if (this.drawForLeaselicence) {
-            this.drawForLeaselicence.setActive(drawForLeaselicence)
+        if (this.drawForModel) {
+            this.drawForModel.setActive(drawForModel)
         }
     }
 }

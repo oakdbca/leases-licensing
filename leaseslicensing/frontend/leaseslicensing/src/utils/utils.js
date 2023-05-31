@@ -269,4 +269,27 @@ export default {
                 });
         });
     },
+    /**
+     * Generic function to fetch data from an endpoint
+     * @param {String} url The url endpoint to fetch data from
+     * @returns a Promise
+     */
+    fetchUrl: async function(url){
+        return new Promise((resolve, reject) => {
+            fetch(url)
+                .then(async response => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error = (data && data.message) || response.statusText;
+                        console.log(error)
+                        reject(error);
+                    }
+                    resolve(data)
+                })
+                .catch(error => {
+                    console.error("There was an error!", error);
+                    reject(error)
+                });
+            });
+    }
 }
