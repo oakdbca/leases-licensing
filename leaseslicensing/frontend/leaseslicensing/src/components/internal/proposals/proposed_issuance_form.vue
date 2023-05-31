@@ -1,81 +1,83 @@
 <template lang="html">
-    <div id="proposedIssuanceApproval">
+    <div :id="'proposedIssuanceApproval' + uuid">
         <div class="container-fluid">
-            <form class="form-horizontal" name="approvalForm">
-                <div class="row">
+            <form class="form-horizontal needs-validation" :id="'proposedIssuanceForm' + uuid" name="proposedIssuanceForm"
+                novalidate>
+                <div class="row pt-2">
                     <VueAlert :show.sync="showError" type="danger"><strong v-html="errorString"></strong></VueAlert>
                     <div class="col-sm-12" v-if="registrationOfInterest">
                         <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="control-label pull-left" for="Name">{{ decisionLabel }}</label>
-                            </div>
-                            <div v-for="(text, key) in approvalDecisionText" :key="key">
-                                <div class="form-check col-sm-12">
-                                    <input type="radio" class="form-check-input" :name="key" :id="key" :value="key"
-                                        v-model="selectedDecision" :disabled="readonly" />
-                                    <label class="form-check-label" :for="key" style="font-weight:normal">{{ text
-                                    }}</label>
-                                </div>
+                            <label class="col-sm-3 col-form-label">{{ decisionLabel }}</label>
+                            <div class="col-sm-9">
+                                <ul class="list-group">
+                                    <li v-for="(text, key) in approvalDecisionText" :key="key" class="list-group-item">
+                                        <input type="radio" class="form-check-input me-3" :name="key" :id="key" :value="key"
+                                            v-model="selectedDecision" :disabled="readonly" />
+                                        <label class="form-check-label" :for="key" style="font-weight:normal">{{ text
+                                        }}</label>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label v-if="withApprover || readonly" class="control-label pull-left"
-                                    for="Name">Details</label>
-                                <label v-else class="control-label pull-left" for="Name">Proposed Details</label>
-                            </div>
+                            <label for="registration_of_interest_details" class="col-sm-3 col-form-label">Details</label>
                             <div class="col-sm-9">
                                 <RichText :proposalData="proposedDecisionDetails" ref="registration_of_interest_details"
                                     id="registration_of_interest_details" :can_view_richtext_src=true
-                                    :key="proposedApprovalKey" v-model="proposedDecisionDetails" :readonly="readonly" />
+                                    :key="proposedApprovalKey" @textChanged="updateProposedDecisionDetails"
+                                    :readonly="readonly" />
+                                <div class="details-invalid-feedback invalid-feedback">
+                                    Please enter some details.
+                                </div>
                             </div>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label v-if="withApprover || readonly" class="control-label pull-left" for="Name">BCC
-                                    email</label>
-                                <label v-else class="control-label pull-left" for="Name">Proposed BCC email</label>
-                            </div>
+                        <div class="row mb-4">
+                            <label for="approval_bcc" class="col-sm-3 col-form-label">Proposed BCC email</label>
                             <div class="col-sm-9">
-                                <input type="text" class="form-control" name="approval_bcc" style="width:70%;"
-                                    ref="bcc_email" v-model="approval.bcc_email" :readonly="readonly">
+                                <input type="text" class="form-control" name="approval_bcc" ref="bcc_email"
+                                    v-model="approval.bcc_email" :readonly="readonly">
                             </div>
                         </div>
-                        <div class="row mb-3">
+                        <div class="row pt-2">
                             <div class="col-sm-12">
-                                <label v-if="submitter_email && applicant_email" class="control-label pull-left"
-                                    for="Name">After approving this proposal, approval will be emailed to
-                                    {{ submitter_email }} and {{ applicant_email }}.</label>
-                                <label v-else class="control-label pull-left" for="Name">After approving this proposal,
-                                    approval will be emailed to {{ submitter_email }}.</label>
+                                <BootstrapAlert
+                                    v-if="submitter_email && applicant_email && (submitter_email != applicant_email)">
+                                    After approving this application, the approval will be emailed to
+                                    <span class="fw-bold">{{ submitter_email }}</span> and <span class="fw-bold">{{
+                                        applicant_email }}</span>
+                                </BootstrapAlert>
+                                <BootstrapAlert v-else>
+                                    After approving this application, the approval will be emailed to
+                                    <span class="fw-bold">{{ submitter_email }}</span>
+                                </BootstrapAlert>
                             </div>
                         </div>
                     </div>
                     <div class="col-sm-12" v-if="leaseLicence">
                         <div class="form-group">
                             <div class="row mb-3">
-                                <div class="col-sm-3">
-                                    <label class="control-label pull-left" for="approvalType">Approval Type</label>
-                                </div>
+                                <label for="approvalType" class="col-sm-3 col-form-label">Approval Type</label>
                                 <div class="col-sm-9">
                                     <select :disabled="readonly" ref="select_approvaltype" class="form-control"
-                                        v-model="selectedApprovalTypeId">
+                                        v-model="selectedApprovalTypeId" required>
                                         <option></option>
                                         <option v-for="atype in approvalTypes" :value="atype.id" :key="atype.name">
                                             {{ atype.name }}</option>
                                     </select>
+                                    <div class="invalid-feedback">
+                                        Please select an Approval Type.
+                                    </div>
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-sm-3">
-                                    <label v-if="withApprover" class="control-label pull-left"
-                                        for="Name">Commencement</label>
-                                    <label v-else class="control-label pull-left" for="Name">Commencement</label>
-                                </div>
+                                <label for="start_date" class="col-sm-3 col-form-label">Commencement</label>
                                 <div class="col-sm-9">
                                     <div class="input-group date" ref="start_date">
                                         <input :disabled="readonly" type="date" class="form-control" name="start_date"
-                                            placeholder="DD/MM/YYYY" v-model="approval.start_date">
+                                            v-model="approval.start_date" required>
+                                        <div class="invalid-feedback">
+                                            Please select a commencement date.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -84,15 +86,14 @@
                                 </VueAlert>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-sm-3">
-                                    <label v-if="withApprover || readonly" class="control-label pull-left"
-                                        for="Name">Expiry</label>
-                                    <label v-else class="control-label pull-left" for="Name">Expiry</label>
-                                </div>
+                                <label for="due_date" class="col-sm-3 col-form-label">Expiry</label>
                                 <div class="col-sm-9">
                                     <div class="input-group date" ref="due_date">
                                         <input :disabled="readonly" type="date" class="form-control" name="due_date"
-                                            placeholder="DD/MM/YYYY" v-model="approval.expiry_date">
+                                            v-model="approval.expiry_date" required>
+                                        <div class="invalid-feedback">
+                                            Please select a expiry date.
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -101,22 +102,21 @@
                                 </VueAlert>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-sm-3">
-                                    <label v-if="withApprover" class="control-label pull-left" for="Name">Details</label>
-                                    <label v-else class="control-label pull-left" for="Name">Details</label>
-                                </div>
+                                <label for="lease_licence_details" class="col-sm-3 col-form-label">Details</label>
                                 <div class="col-sm-9">
                                     <RichText :proposalData="approval.details" ref="lease_licence_details"
                                         id="lease_licence_details" :can_view_richtext_src=true
                                         :key="selectedApprovalTypeName"
                                         :placeholder_text="selectedApprovalTypeDetailsPlaceholder"
-                                        v-model="approval.details" :readonly="readonly" />
+                                        v-model="approval.details" @textChanged="updateProposedDecisionDetails"
+                                        :readonly="readonly" />
+                                    <div class="details-invalid-feedback invalid-feedback">
+                                        Please enter some details.
+                                    </div>
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-sm-3">
-                                    <label for="supporting_documents">File</label>
-                                </div>
+                                <label for="proposed_approval_documents" class="col-sm-3 col-form-label">File</label>
                                 <div class="col-sm-9">
                                     <FileField ref="proposed_approval_documents" name="proposed_approval_documents"
                                         id="proposed_approval_documents" :isRepeatable="true"
@@ -125,11 +125,7 @@
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-sm-3">
-                                    <label v-if="withApprover || readonly" class="control-label pull-left" for="Name">CC
-                                        email</label>
-                                    <label v-else class="control-label pull-left" for="Name">Proposed CC email</label>
-                                </div>
+                                <label for="approval_cc" class="col-sm-3 col-form-label">CC Emails</label>
                                 <div class="col-sm-9">
                                     <input type="text" class="form-control" name="approval_cc" ref="cc_email"
                                         v-model="approval.cc_email" :disabled="readonly">
@@ -148,12 +144,15 @@
                         <div>
                             <div class="row mb-3">
                                 <div class="col-sm-4">
-                                    <label class="control-label pull-left" for="recordManagementNumber">Record Management
+                                    <label class="form-label" for="recordManagementNumber">Record Management
                                         Number</label>
                                 </div>
                                 <div class="col-sm-8">
                                     <input class="form-control" v-model="approval.record_management_number" type="text"
                                         required>
+                                    <div class="invalid-feedback">
+                                        Please enter a record management number.
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -161,8 +160,14 @@
                 </div>
             </form>
         </div>
-        <p v-if="can_preview">Click <a href="#" @click.prevent="preview">here</a> to preview the approval letter.</p>
-
+        <div v-if="can_preview">
+            <ul class="list-group mx-2">
+                <li class="list-group-item"><i class="fa-solid fa-envelope text-primary"></i> Click <a href="#"
+                        @click.prevent="preview">here</a> to preview the approval
+                    letter.</li>
+            </ul>
+            <p v-if="can_preview"></p>
+        </div>
         <div slot="footer">
         </div>
     </div>
@@ -172,6 +177,8 @@
 import { constants } from '@/utils/hooks'
 import VueAlert from '@vue-utils/alert.vue'
 import RichText from '@/components/forms/richtext.vue'
+import { v4 as uuid } from 'uuid';
+
 import {
     api_endpoints,
     helpers,
@@ -239,7 +246,8 @@ export default {
     },
     data: function () {
         return {
-            selectedDecision: null,
+            uuid: uuid(),
+            selectedDecision: "approve_lease_licence",
             isModalOpen: false,
             form: null,
             approval: {},
@@ -250,7 +258,7 @@ export default {
             //state: 'proposed_approval',
             issuingApproval: false,
             approvalDecisionText: {
-                "approve_lease_licence": "Invite applicant to apply for a lease or licence",
+                "approve_lease_licence": "Invite Applicant to Apply for a Lease or Licence",
                 "approve_competitive_process": "Start Competitive process",
                 "decline_application": "Decline Application"
             },
@@ -271,7 +279,6 @@ export default {
                 allowInputToggle: true
             },
             warningString: 'Please attach Level of Approval document before issuing Approval',
-            uuid: 0,
         }
     },
     computed: {
@@ -334,7 +341,7 @@ export default {
             return vm.startDateError;
         },
         title: function () {
-            return this.processing_status == 'With Approver' ? 'Issue Approval' : `Propose to Approve Application: ${this.proposal.lodgement_number}`;
+            return this.processing_status == 'With Approver' ? `Issue Approval for ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}` : `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`;
         },
         is_amendment: function () {
             return this.proposal_type == 'Amendment' ? true : false;
@@ -366,6 +373,17 @@ export default {
         },
     },
     methods: {
+        focus() {
+            this.$nextTick(() => {
+                this.$refs.registration_of_interest_details.focus();
+            });
+        },
+        updateProposedDecisionDetails(detailsText) {
+            console.log('detailsText', detailsText);
+            if (detailsText) {
+                $('.details-invalid-feedback').hide();
+            }
+        },
         handleApprovalTypeChangeEvent(id) {
             this.updateSelectedApprovalType(id);
             this.initSelectDocument();
@@ -407,21 +425,36 @@ export default {
             $('body').append(formElement);
             $(formElement).submit();
         },
-        ok: async function () {
-            await this.sendData();
-        },
-        cancel: function () {
-            this.close()
-        },
-        close: function () {
-            this.isModalOpen = false;
-            this.approval = {};
-            this.errors = false;
-        },
-        fetchContact: async function (id) {
-            const response = await fetch(api_endpoints.contact(id));
-            this.contact = await response.json();
-            this.isModalOpen = true;
+        validateForm: function () {
+            let vm = this;
+            var form = document.getElementById('proposedIssuanceForm' + vm.uuid)
+            if (vm.registrationOfInterest) {
+                if ('' == this.$refs.registration_of_interest_details.detailsText) {
+                    vm.$nextTick(() => {
+                        this.$refs.registration_of_interest_details.focus();
+                        $('.details-invalid-feedback').show();
+                    });
+                    return false;
+                }
+            }
+            if (vm.leaseLicence) {
+                if ('' == this.$refs.lease_licence_details.detailsText) {
+                    vm.$nextTick(() => {
+                        this.$refs.lease_licence_details.focus();
+                        $('.details-invalid-feedback').show();
+                    });
+                    return false;
+                }
+            }
+            if (form.checkValidity()) {
+                console.log('Form valid');
+                vm.sendData();
+            } else {
+                form.classList.add('was-validated');
+                $('#proposedIssuanceForm' + vm.uuid).find(":invalid").first().focus();
+            }
+
+            return false;
         },
         sendData: async function () {
             this.errors = false;
@@ -450,7 +483,6 @@ export default {
                             icon: 'success',
                             confirmButtonText: 'OK'
                         })
-                        this.close();
                         this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
                     } else {
                         this.errors = true;
@@ -464,7 +496,12 @@ export default {
                     })
                     if (response.ok) {
                         this.issuingApproval = false;
-                        this.close();
+                        Swal.fire({
+                            title: `Approval Issued: ${this.proposal.lodgement_number}`,
+                            text: 'Issued successfully.',
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        })
                         this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
                     } else {
                         this.errors = true;
@@ -487,7 +524,7 @@ export default {
             $(vm.$refs.select_approvaltype).select2({
                 "theme": "bootstrap-5",
                 allowClear: true,
-                placeholder: "Select an approval type",
+                placeholder: "Select an Approval Type",
             }).on("select2:select", function (e) {
                 var selected = $(e.currentTarget);
                 vm.handleApprovalTypeChangeEvent(Number(selected.val()));
@@ -503,7 +540,7 @@ export default {
     },
     created: async function () {
         let vm = this;
-        vm.form = document.forms.approvalForm;
+        vm.form = document.forms.proposedIssuanceForm;
         this.approval = Object.assign({}, this.proposal.proposed_issuance_approval);
 
         let initialisers = [
@@ -535,3 +572,11 @@ export default {
     },
 }
 </script>
+<style scoped>
+/* input#details {
+    pointer-events: none;
+    opacity: 0;
+    height: 1px;
+    display: block;
+} */
+</style>
