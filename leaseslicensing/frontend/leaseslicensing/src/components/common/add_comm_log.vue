@@ -91,10 +91,10 @@
                                                 </li>
                                             </ul>
                                         </template>
-                                        <div class="border rounded mt-3 p-2">
-                                            <a href="" @click.prevent="attachAnother"><i class="fa fa-add"></i> Add Another
-                                                File</a>
-
+                                        <div class="border-top mt-3 p-2">
+                                            <button class="btn btn-sm btn-primary" @click.prevent="attachAnother"><i
+                                                    class="fa fa-add"></i> Add Another
+                                                File</button>
                                         </div>
                                     </div>
                                 </div>
