@@ -269,7 +269,7 @@ import Confirmation from '@/components/common/confirmation.vue'
 */
 export default {
     name: 'ApplicationForm',
-    emits: ["refreshFromResponse"],
+    emits: ['refreshFromResponse', 'formMounted'],
     props: {
         show_related_items_tab: {
             type: Boolean,
