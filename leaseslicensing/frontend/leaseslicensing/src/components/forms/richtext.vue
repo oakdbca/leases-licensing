@@ -11,6 +11,8 @@
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
 
 export default {
+    name: 'RichText',
+    emits: ['textChanged'],
     props: [
         "id",
         "name",
@@ -43,6 +45,14 @@ export default {
             // Parent component can subscribe this event in order to update text
             this.$emit('textChanged', this.detailsText)
         }
+    },
+    methods: {
+        focus() {
+            console.log('focus rich text')
+            this.$nextTick(() => {
+                $('.ck-editor__editable').focus();
+            })
+        },
     },
     created: function () {
         if (this.proposalData) {
