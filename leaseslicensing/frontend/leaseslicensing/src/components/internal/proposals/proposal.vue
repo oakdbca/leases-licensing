@@ -28,10 +28,7 @@
             <div class="col-md-9">
                 <!-- Main contents -->
                 <template v-if="display_approval_screen">
-                    <ApprovalScreen
-                        :proposal="proposal"
-                        :readonly="readonly"
-                        />
+                    <ApprovalScreen :proposal="proposal" :readonly="readonly" />
                 </template>
 
                 <template v-if="display_requirements">
@@ -544,13 +541,11 @@ export default {
         canEditComments: function () {
             let canEdit = false;
             if ([constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID, constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID].includes(this.proposal.processing_status_id)) {
-                console.log("correct status")
                 if (this.proposal.application_type.name === constants.APPLICATION_TYPES.LEASE_LICENCE) {
                     if (this.proposal.accessing_user_roles.includes(constants.ROLES.LEASE_LICENCE_ASSESSOR.ID)) {
                         canEdit = true;
                     }
                 } else if (this.proposal.application_type.name === constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST) {
-                    console.log("ROG");
                     if (this.proposal.accessing_user_roles.includes(constants.ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID)) {
                         canEdit = true;
                     }
@@ -1158,7 +1153,7 @@ export default {
         },
         proposedApproval: function () {
             this.proposedApprovalState = 'proposed_approval';
-            this.uuid++;
+            // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
                 //this.$refs.proposed_approval.approval = this.proposal.proposed_issuance_approval != null ? Object.assign({}, this.proposal.proposed_issuance_approval) : {};
                 this.$refs.proposed_approval.isModalOpen = true;
@@ -1191,7 +1186,7 @@ export default {
                 )
             } else {
                 this.proposedApprovalState = 'final_approval';
-                this.uuid++;
+                // this.uuid++; Why do we need to reload the whole form when we open a modal!?
                 this.$nextTick(() => {
                     //this.$refs.proposed_approval.approval = this.proposal.proposed_issuance_approval != null ? helpers.copyObject(this.proposal.proposed_issuance_approval) : {};
                     //this.$refs.proposed_approval.isApprovalLevelDocument = this.isApprovalLevelDocument;
@@ -1320,20 +1315,20 @@ export default {
                         } else {
                             return await response.json();
                         }
-            })
-            .then(data => {
-                vm.proposal = Object.assign({}, data);
-                vm.updateAssignedOfficerSelect();
-            })
-            .catch(error => {
-                this.updateAssignedOfficerSelect();
-                console.log(error);
-                swal.fire({
-                    title: 'Proposal Error',
-                    text: error,
-                    icon: 'error'
+                    })
+                .then(data => {
+                    vm.proposal = Object.assign({}, data);
+                    vm.updateAssignedOfficerSelect();
                 })
-            })
+                .catch(error => {
+                    this.updateAssignedOfficerSelect();
+                    console.log(error);
+                    swal.fire({
+                        title: 'Proposal Error',
+                        text: error,
+                        icon: 'error'
+                    })
+                })
         },
         switchStatus: async function (new_status) {
             let data = { 'status': new_status, 'approver_comment': this.approver_comment };
@@ -1491,7 +1486,6 @@ export default {
         },
     },
     mounted: function () {
-        console.log('in mounted')
         let vm = this
         this.$nextTick(() => {
             vm.addEventListeners()
