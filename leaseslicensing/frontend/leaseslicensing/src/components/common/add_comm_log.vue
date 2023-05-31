@@ -8,10 +8,8 @@
                         <div class="col-sm-12">
                             <div class="form-group">
                                 <div class="row mb-2">
-                                    <div class="col-sm-3">
-                                        <label class="form-label" for="to">To</label>
-                                    </div>
-                                    <div class="col-sm-4">
+                                    <label class="col-form-label col-sm-3" for="to">To</label>
+                                    <div class="col-sm-9">
                                         <input type="text" class="form-control" id="to" name="to" v-model="comms.to"
                                             autofocus required>
                                     </div>
@@ -19,20 +17,16 @@
                             </div>
                             <div class="form-group">
                                 <div class="row mb-2">
-                                    <div class="col-sm-3">
-                                        <label class="form-label" for="Name">From</label>
-                                    </div>
-                                    <div class="col-sm-4">
+                                    <label class="col-form-label col-sm-3" for="fromm">From</label>
+                                    <div class="col-sm-9">
                                         <input type="text" class="form-control" name="fromm" v-model="comms.fromm" required>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <div class="row mb-2">
-                                    <div class="col-sm-3">
-                                        <label class="form-label" for="Name">Type</label>
-                                    </div>
-                                    <div class="col-sm-4">
+                                    <label class="col-form-label col-sm-3" for="type">Type</label>
+                                    <div class="col-sm-9">
                                         <select class="form-select" name="type" v-model="comms.type" required>
                                             <option value="" selected disabled>Select Type</option>
                                             <option value="email">Email</option>
@@ -44,56 +38,64 @@
                             </div>
                             <div class="form-group">
                                 <div class="row mb-2">
-                                    <div class="col-sm-3">
-                                        <label class="form-label" for="Name">Subject/Description</label>
-                                    </div>
+                                    <label class="col-form-label col-sm-3" for="subject">Subject</label>
                                     <div class="col-sm-9">
-                                        <input type="text" class="form-control" name="subject" style="width:70%;"
-                                            v-model="comms.subject" required>
+                                        <input type="text" class="form-control" name="subject" v-model="comms.subject"
+                                            required>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <div class="row mb-2">
-                                    <div class="col-sm-3">
-                                        <label class="form-label" for="Name">Text</label>
-                                    </div>
+                                    <label class="col-form-label col-sm-3" for="text">Text</label>
                                     <div class="col-sm-9">
-                                        <textarea name="text" class="form-control" style="width:70%;" v-model="comms.text"
-                                            required></textarea>
+                                        <textarea name="text" class="form-control" v-model="comms.text" required></textarea>
                                     </div>
                                 </div>
                             </div>
                             <div class="form-group">
                                 <div class="row mb-2">
-                                    <div class="col-sm-3">
-                                        <label class="form-label" for="Name">Attachments</label>
-                                    </div>
+                                    <label class="col-form-label col-sm-3" for="">Attachments</label>
                                     <div class="col-sm-9">
-                                        <template v-for="(f, i) in files">
-                                            <div :class="'row top-buffer file-row-' + i">
-                                                <div class="col-sm-4">
-                                                    <span v-if="f.file == null" class="btn btn-primary btn-file pull-left">
-                                                        Attach File <input type="file" :name="'file-upload-' + i"
-                                                            :class="'file-upload-' + i"
-                                                            @change="uploadFile('file-upload-' + i, f)" />
-                                                    </span>
-                                                    <span v-else class="btn btn-info btn-file pull-left">
-                                                        Update File <input type="file" :name="'file-upload-' + i"
-                                                            :class="'file-upload-' + i"
-                                                            @change="uploadFile('file-upload-' + i, f)" />
-                                                    </span>
-                                                </div>
-                                                <div class="col-sm-4">
-                                                    <span>{{ f.name }}</span>
-                                                </div>
-                                                <div class="col-sm-4">
-                                                    <button @click="removeFile(i)" class="btn btn-danger">Remove</button>
-                                                </div>
-                                            </div>
+                                        <template v-if="files && files.length">
+                                            <ul class="list-group list-group">
+                                                <li class="list-group-item rounded" v-for="(f, i) in files">
+                                                    <div class="row">
+                                                        <div class="col">
+                                                            <span v-if="f.file == null"
+                                                                class="btn btn-primary btn-sm btn-file float-start"><i
+                                                                    class="fa fa-upload" aria-hidden="true"></i>
+
+                                                                Attach File <input type="file" :name="'file-upload-' + i"
+                                                                    :class="'file-upload-' + i"
+                                                                    @change="uploadFile('file-upload-' + i, f)" />
+                                                            </span>
+                                                            <span v-else
+                                                                class="btn btn-secondary btn-file btn-sm float-start"><i
+                                                                    class="fa fa-edit"></i>
+                                                                Update File <input type="file" :name="'file-upload-' + i"
+                                                                    :class="'file-upload-' + i"
+                                                                    @change="uploadFile('file-upload-' + i, f)" />
+                                                            </span>
+                                                        </div>
+                                                        <div class="col-7 text-truncate">
+                                                            {{ f.name }}
+                                                        </div>
+                                                        <div class="col-sm-1">
+                                                            <button v-if="f.file || i > 0" @click.prevent="removeFile(i)"
+                                                                class="btn btn-danger btn-sm"><i class="fa fa-trash"
+                                                                    aria-hidden="true"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </li>
+                                            </ul>
                                         </template>
-                                        <a href="" @click.prevent="attachAnother"><i
-                                                class="fa fa-lg fa-plus top-buffer-2x"></i></a>
+                                        <div class="border rounded mt-3 p-2">
+                                            <a href="" @click.prevent="attachAnother"><i class="fa fa-add"></i> Add Another
+                                                File</a>
+
+                                        </div>
                                     </div>
                                 </div>
                             </div>
