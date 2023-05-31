@@ -1114,7 +1114,9 @@ export default {
                         let resData = await res.json();
                         vm.proposal = Object.assign({}, resData);
                         vm.$nextTick(async () => {
-                            vm.$refs.application_form.incrementComponentMapKey();
+                            if (vm.$refs.application_form != undefined) {
+                                vm.$refs.application_form.incrementComponentMapKey();
+                            }
                         });
                     })
                 } else {

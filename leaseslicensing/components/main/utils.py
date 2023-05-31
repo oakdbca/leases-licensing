@@ -140,6 +140,8 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         response = requests.get(
             f"{settings.KMI_SERVER_URL}{server_path}", params=params
         )
+    if not response.ok:
+        logger.error(f"Error getting features from KMI: {response.text}")
 
     logger.debug(f"Request took: {response.elapsed.total_seconds()}")
     logger.debug(f"Raw response: {response.text}")
@@ -155,6 +157,14 @@ def get_gis_data_for_proposal(proposal, layer_name, properties):
     multipolygon = MultiPolygon(
         list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
     )
+    if not multipolygon.valid:
+        from shapely import wkt
+        from shapely.validation import make_valid, explain_validity
+
+        logger.debug(f"Invalid multipolygon for proposal: {proposal.id}: {multipolygon.valid_reason}")
+
+        multipolygon = make_valid(wkt.loads(multipolygon.wkt))
+        logger.debug(f"Running MakeValid. New validity: {explain_validity(multipolygon)}")
 
     if len(properties) > 1:
         properties_comma_list = ",".join(properties)

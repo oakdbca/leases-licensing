@@ -46,6 +46,7 @@
                     <FormSection :formCollapse="false" label="Map" Index="proposal_geometry">
                         <slot name="slot_map_checklist_questions"></slot>
                         <MapComponent
+                            ref="component_map"
                             :key="componentMapKey"
                             :context="proposal"
                             :proposalIds="[proposal.id]"
@@ -277,7 +278,10 @@ import Confirmation from '@/components/common/confirmation.vue'
 */
 export default {
     name: 'ApplicationForm',
-    emits: ["refreshFromResponse"],
+    emits: [
+            "refreshFromResponse",
+            "formMounted",
+            ],
     props: {
         show_related_items_tab: {
             type: Boolean,
@@ -400,7 +404,7 @@ export default {
         FormSection,
         RichText,
         FileField,
-        ComponentMap,
+        MapComponent,
         Multiselect,
     },
     computed: {

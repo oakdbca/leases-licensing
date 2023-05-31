@@ -960,7 +960,7 @@ export default {
                     vm.selectedModel = model
                     selected.setStyle(hoverSelect);
                 }, {layerFilter: function (layer) {
-                        return layer.get('name') != 'query_layer';
+                        return layer.get('name') === 'query_layer';
                     }
                 });
                 if (selected) {
