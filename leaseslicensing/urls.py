@@ -87,6 +87,7 @@ router.register(r"map_layers", main_api.MapLayerViewSet)
 # router.register(r'payment', main_api.PaymentViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
 
+router.registry.sort(key=lambda x: x[0])
 
 api_patterns = [
     url(
