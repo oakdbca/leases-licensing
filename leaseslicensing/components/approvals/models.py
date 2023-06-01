@@ -142,6 +142,8 @@ class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
 
 # class Approval(models.Model):
 class Approval(RevisionedMixin):
+    MODEL_PREFIX = "L"
+
     APPROVAL_STATUS_CURRENT = "current"
     APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW = "current_pending_renewal_review"
     APPROVAL_STATUS_CURRENT_PENDING_RENEWAL = "current_pending_renewal"
@@ -369,7 +371,7 @@ class Approval(RevisionedMixin):
 
     def save(self, *args, **kwargs):
         if self.lodgement_number in ["", None]:
-            self.lodgement_number = f"L{self.next_id:06d}"
+            self.lodgement_number = f"{self.MODEL_PREFIX}{self.next_id:06d}"
             # self.save()
         super().save(*args, **kwargs)
 
@@ -731,12 +733,6 @@ class Approval(RevisionedMixin):
         """
 
         return self.expiry_date
-
-
-class PreviewTempApproval(Approval):
-    class Meta:
-        app_label = "leaseslicensing"
-        # unique_together= ('lodgement_number', 'issue_date')
 
 
 class ApprovalLogEntry(CommunicationsLogEntry):
