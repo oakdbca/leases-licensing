@@ -1110,11 +1110,20 @@ export default {
                         title: 'Saved',
                         text: 'Your proposal has been saved',
                         icon: 'success',
+                    }).then(async () => {
+                        let resData = await res.json();
+                        vm.proposal = Object.assign({}, resData);
+                        vm.$nextTick(async () => {
+                            if (vm.$refs.application_form != undefined) {
+                                vm.$refs.application_form.incrementComponentMapKey();
+                            }
+                        });
                     })
                 } else {
-                    swal.fire({
+                    let err = await res.json()
+                    await swal.fire({
                         title: "Please fix following errors before saving",
-                        text: err.bodyText,
+                        text: JSON.stringify(err),
                         icon: 'error',
                     })
                 }

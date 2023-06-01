@@ -475,7 +475,7 @@ export default {
                     this.newFeatureId++;
                 };
             }
-            this.forceMapRefresh();
+            this.forceToRefreshMap();
         },
 
         getJSONFeatures: function () {
@@ -1014,7 +1014,7 @@ export default {
 
             return styles
         },
-        forceMapRefresh: function () {
+        forceToRefreshMap: function () {
             let vm = this
             setTimeout(function () {
                 vm.map.updateSize();

@@ -2,6 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.db.models import Q
+from django.urls import reverse
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
@@ -13,6 +14,9 @@ from leaseslicensing.components.main.serializers import (
     ApplicationTypeSerializer,
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
+)
+from leaseslicensing.components.main.utils import (
+    get_polygon_source,
 )
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
@@ -62,7 +66,7 @@ from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
     UserSerializer,
 )
-from leaseslicensing.helpers import is_assessor
+from leaseslicensing.helpers import is_assessor, is_internal
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import GROUP_NAME_CHOICES
 
@@ -78,6 +82,7 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
             "proposal_id",
             "polygon",
             "intersects",
+            "drawn_by",
         )
         read_only_fields = ("id",)
 
@@ -97,6 +102,7 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
 
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
     proposal_id = serializers.IntegerField(write_only=True, required=False)
+    polygon_source = serializers.SerializerMethodField()
 
     class Meta:
         model = ProposalGeometry
@@ -106,9 +112,12 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
             "proposal_id",
             "polygon",
             "intersects",
+            "polygon_source",
         )
         read_only_fields = ("id",)
 
+    def get_polygon_source(self, obj):
+        return get_polygon_source(obj)
 
 class ProposalTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -392,6 +401,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     groups = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
+    details_url = serializers.SerializerMethodField(read_only=True)
 
     # Gis data fields
     identifiers = serializers.SerializerMethodField()
@@ -495,6 +505,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "groups",
             "site_name",
             "proponent_reference_number",
+            "details_url",
         )
         read_only_fields = ("supporting_documents",)
 
@@ -547,6 +558,9 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     def get_lgas(self, obj):
         ids = ProposalLGA.objects.filter(proposal=obj).values_list("lga__id", flat=True)
         return LGA.objects.filter(id__in=ids).values("id", "name")
+
+    def get_details_url(self, obj):
+        return reverse('internal-proposal-detail', kwargs={'proposal_pk': obj.id})
 
     def get_groups(self, obj):
         group_ids = obj.groups.values_list("group__id", flat=True)
@@ -622,6 +636,7 @@ class ListProposalMinimalSerializer(serializers.ModelSerializer):
     lodgement_date_display = serializers.DateTimeField(
         read_only=True, format="%d/%m/%Y", source="lodgement_date"
     )
+    details_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Proposal
@@ -635,7 +650,16 @@ class ListProposalMinimalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "lodgement_date",
             "lodgement_date_display",
+            "details_url",
         )
+
+    def get_details_url(self, obj):
+        request = self.context["request"]
+        if request.user.is_authenticated:
+            if is_internal(request):
+                return reverse('internal-proposal-detail', kwargs={'proposal_pk': obj.id})
+            else:
+                return reverse('external-proposal-detail', kwargs={'proposal_pk': obj.id})
 
 
 class ListProposalSerializer(BaseProposalSerializer):
@@ -679,6 +703,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "accessing_user_can_process",
             "site_name",
             "groups",
+            "details_url",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -1129,6 +1154,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "groups",
             "proponent_reference_number",
             "site_name",
+            "details_url",
             # "assessor_comment_map",
             # "deficiency_comment_map",
             # "assessor_comment_proposal_details",
