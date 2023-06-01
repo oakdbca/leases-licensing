@@ -67,14 +67,9 @@ export default {
             empty_list: '/api/empty_list',
             accessing_user: null,
             loadMap: false,
-            //proposals_url: helpers.add_endpoint_json(api_endpoints.proposals,'user_list'),
-            //approvals_url: helpers.add_endpoint_json(api_endpoints.approvals,'user_list'),
-            //compliances_url: helpers.add_endpoint_json(api_endpoints.compliances,'user_list'),
-
             proposals_url: api_endpoints.proposals_paginated_external,
             approvals_url: api_endpoints.approvals_paginated_external,
             compliances_url: api_endpoints.compliances_paginated_external,
-
             system_name: api_endpoints.system_name,
         }
     },
@@ -83,15 +78,7 @@ export default {
         ApplicationsTable,
         ApplicationsReferredToMeTable,
         CompetitiveProcessesTable,
-        MapComponent,
-        //WaitingListTable,
-        //LicencesAndPermitsTable,
-        //CompliancesTable,
-        //AuthorisedUserApplicationsTable,
-    },
-    watch: {
-
-    },
+        MapComponent,    },
     computed: {
         is_debug: function () {
             return this.$route.query.hasOwnProperty('debug') && this.$route.query.debug == 'true' ? true : false
