@@ -14,7 +14,10 @@ export default {
         datatable,
     },
     props: {
-        ajax_url: '',
+        ajax_url: {
+            type: String,
+            required: true,
+        }
     },
     data() {
         let vm = this;
@@ -26,29 +29,22 @@ export default {
         column_lodgement_number: function () {
             return {
                 data: 'identifier',
-                //name: 'lodgement_number',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                //'render': function(row, type, full){
-                //}
             }
         },
         column_type: function () {
             return {
                 data: 'model_name',
-                //name: 'type',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                //'render': function(row, type, full){
-                //}
             }
         },
         column_description: function () {
             return {
                 data: 'descriptor',
-                //name: 'descriptor',
                 orderable: false,
                 searchable: false,
                 visible: true,
@@ -72,12 +68,9 @@ export default {
         column_action: function () {
             return {
                 data: 'action_url',
-                //name: 'action',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                //'render': function(row, type, full){
-                //}
             }
         },
         datatable_options: function () {
@@ -94,36 +87,24 @@ export default {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
-                //serverSide: true,
+                serverSide: true,
                 searching: true,
                 ordering: true,
                 order: [[0, 'desc']],
                 ajax: {
-                    //"url": '/api/proposal/' + vm.proposal.id + '/get_related_items/',
                     "url": vm.ajax_url,
                     "dataSrc": "",
-
-                    // adding extra GET params for Custom filtering
                     "data": function (d) {
-                        /*
-                        d.filter_application_type = vm.filterApplicationType
-                        d.filter_application_status = vm.filterApplicationStatus
-                        d.filter_applicant = vm.filterApplicant
-                        d.level = vm.level
-                        */
                     }
                 },
                 dom: 'lBfrtip',
                 buttons: [],
                 columns: columns,
                 processing: true,
-                initComplete: function (settings, json) {
-                },
             }
         },
         datatable_headers: function () {
             return [
-                //'id',
                 'Number',
                 'Type',
                 'Description',
