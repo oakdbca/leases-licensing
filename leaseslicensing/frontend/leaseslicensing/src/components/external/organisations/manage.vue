@@ -52,53 +52,169 @@
                         </form>
                     </FormSection>
 
-                    <FormSection v-if="org.address" :formCollapse="true" label="Address Details" index="address-details">
-                        <form class="form-horizontal" action="index.html" method="post">
-                            <div v-if="org">
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">Street</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="street" placeholder=""
-                                            v-model="org.address.line1">
+                    <FormSection v-if="org" index="address-details" label="Address Details" :formCollapse="false">
+                        <form @submit.prevent="" id="address-details" class="mb-2 needs-validation" novalidate>
+                            <!-- <div v-if="org"> -->
+                                <fieldset class="mb-3">
+                                <legend>Postal Address</legend>
+                                <div class="address-box">
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalAddressLine1" class="form-label">Street</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalAddressLine1"
+                                                name="postalAddressLine1" v-model="
+                                                org.postal_address
+                                                .postal_line1
+                                                " required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalLocality" class="form-label">Town/Suburb</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalLocality"
+                                                name="postalLocality" v-model="
+                                                org.postal_address
+                                                .postal_locality
+                                                " required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalState" class="form-label">State</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalState"
+                                                name="postalState" v-model="
+                                                org.postal_address
+                                                .postal_state
+                                                " required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalPostcode" class="form-label">Postcode</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalPostcode"
+                                                name="postalPostcode" v-model="
+                                                org.postal_address
+                                                .postal_postcode
+                                                " maxlength="10" required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalPostcode" class="form-label">Country</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select" id="country" name="Country" v-model="
+                                                org.postal_address
+                                                .postal_country
+                                                " required>
+                                                <option v-for="c in countries" :value="c.code">
+                                                    {{ c.name }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            &nbsp;
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch">
+                                                <label for="billingPostcodeSame" class="form-label">
+                                                    Billing Address Same as Postal Address</label>
+                                                <input @change="toggleBillingAddressFieldsDisabled" class="form-check-input"
+                                                    type="checkbox" v-model="org.billing_same_as_postal"
+                                                    id="toggleBillingAddressFieldsDisabled">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">Town/Suburb</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="surburb" placeholder=""
-                                            v-model="org.address.locality">
+                            </fieldset>
+
+                                <fieldset class="mb-3">
+                                    <legend>Billing Address</legend>
+                                    <div class="address-box">
+
+                                        <div class="row mb-2">
+                                            <div class="col-md-2">
+                                                <label for="billingAddressLine1" class="form-label">Street</label>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control billing-address" id="billingAddressLine1"
+                                                    name="billingAddressLine1" v-model="
+                                                    org.billing_address
+                                                    .billing_line1
+                                                    " required />
+                                            </div>
+                                        </div>
+
+
+                                        <div class="row mb-2">
+                                            <div class="col-md-2">
+                                                <label for="billingLocality" class="form-label">Town/Suburb</label>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="text" class="form-control billing-address" id="billingLocality"
+                                                    name="billingLocality" v-model="
+                                                    org.billing_address
+                                                    .billing_locality
+                                                    " required/>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="billingState" class="form-label">State</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control billing-address" id="billingState"
+                                                name="billingState" v-model="
+                                                org.billing_address
+                                                .billing_state
+                                                " required />
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">State</label>
-                                    <div class="col-sm-3">
-                                        <input type="text" class="form-control" name="country" placeholder=""
-                                            v-model="org.address.state">
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="billingPostcode" class="form-label">Postcode</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control billing-address" id="billingPostcode"
+                                                name="billingPostcode" v-model="
+                                                org.billing_address
+                                                .billing_postcode
+                                                " maxlength="10" required />
+                                        </div>
                                     </div>
-                                    <label for="" class="col-sm-1 control-label">Postcode</label>
-                                    <div class="col-sm-2">
-                                        <input type="text" class="form-control" name="postcode" placeholder=""
-                                            v-model="org.address.postcode">
+                                    <div class="row mb-4">
+                                        <div class="col-md-2">
+                                            <label for="billingPostcode" class="form-label">Country</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select billing-address" id="country" name="Country" v-model="
+                                                org.billing_address
+                                                .billing_country
+                                                " required>
+                                                <option v-for="c in countries" :value="c.code">
+                                                    {{ c.name }}
+                                                </option>
+                                            </select>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">Country</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control" name="country" v-model="org.address.country">
-                                            <option v-for="c in countries" :value="c.alpha2Code">{{ c.name }}
-                                            </option>
-                                        </select>
+                                   
                                     </div>
-                                </div>
-                                <div class="form-group">
-                                    <div class="col-sm-12">
-                                        <button v-if="!updatingAddress" class="float-end btn btn-primary"
-                                            @click.prevent="updateAddress()">Update</button>
-                                        <button v-else disabled class="float-end btn btn-primary"><i
-                                                class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
-                                    </div>
-                                </div>
-                            </div>
+                                </fieldset>
+                               
+                            <BootstrapLoadingButton text="Update" :isLoading="updatingAddress"
+                            @click="validateForm('address-details')" class="btn licensing-btn-primary float-end" />
+                            <!-- </div> -->
                         </form>
                     </FormSection>
 
@@ -225,6 +341,7 @@ import Vue from 'vue'
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
 import datatable from '@vue-utils/datatable.vue'
 import AddContact from '@common-utils/add_contact.vue'
+import BootstrapLoadingButton from '../../../utils/vue/BootstrapLoadingButton.vue';
 
 export default {
     name: 'Organisation',
@@ -502,7 +619,8 @@ export default {
     },
     components: {
         datatable,
-        AddContact
+        AddContact,
+        BootstrapLoadingButton
     },
     computed: {
         classCompute: function () {
@@ -520,7 +638,12 @@ export default {
                 vm.countries = data[0];
                 vm.org = Object.assign({}, data[1]);
                 vm.myorgperms = data[2];
-                // vm.org.address = vm.org.address != null ? vm.org.address : {};
+                vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
+                vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
+                vm.org.billing_same_as_postal = vm.org.billing_same_as_postal != null ? vm.org.billing_same_as_postal : {};
+                if (vm.org.billing_same_as_postal) {
+                        vm.toggleBillingAddressFieldsDisabled();
+                    }
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
@@ -534,6 +657,8 @@ export default {
             next(vm => {
                 vm.org = Object.assign({}, data[0]);
                 vm.myorgperms = data[1];
+                vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
+                vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
                 // vm.org.address = vm.org.address != null ? vm.org.address : {};
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
@@ -542,6 +667,28 @@ export default {
     methods: {
         addContact: function () {
             this.$refs.add_contact.isModalOpen = true;
+        },
+        toggleBillingAddressFieldsDisabled: function () {
+            console.log('toggleBillingAddressFieldsDisabled')
+
+            $('.billing-address').each(function () {
+                if ($(this).attr('disabled')) {
+                    $(this).removeAttr('disabled');
+                } else {
+                    $(this).attr('disabled', 'disabled');
+                }
+            });
+            if (!this.org.billing_same_as_postal) {
+                $('.billing-address').first().focus();
+                this.org.billing_address = {};
+            }
+            else{
+                this.org.billing_address.billing_line1 = this.org.postal_address.postal_line1;
+                this.org.billing_address.billing_locality = this.org.postal_address.postal_locality;
+                this.org.billing_address.billing_state = this.org.postal_address.postal_state;
+                this.org.billing_address.billing_postcode = this.org.postal_address.postal_postcode;
+                this.org.billing_address.billing_country = this.org.postal_address.postal_country;
+            }
         },
         eventListeners: function () {
             let vm = this;
@@ -943,7 +1090,20 @@ export default {
                 emulateJSON: true
             })
         },
+        validateForm: function (formId) {
+            let vm = this;
+            var form = document.getElementById(formId)
 
+            if (form.checkValidity()) {
+                console.log('Form valid');
+                vm.updateAddress();
+            } else {
+                form.classList.add('was-validated');
+                $(form).find("input:invalid").first().focus();
+            }
+
+            return false;
+        },
         updateDetails: function () {
             let vm = this;
             vm.updatingDetails = true;
@@ -952,7 +1112,8 @@ export default {
             }).then((response) => {
                 vm.updatingDetails = false;
                 vm.org = response.body;
-                if (vm.org.address == null) { vm.org.address = {}; }
+                if (vm.org.residential_address == null) { vm.org.residential_address = {}; }
+                if (vm.org.postal_address == null) { vm.org.postal_address = {}; }
                 if (!vm.isApplication) {
                     swal(
                         'Saved',
@@ -1008,12 +1169,26 @@ export default {
         },
         updateAddress: function () {
             let vm = this;
+            let payload = JSON.stringify({
+                'organisation_id':vm.org.id, 
+                'organisation_name': vm.org.ledger_organisation_name ? vm.org.ledger_organisation_name:null,
+                'organisation_abn':vm.org.ledger_organisation_abn,
+                'organisation_email':vm.org.ledger_organisation_email,
+                'organisation_trading_name':vm.org.trading_name,
+                'postal_address':vm.org.postal_address,
+                'billing_address':vm.org.billing_address});
             vm.updatingAddress = true;
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_address')), JSON.stringify(vm.org.address), {
-                emulateJSON: true
-            }).then((response) => {
+
+            fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_address')), {
+                method: 'POST',
+                body:payload,
+            })
+                .then((response) => {
                 vm.updatingAddress = false;
                 vm.org = response.body;
+                // if (vm.org.postal_address == null) { vm.org.postal_address = {}; }
+                // if (vm.org.billing_address == null) { vm.org.billing_address = {}; }
+                //console.log("updateAddress: ", vm.org);
                 if (!vm.isApplication) {
                     swal(
                         'Saved',
@@ -1021,11 +1196,14 @@ export default {
                         'success'
                     )
                 }
-                if (vm.org.address == null) { vm.org.address = {}; }
-            }, (error) => {
-                console.log(error);
-                vm.updatingAddress = false;
-            });
+                // if (vm.org.postal_address == null) { vm.org.postal_address = {}; }
+                // if (vm.org.billing_address == null) { vm.org.billing_address = {}; }
+                })
+                .catch((error) => {
+                    console.log(error);
+                }).finally(() => {
+                    vm.updatingAddress = false;
+                });
         },
         unlinkUser: function (d) {
             let vm = this;
@@ -1043,7 +1221,8 @@ export default {
                     emulateJSON: true
                 }).then((response) => {
                     vm.org = response.body;
-                    if (vm.org.address == null) { vm.org.address = {}; }
+                    if (vm.org.postal_address == null) { vm.org.postal_address = {}; }
+                    if (vm.org.billing_address == null) { vm.org.billing_address = {}; }
                     swal(
                         'Unlink',
                         'You have successfully unlinked ' + person.name + ' from ' + org_name + '.',
@@ -1073,6 +1252,8 @@ export default {
             vm.countries = data[0];
             vm.org = Object.assign({}, data[1]);
             vm.myorgperms = data[2];
+            vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
+            vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
             console.log('vm.org = ' + JSON.stringify(vm.org));
         });
     },
@@ -1113,5 +1294,34 @@ export default {
 
 input[readonly] {
     background-color: white;
+}
+
+
+fieldset,
+legend {
+    all: revert;
+}
+
+legend {
+    color: grey;
+}
+
+fieldset {
+    border-color: #efefef;
+    border-style: solid;
+}
+
+/* Hide the number input arrows */
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+    -moz-appearance: textfield;
 }
 </style>
