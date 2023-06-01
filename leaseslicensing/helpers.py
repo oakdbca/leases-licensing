@@ -1,5 +1,7 @@
 import logging
+import re
 
+from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
 from ledger_api_client.managed_models import SystemGroup, SystemGroupPermission
@@ -154,3 +156,37 @@ def get_instance_identifier(instance):
     raise AttributeError(
         f"Model instance has no valid identifier to use for logging. Tried: {settings.ACTION_LOGGING_IDENTIFIER_FIELDS}"
     )
+
+
+def get_lodgement_number_prefixes():
+    """Returns the prefixes of the models that have a lodgement_number field"""
+    cache_key = settings.CACHE_KEY_LODGEMENT_NUMBER_PREFIXES
+    prefixes = cache.get(cache_key)
+    if prefixes is None:
+        leaseslicensing = apps.get_app_config("leaseslicensing")
+        prefixes = {}
+        for model_string in leaseslicensing.models:
+            model = apps.get_model("leaseslicensing", model_string)
+            if (hasattr(model, "lodgement_number")) and (
+                hasattr(model, "MODEL_PREFIX")
+            ):
+                prefixes[model.MODEL_PREFIX] = model
+        cache.set(cache_key, prefixes, settings.CACHE_TIMEOUT_2_HOURS)
+    return prefixes
+
+
+def get_model_by_lodgement_number_prefix(prefix):
+    """Returns the model class for the prefix"""
+    return get_lodgement_number_prefixes()[prefix]
+
+
+def get_model_by_lodgement_number(lodgement_number):
+    """Returns the model class for the lodgement number"""
+    lodgment_number = re.search("([A-Z]+)([0-9]+)", lodgement_number)
+    if not lodgment_number:
+        raise ValueError(
+            "A valid lodgement number starts with one or more capital letters followed by a series of digits."
+        )
+
+    lodgement_number_prefix = lodgment_number.group(1)
+    return get_model_by_lodgement_number_prefix(lodgement_number_prefix)
