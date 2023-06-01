@@ -426,6 +426,7 @@ CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
 )
 CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS = "dbca_legislated_lands_and_waters"
 CACHE_KEY_MAP_PROPOSALS = "map-proposals"
+CACHE_KEY_LODGEMENT_NUMBER_PREFIXES = "lodgement_number_prefixes"
 
 # ---------- User Log Actions ----------
 
