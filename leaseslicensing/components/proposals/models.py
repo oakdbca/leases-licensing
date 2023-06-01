@@ -19,6 +19,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.db.models import JSONField, Max, Min, Q
+from django.urls import reverse
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.ledger_models import Invoice
@@ -934,6 +935,8 @@ class ProposalManager(models.Manager):
 class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     objects = ProposalManager()
 
+    MODEL_PREFIX = "A"
+
     APPLICANT_TYPE_ORGANISATION = "ORG"
     APPLICANT_TYPE_INDIVIDUAL = "IND"
     APPLICANT_TYPE_PROXY = "PRX"
@@ -1197,7 +1200,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
         if self.lodgement_number == "":
-            new_lodgment_id = f"A{self.pk:06d}"
+            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
 
@@ -3050,11 +3053,14 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def as_related_item(self):
+        action_url = reverse(
+            "internal-proposal-detail", kwargs={"proposal_id": self.id}
+        )
         related_item = RelatedItem(
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
-            action_url=f'<a href=/internal/proposal/{self.id} target="_blank">Open</a>',
+            action_url=f'<a href="{action_url}">View</a>',
             type="application",
         )
         return related_item

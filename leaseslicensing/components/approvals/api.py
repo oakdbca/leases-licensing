@@ -29,8 +29,10 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalSurrenderSerializer,
     ApprovalSuspensionSerializer,
     ApprovalUserActionSerializer,
+    RelatedItemSerializer,
 )
 from leaseslicensing.components.compliances.models import Compliance
+from leaseslicensing.components.invoicing.serializers import InvoiceSerializer
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
@@ -706,3 +708,30 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    def invoices(self, request, *args, **kwargs):
+        instance = self.get_object()
+        qs = instance.invoices.all()
+        serializer = InvoiceSerializer(qs, many=True, context={"request": request})
+        return Response(serializer.data)
+
+    @detail_route(methods=["GET"], detail=True)
+    def related_items(self, request, *args, **kwargs):
+        instance = self.get_object()
+        proposals_queryset = Proposal.objects.filter(
+            approval__lodgement_number=instance.lodgement_number
+        ).values("id", "lodgement_number", "processing_status")
+        compliances_queryset = instance.compliances.values(
+            "id", "lodgement_number", "processing_status"
+        )
+        queryset = proposals_queryset.union(compliances_queryset).order_by(
+            "lodgement_number"
+        )
+        serializer = RelatedItemSerializer(queryset, many=True)
+        return Response(serializer.data)
