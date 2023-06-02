@@ -15,7 +15,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
-from ledger_api_client.utils import update_organisation_obj
+from ledger_api_client.utils import update_organisation_obj, get_organisation
 
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
@@ -49,7 +49,8 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestLogEntrySerializer,
     OrganisationRequestSerializer,
     OrganisationSerializer,
-    OrgUserAcceptSerializer,
+    OrgUserAcceptSerializer, 
+    OrganisationDetailsSerializer
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
@@ -433,87 +434,62 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
         return Response(serializer.data)
 
     # Todo: Implement for segregatted system
-    # @logging_action(
-    #     methods=[
-    #         "POST",
-    #     ],
-    #     detail=True,
-    # )
-    # @basic_exception_handler
-    # def update_details(self, request, *args, **kwargs):
-    #     org = self.get_object()
-    #     instance = org.organisation
-    #     data = request.data
-    #     serializer = DetailsSerializer(
-    #         instance, data=data, context={"request": request}
-    #     )
-    #     serializer.is_valid(raise_exception=True)
-    #     instance = serializer.save()
-    #     # serializer = self.get_serializer(org)
-
-    #     if is_internal(request) and "apply_application_discount" in request.data:
-    #         data = request.data
-    #         if not data["apply_application_discount"]:
-    #             data["application_discount"] = 0
-    #         if not data["apply_licence_discount"]:
-    #             data["licence_discount"] = 0
-
-    #         if data["application_discount"] == 0:
-    #             data["apply_application_discount"] = False
-    #         if data["licence_discount"] == 0:
-    #             data["apply_licence_discount"] = False
-
-    #         if (
-    #             is_internal(request)
-    #             and "charge_once_per_year" in request.data
-    #             and request.data.get("charge_once_per_year")
-    #         ):
-    #             DD = int(request.data.get("charge_once_per_year").split("/")[0])
-    #             MM = int(request.data.get("charge_once_per_year").split("/")[1])
-    #             YYYY = timezone.now().year  # set to current year
-    #             data["charge_once_per_year"] = f"{YYYY}-{MM}-{DD}"
-    #         else:
-    #             data["charge_once_per_year"] = None
-
-    #         serializer = SaveDiscountSerializer(org, data=data)
-    #         serializer.is_valid(raise_exception=True)
-    #         instance = serializer.save()
-
-    #     serializer = self.get_serializer(org)
-    #     return Response(serializer.data)
+    @logging_action(methods=['PUT',], detail=True)
+    def update_details(self, request, *args, **kwargs):
+        try:
+            user = EmailUser.objects.get(id=request.user.id)
+            if user is None:
+                resp_json = {"status" : 404,  "message": "User not found!"}
+                return resp_json
+            org = self.get_object()
+            instance = Organisation.objects.get(id=org.id)
+            if instance is None:
+                resp_json = {"status" : 404,  "message": "Organisation not found!"}
+                return resp_json
+            data = request.data
+            response_ledger = update_organisation_obj(data)
+            logger.debug(f"response_ledger:{response_ledger['status']}")
+            serializer = OrganisationDetailsSerializer(instance, data=data)
+            serializer.is_valid(raise_exception=True)
+            instance = serializer.save()
+            return Response(response_ledger)
+        except ValidationError as e:
+            print(traceback.print_exc())
+            raise serializers.ValidationError(repr(e.error_dict))
+        except Exception as e:
+            print(traceback.print_exc())
+            raise serializers.ValidationError(str(e))
+       
 
     @logging_action(methods=['POST',], detail=True)
     def update_address(self, request, *args, **kwargs):
            try:
+                user = EmailUser.objects.get(id=request.user.id)
+                if user is None:
+                    resp_json = {"status" : 404,  "message": "User not found!"}
+                    return resp_json
+                
+                org_id = request.data.get("organisation_id", None)
+                org_obj = Organisation.objects.get(id=org_id)
+                if org_obj is None:
+                    resp_json = {"status" : 404,  "message": "Organisation not found!"}
+                    return resp_json
+                data = request.data
+                response_ledger = update_organisation_obj(data)
+                return Response(response_ledger)
+           except ValidationError as e:
+                   print(traceback.print_exc())
+                   raise serializers.ValidationError(repr(e.error_dict))
+           except Exception as e:
+                   print(traceback.print_exc())
+                   raise serializers.ValidationError(str(e))
+           
+    @logging_action(methods=['GET',], detail=True)
+    def get_org_address(self, request, *args, **kwargs):
+           try:
                    org = self.get_object()
-                #    print("org_got: {}".format(org.__dict__))
-                #    print("org_id: {}".format(org.ledger_organisation_id))
-                #    print("org_name: {}".format(org.ledger_organisation_name))
-                #    print("org_abn: {}".format(org.ledger_organisation_abn))
-                #    print("org_email: {}".format(org.ledger_organisation_email))
-                   #org_obj = Organisation.objects.get(id=org.id)
-                #    print("OBJECT: {}".format(request.data))
-                   response_from_ledger = update_organisation_obj(request.data)
-                   print("RESPONSE_LEDGER: {}".format(response_from_ledger))
-                   #data = request.data
-                   #print("org_tname: {}".format(org.trading_name))
-                #    instance = org.organisation
-                #    serializer = OrganisationAddressSerializer(data=request.data)
-                #    serializer.is_valid(raise_exception=True)
-                #    address, created = OrganisationAddress.objects.get_or_create(
-                #            line1 = serializer.validated_data['line1'],
-                #            locality = serializer.validated_data['locality'],
-                #            state = serializer.validated_data['state'],
-                #            country = serializer.validated_data['country'],
-                #            postcode = serializer.validated_data['postcode'],
-                #            organisation = instance
-                #    )
-                #    instance.postal_address = address
-                #    instance.save()
-                #    #send_organisation_address_updated_email_notification(request.user, instance, org, request)
-                #    serializer = self.get_serializer(org)
-                   #return Response(serializer.data);
-                   return response_from_ledger
+                   response_ledger = get_organisation(org.id)
+                   return Response(response_ledger['data'])
            except serializers.ValidationError:
                    print(traceback.print_exc())
                    raise

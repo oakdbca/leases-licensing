@@ -13,7 +13,6 @@ export default {
                         reject(error)
                     }
                     resolve(data)
-                    console.log('countries: ', data)
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
@@ -90,6 +89,42 @@ export default {
                         reject(error)
                     }
                     console.log('organisation: ', data)
+                    resolve(data)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                    reject(error)
+                })
+        });
+    },
+    fetchOrganisationAddress: function (id) {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.organisations + id + '/get_org_address')
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        reject(error)
+                    }
+                    let formatted_data = {};
+                    formatted_data = {
+                        postal_address:{
+                            postal_line1: data.postal_address.line1,
+                            postal_locality: data.postal_address.locality,
+                            postal_state: data.postal_address.state,
+                            postal_postcode: data.postal_address.postcode,
+                            postal_country: data.postal_address.country,
+                        },
+                        billing_address:{
+                            billing_line1: data.billing_address.line1,
+                            billing_locality: data.billing_address.locality,
+                            billing_state: data.billing_address.state,
+                            billing_postcode: data.billing_address.postcode,
+                            billing_country: data.billing_address.country,
+                        }
+                    }
                     resolve(data)
                 })
                 .catch((error) => {
