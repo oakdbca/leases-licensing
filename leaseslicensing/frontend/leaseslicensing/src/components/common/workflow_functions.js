@@ -165,3 +165,49 @@ export function updateIdListFromAvailable(id, list, available_items, remove) {
     }
     return false;
 }
+
+/**
+ * Discards a proposal.
+ * @param {object} proposal A proposal object or a proposal ID
+ * @returns an api query Promise
+ */
+export async function discardProposal(proposal) {
+    let proposal_id = proposal.id || proposal;
+
+    return swal.fire({
+        title: "Discard Application",
+        text: "Are you sure you want to discard this application?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: 'Discard Application',
+        confirmButtonColor: '#dc3545'
+    }).then(async result => {
+        return new Promise((resolve, reject) => {
+            if (result.isConfirmed) {
+                // Queries the delete endpoint
+                fetch(api_endpoints.discard_proposal(proposal_id), { method: 'DELETE', })
+                    .then(async response => {
+                        const data = await response.json();
+                        if (!response.ok) {
+                            const error = (data && data.message) || response.statusText;
+                            console.log(error)
+                            swal.fire({
+                                title: 'Error',
+                                text: 'The proposal could not be discarded',
+                                icon: 'error',
+                            });
+                            reject(error);
+                        }
+                        swal.fire({
+                            title: 'Discarded',
+                            text: 'The application has been discarded',
+                            icon: 'success',
+                        });
+                        resolve(data);
+                    });
+            } else {
+                resolve(proposal);
+            }
+        }
+    )});
+}

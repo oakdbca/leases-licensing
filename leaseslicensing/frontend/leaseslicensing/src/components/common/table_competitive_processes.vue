@@ -453,31 +453,6 @@ export default {
             //})
             console.log('New Competitive Process Clicked')
         },
-        discardProposal: function (proposal_id) {
-            let vm = this;
-            swal({
-                title: "Discard Application",
-                text: "Are you sure you want to discard this application?",
-                type: "warning",
-                showCancelButton: true,
-                confirmButtonText: 'Discard Application',
-                confirmButtonColor: '#dc3545'
-            }).then(() => {
-                fetch(api_endpoints.discard_proposal(proposal_id), { method: 'DELETE' })
-                    .then((response) => {
-                        swal(
-                            'Discarded',
-                            'Your application has been discarded',
-                            'success'
-                        )
-                        //vm.$refs.competitive_process_datatable.vmDataTable.ajax.reload();
-                        vm.$refs.competitive_process_datatable.vmDataTable.draw();
-                    }, (error) => {
-                    });
-            }, (error) => {
-
-            });
-        },
         fetchFilterLists: async function () {
             let vm = this;
 
@@ -496,11 +471,6 @@ export default {
         },
         addEventListeners: function () {
             let vm = this
-            vm.$refs.competitive_process_datatable.vmDataTable.on('click', 'a[data-discard-proposal]', function (e) {
-                e.preventDefault();
-                let id = $(this).attr('data-discard-proposal');
-                vm.discardProposal(id)
-            });
 
             // Lodged From
             //$(vm.$refs.proposalDateFromPicker).datetimepicker(vm.datepickerOptions);
