@@ -80,14 +80,12 @@ class LeasesLicensingFurtherInformationView(TemplateView):
 
 
 class InternalProposalView(DetailView):
-    # template_name = 'leaseslicensing/index.html'
     model = Proposal
     template_name = "leaseslicensing/dash/index.html"
 
     def get(self, *args, **kwargs):
         if self.request.user.is_authenticated:
             if is_internal(self.request):
-                # return redirect('internal-proposal-detail')
                 return super().get(*args, **kwargs)
             return redirect("external-proposal-detail")
         kwargs["form"] = LoginForm
