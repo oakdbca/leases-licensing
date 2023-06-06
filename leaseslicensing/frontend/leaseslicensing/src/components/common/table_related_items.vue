@@ -28,7 +28,7 @@ export default {
     computed: {
         column_lodgement_number: function () {
             return {
-                data: 'identifier',
+                data: 'lodgement_number',
                 orderable: false,
                 searchable: false,
                 visible: true,
@@ -36,7 +36,7 @@ export default {
         },
         column_type: function () {
             return {
-                data: 'model_name',
+                data: 'item_type',
                 orderable: false,
                 searchable: false,
                 visible: true,
@@ -44,33 +44,21 @@ export default {
         },
         column_description: function () {
             return {
-                data: 'descriptor',
+                data: 'description',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                'render': function (row, type, full) {
-                    /** The related item description is to be determined per type:
-                     * - Application - application status
-                     * - Lease/License - expiry date
-                     */
-                    if (full.type === "application") {
-                        return constants.PROPOSAL_STATUS[full.descriptor.toUpperCase()].TEXT;
-                    } else if (full.type === "lease_license") {
-                        return full.descriptor;
-                    } else if (full.type === "competitive_process") {
-                        return constants.COMPETITIVE_PROCESS_STATUS[full.descriptor.toUpperCase()].TEXT;
-                    } else {
-                        return full.descriptor;
-                    }
-                }
             }
         },
         column_action: function () {
             return {
-                data: 'action_url',
+                data: 'detail_url',
                 orderable: false,
                 searchable: false,
                 visible: true,
+                render: function (data, type, row) {
+                    return `<a href="${data}" target="_blank">View</a>`
+                }
             }
         },
         datatable_options: function () {
@@ -93,7 +81,7 @@ export default {
                 order: [[0, 'desc']],
                 ajax: {
                     "url": vm.ajax_url,
-                    "dataSrc": "",
+                    "dataSrc": "data",
                     "data": function (d) {
                     }
                 },

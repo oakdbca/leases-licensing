@@ -38,9 +38,6 @@ from leaseslicensing.components.proposals.models import (
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
-from leaseslicensing.utils import search_keys, search_multiple_keys
-
-# from leaseslicensing.components.approvals.email import send_referral_email_notification
 
 logger = logging.getLogger(__name__)
 
@@ -499,30 +496,6 @@ class Approval(RevisionedMixin):
         self.status = self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
         self.renewal_notification_sent_to_holder = True
         self.save()
-
-    def copiedToPermit_fields(self, proposal):
-        p = proposal
-        copied_data = []
-        search_assessor_data = []
-        search_schema = search_multiple_keys(
-            p.schema, primary_search="isCopiedToPermit", search_list=["label", "name"]
-        )
-        if p.assessor_data:
-            search_assessor_data = search_keys(
-                p.assessor_data, search_list=["assessor", "name"]
-            )
-        if search_schema:
-            for c in search_schema:
-                try:
-                    if search_assessor_data:
-                        for d in search_assessor_data:
-                            if c["name"] == d["name"]:
-                                if d["assessor"]:
-                                    # copied_data.append({c['label'], d['assessor']})
-                                    copied_data.append({c["label"]: d["assessor"]})
-                except KeyError:
-                    raise
-        return copied_data
 
     def log_user_action(self, action, request):
         return ApprovalUserAction.log_action(self, action, request.user)

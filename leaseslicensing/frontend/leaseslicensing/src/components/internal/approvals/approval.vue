@@ -177,7 +177,7 @@
 
                     <div class="tab-pane fade" id="pills-related-items" role="tabpanel">
                         <FormSection :formCollapse="false" label="Related Items" Index="related_items">
-                            <!-- <TableRelatedItems :ajax_url="related_items_ajax_url" /> -->
+                            <TableRelatedItems :ajax_url="related_items_ajax_url" />
                         </FormSection>
                     </div>
                 </div>

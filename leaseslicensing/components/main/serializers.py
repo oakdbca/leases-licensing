@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.urls import reverse
 from ledger_api_client.ledger_models import EmailUserRO
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
@@ -14,8 +15,7 @@ from leaseslicensing.components.main.models import (
     TemporaryDocumentCollection,
 )
 from leaseslicensing.components.main.utils import get_secure_document_url
-
-# from leaseslicensing.components.proposals.serializers import ProposalTypeSerializer
+from leaseslicensing.helpers import get_model_by_lodgement_number
 
 
 class CommunicationLogEntrySerializer(serializers.ModelSerializer):
@@ -229,3 +229,42 @@ class SecureDocumentSerializer(serializers.Serializer):
 
     def get_hyperlink(self, obj):
         return f"<a href='{self.get_url(obj)}'>{obj.name}</a>"
+
+
+class RelatedItemSerializer(serializers.Serializer):
+    """Generic related item serializer that uses object introspection to be able to show basic details
+    for proposals, compliances and approvals all in the same result set"""
+
+    id = serializers.IntegerField()
+    lodgement_number = serializers.CharField()
+    item_type = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+    detail_url = serializers.SerializerMethodField()
+
+    def get_item_type(self, obj):
+        model = get_model_by_lodgement_number(obj["lodgement_number"])
+        return model._meta.verbose_name.title()
+
+    def get_description(self, obj):
+        model = get_model_by_lodgement_number(obj["lodgement_number"])
+        processing_status = obj["processing_status"]
+        # Would be nice to have all the models use the same status field name in future
+        if hasattr(model, "STATUS_CHOICES"):
+            processing_status = dict(model.STATUS_CHOICES)[processing_status]
+        elif hasattr(model, "PROCESSING_STATUS_CHOICES"):
+            processing_status = dict(model.PROCESSING_STATUS_CHOICES)[processing_status]
+        else:
+            raise AttributeError(
+                f"Model {model} does not have a STATUS_CHOICES or PROCESSING_STATUS_CHOICES attribute"
+            )
+        return f"Status: {processing_status}"
+
+    def get_detail_url(self, obj):
+        model = get_model_by_lodgement_number(obj["lodgement_number"])
+        # If we need this for external details pages, we can add a check for the request here
+        # change interal to external and make sure the external details page in the url conf takes pk as a kwarg rather
+        # than <model_name>_pk
+        return reverse(
+            f"internal-{model._meta.model.__name__.lower()}-detail",
+            kwargs={"pk": obj["id"]},
+        )

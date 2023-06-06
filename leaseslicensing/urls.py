@@ -17,7 +17,6 @@ from leaseslicensing.components.invoicing import api as invoicing_api
 from leaseslicensing.components.main import api as main_api
 from leaseslicensing.components.organisations import api as org_api
 from leaseslicensing.components.proposals import api as proposal_api
-from leaseslicensing.components.proposals import views as proposal_views
 from leaseslicensing.components.tenure import api as tenure_api
 from leaseslicensing.components.users import api as users_api
 from leaseslicensing.management.default_data_manager import DefaultDataManager
@@ -84,7 +83,6 @@ router.register(r"assessments", proposal_api.ProposalAssessmentViewSet)
 router.register(r"required_documents", main_api.RequiredDocumentViewSet)
 router.register(r"questions", main_api.QuestionViewSet)
 router.register(r"map_layers", main_api.MapLayerViewSet)
-# router.register(r'payment', main_api.PaymentViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
 
 router.registry.sort(key=lambda x: x[0])
@@ -225,8 +223,6 @@ urlpatterns = (
             views.ManagementCommandsView.as_view(),
             name="mgt-commands",
         ),
-        # url(r'test-emails/$', proposal_views.TestEmailView.as_view(), name='test-emails'),
-        url(r"^proposal/$", proposal_views.ProposalView.as_view(), name="proposal"),
         url(
             r"^api/application_types$",
             proposal_api.GetApplicationTypeDescriptions.as_view(),
@@ -252,9 +248,6 @@ urlpatterns = (
             competitive_process_api.GetCompetitiveProcessStatusesDict.as_view(),
             name="get-competitive-process-statuses-dict",
         ),
-        # Approval type should point to Approval.current_proposal.application_type
-        # url(r'^api/approval_types_dict$', approval_api.GetApprovalTypeDict.as_view(),
-        # name='get-approval-type-dict'),
         url(
             r"^api/approval_statuses_dict$",
             approval_api.GetApprovalStatusesDict.as_view(),

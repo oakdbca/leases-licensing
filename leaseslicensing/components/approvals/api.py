@@ -14,6 +14,7 @@ from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
+from rest_framework_datatables.renderers import DatatablesRenderer
 
 from leaseslicensing.components.approvals.models import (
     Approval,
@@ -29,13 +30,13 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalSurrenderSerializer,
     ApprovalSuspensionSerializer,
     ApprovalUserActionSerializer,
-    RelatedItemSerializer,
 )
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.serializers import InvoiceSerializer
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
+from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.organisations.models import OrganisationContact
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
@@ -721,8 +722,15 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         serializer = InvoiceSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
 
-    @detail_route(methods=["GET"], detail=True)
+    @detail_route(
+        methods=["GET"],
+        detail=True,
+        renderer_classes=[DatatablesRenderer],
+        pagination_class=DatatablesPageNumberPagination,
+    )
     def related_items(self, request, *args, **kwargs):
+        """Uses union to combine a queryset of multiple different model types
+        and uses a generic related item serializer to return the data"""
         instance = self.get_object()
         proposals_queryset = Proposal.objects.filter(
             approval__lodgement_number=instance.lodgement_number
@@ -734,4 +742,9 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             "lodgement_number"
         )
         serializer = RelatedItemSerializer(queryset, many=True)
-        return Response(serializer.data)
+        data = {}
+        # Add the fields that the datatables renderer expects
+        data["data"] = serializer.data
+        data["recordsFiltered"] = queryset.count()
+        data["recordsTotal"] = queryset.count()
+        return Response(data=data)

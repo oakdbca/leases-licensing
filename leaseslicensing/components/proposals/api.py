@@ -27,6 +27,7 @@ from rest_framework_datatables.renderers import DatatablesRenderer
 from reversion.models import Version
 
 from leaseslicensing.components.approvals.models import Approval
+from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
@@ -34,6 +35,7 @@ from leaseslicensing.components.main.filters import LedgerDatatablesFilterBacken
 from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
+from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentReason,
@@ -1971,6 +1973,39 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = RelatedItemsSerializer(related_items, many=True)
         return Response(serializer.data)
 
+    @detail_route(
+        methods=["GET"],
+        detail=True,
+        renderer_classes=[DatatablesRenderer],
+        pagination_class=DatatablesPageNumberPagination,
+    )
+    def related_items(self, request, *args, **kwargs):
+        """Uses union to combine a queryset of multiple different model types
+        and uses a generic related item serializer to return the data"""
+        instance = self.get_object()
+        proposals_queryset = Proposal.objects.filter(
+            generated_proposal_id=instance.id
+        ).values("id", "lodgement_number", "processing_status")
+        competitive_process_queryset = CompetitiveProcess.objects.filter(
+            id__in=[
+                instance.generated_competitive_process_id,
+                instance.originating_competitive_process_id,
+            ]
+        ).values("id", "lodgement_number", "status")
+        approval_queryset = Approval.objects.filter(id=instance.approval_id).values(
+            "id", "lodgement_number", "status"
+        )
+        queryset = proposals_queryset.union(
+            competitive_process_queryset, approval_queryset
+        ).order_by("lodgement_number")
+        serializer = RelatedItemSerializer(queryset, many=True)
+        data = {}
+        # Add the fields that the datatables renderer expects
+        data["data"] = serializer.data
+        data["recordsFiltered"] = queryset.count()
+        data["recordsTotal"] = queryset.count()
+        return Response(data=data)
+
 
 class ReferralViewSet(viewsets.ModelViewSet):
     # queryset = Referral.objects.all()
@@ -2551,7 +2586,7 @@ class SearchReferenceView(views.APIView):
                 + f" - { proposal.application_type.name_display }"
                 + f" - { proposal.proposal_type.description } [Proposal]",
                 "redirect_url": reverse(
-                    "internal-proposal-detail", kwargs={"proposal_pk": proposal.id}
+                    "internal-proposal-detail", kwargs={"pk": proposal.id}
                 ),
             }
             for proposal in proposals
@@ -2562,7 +2597,7 @@ class SearchReferenceView(views.APIView):
                 "id": approval.id,
                 "text": f"{ approval.lodgement_number } [Approval]",
                 "redirect_url": reverse(
-                    "internal-approval-detail", kwargs={"approval_pk": approval.id}
+                    "internal-approval-detail", kwargs={"pk": approval.id}
                 ),
             }
             for approval in approvals
@@ -2576,7 +2611,7 @@ class SearchReferenceView(views.APIView):
                 "text": f"{ compliance.lodgement_number } [Compliance]",
                 "redirect_url": reverse(
                     "internal-compliance-detail",
-                    kwargs={"compliance_pk": compliance.id},
+                    kwargs={"pk": compliance.id},
                 ),
             }
             for compliance in compliances

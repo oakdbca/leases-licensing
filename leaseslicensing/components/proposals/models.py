@@ -2953,11 +2953,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 proposal = clone_proposal_with_status_reset(previous_proposal)
                 proposal.proposal_type = "amendment"
                 proposal.training_completed = True
-                # proposal.schema = ProposalType.objects.first().schema
-                ptype = ProposalType.objects.filter(
-                    name=proposal.application_type
-                ).latest("version")
-                proposal.schema = ptype.schema
                 proposal.submitter = request.user
                 proposal.previous_application = self
                 req = self.requirements.all().exclude(is_deleted=True)
@@ -3053,9 +3048,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def as_related_item(self):
-        action_url = reverse(
-            "internal-proposal-detail", kwargs={"proposal_id": self.id}
-        )
+        action_url = reverse("internal-proposal-detail", kwargs={"pk": self.id})
         related_item = RelatedItem(
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,

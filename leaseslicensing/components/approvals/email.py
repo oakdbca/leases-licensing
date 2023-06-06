@@ -238,7 +238,7 @@ def send_approval_surrender_email_notification(approval, request=None):
 def send_approval_renewal_review_email_notification(approval):
     email = ApprovalRenewalReviewNotificationEmail()
     url = settings.SITE_URL
-    url += reverse("internal-approval-detail", kwargs={"approval_pk": approval.pk})
+    url += reverse("internal-approval-detail", kwargs={"pk": approval.pk})
 
     context = {
         "approval": approval,

@@ -532,7 +532,7 @@ export default {
     },
     computed: {
         related_items_ajax_url: function () {
-            return '/api/proposal/' + this.proposal.id + '/get_related_items/'
+            return '/api/proposal/' + this.proposal.id + '/related_items/'
         },
         requirementsKey: function () {
             const req = "proposal_requirements_" + this.uuid;

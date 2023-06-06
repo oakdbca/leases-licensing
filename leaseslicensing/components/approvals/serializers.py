@@ -19,11 +19,7 @@ from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.users.serializers import UserSerializer
-from leaseslicensing.helpers import (
-    get_model_by_lodgement_number,
-    is_approver,
-    is_assessor,
-)
+from leaseslicensing.helpers import is_approver, is_assessor
 
 logger = logging.getLogger(__name__)
 
@@ -363,24 +359,3 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
         # Todo: Change to secure file / document url
         url = obj._file.url
         return url
-
-
-class RelatedItemSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    lodgement_number = serializers.CharField()
-    item_type = serializers.SerializerMethodField()
-    description = serializers.SerializerMethodField()
-    action = serializers.SerializerMethodField()
-
-    def get_item_type(self, obj):
-        model = get_model_by_lodgement_number(obj["lodgement_number"])
-        return model._meta.verbose_name.title()
-
-    def get_description(self, obj):
-        logger.debug(obj)
-        processing_status = obj["processing_status"]
-        return f"Status: {processing_status}"
-
-    def get_action(self, obj):
-        model = get_model_by_lodgement_number(obj["lodgement_number"])
-        return f"reverse for {model} details page"

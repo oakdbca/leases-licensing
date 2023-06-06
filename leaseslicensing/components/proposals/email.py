@@ -83,7 +83,7 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
     url = request.build_absolute_uri(
         reverse(
             "internal-proposal-detail",
-            kwargs={"proposal_pk": referral.proposal.id},
+            kwargs={"pk": referral.proposal.id},
         )
     )
 
@@ -124,9 +124,7 @@ def send_referral_complete_email_notification(referral, request):
     # email = ReferralCompleteNotificationEmail()
     email.subject = sent_by.email + ": " + email.subject
     url = request.build_absolute_uri(
-        reverse(
-            "internal-proposal-detail", kwargs={"proposal_pk": referral.proposal.id}
-        )
+        reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
     )
 
     context = {
@@ -204,7 +202,7 @@ def send_submit_email_notification(request, proposal):
     )
     # email = SubmitSendNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     if "-internal" not in url:
         # add it. This email is for internal staff (assessors)
@@ -276,7 +274,7 @@ def send_approver_decline_email_notification(reason, request, proposal):
     )
     # email = ApproverDeclineSendNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     context = {"proposal": proposal, "reason": reason, "url": url}
 
@@ -300,7 +298,7 @@ def send_approver_approve_email_notification(request, proposal):
     )
     # email = ApproverApproveSendNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     context = {
         "start_date": proposal.proposed_issuance_approval.get("start_date"),
@@ -359,7 +357,7 @@ def send_proposal_approver_sendback_email_notification(request, proposal):
     )
     # email = ApproverSendBackNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
 
     if "test-emails" in request.path_info:
