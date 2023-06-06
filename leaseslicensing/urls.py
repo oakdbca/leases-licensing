@@ -207,11 +207,6 @@ urlpatterns = (
             name="internal-approvals",
         ),
         url(
-            r"^internal/approval/(?P<approval_pk>\d+)/$",
-            views.InternalView.as_view(),
-            name="internal-approval-detail",
-        ),
-        url(
             r"^external/approval/(?P<approval_pk>\d+)/$",
             views.ExternalView.as_view(),
             name="external-approval-detail",
@@ -276,12 +271,12 @@ urlpatterns = (
             name="get-compliance-statuses-dict",
         ),
         url(
-            r"^internal/proposal/(?P<proposal_pk>\d+)/$",
+            r"^internal/proposal/(?P<pk>\d+)/$",
             views.InternalProposalView.as_view(),
             name="internal-proposal-detail",
         ),
         url(
-            r"^internal/approval/(?P<approval_pk>\d+)/$",
+            r"^internal/approval/(?P<pk>\d+)/$",
             views.InternalApprovalView.as_view(),
             name="internal-approval-detail",
         ),
@@ -296,7 +291,7 @@ urlpatterns = (
             name="external-compliance-detail",
         ),
         url(
-            r"^internal/compliance/(?P<compliance_pk>\d+)/$",
+            r"^internal/compliance/(?P<pk>\d+)/$",
             views.InternalComplianceView.as_view(),
             name="internal-compliance-detail",
         ),
