@@ -222,7 +222,7 @@ export default {
             comms_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/comms_log'),
             comms_add_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/add_comms_log'),
 
-            related_items_ajax_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/related_items'),
+            related_items_ajax_url: helpers.add_endpoint_join(api_endpoints.approvals, vm.$route.params.approval_id + '/related_items'),
         }
     },
     components: {
