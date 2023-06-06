@@ -66,18 +66,6 @@ ADD_REVERSION_ADMIN = True
 # maximum number of days allowed for a booking
 WSGI_APPLICATION = "leaseslicensing.wsgi.application"
 
-"""REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'leaseslicensing.perms.OfficerPermission',
-    )
-}"""
-
-# REST_FRAMEWORK = {
-#    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-#    #'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-#        'PAGE_SIZE': 5
-# }
-
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
         "rest_framework.renderers.JSONRenderer",
@@ -111,7 +99,6 @@ if SHOW_DEBUG_TOOLBAR:
         "debug_toolbar.middleware.DebugToolbarMiddleware",
     ]
     INSTALLED_APPS += ("debug_toolbar",)
-    # INTERNAL_IPS = ('127.0.0.1', 'localhost', get_ip())
     INTERNAL_IPS = ("127.0.0.1", "localhost")
 
     # this dict removes check to dtermine if toolbar should display --> works for rks docker container
