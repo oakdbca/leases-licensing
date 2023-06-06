@@ -200,6 +200,30 @@ class OrganisationSerializer(serializers.ModelSerializer):
             read_only=True,
         ).data
 
+class OrganisationDetailsSerializer(serializers.ModelSerializer):
+    organisation_name = serializers.CharField(
+        source="ledger_organisation_name",
+        max_length=255,
+        default="",
+    )
+    organisation_email = serializers.EmailField(
+        source="ledger_organisation_email", 
+        required=False, 
+        allow_blank=True
+    )
+    organisation_trading_name = serializers.CharField(
+        source="trading_name",
+        required=False,
+        allow_blank=True
+        )
+
+    class Meta:
+        model = Organisation
+        fields = (
+            "organisation_name",
+            "organisation_email",
+            "organisation_trading_name",
+        )
 
 class OrganisationKeyValueSerializer(serializers.ModelSerializer):
     class Meta:

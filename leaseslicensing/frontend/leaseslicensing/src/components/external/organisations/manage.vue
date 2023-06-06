@@ -3,15 +3,15 @@
         <div class="row">
             <div v-if="org" class="col">
                 <div class="row">
-                    <FormSection :formCollapse="false" label="Organisation Details" index="organisation-details">
-                        <form class="form-horizontal" name="personal_form" method="post">
-
+                    <FormSection index="organisation-details" label="Organisation Details" :formCollapse="false">
+                        <form @submit.prevent="" id="organisation-details" class="mb-2 needs-validation" novalidate>
+                   
                             <div class="row mb-3">
                                 <label for="ledger_organisation_name" class="col-sm-3 control-label">Organisation
                                     Name</label>
                                 <div class="col-sm-4">
                                     <input type="text" class="form-control" name="ledger_organisation_name"
-                                        v-model="org.ledger_organisation_name">
+                                        v-model="org.organisation_name" required>
                                 </div>
                             </div>
 
@@ -36,69 +36,171 @@
                                 <label for="ledger_organisation_email" class="col-sm-3 control-label">Email
                                 </label>
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="ledger_organisation_email"
-                                        v-model="org.ledger_organisation_email">
+                                    <input type="email" class="form-control" name="ledger_organisation_email"
+                                        v-model="org.organisation_email">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <div class="col-sm-12">
-                                    <button v-if="!updatingDetails" class="float-end btn btn-primary"
-                                        @click.prevent="updateDetails()">Update</button>
-                                    <button v-else disabled class="float-end btn btn-primary"><i
-                                            class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
-                                </div>
+                                    <BootstrapLoadingButton text="Update" :isLoading="updatingDetails"
+                                @click="validateForm('organisation-details')" class="btn licensing-btn-primary float-end" />
+                                    </div>
                             </div>
                         </form>
                     </FormSection>
 
-                    <FormSection v-if="org.address" :formCollapse="true" label="Address Details" index="address-details">
-                        <form class="form-horizontal" action="index.html" method="post">
-                            <div v-if="org">
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">Street</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="street" placeholder=""
-                                            v-model="org.address.line1">
+                    <FormSection v-if="org" index="address-details" label="Address Details" :formCollapse="false">
+                        <form @submit.prevent="" id="address-details" class="mb-2 needs-validation" novalidate>
+                            <fieldset class="mb-3">
+                                <legend>Postal Address</legend>
+                                <div class="address-box">
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalAddressLine1" class="form-label">Street</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalAddressLine1"
+                                                name="postalAddressLine1" v-model="org.postal_address
+                                                    .line1
+                                                    " required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalLocality" class="form-label">Town/Suburb</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalLocality"
+                                                name="postalLocality" v-model="org.postal_address
+                                                    .locality
+                                                    " required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalState" class="form-label">State</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalState" name="postalState"
+                                                v-model="org.postal_address
+                                                    .state
+                                                    " required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalPostcode" class="form-label">Postcode</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control" id="postalPostcode"
+                                                name="postalPostcode" v-model="org.postal_address
+                                                    .postcode
+                                                    " maxlength="10" required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="postalPostcode" class="form-label">Country</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select" id="country" name="Country" v-model="org.postal_address
+                                                .country
+                                                " required>
+                                                <option v-for="c in countries" :value="c.code">
+                                                    {{ c.name }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            &nbsp;
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check form-switch">
+                                                <label for="billingPostcodeSame" class="form-label">
+                                                    Billing Address same as Postal Address</label>
+                                                <input @change="toggleBillingAddressFieldsDisabled" class="form-check-input"
+                                                    type="checkbox" v-model="org.billing_same_as_postal"
+                                                    id="toggleBillingAddressFieldsDisabled">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">Town/Suburb</label>
-                                    <div class="col-sm-6">
-                                        <input type="text" class="form-control" name="surburb" placeholder=""
-                                            v-model="org.address.locality">
+                            </fieldset>
+
+                            <fieldset class="mb-3" :disabled="org.billing_same_as_postal">
+                                <legend>Billing Address</legend>
+                                <div class="address-box">
+
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="billingAddressLine1" class="form-label">Street</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control billing-address" id="billingAddressLine1"
+                                                name="billingAddressLine1" v-model="org.billing_address
+                                                    .line1
+                                                    " required />
+                                        </div>
                                     </div>
+
+
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="billingLocality" class="form-label">Town/Suburb</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control billing-address" id="billingLocality"
+                                                name="billingLocality" v-model="org.billing_address
+                                                    .locality
+                                                    " required />
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="billingState" class="form-label">State</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control billing-address" id="billingState"
+                                                name="billingState" v-model="org.billing_address
+                                                    .state
+                                                    " required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label for="billingPostcode" class="form-label">Postcode</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input type="text" class="form-control billing-address" id="billingPostcode"
+                                                name="billingPostcode" v-model="org.billing_address
+                                                    .postcode
+                                                    " maxlength="10" required />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-4">
+                                        <div class="col-md-2">
+                                            <label for="billingPostcode" class="form-label">Country</label>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select billing-address" id="country" name="Country" v-model="org.billing_address
+                                                .country
+                                                " required>
+                                                <option v-for="c in countries" :value="c.code">
+                                                    {{ c.name }}
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+
                                 </div>
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">State</label>
-                                    <div class="col-sm-3">
-                                        <input type="text" class="form-control" name="country" placeholder=""
-                                            v-model="org.address.state">
-                                    </div>
-                                    <label for="" class="col-sm-1 control-label">Postcode</label>
-                                    <div class="col-sm-2">
-                                        <input type="text" class="form-control" name="postcode" placeholder=""
-                                            v-model="org.address.postcode">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="" class="col-sm-3 control-label">Country</label>
-                                    <div class="col-sm-4">
-                                        <select class="form-control" name="country" v-model="org.address.country">
-                                            <option v-for="c in countries" :value="c.alpha2Code">{{ c.name }}
-                                            </option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <div class="col-sm-12">
-                                        <button v-if="!updatingAddress" class="float-end btn btn-primary"
-                                            @click.prevent="updateAddress()">Update</button>
-                                        <button v-else disabled class="float-end btn btn-primary"><i
-                                                class="fa fa-spin fa-spinner"></i>&nbsp;Updating</button>
-                                    </div>
-                                </div>
-                            </div>
+                            </fieldset>
+
+                            <BootstrapLoadingButton text="Update" :isLoading="updatingAddress"
+                                @click="validateForm('address-details')" class="btn licensing-btn-primary float-end" />
                         </form>
                     </FormSection>
 
@@ -225,6 +327,8 @@ import Vue from 'vue'
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
 import datatable from '@vue-utils/datatable.vue'
 import AddContact from '@common-utils/add_contact.vue'
+import BootstrapLoadingButton from '../../../utils/vue/BootstrapLoadingButton.vue';
+import swal from 'sweetalert2';
 
 export default {
     name: 'Organisation',
@@ -502,25 +606,33 @@ export default {
     },
     components: {
         datatable,
-        AddContact
+        AddContact,
+        BootstrapLoadingButton
     },
     computed: {
         classCompute: function () {
             return this.isApplication ? 'row' : 'container';
+        },
+        isBillingAddressSame: function () {
+            return JSON.stringify(this.org.postal_address) == JSON.stringify(this.org.billing_address);
         },
     },
     beforeRouteEnter: function (to, from, next) {
         let initialisers = [
             utils.fetchCountries(),
             utils.fetchOrganisation(to.params.org_id),
+            utils.fetchOrganisationAddress(to.params.org_id),
             utils.fetchOrganisationPermissions(to.params.org_id)
         ]
         Promise.all(initialisers).then(data => {
             next(vm => {
                 vm.countries = data[0];
-                vm.org = Object.assign({}, data[1]);
-                vm.myorgperms = data[2];
-                // vm.org.address = vm.org.address != null ? vm.org.address : {};
+                vm.org = Object.assign({}, data[1], data[2]);
+                vm.myorgperms = data[3];
+                vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
+                vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
+                vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
+               
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
@@ -528,12 +640,16 @@ export default {
     beforeRouteUpdate: function (to, from, next) {
         let initialisers = [
             utils.fetchOrganisation(to.params.org_id),
-            utils.fetchOrganisationPermissions(to.params.org_id)
+            utils.fetchOrganisationPermissions(to.params.org_id),
+            utils.fetchOrganisationAddress(to.params.org_id),
         ]
         Promise.all(initialisers).then(data => {
             next(vm => {
-                vm.org = Object.assign({}, data[0]);
+                vm.org = Object.assign({}, data[0], data[2]);
                 vm.myorgperms = data[1];
+                vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
+                vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
+                vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
                 // vm.org.address = vm.org.address != null ? vm.org.address : {};
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
@@ -542,6 +658,19 @@ export default {
     methods: {
         addContact: function () {
             this.$refs.add_contact.isModalOpen = true;
+        },
+        toggleBillingAddressFieldsDisabled: function () {
+
+            if (!this.org.billing_same_as_postal) {
+                $('.billing-address').first().focus();
+            }
+            else {
+                this.org.billing_address.line1 = this.org.postal_address.line1;
+                this.org.billing_address.locality = this.org.postal_address.locality;
+                this.org.billing_address.state = this.org.postal_address.state;
+                this.org.billing_address.postcode = this.org.postal_address.postcode;
+                this.org.billing_address.country = this.org.postal_address.country;
+            }
         },
         eventListeners: function () {
             let vm = this;
@@ -943,38 +1072,74 @@ export default {
                 emulateJSON: true
             })
         },
+        validateForm: function (formId) {
+            let vm = this;
+            var form = document.getElementById(formId);
 
+            if (form.checkValidity()) {
+                console.log('Form valid');
+                if (formId == 'address-details') {
+                    const code1 = vm.org.postal_address.postcode;
+                    const code2 = vm.org.billing_address.postcode;
+                    if (isNaN(Number.parseInt(code1)) || isNaN(Number.parseInt(code2))) {
+                     swal.fire(
+                        "Failure updating organisation details.",
+                        "Postcode should only contain numeric value.",
+                        "error"
+                    );
+                    }
+                    else {
+                        vm.updateAddress();
+                    }
+                }
+                else if (formId == 'organisation-details') {
+                    vm.updateDetails();
+                }
+            } else {
+                form.classList.add('was-validated');
+                $(form).find("input:invalid").first().focus();
+            }
+            return false;
+        },
         updateDetails: function () {
             let vm = this;
             vm.updatingDetails = true;
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_details')), JSON.stringify(vm.org), {
-                emulateJSON: true
-            }).then((response) => {
-                vm.updatingDetails = false;
-                vm.org = response.body;
-                if (vm.org.address == null) { vm.org.address = {}; }
-                if (!vm.isApplication) {
-                    swal(
-                        'Saved',
-                        'Organisation details have been saved',
-                        'success'
-                    )
-                }
-            }, (error) => {
-                console.log('EXTERNAL: ' + JSON.stringify(error));
-                var text = helpers.apiVueResourceError(error);
-                if (typeof text == 'object') {
-                    if (text.hasOwnProperty('email')) {
-                        text = text.email[0];
-                    }
-                }
-                swal(
-                    'Error',
-                    'Organisation details cannot be saved because of the following error: ' + text,
-                    'error'
-                )
-                vm.updatingDetails = false;
+            let payload = JSON.stringify({
+                'organisation_id': vm.org.id,
+                'organisation_name': vm.org.organisation_name ? vm.org.organisation_name : null,
+                'organisation_abn': vm.org.ledger_organisation_abn,
+                'organisation_email': vm.org.organisation_email,
+                'organisation_trading_name': vm.org.trading_name,
             });
+
+            fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_details')), {
+                method: 'PUT',
+                body: payload,
+            })
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
+                    }
+                    swal.fire(
+                        'Success',
+                        'Organisation details updated successfully.',
+                        'success'
+                    );
+                })
+                .catch((error) => {
+                    swal.fire(
+                        "Failure updating organisation details.",
+                        "Something went wrong! Please try again.",
+                        "error"
+                    );
+                    console.log(error);
+                }).finally(() => {
+                    vm.updatingDetails = false;
+                });
         },
         addedContact: function () {
             let vm = this;
@@ -1009,23 +1174,55 @@ export default {
         updateAddress: function () {
             let vm = this;
             vm.updatingAddress = true;
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_address')), JSON.stringify(vm.org.address), {
-                emulateJSON: true
-            }).then((response) => {
-                vm.updatingAddress = false;
-                vm.org = response.body;
-                if (!vm.isApplication) {
-                    swal(
-                        'Saved',
-                        'Address details have been saved',
-                        'success'
-                    )
+            let payload = JSON.stringify({
+                'organisation_id': vm.org.id,
+                'postal_address':
+                {
+                    "postal_line1": vm.org.postal_address.line1,
+                    "postal_locality": vm.org.postal_address.locality,
+                    "postal_state": vm.org.postal_address.state,
+                    "postal_postcode": vm.org.postal_address.postcode,
+                    "postal_country": vm.org.postal_address.country
+                },
+                "billing_address":
+                {
+                    "billing_line1": vm.org.billing_address.line1,
+                    "billing_locality": vm.org.billing_address.locality,
+                    "billing_state": vm.org.billing_address.state,
+                    "billing_postcode": vm.org.billing_address.postcode,
+                    "billing_country": vm.org.billing_address.country,
                 }
-                if (vm.org.address == null) { vm.org.address = {}; }
-            }, (error) => {
-                console.log(error);
-                vm.updatingAddress = false;
             });
+
+            fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_address')), {
+                method: 'POST',
+                body: payload,
+            })
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
+                    }
+                    vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
+                    swal.fire(
+                        'Success',
+                        'Organisation address updated successfully',
+                        'success'
+                    );
+                })
+                .catch((error) => {
+                    swal.fire(
+                        "Failure updating organisation address.",
+                        "Something went wrong! Please try again.",
+                        "error"
+                    );
+                    console.log(error);
+                }).finally(() => {
+                    vm.updatingAddress = false;
+                });
         },
         unlinkUser: function (d) {
             let vm = this;
@@ -1043,7 +1240,8 @@ export default {
                     emulateJSON: true
                 }).then((response) => {
                     vm.org = response.body;
-                    if (vm.org.address == null) { vm.org.address = {}; }
+                    if (vm.org.postal_address == null) { vm.org.postal_address = {}; }
+                    if (vm.org.billing_address == null) { vm.org.billing_address = {}; }
                     swal(
                         'Unlink',
                         'You have successfully unlinked ' + person.name + ' from ' + org_name + '.',
@@ -1062,18 +1260,21 @@ export default {
     },
     created: function () {
         let vm = this;
-        console.log('vm.$route.params.org_id = ' + vm.$route.params.org_id)
         this.personal_form = document.forms.personal_form;
         let initialisers = [
             utils.fetchCountries(),
             utils.fetchOrganisation(vm.$route.params.org_id),
+            utils.fetchOrganisationAddress(vm.$route.params.org_id),
             utils.fetchOrganisationPermissions(vm.$route.params.org_id)
         ]
         Promise.all(initialisers).then(data => {
             vm.countries = data[0];
-            vm.org = Object.assign({}, data[1]);
-            vm.myorgperms = data[2];
-            console.log('vm.org = ' + JSON.stringify(vm.org));
+            vm.org = Object.assign({}, data[1], data[2]);
+            vm.myorgperms = data[3];
+            vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
+            vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
+            vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
+            //console.log('vm.org = ' + JSON.stringify(vm.org));
         });
     },
     mounted: function () {
@@ -1113,5 +1314,34 @@ export default {
 
 input[readonly] {
     background-color: white;
+}
+
+
+fieldset,
+legend {
+    all: revert;
+}
+
+legend {
+    color: grey;
+}
+
+fieldset {
+    border-color: #efefef;
+    border-style: solid;
+}
+
+/* Hide the number input arrows */
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+    -moz-appearance: textfield;
 }
 </style>
