@@ -399,7 +399,7 @@
                                     <td>
                                         <template v-if="'Approved' == org.status">
                                             <div>
-                                                <a :href="'/external/organisations/manage/' + org.id"
+                                                <a :href="'/external/organisations/manage/' + org.organisation"
                                                     class="btn btn-primary btn-sm btn-status me-1" role="button">
                                                     <i class="fa fa-pencil-square"></i>
                                                     update</a>
@@ -498,6 +498,7 @@ export default {
                 vm.email_user.id = data[2].id;
                 vm.email_user.is_internal = data[2].is_internal;
                 vm.organisation_requests = data[3].results;
+                console.log("REQUESTS: ", vm.organisation_requests[0]);
                 // Convert date to format that the date picker can use
                 vm.email_user.dob = vm.email_user.dob.split("/").reverse().join("-");
                 this.$nextTick(() => {

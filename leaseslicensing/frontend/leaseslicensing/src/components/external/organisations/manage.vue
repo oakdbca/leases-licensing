@@ -120,7 +120,7 @@
                                         <div class="col-md-6">
                                             <div class="form-check form-switch">
                                                 <label for="billingPostcodeSame" class="form-label">
-                                                    Billing Address Same as Postal Address</label>
+                                                    Billing Address same as Postal Address</label>
                                                 <input @change="toggleBillingAddressFieldsDisabled" class="form-check-input"
                                                     type="checkbox" v-model="org.billing_same_as_postal"
                                                     id="toggleBillingAddressFieldsDisabled">
@@ -649,6 +649,7 @@ export default {
                 vm.myorgperms = data[1];
                 vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
                 vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
+                vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
                 // vm.org.address = vm.org.address != null ? vm.org.address : {};
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
@@ -659,7 +660,6 @@ export default {
             this.$refs.add_contact.isModalOpen = true;
         },
         toggleBillingAddressFieldsDisabled: function () {
-            console.log('toggleBillingAddressFieldsDisabled')
 
             if (!this.org.billing_same_as_postal) {
                 $('.billing-address').first().focus();
@@ -1074,14 +1074,25 @@ export default {
         },
         validateForm: function (formId) {
             let vm = this;
-            var form = document.getElementById(formId)
+            var form = document.getElementById(formId);
 
             if (form.checkValidity()) {
                 console.log('Form valid');
-                if(formId == 'address-details'){
-                    vm.updateAddress();
+                if (formId == 'address-details') {
+                    const code1 = vm.org.postal_address.postcode;
+                    const code2 = vm.org.billing_address.postcode;
+                    if (isNaN(Number.parseInt(code1)) || isNaN(Number.parseInt(code2))) {
+                     swal.fire(
+                        "Failure updating organisation details.",
+                        "Postcode should only contain numeric value.",
+                        "error"
+                    );
+                    }
+                    else {
+                        vm.updateAddress();
+                    }
                 }
-                else if(formId == 'organisation-details'){
+                else if (formId == 'organisation-details') {
                     vm.updateDetails();
                 }
             } else {
@@ -1120,16 +1131,11 @@ export default {
                     );
                 })
                 .catch((error) => {
-                //     swal(
-                //     'Error',
-                //     'Organisation details cannot be saved because of the following error: ' + text,
-                //     'error'
-                // )
-                    new swal({
-                            title: "Failure updating organisation details.",
-                            text: "Something went wrong! Please try again.",
-                            type: 'error'
-                        });
+                    swal.fire(
+                        "Failure updating organisation details.",
+                        "Something went wrong! Please try again.",
+                        "error"
+                    );
                     console.log(error);
                 }).finally(() => {
                     vm.updatingDetails = false;
@@ -1200,6 +1206,7 @@ export default {
                         console.log(error);
                         return Promise.reject(error);
                     }
+                    vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
                     swal.fire(
                         'Success',
                         'Organisation address updated successfully',
@@ -1207,12 +1214,12 @@ export default {
                     );
                 })
                 .catch((error) => {
-                    new swal({
-                            title: "Failure updating address.",
-                            text: "Something went wrong! Please try again.",
-                            type: 'error'
-                        });
-                    console.log("printin this....",error);
+                    swal.fire(
+                        "Failure updating organisation address.",
+                        "Something went wrong! Please try again.",
+                        "error"
+                    );
+                    console.log(error);
                 }).finally(() => {
                     vm.updatingAddress = false;
                 });
