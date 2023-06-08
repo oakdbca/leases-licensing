@@ -32,7 +32,6 @@ class OrganisationAdmin(admin.ModelAdmin):
         "ledger_organisation_name",
         "ledger_organisation_abn",
         "ledger_organisation_email",
-        "delegates",
         "admin_pin_one",
         "admin_pin_two",
         "user_pin_one",
