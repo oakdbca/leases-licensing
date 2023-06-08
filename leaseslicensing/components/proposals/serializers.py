@@ -1476,12 +1476,20 @@ class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
         fields = ("id", "code", "text")
 
 
+class ProposedApprovalROISerializer(serializers.Serializer):
+    decision = serializers.CharField(allow_null=False)
+    details = serializers.CharField(allow_null=False)
+    bcc_email = serializers.CharField(required=False, allow_null=True)
+
+
 class ProposedApprovalSerializer(serializers.Serializer):
-    # expiry_date = serializers.DateField(input_formats=['%d/%m/%Y'])
-    # start_date = serializers.DateField(input_formats=['%d/%m/%Y'])
+    approval_type = serializers.IntegerField()
     details = serializers.CharField()
-    decision = serializers.CharField()
     cc_email = serializers.CharField(required=False, allow_null=True)
+    expiry_date = serializers.DateField(input_formats=["%Y-%m-%d"])
+    start_date = serializers.DateField(input_formats=["%Y-%m-%d"])
+    selected_document_types = serializers.ListField()
+    record_management_number = serializers.CharField(allow_null=False)
 
 
 class PropedDeclineSerializer(serializers.Serializer):

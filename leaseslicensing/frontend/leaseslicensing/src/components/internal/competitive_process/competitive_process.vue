@@ -293,7 +293,7 @@ export default {
             return this.competitive_process.can_accessing_user_view;
         },
         related_items_ajax_url: function () {
-            return '/api/competitive_process/' + this.competitive_process.id + '/get_related_items/'
+            return '/api/competitive_process/' + this.competitive_process.id + '/related_items/'
         },
         competitiveProcessDocumentUrl: function () {
             return helpers.add_endpoint_join(

@@ -93,10 +93,13 @@ export default {
                 return options.indexOf(val) != -1 ? true : false
             },
         },
+        approval_id: {
+            type: Number,
+            required: false,
+        },
         target_email_user_id: {
             type: Number,
             required: false,
-            default: 0,
         },
     },
     data() {
@@ -191,6 +194,12 @@ export default {
         },
     },
     computed: {
+        url: function () {
+            if (this.approval_id) {
+                return api_endpoints.invoices + `?approval_id=${this.approval_id}&format=datatables`
+            }
+            return api_endpoints.invoices + '?format=datatables'
+        },
         filterApplied: function () {
             if (
                 this.filterInvoiceStatus.toLowerCase() === 'all' &&
@@ -210,6 +219,9 @@ export default {
             return this.level == 'internal'
         },
         invoicesHeaders: function () {
+            if (this.approval_id) {
+
+            }
             return [
                 'ID',
                 'Number',
@@ -463,7 +475,7 @@ export default {
 
             return {
                 searching: true,
-                autoWidth: false,
+                autoWidth: true,
                 language: {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
@@ -471,9 +483,8 @@ export default {
                 serverSide: true,
 
                 ajax: {
-                    url:
-                        api_endpoints.invoices +
-                        '?format=datatables',
+                    url: vm.url
+                    ,
                     dataSrc: 'data',
 
                     // adding extra GET params for Custom filtering
@@ -500,6 +511,10 @@ export default {
     methods: {
         collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.showWarningIcon(this.filterApplied)
+        },
+        adjust_table_width: function () {
+            this.$refs.invoices_datatable.vmDataTable.columns.adjust()
+            this.$refs.invoices_datatable.vmDataTable.responsive.recalc()
         },
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded

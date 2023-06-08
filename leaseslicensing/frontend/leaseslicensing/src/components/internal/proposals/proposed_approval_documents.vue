@@ -5,51 +5,43 @@
                 <form class="form-horizontal" name="approvalDocumentsForm">
                     <div class="col-sm-12">
                         <div class="form-group">
-
-                            <div v-if="!readonly" class="row modal-input-row">
+                            <div v-if="!readonly" class="row mb-3">
                                 <div v-if="withApprover">
                                     Selected documents that need to be attached as part of the approval of this application
                                 </div>
                                 <div v-else class="col-sm-12">
-                                    Select zero or more documents that need to be attached as part of the approval of this application
+                                    Select zero or more documents that that are required for the approval of this
+                                    application
                                 </div>
                             </div>
                             <div class="form-group" v-if="isLeaseLicence && !readonly">
-                                <div class="row modal-input-row">
+                                <div class="row mb-3">
                                     <div class="col-sm-4">
-                                        <select
-                                            ref="select_document"
-                                            class="form-control"
-                                            id="documentTypeSelector"
+                                        <select ref="select_document" class="form-control" id="documentTypeSelector"
                                             :v-model="selectedDocumentTypesIds"
-                                            :disabled="availableDocumentTypes.length == 0"
-                                        >
+                                            :disabled="availableDocumentTypes.length == 0">
                                             <option></option>
-                                            <option v-for="docType in availableDocumentTypes" :value="docType.id">{{ docType.name }}</option>
+                                            <option v-for="docType in availableDocumentTypes" :value="docType.id">{{
+                                                docType.name }}</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
-
-                            <div v-for="docType in selectedDocumentTypes">
-                                <div class="row modal-input-row">
-                                    <div class="col-sm-3">
-                                        <textarea :disabled="true" class="control-label pull-left"
-                                                rows="1" placeholder="<selected document type>"
-                                                style="resize: none"
-                                        >{{ docType.name }}</textarea>
+                            <div v-for="docType in selectedDocumentTypes" class="border rounded mb-3 p-3">
+                                <div class="row mb-3">
+                                    <div class="col fw-bold">
+                                        {{ docType.name }}
                                     </div>
-                                    <div class="col-sm-9">
-                                        <FileField
-                                            :readonly="readonly"
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col">
+                                        <FileField :readonly="readonly"
                                             :name="'lease_licence_approval_documents_' + docType.name + '_' + docType.id"
                                             :id="'lease_licence_approval_documents_' + docType.name + '_' + docType.id"
                                             :approval_type="selectedApprovalTypeId"
-                                            :approval_type_document_type="docType.id"
-                                            :isRepeatable="true"
+                                            :approval_type_document_type="docType.id" :isRepeatable="true"
                                             :documentActionUrl="leaseLicenceApprovalDocumentsUrl"
-                                            :replace_button_by_text="true"
-                                        />
+                                            :replace_button_by_text="true" />
                                     </div>
                                 </div>
                             </div>
@@ -97,54 +89,54 @@ export default {
     components: {
         FileField,
     },
-    data: function() {
+    data: function () {
         return {
             selectedDocumentTypes: [],
             availableDocumentTypes: [],
         }
     },
     computed: {
-        withApprover: function(){
+        withApprover: function () {
             return [constants.PROPOSAL_STATUS.WITH_APPROVER.ID,].includes(
                 this.proposal.processing_status_id
-                ) ?
+            ) ?
                 true :
                 false;
         },
-        isLeaseLicence: function(){
+        isLeaseLicence: function () {
             if (this.proposal && this.proposal.application_type.name === 'lease_licence') {
                 return true;
             }
         },
-        leaseLicenceApprovalDocumentsUrl: function() {
+        leaseLicenceApprovalDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_lease_licence_approval_document/'
-                )
+            )
         },
-        canChangeDocuments: function() {
+        canChangeDocuments: function () {
             /** The assessor and the approver can change the documents
              */
 
             return [
-                    constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
-                    constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
-                    constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
-                ].includes(this.proposal.processing_status_id)
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
+            ].includes(this.proposal.processing_status_id)
         },
-        selectedDocumentTypesIds: function() {
+        selectedDocumentTypesIds: function () {
             // Return the ids of selected document types from the document type-dropdown
-            return this.selectedDocumentTypes.map(({id})=>id);
+            return this.selectedDocumentTypes.map(({ id }) => id);
         },
     },
     methods: {
         documentTypeSelectorBlur() {
-            $('#'+'documentTypeSelector').val(null).trigger("change");
+            $('#' + 'documentTypeSelector').val(null).trigger("change");
         },
         /**
          * Initialise the select2 control for adding documents as part of the application
          */
-        initSelectDocument: function() {
+        initSelectDocument: function () {
             let vm = this;
 
             $(vm.$refs.select_document).select2({
@@ -164,10 +156,10 @@ export default {
                     }
                     return $('<div">' + data.text + '</div>');
                 },
-                templateResult: function(result) {
+                templateResult: function (result) {
                     // Add custom styling to the selection dropdown options
 
-                    if(!result.id) {
+                    if (!result.id) {
                         return $('<div style="color: grey;">' + result.text + '</div>');
                     }
                     else {
@@ -208,10 +200,10 @@ export default {
          */
         updateSelectedDocumentTypes(id, remove) {
             let list = updateIdListFromAvailable(
-                            id,
-                            this.selectedDocumentTypes,
-                            this.availableDocumentTypes,
-                            remove);
+                id,
+                this.selectedDocumentTypes,
+                this.availableDocumentTypes,
+                remove);
             if (list) {
                 this.selectedDocumentTypes = list;
             } else {
@@ -219,13 +211,13 @@ export default {
             }
         },
     },
-    created: async function() {
+    created: async function () {
         let vm = this;
         vm.approval = Object.assign({}, vm.proposal.proposed_issuance_approval);
         vm.availableDocumentTypes = [];
         vm.selectedDocumentTypes = [];
 
-        vm.$nextTick(()=>{
+        vm.$nextTick(() => {
             vm.initSelectDocument();
 
             // Available Document Types
@@ -244,5 +236,4 @@ export default {
         });
     }
 }
-
 </script>

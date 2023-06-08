@@ -308,7 +308,9 @@ class InvoicingDetails(BaseModel):
         on_delete=models.SET_NULL,
         related_name="invoicing_details_set_for_review",
     )
-    invoicing_once_every = models.PositiveSmallIntegerField(null=True, blank=True)
+    invoicing_once_every = models.PositiveSmallIntegerField(
+        null=True, blank=True
+    )  # Probably better to call this times per repetition?
     invoicing_repetition_type = models.ForeignKey(
         RepetitionType,
         null=True,
@@ -511,6 +513,9 @@ class InvoiceManager(models.Manager):
 
 class Invoice(RevisionedMixin, models.Model):
     objects = InvoiceManager()
+
+    MODEL_PREFIX = "I"
+
     INVOICE_STATUS_UNPAID = "unpaid"
     INVOICE_STATUS_PAID = "paid"
     INVOICE_STATUS_VOID = "void"
@@ -521,7 +526,11 @@ class Invoice(RevisionedMixin, models.Model):
     )
     lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     approval = models.ForeignKey(
-        "Approval", blank=False, null=False, on_delete=models.PROTECT
+        "Approval",
+        blank=False,
+        null=False,
+        on_delete=models.PROTECT,
+        related_name="invoices",
     )
     status = models.CharField(
         max_length=40, choices=INVOICE_STATUS_CHOICES, null=True, blank=True
@@ -545,7 +554,7 @@ class Invoice(RevisionedMixin, models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.lodgement_number == "":
-            self.lodgement_number = f"I{self.pk:06d}"
+            self.lodgement_number = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.save()
 
     def __str__(self):

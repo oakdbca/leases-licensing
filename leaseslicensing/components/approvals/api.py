@@ -14,6 +14,7 @@ from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
+from rest_framework_datatables.renderers import DatatablesRenderer
 
 from leaseslicensing.components.approvals.models import (
     Approval,
@@ -23,7 +24,6 @@ from leaseslicensing.components.approvals.models import (
 from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
     ApprovalDocumentHistorySerializer,
-    ApprovalExtendSerializer,
     ApprovalLogEntrySerializer,
     ApprovalPaymentSerializer,
     ApprovalSerializer,
@@ -32,33 +32,17 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalUserActionSerializer,
 )
 from leaseslicensing.components.compliances.models import Compliance
+from leaseslicensing.components.invoicing.serializers import InvoiceSerializer
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
+from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.organisations.models import OrganisationContact
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
 
 logger = logging.getLogger(__name__)
-
-
-# class GetApprovalTypeDict(views.APIView):
-#    renderer_classes = [JSONRenderer, ]
-#
-#    def get(self, request, format=None):
-#        include_codes = request.GET.get('include_codes', '')
-#        include_codes = include_codes.split(',')
-#        cache_title = 'approval_type_dict'
-#        for code in include_codes:
-#            cache_title += '_' + code
-#        data = cache.get(cache_title)
-#        if not data:
-#            #cache.set(cache_title, Approval.approval_types_dict(include_codes), settings.LOV_CACHE_TIMEOUT)
-#            cache.set(cache_title,
-#               [{'code': i[0], 'description': i[1]} for i in Approval.STATUS_CHOICES], settings.LOV_CACHE_TIMEOUT)
-#            data = cache.get(cache_title)
-#        return Response(data)
 
 
 class GetApprovalTypesDict(views.APIView):
@@ -385,6 +369,7 @@ class ApprovalViewSet(viewsets.ModelViewSet):
     # queryset = Approval.objects.all()
     queryset = Approval.objects.none()
     serializer_class = ApprovalSerializer
+    pagination_class = DatatablesPageNumberPagination
 
     def get_queryset(self):
         if is_internal(self.request):
@@ -478,98 +463,6 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             return Response(returned_data)
         else:
             return Response()
-
-    # Commenting this out for now. Not sure if we need this
-    # @detail_route(methods=["POST"], detail=True)
-    # @renderer_classes((JSONRenderer,))
-    # def process_document(self, request, *args, **kwargs):
-    #     instance = self.get_object()
-    #     action = request.POST.get("action")
-    #     section = request.POST.get("input_name")
-    #     if action == "list" and "input_name" in request.POST:
-    #         pass
-
-    #     elif action == "delete" and "document_id" in request.POST:
-    #         document_id = request.POST.get("document_id")
-    #         document = instance.qaofficer_documents.get(id=document_id)
-
-    #         document.visible = False
-    #         document.save()
-    #         instance.save(
-    #             version_comment=f"Licence ({section}): {document.name}"
-    #         )  # to allow revision to be added to reversion history
-
-    #     elif (
-    #         action == "save"
-    #         and "input_name" in request.POST
-    #         and "filename" in request.POST
-    #     ):
-    #         proposal_id = request.POST.get("proposal_id")
-    #         filename = request.POST.get("filename")
-    #         _file = request.POST.get("_file")
-    #         if not _file:
-    #             _file = request.FILES.get("_file")
-
-    #         document = instance.qaofficer_documents.get_or_create(
-    #             input_name=section, name=filename
-    #         )[0]
-    #         path = default_storage.save(
-    #             "{}/proposals/{}/approvals/{}".format(
-    #                 settings.MEDIA_APP_DIR, proposal_id, filename
-    #             ),
-    #             ContentFile(_file.read()),
-    #         )
-
-    #         document._file = path
-    #         document.save()
-    #         instance.save(
-    #             version_comment=f"Licence ({section}): {filename}"
-    #         )  # to allow revision to be added to reversion history
-    #         # instance.current_proposal.save(version_comment='File Added: {}'.format(filename))
-    #         # # to allow revision to be added to reversion history
-
-    #     return Response(
-    #         [
-    #             dict(
-    #                 input_name=d.input_name,
-    #                 name=d.name,
-    #                 file=d._file.url,
-    #                 id=d.id,
-    #                 can_delete=d.can_delete,
-    #             )
-    #             for d in instance.qaofficer_documents.filter(
-    #                 input_name=section, visible=True
-    #             )
-    #             if d._file
-    #         ]
-    #     )
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    def approval_extend(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            serializer = ApprovalExtendSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            instance.approval_extend(request, serializer.validated_data)
-            serializer = ApprovalSerializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
 
     @detail_route(
         methods=[
@@ -799,3 +692,51 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         except Exception as e:
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    def invoices(self, request, *args, **kwargs):
+        instance = self.get_object()
+        qs = instance.invoices.all()
+        serializer = InvoiceSerializer(qs, many=True, context={"request": request})
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=["GET"],
+        detail=True,
+        renderer_classes=[DatatablesRenderer],
+        pagination_class=DatatablesPageNumberPagination,
+    )
+    def related_items(self, request, *args, **kwargs):
+        """Uses union to combine a queryset of multiple different model types
+        and uses a generic related item serializer to return the data
+        Todo: Pagination is not working."""
+        instance = self.get_object()
+        proposals_queryset = Proposal.objects.filter(
+            approval__lodgement_number=instance.lodgement_number
+        ).values("id", "lodgement_number", "processing_status")
+        compliances_queryset = instance.compliances.values(
+            "id", "lodgement_number", "processing_status"
+        )
+        queryset = proposals_queryset.union(compliances_queryset).order_by(
+            "lodgement_number"
+        )
+
+        # page = self.paginate_queryset(queryset)
+        # if page is not None:
+        #     logger.debug(f"page = {page}")
+        #     serializer = RelatedItemSerializer(page, many=True)
+        #     return self.get_paginated_response(serializer.data)
+
+        logger.debug(f"paginated_queryset query: {queryset}")
+        serializer = RelatedItemSerializer(queryset, many=True)
+        data = {}
+        # Add the fields that the datatables renderer expects
+        data["data"] = serializer.data
+        data["recordsFiltered"] = queryset.count()
+        data["recordsTotal"] = queryset.count()
+        return Response(data=data)

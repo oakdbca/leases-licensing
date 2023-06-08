@@ -93,6 +93,10 @@ export default {
         okDisabled: {
             type: Boolean,
             default: false
+        },
+        scrollable: {
+            type: Boolean,
+            default: false
         }
     },
     data() {
@@ -107,7 +111,8 @@ export default {
                 'modal-xl': this.extraLarge,
                 'modal-lg': this.large,
                 'modal-sm': this.small,
-                'modal-full': this.full
+                'modal-full': this.full,
+                'modal-dialog-scrollable': this.scrollable
             }
         },
         show: function () {

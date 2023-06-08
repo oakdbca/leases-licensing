@@ -14,7 +14,10 @@ export default {
         datatable,
     },
     props: {
-        ajax_url: '',
+        ajax_url: {
+            type: String,
+            required: true,
+        }
     },
     data() {
         let vm = this;
@@ -25,59 +28,37 @@ export default {
     computed: {
         column_lodgement_number: function () {
             return {
-                data: 'identifier',
-                //name: 'lodgement_number',
+                data: 'lodgement_number',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                //'render': function(row, type, full){
-                //}
             }
         },
         column_type: function () {
             return {
-                data: 'model_name',
-                //name: 'type',
+                data: 'item_type',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                //'render': function(row, type, full){
-                //}
             }
         },
         column_description: function () {
             return {
-                data: 'descriptor',
-                //name: 'descriptor',
+                data: 'description',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                'render': function (row, type, full) {
-                    /** The related item description is to be determined per type:
-                     * - Application - application status
-                     * - Lease/License - expiry date
-                     */
-                    if (full.type === "application") {
-                        return constants.PROPOSAL_STATUS[full.descriptor.toUpperCase()].TEXT;
-                    } else if (full.type === "lease_license") {
-                        return full.descriptor;
-                    } else if (full.type === "competitive_process") {
-                        return constants.COMPETITIVE_PROCESS_STATUS[full.descriptor.toUpperCase()].TEXT;
-                    } else {
-                        return full.descriptor;
-                    }
-                }
             }
         },
         column_action: function () {
             return {
-                data: 'action_url',
-                //name: 'action',
+                data: 'detail_url',
                 orderable: false,
                 searchable: false,
                 visible: true,
-                //'render': function(row, type, full){
-                //}
+                render: function (data, type, row) {
+                    return `<a href="${data}" target="_blank">View</a>`
+                }
             }
         },
         datatable_options: function () {
@@ -94,36 +75,24 @@ export default {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
-                //serverSide: true,
+                serverSide: true,
                 searching: true,
                 ordering: true,
                 order: [[0, 'desc']],
                 ajax: {
-                    //"url": '/api/proposal/' + vm.proposal.id + '/get_related_items/',
                     "url": vm.ajax_url,
-                    "dataSrc": "",
-
-                    // adding extra GET params for Custom filtering
+                    "dataSrc": "data",
                     "data": function (d) {
-                        /*
-                        d.filter_application_type = vm.filterApplicationType
-                        d.filter_application_status = vm.filterApplicationStatus
-                        d.filter_applicant = vm.filterApplicant
-                        d.level = vm.level
-                        */
                     }
                 },
                 dom: 'lBfrtip',
                 buttons: [],
                 columns: columns,
                 processing: true,
-                initComplete: function (settings, json) {
-                },
             }
         },
         datatable_headers: function () {
             return [
-                //'id',
                 'Number',
                 'Type',
                 'Description',

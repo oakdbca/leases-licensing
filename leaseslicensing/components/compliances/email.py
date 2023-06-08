@@ -222,9 +222,7 @@ def send_internal_reminder_email_notification(compliance, is_test=False):
     email = ComplianceInternalReminderNotificationEmail()
     # url = request.build_absolute_uri(reverse('external-compliance-detail',kwargs={'compliance_pk': compliance.id}))
     url = settings.SITE_URL
-    url += reverse(
-        "internal-compliance-detail", kwargs={"compliance_pk": compliance.id}
-    )
+    url += reverse("internal-compliance-detail", kwargs={"pk": compliance.id})
     if "-internal" not in url:
         # add it. This email is for internal staff
         url = f"-internal.{settings.SITE_DOMAIN}".join(
@@ -300,11 +298,9 @@ def send_due_email_notification(compliance, is_test=False):
 
 def send_internal_due_email_notification(compliance, is_test=False):
     email = ComplianceInternalDueNotificationEmail()
-    # url = request.build_absolute_uri(reverse('external-compliance-detail',kwargs={'compliance_pk': compliance.id}))
+    # url = request.build_absolute_uri(reverse('external-compliance-detail',kwargs={'pk': compliance.id}))
     url = settings.SITE_URL
-    url += reverse(
-        "internal-compliance-detail", kwargs={"compliance_pk": compliance.id}
-    )
+    url += reverse("internal-compliance-detail", kwargs={"pk": compliance.id})
     if "-internal" not in url:
         # add it. This email is for internal staff
         url = f"-internal.{settings.SITE_DOMAIN}".join(

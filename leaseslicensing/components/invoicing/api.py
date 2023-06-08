@@ -20,6 +20,10 @@ logger = logging.getLogger(__name__)
 
 class InvoiceFilterBackend(DatatablesFilterBackend):
     def filter_queryset(self, request, queryset, view):
+        approval_id = request.GET.get("approval_id", None)
+        if approval_id:
+            queryset = queryset.filter(approval_id=approval_id)
+
         filter_invoice_organisation = (
             request.GET.get("filter_invoice_organisation")
             if request.GET.get("filter_invoice_organisation") != "all"

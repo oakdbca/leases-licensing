@@ -1,0 +1,163 @@
+[
+    {
+        "model": "leaseslicensing.group",
+        "pk": 1,
+        "fields": {
+            "name": "Access"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 2,
+        "fields": {
+            "name": "Agriculture"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 3,
+        "fields": {
+            "name": "Communication (Commercial)"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 4,
+        "fields": {
+            "name": "Communication (Non-commercial)"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 5,
+        "fields": {
+            "name": "Clubs and Associations"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 6,
+        "fields": {
+            "name": "Dam/Water Supply (Commercial)"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 7,
+        "fields": {
+            "name": "Dam/Water Supply (Non-commercial)"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 8,
+        "fields": {
+            "name": "Education"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 9,
+        "fields": {
+            "name": "Gravel"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 10,
+        "fields": {
+            "name": "House Rental"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 11,
+        "fields": {
+            "name": "Local Government and Community Service"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 12,
+        "fields": {
+            "name": "Marine Aid to Navigation"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 13,
+        "fields": {
+            "name": "Monitoring and Research (Mining)"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 14,
+        "fields": {
+            "name": "Monitoring and Research (Other)"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 15,
+        "fields": {
+            "name": "Recreation"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 16,
+        "fields": {
+            "name": "Sanitary/Rubbish Disposal Sites"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 17,
+        "fields": {
+            "name": "Sawmill"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 18,
+        "fields": {
+            "name": "Site"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 19,
+        "fields": {
+            "name": "Tourism"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 20,
+        "fields": {
+            "name": "Traditional Owner Purposes"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 21,
+        "fields": {
+            "name": "Utilities"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 22,
+        "fields": {
+            "name": "Wildlife Care and Rehabilitation"
+        }
+    },
+    {
+        "model": "leaseslicensing.group",
+        "pk": 23,
+        "fields": {
+            "name": "Other"
+        }
+    }
+]

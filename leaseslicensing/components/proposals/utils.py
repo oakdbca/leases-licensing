@@ -498,6 +498,8 @@ def save_proponent_data_lease_licence(instance, request, viewset):
 
     save_geometry(instance, request)
 
+    populate_gis_data(instance)
+
     if viewset.action == "submit":
         check_geometry(instance)
 

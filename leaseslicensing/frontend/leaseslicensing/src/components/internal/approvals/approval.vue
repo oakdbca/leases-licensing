@@ -1,7 +1,10 @@
 <template>
     <div v-if="approval" class="container" id="internalApproval">
         <div class="row">
-            <h3>{{ approvalLabel }}: {{ approval.lodgement_number }}</h3>
+            <h3>{{ approvalLabel }}: {{ approval.lodgement_number }} <small v-if="approval.original_leaselicense_number"
+                    class="text-muted"> (Migrated from: {{
+                        approval.original_leaselicense_number
+                    }})</small></h3>
             <div class="col-md-3">
                 <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
                     :disable_add_entry="false" />
@@ -80,7 +83,7 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="pills-invoicing-tab" data-bs-toggle="pill"
                             data-bs-target="#pills-invoicing" role="tab" aria-controls="pills-invoicing"
-                            aria-selected="true">
+                            aria-selected="true" @click="tabClicked('invoicing')">
                             Invoicing
                         </button>
                     </li>
@@ -106,36 +109,52 @@
                             <div v-if="loading.length == 0" class="card-body" :id="oBody">
                                 <form class="form-horizontal" action="index.html" method="post">
                                     <div class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Lodgement
+                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Lodgement
                                             Number</label>
-                                        <div class="col-sm-6">
+                                        <div class="col-sm-8">
                                             <input class="form-control" type="text" :value="approval.lodgement_number"
                                                 readonly />
                                         </div>
                                     </div>
+                                    <div v-if="approval.original_leaselicense_number" class="row mb-3">
+                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Migrated from</label>
+                                        <div class="col-sm-8">
+                                            <input class="form-control" type="text"
+                                                :value="approval.original_leaselicense_number" readonly />
+                                        </div>
+                                    </div>
                                     <div class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-3 col-form-label">Approval Type</label>
-                                        <div class="col-sm-6">
+                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Approval Type</label>
+                                        <div class="col-sm-8">
                                             <input class="form-control" type="text" :value="approval.application_type"
                                                 readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="start_date" class="col-sm-3 col-form-label">Commencement</label>
-                                        <div class="col-sm-6">
+                                        <label for="start_date" class="col-sm-4 col-form-label">Commencement</label>
+                                        <div class="col-sm-8">
                                             <input class="form-control" id="issue_date" type="text"
                                                 :value="formatDate(approval.start_date)" readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="expiry_date" class="col-sm-3 col-form-label">Expiry</label>
-                                        <div class="col-sm-6">
+                                        <label for="expiry_date" class="col-sm-4 col-form-label">Expiry</label>
+                                        <div class="col-sm-8">
                                             <input class="form-control" id="issue_date" type="text"
                                                 :value="formatDate(approval.expiry_date)" readonly />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="" class="col-sm-3 col-form-label">{{ approvalLabel }}</label>
+                                        <label for="record_management_number" class="col-sm-4 col-form-label">Record
+                                            Management
+                                            Number</label>
+                                        <div class="col-sm-8">
+                                            <input class="form-control" type="text" id="record_management_number"
+                                                :value="approval.record_management_number" readonly />
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <label for="" class="col-sm-4 col-form-label">{{ approvalLabel }}</label>
                                         <div class="col-sm-4">
                                             <p><a target="_blank" :href="approval.licence_document"
                                                     class="form-label pull-left">Licence.pdf</a></p>
@@ -152,18 +171,15 @@
                     </div>
 
                     <div class="tab-pane fade" id="pills-invoicing" role="tabpanel">
-                        Invoicing
+                        <InvoicesTable v-if="loadInvoices" ref="invoice_table" :approval_id="approval.id"
+                            level="internal" />
                     </div>
 
                     <div class="tab-pane fade" id="pills-related-items" role="tabpanel">
-                        Related Items
+                        <FormSection :formCollapse="false" label="Related Items" Index="related_items">
+                            <TableRelatedItems :ajax_url="related_items_ajax_url" />
+                        </FormSection>
                     </div>
-                </div>
-
-                <div class="row">
-
-
-
                 </div>
             </div>
         </div>
@@ -174,13 +190,12 @@ import datatable from '@vue-utils/datatable.vue'
 import CommsLogs from '@common-utils/comms_logs.vue'
 import Applicant from '@/components/common/applicant.vue'
 import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
+import InvoicesTable from "@/components/common/table_invoices.vue"
 import FormSection from "@/components/forms/section_toggle.vue"
 import { api_endpoints, helpers } from '@/utils/hooks'
 import Swal from 'sweetalert2'
-//import OnSiteInformation from '@/components/common/apiary/section_on_site_information.vue'
-//import TemporaryUse from '@/components/common/apiary/section_temporary_use.vue'
-//import ComponentSiteSelection from '@/components/common/apiary/component_site_selection.vue'
-//import SectionAnnualRentalFee from '@/components/common/apiary/section_annual_rental_fee.vue'
+import TableRelatedItems from '@/components/common/table_related_items.vue'
+
 export default {
     name: 'ApprovalDetail',
     data() {
@@ -201,123 +216,14 @@ export default {
             org: {
                 address: {}
             },
-
+            loadInvoices: false,
             // Filters
             logs_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/action_log'),
             comms_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/comms_log'),
             comms_add_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/add_comms_log'),
-            moorings_datatable_headers: [
-                //'Id',
-                'Mooring',
-                'Sticker',
-                'Licensee',
-                'Allocated By',
-                'Mobile',
-                'Email',
-            ],
 
-            moorings_datatable_options: {
-                autoWidth: false,
-                responsive: true,
-                columns: [
-                    {
-                        data: "mooring_name",
-                    },
-                    {
-                        data: "sticker",
-                    },
-                    {
-                        data: "licensee",
-                    },
-                    {
-                        data: "allocated_by",
-                    },
-                    {
-                        data: "mobile",
-                    },
-                    {
-                        data: "email",
-                    },
-                ],
-            },
-            ml_vessels_datatable_headers: [
-                //'Id',
-                'Vessel',
-                'Rego No',
-                'Sticker',
-                'Owner',
-                'Mobile',
-                'Email',
-            ],
-
-            ml_vessels_datatable_options: {
-                autoWidth: false,
-                responsive: true,
-                columns: [
-                    {
-                        data: "vessel_name",
-                    },
-                    {
-                        data: "rego_no",
-                    },
-                    {
-                        data: "sticker_numbers",
-                    },
-                    {
-                        data: "owner",
-                    },
-                    {
-                        data: "mobile",
-                    },
-                    {
-                        data: "email",
-                    },
-                ],
-            },
-            ml_authorised_users_datatable_headers: [
-                'Number',
-                'Vessel',
-                'Holder',
-                'Mobile',
-                'Email',
-                'Status',
-            ],
-
-            ml_authorised_users_datatable_options: {
-                autoWidth: false,
-                responsive: true,
-                columns: [
-                    {
-                        data: "lodgement_number",
-                    },
-                    {
-                        data: "vessel_name",
-                    },
-                    {
-                        data: "holder",
-                    },
-                    {
-                        data: "mobile",
-                    },
-                    {
-                        data: "email",
-                    },
-                    {
-                        data: "status",
-                    },
-                ],
-            },
-
+            related_items_ajax_url: helpers.add_endpoint_join(api_endpoints.approvals, vm.$route.params.approval_id + '/related_items'),
         }
-    },
-    watch: {
-        showExpired: function (value) {
-            console.log(value)
-            //this.$refs.approvals_datatable.vmDataTable.ajax.reload()
-            this.$nextTick(() => {
-                this.constructMLAuthorisedUsersTable()
-            });
-        },
     },
     components: {
         datatable,
@@ -325,6 +231,8 @@ export default {
         FormSection,
         Applicant,
         OrganisationApplicant,
+        InvoicesTable,
+        TableRelatedItems,
     },
     computed: {
         debug: function () {
@@ -356,86 +264,16 @@ export default {
             }
             return permit;
         },
-        mooringLicence: function () {
-            let permit = false;
-            if (this.approval && this.approval.approval_type_dict && this.approval.approval_type_dict.code === 'ml') {
-                permit = true;
-            }
-            return permit;
-        },
     },
     methods: {
+        tabClicked: function (param) {
+            if (param == 'invoicing') {
+                console.log('invoicing tab clicked')
+                this.loadInvoices = true;
+            }
+        },
         formatDate: function (data) {
             return data ? moment(data).format(this.DATE_TIME_FORMAT) : '';
-        },
-        constructMooringsTable: function () {
-            let vm = this;
-            this.$refs.moorings_datatable.vmDataTable.clear().draw();
-
-            for (let aum of vm.approval.authorised_user_moorings_detail) {
-                this.$refs.moorings_datatable.vmDataTable.row.add(
-                    {
-                        'mooring_name': aum.mooring_name,
-                        'sticker': aum.sticker,
-                        'licensee': aum.licensee,
-                        'allocated_by': aum.allocated_by,
-                        'mobile': aum.mobile,
-                        'email': aum.email,
-                    }
-                ).draw();
-            }
-        },
-        constructMLVesselsTable: function () {
-            let vm = this;
-            this.$refs.ml_vessels_datatable.vmDataTable.clear().draw();
-
-            for (let mlv of vm.approval.mooring_licence_vessels_detail) {
-                this.$refs.ml_vessels_datatable.vmDataTable.row.add(
-                    {
-                        'vessel_name': mlv.vessel_name,
-                        'rego_no': mlv.rego_no,
-                        'sticker_numbers': mlv.sticker_numbers,
-                        'owner': mlv.owner,
-                        'mobile': mlv.mobile,
-                        'email': mlv.email,
-                    }
-                ).draw();
-            }
-        },
-        constructMLAuthorisedUsersTable: function () {
-            let vm = this;
-            this.$refs.ml_authorised_users_datatable.vmDataTable.clear().draw();
-
-            for (let mlau of vm.approval.mooring_licence_authorised_users) {
-                if (this.showExpired || (!this.showExpired && ['current'].includes(mlau.status))) {
-                    this.$refs.ml_authorised_users_datatable.vmDataTable.row.add(
-                        {
-                            'lodgement_number': mlau.lodgement_number,
-                            'vessel_name': mlau.vessel_name,
-                            'holder': mlau.holder,
-                            'mobile': mlau.mobile,
-                            'email': mlau.email,
-                            'status': mlau.status,
-                        }
-                    ).draw();
-                }
-            }
-        },
-
-        commaToNewline(s) {
-            return s.replace(/[,;]/g, '\n');
-        },
-        viewApprovalPDF: function (id, media_link) {
-            let vm = this;
-            //console.log(approval);
-            vm.$http.get(helpers.add_endpoint_json(api_endpoints.approvals, (id + '/approval_pdf_view_log')), {
-            })
-                .then((response) => {
-                    //console.log(response)
-                }, (error) => {
-                    console.log(error);
-                });
-            window.open(media_link, '_blank');
         },
         renewalRevew: function (canBeRenewed) {
             let vm = this;
@@ -483,19 +321,9 @@ export default {
     created: async function () {
         const response = await fetch(helpers.add_endpoint_json(api_endpoints.approvals, this.$route.params.approval_id))
         const resData = await response.json()
-        console.log({ resData })
         this.approval = Object.assign({}, resData);
         this.approval.applicant_id = resData.applicant_id;
         if (this.approval.submitter.postal_address == null) { this.approval.submitter.postal_address = {}; }
-        await this.$nextTick(() => {
-            if (this.approval && this.approval.id && this.authorisedUserPermit) {
-                this.constructMooringsTable();
-            }
-            if (this.approval && this.approval.id && this.mooringLicence) {
-                this.constructMLVesselsTable();
-                this.constructMLAuthorisedUsersTable();
-            }
-        })
     },
 }
 </script>
