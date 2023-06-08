@@ -45,24 +45,6 @@ from leaseslicensing.helpers import is_assessor, is_customer, is_internal
 logger = logging.getLogger(__name__)
 
 
-# class GetApprovalTypeDict(views.APIView):
-#    renderer_classes = [JSONRenderer, ]
-#
-#    def get(self, request, format=None):
-#        include_codes = request.GET.get('include_codes', '')
-#        include_codes = include_codes.split(',')
-#        cache_title = 'approval_type_dict'
-#        for code in include_codes:
-#            cache_title += '_' + code
-#        data = cache.get(cache_title)
-#        if not data:
-#            #cache.set(cache_title, Approval.approval_types_dict(include_codes), settings.LOV_CACHE_TIMEOUT)
-#            cache.set(cache_title,
-#               [{'code': i[0], 'description': i[1]} for i in Approval.STATUS_CHOICES], settings.LOV_CACHE_TIMEOUT)
-#            data = cache.get(cache_title)
-#        return Response(data)
-
-
 class GetApprovalTypesDict(views.APIView):
     renderer_classes = [
         JSONRenderer,
@@ -387,6 +369,7 @@ class ApprovalViewSet(viewsets.ModelViewSet):
     # queryset = Approval.objects.all()
     queryset = Approval.objects.none()
     serializer_class = ApprovalSerializer
+    pagination_class = DatatablesPageNumberPagination
 
     def get_queryset(self):
         if is_internal(self.request):
@@ -730,7 +713,8 @@ class ApprovalViewSet(viewsets.ModelViewSet):
     )
     def related_items(self, request, *args, **kwargs):
         """Uses union to combine a queryset of multiple different model types
-        and uses a generic related item serializer to return the data"""
+        and uses a generic related item serializer to return the data
+        Todo: Pagination is not working."""
         instance = self.get_object()
         proposals_queryset = Proposal.objects.filter(
             approval__lodgement_number=instance.lodgement_number
@@ -741,6 +725,14 @@ class ApprovalViewSet(viewsets.ModelViewSet):
         queryset = proposals_queryset.union(compliances_queryset).order_by(
             "lodgement_number"
         )
+
+        # page = self.paginate_queryset(queryset)
+        # if page is not None:
+        #     logger.debug(f"page = {page}")
+        #     serializer = RelatedItemSerializer(page, many=True)
+        #     return self.get_paginated_response(serializer.data)
+
+        logger.debug(f"paginated_queryset query: {queryset}")
         serializer = RelatedItemSerializer(queryset, many=True)
         data = {}
         # Add the fields that the datatables renderer expects
