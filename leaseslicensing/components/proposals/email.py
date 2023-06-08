@@ -281,7 +281,7 @@ def send_approver_decline_email_notification(reason, request, proposal):
     context = {"proposal": proposal, "reason": reason, "url": url}
 
     cc_email_str = request.data.get("cc_email", None)
-    cc_emails = re.split("[\s,;]+",  cc_email_str) if cc_email_str else []
+    cc_emails = re.split("[\s,;]+", cc_email_str) if cc_email_str else []
 
     msg = email.send(proposal.approver_recipients, cc=cc_emails, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
@@ -448,7 +448,7 @@ def send_license_ready_for_invoicing_notification(proposal, request):
     )
 
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     if "-internal" not in url:
         # add it. This email is for internal staff (approver)

@@ -70,7 +70,7 @@ class RegistrationOfInterestSerializer(serializers.ModelSerializer):
         )
 
     def get_details_url(self, obj):
-        return reverse('internal-proposal-detail', kwargs={'proposal_pk': obj.id})
+        return reverse('internal-proposal-detail', kwargs={'pk': obj.id})
 
     def get_proposalgeometry(self, obj):
         """
@@ -412,7 +412,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             'competitive_process_geometries',
             'allowed_editors',
             'accessing_user_roles',
-            'label', # A static value to be used on the map
+            'label',  # A static value to be used on the map
             'details_url',
         )
         extra_kwargs = {
