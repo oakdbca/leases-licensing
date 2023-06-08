@@ -233,7 +233,7 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
         instance = serializer.save()
         # Handle "geometry" data
         if competitive_process_geometry_data:
-            save_geometry(instance, competitive_process_geometry_data, self.action)
+            save_geometry(request, instance, competitive_process_geometry_data, self.action)
 
         # Return the serialized saved instance
         return CompetitiveProcessSerializer(

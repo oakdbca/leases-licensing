@@ -57,6 +57,8 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_approver_sendback_email_notification,
     send_proposal_decline_email_notification,
     send_referral_email_notification,
+    send_proposal_approval_email_notification,
+    send_referral_complete_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
     LGA,
@@ -2708,14 +2710,21 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
                     # TODO: additional logic required for amendment, reissue, etc?
 
-                    # send Proposal approval email with attachment
-                    # TODO: generate doc, then email
-                    # send_proposal_approval_email_notification(self,request)
-                    # TODO: add reversion
-                    # self.save(version_comment='Final Approval: {}'.format(self.approval.lodgement_number))
-                    self.save()
+                    # Generate approval (license) document
+                    self.create_approval_pdf(request)
+                    # TODO: Send notification email to approver after the finance team
+                    # has created the invoice
+                    # send_license_ready_for_invoicing_notification(self, request)
+
+                    # Send notification email to applicant
+                    send_proposal_approval_email_notification(self,request)
+
+                    self.save(
+                        version_comment=f"Final Approval: {self.approval.lodgement_number}"
+                        )
                     if self.approval and self.approval.documents:
                         self.approval.documents.all().update(can_delete=False)
+
 
             except Exception as e:
                 logger.exception(e)
@@ -3383,6 +3392,7 @@ class ProposalGeometry(models.Model):
     copied_from = models.ForeignKey(
         "self", on_delete=models.SET_NULL, blank=True, null=True
     )
+    drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4177,7 +4187,7 @@ class Referral(RevisionedMixin):
                 # .format(request.user.get_full_name(), self.id,self.proposal.id,'{}'
                 # .format(self.referral_group.name)),request)
 
-                # send_referral_complete_email_notification(self, request)
+                send_referral_complete_email_notification(self, request)
             except Exception as e:
                 logger.exception(e)
                 raise e

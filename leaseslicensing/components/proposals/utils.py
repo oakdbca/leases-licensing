@@ -642,11 +642,13 @@ def save_geometry(instance, request):
             except ProposalGeometry.DoesNotExist:
                 logger.warn(f"Proposal geometry does not exist: {feature.get('id')}")
                 continue
+            proposal_geometry_data["drawn_by"] = proposalgeometry.drawn_by
             serializer = ProposalGeometrySaveSerializer(
                 proposalgeometry, data=proposal_geometry_data
             )
         else:
             logger.info(f"Creating new proposal geometry for Proposal: {instance}")
+            proposal_geometry_data["drawn_by"] = request.user.id
             serializer = ProposalGeometrySaveSerializer(data=proposal_geometry_data)
 
         serializer.is_valid(raise_exception=True)

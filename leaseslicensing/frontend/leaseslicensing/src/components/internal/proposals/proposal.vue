@@ -1069,6 +1069,12 @@ export default {
                             },
                         }
                     )
+                    // Get the id of the referral popover and hide it
+                    let modal_id = $(
+                        vm.$refs.workflow.$refs.more_referrals.$refs.showRef).attr(
+                            "aria-describedby");
+                    $(`#${modal_id}`).hide();
+
                     this.$router.push({ name: 'internal-dashboard' })
                 }
             }).catch(err => {
@@ -1099,11 +1105,20 @@ export default {
                         title: 'Saved',
                         text: 'Your proposal has been saved',
                         icon: 'success',
+                    }).then(async () => {
+                        let resData = await res.json();
+                        vm.proposal = Object.assign({}, resData);
+                        vm.$nextTick(async () => {
+                            if (vm.$refs.application_form != undefined) {
+                                vm.$refs.application_form.incrementComponentMapKey();
+                            }
+                        });
                     })
                 } else {
-                    swal.fire({
+                    let err = await res.json()
+                    await swal.fire({
                         title: "Please fix following errors before saving",
-                        text: err.bodyText,
+                        text: JSON.stringify(err),
                         icon: 'error',
                     })
                 }

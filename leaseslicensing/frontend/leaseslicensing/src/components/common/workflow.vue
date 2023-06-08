@@ -123,6 +123,7 @@
                                     </table>
 
                                     <MoreReferrals
+                                        ref="more_referrals"
                                         @switchStatus="switchStatus"
                                         :proposal="proposal"
                                         :canAction="canLimitedAction"

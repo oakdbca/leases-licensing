@@ -568,6 +568,10 @@ class ProposalViewSet(UserActionLoggingViewset):
     @list_route(methods=["GET"], detail=False)
     def list_for_map(self, request, *args, **kwargs):
         """Returns the proposals for the map"""
+        proposal_ids = [
+            int(id) for id in request.query_params.get("proposal_ids", "").
+            split(",") if id.lstrip("-").isnumeric()
+            ]
         application_type = request.query_params.get("application_type", None)
         processing_status = request.query_params.get("processing_status", None)
 
@@ -581,6 +585,10 @@ class ProposalViewSet(UserActionLoggingViewset):
             )
             cache.set(cache_key, qs, settings.CACHE_TIMEOUT_2_HOURS)
         logger.debug(f"{cache_key}:{qs}")
+
+        if len(proposal_ids) > 0:
+            logger.debug(f"Filtering by proposal_ids: {proposal_ids}")
+            qs = qs.filter(id__in=proposal_ids)
 
         if (
             application_type
@@ -1861,7 +1869,10 @@ class ProposalViewSet(UserActionLoggingViewset):
     def referral_save(self, request, *args, **kwargs):
         instance = self.get_object()
         save_referral_data(instance, request, False)
-        return Response({})
+
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
@@ -1869,8 +1880,10 @@ class ProposalViewSet(UserActionLoggingViewset):
     def assessor_save(self, request, *args, **kwargs):
         instance = self.get_object()
         save_assessor_data(instance, request, self)
-        # return redirect(reverse("external"))
-        return Response({})
+
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))

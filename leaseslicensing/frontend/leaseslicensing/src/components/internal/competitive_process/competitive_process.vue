@@ -59,11 +59,23 @@
                     </div>
                     <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                         <FormSection :formCollapse="false" label="Map" Index="map">
-                            <ComponentMap ref="component_map" :is_internal=true :is_external=false
-                                @featuresDisplayed="updateTableByFeatures" :can_modify="can_modify"
-                                :display_at_time_of_submitted="show_col_status_when_submitted"
-                                @featureGeometryUpdated="featureGeometryUpdated" @popupClosed="popupClosed"
-                                :competitive_process="competitive_process" :readonly="readonly" />
+                            <!--
+                                validate-feature: event callback function to execute code to validate a feature. Needs to call `finishDrawing` on the map component to complete the drawing
+                             -->
+                            <MapComponent
+                                ref="component_map"
+                                :key="componentMapKey"
+                                :context="competitive_process"
+                                :proposalIds="[-1]"
+                                :owsQuery="owsQuery"
+                                :featureCollection="geometriesToFeatureCollection"
+                                styleBy="assessor"
+                                :filterable="false"
+                                :drawable="true"
+                                :selectable="true"
+                                level="internal"
+                                @validate-feature="validateFeature.bind(this)()"
+                            />
                         </FormSection>
                     </div>
                     <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab">
@@ -156,10 +168,11 @@ import CommsLogs from '@common-utils/comms_logs.vue'
 import Workflow from '@common-utils/workflow_competitive_process.vue'
 import FormSection from '@/components/forms/section_toggle.vue'
 import TableParties from '@common-utils/table_parties'
-import ComponentMap from '@/components/common/component_map.vue'
+import MapComponent from "@/components/common/component_map_with_filters_v2"
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
+import { owsQuery, validateFeature } from '@/components/common/map_functions.js'
 
 export default {
     name: 'CompetitiveProcess',
@@ -170,6 +183,7 @@ export default {
             competitive_process: null,
             can_modify: true,
             show_col_status_when_submitted: true,
+            componentMapKey: 0,
 
             // For Comms Log
             comms_url: helpers.add_endpoint_json(api_endpoints.competitive_process, vm.$route.params.competitive_process_id + '/comms_log'),
@@ -177,6 +191,8 @@ export default {
             logs_url: helpers.add_endpoint_json(api_endpoints.competitive_process, vm.$route.params.competitive_process_id + '/action_log'),
 
             processing: false,
+            owsQuery: owsQuery,
+            validateFeature: validateFeature,
         }
     },
     components: {
@@ -184,7 +200,7 @@ export default {
         Workflow,
         TableParties,
         FormSection,
-        ComponentMap,
+        MapComponent,
         RichText,
         FileField,
         TableRelatedItems,
@@ -348,10 +364,59 @@ export default {
             return this.competitive_process.competitive_process_parties.filter(
                 party => party.id > 0);
         },
+        incrementComponentMapKey: function () {
+            this.componentMapKey++;
+        },
+        /**
+         * Returns competitive process geometries as a FeatureCollection adding whether
+         * the geometry is from the competitive process or from a proposal.
+         */
+        geometriesToFeatureCollection: function () {
+            let vm = this;
+
+            let featureCollection = { ...vm.competitive_process.competitive_process_geometries };
+            Object.keys(featureCollection["features"]).forEach(function (key, _) {
+                featureCollection["features"][key]["properties"]["source"] = "competitive_process";
+                // Create competitive process model object using the same field names as for proposal
+                let model = {
+                    id: vm.competitive_process.id,
+                    details_url: vm.competitive_process.details_url,
+                    application_type_name_display: vm.competitive_process.label,
+                    lodgement_number: vm.competitive_process.lodgement_number,
+                    lodgement_date_display: vm.competitive_process.created_at,
+                    processing_status_display: vm.competitive_process.status,
+                };
+                featureCollection["features"][key]["model"] = model;
+            });
+
+            // Append proposal geometries to competitive process geometries
+            if (vm.competitive_process.registration_of_interest) {
+                let proposalgeometries = { ...vm.competitive_process.registration_of_interest.proposalgeometry };
+
+                for (let feature of proposalgeometries["features"]) {
+                    feature["properties"]["source"] = "registration_of_interest";
+                    // Build proposal model object for geometry feature (i.e. the proposal that this geometry belongs to)
+                    // Have to omit proposalgeometry from model object to avoid circular reference in the form `a.features[i].b = a`
+                    let model = {
+                        id: vm.competitive_process.registration_of_interest.id,
+                        details_url: vm.competitive_process.registration_of_interest.details_url,
+                        application_type_name_display: vm.competitive_process.registration_of_interest.application_type_name_display,
+                        lodgement_number: vm.competitive_process.registration_of_interest.lodgement_number,
+                        lodgement_date_display: vm.competitive_process.registration_of_interest.lodgement_date_display,
+                        processing_status_display: vm.competitive_process.registration_of_interest.processing_status_display,
+                    };
+
+                    feature["model"] = model;
+                    featureCollection["features"].push(feature);
+                }
+            }
+
+            return featureCollection;
+        },
     },
     methods: {
         mapTabClicked: function () {
-            this.$refs.component_map.forceMapRefresh()
+            this.$refs.component_map.forceToRefreshMap()
         },
         detailsTextChanged: function (new_text) {
             this.competitive_process.details = new_text
@@ -366,7 +431,8 @@ export default {
         constructPayload: function () {
             let vm = this
 
-            let payload = { 'competitive_process': vm.competitive_process }
+            // Shallow (?) copy competitive_process object into payload
+            let payload = { 'competitive_process': {...vm.competitive_process} };
             if (vm.$refs.component_map) {
                 // Update geometry data of the competitive process
                 let geojson_str = vm.$refs.component_map.getJSONFeatures()
@@ -419,6 +485,7 @@ export default {
                     vm.set_custom_rows_property("processing", false);
                     vm.$nextTick(async () => {
                         vm.cp_id = uuid();
+                        vm.incrementComponentMapKey;
                     });
                 })
                 .catch(error => {

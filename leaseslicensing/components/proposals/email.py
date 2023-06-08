@@ -1,3 +1,4 @@
+import re
 import logging
 from datetime import datetime
 
@@ -127,8 +128,9 @@ def send_referral_complete_email_notification(referral, request):
         reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
     )
 
+    email_user = retrieve_email_user(referral.referral)
     context = {
-        "completed_by": retrieve_email_user(referral.referral),
+        "completed_by": f"{email_user.first_name} {email_user.last_name}",
         "proposal": referral.proposal,
         "url": url,
         "referral_comments": referral.referral_text,
@@ -278,7 +280,10 @@ def send_approver_decline_email_notification(reason, request, proposal):
     )
     context = {"proposal": proposal, "reason": reason, "url": url}
 
-    msg = email.send(proposal.approver_recipients, context=context)
+    cc_email_str = request.data.get("cc_email", None)
+    cc_emails = re.split("[\s,;]+",  cc_email_str) if cc_email_str else []
+
+    msg = email.send(proposal.approver_recipients, cc=cc_emails, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, proposal, sender=sender)
     if proposal.org_applicant:
@@ -415,7 +420,10 @@ def send_proposal_approval_email_notification(proposal, request):
     }
 
     msg = email.send(
-        proposal.submitter.email, bcc=all_ccs, attachments=attachments, context=context
+        retrieve_email_user(proposal.submitter).email,
+        bcc=all_ccs,
+        attachments=attachments,
+        context=context,
     )
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
 
@@ -429,6 +437,32 @@ def send_proposal_approval_email_notification(proposal, request):
         _log_org_email(msg, proposal.org_applicant, proposal.submitter, sender=sender)
     elif proposal.ind_applicant:
         _log_user_email(msg, proposal.ind_applicant, proposal.submitter, sender=sender)
+
+
+def send_license_ready_for_invoicing_notification(proposal, request):
+    application_type = proposal.application_type.name_display
+    email = TemplateEmailBase(
+        subject=f"{application_type} application ready for invoicing data.",
+        html_template="leaseslicensing/emails/proposals/send_license_ready_for_invoicing_notification.html",
+        txt_template="leaseslicensing/emails/proposals/send_license_ready_for_invoicing_notification.txt",
+    )
+
+    url = request.build_absolute_uri(
+        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+    )
+    if "-internal" not in url:
+        # add it. This email is for internal staff (approver)
+        url = f"-internal.{settings.SITE_DOMAIN}".join(
+            url.split("." + settings.SITE_DOMAIN)
+        )
+
+    context = {"proposal": proposal, "url": url}
+
+    msg = email.send(proposal.approver_recipients, context=context)
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+    _log_proposal_email(msg, proposal, sender=sender)
+
+    return msg
 
 
 def send_proposal_awaiting_payment_approval_email_notification(proposal, request):

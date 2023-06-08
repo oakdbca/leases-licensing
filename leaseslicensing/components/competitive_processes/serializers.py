@@ -1,5 +1,6 @@
 from django.core.files.storage import default_storage
 from ledger_api_client.managed_models import SystemGroup
+from django.urls import reverse
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
@@ -27,22 +28,49 @@ from leaseslicensing.settings import GROUP_NAME_CHOICES
 from ... import settings
 from ..main.models import TemporaryDocumentCollection
 from ..organisations.serializers import OrganisationSerializer
+from leaseslicensing.components.proposals.models import Proposal
+from leaseslicensing.components.main.serializers import CommunicationLogEntrySerializer, EmailUserSerializer
+from leaseslicensing.components.main.utils import (
+    get_polygon_source,
+)
+from leaseslicensing.components.users.serializers import UserSerializerSimple
+from ... import settings
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
+from ledger_api_client.managed_models import SystemGroup
+from leaseslicensing.settings import GROUP_NAME_CHOICES
 
 
 class RegistrationOfInterestSerializer(serializers.ModelSerializer):
     relevant_applicant_name = serializers.CharField()
     proposalgeometry = serializers.SerializerMethodField()
+    application_type_name_display = serializers.CharField(
+        read_only=True, source="application_type.name_display"
+    )
+    processing_status_display = serializers.CharField(
+        read_only=True, source="get_processing_status_display"
+    )
+    lodgement_date_display = serializers.DateTimeField(
+        read_only=True, format="%d/%m/%Y", source="lodgement_date"
+    )
+    details_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Proposal
         fields = (
-            "id",
-            "lodgement_number",
-            "relevant_applicant_name",
-            "proposalgeometry",
-            "applicant_id",
-            "processing_status",
+            'id',
+            'lodgement_number',
+            'relevant_applicant_name',
+            'proposalgeometry',
+            'applicant_id',
+            'processing_status',
+            'application_type_name_display',
+            'processing_status_display',
+            'lodgement_date_display',
+            'details_url',
         )
+
+    def get_details_url(self, obj):
+        return reverse('internal-proposal-detail', kwargs={'proposal_pk': obj.id})
 
     def get_proposalgeometry(self, obj):
         """
@@ -229,6 +257,7 @@ class CompetitiveProcessPartySerializer(serializers.ModelSerializer):
 
 class CompetitiveProcessGeometrySerializer(GeoFeatureModelSerializer):
     competitive_process_id = serializers.IntegerField(write_only=True, required=False)
+    polygon_source = serializers.SerializerMethodField()
 
     class Meta:
         model = CompetitiveProcessGeometry
@@ -238,8 +267,13 @@ class CompetitiveProcessGeometrySerializer(GeoFeatureModelSerializer):
             "competitive_process_id",
             "polygon",
             "intersects",
+            "polygon_source",
+            "drawn_by",
         )
         read_only_fields = ("id",)
+
+    def get_polygon_source(self, obj):
+        return get_polygon_source(obj)
 
 
 class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
@@ -251,21 +285,23 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
     group = serializers.CharField(read_only=True)  # For property
     can_accessing_user_view = serializers.SerializerMethodField()
     can_accessing_user_process = serializers.SerializerMethodField()
+    details_url = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = CompetitiveProcess
         fields = (
-            "id",
-            "lodgement_number",
-            "registration_of_interest",
-            "generated_proposal",
-            "status",
-            "created_at",
-            "assigned_officer",
-            "site",
-            "group",
-            "can_accessing_user_view",
-            "can_accessing_user_process",
+            'id',
+            'lodgement_number',
+            'registration_of_interest',
+            'generated_proposal',
+            'status',
+            'created_at',
+            'assigned_officer',
+            'site',
+            'group',
+            'can_accessing_user_view',
+            'can_accessing_user_process',
+            'details_url',
         )
         # additional data to be returned for datatable
         # fields listed here should be listed 'fields' above, otherwise not returned
@@ -277,6 +313,9 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
             "can_accessing_user_view",
             "can_accessing_user_process",
         )
+
+    def get_details_url(self, obj):
+        return reverse('internal-competitive-process-detail', kwargs={'competitive_process_pk': obj.id})
 
     def get_registration_of_interest(self, obj):
         if obj.generated_from_registration_of_interest:
@@ -348,30 +387,33 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     accessing_user_roles = serializers.SerializerMethodField()
     generated_proposal = ProposalSerializer(many=True, required=False, read_only=True)
     winner = CompetitiveProcessPartySerializer(allow_null=True, required=False)
+    label = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = CompetitiveProcess
         fields = (
-            "id",
-            "lodgement_number",
-            "registration_of_interest",
-            "generated_proposal",
-            "status",
-            "status_id",
-            "created_at",
-            "assigned_officer",
-            "site",
-            "group",
-            "can_accessing_user_view",
-            "can_accessing_user_process",
-            "accessing_user",
-            "competitive_process_parties",
-            "winner",
-            "winner_id",
-            "details",
-            "competitive_process_geometries",
-            "allowed_editors",
-            "accessing_user_roles",
+            'id',
+            'lodgement_number',
+            'registration_of_interest',
+            'generated_proposal',
+            'status',
+            'status_id',
+            'created_at',
+            'assigned_officer',
+            'site',
+            'group',
+            'can_accessing_user_view',
+            'can_accessing_user_process',
+            'accessing_user',
+            'competitive_process_parties',
+            'winner',
+            'winner_id',
+            'details',
+            'competitive_process_geometries',
+            'allowed_editors',
+            'accessing_user_roles',
+            'label', # A static value to be used on the map
+            'details_url',
         )
         extra_kwargs = {
             "winner_id": {
@@ -379,6 +421,9 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
                 "required": False,
             },
         }
+
+    def get_label(self, obj):
+        return "Competitive Process"
 
     def get_accessing_user(self, obj):
         user = self.context.get("request").user
