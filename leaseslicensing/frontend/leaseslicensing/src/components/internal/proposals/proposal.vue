@@ -1056,6 +1056,7 @@ export default {
             return s.replace(/[,;]/g, '\n');
         },
         proposedDecline: function () {
+            this.proposedApprovalState = 'proposed_decline';
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
                 this.$refs.proposed_decline.isModalOpen = true;

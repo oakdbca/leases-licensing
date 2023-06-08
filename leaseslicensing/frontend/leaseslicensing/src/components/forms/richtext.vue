@@ -2,7 +2,7 @@
     <div>
         <div class="form-group">
             <ckeditor :editor="editor" v-model="detailsText" :config="editorConfig" :name="name" :required="isRequired"
-                :disabled="readonly" :read-only="readonly" />
+                :disabled="readonly" :read-only="readonly" :id="id"/>
         </div>
     </div>
 </template>

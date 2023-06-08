@@ -22,10 +22,17 @@
                         <div class="row mb-3">
                             <label for="registration_of_interest_details" class="col-sm-3 col-form-label">Details</label>
                             <div class="col-sm-9">
-                                <RichText :proposalData="proposedDecisionDetails" ref="registration_of_interest_details"
-                                    id="registration_of_interest_details" :can_view_richtext_src=true
-                                    :key="proposedApprovalKey" @textChanged="updateProposedDecisionDetails"
-                                    :readonly="readonly" />
+                                <div class="col-sm-9">
+                                    <RichText
+                                        :proposalData="proposedDecisionDetails"
+                                        ref="registration_of_interest_details"
+                                        id="registration_of_interest_details_approve"
+                                        :can_view_richtext_src=true
+                                        :key="uuid"
+                                        v-model="proposedDecisionDetails" @textChanged="updateProposedDecisionDetails"
+                                        :readonly="readonly"
+                                    />
+                                </div>
                                 <div class="details-invalid-feedback invalid-feedback">
                                     Please enter some details.
                                 </div>
@@ -104,12 +111,16 @@
                             <div class="row mb-3">
                                 <label for="lease_licence_details" class="col-sm-3 col-form-label">Details</label>
                                 <div class="col-sm-9">
-                                    <RichText :proposalData="approval.details" ref="lease_licence_details"
-                                        id="lease_licence_details" :can_view_richtext_src=true
-                                        :key="selectedApprovalTypeName"
-                                        :placeholder_text="selectedApprovalTypeDetailsPlaceholder"
-                                        v-model="approval.details" @textChanged="updateProposedDecisionDetails"
-                                        :readonly="readonly" />
+                                    <RichText
+                                    :proposalData="proposedDecisionDetails"
+                                    ref="lease_licence_details"
+                                    id="lease_licence_details_approve"
+                                    :can_view_richtext_src=true
+                                    :key="uuid"
+                                    :placeholder_text="selectedApprovalTypeDetailsPlaceholder"
+                                    v-model="approval.details" @textChanged="updateProposedDecisionDetails"
+                                    :readonly="readonly"
+                                    />
                                     <div class="details-invalid-feedback invalid-feedback">
                                         Please enter some details.
                                     </div>
@@ -279,6 +290,8 @@ export default {
                 allowInputToggle: true
             },
             warningString: 'Please attach Level of Approval document before issuing Approval',
+            uuid: uuid(),
+            detailsTexts: {},
         }
     },
     computed: {
@@ -319,13 +332,22 @@ export default {
              *  by the assessor is an approval or a decline.
              */
 
+            // This is here to re-evalute the computed property after fetching details texts
+            this.uuid;
+
             if (this.approval.decision) {
                 return this.approval.details;
             }
             else if (this.proposal.proposed_decline_status) {
                 return this.proposal.proposaldeclineddetails.reason;
             } else {
-                return "";
+                // Use standard text from admin
+                let id = this.$refs.hasOwnProperty("registration_of_interest_details") ?
+                                this.$refs.registration_of_interest_details.id :
+                            this.$refs.hasOwnProperty("lease_licence_details") ?
+                                this.$refs.lease_licence_details.id :
+                            "";
+                return this.detailsTexts[id] || "";
             }
         },
         showError: function () {
@@ -549,6 +571,7 @@ export default {
 
         let initialisers = [
             utils.fetchApprovalTypes(),
+            utils.fetchUrl(`${api_endpoints.details_text}key-value-list/`),
         ]
         Promise.all(initialisers).then(data => {
             for (let approvalType of data[0]) {
@@ -562,6 +585,10 @@ export default {
 
             this.selectedApprovalTypeId = this.approval.approval_type;
 
+            for (let detailText of data[1]) {
+                vm.detailsTexts[detailText.target] = detailText.body;
+            }
+            vm.uuid = uuid();
         });
 
         this.$nextTick(() => {

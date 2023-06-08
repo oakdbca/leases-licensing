@@ -2714,6 +2714,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # Send notification email to applicant
                     send_proposal_approval_email_notification(self,request)
 
+                    # FIXME: Cramming all the branched decisions and dependencies into this one
+                    # function (and the same api endpoint) makes the flow of logic really hard to
+                    # follow and easy to introduce errors. Can we refactor the nested if/else
+                    # statements into dedicated api endpoints and functions?
                     if self.approval:
                         self.save(
                             version_comment=f"Final Approval: {self.approval.lodgement_number}"

@@ -21,6 +21,7 @@ from leaseslicensing.components.tenure import api as tenure_api
 from leaseslicensing.components.users import api as users_api
 from leaseslicensing.management.default_data_manager import DefaultDataManager
 from leaseslicensing.utils import are_migrations_running
+from leaseslicensing.components.texts import api as textbody_api
 
 # API patterns
 router = routers.DefaultRouter()
@@ -85,6 +86,8 @@ router.register(r"required_documents", main_api.RequiredDocumentViewSet)
 router.register(r"questions", main_api.QuestionViewSet)
 router.register(r"map_layers", main_api.MapLayerViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
+
+router.register(r"detailstext", textbody_api.DetailsTextViewSet)
 
 router.registry.sort(key=lambda x: x[0])
 
