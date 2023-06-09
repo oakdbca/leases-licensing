@@ -19,6 +19,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.db.models import JSONField, Max, Min, Q
+from django.urls import reverse
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.ledger_models import Invoice
@@ -114,12 +115,6 @@ def update_requirement_doc_filename(instance, filename):
 
 def update_proposal_comms_log_filename(instance, filename):
     return f"proposals/{instance.log_entry.proposal.id}/{filename}"
-
-
-def update_filming_park_doc_filename(instance, filename):
-    return "proposals/{}/filming_park_documents/{}".format(
-        instance.filming_park.proposal.id, filename
-    )
 
 
 def update_events_park_doc_filename(instance, filename):
@@ -942,6 +937,8 @@ class ProposalManager(models.Manager):
 class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     objects = ProposalManager()
 
+    MODEL_PREFIX = "A"
+
     APPLICANT_TYPE_ORGANISATION = "ORG"
     APPLICANT_TYPE_INDIVIDUAL = "IND"
     APPLICANT_TYPE_PROXY = "PRX"
@@ -1205,7 +1202,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
         if self.lodgement_number == "":
-            new_lodgment_id = f"A{self.pk:06d}"
+            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
 
@@ -2454,7 +2451,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 "details": details.get("details"),
                 "cc_email": details.get("cc_email"),
                 "decision": details.get("decision"),
-                "groups": details.get("groups"),
+                "record_management_number": details.get("record_management_number"),
             }
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             # start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None
@@ -2462,11 +2459,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             self.proposed_issuance_approval = {
                 "approval_type": details.get("approval_type"),
                 # "approval_sub_type": details.get("approval_sub_type"),
-                "groups": details.get("groups"),
                 "selected_document_types": details.get("selected_document_types"),
                 # "approval_type_document_type": details.get("approval_type_document_type"),
                 "cc_email": details.get("cc_email"),
                 "details": details.get("details"),
+                "record_management_number": details.get("record_management_number"),
                 "start_date": details.get("start_date"),
                 "expiry_date": details.get("expiry_date"),
             }
@@ -2547,76 +2544,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 raise e
 
     def preview_approval(self, request, details):
-        from leaseslicensing.components.approvals.models import PreviewTempApproval
-
-        with transaction.atomic():
-            try:
-                # if self.processing_status != 'with_assessor_conditions' or self.processing_status != 'with_approver':
-                if not (
-                    self.processing_status == "with_assessor_conditions"
-                    or self.processing_status == "with_approver"
-                ):
-                    raise ValidationError(
-                        "Licence preview only available when processing status is with_approver. "
-                        "Current status {}".format(self.processing_status)
-                    )
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                # if not self.applicant.organisation.postal_address:
-                if not self.applicant_address:
-                    raise ValidationError(
-                        "The applicant needs to have set their postal address before approving this proposal."
-                    )
-
-                lodgement_number = (
-                    self.previous_application.approval.lodgement_number
-                    if self.proposal_type in ["renewal", "amendment"]
-                    else None
-                )  # renewals/amendments keep same licence number
-                preview_approval = PreviewTempApproval.objects.create(
-                    current_proposal=self,
-                    issue_date=timezone.now(),
-                    expiry_date=datetime.datetime.strptime(
-                        details.get("due_date"), "%d/%m/%Y"
-                    ).date(),
-                    start_date=datetime.datetime.strptime(
-                        details.get("start_date"), "%d/%m/%Y"
-                    ).date(),
-                    submitter=self.submitter,
-                    org_applicant=self.org_applicant,
-                    proxy_applicant=self.proxy_applicant,
-                    lodgement_number=lodgement_number,
-                )
-
-                # Generate the preview document - get the value of the BytesIO buffer
-                licence_buffer = preview_approval.generate_doc(
-                    request.user, preview=True
-                )
-
-                # clean temp preview licence object
-                transaction.set_rollback(True)
-
-                return licence_buffer
-            except Exception as e:
-                logger.exception(e)
-                raise e
-
-    def create_approval_pdf(self, request):
-        """
-        Callback function to create this Proposal's approval PDF
-
-        TODO: Use proper template in `pdf.py::create_approval_doc` instead of the dummy one
-        """
-
-        try:
-            # Get a user
-            user = self.relevant_applicant
-            # Generate the Approval document
-            self.approval.generate_doc(user)
-
-        except Exception as e:
-            logger.exception("Error in `create_approval_pdf`")
-            raise serializers.ValidationError(e.args[0])
+        # I don't think we need this now that approvals are uploaded from hard copy scans?
+        pass
 
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
@@ -2624,6 +2553,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         with transaction.atomic():
             try:
                 self.proposed_decline_status = False
+
+                record_management_number = self.proposed_issuance_approval.get(
+                    "record_management_number", None
+                )
 
                 # if (self.processing_status==Proposal.PROCESSING_STATUS_AWAITING_PAYMENT
                 # and self.fee_paid) or (self.proposal_type=='amendment'):
@@ -2676,6 +2609,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                                 "org_applicant": self.org_applicant,
                                 "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
+                                "record_management_number": record_management_number,
                             },
                         )
                         if created:
@@ -2701,6 +2635,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                                 "org_applicant": self.org_applicant,
                                 "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
+                                "record_management_number": record_management_number,
                             },
                         )
                         if created:
@@ -2760,6 +2695,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                                 "submitter": self.submitter,
                                 "org_applicant": self.org_applicant,
                                 "proxy_applicant": self.proxy_applicant,
+                                "record_management_number": record_management_number,
                             },
                         )
 
@@ -2775,7 +2711,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # TODO: additional logic required for amendment, reissue, etc?
 
                     # Generate approval (license) document
-                    self.create_approval_pdf(request)
+                    # self.create_approval_pdf(request)
                     # TODO: Send notification email to approver after the finance team
                     # has created the invoice
                     # send_license_ready_for_invoicing_notification(self, request)
@@ -2783,12 +2719,16 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # Send notification email to applicant
                     send_proposal_approval_email_notification(self,request)
 
-                    self.save(
-                        version_comment=f"Final Approval: {self.approval.lodgement_number}"
+                    if self.approval:
+                        self.save(
+                            version_comment=f"Final Approval: {self.approval.lodgement_number}"
                         )
-                    if self.approval and self.approval.documents:
-                        self.approval.documents.all().update(can_delete=False)
-
+                        if self.approval.documents:
+                            self.approval.documents.all().update(can_delete=False)
+                    else:
+                        self.save(
+                            version_comment=f"Registration of Interest Approval: {self.lodgement_number}"
+                        )
 
             except Exception as e:
                 logger.exception(e)
@@ -3026,20 +2966,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 proposal = clone_proposal_with_status_reset(previous_proposal)
                 proposal.proposal_type = "amendment"
                 proposal.training_completed = True
-                # proposal.schema = ProposalType.objects.first().schema
-                ptype = ProposalType.objects.filter(
-                    name=proposal.application_type
-                ).latest("version")
-                proposal.schema = ptype.schema
                 proposal.submitter = request.user
                 proposal.previous_application = self
-                if proposal.application_type.name == ApplicationType.TCLASS:
-                    try:
-                        ProposalOtherDetails.objects.get(proposal=proposal)
-                    except ProposalOtherDetails.DoesNotExist:
-                        ProposalOtherDetails.objects.create(proposal=proposal)
-                # copy all the requirements from the previous proposal
-                # req=self.requirements.all()
                 req = self.requirements.all().exclude(is_deleted=True)
                 from copy import deepcopy
 
@@ -3133,11 +3061,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def as_related_item(self):
+        action_url = reverse("internal-proposal-detail", kwargs={"pk": self.id})
         related_item = RelatedItem(
             identifier=self.related_item_identifier,
             model_name=self._meta.verbose_name,
             descriptor=self.related_item_descriptor,
-            action_url=f'<a href=/internal/proposal/{self.id} target="_blank">Open</a>',
+            action_url=f'<a href="{action_url}">View</a>',
             type="application",
         )
         return related_item
@@ -3891,14 +3820,6 @@ class ProposalUserAction(UserAction):
     ACTION_ISSUE_APPROVAL_DISTRICT = (
         "Issue Licence by district application {} of application {}"
     )
-
-    # Event
-    ACTION_CREATE_EVENT_PARK = "Create Event Park {}"
-    ACTION_EDIT_EVENT_PARK = "Edit Event Park {}"
-    ACTION_CREATE_PRE_EVENT_PARK = "Create Pre Event Park {}"
-    ACTION_EDIT_PRE_EVENT_PARK = "Edit Pre Event Park {}"
-    ACTION_CREATE_ABSEILING_CLIMBING_ACTIVITY = "Create Abseiling Climbing Activity {}"
-    ACTION_EDIT_ABSEILING_CLIMBING_ACTIVITY = "Edit Abseiling Climbing Activity {}"
 
     # monthly invoicing by cron
     ACTION_SEND_BPAY_INVOICE = "Send BPAY invoice {} for application {} to {}"
@@ -5024,15 +4945,10 @@ def searchKeyWords(
     from leaseslicensing.utils import search, search_approval, search_compliance
 
     qs = []
-    application_types = [
-        ApplicationType.TCLASS,
-        ApplicationType.EVENT,
-        ApplicationType.FILMING,
-    ]
     if is_internal:
-        proposal_list = Proposal.objects.filter(
-            application_type__name__in=application_types
-        ).exclude(processing_status__in=["discarded", "draft"])
+        proposal_list = Proposal.objects.exclude(
+            processing_status__in=["discarded", "draft"]
+        )
         approval_list = (
             Approval.objects.all()
             .order_by("lodgement_number", "-issue_date")

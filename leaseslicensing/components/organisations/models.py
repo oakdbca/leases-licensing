@@ -954,6 +954,8 @@ def organisation_request_identification_upload_path(instance, filename):
 
 
 class OrganisationRequest(models.Model):
+    MODEL_PREFIX = "OAR"
+
     STATUS_CHOICES = (
         ("with_assessor", "With Assessor"),
         ("approved", "Approved"),
@@ -987,11 +989,12 @@ class OrganisationRequest(models.Model):
     class Meta:
         app_label = "leaseslicensing"
         ordering = ["-lodgement_number"]
+        verbose_name = "Organisation Request"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.lodgement_number == "":
-            new_lodgment_id = f"OAR{self.pk:06d}"
+            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
 

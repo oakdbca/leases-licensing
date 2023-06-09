@@ -4,7 +4,7 @@ import traceback
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import CharField, IntegerField, Q, Value
+from django.db.models import Case, CharField, IntegerField, Q, Value, When
 from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroupPermission
@@ -19,6 +19,7 @@ from ledger_api_client.utils import update_organisation_obj, get_organisation
 
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
+    NoPaginationListMixin,
     UserActionLoggingViewset,
 )
 from leaseslicensing.components.main.decorators import (
@@ -566,8 +567,14 @@ class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
     serializer_class = OrganisationRequestSerializer
 
 
-class OrganisationRequestsViewSet(UserActionLoggingViewset):
-    queryset = OrganisationRequest.objects.all()
+class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixin):
+    queryset = OrganisationRequest.objects.all().order_by(
+        Case(
+            When(status="approved", then=Value(0)),
+            When(status="with_assessor", then=Value(1)),
+            When(status="declined", then=Value(2)),
+        )
+    )
     serializer_class = OrganisationRequestSerializer
 
     def get_serializer_class(self):
@@ -577,11 +584,11 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset):
 
     def get_queryset(self):
         if is_internal(self.request):
-            return OrganisationRequest.objects.all()
+            return self.queryset
         elif is_customer(self.request):
-            return OrganisationRequest.objects.filter(
-                requester=self.request.user.id
-            ).exclude(status="declined")
+            return self.queryset.filter(requester=self.request.user.id).exclude(
+                status="declined"
+            )
         return OrganisationRequest.objects.none()
 
     @list_route(

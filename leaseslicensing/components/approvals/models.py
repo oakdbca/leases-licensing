@@ -38,9 +38,6 @@ from leaseslicensing.components.proposals.models import (
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
-from leaseslicensing.utils import search_keys, search_multiple_keys
-
-# from leaseslicensing.components.approvals.email import send_referral_email_notification
 
 logger = logging.getLogger(__name__)
 
@@ -99,8 +96,9 @@ class ApprovalDocument(Document):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.approval.user_has_object_permission(user_id)
 
-    class Meta:
-        app_label = "leaseslicensing"
+
+class Meta:
+    app_label = "leaseslicensing"
 
 
 class ApprovalType(RevisionedMixin):
@@ -141,6 +139,8 @@ class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
 
 # class Approval(models.Model):
 class Approval(RevisionedMixin):
+    MODEL_PREFIX = "L"
+
     APPROVAL_STATUS_CURRENT = "current"
     APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW = "current_pending_renewal_review"
     APPROVAL_STATUS_CURRENT_PENDING_RENEWAL = "current_pending_renewal"
@@ -230,9 +230,7 @@ class Approval(RevisionedMixin):
         max_length=255, blank=True, null=True
     )
     migrated = models.BooleanField(default=False)
-    # for eclass licence as it can be extended/ renewed once
-    extended = models.BooleanField(default=False)
-    expiry_notice_sent = models.BooleanField(default=False)
+    record_management_number = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -370,7 +368,7 @@ class Approval(RevisionedMixin):
 
     def save(self, *args, **kwargs):
         if self.lodgement_number in ["", None]:
-            self.lodgement_number = f"L{self.next_id:06d}"
+            self.lodgement_number = f"{self.MODEL_PREFIX}{self.next_id:06d}"
             # self.save()
         super().save(*args, **kwargs)
 
@@ -486,47 +484,6 @@ class Approval(RevisionedMixin):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.current_proposal.user_has_object_permission(user_id)
 
-    #    @property
-    #    def approved_by(self):
-    #        try:
-    #            proposal = self.proposal_set.all().order_by('-id')[0]
-    #            if proposal.application_type.name == ApplicationType.FILMING:
-    #                return proposal.action_logs.filter(what__contains='Awaiting Payment').last().who
-    #            return proposal.action_logs.filter(what__contains='Issue Licence').last().who
-    #        except:
-    #            return None
-
-    def generate_doc(self, user, preview=False):
-        from leaseslicensing.components.approvals.pdf import (
-            create_approval_doc,
-            create_approval_pdf_bytes,
-        )
-
-        # Seems this functionality is not needed in leases
-        # copied_to_permit = self.copiedToPermit_fields(
-        #     self.current_proposal
-        # )  # Get data related to isCopiedToPermit tag
-        copied_to_permit = "not_needed_in_leases"
-
-        if preview:
-            return create_approval_pdf_bytes(
-                self, self.current_proposal, copied_to_permit, user
-            )
-
-        self.licence_document = create_approval_doc(self)
-        self.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.licence_document.name
-            )
-        )
-        # TODO Do we need versioning? Commented `version_comment` out for now.
-        # Needs `Proposal` to inherit from `RevisionedMixin`?
-        self.current_proposal.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.licence_document.name
-            )
-        )
-
     def review_renewal(self, can_be_renewed):
         if not can_be_renewed:
             # The approval will be left in current status to expire naturally
@@ -539,45 +496,6 @@ class Approval(RevisionedMixin):
         self.status = self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
         self.renewal_notification_sent_to_holder = True
         self.save()
-
-    def generate_renewal_doc(self):
-        from leaseslicensing.components.approvals.pdf import create_renewal_doc
-
-        self.renewal_document = create_renewal_doc(self, self.current_proposal)
-        self.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.renewal_document.name
-            )
-        )
-        self.current_proposal.save(
-            version_comment="Created Approval PDF: {}".format(
-                self.renewal_document.name
-            )
-        )
-
-    def copiedToPermit_fields(self, proposal):
-        p = proposal
-        copied_data = []
-        search_assessor_data = []
-        search_schema = search_multiple_keys(
-            p.schema, primary_search="isCopiedToPermit", search_list=["label", "name"]
-        )
-        if p.assessor_data:
-            search_assessor_data = search_keys(
-                p.assessor_data, search_list=["assessor", "name"]
-            )
-        if search_schema:
-            for c in search_schema:
-                try:
-                    if search_assessor_data:
-                        for d in search_assessor_data:
-                            if c["name"] == d["name"]:
-                                if d["assessor"]:
-                                    # copied_data.append({c['label'], d['assessor']})
-                                    copied_data.append({c["label"]: d["assessor"]})
-                except KeyError:
-                    raise
-        return copied_data
 
     def log_user_action(self, action, request):
         return ApprovalUserAction.log_action(self, action, request.user)
@@ -600,37 +518,6 @@ class Approval(RevisionedMixin):
                     ProposalUserAction.ACTION_EXPIRED_APPROVAL_.format(proposal.id),
                     user,
                 )
-
-    def approval_extend(self, request, details):
-        with transaction.atomic():
-            if request.user.id not in self.allowed_assessor_ids:
-                raise ValidationError("You do not have access to extend this approval")
-            self.renewal_count += 1
-            self.extend_details = details.get("extend_details")
-            self.expiry_date = datetime.date(
-                self.expiry_date.year
-                + self.current_proposal.application_type.max_renewal_period,
-                self.expiry_date.month,
-                self.expiry_date.day,
-            )
-            today = timezone.now().date()
-            if self.expiry_date <= today:
-                if not self.status == "extended":
-                    self.status = "extended"
-                    # send_approval_extend_email_notification(self)
-            self.extended = True
-            self.save()
-            # Log proposal action
-            self.log_user_action(
-                ApprovalUserAction.ACTION_EXTEND_APPROVAL.format(self.id), request
-            )
-            # Log entry for organisation
-            self.current_proposal.log_user_action(
-                ProposalUserAction.ACTION_EXTEND_APPROVAL.format(
-                    self.current_proposal.id
-                ),
-                request,
-            )
 
     def approval_cancellation(self, request, details):
         with transaction.atomic():
@@ -819,12 +706,6 @@ class Approval(RevisionedMixin):
         """
 
         return self.expiry_date
-
-
-class PreviewTempApproval(Approval):
-    class Meta:
-        app_label = "leaseslicensing"
-        # unique_together= ('lodgement_number', 'issue_date')
 
 
 class ApprovalLogEntry(CommunicationsLogEntry):

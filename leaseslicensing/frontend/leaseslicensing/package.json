@@ -15,6 +15,7 @@
         "@dbca/gov-vue3-components": "^0.0.11",
         "@fortawesome/fontawesome-free": "^6.0.0",
         "@vue/cli-service": "^5.0.4",
+        "currency.js": "^2.0.4",
         "datatables.net-bs5": "^1.12.1",
         "datatables.net-buttons-bs5": "^2.3.3",
         "datatables.net-responsive-bs5": "^2.3.0",
@@ -45,7 +46,9 @@
     ],
     "devDependencies": {
         "eslint": "^8.15.0",
+        "moment-locales-webpack-plugin": "^1.2.0",
         "prettier": "2.8.4",
-        "vls": "^0.7.6"
+        "vls": "^0.7.6",
+        "webpack-bundle-analyzer": "^4.8.0"
     }
 }

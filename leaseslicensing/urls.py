@@ -9,15 +9,14 @@ from rest_framework import routers
 from leaseslicensing import views
 from leaseslicensing.admin import admin
 from leaseslicensing.components.approvals import api as approval_api
-from leaseslicensing.components.bookings import api as booking_api
 from leaseslicensing.components.competitive_processes import (
     api as competitive_process_api,
 )
 from leaseslicensing.components.compliances import api as compliances_api
+from leaseslicensing.components.invoicing import api as invoicing_api
 from leaseslicensing.components.main import api as main_api
 from leaseslicensing.components.organisations import api as org_api
 from leaseslicensing.components.proposals import api as proposal_api
-from leaseslicensing.components.proposals import views as proposal_views
 from leaseslicensing.components.tenure import api as tenure_api
 from leaseslicensing.components.users import api as users_api
 from leaseslicensing.management.default_data_manager import DefaultDataManager
@@ -25,18 +24,26 @@ from leaseslicensing.utils import are_migrations_running
 
 # API patterns
 router = routers.DefaultRouter()
-router.register(r"organisations", org_api.OrganisationViewSet, basename="organisations")
-router.register(r"proposal", proposal_api.ProposalViewSet, basename="proposal")
-router.register(r"identifiers", tenure_api.IdentifierViewSet, basename="identifiers")
-router.register(r"vestings", tenure_api.VestingViewSet, basename="vestings")
-router.register(r"names", tenure_api.NameViewSet, basename="names")
-router.register(r"acts", tenure_api.ActViewSet, basename="acts")
-router.register(r"tenures", tenure_api.TenureViewSet, basename="tenures")
-router.register(r"categories", tenure_api.CategoryViewSet, basename="categories")
-router.register(r"regions", tenure_api.RegionViewSet, basename="regions")
-router.register(r"districts", tenure_api.DistrictViewSet, basename="districts")
-router.register(r"lgas", tenure_api.LGAViewSet, basename="lgas")
-router.register(r"groups", tenure_api.GroupViewSet, basename="groups")
+router.register("organisations", org_api.OrganisationViewSet, basename="organisations")
+router.register("proposal", proposal_api.ProposalViewSet, basename="proposal")
+router.register("identifiers", tenure_api.IdentifierViewSet, basename="identifiers")
+router.register("vestings", tenure_api.VestingViewSet, basename="vestings")
+router.register("names", tenure_api.NameViewSet, basename="names")
+router.register("acts", tenure_api.ActViewSet, basename="acts")
+router.register("tenures", tenure_api.TenureViewSet, basename="tenures")
+router.register("categories", tenure_api.CategoryViewSet, basename="categories")
+router.register("regions", tenure_api.RegionViewSet, basename="regions")
+router.register("districts", tenure_api.DistrictViewSet, basename="districts")
+router.register("lgas", tenure_api.LGAViewSet, basename="lgas")
+router.register("groups", tenure_api.GroupViewSet, basename="groups")
+
+router.register("invoices", invoicing_api.InvoiceViewSet, basename="invoices")
+router.register(
+    "invoice_transactions",
+    invoicing_api.InvoiceTransactionViewSet,
+    basename="invoice_transactions",
+)
+
 router.register(
     r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
 )
@@ -49,12 +56,9 @@ router.register(r"approval_paginated", approval_api.ApprovalPaginatedViewSet)
 router.register(
     r"competitive_process", competitive_process_api.CompetitiveProcessViewSet
 )
-router.register(r"booking_paginated", booking_api.BookingPaginatedViewSet)
 router.register(r"compliance_paginated", compliances_api.CompliancePaginatedViewSet)
 router.register(r"referrals", proposal_api.ReferralViewSet)
 router.register(r"approvals", approval_api.ApprovalViewSet)
-router.register(r"bookings", booking_api.BookingViewSet)
-router.register(r"overdue_invoices", booking_api.OverdueBookingInvoiceViewSet)
 router.register(r"compliances", compliances_api.ComplianceViewSet)
 router.register(r"proposal_requirements", proposal_api.ProposalRequirementViewSet)
 router.register(
@@ -79,9 +83,9 @@ router.register(r"assessments", proposal_api.ProposalAssessmentViewSet)
 router.register(r"required_documents", main_api.RequiredDocumentViewSet)
 router.register(r"questions", main_api.QuestionViewSet)
 router.register(r"map_layers", main_api.MapLayerViewSet)
-# router.register(r'payment', main_api.PaymentViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
 
+router.registry.sort(key=lambda x: x[0])
 
 api_patterns = [
     url(
@@ -201,18 +205,13 @@ urlpatterns = (
             name="internal-approvals",
         ),
         url(
-            r"^internal/approval/(?P<approval_pk>\d+)/$",
-            views.InternalView.as_view(),
-            name="internal-approval-detail",
-        ),
-        url(
             r"^external/approval/(?P<approval_pk>\d+)/$",
             views.ExternalView.as_view(),
             name="external-approval-detail",
         ),
         url(r"^external/", views.ExternalView.as_view(), name="external"),
         url(r"^firsttime/$", views.first_time, name="first_time"),
-        url(r"^account/", views.ExternalView.as_view(), name="manage-account"),
+        url(r"^account/", views.AccountView.as_view(), name="manage-account"),
         url(r"^profiles/", views.ExternalView.as_view(), name="manage-profiles"),
         url(
             r"^help/(?P<application_type>[^/]+)/(?P<help_type>[^/]+)/$",
@@ -224,8 +223,6 @@ urlpatterns = (
             views.ManagementCommandsView.as_view(),
             name="mgt-commands",
         ),
-        # url(r'test-emails/$', proposal_views.TestEmailView.as_view(), name='test-emails'),
-        url(r"^proposal/$", proposal_views.ProposalView.as_view(), name="proposal"),
         url(
             r"^api/application_types$",
             proposal_api.GetApplicationTypeDescriptions.as_view(),
@@ -251,9 +248,6 @@ urlpatterns = (
             competitive_process_api.GetCompetitiveProcessStatusesDict.as_view(),
             name="get-competitive-process-statuses-dict",
         ),
-        # Approval type should point to Approval.current_proposal.application_type
-        # url(r'^api/approval_types_dict$', approval_api.GetApprovalTypeDict.as_view(),
-        # name='get-approval-type-dict'),
         url(
             r"^api/approval_statuses_dict$",
             approval_api.GetApprovalStatusesDict.as_view(),
@@ -270,12 +264,12 @@ urlpatterns = (
             name="get-compliance-statuses-dict",
         ),
         url(
-            r"^internal/proposal/(?P<proposal_pk>\d+)/$",
+            r"^internal/proposal/(?P<pk>\d+)/$",
             views.InternalProposalView.as_view(),
             name="internal-proposal-detail",
         ),
         url(
-            r"^internal/approval/(?P<approval_pk>\d+)/$",
+            r"^internal/approval/(?P<pk>\d+)/$",
             views.InternalApprovalView.as_view(),
             name="internal-approval-detail",
         ),
@@ -290,7 +284,7 @@ urlpatterns = (
             name="external-compliance-detail",
         ),
         url(
-            r"^internal/compliance/(?P<compliance_pk>\d+)/$",
+            r"^internal/compliance/(?P<pk>\d+)/$",
             views.InternalComplianceView.as_view(),
             name="internal-compliance-detail",
         ),

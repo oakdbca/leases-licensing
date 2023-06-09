@@ -27,34 +27,6 @@ class ApprovalExpireNotificationEmail(TemplateEmailBase):
         self.txt_template = "leaseslicensing/emails/approval_expire_notification.txt"
 
 
-class FilmingLawfulAuthorityApprovalExpireNotificationEmail(TemplateEmailBase):
-    def __init__(self):
-        super().__init__()
-        self.subject = "{} - Commercial Filming Lawful Authoriy expired.".format(
-            settings.DEP_NAME
-        )
-        self.html_template = (
-            "leaseslicensing/emails/approval_lawful_authority_expire_notification.html"
-        )
-        self.txt_template = (
-            "leaseslicensing/emails/approval_lawful_authority_expire_notification.txt"
-        )
-
-
-class FilmingLicenceApprovalExpireNotificationEmail(TemplateEmailBase):
-    def __init__(self):
-        super().__init__()
-        self.subject = "{} - Commercial Filming Lawful Authoriy expired.".format(
-            settings.DEP_NAME
-        )
-        self.html_template = (
-            "leaseslicensing/emails/approval_filming_expire_notification.html"
-        )
-        self.txt_template = (
-            "leaseslicensing/emails/approval_filming_expire_notification.txt"
-        )
-
-
 class ApprovalCancelNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
@@ -266,7 +238,7 @@ def send_approval_surrender_email_notification(approval, request=None):
 def send_approval_renewal_review_email_notification(approval):
     email = ApprovalRenewalReviewNotificationEmail()
     url = settings.SITE_URL
-    url += reverse("internal-approval-detail", kwargs={"approval_pk": approval.pk})
+    url += reverse("internal-approval-detail", kwargs={"pk": approval.pk})
 
     context = {
         "approval": approval,

@@ -77,6 +77,26 @@ export default {
                 });
         });
     },
+    fetchOrganisations: function () {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.organisations)
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        reject(error)
+                    }
+                    console.log('organisations: ', data)
+                    resolve(data)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                    reject(error)
+                })
+        });
+    },
     fetchOrganisation: function (id) {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations + id + '/')
@@ -99,7 +119,7 @@ export default {
     },
     fetchOrganisationAddress: function (id) {
         return new Promise((resolve, reject) => {
-            fetch(api_endpoints.organisations + id + '/get_org_address')
+            fetch(api_endpoints.organisations + id + '/get_org_address/')
                 .then(async (response) => {
                     const data = await response.json()
                     if (!response.ok) {
@@ -110,14 +130,14 @@ export default {
                     }
                     let formatted_data = {};
                     formatted_data = {
-                        postal_address:{
+                        postal_address: {
                             postal_line1: data.postal_address.line1,
                             postal_locality: data.postal_address.locality,
                             postal_state: data.postal_address.state,
                             postal_postcode: data.postal_address.postcode,
                             postal_country: data.postal_address.country,
                         },
-                        billing_address:{
+                        billing_address: {
                             billing_line1: data.billing_address.line1,
                             billing_locality: data.billing_address.locality,
                             billing_state: data.billing_address.state,
@@ -135,7 +155,7 @@ export default {
     },
     fetchOrganisationRequests: function () {
         return new Promise((resolve, reject) => {
-            fetch(api_endpoints.organisation_requests)
+            fetch(api_endpoints.organisation_requests + 'no-pagination/')
                 .then(async response => {
                     const data = await response.json();
                     if (!response.ok) {
@@ -304,12 +324,32 @@ export default {
                 });
         });
     },
+    fetchInvoiceTransactions: function (invoice_id) {
+        return new Promise((resolve, reject) => {
+            fetch(api_endpoints.invoices + `${invoice_id}/transactions/`)
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                        reject(error)
+                    }
+                    console.log('transactions: ', data)
+                    resolve(data)
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                    reject(error)
+                })
+        });
+    },
     /**
      * Generic function to fetch data from an endpoint
      * @param {String} url The url endpoint to fetch data from
      * @returns a Promise
      */
-    fetchUrl: async function(url){
+    fetchUrl: async function (url) {
         return new Promise((resolve, reject) => {
             fetch(url)
                 .then(async response => {
@@ -325,6 +365,6 @@ export default {
                     console.error("There was an error!", error);
                     reject(error)
                 });
-            });
+        });
     }
 }

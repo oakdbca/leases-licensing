@@ -44,7 +44,7 @@ class CompetitiveProcess(models.Model):
 
     objects = CompetitiveProcessManager()
 
-    prefix = "CP"
+    MODEL_PREFIX = "CP"
 
     # For status
     STATUS_IN_PROGRESS = "in_progress"
@@ -58,7 +58,7 @@ class CompetitiveProcess(models.Model):
         (STATUS_COMPLETED_DECLINED, "Completed (Declined)"),
     )
 
-    lodgement_number = models.CharField(max_length=9, blank=True, default="")
+    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     status = models.CharField(
         "Status",
         max_length=30,
@@ -241,24 +241,10 @@ class CompetitiveProcess(models.Model):
             return retrieve_email_user(self.assigned_officer_id)
         return None
 
-    @property
-    def next_lodgement_number(self):
-        try:
-            ids = [
-                int(i.lstrip(self.prefix))
-                for i in CompetitiveProcess.objects.all().values_list(
-                    "lodgement_number", flat=True
-                )
-                if i
-            ]
-            return max(ids) + 1 if ids else 1
-        except Exception as e:
-            print(e)
-
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.lodgement_number == "":
-            self.lodgement_number = self.prefix + f"{self.next_lodgement_number:07d}"
+            self.lodgement_number = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.save()
 
     def get_related_items(self, **kwargs):

@@ -45,6 +45,8 @@ class ComplianceManager(models.Manager):
 class Compliance(RevisionedMixin, models.Model):
     objects = ComplianceManager()
 
+    MODEL_PREFIX = "C"
+
     PROCESSING_STATUS_CHOICES = (
         ("due", "Due"),
         ("future", "Future"),
@@ -182,7 +184,7 @@ class Compliance(RevisionedMixin, models.Model):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if self.lodgement_number == "":
-            new_lodgment_id = f"C{self.pk:06d}"
+            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
 

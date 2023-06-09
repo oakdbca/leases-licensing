@@ -64,10 +64,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="residentialAddressLine1"
-                                                name="residentialAddressLine1" v-model="
-                                                    email_user.residential_address
-                                                        .line1
-                                                " required />
+                                                name="residentialAddressLine1" v-model="email_user.residential_address
+                                                    .line1
+                                                    " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -76,10 +75,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="residentialLocality"
-                                                name="residentialLocality" v-model="
-                                                    email_user.residential_address
-                                                        .locality
-                                                " required />
+                                                name="residentialLocality" v-model="email_user.residential_address
+                                                    .locality
+                                                    " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -88,10 +86,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="residentialState"
-                                                name="residentialState" v-model="
-                                                    email_user.residential_address
-                                                        .state
-                                                " required />
+                                                name="residentialState" v-model="email_user.residential_address
+                                                    .state
+                                                    " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -100,10 +97,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="residentialPostcode"
-                                                name="residentialPostcode" v-model="
-                                                    email_user.residential_address
-                                                        .postcode
-                                                " maxlength="10" required />
+                                                name="residentialPostcode" v-model="email_user.residential_address
+                                                    .postcode
+                                                    " maxlength="10" required />
                                         </div>
                                     </div>
                                     <div class="row mb-4">
@@ -111,10 +107,9 @@
                                             <label for="residentialPostcode" class="form-label">Country</label>
                                         </div>
                                         <div class="col-md-4">
-                                            <select class="form-select" id="country" name="Country" v-model="
-                                                email_user.residential_address
-                                                    .country
-                                            " required>
+                                            <select class="form-select" id="country" name="Country" v-model="email_user.residential_address
+                                                .country
+                                                " required>
                                                 <option v-for="c in countries" :value="c.code">
                                                     {{ c.name }}
                                                 </option>
@@ -146,10 +141,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control postal-address" id="postalAddressLine1"
-                                                name="postalAddressLine1" v-model="
-                                                    email_user.postal_address
-                                                        .line1
-                                                " required />
+                                                name="postalAddressLine1" v-model="email_user.postal_address
+                                                    .line1
+                                                    " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -158,10 +152,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control postal-address" id="postalLocality"
-                                                name="postalLocality" v-model="
-                                                    email_user.postal_address
-                                                        .locality
-                                                " required />
+                                                name="postalLocality" v-model="email_user.postal_address
+                                                    .locality
+                                                    " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -170,10 +163,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control postal-address" id="postalState"
-                                                name="postalState" v-model="
-                                                    email_user.postal_address
-                                                        .state
-                                                " required />
+                                                name="postalState" v-model="email_user.postal_address
+                                                    .state
+                                                    " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -182,10 +174,9 @@
                                         </div>
                                         <div class="col-md-4">
                                             <input type="text" class="form-control postal-address" id="postalPostcode"
-                                                name="postalPostcode" v-model="
-                                                    email_user.postal_address
-                                                        .postcode
-                                                " maxlength="10" required />
+                                                name="postalPostcode" v-model="email_user.postal_address
+                                                    .postcode
+                                                    " maxlength="10" required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -193,10 +184,9 @@
                                             <label for="postalPostcode" class="form-label">Country</label>
                                         </div>
                                         <div class="col-md-4">
-                                            <select class="form-select postal-address" id="country" name="Country" v-model="
-                                                email_user.postal_address
-                                                    .country
-                                            " required>
+                                            <select class="form-select postal-address" id="country" name="Country" v-model="email_user.postal_address
+                                                .country
+                                                " required>
                                                 <option v-for="c in countries" :value="c.code">
                                                     {{ c.name }}
                                                 </option>
@@ -386,20 +376,20 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="org in organisation_requests">
-                                    <td><span>{{ org.name }}</span></td>
-                                    <td><span>{{ helpers.formatABNorACN(org.abn) }}</span></td>
+                                <tr v-for="organisation_request in organisation_requests">
+                                    <td><span>{{ organisation_request.name }}</span></td>
+                                    <td><span>{{ helpers.formatABNorACN(organisation_request.abn) }}</span></td>
                                     <td>
-                                        <span v-if="'With Assessor' == org.status" class="badge bg-secondary p-2"><i
-                                                class="fa fa-clock"></i>
+                                        <span v-if="'With Assessor' == organisation_request.status"
+                                            class="badge bg-secondary p-2"><i class="fa fa-clock"></i>
                                             Pending</span>
-                                        <span v-if="'Approved' == org.status" class="badge bg-success me-1 p-2"><i
-                                                class="fa fa-chain"></i> Linked</span>
+                                        <span v-if="'Approved' == organisation_request.status"
+                                            class="badge bg-success me-1 p-2"><i class="fa fa-chain"></i> Linked</span>
                                     </td>
                                     <td>
-                                        <template v-if="'Approved' == org.status">
+                                        <template v-if="'Approved' == organisation_request.status">
                                             <div>
-                                                <a :href="'/external/organisations/manage/' + org.organisation"
+                                                <a :href="'/external/organisations/manage/' + organisation_request.organisation"
                                                     class="btn btn-primary btn-sm btn-status me-1" role="button">
                                                     <i class="fa fa-pencil-square"></i>
                                                     update</a>
@@ -497,8 +487,7 @@ export default {
                 vm.email_user = data[1].data;
                 vm.email_user.id = data[2].id;
                 vm.email_user.is_internal = data[2].is_internal;
-                vm.organisation_requests = data[3].results;
-                console.log("REQUESTS: ", vm.organisation_requests[0]);
+                vm.organisation_requests = data[3];
                 // Convert date to format that the date picker can use
                 vm.email_user.dob = vm.email_user.dob.split("/").reverse().join("-");
                 this.$nextTick(() => {
@@ -522,21 +511,10 @@ export default {
             let vm = this;
             vm.loadingOrganisationRequests = true;
             utils.fetchOrganisationRequests().then(data => {
-                vm.organisation_requests = data.results;
+                vm.organisation_requests = data;
                 vm.loadingOrganisationRequests = false;
             });
         },
-        // copyResidentialAddress: function (event) {
-        //     let vm = this;
-        //     if (event.target.checked) {
-        //         vm.email_user.postal_address = { ...vm.email_user.residential_address };
-        //         vm.togglePostalAddressFieldsDisabled();
-        //     } else {
-        //         Object.keys(vm.email_user.postal_address).forEach((i) => vm.email_user.postal_address[i] = '');
-        //         vm.email_user.postal_address.country = 'AU';
-        //         vm.togglePostalAddressFieldsDisabled();
-        //     }
-        // },
         validateForm: function (formId) {
             let vm = this;
             var form = document.getElementById(formId)

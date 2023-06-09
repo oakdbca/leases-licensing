@@ -10,9 +10,6 @@ from django.urls import reverse
 from django.utils.encoding import smart_text
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
-from leaseslicensing.components.bookings.awaiting_payment_invoice_pdf import (
-    create_awaiting_payment_invoice_pdf_bytes,
-)
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
@@ -78,12 +75,6 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
 def send_referral_email_notification(referral, recipients, request, reminder=False):
-    # if referral.proposal.is_filming_application:
-    #     email = ReferralFilmingSendNotificationEmail()
-    #     proposed_start_date= referral.proposal.filming_activity.commencement_date
-    # else:
-    #     email = ReferralSendNotificationEmail()
-    # email = ReferralSendNotificationEmail()
     application_type = referral.proposal.application_type.name_display
     email = TemplateEmailBase(
         subject=f"A referral for a {application_type} has been sent to you.",
@@ -93,19 +84,16 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
     url = request.build_absolute_uri(
         reverse(
             "internal-proposal-detail",
-            kwargs={"proposal_pk": referral.proposal.id},
+            kwargs={"pk": referral.proposal.id},
         )
     )
 
-    # filming_handbook_url= settings.COLS_FILMING_HANDBOOK_URL
     context = {
         "proposal": referral.proposal,
         "url": url,
         "reminder": reminder,
         "comments": referral.text,
-        # 'filming_handbook_url': filming_handbook_url,
         # 'proposed_start_date': proposed_start_date,
-        "filming_handbook_url": "",
         "proposed_start_date": "",
     }
 
@@ -137,9 +125,7 @@ def send_referral_complete_email_notification(referral, request):
     # email = ReferralCompleteNotificationEmail()
     email.subject = sent_by.email + ": " + email.subject
     url = request.build_absolute_uri(
-        reverse(
-            "internal-proposal-detail", kwargs={"proposal_pk": referral.proposal.id}
-        )
+        reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
     )
 
     email_user = retrieve_email_user(referral.referral)
@@ -218,7 +204,7 @@ def send_submit_email_notification(request, proposal):
     )
     # email = SubmitSendNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     if "-internal" not in url:
         # add it. This email is for internal staff (assessors)
@@ -290,12 +276,12 @@ def send_approver_decline_email_notification(reason, request, proposal):
     )
     # email = ApproverDeclineSendNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     context = {"proposal": proposal, "reason": reason, "url": url}
 
     cc_email_str = request.data.get("cc_email", None)
-    cc_emails = re.split("[\s,;]+",  cc_email_str) if cc_email_str else []
+    cc_emails = re.split("[\s,;]+", cc_email_str) if cc_email_str else []
 
     msg = email.send(proposal.approver_recipients, cc=cc_emails, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
@@ -317,7 +303,7 @@ def send_approver_approve_email_notification(request, proposal):
     )
     # email = ApproverApproveSendNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     context = {
         "start_date": proposal.proposed_issuance_approval.get("start_date"),
@@ -376,7 +362,7 @@ def send_proposal_approver_sendback_email_notification(request, proposal):
     )
     # email = ApproverSendBackNotificationEmail()
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
 
     if "test-emails" in request.path_info:
@@ -410,19 +396,20 @@ def send_proposal_approval_email_notification(proposal, request):
         all_ccs = cc_list.split(",")
 
     attachments = []
-    licence_document = proposal.approval.licence_document._file
-    if licence_document is not None:
-        file_name = proposal.approval.licence_document.name
-        attachment = (file_name, licence_document.file.read(), "application/pdf")
-        attachments.append(attachment)
+    # Commented out as we have removed the create approval pdf method for now
+    # licence_document = proposal.approval.licence_document._file
+    # if licence_document is not None:
+    #     file_name = proposal.approval.licence_document.name
+    #     attachment = (file_name, licence_document.file.read(), "application/pdf")
+    #     attachments.append(attachment)
 
-        # add requirement documents
-        for requirement in proposal.requirements.exclude(is_deleted=True):
-            for doc in requirement.requirement_documents.all():
-                file_name = doc._file.name
-                # attachment = (file_name, doc._file.file.read(), 'image/*')
-                attachment = (file_name, doc._file.file.read())
-                attachments.append(attachment)
+    #     # add requirement documents
+    #     for requirement in proposal.requirements.exclude(is_deleted=True):
+    #         for doc in requirement.requirement_documents.all():
+    #             file_name = doc._file.name
+    #             # attachment = (file_name, doc._file.file.read(), 'image/*')
+    #             attachment = (file_name, doc._file.file.read())
+    #             attachments.append(attachment)
 
     url = request.build_absolute_uri(reverse("external"))
     if "-internal" in url:
@@ -442,10 +429,12 @@ def send_proposal_approval_email_notification(proposal, request):
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
 
     email_entry = _log_proposal_email(msg, proposal, sender=sender)
-    path_to_file = "{}/proposals/{}/approvals/{}".format(
-        settings.MEDIA_APP_DIR, proposal.id, file_name
-    )
-    email_entry.documents.get_or_create(_file=path_to_file, name=file_name)
+
+    # Commented out as we have removed the create approval pdf method for now
+    # path_to_file = "{}/proposals/{}/approvals/{}".format(
+    #     settings.MEDIA_APP_DIR, proposal.id, file_name
+    # )
+    # email_entry.documents.get_or_create(_file=path_to_file, name=file_name)
 
     if proposal.org_applicant:
         _log_org_email(msg, proposal.org_applicant, proposal.submitter, sender=sender)
@@ -462,7 +451,7 @@ def send_license_ready_for_invoicing_notification(proposal, request):
     )
 
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"proposal_pk": proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
     if "-internal" not in url:
         # add it. This email is for internal staff (approver)
@@ -504,7 +493,10 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
         url = "".join(url.split("-internal"))
 
     filename = "confirmation.pdf"
-    doc = create_awaiting_payment_invoice_pdf_bytes(filename, proposal)
+
+    # Commenting out as removing bookings component
+    doc = None  # create_awaiting_payment_invoice_pdf_bytes(filename, proposal)
+
     attachment = (filename, doc, "application/pdf")
 
     context = {

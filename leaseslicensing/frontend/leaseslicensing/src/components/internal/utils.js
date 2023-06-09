@@ -11,16 +11,6 @@ export default {
                 });
         });
     },
-    fetchOrganisations: function (id) {
-        return new Promise((resolve, reject) => {
-            this.$http.get(api_endpoints.organisations).then((response) => {
-                resolve(response.body);
-            },
-                (error) => {
-                    reject(error);
-                });
-        });
-    },
     fetchCountries: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.countries)

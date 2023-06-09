@@ -27,6 +27,7 @@ from rest_framework_datatables.renderers import DatatablesRenderer
 from reversion.models import Version
 
 from leaseslicensing.components.approvals.models import Approval
+from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
@@ -34,6 +35,7 @@ from leaseslicensing.components.main.filters import LedgerDatatablesFilterBacken
 from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
+from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentReason,
@@ -72,6 +74,8 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     ProposalStandardRequirementSerializer,
     ProposalTypeSerializer,
     ProposalUserActionSerializer,
+    ProposedApprovalROISerializer,
+    ProposedApprovalSerializer,
     ReferralSerializer,
     SaveProposalSerializer,
     SearchKeywordSerializer,
@@ -1555,15 +1559,8 @@ class ProposalViewSet(UserActionLoggingViewset):
                         "The status provided is not allowed"
                     )
             instance.move_to_status(request, status, approver_comment)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
             serializer_class = self.get_serializer_class()
             serializer = serializer_class(instance, context={"request": request})
-            # if instance.application_type.name==ApplicationType.TCLASS:
-            #     serializer = InternalProposalSerializer(instance,context={'request':request})
-            # elif instance.application_type.name==ApplicationType.FILMING:
-            #     serializer = InternalFilmingProposalSerializer(instance,context={'request':request})
-            # elif instance.application_type.name==ApplicationType.EVENT:
-            #     serializer = InternalProposalSerializer(instance,context={'request':request})
             return Response(serializer.data)
         except serializers.ValidationError:
             print(traceback.print_exc())
@@ -1665,11 +1662,13 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     def proposed_approval(self, request, *args, **kwargs):
         instance = self.get_object()
-        # serializer = ProposedApprovalSerializer(data=request.data)
-        # serializer.is_valid(raise_exception=True)
-        # instance.proposed_approval(request, serializer.validated_data)
+        approval_type = request.data.get("approval_type", None)
+        if not approval_type:
+            serializer = ProposedApprovalROISerializer(data=request.data)
+        else:
+            serializer = ProposedApprovalSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         instance.proposed_approval(request, request.data)
-        # serializer = InternalProposalSerializer(instance,context={'request':request})
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
@@ -1701,27 +1700,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             print(traceback.print_exc())
             raise serializers.ValidationError(str(e))
 
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    def test_create_approval_pdf(self, request, **kwargs):
-        """
-        API endpoint to test the creation of this Proposal's approval PDF
-        """
-
-        instance = self.get_object()
-        try:
-            instance.create_approval_pdf(request)
-        except ValidationError:
-            raise ValidationError
-
-        serializer_class = self.get_serializer_class()
-        serializer = serializer_class(instance, context={"request": request})
-        return Response(serializer.data)
-
+    @basic_exception_handler
     @detail_route(
         methods=[
             "POST",
@@ -1729,27 +1708,17 @@ class ProposalViewSet(UserActionLoggingViewset):
         detail=True,
     )
     def final_approval(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            # serializer = ProposedApprovalSerializer(data=request.data)
-            # serializer.is_valid(raise_exception=True)
-            instance.final_approval(request, request.data)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.get_serializer_class()
-            serializer = serializer_class(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        approval_type = request.data.get("approval_type", None)
+        if not approval_type:
+            serializer = ProposedApprovalROISerializer(data=request.data)
+        else:
+            serializer = ProposedApprovalSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance.final_approval(request, request.data)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1985,19 +1954,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     def update(self, request, *args, **kwargs):
         try:
             instance = self.get_object()
-            if instance.application_type.name == ApplicationType.TCLASS:
-                serializer = SaveProposalSerializer(instance, data=request.data)
-
-            # Commenting out as no such seralizer exists, maybe this isn't needed and was taken from apiary?
-            # elif instance.application_type.name == ApplicationType.FILMING:
-            #     serializer = ProposalFilmingOtherDetailsSerializer(
-            #         data=other_details_data
-            #     )
-            # elif instance.application_type.name == ApplicationType.EVENT:
-            #     serializer = ProposalEventOtherDetailsSerializer(
-            #         data=other_details_data
-            #     )
-
+            serializer = SaveProposalSerializer(instance, data=request.data)
             serializer.is_valid(raise_exception=True)
             self.perform_update(serializer)
             return Response(serializer.data)
@@ -2028,6 +1985,39 @@ class ProposalViewSet(UserActionLoggingViewset):
         related_items = instance.get_related_items()
         serializer = RelatedItemsSerializer(related_items, many=True)
         return Response(serializer.data)
+
+    @detail_route(
+        methods=["GET"],
+        detail=True,
+        renderer_classes=[DatatablesRenderer],
+        pagination_class=DatatablesPageNumberPagination,
+    )
+    def related_items(self, request, *args, **kwargs):
+        """Uses union to combine a queryset of multiple different model types
+        and uses a generic related item serializer to return the data"""
+        instance = self.get_object()
+        proposals_queryset = Proposal.objects.filter(
+            generated_proposal_id=instance.id
+        ).values("id", "lodgement_number", "processing_status")
+        competitive_process_queryset = CompetitiveProcess.objects.filter(
+            id__in=[
+                instance.generated_competitive_process_id,
+                instance.originating_competitive_process_id,
+            ]
+        ).values("id", "lodgement_number", "status")
+        approval_queryset = Approval.objects.filter(id=instance.approval_id).values(
+            "id", "lodgement_number", "status"
+        )
+        queryset = proposals_queryset.union(
+            competitive_process_queryset, approval_queryset
+        ).order_by("lodgement_number")
+        serializer = RelatedItemSerializer(queryset, many=True)
+        data = {}
+        # Add the fields that the datatables renderer expects
+        data["data"] = serializer.data
+        data["recordsFiltered"] = queryset.count()
+        data["recordsTotal"] = queryset.count()
+        return Response(data=data)
 
 
 class ReferralViewSet(viewsets.ModelViewSet):
@@ -2609,7 +2599,7 @@ class SearchReferenceView(views.APIView):
                 + f" - { proposal.application_type.name_display }"
                 + f" - { proposal.proposal_type.description } [Proposal]",
                 "redirect_url": reverse(
-                    "internal-proposal-detail", kwargs={"proposal_pk": proposal.id}
+                    "internal-proposal-detail", kwargs={"pk": proposal.id}
                 ),
             }
             for proposal in proposals
@@ -2620,7 +2610,7 @@ class SearchReferenceView(views.APIView):
                 "id": approval.id,
                 "text": f"{ approval.lodgement_number } [Approval]",
                 "redirect_url": reverse(
-                    "internal-approval-detail", kwargs={"approval_pk": approval.id}
+                    "internal-approval-detail", kwargs={"pk": approval.id}
                 ),
             }
             for approval in approvals
@@ -2634,7 +2624,7 @@ class SearchReferenceView(views.APIView):
                 "text": f"{ compliance.lodgement_number } [Compliance]",
                 "redirect_url": reverse(
                     "internal-compliance-detail",
-                    kwargs={"compliance_pk": compliance.id},
+                    kwargs={"pk": compliance.id},
                 ),
             }
             for compliance in compliances

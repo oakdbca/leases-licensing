@@ -1000,6 +1000,11 @@ export default {
                             if (!response.ok) {
                                 const error = (data && data.message) || response.statusText;
                                 console.log(error)
+                                Swal.fire({
+                                    title: "Reissue Approval",
+                                    text: data,
+                                    icon: "error",
+                                })
                                 Promise.reject(error);
                             }
                             vm.$router.push({

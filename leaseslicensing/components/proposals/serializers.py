@@ -9,7 +9,6 @@ from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
-from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeSerializer,
     CommunicationLogEntrySerializer,
@@ -118,6 +117,7 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
 
     def get_polygon_source(self, obj):
         return get_polygon_source(obj)
+
 
 class ProposalTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -560,7 +560,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         return LGA.objects.filter(id__in=ids).values("id", "name")
 
     def get_details_url(self, obj):
-        return reverse('internal-proposal-detail', kwargs={'proposal_pk': obj.id})
+        return reverse('internal-proposal-detail', kwargs={'pk': obj.id})
 
     def get_groups(self, obj):
         group_ids = obj.groups.values_list("group__id", flat=True)
@@ -613,17 +613,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     def get_customer_status(self, obj):
         return obj.get_processing_status_display()
 
-    # def get_is_qa_officer(self,obj):
-    #     return True
-
-    def get_allow_full_discount(self, obj):
-        return (
-            True
-            if obj.application_type.name == ApplicationType.TCLASS
-            and obj.allow_full_discount
-            else False
-        )
-
 
 class ListProposalMinimalSerializer(serializers.ModelSerializer):
     proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
@@ -657,7 +646,7 @@ class ListProposalMinimalSerializer(serializers.ModelSerializer):
         request = self.context["request"]
         if request.user.is_authenticated:
             if is_internal(request):
-                return reverse('internal-proposal-detail', kwargs={'proposal_pk': obj.id})
+                return reverse('internal-proposal-detail', kwargs={'pk': obj.id})
             else:
                 return reverse('external-proposal-detail', kwargs={'proposal_pk': obj.id})
 
@@ -1514,12 +1503,20 @@ class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
         fields = ("id", "code", "text")
 
 
+class ProposedApprovalROISerializer(serializers.Serializer):
+    decision = serializers.CharField(allow_null=False)
+    details = serializers.CharField(allow_null=False)
+    bcc_email = serializers.CharField(required=False, allow_null=True)
+
+
 class ProposedApprovalSerializer(serializers.Serializer):
-    # expiry_date = serializers.DateField(input_formats=['%d/%m/%Y'])
-    # start_date = serializers.DateField(input_formats=['%d/%m/%Y'])
+    approval_type = serializers.IntegerField()
     details = serializers.CharField()
-    decision = serializers.CharField()
     cc_email = serializers.CharField(required=False, allow_null=True)
+    expiry_date = serializers.DateField(input_formats=["%Y-%m-%d"])
+    start_date = serializers.DateField(input_formats=["%Y-%m-%d"])
+    selected_document_types = serializers.ListField()
+    record_management_number = serializers.CharField(allow_null=False)
 
 
 class PropedDeclineSerializer(serializers.Serializer):

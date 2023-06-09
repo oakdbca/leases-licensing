@@ -52,7 +52,6 @@ INSTALLED_APPS += [
     "leaseslicensing.components.proposals",
     "leaseslicensing.components.approvals",
     "leaseslicensing.components.compliances",
-    "leaseslicensing.components.bookings",
     "leaseslicensing.components.competitive_processes",
     "leaseslicensing.components.invoicing",
     "leaseslicensing.components.tenure",
@@ -66,18 +65,6 @@ ADD_REVERSION_ADMIN = True
 
 # maximum number of days allowed for a booking
 WSGI_APPLICATION = "leaseslicensing.wsgi.application"
-
-"""REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'leaseslicensing.perms.OfficerPermission',
-    )
-}"""
-
-# REST_FRAMEWORK = {
-#    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-#    #'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-#        'PAGE_SIZE': 5
-# }
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": (
@@ -94,7 +81,6 @@ REST_FRAMEWORK = {
 
 
 MIDDLEWARE_CLASSES += [
-    # 'leaseslicensing.middleware.BookingTimerMiddleware',
     # 'leaseslicensing.middleware.FirstTimeNagScreenMiddleware',
     # 'leaseslicensing.middleware.RevisionOverrideMiddleware',
     "leaseslicensing.middleware.CacheControlMiddleware",
@@ -113,7 +99,6 @@ if SHOW_DEBUG_TOOLBAR:
         "debug_toolbar.middleware.DebugToolbarMiddleware",
     ]
     INSTALLED_APPS += ("debug_toolbar",)
-    # INTERNAL_IPS = ('127.0.0.1', 'localhost', get_ip())
     INTERNAL_IPS = ("127.0.0.1", "localhost")
 
     # this dict removes check to dtermine if toolbar should display --> works for rks docker container
@@ -121,6 +106,8 @@ if SHOW_DEBUG_TOOLBAR:
         # "SHOW_TOOLBAR_CALLBACK": show_toolbar,
         "INTERCEPT_REDIRECTS": False,
     }
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedStaticFilesStorage"
 
 TEMPLATES[0]["DIRS"].append(os.path.join(BASE_DIR, "leaseslicensing", "templates"))
 TEMPLATES[0]["DIRS"].append(
@@ -168,7 +155,6 @@ SYSTEM_NAME_SHORT = env("SYSTEM_NAME_SHORT", "LALS")
 SITE_PREFIX = env("SITE_PREFIX")
 SITE_DOMAIN = env("SITE_DOMAIN")
 SUPPORT_EMAIL = env("SUPPORT_EMAIL", "licensing@" + SITE_DOMAIN).lower()
-SUPPORT_EMAIL_FILMING = env("SUPPORT_EMAIL_FILMING", "filming@" + SITE_DOMAIN).lower()
 DEP_URL = env("DEP_URL", "www." + SITE_DOMAIN)
 DEP_PHONE = env("DEP_PHONE", "(08) 9219 9978")
 DEP_PHONE_FILMING = env("DEP_PHONE_FILMING", "(08) 9219 8411")
@@ -249,6 +235,7 @@ if DEBUG:
             "console": {
                 "class": "logging.StreamHandler",
                 "level": "DEBUG",
+                "formatter": "verbose",
             },
             "leaseslicensing_rotating_file": {
                 "level": "INFO",
@@ -258,7 +245,7 @@ if DEBUG:
                 "maxBytes": 5242880,
             },
             "mail_admins": {
-                "level": "ERROR",
+                "level": "CRITICAL",
                 "class": "django.utils.log.AdminEmailHandler",
                 "include_html": True,
             },
@@ -368,26 +355,26 @@ CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI = "base_fee_plus_annual_cpi"
 CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER = "percentage_of_gross_turnover"
 CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE = "no_rent_or_licence_charge"
 CHARGE_METHODS = (
-    (CHARGE_METHOD_ONCE_OFF_CHARGE, "Once-off charge"),
+    (CHARGE_METHOD_ONCE_OFF_CHARGE, "Once-off Charge"),
     (
         CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT,
-        "Base fee plus fixed annual increment",
+        "Base Fee Plus Fixed Annual Increment",
     ),
     (
         CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE,
-        "Base fee plus fixed annual percentage",
+        "Base Fee Plus Fixed Annual Percentage",
     ),
-    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base fee plus annual CPI"),
-    (CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER, "Percentage of gross turnover"),
-    (CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE, "No rent or licence charge"),
+    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base Fee Plus Annual CPI"),
+    (CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER, "Percentage of Gross Turnover"),
+    (CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE, "No Charge"),
 )
 REPETITION_TYPE_ANNUALLY = "annually"
 REPETITION_TYPE_QUARTERLY = "quarterly"
 REPETITION_TYPE_MONTHLY = "monthly"
 REPETITION_TYPES = (
-    (REPETITION_TYPE_ANNUALLY, "Annually"),
-    (REPETITION_TYPE_QUARTERLY, "Quarterly"),
-    (REPETITION_TYPE_MONTHLY, "Monthly"),
+    (REPETITION_TYPE_ANNUALLY, "Year"),
+    (REPETITION_TYPE_QUARTERLY, "Quarter"),
+    (REPETITION_TYPE_MONTHLY, "Month"),
 )
 
 # ---------- Identifier fields for logging ----------
@@ -426,6 +413,7 @@ CACHE_KEY_APPLICATION_STATUSES_DICT_FOR_FILTER = (
 )
 CACHE_KEY_DBCA_LEGISLATED_LANDS_AND_WATERS = "dbca_legislated_lands_and_waters"
 CACHE_KEY_MAP_PROPOSALS = "map-proposals"
+CACHE_KEY_LODGEMENT_NUMBER_PREFIXES = "lodgement_number_prefixes"
 
 # ---------- User Log Actions ----------
 

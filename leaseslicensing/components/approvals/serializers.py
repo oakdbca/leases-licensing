@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
@@ -18,6 +20,8 @@ from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.users.serializers import UserSerializer
 from leaseslicensing.helpers import is_approver, is_assessor
+
+logger = logging.getLogger(__name__)
 
 
 class ApprovalPaymentSerializer(serializers.ModelSerializer):
@@ -195,6 +199,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "groups_names_list",
             "categories_list",
             "site_name",
+            "record_management_number",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
