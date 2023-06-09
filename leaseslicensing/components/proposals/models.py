@@ -2711,7 +2711,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # TODO: additional logic required for amendment, reissue, etc?
 
                     # Generate approval (license) document
-                    self.create_approval_pdf(request)
+                    # self.create_approval_pdf(request)
                     # TODO: Send notification email to approver after the finance team
                     # has created the invoice
                     # send_license_ready_for_invoicing_notification(self, request)
@@ -2719,12 +2719,16 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # Send notification email to applicant
                     send_proposal_approval_email_notification(self,request)
 
-                    self.save(
-                        version_comment=f"Final Approval: {self.approval.lodgement_number}"
+                    if self.approval:
+                        self.save(
+                            version_comment=f"Final Approval: {self.approval.lodgement_number}"
                         )
-                    if self.approval and self.approval.documents:
-                        self.approval.documents.all().update(can_delete=False)
-
+                        if self.approval.documents:
+                            self.approval.documents.all().update(can_delete=False)
+                    else:
+                        self.save(
+                            version_comment=f"Registration of Interest Approval: {self.lodgement_number}"
+                        )
 
             except Exception as e:
                 logger.exception(e)
