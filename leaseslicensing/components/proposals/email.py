@@ -396,19 +396,20 @@ def send_proposal_approval_email_notification(proposal, request):
         all_ccs = cc_list.split(",")
 
     attachments = []
-    licence_document = proposal.approval.licence_document._file
-    if licence_document is not None:
-        file_name = proposal.approval.licence_document.name
-        attachment = (file_name, licence_document.file.read(), "application/pdf")
-        attachments.append(attachment)
+    # Commented out as we have removed the create approval pdf method for now
+    # licence_document = proposal.approval.licence_document._file
+    # if licence_document is not None:
+    #     file_name = proposal.approval.licence_document.name
+    #     attachment = (file_name, licence_document.file.read(), "application/pdf")
+    #     attachments.append(attachment)
 
-        # add requirement documents
-        for requirement in proposal.requirements.exclude(is_deleted=True):
-            for doc in requirement.requirement_documents.all():
-                file_name = doc._file.name
-                # attachment = (file_name, doc._file.file.read(), 'image/*')
-                attachment = (file_name, doc._file.file.read())
-                attachments.append(attachment)
+    #     # add requirement documents
+    #     for requirement in proposal.requirements.exclude(is_deleted=True):
+    #         for doc in requirement.requirement_documents.all():
+    #             file_name = doc._file.name
+    #             # attachment = (file_name, doc._file.file.read(), 'image/*')
+    #             attachment = (file_name, doc._file.file.read())
+    #             attachments.append(attachment)
 
     url = request.build_absolute_uri(reverse("external"))
     if "-internal" in url:
@@ -428,10 +429,12 @@ def send_proposal_approval_email_notification(proposal, request):
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
 
     email_entry = _log_proposal_email(msg, proposal, sender=sender)
-    path_to_file = "{}/proposals/{}/approvals/{}".format(
-        settings.MEDIA_APP_DIR, proposal.id, file_name
-    )
-    email_entry.documents.get_or_create(_file=path_to_file, name=file_name)
+
+    # Commented out as we have removed the create approval pdf method for now
+    # path_to_file = "{}/proposals/{}/approvals/{}".format(
+    #     settings.MEDIA_APP_DIR, proposal.id, file_name
+    # )
+    # email_entry.documents.get_or_create(_file=path_to_file, name=file_name)
 
     if proposal.org_applicant:
         _log_org_email(msg, proposal.org_applicant, proposal.submitter, sender=sender)
