@@ -58,6 +58,24 @@
                     </div>
                 </div>
 
+                <div v-if="showEditingInvoicingOptions" class="row mt-2 mb-2">
+                    <div class="col">
+                        <div class="card card-default">
+                            <div class="card-header">
+                                Edit Invoicing Details
+                            </div>
+                            <div class="card-body card-collapse">
+                                <div class="mb-2"><button @click="completeEditingInvoicing(true)"
+                                        class="btn btn-primary licensing-btn">Complete Editing</button></div>
+                                <div><button @click="cancelEditingInvoicing(false)"
+                                        class="btn btn-secondary licensing-btn">Cancel
+                                        Editing</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             <div class="col-md-9">
 
@@ -170,12 +188,17 @@
                         Map
                     </div>
 
-                    <div class="tab-pane fade" id="pills-invoicing" role="tabpanel">
+                    <div class="tab-pane fade" id="pills-invoicing" role="tabpanel" aria-labelledby="pills-invoicing-tab">
                         <InvoicesTable v-if="loadInvoices" ref="invoice_table" :approval_id="approval.id"
                             level="internal" />
+                        <FormSection class="mt-5" v-if="loadInvoices && showEditingInvoicingOptions" :formCollapse="false"
+                            label="Edit Invoicing Details">
+                            <InvoicingDetails :invoicing_details="approval.current_proposal.invoicing_details" />
+                        </FormSection>
                     </div>
 
-                    <div class="tab-pane fade" id="pills-related-items" role="tabpanel">
+                    <div class="tab-pane fade" id="pills-related-items" role="tabpanel"
+                        aria-labelledby="pills-related-items-tab">
                         <FormSection :formCollapse="false" label="Related Items" Index="related_items">
                             <TableRelatedItems :ajax_url="related_items_ajax_url" />
                         </FormSection>
@@ -192,9 +215,10 @@ import Applicant from '@/components/common/applicant.vue'
 import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
 import InvoicesTable from "@/components/common/table_invoices.vue"
 import FormSection from "@/components/forms/section_toggle.vue"
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import Swal from 'sweetalert2'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
+import InvoicingDetails from "@/components/common/invoicing_details.vue"
 
 export default {
     name: 'ApprovalDetail',
@@ -233,6 +257,7 @@ export default {
         OrganisationApplicant,
         InvoicesTable,
         TableRelatedItems,
+        InvoicingDetails,
     },
     computed: {
         debug: function () {
@@ -250,19 +275,8 @@ export default {
             }
             return description;
         },
-        annualAdmissionPermit: function () {
-            let permit = false;
-            if (this.approval && this.approval.approval_type_dict && this.approval.approval_type_dict.code === 'aap') {
-                permit = true;
-            }
-            return permit;
-        },
-        authorisedUserPermit: function () {
-            let permit = false;
-            if (this.approval && this.approval.approval_type_dict && this.approval.approval_type_dict.code === 'aup') {
-                permit = true;
-            }
-            return permit;
+        showEditingInvoicingOptions: function () {
+            return this.approval && constants.APPROVAL_STATUS.CURRENT_EDITING_INVOICING.TEXT == this.approval.status;
         },
     },
     methods: {
@@ -317,6 +331,47 @@ export default {
                 }
             })
         },
+        completeEditingInvoicing: function () {
+            alert('Call api to modify invoices based on new invoicing details')
+        },
+        cancelEditingInvoicing: function () {
+            let vm = this;
+            Swal.fire({
+                title: "Cancel Editing Invoicing Details",
+                text: "Are you sure you want to cancel editing invoicing details (any unsaved changes will be lost)?",
+                icon: "warning",
+                showCancelButton: true,
+                reverseButtons: true,
+                confirmButtonText: 'Cancel Editing',
+                cancelButtonText: 'Continue Editing',
+                confirmButtonColor: '#226fbb',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    let requestOptions = {
+                        method: "PATCH",
+                    };
+                    fetch(helpers.add_endpoint_join(api_endpoints.approvals, (vm.approval.id + '/cancel_editing_invoicing/')), requestOptions)
+                        .then(async response => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error = (data && data.message) || response.statusText;
+                                console.log(error)
+                                Promise.reject(error);
+                            }
+                            vm.$router.push({
+                                name: "internal-approvals-dash",
+                            });
+                        }, (error) => {
+                            console.log(error);
+                        });
+                }
+            })
+        },
     },
     created: async function () {
         const response = await fetch(helpers.add_endpoint_json(api_endpoints.approvals, this.$route.params.approval_id))
@@ -324,6 +379,20 @@ export default {
         this.approval = Object.assign({}, resData);
         this.approval.applicant_id = resData.applicant_id;
         if (this.approval.submitter.postal_address == null) { this.approval.submitter.postal_address = {}; }
+        this.$nextTick(function () {
+            if (window.location.hash == '#edit-invoicing') {
+                console.log(this.approval)
+                console.log('opening invoicing tab')
+                this.loadInvoices = true;
+                var tab_element = document.querySelector('#pills-invoicing-tab');
+                var tab = new bootstrap.Tab(tab_element);
+                tab.show();
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        })
     },
+    mounted: function () {
+
+    }
 }
 </script>

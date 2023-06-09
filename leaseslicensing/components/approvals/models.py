@@ -150,6 +150,7 @@ class Approval(RevisionedMixin):
     APPROVAL_STATUS_SUSPENDED = "suspended"
     APPROVAL_STATUS_EXTENDED = "extended"
     APPROVAL_STATUS_AWAITING_PAYMENT = "awaiting_payment"
+    APPROVAL_STATUS_CURRENT_EDITING_INVOICING = "current_editing_invoicing"
 
     STATUS_CHOICES = (
         (APPROVAL_STATUS_CURRENT, "Current"),
@@ -164,6 +165,7 @@ class Approval(RevisionedMixin):
         (APPROVAL_STATUS_SUSPENDED, "Suspended"),
         (APPROVAL_STATUS_EXTENDED, "extended"),
         (APPROVAL_STATUS_AWAITING_PAYMENT, "Awaiting Payment"),
+        (APPROVAL_STATUS_CURRENT_EDITING_INVOICING, "Current (Editing Invoicing)"),
     )
     lodgement_number = models.CharField(max_length=9, blank=True, default="")
     status = models.CharField(

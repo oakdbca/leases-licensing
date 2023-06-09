@@ -545,8 +545,14 @@ export default {
                             if (full.can_reinstate) {
                                 links += `<a href='#${full.id}' data-reinstate-approval='${full.id}'>Reinstate</a><br/>`;
                             }
-                            // Todo: Not yet sure under which circumstances these actions should be visible
-                            links += `<a href='#${full.id}' data-review-invoice-details-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
+                            // Todo: Not yet totally sure under which circumstances this action should be visible
+                            if (constants.APPROVAL_STATUS.CURRENT.TEXT == full.status) {
+                                links += `<a href='#${full.id}' data-review-invoice-detail-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
+                            }
+                            if (full.status == constants.APPROVAL_STATUS.CURRENT_EDITING_INVOICING.TEXT) {
+                                links += `<a href='/internal/approval/${full.id}#edit-invoicing'>Continue Editing Invoicing</a><br/>`;
+                            }
+
                             if ('current_pending_renewal_review' == full.status) {
                                 links += `<a href='#${full.id}' data-review-renewal-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Renewal</a><br/>`;
                             }
@@ -854,7 +860,7 @@ export default {
             });
 
             // Internal review invoice details listener
-            vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-review-invoice-details-approval]', function (e) {
+            vm.$refs.approvals_datatable.vmDataTable.on('click', 'a[data-review-invoice-detail-approval]', function (e) {
                 e.preventDefault();
                 var id = $(this).attr('data-review-invoice-detail-approval');
                 var lodgement_number = $(this).attr('data-approval-lodgement-number');
@@ -1096,7 +1102,43 @@ export default {
             });
         },
         approvalReviewInvoiceDetails: function (approval_id, approval_lodgement_number) {
-            alert('Will implement once we have completed the invoicing functionality.')
+            let vm = this;
+            Swal.fire({
+                title: "Approval Review Invoice Details",
+                text: "Are you sure you want to review the invoice details for this approval?",
+                icon: "warning",
+                showCancelButton: true,
+                reverseButtons: true,
+                confirmButtonText: 'Review Invoice Details',
+                confirmButtonColor: '#226fbb',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    let requestOptions = {
+                        method: "PATCH",
+                    };
+                    fetch(helpers.add_endpoint_join(api_endpoints.approvals, (approval_id + '/review_invoice_details/')), requestOptions)
+                        .then(async response => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                const error = (data && data.message) || response.statusText;
+                                console.log(error)
+                                Promise.reject(error);
+                            }
+                            vm.$router.push({
+                                name: "internal-approval-detail",
+                                hash: "#edit-invoicing",
+                                params: { approval_id: approval_id }
+                            });
+                        }, (error) => {
+                            console.log(error);
+                        });
+                }
+            })
         },
         approvalReviewRenewal: function (approval_id, approval_lodgement_number) {
             alert('Will implement when we have an idea what is supposed to happen here.')

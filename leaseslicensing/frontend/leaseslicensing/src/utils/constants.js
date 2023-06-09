@@ -59,7 +59,8 @@ module.exports = {
     APPROVAL_STATUS: {
         CURRENT: { ID: 'current', TEXT: 'Current' },
         CURRENT_BASE_FEE_REVIEW: { ID: 'current_base_fee_review', TEXT: 'Current (base fee review)' },
-        CURRENT_RENEWAL_REVIEW: { ID: 'current_renewal_review', TEXT: 'Current (renewal review)' },
+        APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW: { ID: 'current_pending_renewal_review', TEXT: 'Current (Pending Renewal Review)' },
+        CURRENT_EDITING_INVOICING: { ID: 'current_editing_invoicing', TEXT: 'Current (Editing Invoicing)' },
         CANCELLED: { ID: 'cancelled', TEXT: 'Cancelled' },
         SURRENDERED: { ID: 'surrendered', TEXT: 'Surrendered' },
         SUSPENDED: { ID: 'suspended', TEXT: 'Suspended' },
