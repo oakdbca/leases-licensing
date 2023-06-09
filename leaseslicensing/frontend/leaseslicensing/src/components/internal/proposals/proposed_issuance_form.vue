@@ -375,7 +375,11 @@ export default {
     methods: {
         focus() {
             this.$nextTick(() => {
-                this.$refs.registration_of_interest_details.focus();
+                if (this.$refs.registration_of_interest_details) {
+                    this.$refs.registration_of_interest_details.focus();
+                } else {
+                    this.$refs.lease_licence_details.focus();
+                }
             });
         },
         updateProposedDecisionDetails(detailsText) {
