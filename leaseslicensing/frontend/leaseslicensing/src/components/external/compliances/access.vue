@@ -24,7 +24,7 @@
                 <div class="col-md-12">
                     <FormSection :label="'Submit Compliance - ' + compliance.lodgement_number"
                         Index="compliance_with_requirements">
-                        <form class="needs-validation" id="complianceForm" name="complianceForm" method="post" novalidate>
+                        <form class="needs-validation" id="complianceForm" name="complianceForm" novalidate>
                             <alert :show.sync="showError" type="danger">
                                 <strong>{{ errorString }}</strong>
                             </alert>
@@ -46,14 +46,18 @@
                                 <label class="col-form-label col-sm-2" for="detail">Details:</label>
                                 <div class="col-sm-9">
                                     <textarea :disabled="isFinalised" class="form-control" id="detail" name="detail"
-                                        rows="8" v-model="compliance.text" autofocus></textarea>
+                                        rows="8" v-model="compliance.text" autofocus required></textarea>
+                                    <div class="invalid-feedback">
+                                        Please provide some details regarding the fulfillment of the above requirement.
+                                    </div>
                                 </div>
                             </div>
                             <div v-if="hasDocuments" class="row mb-3">
                                 <label class="col-form-label col-sm-2">Documents:</label>
                                 <div class="col-sm-6">
                                     <div class="row mb-3" v-for="d in compliance.documents">
-                                        <a :href="d[1]" target="_blank" class="control-label pull-left">{{ d[0] }}</a>
+                                        <a :href="d[1]" target="_blank" class="control-label pull-left">{{ d[0]
+                                        }}</a>
                                         <span v-if="!isFinalised && d.can_delete">
                                             <a @click="delete_document(d)" class="fa fa-trash-o control-label"
                                                 title="Remove file" style="cursor: pointer; color:red;"></a>
@@ -110,14 +114,14 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row mb-3">
-                                <div class="form-group">
-                                    <div class="col">
-                                        <button v-if="!isFinalised" @click.prevent="close()"
-                                            class="btn btn-secondary me-2">Return to Dashboard</button>
-                                        <button v-if="!isFinalised" @click.prevent="validateForm()"
-                                            class="btn btn-primary">Submit</button>
-                                    </div>
+                            <div class="row mt-3">
+                                <div class="col-sm-2"></div>
+                                <div class="col">
+                                    <button v-if="!isFinalised" @click.prevent="close()"
+                                        class="btn btn-secondary me-2">Return
+                                        to Dashboard</button>
+                                    <button v-if="!isFinalised" @click.prevent="validateForm()"
+                                        class="btn btn-primary">Submit</button>
                                 </div>
                             </div>
                         </form>
