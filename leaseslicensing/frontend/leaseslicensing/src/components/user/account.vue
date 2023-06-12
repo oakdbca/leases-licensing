@@ -66,7 +66,7 @@
                                             <input type="text" class="form-control" id="residentialAddressLine1"
                                                 name="residentialAddressLine1" v-model="email_user.residential_address
                                                     .line1
-                                                    " required />
+                                                " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -77,7 +77,7 @@
                                             <input type="text" class="form-control" id="residentialLocality"
                                                 name="residentialLocality" v-model="email_user.residential_address
                                                     .locality
-                                                    " required />
+                                                " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -88,7 +88,7 @@
                                             <input type="text" class="form-control" id="residentialState"
                                                 name="residentialState" v-model="email_user.residential_address
                                                     .state
-                                                    " required />
+                                                " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -99,7 +99,7 @@
                                             <input type="text" class="form-control" id="residentialPostcode"
                                                 name="residentialPostcode" v-model="email_user.residential_address
                                                     .postcode
-                                                    " maxlength="10" required />
+                                                " maxlength="10" required />
                                         </div>
                                     </div>
                                     <div class="row mb-4">
@@ -109,7 +109,7 @@
                                         <div class="col-md-4">
                                             <select class="form-select" id="country" name="Country" v-model="email_user.residential_address
                                                 .country
-                                                " required>
+                                            " required>
                                                 <option v-for="c in countries" :value="c.code">
                                                     {{ c.name }}
                                                 </option>
@@ -143,7 +143,7 @@
                                             <input type="text" class="form-control postal-address" id="postalAddressLine1"
                                                 name="postalAddressLine1" v-model="email_user.postal_address
                                                     .line1
-                                                    " required />
+                                                " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -154,7 +154,7 @@
                                             <input type="text" class="form-control postal-address" id="postalLocality"
                                                 name="postalLocality" v-model="email_user.postal_address
                                                     .locality
-                                                    " required />
+                                                " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -165,7 +165,7 @@
                                             <input type="text" class="form-control postal-address" id="postalState"
                                                 name="postalState" v-model="email_user.postal_address
                                                     .state
-                                                    " required />
+                                                " required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -176,7 +176,7 @@
                                             <input type="text" class="form-control postal-address" id="postalPostcode"
                                                 name="postalPostcode" v-model="email_user.postal_address
                                                     .postcode
-                                                    " maxlength="10" required />
+                                                " maxlength="10" required />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
@@ -186,7 +186,7 @@
                                         <div class="col-md-4">
                                             <select class="form-select postal-address" id="country" name="Country" v-model="email_user.postal_address
                                                 .country
-                                                " required>
+                                            " required>
                                                 <option v-for="c in countries" :value="c.code">
                                                     {{ c.name }}
                                                 </option>
@@ -792,5 +792,6 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type=number] {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 </style>

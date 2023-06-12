@@ -7,6 +7,8 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
+from django.http import HttpResponseRedirect
+from django.urls import reverse
 from rest_framework import filters, generics, serializers, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -592,6 +594,34 @@ class ApprovalViewSet(viewsets.ModelViewSet):
             )
 
         instance.review_renewal(can_be_renewed)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def review_invoice_details(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.status = Approval.APPROVAL_STATUS_CURRENT_EDITING_INVOICING
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def cancel_editing_invoicing(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.status = Approval.APPROVAL_STATUS_CURRENT
+        instance.save()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 

@@ -22,7 +22,7 @@
                     @completeReferral="completeReferral" @amendmentRequest="amendmentRequest"
                     @proposedDecline="proposedDecline" @proposedApproval="proposedApproval" @issueApproval="issueApproval"
                     @declineProposal="declineProposal" @assignRequestUser="assignRequestUser" @assignTo="assignTo"
-                    @completeEditing="completeEditing" class="mt-2" />
+                    @completeEditing="completeEditing" @cancelEditing="cancelEditing" class="mt-2" />
             </div>
 
             <div class="col-md-9">
@@ -944,6 +944,9 @@ export default {
                     })
                 })
             }
+        },
+        cancelEditing: function () {
+            alert('cancelEditing')
         },
         applicationFormMounted: function () {
             this.fetchAdditionalDocumentTypesDict()  // <select> element for the additional document type exists in the ApplicationForm component, which is a child component of this component.
