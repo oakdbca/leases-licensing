@@ -1,6 +1,7 @@
 """
-WSGI config for ledger project.
-It exposes the WSGI callable as a module-level variable named ``application``.
+WSGI configuration for leases licensing project.
+
+Exposes the WSGI callable as a module-level variable named 'application'
 """
 import os
 from django.core.wsgi import get_wsgi_application
