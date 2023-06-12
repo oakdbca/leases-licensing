@@ -35,13 +35,12 @@
     </div>
 </template>
 <script>
-import Vue from 'vue'
 import {
   api_endpoints,
   helpers
 }
 from '@/utils/hooks'
-//import utils from './utils'
+
 export default {
   name: 'externalComplianceSubmit',
   data: function() {
@@ -49,12 +48,6 @@ export default {
     return {
         "compliance": {},
     }
-  },
-  components: {
-  },
-  computed: {
-  },
-  methods: {
   },
   filters:{
         formatDate: function(data){

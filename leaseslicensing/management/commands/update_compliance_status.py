@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.utils import timezone
 from django.conf import settings
-from ledger.accounts.models import EmailUser
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from leaseslicensing.components.compliances.models import (
     Compliance,
     ComplianceUserAction,
@@ -11,7 +11,6 @@ from leaseslicensing.components.compliances.email import (
     send_internal_due_email_notification,
 )
 import datetime
-import itertools
 
 import logging
 
@@ -24,17 +23,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         today = timezone.localtime(timezone.now()).date()
         compare_date = today + datetime.timedelta(days=14)
-
-        try:
-            user = EmailUser.objects.get(email=settings.CRON_EMAIL)
-        except:
-            user = EmailUser.objects.create(email=settings.CRON_EMAIL, password="")
+        user = EmailUser.objects.get(email=settings.CRON_EMAIL)
 
         logger.info("Running command {}".format(__name__))
         errors = []
         updates = []
         for c in Compliance.objects.filter(processing_status="future"):
-            # if(c.due_date<= compare_date<= c.approval.expiry_date) and c.approval.status=='current':
             if (
                 (c.due_date <= compare_date)
                 and (c.due_date <= c.approval.expiry_date)
@@ -45,7 +39,7 @@ class Command(BaseCommand):
                     c.customer_status = "due"
                     c.save()
                     ComplianceUserAction.log_action(
-                        c, ComplianceUserAction.ACTION_STATUS_CHANGE.format(c.id), user
+                        c, ComplianceUserAction.ACTION_STATUS_CHANGE.format(c.id), user.id
                     )
                     logger.info(
                         "updated Compliance {} status to {}".format(

@@ -246,18 +246,46 @@ export default {
                 name: "due_date",
             }
         },
-        statusColumn: function () {
+        processingStatusColumn: function () {
             return {
-                // 6. Status
-                data: "id",
+                data: "processing_status",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
+                render: function (row, type, full) {
+                    let status_html = '';
+                    if ('Future' == full.processing_status) {
+                        return `<span class="badge bg-info">${full.processing_status}</span>`
+                    }
+                    if ('Due' == full.processing_status) {
+                        return `<span class="badge bg-warning">${full.processing_status}</span>`
+                    }
+                    if ('Overdue' == full.processing_status) {
+                        return `<span class="badge bg-danger">${full.processing_status}</span>`
+                    }
                     return full.processing_status
-                    //return full.id;
                 },
-                name: "processing_status"
+            }
+        },
+        customerStatusColumn: function () {
+            return {
+                data: "customer_status",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    let status_html = '';
+                    if ('Future' == full.customer_status) {
+                        return `<span class="badge bg-info">${full.customer_status}</span>`
+                    }
+                    if ('Due' == full.customer_status) {
+                        return `<span class="badge bg-warning">${full.customer_status}</span>`
+                    }
+                    if ('Overdue' == full.customer_status) {
+                        return `<span class="badge bg-danger">${full.customer_status}</span>`
+                    }
+                    return full.customer_status
+                },
             }
         },
         actionColumn: function () {
@@ -313,7 +341,7 @@ export default {
                 this.applicationTypeColumn, // Type
                 this.holderColumn, // Holder
                 this.licenceNumberColumn, // Approval
-                this.statusColumn, // Status
+                this.customerStatusColumn, // Status
                 this.dueDateColumn, // Due Date
                 this.actionColumn, //Action
             ]
@@ -322,7 +350,7 @@ export default {
                     this.lodgementNumberColumn,
                     this.applicationTypeColumn,
                     this.licenceNumberColumn,
-                    this.statusColumn,
+                    this.processingStatusColumn,
                     this.dueDateColumn,
                     this.actionColumn,
                 ]
@@ -333,7 +361,7 @@ export default {
                     this.applicationTypeColumn,
                     this.holderColumn,
                     this.licenceNumberColumn,
-                    this.statusColumn,
+                    this.processingStatusColumn,
                     this.dueDateColumn,
                     this.assignedToNameColumn,
                     this.actionColumn,

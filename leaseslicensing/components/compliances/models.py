@@ -73,7 +73,6 @@ class Compliance(RevisionedMixin, models.Model):
     )
     due_date = models.DateField()
     text = models.TextField(blank=True)
-    # meta = JSONField(null=True, blank=True)
     num_participants = models.SmallIntegerField(
         "Number of participants", blank=True, null=True
     )
@@ -103,6 +102,7 @@ class Compliance(RevisionedMixin, models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ("approval__lodgement_number", "lodgement_number",)
 
     @property
     def approval_number(self):
