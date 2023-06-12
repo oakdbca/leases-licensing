@@ -253,17 +253,27 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    let status_html = '';
+                    let class_name = '';
+                    let icon_html = '';
+
                     if ('Future' == full.processing_status) {
-                        return `<span class="badge bg-info">${full.processing_status}</span>`
+                        class_name = 'info';
                     }
                     if ('Due' == full.processing_status) {
-                        return `<span class="badge bg-warning">${full.processing_status}</span>`
+                        class_name = 'warning';
                     }
                     if ('Overdue' == full.processing_status) {
-                        return `<span class="badge bg-danger">${full.processing_status}</span>`
+                        class_name = 'danger';
                     }
-                    return full.processing_status
+                    if ('With Assessor' == full.processing_status) {
+                        class_name = 'primary';
+                        icon_html = '<i class="fa fa-clock"></i> ';
+                    }
+                    if ('Approved' == full.processing_status) {
+                        class_name = 'success';
+                        icon_html = '<i class="fa fa-check"></i> ';
+                    }
+                    return `<span class="badge bg-${class_name} py-2">${icon_html}${full.processing_status}</span>`
                 },
             }
         },
@@ -274,17 +284,26 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    let status_html = '';
+                    let class_name = '';
+                    let icon_html = '';
                     if ('Future' == full.customer_status) {
-                        return `<span class="badge bg-info">${full.customer_status}</span>`
+                        class_name = 'info';
                     }
                     if ('Due' == full.customer_status) {
-                        return `<span class="badge bg-warning">${full.customer_status}</span>`
+                        class_name = 'warning';
+                    }
+                    if ('Under Review' == full.customer_status) {
+                        class_name = 'secondary';
+                        icon_html = '<i class="fa fa-clock"></i> ';
+                    }
+                    if ('Approved' == full.customer_status) {
+                        class_name = 'success';
+                        icon_html = '<i class="fa fa-check"></i> ';
                     }
                     if ('Overdue' == full.customer_status) {
-                        return `<span class="badge bg-danger">${full.customer_status}</span>`
+                        class_name = 'danger';
                     }
-                    return full.customer_status
+                    return `<span class="badge bg-${class_name} py-2">${icon_html}${full.customer_status}</span>`
                 },
             }
         },

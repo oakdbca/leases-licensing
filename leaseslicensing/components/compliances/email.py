@@ -473,9 +473,7 @@ def send_notification_only_email(compliance, is_test=False):
 
 
 def send_internal_notification_only_email(compliance, is_test=False):
-    # email = ComplianceInternalDueNotificationEmail()
     email = ComplianceInternalNotificationOnlyEmail()
-    # url = request.build_absolute_uri(reverse('external-compliance-detail',kwargs={'compliance_pk': compliance.id}))
     url = settings.SITE_URL
     url += reverse(
         "internal-compliance-detail", kwargs={"pk": compliance.id}
@@ -620,61 +618,61 @@ def _log_org_email(email_message, organisation, customer, sender=None):
 
 
 def _log_user_email(email_message, emailuser, customer, sender=None):
-    # TODO Function definition is commented out. Probably needs implementation of
-    # `EmailUserLogEntry` in `ledger_api_client.ledger_models`?
-    raise NotImplementedError(
-        "`_log_user_email` has been commented out. Needs implementation."
-    )
+    from leaseslicensing.components.users.models import EmailUserLogEntry
 
+    if isinstance(
+        email_message,
+        (
+            EmailMultiAlternatives,
+            EmailMessage,
+        ),
+    ):
+        # TODO this will log the plain text body, should we log the html instead
+        text = email_message.body
+        subject = email_message.subject
+        fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
 
-#    from ledger.accounts.models import EmailUserLogEntry
-#
-#    if isinstance(
-#        email_message,
-#        (
-#            EmailMultiAlternatives,
-#            EmailMessage,
-#        ),
-#    ):
-#        # TODO this will log the plain text body, should we log the html instead
-#        text = email_message.body
-#        subject = email_message.subject
-#        fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
-#        # the to email is normally a list
-#        if isinstance(email_message.to, list):
-#            to = ",".join(email_message.to)
-#        else:
-#            to = smart_text(email_message.to)
-#        # we log the cc and bcc in the same cc field of the log entry as a ',' comma separated string
-#        all_ccs = []
-#        if email_message.cc:
-#            all_ccs += list(email_message.cc)
-#        if email_message.bcc:
-#            all_ccs += list(email_message.bcc)
-#        all_ccs = ",".join(all_ccs)
-#
-#    else:
-#        text = smart_text(email_message)
-#        subject = ""
-#        to = customer
-#        fromm = smart_text(sender) if sender else SYSTEM_NAME
-#        all_ccs = ""
-#
-#    customer = customer
-#
-#    staff = sender
-#
-#    kwargs = {
-#        "subject": subject,
-#        "text": text,
-#        "emailuser": emailuser,
-#        "customer": customer,
-#        "staff": staff,
-#        "to": to,
-#        "fromm": fromm,
-#        "cc": all_ccs,
-#    }
-#
-#    email_entry = EmailUserLogEntry.objects.create(**kwargs)
-#
-#    return email_entry
+        # the to email is normally a list
+        if isinstance(email_message.to, list):
+            to = ",".join(email_message.to)
+        else:
+            to = smart_text(email_message.to)
+
+        # we log the cc and bcc in the same cc field of the log entry as a ',' comma separated string
+        all_ccs = []
+        if email_message.cc:
+            all_ccs += list(email_message.cc)
+        if email_message.bcc:
+            all_ccs += list(email_message.bcc)
+        all_ccs = ",".join(all_ccs)
+
+    else:
+        text = smart_text(email_message)
+        subject = ""
+        to = customer
+        fromm = smart_text(sender) if sender else SYSTEM_NAME
+        all_ccs = ""
+
+    customer = customer
+
+    staff = sender
+
+    if type(staff) is not int:
+        if not hasattr(staff, "id"):
+            raise ValueError("staff must be an int (i.e. EmailUser.id)")
+        staff = staff.id
+
+    kwargs = {
+        "subject": subject,
+        "text": text,
+        "email_user": emailuser,
+        "customer": customer,
+        "staff": staff,
+        "to": to,
+        "fromm": fromm,
+        "cc": all_ccs,
+    }
+
+    email_entry = EmailUserLogEntry.objects.create(**kwargs)
+
+    return email_entry

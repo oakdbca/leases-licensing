@@ -22,12 +22,19 @@
                     </div>
                 </div>
                 <div class="col-md-12">
-                    <FormSection :label="'Submit Compliance - ' + compliance.lodgement_number"
-                        Index="compliance_with_requirements">
+                    <FormSection :label="title" Index="compliance_with_requirements">
                         <form class="needs-validation" id="complianceForm" name="complianceForm" novalidate>
                             <alert :show.sync="showError" type="danger">
                                 <strong>{{ errorString }}</strong>
                             </alert>
+                            <div v-if="'Under Review' == compliance.customer_status" class="row mb-3">
+                                <label class="col-form-label col-sm-2" for="due_date">Status:</label>
+                                <div class="col-sm-6">
+                                    <span class="badge bg-secondary py-2 mt-1"><i data-v-2184290e=""
+                                            class="fa fa-clock"></i> {{
+                                                compliance.customer_status }}</span>
+                                </div>
+                            </div>
                             <div class="row mb-3">
                                 <label class="col-form-label col-sm-2" for="due_date">Due Date:</label>
                                 <div class="col-sm-6">
@@ -54,20 +61,24 @@
                             </div>
                             <div v-if="hasDocuments" class="row mb-3">
                                 <label class="col-form-label col-sm-2">Documents:</label>
-                                <div class="col-sm-6">
-                                    <div class="row mb-3" v-for="d in compliance.documents">
-                                        <a :href="d[1]" target="_blank" class="control-label pull-left">{{ d[0]
-                                        }}</a>
-                                        <span v-if="!isFinalised && d.can_delete">
-                                            <a @click="delete_document(d)" class="fa fa-trash-o control-label"
-                                                title="Remove file" style="cursor: pointer; color:red;"></a>
-                                        </span>
-                                        <span v-else>
-                                            <i class="fa fa-info-circle" aria-hidden="true"
-                                                title="Previously submitted documents cannot be deleted"
-                                                style="cursor: pointer;"></i>
-                                        </span>
-                                    </div>
+                                <div class="col-sm-9">
+                                    <template v-if="compliance.documents && compliance.documents.length">
+                                        <ul class="list-group">
+                                            <li class="list-group-item rounded" v-for="(d, i) in compliance.documents">
+                                                <a :href="d[1]" target="_blank" class="me-1">{{ d[0]
+                                                }}</a>
+                                                <span v-if="!isFinalised && d.can_delete">
+                                                    <a @click="delete_document(d)" class="fa fa-trash-o control-label"
+                                                        title="Remove file" style="cursor: pointer; color:red;"></a>
+                                                </span>
+                                                <span v-else>
+                                                    <i class="fa fa-info-circle" aria-hidden="true"
+                                                        title="Previously submitted documents cannot be deleted"
+                                                        style="cursor: pointer;"></i>
+                                                </span>
+                                            </li>
+                                        </ul>
+                                    </template>
                                 </div>
                             </div>
                             <div v-if="!isFinalised" class="row mb-3">
@@ -109,7 +120,8 @@
                                     </template>
                                     <div class="border-top mt-3 p-2">
                                         <button class="btn btn-sm btn-primary" @click.prevent="attachAnother"><i
-                                                class="fa fa-add"></i> Add Another
+                                                class="fa fa-add"></i>
+                                            Add Another
                                             File</button>
                                     </div>
                                 </div>
@@ -148,6 +160,7 @@ export default {
     data() {
         let vm = this;
         return {
+            title: '',
             form: null,
             loading: [],
             compliance: null,
@@ -173,11 +186,6 @@ export default {
         isFinalised: function () {
             return this.compliance && (this.compliance.customer_status == "Under Review" || this.compliance.customer_status == "Approved");
         },
-    },
-    filters: {
-        formatDate: function (data) {
-            return moment(data).format('DD/MM/YYYY HH:mm:ss');
-        }
     },
     components: {
         datatable,
@@ -278,12 +286,15 @@ export default {
                 formData.append('detail', this.compliance.text);
                 let numFiles = 0;
                 for (let i = 0; i < this.files.length; i++) {
-                    formData.append('file' + i, this.files[i].file);
-                    formData.append('name' + i, this.files[i].name);
-                    numFiles++;
+                    if (this.files[i].file && this.files[i].name) {
+                        formData.append('file' + i, this.files[i].file);
+                        formData.append('name' + i, this.files[i].name);
+                        console.log(this.files[i].file)
+                        numFiles++;
+                    }
                 }
                 formData.append('num_files', numFiles);
-                this.addingComms = true;
+                console.log('num_files: ' + numFiles)
 
                 fetch(helpers.add_endpoint_json(api_endpoints.compliances, this.compliance.id + '/submit'), {
                     method: 'POST',
@@ -322,6 +333,13 @@ export default {
                 const resData = await response.json();
                 vm.compliance = Object.assign({}, resData);
                 if (vm.compliance.customer_status == "Under Review" || vm.compliance.customer_status == "Approved") { vm.isFinalised = true }
+                vm.status = vm.compliance.customer_status;
+
+                if ('Under Review' == vm.compliance.customer_status) {
+                    vm.title = "View Compliance - " + this.compliance.lodgement_number;
+                } else {
+                    vm.title = "Submit Compliance - " + this.compliance.lodgement_number;
+                }
 
                 fetch(helpers.add_endpoint_json(api_endpoints.compliances, compliance_id + '/amendment_request')).then(async (res) => {
                     vm.setAmendmentData(await res.json());

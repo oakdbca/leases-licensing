@@ -113,8 +113,9 @@
                     </div>
                 </div>
             </div>
+            <ComplianceAmendmentRequest ref="amendment_request" :compliance_id="compliance.id" v-if="compliance.id" />
         </div>
-        <ComplianceAmendmentRequest ref="amendment_request" :compliance_id="compliance.id" v-if="compliance.id" />
+        <BootstrapSpinner v-else :loading="true" class="text-primary" />
     </div>
 </template>
 <script>
@@ -138,9 +139,7 @@ export default {
             loading: [],
             loadRelatedItems: false,
             profile: {},
-            compliance: {
-                //requester: {}
-            },
+            compliance: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
             members: [],
             // Filters
@@ -152,42 +151,9 @@ export default {
     watch: {},
     filters: {
         formatDate: function (data) {
-            //return data ? moment(data).format('DD/MM/YYYY'): '';
             console.log(data);
             console.log(moment(data).format('DD/MM/YYYY'));
         },
-    },
-    //   beforeRouteEnter: async function(to, from, next){
-    beforeRouteEnter: function (to, from, next) {
-        /*
-        const res = await fetch(`/api/proposal/${this.$route.params.proposal_id}/internal_proposal.json`);
-        const resData = await res.json();
-        this.compliance = Object.assign({}, resData);
-        */
-
-        const url = helpers.add_endpoint_json(api_endpoints.compliances, to.params.compliance_id + '/internal_compliance');
-        fetch(helpers.add_endpoint_json(api_endpoints.compliances, to.params.compliance_id + '/internal_compliance')).then(async response => {
-            if (!response.ok) {
-                return await response.text().then(text => { throw new Error(text); });
-            } else {
-                return await response.json();
-            }
-        })
-            .then(async data => {
-                next((vm) => {
-                    // const data = await response.json();
-                    vm.compliance = Object.assign({}, data);
-                    vm.members = vm.compliance.allowed_assessors;
-                });
-            })
-            .catch(error => {
-                console.log(error);
-                swal.fire({
-                    title: 'Proposal Error',
-                    text: error,
-                    icon: 'error'
-                })
-            });
     },
     components: {
         ApprovalsTable,
@@ -224,11 +190,6 @@ export default {
         },
         assignMyself: async function () {
             let vm = this;
-            /*
-            const res = await fetch(helpers.add_endpoint_json(api_endpoints.compliances,(vm.compliance.id+'/assign_request_user')));
-            const resData = await res.json();
-            this.compliance = Object.assign({}, resData);
-            */
             this.compliance = Object.assign({}, await helpers.fetchWrapper(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/assign_request_user'))));
             Swal.fire({
                 title: 'Success',
@@ -243,14 +204,6 @@ export default {
             if (vm.compliance.assigned_to != 'null') {
                 const data = { 'user_id': vm.compliance.assigned_to };
                 const url = helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/assign_to'));
-                /*
-                const res = await fetch(helpers.add_endpoint_json(api_endpoints.compliances,(vm.compliance.id+'/assign_to')),{
-                    body: JSON.stringify(data),
-                    method: 'POST',
-                });
-                const resData = await res.json();
-                this.compliance = Object.assign({}, resData);
-                */
                 this.compliance = Object.assign({}, await helpers.fetchWrapper(url, 'POST', data));
                 let assessor_assigned = this.compliance.allowed_assessors.find(function (assessor) {
                     console.log(assessor.id, vm.compliance.assigned_to)
@@ -267,29 +220,25 @@ export default {
                 })
             }
             else {
-                /*
-                const res = await fetch(helpers.add_endpoint_json(api_endpoints.compliances,(vm.compliance.id+'/unassign')));
-                const resData = await res.json();
-                this.compliance = Object.assign({}, resData);
-                */
                 this.compliance = Object.assign({}, await helpers.fetchWrapper(url));
             }
         },
         acceptCompliance: async function () {
             let vm = this;
             await swal.fire({
-                //swal({
-                title: "Accept Compliance with requirements",
-                text: "Are you sure you want to accept this compliance with requirements?",
+                title: `Approve Compliance ${vm.compliance.lodgement_number}`,
+                text: "Are you sure you want to approve this compliance?",
                 icon: "question",
                 showCancelButton: true,
-                confirmButtonText: 'Accept'
+                reverseButtons: true,
+                confirmButtonText: 'Accept',
+                confirmButtonColor: '#226fbb',
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
             });
-            /*
-            const res = await fetch(helpers.add_endpoint_json(api_endpoints.compliances,(vm.compliance.id+'/accept')));
-            const resData = await res.json();
-            vm.compliance = Object.assign({}, resData);
-            */
             this.compliance = Object.assign({}, await helpers.fetchWrapper(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/accept'))));
         },
         amendmentRequest: function () {
@@ -297,8 +246,6 @@ export default {
             this.$refs.amendment_request.isModalOpen = true;
         },
         fetchProfile: async function () {
-            //const res = await fetch(api_endpoints.profile);
-            //const resData = await res.json();
             this.profile = Object.assign({}, await helpers.fetchWrapper(api_endpoints.profile));
         },
         check_assessor: function () {
@@ -311,9 +258,41 @@ export default {
             else
                 return false;
         },
+        fetchCompliance: function (compliance_id) {
+            let vm = this;
+            fetch(helpers.add_endpoint_json(api_endpoints.compliances, compliance_id + '/internal_compliance')).then(async response => {
+                if (!response.ok) {
+                    return await response.text().then(text => { throw new Error(text); });
+                } else {
+                    return await response.json();
+                }
+            })
+                .then(async data => {
+                    vm.compliance = Object.assign({}, data);
+                    vm.members = vm.compliance.allowed_assessors;
+                })
+                .catch(error => {
+                    console.log(error);
+                    swal.fire({
+                        title: 'Compliance Error',
+                        text: error,
+                        icon: 'error'
+                    })
+                });
+        },
+    },
+    beforeRouteEnter: function (to, from, next) {
+        console.log('beforeRouteEnter')
+        next(vm => {
+            vm.fetchCompliance(to.params.compliance_id);
+        })
     },
     created: function () {
+        console.log('created')
         this.fetchProfile();
+        if (!this.compliance) {
+            this.fetchCompliance(this.$route.params.compliance_id);
+        }
     }
 }
 </script>

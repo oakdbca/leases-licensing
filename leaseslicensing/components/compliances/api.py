@@ -31,6 +31,7 @@ from leaseslicensing.components.compliances.serializers import (
     InternalComplianceSerializer,
     SaveComplianceSerializer,
 )
+from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.proposals.api import ProposalRenderer
@@ -294,68 +295,49 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         detail=True,
     )
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def submit(self, request, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                instance = self.get_object()
-                data = {
-                    "text": request.data.get("detail"),
-                }
+        with transaction.atomic():
+            instance = self.get_object()
+            data = {
+                "text": request.data.get("detail"),
+            }
 
-                serializer = SaveComplianceSerializer(instance, data=data)
-                serializer.is_valid(raise_exception=True)
-                instance = serializer.save()
-                # FIXME Is the right place to submit the request. Invoking submit will also
-                # send out email notifications,
-                # so it would be plausible to do this last after everything else, but submitting
-                # at the end of this function
-                # will cause any document attached to this Compliance to be uploaded twice
-                # and appear twice in the view.
-                instance.submit(request)
+            serializer = SaveComplianceSerializer(instance, data=data)
+            serializer.is_valid(raise_exception=True)
+            instance = serializer.save()
+            # FIXME Is the right place to submit the request. Invoking submit will also
+            # send out email notifications,
+            # so it would be plausible to do this last after everything else, but submitting
+            # at the end of this function
+            # will cause any document attached to this Compliance to be uploaded twice
+            # and appear twice in the view.
+            instance.submit(request)
 
-                serializer = self.get_serializer(instance)
+            serializer = self.get_serializer(instance)
 
-                # Save the files
-                # for f in request.FILES:
-                # for f in request.data.get("files"):
-                num_files = request.data.get("num_files")
-                for i in range(int(num_files)):
-                    # filename = str(f.get("name"))
-                    # _file = f.get("file")
-                    filename = request.data.get("name" + str(i))
-                    _file = request.data.get("file" + str(i))
+            logger.debug(f"num_files: {request.data.get('num_files')}")
 
-                    if not isinstance(_file, InMemoryUploadedFile):
-                        raise serializers.ValidationError("No files attached")
+            num_files = request.data.get("num_files")
+            for i in range(int(num_files)):
+                filename = request.data.get("name" + str(i))
+                _file = request.data.get("file" + str(i))
 
-                    document = instance.documents.get_or_create(name=filename)[0]
-                    path = default_storage.save(
-                        "{}/{}/documents/{}".format(
-                            instance._meta.model_name, instance.id, filename
-                        ),
-                        ContentFile(_file.read()),
-                    )
+                if not isinstance(_file, InMemoryUploadedFile):
+                    raise serializers.ValidationError("No files attached")
 
-                    document._file = path
-                    document.save()
+                document = instance.documents.get_or_create(name=filename)[0]
+                path = default_storage.save(
+                    "{}/{}/documents/{}".format(
+                        instance._meta.model_name, instance.id, filename
+                    ),
+                    ContentFile(_file.read()),
+                )
 
-                #    document = instance.documents.create()
-                #    document.name = str(f.get("name"))
-                #    document._file = f.get("file")
-                #    document.save()
-                # End Save Documents
+                document._file = path
+                document.save()
 
-                return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            if hasattr(e, "message"):
-                raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -463,21 +445,12 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def accept(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.accept(request)
-            serializer = InternalComplianceSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.accept(request)
+        serializer = InternalComplianceSerializer(instance)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
