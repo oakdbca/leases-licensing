@@ -141,13 +141,15 @@
                                     <tr>
                                         <th scope="row">Processing Status</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td>{{ selectedModel.status || selectedModel.processing_status_display || selectedModel.processing_status }}</td>
+                                        <td>{{ selectedModel.status || selectedModel.status_display || selectedModel.processing_status_display || selectedModel.processing_status }}</td>
                                     </tr>
                                     <!-- TODO: `created_at` is not formatted to DD/MM/YYYY -->
-                                    <tr v-if="selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at">
-                                        <th scope="row">Lodgement Date</th>
+                                    <tr v-if="selectedModel.copied_from || selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at || selectedModel.created_at_display">
+                                        <th v-if="selectedModel.copied_from" scope="row">Lodgement (original application)</th>
+                                        <th v-else scope="row">Lodgement Date</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td>{{ selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at
+                                        <td v-if="selectedModel.copied_from">{{ selectedModel.copied_from.lodgement_date_display }}</td>
+                                        <td v-else>{{ selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at || selectedModel.created_at_display
                                         }}</td>
                                     </tr>
                                     <tr v-if="selectedModel.polygon_source">
@@ -956,6 +958,7 @@ export default {
                         console.error("No model found for feature");
                     } else {
                         model.polygon_source = selected.getProperties().polygon_source;
+                        model.copied_from = selected.getProperties().copied_from;
                     }
                     vm.selectedModel = model
                     selected.setStyle(hoverSelect);
@@ -1181,8 +1184,9 @@ export default {
             if (featureCollection == null) {
                 featureCollection = vm.featureCollection;
             }
+            console.log("Adding features to map:", featureCollection);
 
-            for (let featureData of vm.featureCollection["features"]) {
+            for (let featureData of featureCollection["features"]) {
                 let feature = vm.featureFromDict(featureData, featureData.model);
 
                 vm.modelQuerySource.addFeature(feature);
@@ -1204,13 +1208,27 @@ export default {
             vm.modelQuerySource.clear();
             proposals.forEach(function (proposal) {
                 proposal.proposalgeometry.features.forEach(function (featureData) {
-
                     let feature = vm.featureFromDict(featureData, proposal);
+
+                    if (vm.modelQuerySource.getFeatureById(feature.getId())) {
+                        console.warn(`Feature ${feature.getId()} already exists in the source. Skipping...`);
+                        return;
+                    }
                     vm.modelQuerySource.addFeature(feature);
                     vm.newFeatureId++;
                 });
+                if (proposal.competitive_process) {
+                    proposal.competitive_process.competitive_process_geometries.features.forEach(function (featureData) {
+                        let feature = vm.featureFromDict(featureData, proposal.competitive_process);
+                        if (vm.modelQuerySource.getFeatureById(feature.getId())) {
+                            console.warn(`Feature ${feature.getId()} already exists in the source. Removing...`);
+                            vm.modelQuerySource.removeFeature(vm.modelQuerySource.getFeatureById(feature.getId()));
+                        }
+                        vm.modelQuerySource.addFeature(feature);
+                        vm.newFeatureId++;
+                    });
+                }
             });
-
             vm.addFeatureCollectionToMap();
         },
         /**
@@ -1234,7 +1252,9 @@ export default {
                 label: model.label || model.application_type_name_display,
                 color: color,
                 source: featureData.properties.source,
-                polygon_source: featureData.properties.polygon_source
+                polygon_source: featureData.properties.polygon_source,
+                locked: featureData.properties.locked,
+                copied_from: featureData.properties.proposal_copied_from,
             });
             // Id of the model object (https://datatracker.ietf.org/doc/html/rfc7946#section-3.2)
             feature.setId(featureData.id);

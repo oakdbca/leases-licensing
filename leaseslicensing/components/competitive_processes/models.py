@@ -98,15 +98,19 @@ class CompetitiveProcess(models.Model):
                     code=settings.PROPOSAL_TYPE_NEW
                 ).id,
             )
+
+            lease_licence.originating_competitive_process = self
+
             # add geometry
             from copy import deepcopy
 
-            for geo in self.competitive_process_geometries.all():
-                new_geo = deepcopy(geo)
-                new_geo.proposal = lease_licence
-                new_geo.copied_from = geo
-                new_geo.id = None
-                new_geo.save()
+            if self.originating_proposal is not None:
+                for geo in self.originating_proposal.proposalgeometry.all():
+                    new_geo = deepcopy(geo)
+                    new_geo.proposal = lease_licence
+                    new_geo.copied_from = geo
+                    new_geo.id = None
+                    new_geo.save()
 
         return lease_licence
 
@@ -204,6 +208,9 @@ class CompetitiveProcess(models.Model):
                     Proposal.PROCESSING_STATUS_DISCARDED
                 )
                 generated_proposal.save()
+
+            # Unlock the competitive process geometries (not those from the originating proposal)
+            self.competitive_process_geometries.all().update(locked=False)
 
             # Set the status of the competitive process to in progress
             self.status = CompetitiveProcess.STATUS_IN_PROGRESS
@@ -362,6 +369,7 @@ class CompetitiveProcessGeometry(models.Model):
     polygon = PolygonField(srid=4326, blank=True, null=True)
     intersects = models.BooleanField(default=False)
     drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
+    locked = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"

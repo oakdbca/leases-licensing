@@ -364,9 +364,6 @@ export default {
             return this.competitive_process.competitive_process_parties.filter(
                 party => party.id > 0);
         },
-        incrementComponentMapKey: function () {
-            this.componentMapKey++;
-        },
         /**
          * Returns competitive process geometries as a FeatureCollection adding whether
          * the geometry is from the competitive process or from a proposal.
@@ -485,7 +482,7 @@ export default {
                     vm.set_custom_rows_property("processing", false);
                     vm.$nextTick(async () => {
                         vm.cp_id = uuid();
-                        vm.incrementComponentMapKey;
+                        vm.incrementComponentMapKey();
                     });
                 })
                 .catch(error => {
@@ -807,7 +804,10 @@ export default {
             } else {
                 console.error(`Can not add data to party with ID ${id}.`);
             }
-        }
+        },
+        incrementComponentMapKey: function () {
+            this.componentMapKey++;
+        },
     }
 }
 </script>

@@ -269,6 +269,7 @@ class CompetitiveProcessGeometrySerializer(GeoFeatureModelSerializer):
             "intersects",
             "polygon_source",
             "drawn_by",
+            "locked",
         )
         read_only_fields = ("id",)
 

@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.gis.geos import Polygon
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser  # , Document
 
@@ -597,9 +598,13 @@ def save_geometry(instance, request):
         return
 
     proposal_geometry = json.loads(proposal_geometry_str)
-    if 0 == len(proposal_geometry["features"]):
+    if 0 == len(proposal_geometry["features"]) and\
+        0 == ProposalGeometry.objects.filter(proposal=instance).count():
+        # No feature to save and no feature to delete
         logger.debug("proposal_geometry has no features to save")
         return
+
+    action = request.data.get("action", None)
 
     proposal_geometry_ids = []
     for feature in proposal_geometry.get("features"):
@@ -640,12 +645,14 @@ def save_geometry(instance, request):
                 logger.warn(f"Proposal geometry does not exist: {feature.get('id')}")
                 continue
             proposal_geometry_data["drawn_by"] = proposalgeometry.drawn_by
+            proposal_geometry_data["locked"] = action in ["submit"] and proposalgeometry.drawn_by == request.user.id or proposalgeometry.locked
             serializer = ProposalGeometrySaveSerializer(
                 proposalgeometry, data=proposal_geometry_data
             )
         else:
             logger.info(f"Creating new proposal geometry for Proposal: {instance}")
             proposal_geometry_data["drawn_by"] = request.user.id
+            proposal_geometry_data["locked"] = action in ["submit"]
             serializer = ProposalGeometrySaveSerializer(data=proposal_geometry_data)
 
         serializer.is_valid(raise_exception=True)
@@ -654,9 +661,11 @@ def save_geometry(instance, request):
         proposal_geometry_ids.append(proposalgeometry_instance.id)
 
     # Remove any proposal geometries from the db that are no longer in the proposal_geometry that was submitted
+    # Prevent deletion of polygons that are locked after status change (e.g. after submit)
+    # or have been drawn by another user
     deleted_proposal_geometries = (
         ProposalGeometry.objects.filter(proposal=instance)
-        .exclude(id__in=proposal_geometry_ids)
+        .exclude(Q(id__in=proposal_geometry_ids) | Q(locked=True) | ~Q(drawn_by=request.user.id))
         .delete()
     )
     logger.debug(f"Deleted proposal geometries: {deleted_proposal_geometries}\n\n\n")

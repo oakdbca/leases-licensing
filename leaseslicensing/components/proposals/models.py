@@ -2139,6 +2139,13 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 if status == "with_assessor_conditions":
                     self.add_default_requirements()
 
+                # Lock the proposal geometries associated with this proposal and owned by the current user
+                ProposalGeometry.objects.filter(proposal=self).exclude(
+                    Q(locked=True) | ~Q(drawn_by=request.user.id)
+                ).update(
+                    **{ 'locked': True }
+                )
+
                 # Create a log entry for the proposal
                 if self.processing_status == self.PROCESSING_STATUS_WITH_ASSESSOR:
                     self.log_user_action(
@@ -3396,6 +3403,7 @@ class ProposalGeometry(models.Model):
         "self", on_delete=models.SET_NULL, blank=True, null=True
     )
     drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
+    locked = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"

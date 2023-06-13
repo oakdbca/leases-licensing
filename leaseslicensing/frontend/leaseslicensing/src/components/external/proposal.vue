@@ -319,6 +319,11 @@ export default {
             }
             payload.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
 
+            if (vm.submitting) {
+                // Provide an action to have the backend lock the geometry
+                payload.action = "submit";
+            }
+
             const res = await fetch(url, { body: JSON.stringify(payload), method: 'POST' });
             if (res.ok) {
                 if (withConfirm) {
