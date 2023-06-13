@@ -407,6 +407,12 @@ export default {
                 text: "Are you sure you want to accept this organisation request?",
                 type: "question",
                 showCancelButton: true,
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
                 confirmButtonText: 'Accept'
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -423,7 +429,6 @@ export default {
                                 return Promise.reject(error)
                             }
                             vm.access = data
-                            console.log(vm.access)
                             Swal.fire(
                                 'Success',
                                 'Organisation request accepted. The user will be notified by email.',
@@ -447,7 +452,6 @@ export default {
                 }
             })
         },
-
         declineRequest: function () {
             let vm = this;
             Swal.fire({
@@ -455,7 +459,13 @@ export default {
                 text: "Are you sure you want to decline this organisation request?",
                 type: "question",
                 showCancelButton: true,
-                confirmButtonText: 'Decline'
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                },
+                confirmButtonText: 'Decline',
             }).then((result) => {
                 if (result.isConfirmed) {
                     const requestOptions = {
@@ -471,12 +481,15 @@ export default {
                                 return Promise.reject(error)
                             }
                             vm.access = data
-                            console.log(vm.access)
+                            Swal.fire(
+                                'Success',
+                                'Organisation request declined. The user will be notified by email.',
+                                'success'
+                            )
                         })
                         .catch((error) => {
                             this.errorMessage = constants.ERRORS.API_ERROR
                             console.error('There was an error!', error)
-
                         })
                 }
             });

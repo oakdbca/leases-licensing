@@ -48,9 +48,9 @@
                             </div>
                             <div class="card-body card-collapse">
                                 <div class="mb-2"><button @click="renewalRevew(true)"
-                                        class="btn btn-primary licensing-btn">Allow
+                                        class="btn btn-primary btn-licensing">Allow
                                         Renewal</button></div>
-                                <div><button @click="renewalRevew(false)" class="btn btn-danger licensing-btn">Disallow
+                                <div><button @click="renewalRevew(false)" class="btn btn-danger btn-licensing">Disallow
                                         Renewal</button>
                                 </div>
                             </div>
@@ -66,9 +66,9 @@
                             </div>
                             <div class="card-body card-collapse">
                                 <div class="mb-2"><button @click="completeEditingInvoicing(true)"
-                                        class="btn btn-primary licensing-btn">Complete Editing</button></div>
+                                        class="btn btn-primary btn-licensing">Complete Editing</button></div>
                                 <div><button @click="cancelEditingInvoicing(false)"
-                                        class="btn btn-secondary licensing-btn">Cancel
+                                        class="btn btn-secondary btn-licensing">Cancel
                                         Editing</button>
                                 </div>
                             </div>

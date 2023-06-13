@@ -50,4 +50,4 @@ export default {
             name: 'draft_proposal'
         },
     ]
-}
+};

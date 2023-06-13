@@ -247,63 +247,26 @@ export default {
             }
         },
         processingStatusColumn: function () {
+            let vm = this;
             return {
                 data: "processing_status",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    let class_name = '';
-                    let icon_html = '';
-
-                    if ('Future' == full.processing_status) {
-                        class_name = 'info';
-                    }
-                    if ('Due' == full.processing_status) {
-                        class_name = 'warning';
-                    }
-                    if ('Overdue' == full.processing_status) {
-                        class_name = 'danger';
-                    }
-                    if ('With Assessor' == full.processing_status) {
-                        class_name = 'primary';
-                        icon_html = '<i class="fa fa-clock"></i> ';
-                    }
-                    if ('Approved' == full.processing_status) {
-                        class_name = 'success';
-                        icon_html = '<i class="fa fa-check"></i> ';
-                    }
-                    return `<span class="badge bg-${class_name} py-2">${icon_html}${full.processing_status}</span>`
+                    return vm.getStatusHtml(full.processing_status)
                 },
             }
         },
         customerStatusColumn: function () {
+            let vm = this;
             return {
                 data: "customer_status",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    let class_name = '';
-                    let icon_html = '';
-                    if ('Future' == full.customer_status) {
-                        class_name = 'info';
-                    }
-                    if ('Due' == full.customer_status) {
-                        class_name = 'warning';
-                    }
-                    if ('Under Review' == full.customer_status) {
-                        class_name = 'secondary';
-                        icon_html = '<i class="fa fa-clock"></i> ';
-                    }
-                    if ('Approved' == full.customer_status) {
-                        class_name = 'success';
-                        icon_html = '<i class="fa fa-check"></i> ';
-                    }
-                    if ('Overdue' == full.customer_status) {
-                        class_name = 'danger';
-                    }
-                    return `<span class="badge bg-${class_name} py-2">${icon_html}${full.customer_status}</span>`
+                    return vm.getStatusHtml(full.customer_status)
                 },
             }
         },
@@ -353,7 +316,6 @@ export default {
                 }
             }
         },
-
         applicableColumns: function () {
             let columns = [
                 this.lodgementNumberColumn, // Number
@@ -456,6 +418,37 @@ export default {
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded
         },
+        getStatusHtml: function (status) {
+            let class_name = '';
+            let icon = '';
+
+            if ('Future' == status) {
+                class_name = 'info';
+                icon = 'calendar-plus';
+            }
+            if ('Due Soon' == status) {
+                class_name = 'warning';
+                icon = 'clock';
+            }
+            if ('Overdue' == status) {
+                class_name = 'danger';
+                icon = 'exclamation-circle';
+            }
+            if ('With Assessor' == status) {
+                class_name = 'primary';
+                icon = 'clipboard';
+            }
+            if ('Under Review' == status) {
+                class_name = 'secondary';
+                icon = 'clipboard';
+            }
+            if ('Approved' == status) {
+                class_name = 'success';
+                icon = 'check';
+            }
+            return `<span class="badge bg-${class_name} py-2"><i class="fa fa-${icon}" aria-hidden="true"></i> ${status}</span>`
+
+        },
         fetchFilterLists: function () {
             let vm = this;
 
@@ -497,7 +490,28 @@ export default {
         },
     },
     created: function () {
-        this.fetchFilterLists()
+        this.fetchFilterLists();
+        $.fn.pulse = function (options) {
+            var options = $.extend({
+                times: 3,
+                duration: 1000
+            }, options);
+
+            var period = function (callback) {
+                $(this).animate({ opacity: 0 }, options.duration, function () {
+                    $(this).animate({ opacity: 1 }, options.duration, callback);
+                });
+            };
+            return this.each(function () {
+                var i = +options.times, self = this,
+                    repeat = function () { --i && period.call(self, repeat) };
+                period.call(this, repeat);
+            });
+        };
+        $('.pulsate').each(function (element) {
+            $(element).pulse({ times: 6, duration: 1000 });
+        });
     },
 }
 </script>
+

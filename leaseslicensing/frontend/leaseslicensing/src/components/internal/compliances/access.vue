@@ -1,7 +1,7 @@
 <template>
     <div class="container" id="internalCompliance">
         <div v-if="compliance" class="row">
-            <h3>Compliance with Requirements {{ compliance.reference }}</h3>
+            <h3>Compliance: {{ compliance.reference }}</h3>
             <div class="col-md-3">
 
                 <CommsLogs class="mb-3" :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
@@ -17,7 +17,7 @@
                                 <div class="mb-1"><strong>Status</strong></div>
                                 <div>{{ compliance.processing_status }}</div>
                             </div>
-                            <div class="col-sm-12 mb-2 pb-2 border-bottom">
+                            <div class="col-sm-12 mb-2 pb-2">
                                 <div class="mb-1"><strong>Currently assigned to</strong>
                                 </div>
                                 <select v-show="isLoading" class="form-select">
@@ -33,11 +33,15 @@
                                     @click.prevent="assignMyself()" class="btn btn-primary float-end mb-2">Assign to
                                     me</a>
                             </div>
-                            <div class="col-sm-12" v-if="!canViewonly && check_assessor()">
+                            <div class="col-sm-12 border-top"
+                                v-if="!canViewonly && check_assessor() && profile.id == compliance.assigned_to">
                                 <div class="mb-1"><strong>Actions</strong></div>
-                                <button class="btn btn-primary mb-2" @click.prevent="amendmentRequest()">Request
-                                    Amendment</button>
-                                <button class="btn btn-primary" @click.prevent="acceptCompliance()">Approve</button><br />
+                                <div class="action-buttons">
+                                    <button class="btn btn-primary mb-2" @click.prevent="amendmentRequest()">Request
+                                        Amendment</button>
+                                    <button class="btn btn-primary"
+                                        @click.prevent="acceptCompliance()">Approve</button><br />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -63,34 +67,57 @@
                         <div class="tab-content" id="pills-tabContent">
                             <div class="tab-pane active" id="pills-compliance" role="tabpanel"
                                 aria-labelledby="pills-compliance-tab">
-                                <FormSection :formCollapse="false" label="Compliance with Requirements"
+                                <FormSection :formCollapse="false" :label="'Compliance ' + compliance.reference"
                                     Index="compliance_with_requirements">
                                     <CollapsibleFilters component_title="Assessor comments" ref="collapsible_filters"
                                         @created="collapsible_component_mounted" class="mb-3">
                                         Todo: Populate with assessment data for this compliance
                                     </CollapsibleFilters>
-
+                                    <div v-if="compliance.approval" class="row mb-3">
+                                        <label for="" class="col-sm-3 col-form-label">Approval</label>
+                                        <div class="col-sm-9">
+                                            <router-link class="form-control-text"
+                                                :to="{ name: 'internal-approval-detail', params: { approval_id: compliance.approval } }">{{
+                                                    compliance.approval_lodgement_number }}</router-link>
+                                        </div>
+                                    </div>
+                                    <div v-if="compliance.holder" class="row mb-3">
+                                        <label for="holder" class="col-sm-3 col-form-label">Holder</label>
+                                        <div class="col-sm-9">
+                                            <input type="text" class="form-control-plaintext" id="holder" name="holder"
+                                                :value="compliance.holder">
+                                        </div>
+                                    </div>
+                                    <div v-if="compliance.due_date" class="row mb-3">
+                                        <label for="holder" class="col-sm-3 col-form-label">Due Date</label>
+                                        <div class="col-sm-9">
+                                            <div class="form-control-text">{{ dueDateFormatted }}</div>
+                                        </div>
+                                    </div>
                                     <div class="row mb-3">
                                         <label for="" class="col-sm-3 col-form-label">Requirement</label>
-                                        <div class="col-sm-6">
-                                            <input type="text" readonly :value="compliance.requirement"
-                                                class="form-control">
+                                        <div class="col-sm-9">
+                                            <input type="text" id="requirement" name="requirement" readonly
+                                                :value="compliance.requirement" class="form-control">
                                         </div>
                                     </div>
                                     <div class="row mb-3">
                                         <label for="details" class="col-sm-3 col-form-label">Details</label>
-                                        <div class="col-sm-6">
-                                            <textarea disabled class="form-control" name="details"
+                                        <div class="col-sm-9">
+                                            <textarea disabled class="form-control" id="details" name="details"
                                                 v-model="compliance.text"></textarea>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
                                         <label for="" class="col-sm-3 col-form-label">Attachments</label>
-                                        <div class="col-sm-6">
+                                        <div class="col-sm-9">
                                             <template v-if="compliance.documents && compliance.documents.length">
-                                                <div class="row" v-for="d in compliance.documents">
-                                                    <a :href="d[1]" target="_blank" class="col-form-label">{{ d[0] }}</a>
-                                                </div>
+                                                <ul class="list-group">
+                                                    <li v-for="d in compliance.documents" class="list-group-item"><i
+                                                            class="fa-solid fa-file me-2"></i> <a :href="d[1]"
+                                                            target="_blank" class="col-form-label">{{ d[0]
+                                                            }}</a></li>
+                                                </ul>
                                             </template>
                                             <template v-else>
                                                 <div class="row">
@@ -113,7 +140,8 @@
                     </div>
                 </div>
             </div>
-            <ComplianceAmendmentRequest ref="amendment_request" :compliance_id="compliance.id" v-if="compliance.id" />
+            <ComplianceAmendmentRequest ref="amendment_request" :compliance_id="compliance.id"
+                :compliance_lodgement_number="compliance.lodgement_number" v-if="compliance.id" />
         </div>
         <BootstrapSpinner v-else :loading="true" class="text-primary" />
     </div>
@@ -140,20 +168,13 @@ export default {
             loadRelatedItems: false,
             profile: {},
             compliance: null,
-            DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
+            DATE_FORMAT: 'DD/MM/YYYY',
             members: [],
             // Filters
             logs_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/action_log'),
             comms_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/comms_log'),
             comms_add_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/add_comms_log'),
         }
-    },
-    watch: {},
-    filters: {
-        formatDate: function (data) {
-            console.log(data);
-            console.log(moment(data).format('DD/MM/YYYY'));
-        },
     },
     components: {
         ApprovalsTable,
@@ -171,7 +192,10 @@ export default {
         },
         showAssignToMeButton: function () {
             return this.compliance.assigned_to != this.profile.id
-        }
+        },
+        dueDateFormatted: function () {
+            return moment(this.compliance.due_date).format(this.DATE_FORMAT);
+        },
     },
     methods: {
         collapsible_component_mounted: function () {
@@ -201,9 +225,10 @@ export default {
         },
         assignTo: async function () {
             let vm = this;
+            console.log(vm.compliance.assigned_to)
             if (vm.compliance.assigned_to != 'null') {
-                const data = { 'user_id': vm.compliance.assigned_to };
                 const url = helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/assign_to'));
+                const data = { 'user_id': vm.compliance.assigned_to };
                 this.compliance = Object.assign({}, await helpers.fetchWrapper(url, 'POST', data));
                 let assessor_assigned = this.compliance.allowed_assessors.find(function (assessor) {
                     console.log(assessor.id, vm.compliance.assigned_to)
@@ -220,6 +245,8 @@ export default {
                 })
             }
             else {
+                console.log('unassign')
+                const url = await helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/unassign'));
                 this.compliance = Object.assign({}, await helpers.fetchWrapper(url));
             }
         },
@@ -239,7 +266,17 @@ export default {
                     cancelButton: 'btn btn-secondary me-2'
                 },
             });
-            this.compliance = Object.assign({}, await helpers.fetchWrapper(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/accept'))));
+            await helpers.fetchWrapper(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/accept'))).then(function (response) {
+                vm.compliance = Object.assign({}, response);
+                Swal.fire({
+                    title: 'Success',
+                    text: `Compliance ${vm.compliance.reference} has been approved.`,
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                })
+                vm.$router.push({ name: 'internal-compliances-dash' });
+            });
         },
         amendmentRequest: function () {
             this.$refs.amendment_request.amendment.compliance = this.compliance.id;
@@ -296,3 +333,22 @@ export default {
     }
 }
 </script>
+<style scoped>
+.action-buttons {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.action-buttons button {
+    width: 190px;
+}
+
+.form-control-text {
+    display: block;
+    width: fit-content;
+    margin: 0px;
+    padding: 0.375em 0 0.375em 0;
+    line-height: 1.5;
+    height: 100%;
+}
+</style>

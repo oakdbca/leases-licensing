@@ -2,20 +2,31 @@
     <div class="container" id="externalCompliance">
         <div v-if="compliance">
             <BootstrapAlert v-if="isDiscarded" type="danger" icon="exclamation-triangle-fill">
-                <h3>You cannot access this Compliance with requirements as this has been discarded.</h3>
+                <h3>You cannot access this Compliance as this has been discarded.</h3>
             </BootstrapAlert>
             <div v-else class="row mb-3">
                 <div v-if="!isFinalised">
                     <div v-if="hasAmendmentRequest">
-                        <FormSection customColor="red"
-                            label="An amendment has been requested for this Compliance with Requirements"
+                        <FormSection customColor="red" label="This Compliance Requires one or more Amendments"
                             Index="amendment_compliance_with_requirements">
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <div v-for="a in amendment_request">
-                                        <p>Reason: {{ a.reason }}</p>
-                                        <p>Details: {{ a.text }}</p>
-                                    </div>
+                            <div class="row">
+                                <div class="col">
+                                    <ol class="list-group">
+                                        <li v-for="a in amendment_request"
+                                            class="list-group-item d-flex justify-content-between align-items-start">
+                                            <div class="ms-2 me-auto">
+                                                <div class="mt-3">
+                                                    <BootstrapAlert class="alert-sm" type="danger"
+                                                        icon="exclamation-triangle-fill">
+                                                        {{ a.reason }}
+                                                    </BootstrapAlert>
+                                                </div>
+                                                <div class="amendment-text py-3">
+                                                    {{ a.text }}
+                                                </div>
+                                            </div>
+                                        </li>
+                                    </ol>
                                 </div>
                             </div>
                         </FormSection>
@@ -27,12 +38,18 @@
                             <alert :show.sync="showError" type="danger">
                                 <strong>{{ errorString }}</strong>
                             </alert>
-                            <div v-if="'Under Review' == compliance.customer_status" class="row mb-3">
+                            <div v-if="'Under Review' == compliance.customer_status" class=" row mb-3">
                                 <label class="col-form-label col-sm-2" for="due_date">Status:</label>
                                 <div class="col-sm-6">
-                                    <span class="badge bg-secondary py-2 mt-1"><i data-v-2184290e=""
-                                            class="fa fa-clock"></i> {{
-                                                compliance.customer_status }}</span>
+                                    <span class="badge bg-secondary py-2 mt-1"><i class="fa fa-clock"></i> {{
+                                        compliance.customer_status }}</span>
+                                </div>
+                            </div>
+                            <div v-if="'Approved' == compliance.customer_status" class="row mb-3">
+                                <label class="col-form-label col-sm-2" for="due_date">Status:</label>
+                                <div class="col-sm-6">
+                                    <span class="badge bg-success py-2 mt-1"><i class="fa fa-check"></i> {{
+                                        compliance.customer_status }}</span>
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -320,7 +337,7 @@ export default {
                         this.addingCompliance = false;
                         this.errorString = error.message;
                         swal.fire({
-                            title: 'Proposal Error',
+                            title: 'Compliance Error',
                             text: error.message,
                             icon: 'error'
                         });
@@ -395,5 +412,16 @@ export default {
     background: white;
     cursor: inherit;
     display: block;
+}
+
+.alert-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0;
+    border-radius: 0.2rem;
+}
+
+.amendment-text {
+    white-space: pre-wrap;
 }
 </style>
