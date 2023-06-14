@@ -16,8 +16,9 @@
                 </div>
             </form>
 
-            <RequirementDetail ref="requirement_detail" :proposal_id="proposal.id" :requirements="requirements"
-                :selectedRequirement="selectedRequirement" @updateRequirements="updatedRequirements" :key="uuid" />
+            <RequirementDetail v-if="proposal && requirements && requirements.length > 0" ref="requirement_detail"
+                :proposal_id="proposal.id" :requirements="requirements" :selectedRequirement="selectedRequirement"
+                @updateRequirements="updatedRequirements" :key="uuid" />
         </FormSection>
     </div>
 </template>
@@ -255,6 +256,12 @@ export default {
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: 'Yes',
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: "btn btn-primary",
+                    cancelButton: "btn btn-secondary me-2"
+                }
             }).then(async result => {
                 if (result.isConfirmed) {
                     const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements, _id + '/discard'));
