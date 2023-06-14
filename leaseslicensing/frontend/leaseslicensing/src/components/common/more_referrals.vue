@@ -1,12 +1,12 @@
 <template id="more-referrals">
-    <div>
-        <a v-if="!isFinalised" ref="showRef" @click.prevent="" class="actionBtn top-buffer-s small text-xsmall">Show
+    <div class="mt-2">
+        <a v-if="!isFinalised" ref="showRef" @click.prevent="" role="button" class="float-end">Show
             Referrals</a>
     </div>
 </template>
 
 <script>
-import { api_endpoints, constants, helpers } from '@/utils/hooks'
+import { constants } from '@/utils/hooks'
 import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
 import { v4 as uuid } from 'uuid';
 
@@ -44,10 +44,8 @@ export default {
                 responsive: true,
                 deferRender: true,
                 autowidth: true,
-                //order: [[0, 'desc']],
                 processing: true,
                 ajax: {
-                    //"url": helpers.add_endpoint_json(api_endpoints.referrals,'datatable_list')+'?proposal='+vm.proposal.id,
                     "url": this.referral_url,
                     "dataSrc": '',
                 },
@@ -95,7 +93,6 @@ export default {
                     {
                         title: 'Referral Comments',
                         data: 'referral_text',
-
                         'render': function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
@@ -120,7 +117,6 @@ export default {
 
                             return result;
                         },
-                        //'createdCell': helpers.dtPopoverCellFn,
                     }
                 ]
             },
@@ -129,16 +125,11 @@ export default {
             resendReferral: resendReferral,
         }
     },
-    computed: {
-
-    },
     methods: {
         initialiseTable: function () {
-
             // To allow table elements (ref: https://getbootstrap.com/docs/5.1/getting-started/javascript/#sanitizer)
             var myDefaultAllowList = bootstrap.Tooltip.Default.allowList
             myDefaultAllowList.table = []
-
             let vm = this;
             let table_id = 'more-referrals-table' + vm.uuid;
             let popover_name = 'popover-' + vm.uuid;
@@ -154,11 +145,9 @@ export default {
                 container: 'body',
                 placement: 'right',
                 trigger: "click focus",
-                //offset: '0 10',
             })
             popover_elem.addEventListener('inserted.bs.popover', function () {
                 console.log('in inserted.bs.popover')
-
                 vm.table = $('#' + table_id).DataTable(vm.datatable_options);
 
                 // activate popover when table is drawn.
@@ -191,21 +180,10 @@ export default {
             })
             popover_elem.addEventListener('shown.bs.popover', function () {
                 console.log('in shown.bs.popover')
-
                 var el = vm.$refs.showRef;
-                // var popoverheight = parseInt($('.'+popover_name).height());
-
                 var popover_bounding_top = parseInt($('.' + popover_name)[0].getBoundingClientRect().top);
-                // var popover_bounding_bottom = parseInt($('.'+popover_name)[0].getBoundingClientRect().bottom);
-
                 var el_bounding_top = parseInt($(el)[0].getBoundingClientRect().top);
-                // var el_bounding_bottom = parseInt($(el)[0].getBoundingClientRect().top);
-
                 var diff = el_bounding_top - popover_bounding_top;
-
-                // var position = parseInt($('.'+popover_name).position().top);
-                // var pos2 = parseInt($(el).position().top) - 5;
-
                 var x = diff + 5;
                 $('.' + popover_name).children('.arrow').css('top', x + 'px');
             })
@@ -214,24 +192,10 @@ export default {
             this.$emit('switchStatus', value);
         },
     },
-    created() {
-
-    },
     mounted() {
         this.$nextTick(() => {
-            //popoverTriggerElhelpers.enablePopovers()
             this.initialiseTable()
         })
     },
 }
 </script>
-
-<style scoped>
-.top-buffer-s {
-    margin-top: 10px;
-}
-
-.actionBtn {
-    cursor: pointer;
-}
-</style>
