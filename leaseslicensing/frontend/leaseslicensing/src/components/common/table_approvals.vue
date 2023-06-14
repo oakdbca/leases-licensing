@@ -731,36 +731,6 @@ export default {
         },
         addEventListeners: function () {
             let vm = this;
-            /*
-            // update to bs5
-            // Lodged From
-            $(vm.$refs.approvalDateFromPicker).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.approvalDateFromPicker).on('dp.change',function (e) {
-                if ($(vm.$refs.approvalDateFromPicker).data('DateTimePicker').date()) {
-                    // DateFrom has been picked
-                    vm.filterApprovalExpiryDateFrom = e.date.format('DD/MM/YYYY');
-                    $(vm.$refs.approvalDateToPicker).data("DateTimePicker").minDate(e.date);
-                }
-                else if ($(vm.$refs.approvalDateFromPicker).data('date') === "") {
-                    vm.filterApprovalExpiryDateFrom = "";
-                    $(vm.$refs.approvalDateToPicker).data("DateTimePicker").minDate(false);
-                }
-            });
-
-            // Lodged To
-            $(vm.$refs.approvalDateToPicker).datetimepicker(vm.datepickerOptions);
-            $(vm.$refs.approvalDateToPicker).on('dp.change',function (e) {
-                if ($(vm.$refs.approvalDateToPicker).data('DateTimePicker').date()) {
-                    // DateTo has been picked
-                    vm.filterApprovalExpiryDateTo = e.date.format('DD/MM/YYYY');
-                    $(vm.$refs.approvalDateFromPicker).data("DateTimePicker").maxDate(e.date);
-                }
-                else if ($(vm.$refs.approvalDateToPicker).data('date') === "") {
-                    vm.filterApprovalExpiryDateTo = "";
-                    $(vm.$refs.approvalDateFromPicker).data("DateTimePicker").maxDate(false);
-                }
-            });
-            */
 
             //Internal Action shortcut listeners
             let table = vm.$refs.approvals_datatable.vmDataTable
