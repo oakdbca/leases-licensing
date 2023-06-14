@@ -16,12 +16,6 @@ from leaseslicensing.components.proposals.forms import SectionChecklistForm
 from leaseslicensing.components.proposals.models import ChecklistQuestion
 from leaseslicensing.utils import create_helppage_object
 
-# Register your models here.
-
-# Commented since COLS does not use schema - so will not require direct editing by user in Admin
-# (although a ProposalType is still required for ApplicationType)
-# @admin.register(models.ProposalType)
-
 
 class ProposalTypeAdmin(admin.ModelAdmin):
     list_display = ["name", "description", "version"]
@@ -49,17 +43,7 @@ class AdditionalDocumentTypeAdmin(admin.ModelAdmin):
     list_filter = ("enabled",)
 
 
-# @admin.register(models.ProposalAssessmentAnswer)
-# class ProposalAssessmentAnswerAdmin(admin.ModelAdmin):
-#     list_display = [
-#         "checklist_question",
-#         "answer_yes_no",
-#         "answer_text",
-#     ]
-
-
 @admin.register(models.Proposal)
-# class ProposalAdmin(VersionAdmin):
 class ProposalAdmin(admin.ModelAdmin):
     list_display = [
         "lodgement_number",
@@ -87,7 +71,6 @@ class ProposalStandardRequirementAdmin(admin.ModelAdmin):
     ]
 
 
-# @admin.register(models.HelpPage)
 class HelpPageAdmin(admin.ModelAdmin):
     list_display = ["application_type", "help_type", "description", "version"]
     form = forms.LeasesLicensingHelpPageAdminForm
@@ -215,38 +198,3 @@ class RequiredDocumentAdmin(admin.ModelAdmin):
 class GlobalSettingsAdmin(admin.ModelAdmin):
     list_display = ["key", "value"]
     ordering = ("key",)
-
-
-# @admin.register(models.ReferralRecipientGroup)
-# class ReferralRecipientGroupAdmin(admin.ModelAdmin):
-#     list_display = ['name']
-#     exclude = ('site',)
-#     actions = None
-#
-#     def formfield_for_manytomany(self, db_field, request, **kwargs):
-#         if db_field.name == "members":
-#             kwargs["queryset"] = EmailUser.objects.filter(is_staff=True)
-#         return super(ReferralRecipientGroupAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
-
-# @admin.register(models.QAOfficerGroup)
-# class QAOfficerGroupAdmin(admin.ModelAdmin):
-#    #filter_horizontal = ('members',)
-#    list_display = ['name']
-#    exclude = ('site',)
-#    actions = None
-#
-#    def formfield_for_manytomany(self, db_field, request, **kwargs):
-#        if db_field.name == "members":
-#            #kwargs["queryset"] = EmailUser.objects.filter(email__icontains='@dbca.wa.gov.au')
-#            kwargs["queryset"] = EmailUser.objects.filter(is_staff=True)
-#        return super(QAOfficerGroupAdmin, self).formfield_for_manytomany(db_field, request, **kwargs)
-#
-#    #list_display = ['id','name', 'visible']
-#    list_display = ['name']
-#    ordering = ('id',)
-
-
-# @admin.register(Question)
-# class QuestionAdmin(admin.ModelAdmin):
-#     list_display = ['question_text', 'answer_one', 'answer_two', 'answer_three', 'answer_four', 'application_type',]
-#     ordering = ('question_text',)
