@@ -3620,13 +3620,11 @@ class Assessment(ProposalRequest):
         ("assessed", "Assessed"),
         ("assessment_expired", "Assessment Period Expired"),
     )
-    # assigned_assessor = models.ForeignKey(EmailUser, blank=True, null=True, on_delete=models.SET_NULL)
     assigned_assessor = models.IntegerField()  # EmailUserRO
     status = models.CharField(
         "Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
     date_last_reminded = models.DateField(null=True, blank=True)
-    # requirements = models.ManyToManyField('Requirement', through='AssessmentRequirement')
     comment = models.TextField(blank=True)
     purpose = models.TextField(blank=True)
 
@@ -3635,9 +3633,7 @@ class Assessment(ProposalRequest):
 
 
 class ProposalDeclinedDetails(models.Model):
-    # proposal = models.OneToOneField(Proposal, related_name='declined_details')
     proposal = models.OneToOneField(Proposal, on_delete=models.CASCADE)
-    # officer = models.ForeignKey(EmailUser, null=False, on_delete=models.CASCADE)
     officer = models.IntegerField()  # EmailUserRO
     reason = models.TextField(blank=True)
     cc_email = models.TextField(null=True)
@@ -3647,9 +3643,7 @@ class ProposalDeclinedDetails(models.Model):
 
 
 class ProposalOnHold(models.Model):
-    # proposal = models.OneToOneField(Proposal, related_name='onhold')
     proposal = models.OneToOneField(Proposal, on_delete=models.CASCADE)
-    # officer = models.ForeignKey(EmailUser, null=False, on_delete=models.CASCADE)
     officer = models.IntegerField()  # EmailUserRO
     comment = models.TextField(blank=True)
     documents = models.ForeignKey(
@@ -3664,7 +3658,6 @@ class ProposalOnHold(models.Model):
         app_label = "leaseslicensing"
 
 
-# class ProposalStandardRequirement(models.Model):
 class ProposalStandardRequirement(RevisionedMixin):
     text = models.TextField()
     code = models.CharField(max_length=10, unique=True)
@@ -3674,7 +3667,6 @@ class ProposalStandardRequirement(RevisionedMixin):
     )
     participant_number_required = models.BooleanField(default=False)
     default = models.BooleanField(default=False)
-    # require_due_date = models.BooleanField(default=False)
 
     def __str__(self):
         return self.code
@@ -3683,18 +3675,6 @@ class ProposalStandardRequirement(RevisionedMixin):
         app_label = "leaseslicensing"
         verbose_name = "Application Standard Requirement"
         verbose_name_plural = "Application Standard Requirements"
-
-    # def clean(self):
-    #     if self.application_type:
-    #         try:
-    #             default = ProposalStandardRequirement.objects
-    # .get(default=True, application_type=self.application_type)
-    #         except ProposalStandardRequirement.DoesNotExist:
-    #             default = None
-
-    #     if not self.pk:
-    #         if default and self.default:
-    #             raise ValidationError('There can only be one default Standard requirement per Application type')
 
 
 class ProposalUserAction(UserAction):
