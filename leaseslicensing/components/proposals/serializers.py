@@ -704,8 +704,7 @@ class CompetitiveProcessSerializer(serializers.ModelSerializer):
         if request.user.is_authenticated:
             if is_internal(request):
                 return reverse(
-                    "internal-competitive-process-detail",
-                    kwargs={"competitive_process_pk": obj.id},
+                    "internal-competitiveprocess-detail", kwargs={"pk": obj.id}
                 )
             else:
                 return ""

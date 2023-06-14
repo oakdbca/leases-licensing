@@ -293,9 +293,9 @@ urlpatterns = (
             name="internal-compliance-detail",
         ),
         url(
-            r"^internal/competitive_process/(?P<competitive_process_pk>\d+)/$",
+            r"^internal/competitive_process/(?P<pk>\d+)/$",
             views.InternalCompetitiveProcessView.as_view(),
-            name="internal-competitive-process-detail",
+            name="internal-competitiveprocess-detail",
         ),
     ]
     + ledger_patterns

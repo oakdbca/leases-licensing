@@ -316,7 +316,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
         )
 
     def get_details_url(self, obj):
-        return reverse('internal-competitive-process-detail', kwargs={'competitive_process_pk': obj.id})
+        return reverse('internal-competitiveprocess-detail', kwargs={'pk': obj.id})
 
     def get_registration_of_interest(self, obj):
         if obj.generated_from_registration_of_interest:

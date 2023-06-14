@@ -21,8 +21,8 @@ def send_winner_notification(request, competitive_process):
     )
 
     url = request.build_absolute_uri(
-        reverse("internal-competitive-process-detail",
-            kwargs={"competitive_process_pk": competitive_process.id})
+        reverse("internal-competitiveprocess-detail",
+            kwargs={"pk": competitive_process.id})
     )
     context = {"competitive_process": competitive_process,
                "url": url}
@@ -59,8 +59,8 @@ def send_competitive_process_create_notification(request, competitive_process, *
         txt_template="leaseslicensing/emails/competitive_processes/competitive_process_create_notification.txt",
     )
     url = request.build_absolute_uri(
-        reverse("internal-competitive-process-detail",
-                kwargs={"competitive_process_pk": competitive_process.id})
+        reverse("internal-competitiveprocess-detail",
+                kwargs={"pk": competitive_process.id})
     )
     context = {"competitive_process": competitive_process,
                "url": url}

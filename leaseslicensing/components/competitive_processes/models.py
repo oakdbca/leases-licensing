@@ -80,7 +80,7 @@ class CompetitiveProcess(models.Model):
         ordering = ("modified_at",)
 
     def __str__(self):
-        return self.lodgement_number
+        return str(self.lodgement_number)
 
     def create_lease_licence_from_competitive_process(self):
         from leaseslicensing.components.proposals.models import Proposal, ProposalType
@@ -250,7 +250,7 @@ class CompetitiveProcess(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.lodgement_number == "":
+        if not self.lodgement_number:
             self.lodgement_number = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.save()
 
@@ -477,7 +477,7 @@ class PartyDetail(models.Model):
 
     @property
     def created_by(self):
-        if self.created_by_id:
+        if self.create_by_id:
             person = retrieve_email_user(self.created_by_id)
             return person
         return None

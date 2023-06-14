@@ -83,7 +83,13 @@ export default {
                     "url": vm.ajax_url,
                     "dataSrc": "data",
                     "data": function (d) {
-                    }
+                    },
+                    error: function(response, textStatus, errorThrown){
+                        let error = response.responseJSON? response.responseJSON.data: response.responseText;
+                        console.log(
+                            `${textStatus}: ${errorThrown}: ${JSON.stringify(error)}`
+                        );
+                    },
                 },
                 dom: 'lBfrtip',
                 buttons: [],
