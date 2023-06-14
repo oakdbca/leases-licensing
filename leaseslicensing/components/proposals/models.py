@@ -4345,6 +4345,21 @@ class Referral(RevisionedMixin):
         return self.processing_status == "with_referral"
 
 
+class ExternalReferralInvite(RevisionedMixin):
+    email = models.EmailField()
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    organisation = models.CharField(max_length=100)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        verbose_name = "External Referral"
+        verbose_name_plural = "External Referrals"
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.email}) [{self.organisation}]"
+
+
 class ProposalRequirement(RevisionedMixin):
     RECURRENCE_PATTERNS = [(1, "Weekly"), (2, "Monthly"), (3, "Yearly")]
     standard_requirement = models.ForeignKey(
