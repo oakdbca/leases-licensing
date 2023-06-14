@@ -4,158 +4,142 @@
             <div class="card-header">
                 Workflow
             </div>
-            <div class="card-body card-collapse">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <strong>Status</strong><br />
-                        {{ proposal.processing_status }}
-                    </div>
-                    <div>
-                        <div class="col-sm-12">
-                            <div class="separator"></div>
-                        </div>
-                        <div v-if="!isFinalised" class="col-sm-12">
-                            <strong>Currently assigned to</strong><br />
-                            <div class="form-group">
-                                <template v-if="proposal.processing_status_id == 'with_approver'">
-                                    <select ref="assigned_officer" :disabled="!canAction" class="form-control"
-                                        v-model="proposal.assigned_approver" @change="assignTo()">
-                                        <option v-for="member in proposal.allowed_assessors" :value="member.id"
-                                            :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
-                                    </select>
-                                    <div class="text-end">
-                                        <a v-if="canAssess && proposal.assigned_approver != proposal.current_assessor.id"
-                                            @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to
-                                            me</a>
-                                    </div>
-                                </template>
-                                <template v-else>
-                                    <select ref="assigned_officer" :disabled="!canAction" class="form-control"
-                                        v-model="proposal.assigned_officer" @change="assignTo()">
-                                        <option v-for="member in proposal.allowed_assessors" :value="member.id"
-                                            :key="member.id">{{ member.first_name }} {{ member.last_name }}</option>
-                                    </select>
-                                    <div class="text-end">
-                                        <a v-if="canAssess && proposal.assigned_officer != proposal.current_assessor.id"
-                                            @click.prevent="assignRequestUser()" class="actionBtn pull-right">Assign to
-                                            me</a>
-                                    </div>
-                                </template>
-                            </div>
-                        </div>
-                    </div>
-
-                    <template v-if="show_toggle_proposal">
-                        <div class="col-sm-12">
-                            <strong>Proposal</strong><br />
-                            <a class="actionBtn" v-if="!showingProposal" @click.prevent="toggleProposal()">Show
-                                Application</a>
-                            <a class="actionBtn" v-else @click.prevent="toggleProposal()">Hide Application</a>
-                        </div>
-                        <div class="col-sm-12">
-                            <div class="separator"></div>
+            <div class="card-body border-bottom">
+                <div class="fw-bold">Status</div>
+                {{ proposal.processing_status }}
+            </div>
+            <div class="card-body border-bottom">
+                <div v-if="!isFinalised" class="col-sm-12">
+                    <div class="fw-bold mb-1">Currently Assigned To</div>
+                    <template v-if="proposal.processing_status_id == 'with_approver'">
+                        <select ref=" assigned_officer" :disabled="!canAction" class="form-select"
+                            v-model="proposal.assigned_approver" @change="assignTo()">
+                            <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{
+                                member.first_name }} {{ member.last_name }}</option>
+                        </select>
+                        <div class="text-end mt-2">
+                            <a v-if="canAssess && proposal.assigned_approver != proposal.current_assessor.id"
+                                @click.prevent="assignRequestUser()" role="button" class="float-end">Assign to
+                                me</a>
                         </div>
                     </template>
-                    <template v-if="show_toggle_requirements">
-                        <div class="col-sm-12">
-                            <strong>Conditions</strong><br />
-                            <a class="actionBtn" v-if="!showingRequirements" @click.prevent="toggleRequirements()">Show
-                                Conditions</a>
-                            <a class="actionBtn" v-else @click.prevent="toggleRequirements()">Hide Conditions</a>
-                        </div>
-                        <div class="col-sm-12">
-                            <div class="separator"></div>
+                    <template v-else>
+                        <select ref="assigned_officer" :disabled="!canAction" class="form-select"
+                            v-model="proposal.assigned_officer" @change="assignTo()">
+                            <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{
+                                member.first_name }} {{ member.last_name }}</option>
+                        </select>
+                        <div class="text-end mt-2">
+                            <a v-if="canAssess && proposal.assigned_officer != proposal.current_assessor.id"
+                                @click.prevent="assignRequestUser()" role="button" class="float-end">Assign to
+                                me</a>
                         </div>
                     </template>
-
-                    <div class="col-sm-12">
-                        <div class="separator"></div>
+                </div>
+            </div>
+            <div v-if="show_toggle_proposal" class="card-body border-bottom">
+                <div class="col-sm-12">
+                    <strong>Proposal</strong><br />
+                    <a class="actionBtn" v-if="!showingProposal" @click.prevent="toggleProposal()">Show
+                        Application</a>
+                    <a class="actionBtn" v-else @click.prevent="toggleProposal()">Hide Application</a>
+                </div>
+            </div>
+            <div v-if="show_toggle_requirements" class="card-body border-bottom">
+                <div class="col-sm-12">
+                    <strong>Conditions</strong><br />
+                    <a class="actionBtn" v-if="!showingRequirements" @click.prevent="toggleRequirements()">Show
+                        Conditions</a>
+                    <a class="actionBtn" v-else @click.prevent="toggleRequirements()">Hide Conditions</a>
+                </div>
+            </div>
+            <div v-if="proposal.processing_status == 'With Assessor' || proposal.processing_status == 'With Referral'"
+                class="card-body border-bottom">
+                <div class="col-sm-12">
+                    <div class="fw-bold mb-1">Referrals</div>
+                    <div class="form-group">
+                        <select :disabled="!canLimitedAction" ref="department_users" class="form-control">
+                        </select>
+                        <template v-if='!sendingReferral'>
+                            <template v-if="selected_referral">
+                                <label class="control-label pull-left" for="Name">Comments</label>
+                                <textarea class="form-control comments_to_referral" name="name"
+                                    v-model="referral_text"></textarea>
+                                <div class="text-end">
+                                    <a v-if="canLimitedAction" @click.prevent="sendReferral()" class="actionBtn">Send</a>
+                                </div>
+                            </template>
+                        </template>
+                        <template v-else>
+                            <span v-if="canLimitedAction" @click.prevent="sendReferral()" disabled
+                                class="actionBtn text-primary pull-right">
+                                Sending Referral&nbsp;
+                                <i class="fa fa-circle-o-notch fa-spin fa-fw"></i>
+                            </span>
+                        </template>
                     </div>
-                    <template
-                        v-if="proposal.processing_status == 'With Assessor' || proposal.processing_status == 'With Referral'">
-                        <div class="col-sm-12">
-                            <strong>Referrals</strong><br />
-                            <div class="form-group">
-                                <select :disabled="!canLimitedAction" ref="department_users" class="form-control">
-                                    <!-- <option value="null"></option> -->
-                                    <!-- <option v-for="user in department_users" :value="user.email" :key="user.id">{{user.full_name}}</option> -->
-                                </select>
-                                <template v-if='!sendingReferral'>
-                                    <template v-if="selected_referral">
-                                        <label class="control-label pull-left" for="Name">Comments</label>
-                                        <textarea class="form-control comments_to_referral" name="name"
-                                            v-model="referral_text"></textarea>
-                                        <div class="text-end">
-                                            <a v-if="canLimitedAction" @click.prevent="sendReferral()"
-                                                class="actionBtn">Send</a>
-                                        </div>
+                    <table v-if="proposal.latest_referrals && proposal.latest_referrals.length" class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Referral</th>
+                                <th>Status/Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="r in proposal.latest_referrals">
+                                <td>
+                                    <small>{{ r.referral_obj.first_name }} {{ r.referral_obj.last_name
+                                    }}</small><br />
+                                    <small>{{ formatDate(r.lodged_on) }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ r.processing_status }}</small><br />
+                                    <template v-if="r.processing_status == 'Awaiting'">
+                                        <small v-if="canLimitedAction"><a
+                                                @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                                href="#">Remind</a>/<a
+                                                @click.prevent="recallReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                                href="#">Recall</a></small>
                                     </template>
-                                </template>
-                                <template v-else>
-                                    <span v-if="canLimitedAction" @click.prevent="sendReferral()" disabled
-                                        class="actionBtn text-primary pull-right">
-                                        Sending Referral&nbsp;
-                                        <i class="fa fa-circle-o-notch fa-spin fa-fw"></i>
-                                    </span>
-                                </template>
-                            </div>
-                            <table class="table small w-auto table-sm text-xsmall">
-                                <tr>
-                                    <th>Referral</th>
-                                    <th>Status/Action</th>
-                                </tr>
-                                <tr v-for="r in proposal.latest_referrals">
-                                    <td>
-                                        <small>{{ r.referral_obj.first_name }} {{ r.referral_obj.last_name }}</small><br />
-                                        <small>{{ formatDate(r.lodged_on) }}</small>
-                                    </td>
-                                    <td>
-                                        <small>{{ r.processing_status }}</small><br />
-                                        <template v-if="r.processing_status == 'Awaiting'">
-                                            <small v-if="canLimitedAction"><a
-                                                    @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])"
-                                                    href="#">Remind</a>/<a
-                                                    @click.prevent="recallReferral.bind(this)(r.id, r.referral_obj['fullname'])"
-                                                    href="#">Recall</a></small>
-                                        </template>
-                                        <template v-else>
-                                            <small v-if="canLimitedAction"><a
-                                                    @click.prevent="resendReferral.bind(this)(r.id, r.referral_obj['fullname'])"
-                                                    href="#">Resend</a></small>
-                                        </template>
-                                    </td>
-                                </tr>
-                            </table>
-
-                            <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :proposal="proposal"
-                                :canAction="canLimitedAction" :isFinalised="isFinalised" :referral_url="referralListURL" />
-                        </div>
-                        <div class="col-sm-12">
-                            <div class="separator"></div>
-                        </div>
-                    </template>
-
+                                    <template v-else>
+                                        <small v-if="canLimitedAction"><a
+                                                @click.prevent="resendReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                                href="#">Resend</a></small>
+                                    </template>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :proposal="proposal"
+                        :canAction="canLimitedAction" :isFinalised="isFinalised" :referral_url="referralListURL" />
+                </div>
+            </div>
+            <div class="card-body border-bottom">
+                <div class="row">
                     <div v-if="display_actions">
                         <div>
                             <strong>Action</strong>
                         </div>
-
                         <template v-for="configuration in configurations_for_buttons" :key="configuration.key">
                             <button v-if="configuration.function_to_show_hide()" class="btn btn-primary  w-75 my-1"
                                 @click.prevent="configuration.function_when_clicked"
-                                :disabled="configuration.function_to_disable()">{{ configuration.button_title }}</button>
+                                :disabled="configuration.function_to_disable()">{{ configuration.button_title
+                                }}</button>
                         </template>
                     </div>
                 </div>
             </div>
         </div>
+        <AddExternalReferral ref="AddExternalReferral" :email="external_referral_email" />
     </div>
 </template>
 
 <script>
 import { api_endpoints, helpers, constants } from '@/utils/hooks'
 import MoreReferrals from '@common-utils/more_referrals.vue'
+import AddExternalReferral from '@/components/internal/proposals/proposal_add_external_referral.vue'
 import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
+import Swal from 'sweetalert2';
 
 export default {
     name: 'Workflow',
@@ -175,6 +159,7 @@ export default {
             department_users: [],
             selected_referral: '',
             referral_text: '',
+            external_referral_email: '',
             sendingReferral: false,
             configurations_for_buttons: [
                 {
@@ -468,6 +453,7 @@ export default {
     },
     components: {
         MoreReferrals,
+        AddExternalReferral,
     },
     computed: {
         proposal_form_url: function () {
@@ -477,8 +463,7 @@ export default {
             return this.proposal != null ? helpers.add_endpoint_json(api_endpoints.referrals, 'datatable_list') + '?proposal=' + this.proposal.id : '';
         },
         show_toggle_proposal: function () {
-            if ( // this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
-                // this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID ||
+            if (
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
                 this.isFinalised) {
@@ -582,26 +567,11 @@ export default {
         },
         initialiseSelects: function () {
             let vm = this;
-            /*
-            $(vm.$refs.department_users).select2({
-                "theme": "bootstrap-5",
-                allowClear: true,
-                placeholder:"Select Referral"
-            }).
-            on("select2:select",function (e) {
-                var selected = $(e.currentTarget);
-                vm.selected_referral = selected.val();
-            }).
-            on("select2:unselect",function (e) {
-                var selected = $(e.currentTarget);
-                vm.selected_referral = ''
-            });
-            */
             $(vm.$refs.department_users).select2({
                 minimumInputLength: 2,
                 "theme": "bootstrap-5",
                 allowClear: true,
-                placeholder: "Select Referrer",
+                placeholder: "Search Referrals by Email",
                 ajax: {
                     url: api_endpoints.users + 'get_department_users/',
                     dataType: 'json',
@@ -612,11 +582,36 @@ export default {
                         }
                         return query;
                     },
+                    processResults: function (data, params) {
+                        console.log(`data.results`, data.results)
+                        if (Object.keys(data.results).length == 0) {
+                            Swal.fire({
+                                title: "No Referrer Found",
+                                text: "Would you like to invite a new external referral to the system?",
+                                icon: "warning",
+                                showCancelButton: true,
+                                reverseButtons: true,
+                                confirmButtonText: "Yes",
+                                cancelButtonText: "No",
+                                buttonsStyling: false,
+                                customClass: {
+                                    confirmButton: "btn btn-primary",
+                                    cancelButton: "btn btn-secondary me-2",
+                                },
+                            }).then(async (result) => {
+                                if (result.isConfirmed) {
+                                    vm.external_referral_email = params.term;
+                                    vm.$refs.AddExternalReferral.isModalOpen = true;
+                                    $(vm.$refs.department_users).select2("close");
+                                }
+                            });
+                        }
+                        return data;
+                    },
                 },
+
             })
                 .on("select2:select", function (e) {
-                    //var selected = $(e.currentTarget);
-                    //vm.selected_referral = selected.val();
                     let data = e.params.data.id;
                     vm.selected_referral = data;
                 })
@@ -663,43 +658,9 @@ export default {
         },
         updateAssignedOfficerSelect: function (selected_user) {
             let vm = this;
-            //if (vm.proposal.processing_status == 'With Approver'){
-            //$(vm.$refs.assigned_officer).val(vm.proposal.assigned_approver);
             $(vm.$refs.assigned_officer).val(selected_user)
             $(vm.$refs.assigned_officer).trigger('change')
-            //}
-            //else{
-            //    $(vm.$refs.assigned_officer).val(vm.proposal.assigned_officer);
-            //    $(vm.$refs.assigned_officer).trigger('change');
-            //}
         },
-        // The event call to `@refreshFromResponse="refreshFromResponse"` shouldn't be needed anymore, as it seems to be dropped in favor of `switchStatus`
-        // See components `proposal::Workflow` and `workflow::MoreReferrals` now listen for `@switchStatus="switchStatus"`
-        /*
-        refreshFromResponse:function(response){
-            let vm = this;
-            vm.proposal = helpers.copyObject(response.body);
-            vm.proposal.applicant.address = vm.proposal.applicant.address != null ? vm.proposal.applicant.address : {};
-            vm.$nextTick(() => {
-                vm.initialiseAssignedOfficerSelect(true);
-                vm.updateAssignedOfficerSelect();
-            });
-        },
-        */
-        /*
-        fetchDeparmentUsers: async function(){
-            this.loading.push('Loading Department Users');
-
-            try {
-                const response  = await fetch(api_endpoints.department_users)
-                const resData = await response.json()
-                this.department_users = Object.assign(resData)
-                this.loading.splice('Loading Department Users',1);
-            } catch(error) {
-                this.loading.splice('Loading Department Users',1);
-            }
-        },
-        */
         performSendReferral: async function () {
             let vm = this
             let my_headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -754,30 +715,23 @@ export default {
             let vm = this
             this.checkAssessorData();
             swal.fire({
-                title: "Send to referral",
+                title: "Send Referral",
                 text: "Are you sure you want to send to referral?",
                 icon: "warning",
                 showCancelButton: true,
-                confirmButtonText: 'Send to referral',
-                //confirmButtonColor:'#dc3545'
+                confirmButtonText: 'Send Referral',
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                }
             }).then(async result => {
                 if (result.isConfirmed) {
                     // When Yes
                     await vm.performSendReferral()
                 }
             })
-            //this.proposal = response.body;  // <== Mutating props... Is this fine??? // 20220509 - no, it is not
-            /*
-            // Don't use this endpoint
-            $(vm.$refs.department_users).val(null).trigger("change");  // Unselect referral
-            vm.selected_referral = '';
-            vm.referral_text = '';
-            },
-            error => {
-                $(vm.$refs.department_users).val(null).trigger("change");  // Unselect referral
-                vm.sendingReferral = false;
-            }
-            */
         },
         assignRequestUser: function () {
             this.$emit('assignRequestUser')
@@ -814,9 +768,6 @@ export default {
         declineProposal: function () {
             this.$emit('declineProposal')
         },
-    },
-    created: function () {
-        //this.fetchDeparmentUsers()
     },
     mounted: function () {
         let vm = this
