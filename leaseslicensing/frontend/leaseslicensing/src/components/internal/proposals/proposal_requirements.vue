@@ -45,7 +45,7 @@ export default {
             panelBody: "proposal-requirements-" + vm._uid,
             selectedRequirement: {},
             requirements: [],
-            requirement_headers: ["Requirement", "Due Date", "Recurrence", "Source", "Action", "Order"],
+            requirement_headers: ["Requirement", "Due Date", "Repeats", "Source", "Action", "Order"],
             requirement_options: {
                 autoWidth: false,
                 language: {
@@ -57,15 +57,13 @@ export default {
                     "dataSrc": ''
                 },
                 order: [],
-                //dom: 'lBfrtip',
-                dom: '<"top"fB>rt<"bottom"ip><"clear"l>',
-                buttons: [
-                    'excel', 'csv',], //'copy'
+                dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'d-flex align-items-center'<'me-auto'i>p>",
+                buttons: ['excel', 'csv',],
                 columns: [
                     {
                         data: "requirement",
-                        //orderable: false,
-                        //'render': function (value) {
                         mRender: function (data, type, full) {
                             var ellipsis = '...',
                                 truncated = _.truncate(data, {
@@ -77,10 +75,8 @@ export default {
                                 popTemplate = _.template('<a tabindex="0" ' +
                                     'role="button" ' +
                                     'data-bs-toggle="popover" ' +
-                                    //'data-bs-container="body" ' +
                                     'data-bs-trigger="focus" ' +
                                     'data-bs-placement="top"' +
-                                    //'data-bs-html="true" ' +
                                     'data-bs-content="<%= text %>" ' +
                                     '>more</button>');
                             if (_.endsWith(truncated, ellipsis)) {
@@ -91,7 +87,6 @@ export default {
 
                             return result;
                         },
-                        //'createdCell': helpers.dtPopoverCellFn,
                     },
                     {
                         data: "due_date",
@@ -103,19 +98,27 @@ export default {
                     {
                         data: "recurrence",
                         mRender: function (data, type, full) {
+
                             if (full.recurrence) {
+                                let recurrence_interval = '';
                                 switch (full.recurrence_pattern) {
                                     case 1:
-                                        return `Once per ${full.recurrence_schedule} week(s)`;
+                                        recurrence_interval = 'week';
+                                        break;
                                     case 2:
-                                        return `Once per ${full.recurrence_schedule} month(s)`;
+                                        recurrence_interval = 'month';
+                                        break;
                                     case 3:
-                                        return `Once per ${full.recurrence_schedule} year(s)`;
-                                    default:
-                                        return '';
+                                        recurrence_interval = 'year';
+                                        break;
                                 }
+                                let plural = '';
+                                if (full.recurrence_schedule > 1) {
+                                    plural = 's';
+                                }
+                                return `${full.recurrence_schedule} time${plural} each ${recurrence_interval}`;
                             }
-                            return '';
+                            return 'N/A';
                         },
                         orderable: false
                     },
@@ -161,16 +164,8 @@ export default {
                             let links = '';
                             // TODO check permission to change the order
                             if (vm.proposal.assessor_mode.has_assessor_mode) {
-                                /*
-                                links +=  `<i data-id="${full.id}" class="dtMoveUp fa fa-angle-up fa-2x"></i><br/>`;
-                                links +=  `<i data-id="${full.id}" class="dtMoveDown fa fa-angle-down fa-2x"></i><br/>`;
-                                */
                                 links += `<a class="dtMoveUp" data-id="${full.id}" href='#'><i class="fa fa-angle-up fa-2x"></i></a><br/>`;
                                 links += `<a class="dtMoveDown" data-id="${full.id}" href='#'><i class="fa fa-angle-down fa-2x"></i></a><br/>`;
-                                /*
-                                links +=  `<a class="dtMoveUp" data-id="${full.id}" href='#'><i class="down-chevron-close"></i></a><br/>`;
-                                //links +=  `<i class="bi fw-bold down-chevron-close chevron-toggle" :data-bs-target="'#' +section_body_id"></i>`;
-                                */
                             }
                             return links;
                         },
@@ -178,38 +173,8 @@ export default {
                     }
                 ],
                 processing: true,
-                /*
-                rowCallback: function ( row, data, index) {
-                    console.log("rowCallback")
-                    if (data.copied_for_renewal && data.require_due_date && !data.due_date) {
-                        $('td', row).css('background-color', 'Red');
-                        vm.setApplicationWorkflowState(false)
-                        //vm.$emit('refreshRequirements',false);
-                    }
-                },
-                drawCallback: function (settings) {
-                    console.log("drawCallback")
-                    $(vm.$refs.requirements_datatable.table).find('tr:last .dtMoveDown').remove();
-                    $(vm.$refs.requirements_datatable.table).children('tbody').find('tr:first .dtMoveUp').remove();
-
-                    // Remove previous binding before adding it
-                    $('.dtMoveUp').unbind('click');
-                    $('.dtMoveDown').unbind('click');
-
-                    // Bind clicks to functions
-                    $('.dtMoveUp').click(vm.moveUp);
-                    $('.dtMoveDown').click(vm.moveDown);
-                },
-                 preDrawCallback: function (settings) {
-                    console.log("preDrawCallback")
-                    vm.setApplicationWorkflowState(true)
-                    //vm.$emit('refreshRequirements',true);
-                },
-                */
                 initComplete: function () {
-                    //vm.enablePopovers();
                     helpers.enablePopovers()
-                    //console.log($('#' + vm.datatableId).DataTable());
                     vm.addTableListeners();
                 },
             }
@@ -228,7 +193,6 @@ export default {
     },
     computed: {
         datatableId: function () {
-            //return 'requirements-datatable-' + this._uid;
             return 'requirements-datatable';
         },
         hasAssessorMode() {
@@ -272,8 +236,6 @@ export default {
                     } else {
                         console.log("error")
                     }
-                } else {
-                    // When cancel
                 }
             })
         },
@@ -294,9 +256,6 @@ export default {
             if (response.ok) {
                 const resData = await response.json();
                 this.selectedRequirement = Object.assign({}, resData);
-                //this.$refs.requirement_detail.requirement = Object.assign({}, resData);
-                //this.$refs.requirement_detail.requirement.due_date =  response.body.due_date != null && response.body.due_date != undefined ? moment(response.body.due_date).format('DD/MM/YYYY'): '';
-                //response.body.standard ? $(this.$refs.requirement_detail.$refs.standard_req).val(response.body.standard_requirement).trigger('change'): '';
                 this.$nextTick(() => {
                     this.addRequirement();
                 });
@@ -354,9 +313,6 @@ export default {
             try {
                 const res = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements, req + '/' + movement))
                 this.$parent.uuid++;
-                //await this.$refs.requirements_datatable.vmDataTable.ajax.reload();
-                //this.$refs.requirements_datatable.vmDataTable.page(0).draw(false);
-                //this.$refs.requirements_datatable.vmDataTable.draw();
             } catch (error) {
                 console.log(error);
             }
@@ -367,12 +323,6 @@ export default {
         moveDown(id) {
             this.sendDirection(id, 'down');
         },
-        //enablePopovers: function() {
-        //    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
-        //    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-        //        let popover = new bootstrap.Popover(popoverTriggerEl)
-        //    })
-        //},
     },
     mounted: async function () {
         await this.fetchRequirements();
@@ -382,8 +332,3 @@ export default {
     },
 }
 </script>
-<style scoped>
-.dataTables_wrapper .dt-buttons {
-    float: right;
-}
-</style>
