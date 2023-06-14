@@ -375,8 +375,8 @@
                     <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
                         Save and Exit&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
                     </button>
-                    <input v-else type="button" @click.prevent="save_and_exit" class="btn btn-primary" value="Save and Exit"
-                        :disabled="disableSaveAndExitBtn" />
+                    <input v-else type="button" @click.prevent="save_and_exit" class="btn btn-primary me-2"
+                        value="Save and Exit" :disabled="disableSaveAndExitBtn" />
 
                     <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
                         Save and Continue&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
@@ -973,30 +973,7 @@ export default {
                     })
                 vm.select2AppliedToAdditionalDocumentTypes = true
             }
-
-            // Set default selections
-            //$(vm.$refs.select_additional_document_types).val(vm.additionalDocumentTypesSelected).trigger('change')
         },
-        addEventListeners: function () {
-        },
-        /*
-        applySelect2ToAdditionalDocumentType: function(option_data){
-            let vm = this
-            vm.additional_document_types = option_data
-
-            // TODO: Make select2 work...  Somehow the code below doesn't work...
-
-            $(vm.$refs.selectAdditionalDocumentTypes).select2({
-                "theme": "bootstrap-5",
-                allowClear: true,
-                placeholder: "Select Document Type(s)",
-                multiple: true,
-                minimumResultsForSearch: -1,  // This hide the search box below selections
-            //    data: option_data,
-            })
-            vm.select2AppliedToAdditionalDocumentTypes = true
-        },
-        */
         collapsible_map_checklist_questions_component_mounted: function () {
             this.$refs.collapsible_map_checklist_questions.show_warning_icon(false)
         },
@@ -1131,11 +1108,8 @@ export default {
         },
         checkAssessorData: function () {
             //check assessor boxes and clear value of hidden assessor boxes so it won't get printed on approval pdf.
-
             //select all fields including hidden fields
-            //console.log("here");
             var all_fields = $('input[type=text]:required, textarea:required, input[type=checkbox]:required, input[type=radio]:required, input[type=file]:required, select:required')
-
             all_fields.each(function () {
                 var ele = null;
                 //check the fields which has assessor boxes.
@@ -1144,7 +1118,6 @@ export default {
                     var visiblity = $("[name=" + this.name + "-Assessor]").is(':visible')
                     if (!visiblity) {
                         if (ele[0].value != '') {
-                            //console.log(visiblity, ele[0].name, ele[0].value)
                             ele[0].value = ''
                         }
                     }
@@ -1163,8 +1136,7 @@ export default {
             return s.replace(/[,;]/g, '\n');
         },
         proposedDecline: function () {
-            this.uuid++;
-            //this.$refs.proposed_decline.decline = this.proposal.proposaldeclineddetails != null ? Object.assign({}, this.proposal.proposaldeclineddetails): {};
+            // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
                 this.$refs.proposed_decline.isModalOpen = true;
             });
@@ -1173,13 +1145,10 @@ export default {
             this.proposedApprovalState = 'proposed_approval';
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
-                //this.$refs.proposed_approval.approval = this.proposal.proposed_issuance_approval != null ? Object.assign({}, this.proposal.proposed_issuance_approval) : {};
                 this.$refs.proposed_approval.isModalOpen = true;
             });
         },
         issueApproval: function () {
-            //this.$refs.proposed_approval.approval = helpers.copyObject(this.proposal.proposed_issuance_approval);
-
             //save approval level comment before opening 'issue approval' modal
             if (this.proposal && this.proposal.processing_status == 'With Approver' && this.proposal.approval_level != null && this.proposal.approval_level_document == null) {
                 if (this.proposal.approval_level_comment != '') {
@@ -1206,12 +1175,9 @@ export default {
                 this.proposedApprovalState = 'final_approval';
                 // this.uuid++; Why do we need to reload the whole form when we open a modal!?
                 this.$nextTick(() => {
-                    //this.$refs.proposed_approval.approval = this.proposal.proposed_issuance_approval != null ? helpers.copyObject(this.proposal.proposed_issuance_approval) : {};
-                    //this.$refs.proposed_approval.isApprovalLevelDocument = this.isApprovalLevelDocument;
                     this.$refs.proposed_approval.isModalOpen = true;
                 });
             }
-
         },
         declineProposal: function () {
             this.$refs.proposed_decline.decline = this.proposal.proposaldeclineddetails != null ? helpers.copyObject(this.proposal.proposaldeclineddetails) : {};
@@ -1222,9 +1188,7 @@ export default {
             $('.deficiency').each((i, d) => {
                 values += $(d).val() != '' ? `Question - ${$(d).data('question')}\nDeficiency - ${$(d).val()}\n\n` : '';
             });
-            //this.deficientFields();
             this.$refs.amendment_request.amendment.text = values;
-
             this.$refs.amendment_request.isModalOpen = true;
         },
         highlight_deficient_fields: function (deficient_fields) {
@@ -1241,10 +1205,8 @@ export default {
                     var name = $(d)[0].name
                     var tmp = name.replace("-comment-field", "")
                     deficient_fields.push(tmp);
-                    //console.log('data', $("#"+"id_" + tmp))
                 }
             });
-            //console.log('deficient fields', deficient_fields);
             vm.highlight_deficient_fields(deficient_fields);
         },
         toggleProposal: function (value) {
@@ -1257,13 +1219,9 @@ export default {
             console.log('updateAssignedOfficerSelect')
             let vm = this;
             if (vm.proposal.processing_status == 'With Approver') {
-                //$(vm.$refs.assigned_officer).val(vm.proposal.assigned_approver);
-                //$(vm.$refs.assigned_officer).trigger('change');
                 vm.$refs.workflow.updateAssignedOfficerSelect(vm.proposal.assigned_approver)
             }
             else {
-                //$(vm.$refs.assigned_officer).val(vm.proposal.assigned_officer);
-                //$(vm.$refs.assigned_officer).trigger('change');
                 vm.$refs.workflow.updateAssignedOfficerSelect(vm.proposal.assigned_officer)
             }
         },
@@ -1503,12 +1461,6 @@ export default {
                 })
         },
     },
-    mounted: function () {
-        let vm = this
-        this.$nextTick(() => {
-            vm.addEventListeners()
-        })
-    },
     updated: function () {
         let vm = this;
         if (!vm.panelClickersInitialised) {
@@ -1535,19 +1487,10 @@ export default {
 }
 </script>
 <style scoped>
-.horizontal_rule {
-    margin: 15px 0 10px 0;
-    border-top: 2px solid #888;
-}
-
 .assessment_title {
     margin: 20px 0 10px 0;
     border-bottom: 1px solid #888;
     font-weight: bold;
     font-size: 1.3em;
-}
-
-.btn-primary {
-    margin: 2px;
 }
 </style>
