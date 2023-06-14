@@ -204,24 +204,25 @@ class UserViewSet(UserActionLoggingViewset):
         search_term = request.GET.get("term", "")
 
         # Allow for search of first name, last name and concatenation of both
-        data = (
-            EmailUser.objects.annotate(
-                full_name=Concat("first_name", Value(" "), "last_name")
-            )
-            .filter(is_staff=True)
-            .filter(
-                Q(first_name__icontains=search_term)
-                | Q(last_name__icontains=search_term)
-                | Q(full_name__icontains=search_term)
-            )
-            .values("email", "first_name", "last_name")[:10]
-        )
+        department_users = EmailUser.objects.annotate(
+            search_term=Concat(
+                "first_name",
+                Value(" "),
+                "last_name",
+                Value(" "),
+                "email",
+                output_field=CharField(),
+            )).filter(is_staff=True)
+
+        department_users = department_users.filter(search_term__icontains=search_term).values(
+            "id", "email", "first_name", "last_name"
+        )[:10]
         data_transform = [
             {
                 "id": person["email"],
-                "text": f"{person['first_name']} {person['last_name']}",
+                "text": f"{person['first_name']} {person['last_name']} ({person['email']})",
             }
-            for person in data
+            for person in department_users
         ]
 
         return Response({"results": data_transform})
