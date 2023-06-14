@@ -1444,10 +1444,8 @@ class RequirementDocumentSerializer(serializers.ModelSerializer):
 
 
 class ProposalRequirementSerializer(serializers.ModelSerializer):
-    # due_date = serializers.DateField(input_formats=['%d/%m/%Y'],required=False,allow_null=True)
     can_referral_edit = serializers.SerializerMethodField()
     requirement_documents = RequirementDocumentSerializer(many=True, read_only=True)
-    # The user who created the requirement
     source = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -1467,7 +1465,6 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             "requirement",
             "is_deleted",
             "copied_from",
-            # 'referral_group',
             "can_referral_edit",
             "requirement_documents",
             "require_due_date",
