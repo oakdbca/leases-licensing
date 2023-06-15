@@ -1043,7 +1043,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         on_delete=models.SET_NULL,
     )
     proxy_applicant = models.IntegerField(null=True, blank=True)  # EmailUserRO
-    lodgement_number = models.CharField(max_length=9, blank=True, default="")
+    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     lodgement_sequence = models.IntegerField(blank=True, default=0)
     lodgement_date = models.DateTimeField(blank=True, null=True)
     submitter = models.IntegerField(null=True)  # EmailUserRO
@@ -1194,7 +1194,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         verbose_name_plural = "Applications"
 
     def __str__(self):
-        return str(self.id)
+        return self.lodgement_number if self.lodgement_number else f"{self.MODEL_PREFIX}{'?'*6}"
 
     # Append 'P' to Proposal id to generate Lodgement number.
     # Lodgement number and lodgement sequence are used to generate Reference.
@@ -1202,7 +1202,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         super().save(*args, **kwargs)  # Call parent `save` to create a Proposal id
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
-        if self.lodgement_number == "":
+        if not self.lodgement_number:
             new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()

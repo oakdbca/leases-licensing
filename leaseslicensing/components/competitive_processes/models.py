@@ -80,7 +80,7 @@ class CompetitiveProcess(models.Model):
         ordering = ("modified_at",)
 
     def __str__(self):
-        return str(self.lodgement_number)
+        return self.lodgement_number if self.lodgement_number else f"{self.MODEL_PREFIX}{'?'*6}"
 
     def create_lease_licence_from_competitive_process(self):
         from leaseslicensing.components.proposals.models import Proposal, ProposalType

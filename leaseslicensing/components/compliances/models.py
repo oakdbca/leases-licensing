@@ -79,7 +79,7 @@ class Compliance(RevisionedMixin, models.Model):
         (CUSTOMER_STATUS_OVERDUE, "Overdue"),
     )
 
-    lodgement_number = models.CharField(max_length=9, blank=True, default="")
+    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     proposal = models.ForeignKey(
         "leaseslicensing.Proposal", related_name="compliances", on_delete=models.CASCADE
     )
@@ -198,7 +198,7 @@ class Compliance(RevisionedMixin, models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.lodgement_number == "":
+        if not self.lodgement_number:
             new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()
@@ -340,7 +340,7 @@ class Compliance(RevisionedMixin, models.Model):
         return ComplianceUserAction.log_action(self, action, request.user.id)
 
     def __str__(self):
-        return self.lodgement_number
+        return self.lodgement_number if self.lodgement_number else f"{self.MODEL_PREFIX}{'?'*6}"
 
 
 def update_proposal_compliance_filename(instance, filename):

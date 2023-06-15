@@ -167,7 +167,7 @@ class Approval(RevisionedMixin):
         (APPROVAL_STATUS_AWAITING_PAYMENT, "Awaiting Payment"),
         (APPROVAL_STATUS_CURRENT_EDITING_INVOICING, "Current (Editing Invoicing)"),
     )
-    lodgement_number = models.CharField(max_length=9, blank=True, default="")
+    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     status = models.CharField(
         max_length=40, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
@@ -369,13 +369,13 @@ class Approval(RevisionedMixin):
         return max(ids) + 1 if ids else 1
 
     def save(self, *args, **kwargs):
-        if self.lodgement_number in ["", None]:
+        if not self.lodgement_number:
             self.lodgement_number = f"{self.MODEL_PREFIX}{self.next_id:06d}"
             # self.save()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.lodgement_number
+        return self.lodgement_number if self.lodgement_number else f"{self.MODEL_PREFIX}{'?'*6}"
 
     @property
     def reference(self):
