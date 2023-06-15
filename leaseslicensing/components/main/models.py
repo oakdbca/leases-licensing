@@ -442,3 +442,89 @@ class SecureFileField(models.FileField):
     def __init__(self, *args, **kwargs):
         kwargs["storage"] = upload_protected_files_storage
         super().__init__(*args, **kwargs)
+
+
+class LicensingModel(models.Model):
+    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
+
+    class Meta:
+        abstract = True
+        app_label = "leaseslicensing"
+
+    def __str__(self):
+        return (
+            self.lodgement_number
+            if self.lodgement_number
+            else f"{self._MODEL_PREFIX()}{'?'*6}"
+        )
+
+    def _MODEL_PREFIX(self):
+        if not hasattr(self, "MODEL_PREFIX"):
+            raise NotImplementedError(
+                f"{self.__class__.__name__} model has no `MODEL_PREFIX` attribute"
+            )
+        return self.MODEL_PREFIX
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if not self.lodgement_number:
+            new_lodgement_id = f"{self._MODEL_PREFIX()}{self.pk:06d}"
+            self.lodgement_number = new_lodgement_id
+            self.save()
+
+class LicensingModelVersioned(LicensingModel, RevisionedMixin):
+
+    class Meta:
+        abstract = True
+        app_label = "leaseslicensing"
+
+    @property
+    def lodgement_versions(self):
+        """
+        Returns lodgement data for all commented versions of this model,
+        as well as the the most recent data set.
+        """
+
+        first = Version.objects.get_for_object(self).first()
+        if not first:
+            return []
+        current_revision_id = first.revision_id
+        versions = self.revision_versions().filter(
+            ~Q(revision__comment="") | Q(revision_id=current_revision_id)
+        )
+
+        return self.versions_to_lodgement_dict(versions)
+
+    def versions_to_lodgement_dict(self, versions_qs):
+        """
+        Returns a dictionary of revision id, comment, lodgement number, lodgement sequence,
+        lodgement date for versions queryset of this model to be used in the fronend.
+        """
+
+        rr = []
+        for obj in versions_qs:
+            rr.append(
+                dict(
+                    revision_id=obj.revision_id,
+                    revision_comment=obj.revision.comment.strip(),
+                    lodgement_number=obj.field_dict.get("lodgement_number", None),
+                    lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
+                    lodgement_date=obj.field_dict.get("lodgement_date", None),
+                )
+            )
+
+        return rr
+
+    def revision_versions(self):
+        """
+        Returns all versions of this model
+        """
+
+        return Version.objects.get_for_object(self).select_related("revision")
+
+    def revision_version(self, revision_id):
+        """
+        Returns the version of this model for revision id `revision_id`
+        """
+
+        return self.revision_versions().filter(revision_id=revision_id)[0]

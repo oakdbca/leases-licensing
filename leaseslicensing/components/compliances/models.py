@@ -20,8 +20,8 @@ from leaseslicensing.components.compliances.email import (
 )
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
+    LicensingModelVersioned,
     Document,
-    RevisionedMixin,
     SecureFileField,
     UserAction,
 )
@@ -42,7 +42,7 @@ class ComplianceManager(models.Manager):
         )
 
 
-class Compliance(RevisionedMixin, models.Model):
+class Compliance(LicensingModelVersioned):
     objects = ComplianceManager()
 
     MODEL_PREFIX = "C"
@@ -79,7 +79,6 @@ class Compliance(RevisionedMixin, models.Model):
         (CUSTOMER_STATUS_OVERDUE, "Overdue"),
     )
 
-    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     proposal = models.ForeignKey(
         "leaseslicensing.Proposal", related_name="compliances", on_delete=models.CASCADE
     )
@@ -195,13 +194,6 @@ class Compliance(RevisionedMixin, models.Model):
         if self.proposal.application_type:
             return self.proposal.application_type.name_display
         return None
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if not self.lodgement_number:
-            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
-            self.lodgement_number = new_lodgment_id
-            self.save()
 
     def submit(self, request):
         with transaction.atomic():
@@ -338,9 +330,6 @@ class Compliance(RevisionedMixin, models.Model):
 
     def log_user_action(self, action, request):
         return ComplianceUserAction.log_action(self, action, request.user.id)
-
-    def __str__(self):
-        return self.lodgement_number if self.lodgement_number else f"{self.MODEL_PREFIX}{'?'*6}"
 
 
 def update_proposal_compliance_filename(instance, filename):

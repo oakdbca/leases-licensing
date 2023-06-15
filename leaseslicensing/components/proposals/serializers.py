@@ -1418,8 +1418,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
         Returns all lodgement versions of a proposal, when browsing in debug mode
         """
 
-        data = self.context.get("request").data
-        if data.get("debug", False):
+        query_params = self.context.get("request").query_params
+        if query_params.get("debug", False):
             return obj.versions_to_lodgement_dict(obj.revision_versions())
         else:
             return []

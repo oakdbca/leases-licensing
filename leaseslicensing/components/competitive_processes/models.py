@@ -13,6 +13,7 @@ from leaseslicensing.components.competitive_processes.email import (
 from leaseslicensing.components.main.models import (
     ApplicationType,
     CommunicationsLogEntry,
+    LicensingModelVersioned,
     Document,
     SecureFileField,
     UserAction,
@@ -39,7 +40,7 @@ class CompetitiveProcessManager(models.Manager):
         )
 
 
-class CompetitiveProcess(models.Model):
+class CompetitiveProcess(LicensingModelVersioned):
     """A class to represent a competitive process"""
 
     objects = CompetitiveProcessManager()
@@ -58,7 +59,6 @@ class CompetitiveProcess(models.Model):
         (STATUS_COMPLETED_DECLINED, "Completed (Declined)"),
     )
 
-    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     status = models.CharField(
         "Status",
         max_length=30,
@@ -78,9 +78,6 @@ class CompetitiveProcess(models.Model):
         verbose_name = "Competitive Process"
         verbose_name_plural = "Competitive Processes"
         ordering = ("modified_at",)
-
-    def __str__(self):
-        return self.lodgement_number if self.lodgement_number else f"{self.MODEL_PREFIX}{'?'*6}"
 
     def create_lease_licence_from_competitive_process(self):
         from leaseslicensing.components.proposals.models import Proposal, ProposalType
@@ -116,7 +113,7 @@ class CompetitiveProcess(models.Model):
 
     def discard(self, request):
         self.status = CompetitiveProcess.STATUS_DISCARDED
-        self.save()
+        self.save(version_comment=f"Discarded competitive process {self.pk}")
 
     def complete(self, request):
         if self.winner:
@@ -131,7 +128,7 @@ class CompetitiveProcess(models.Model):
             send_winner_notification(request, self)
         else:
             self.status = CompetitiveProcess.STATUS_COMPLETED_DECLINED
-        self.save()
+        self.save(version_comment=f"Completed competitive process {self.pk}")
 
     def unlock(self, request):
         """Unlock the competitive process and make it available for editing again.
@@ -219,7 +216,7 @@ class CompetitiveProcess(models.Model):
             self.winner_id = None
             self.details = ""
             self.competitive_process_documents.all().delete()
-            self.save()
+            self.save(version_comment=f"Unlocked competitive process {self.pk}")
 
     @property
     def site(self):
@@ -247,12 +244,6 @@ class CompetitiveProcess(models.Model):
         if self.is_assigned:
             return retrieve_email_user(self.assigned_officer_id)
         return None
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if not self.lodgement_number:
-            self.lodgement_number = f"{self.MODEL_PREFIX}{self.pk:06d}"
-            self.save()
 
     def get_related_items(self, **kwargs):
         return_list = []

@@ -43,6 +43,9 @@ class LeasesLicensingConfig(AppConfig):
                 SectionChecklist,
                 ShapefileDocument,
             )
+            from leaseslicensing.components.competitive_processes.models import (
+                CompetitiveProcessParty,
+            )
 
             # main
             reversion.register(ApplicationType, follow=[])
@@ -68,7 +71,14 @@ class LeasesLicensingConfig(AppConfig):
             reversion.register(ProposalType)
             reversion.register(Organisation)
             reversion.register(ProposalDocument)
-            reversion.register(CompetitiveProcess)
+            reversion.register(CompetitiveProcess, follow=["winner"])
+            reversion.register(
+                CompetitiveProcessParty,
+                follow=[
+                    "competitive_process",
+                    "organisation",
+                ],
+            )
             reversion.register(ShapefileDocument, follow=["proposal"])
             reversion.register(AdditionalDocumentType)
             reversion.register(ApplicationFeeDiscount, follow=["proposal"])

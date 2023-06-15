@@ -36,6 +36,7 @@ from leaseslicensing.components.invoicing.models import InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
     ApplicationType,
     CommunicationsLogEntry,
+    LicensingModelVersioned,
     Document,
     RevisionedMixin,
     SecureFileField,
@@ -935,7 +936,7 @@ class ProposalManager(models.Manager):
         )
 
 
-class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
+class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     objects = ProposalManager()
 
     MODEL_PREFIX = "A"
@@ -1043,7 +1044,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         on_delete=models.SET_NULL,
     )
     proxy_applicant = models.IntegerField(null=True, blank=True)  # EmailUserRO
-    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     lodgement_sequence = models.IntegerField(blank=True, default=0)
     lodgement_date = models.DateTimeField(blank=True, null=True)
     submitter = models.IntegerField(null=True)  # EmailUserRO
@@ -1193,19 +1193,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         verbose_name = "Application"
         verbose_name_plural = "Applications"
 
-    def __str__(self):
-        return self.lodgement_number if self.lodgement_number else f"{self.MODEL_PREFIX}{'?'*6}"
-
-    # Append 'P' to Proposal id to generate Lodgement number.
-    # Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)  # Call parent `save` to create a Proposal id
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
-        if not self.lodgement_number:
-            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
-            self.lodgement_number = new_lodgment_id
-            self.save()
+        super().save(*args, **kwargs)
 
     @property
     def submitter_obj(self):
@@ -1396,53 +1387,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             p = p.previous_application
         return history_list
 
-    @property
-    def lodgement_versions(self):
-        """
-        Returns lodgement data for all commented versions of this model,
-        as well as the the most recent data set.
-        """
-
-        current_revision_id = Version.objects.get_for_object(self).first().revision_id
-        versions = self.revision_versions().filter(
-            ~Q(revision__comment="") | Q(revision_id=current_revision_id)
-        )
-
-        return self.versions_to_lodgement_dict(versions)
-
-    def versions_to_lodgement_dict(self, versions_qs):
-        """
-        Returns a dictionary of revision id, comment, lodgement number, lodgement sequence,
-        lodgement date for versions queryset of this model to be used in the fronend.
-        """
-
-        rr = []
-        for obj in versions_qs:
-            rr.append(
-                dict(
-                    revision_id=obj.revision_id,
-                    revision_comment=obj.revision.comment.strip(),
-                    lodgement_number=obj.field_dict.get("lodgement_number", None),
-                    lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
-                    lodgement_date=obj.field_dict.get("lodgement_date", None),
-                )
-            )
-
-        return rr
-
-    def revision_versions(self):
-        """
-        Returns all versions of this model
-        """
-
-        return Version.objects.get_for_object(self).select_related("revision")
-
-    def revision_version(self, revision_id):
-        """
-        Returns the version of this model for revision id `revision_id`
-        """
-
-        return self.revision_versions().filter(revision_id=revision_id)[0]
 
     @property
     def is_assigned(self):

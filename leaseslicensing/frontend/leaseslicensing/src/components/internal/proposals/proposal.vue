@@ -1351,7 +1351,11 @@ export default {
         },
         fetchProposal: async function () {
             let vm = this;
-            fetch(`/api/proposal/${this.$route.params.proposal_id}/`).then(async response => {
+            let payload = {
+                "debug": this.debug
+            }
+            fetch(`/api/proposal/${this.$route.params.proposal_id}?${new URLSearchParams(payload)}`)
+            .then(async response => {
                 if (!response.ok) {
                     const text = await response.json();
                     throw new Error(text);
