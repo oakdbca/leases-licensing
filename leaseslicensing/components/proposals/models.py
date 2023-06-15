@@ -4345,11 +4345,16 @@ class Referral(RevisionedMixin):
         return self.processing_status == "with_referral"
 
 
-class ExternalReferralInvite(RevisionedMixin):
+class ExternalRefereeInvite(RevisionedMixin):
     email = models.EmailField()
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     organisation = models.CharField(max_length=100)
+    invite_email_sent = models.BooleanField(default=False)
+    datetime_first_logged_in = models.DateTimeField(null=True, blank=True)
+    proposal = models.ForeignKey(
+        Proposal, related_name="external_referee_invites", on_delete=models.CASCADE
+    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4358,6 +4363,9 @@ class ExternalReferralInvite(RevisionedMixin):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email}) [{self.organisation}]"
+
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
 
 
 class ProposalRequirement(RevisionedMixin):
