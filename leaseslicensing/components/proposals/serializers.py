@@ -23,6 +23,7 @@ from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentRequest,
     ChecklistQuestion,
+    ExternalRefereeInvite,
     Proposal,
     ProposalAct,
     ProposalApplicantDetails,
@@ -1632,3 +1633,18 @@ class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdditionalDocumentType
         fields = "__all__"
+
+
+class ExternalRefereeInviteSerializer(serializers.ModelSerializer):
+    proposal_id = serializers.IntegerField(required=False)
+
+    class Meta:
+        model = ExternalRefereeInvite
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "organisation",
+            "proposal_id",
+        ]

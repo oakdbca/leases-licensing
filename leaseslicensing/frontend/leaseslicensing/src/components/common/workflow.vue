@@ -130,7 +130,7 @@
                 </div>
             </div>
         </div>
-        <AddExternalReferral ref="AddExternalReferral" :email="external_referral_email" />
+        <AddExternalReferral ref="AddExternalReferral" :proposal_id="proposal.id" :email="external_referral_email" />
     </div>
 </template>
 
@@ -571,7 +571,7 @@ export default {
                 minimumInputLength: 2,
                 "theme": "bootstrap-5",
                 allowClear: true,
-                placeholder: "Search Referrals by Email",
+                placeholder: "Search Referee by Email",
                 ajax: {
                     url: api_endpoints.users + 'get_department_users/',
                     dataType: 'json',
@@ -586,8 +586,8 @@ export default {
                         console.log(`data.results`, data.results)
                         if (Object.keys(data.results).length == 0) {
                             Swal.fire({
-                                title: "No Referrer Found",
-                                text: "Would you like to invite a new external referral to the system?",
+                                title: "No Referee Found",
+                                text: "Would you like to invite a new external referee to the system?",
                                 icon: "warning",
                                 showCancelButton: true,
                                 reverseButtons: true,

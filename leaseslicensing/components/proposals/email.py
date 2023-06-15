@@ -569,6 +569,31 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
 #    return email_entry
 
 
+def send_external_referee_invite_email(external_referee_invite, proposal, request):
+    email = TemplateEmailBase(
+        subject=f"Referral Request for DBCA {proposal.application_type.name_display} Application: {proposal.lodgement_number}",
+        html_template="leaseslicensing/emails/proposals/send_external_referee_invite.html",
+        txt_template="leaseslicensing/emails/proposals/send_external_referee_invite.txt",
+    )
+
+    url = request.build_absolute_uri(reverse("external"))
+    context = {
+        "external_referee_invite": external_referee_invite,
+        "proposal": proposal,
+        "url": url,
+    }
+
+    msg = email.send(
+        external_referee_invite.email,
+        context=context,
+    )
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+    email_entry = _log_proposal_email(msg, proposal, sender=sender)
+
+    external_referee_invite.invite_email_sent = True
+    external_referee_invite.save()
+
+
 def _log_proposal_email(
     email_message, proposal, sender=None, file_bytes=None, filename=None
 ):

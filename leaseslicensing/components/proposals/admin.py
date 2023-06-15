@@ -198,3 +198,8 @@ class RequiredDocumentAdmin(admin.ModelAdmin):
 class GlobalSettingsAdmin(admin.ModelAdmin):
     list_display = ["key", "value"]
     ordering = ("key",)
+
+
+@admin.register(models.ExternalRefereeInvite)
+class ExternalRefereeInviteAdmin(admin.ModelAdmin):
+    pass

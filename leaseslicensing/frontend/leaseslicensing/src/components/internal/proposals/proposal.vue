@@ -404,6 +404,7 @@ import datatable from '@vue-utils/datatable.vue'
 import Requirements from '@/components/internal/proposals/proposal_requirements.vue'
 import ProposedApproval from '@/components/internal/proposals/proposed_issuance.vue'
 import ApprovalScreen from '@/components/internal/proposals/proposal_approval.vue'
+import ErrorRenderer from '@common-utils/ErrorRenderer.vue'
 import CommsLogs from '@common-utils/comms_logs.vue'
 import Submission from '@common-utils/submission.vue'
 import Workflow from '@common-utils/workflow.vue'
@@ -502,8 +503,6 @@ export default {
         }
     },
     components: {
-        //ProposalDisturbance,
-        //ProposalApiary,
         datatable,
         ProposedDecline,
         AmendmentRequest,
@@ -513,14 +512,12 @@ export default {
         CommsLogs,
         Submission,
         Workflow,
-        //MoreReferrals,
-        //NewApply,
-        //MapLocations,
         ApplicationForm,
         FormSection,
         CollapsibleQuestions,
         ChecklistQuestion,
         TableRelatedItems,
+        ErrorRenderer,
     },
     props: {
         proposalId: {

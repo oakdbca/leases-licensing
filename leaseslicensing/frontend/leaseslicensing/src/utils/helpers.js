@@ -37,7 +37,6 @@ module.exports = {
         }
         return response;
     },
-
     formatError: function (err) {
         let returnStr = '';
         // object {}

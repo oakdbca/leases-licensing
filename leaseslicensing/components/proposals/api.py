@@ -36,11 +36,13 @@ from leaseslicensing.components.main.models import ApplicationType, RequiredDocu
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
+from leaseslicensing.components.proposals.email import send_external_referee_invite_email
 from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentReason,
     AmendmentRequest,
     ChecklistQuestion,
+    ExternalRefereeInvite,
     Proposal,
     ProposalAssessment,
     ProposalAssessmentAnswer,
@@ -60,6 +62,7 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     AmendmentRequestSerializer,
     ChecklistQuestionSerializer,
     CreateProposalSerializer,
+    ExternalRefereeInviteSerializer,
     DTReferralSerializer,
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
@@ -571,7 +574,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         proposal_ids = [
             int(id) for id in request.query_params.get("proposal_ids", "").
             split(",") if id.lstrip("-").isnumeric()
-            ]
+        ]
         application_type = request.query_params.get("application_type", None)
         processing_status = request.query_params.get("processing_status", None)
 
@@ -1849,6 +1852,26 @@ class ProposalViewSet(UserActionLoggingViewset):
         instance = self.get_object()
         save_proponent_data(instance, request, self)
         # return redirect(reverse('external'))
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def external_referee_invite(self, request, *args, **kwargs):
+        instance = self.get_object()
+        logger.debug(request.data)
+        request.data["proposal_id"] = instance.id
+        serializer = ExternalRefereeInviteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if ExternalRefereeInvite.objects.filter(
+            email=request.data["email"]
+        ).exists():
+            raise serializers.ValidationError(
+                "An invitation has already been sent to this email address"
+            )
+        external_referee_invite = ExternalRefereeInvite.objects.create(**request.data)
+        send_external_referee_invite_email(external_referee_invite, instance, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 

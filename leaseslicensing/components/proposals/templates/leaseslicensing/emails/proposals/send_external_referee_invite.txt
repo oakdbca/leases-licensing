@@ -1,0 +1,18 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{% block greetings %}
+    Dear {{ external_referee_invite.full_name}},
+{% endblock %}
+
+{%  block content %}
+    You have been invited to complete referral for DBCA {{proposal.application_type.name_display}} application: <strong>{{proposal.lodgement_number}}</strong>.
+
+    Comments: {{comments}}
+
+    In order to submit your comments regarding the application you will need to create an account with
+    our system. (If you already have an account with us you can simply log in as usual).
+
+    When you register and log in you will be able to see any applications that have been referred to you.
+
+    <a href="{{ url }}">Click here to register and log in</a>
+{%  endblock %}
