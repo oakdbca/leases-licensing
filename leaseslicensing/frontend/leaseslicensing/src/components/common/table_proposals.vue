@@ -2,7 +2,7 @@
     <div>
         <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
             class="mb-2">
-            <div class="row">
+            <div class="row mt-1 p-2">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Type</label>
