@@ -534,7 +534,7 @@ def save_referral_data(proposal, request, referral_completed=False):
                                 answer_obj = _save_answer_dict(answer_dict)
                                 # Not yet sure what the intention for answer_ob is
                                 # but just printing as it wasn't accessed.
-                                print(answer_obj)
+                                logger.debug(answer_obj)
                     if referral_completed:
                         # Make this assessment completed
                         # TODO Why is `assessment` reassigned here?
@@ -577,7 +577,7 @@ def save_assessor_data(proposal, request, viewset):
                     for answer_dict in answers:
                         answer_obj = _save_answer_dict(answer_dict)
                         # Not yet sure what the intention for answer_ob is but just printing as it wasn't accessed.
-                        print(answer_obj)
+                        logger.debug(answer_obj)
         # Save geometry
         save_geometry(proposal, request)
         populate_gis_data(proposal)
