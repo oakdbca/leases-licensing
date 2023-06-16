@@ -50,28 +50,31 @@
                             <template v-slot:slot_map_checklist_questions>
                                 <CollapsibleQuestions component_title="Comments" ref="collapsible_map_comments"
                                     @created="collapsible_map_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_map">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control" v-model="assessment.assessor_comment_map"
+                                                        id="assessor_comment_map" :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_map">Assessor Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.assessor_comment_map"
-                                                id="assessor_comment_map" :readonly="!canEditComments" />
+                                        <div class="row mb-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_map"
+                                                        id="deficiency_comment_map" :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_map">Deficiency Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_map">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.deficiency_comment_map"
-                                                id="deficiency_comment_map" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-
                                 </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_map_checklist_questions"
+                                <CollapsibleQuestions
+                                    v-if="assessment_for_assessor_map.length > 0 && assessments_for_referrals_map.length > 0"
+                                    component_title="Checklist Questions" ref="collapsible_map_checklist_questions"
                                     @created="collapsible_map_checklist_questions_component_mounted" class="mb-2">
                                     <template v-if="assessment_for_assessor_map.length > 0">
                                         <div class="assessment_title">Assessor</div>
@@ -95,34 +98,42 @@
                             <template v-slot:slot_proposal_details_checklist_questions>
                                 <CollapsibleQuestions component_title="Comments" ref="collapsible_proposal_details_comments"
                                     @created="collapsible_proposal_details_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_proposal_details">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.assessor_comment_proposal_details"
+                                                        id="assessor_comment_proposal_details"
+                                                        :readonly="!canEditComments" />
+                                                    <label for="assessor_comment_proposal_details">Assessor Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.assessor_comment_proposal_details"
-                                                id="assessor_comment_proposal_details" :readonly="!canEditComments" />
+
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_proposal_details"
+                                                        id="deficiency_comment_proposal_details"
+                                                        :readonly="!canEditComments" />
+                                                    <label for="deficiency_comment_proposal_details">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_proposal_details">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.deficiency_comment_proposal_details"
-                                                id="deficiency_comment_proposal_details" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="referrer_comment_proposal_details">Referrer Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.referrer_comment_proposal_details"
-                                                id="referrer_comment_proposal_details" />
+
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.referrer_comment_proposal_details"
+                                                        id="referrer_comment_proposal_details"
+                                                        :readonly="!canEditComments" />
+                                                    <label for="referrer_comment_proposal_details">Referrer Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </CollapsibleQuestions>
@@ -152,7 +163,7 @@
                                 <CollapsibleQuestions component_title="Comments" ref="collapsible_proposal_impact_comments"
                                     @created="collapsible_proposal_impact_comments_component_mounted" class="mb-2">
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="assessor_comment_proposal_impact">Assessor Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -162,7 +173,7 @@
                                         </div>
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="deficiency_comment_proposal_impact">Deficiency Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -199,7 +210,7 @@
                                 <CollapsibleQuestions component_title="Comments" ref="collapsible_other_comments"
                                     @created="collapsible_other_comments_component_mounted" class="mb-2">
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="assessor_comment_other">Assessor Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -208,7 +219,7 @@
                                         </div>
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="deficiency_comment_other">Deficiency Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -244,7 +255,7 @@
                                 <CollapsibleQuestions component_title="Comments" ref="collapsible_deed_poll_comments"
                                     @created="collapsible_deed_poll_comments_component_mounted" class="mb-2">
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="assessor_comment_deed_poll">Assessor Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -253,7 +264,7 @@
                                         </div>
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="deficiency_comment_deed_poll">Deficiency Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -290,7 +301,7 @@
                                     ref="collapsible_additional_documents_comments"
                                     @created="collapsible_additional_documents_comments_component_mounted" class="mb-2">
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="assessor_comment_additional_documents">Assessor Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -300,7 +311,7 @@
                                         </div>
                                     </div>
                                     <div class="row">
-                                        <div class="col-md-2">
+                                        <div class="col-md-4">
                                             <label for="deficiency_comment_additional_documents">Deficiency Comment</label>
                                         </div>
                                         <div class="col-md-8">
@@ -395,9 +406,6 @@
 </template>
 
 <script>
-//import ProposalDisturbance from '../../form.vue'
-//import ProposalApiary from '@/components/form_apiary.vue'
-//import NewApply from '../../external/proposal_apply_new.vue'
 import ProposedDecline from '@/components/internal/proposals/proposal_proposed_decline.vue'
 import AmendmentRequest from '@/components/internal/proposals/amendment_request.vue'
 import datatable from '@vue-utils/datatable.vue'
@@ -844,24 +852,13 @@ export default {
             );
         },
         canAssess: function () {
-            return true  // TODO: Implement correctly.  May not be needed though
-
-            //return this.proposal && this.proposal.assessor_mode.assessor_can_assess ? true : false;
+            return this.proposal && this.proposal.assessor_mode.assessor_can_assess;
         },
         hasAssessorMode: function () {
             return this.proposal && this.proposal.assessor_mode.has_assessor_mode ? true : false;
         },
         canAction: function () {
-
-            // For now returning true when viewing the current version of the Proposal
-            return this.on_current_revision;  // TODO: implement this.  This is just temporary solution
-
-            //if (this.proposal.processing_status == 'With Approver'){
-            //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_approver || this.proposal.assigned_approver == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //}
-            //else{
-            //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_officer || this.proposal.assigned_officer == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //}
+            return this.proposal.assessor_mode.assessor_can_assess;
         },
         canLimitedAction: function () {
 
