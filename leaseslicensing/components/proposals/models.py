@@ -1273,6 +1273,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             email_user = retrieve_email_user(self.ind_applicant)
         elif self.proxy_applicant:
             email_user = retrieve_email_user(self.proxy_applicant)
+        elif self.submitter:
+            email_user = retrieve_email_user(self.submitter)
         else:
             logger.error(
                 f"Applicant for the proposal {self.lodgement_number} not found"
@@ -1498,7 +1500,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def latest_referrals(self):
         referrals = self.referrals
         for referral in referrals.all():
-            print(referral)
+            logger.debug(referral)
         return referrals.all()[:3]
 
     @property
@@ -1655,18 +1657,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         Returns whether `user` is a referrer for this proposal
         """
 
-        if self.processing_status in [
+        return self.processing_status in [
             Referral.PROCESSING_STATUS_WITH_REFERRAL,
             Referral.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
-        ]:
-            # Get this proposal's referral where the requesting user is the referrer
-            try:
-                Referral.objects.get(proposal=self, referral=user.id)
-            except Referral.DoesNotExist:
-                logger.debug("Referral does not exist")
-                return False
-
-            return True
+        ] and Referral.objects.filter(proposal=self, referral=user.id).exists()
 
     def referrer_can_edit_referral(self, user):
         """
@@ -1901,85 +1895,81 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def send_referral(self, request, referral_email, referral_text):
         with transaction.atomic():
-            try:
-                referral_email = referral_email.lower()
-                if (
-                    self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                    or self.processing_status
-                    == Proposal.PROCESSING_STATUS_WITH_REFERRAL
-                ):
-                    self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
-                    self.save()
+            referral_email = referral_email.lower()
+            if (
+                self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                or self.processing_status
+                == Proposal.PROCESSING_STATUS_WITH_REFERRAL
+            ):
+                self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
+                self.save()
 
-                    # Check if the user is in ledger
-                    try:
-                        user = EmailUser.objects.get(email__icontains=referral_email)
-                    except EmailUser.DoesNotExist:
-                        # Validate if it is a deparment user
-                        department_user = get_department_user(referral_email)
-                        if not department_user:
-                            raise ValidationError(
-                                "The user you want to send the referral to is not a member of the department"
-                            )
-                        # Check if the user is in ledger or create
-
-                        user, created = EmailUser.objects.get_or_create(
-                            email=department_user["email"].lower()
-                        )
-                        if created:
-                            user.first_name = department_user["given_name"]
-                            user.last_name = department_user["surname"]
-                            user.save()
-
-                    referral = None
-                    try:
-                        referral = Referral.objects.get(referral=user.id, proposal=self)
+                # Check if the user is in ledger
+                try:
+                    user = EmailUser.objects.get(email__icontains=referral_email)
+                except EmailUser.DoesNotExist:
+                    # Validate if it is a deparment user
+                    department_user = get_department_user(referral_email)
+                    if not department_user:
                         raise ValidationError(
-                            "A referral has already been sent to this user"
+                            "The user you want to send the referral to is not a member of the department"
                         )
-                    except Referral.DoesNotExist:
-                        # Create Referral
-                        referral = Referral.objects.create(
-                            proposal=self,
-                            referral=user.id,
-                            sent_by=request.user.id,
-                            text=referral_text,
-                            assigned_officer=request.user.id,
-                        )
-                        # Create answers for this referral
-                        self.make_questions_ready(referral)
+                    # Check if the user is in ledger or create
 
-                    # Create a log entry for the proposal
-                    self.log_user_action(
-                        ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                            referral.id,
-                            self.lodgement_number,
-                            f"{user.get_full_name()}({user.email})",
-                        ),
-                        request,
+                    user, created = EmailUser.objects.get_or_create(
+                        email=department_user["email"].lower()
                     )
-                    # Create a log entry for the organisation
-                    if self.applicant:
-                        pass
-                        # TODO: implement logging to ledger/application???
-                        # self.applicant.log_user_action(
-                        #    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                        #        referral.id, self.lodgement_number, '{}({})'.format(user.get_full_name(), user.email)
-                        #    ), request
-                        # )
-                    # send email
-                    send_referral_email_notification(
-                        referral,
-                        [
-                            user.email,
-                        ],
-                        request,
+                    if created:
+                        user.first_name = department_user["given_name"]
+                        user.last_name = department_user["surname"]
+                        user.save()
+
+                referral = None
+                try:
+                    referral = Referral.objects.get(referral=user.id, proposal=self)
+                    raise ValidationError(
+                        "A referral has already been sent to this user"
                     )
-                else:
-                    raise exceptions.ProposalReferralCannotBeSent()
-            except Exception as e:
-                logger.exception(e)
-                raise e
+                except Referral.DoesNotExist:
+                    # Create Referral
+                    referral = Referral.objects.create(
+                        proposal=self,
+                        referral=user.id,
+                        sent_by=request.user.id,
+                        text=referral_text,
+                        assigned_officer=request.user.id,
+                    )
+                    # Create answers for this referral
+                    self.make_questions_ready(referral)
+
+                # Create a log entry for the proposal
+                self.log_user_action(
+                    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                        referral.id,
+                        self.lodgement_number,
+                        f"{user.get_full_name()}({user.email})",
+                    ),
+                    request,
+                )
+                # Create a log entry for the organisation
+                if self.applicant:
+                    pass
+                    # TODO: implement logging to ledger/application???
+                    # self.applicant.log_user_action(
+                    #    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                    #        referral.id, self.lodgement_number, '{}({})'.format(user.get_full_name(), user.email)
+                    #    ), request
+                    # )
+                # send email
+                send_referral_email_notification(
+                    referral,
+                    [
+                        user.email,
+                    ],
+                    request,
+                )
+            else:
+                raise exceptions.ProposalReferralCannotBeSent()
 
     def assign_officer(self, request, officer):
         with transaction.atomic():
@@ -4037,16 +4027,15 @@ class Referral(RevisionedMixin):
                 raise exceptions.ProposalNotAuthorized()
             self.processing_status = Referral.PROCESSING_STATUS_RECALLED
             self.save()
-            # TODO Log proposal action
+
+            # Log an action for the proposal
             self.proposal.log_user_action(
                 ProposalUserAction.RECALL_REFERRAL.format(self.id, self.proposal.id),
                 request,
             )
-            # TODO log organisation action
-            applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-            applicant_field = retrieve_email_user(applicant_field)
-            # TODO: implement logging
-            # applicant_field.log_user_action(ProposalUserAction.RECALL_REFERRAL.format(self.id,self.proposal.id),request)
+
+            # Log an action for the applicant
+            self.proposal.applicant.log_user_action(ProposalUserAction.RECALL_REFERRAL.format(self.id,self.proposal.id),request)
 
     @property
     def referral_as_email_user(self):
@@ -4056,9 +4045,8 @@ class Referral(RevisionedMixin):
         with transaction.atomic():
             if not self.proposal.can_assess(request.user):
                 raise exceptions.ProposalNotAuthorized()
+
             # Create a log entry for the proposal
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_REMIND_REFERRAL.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_REMIND_REFERRAL.format(self.id,self.proposal.id,'{}'.format(self.referral_group.name)),request)
             self.proposal.log_user_action(
                 ProposalUserAction.ACTION_REMIND_REFERRAL.format(
                     self.id,
@@ -4067,21 +4055,15 @@ class Referral(RevisionedMixin):
                 ),
                 request,
             )
-            # Create a log entry for the organisation
-            applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-            applicant_field = retrieve_email_user(applicant_field)
-            # applicant_field.log_user_action(ProposalUserAction.ACTION_REMIND_REFERRAL.format(self.id,self.proposal.id,'{}'.format(self.referral_group.name)),request)
 
-            # TODO: logging applicant_field
-            # applicant_field.log_user_action(
-            #     ProposalUserAction.ACTION_REMIND_REFERRAL.format(
-            #         self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
-            #         ), request
-            #     )
+            # Create a log entry for the applicant
+            self.proposal.applicant.log_user_action(
+                ProposalUserAction.ACTION_REMIND_REFERRAL.format(
+                    self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
+                ), request
+            )
 
             # send email
-            # recipients = self.referral_group.members_list
-            # send_referral_email_notification(self,recipients,request,reminder=True)
             send_referral_email_notification(
                 self,
                 [
@@ -4107,9 +4089,8 @@ class Referral(RevisionedMixin):
             self.proposal.save()
             self.sent_from = 1
             self.save()
+
             # Create a log entry for the proposal
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(self.id,self.proposal.id,'{}'.format(self.referral_group.name)),request)
             self.proposal.log_user_action(
                 ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
                     self.id,
@@ -4118,21 +4099,17 @@ class Referral(RevisionedMixin):
                 ),
                 request,
             )
-            # Create a log entry for the organisation
-            # self.proposal.applicant.log_user_action(ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-            applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-            applicant_field = retrieve_email_user(applicant_field)
 
-            # TODO: logging applicant_field
-            # applicant_field.log_user_action(
-            #     ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
-            #         self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
-            #         ), request
-            #     )
+            # Create a log entry for the applicant
+            self.proposal.applicant.log_user_action(
+                ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
+                    self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
+                ), request
+            )
 
             # send email
             # recipients = self.referral_group.members_list
-            # send_referral_email_notification(self,recipients,request)
+            # ~leaving the comment above here in case we need to send to the whole group
             send_referral_email_notification(
                 self,
                 [
@@ -4350,7 +4327,7 @@ class ExternalRefereeInvite(RevisionedMixin):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     organisation = models.CharField(max_length=100)
-    invite_email_sent = models.BooleanField(default=False)
+    datetime_sent = models.DateTimeField(null=True, blank=True)
     datetime_first_logged_in = models.DateTimeField(null=True, blank=True)
     proposal = models.ForeignKey(
         Proposal, related_name="external_referee_invites", on_delete=models.CASCADE
@@ -4483,13 +4460,13 @@ class ProposalRequirement(RevisionedMixin):
 
     def swap(self, other):
         new_self_position = other.req_order
-        print(self.id)
-        print("new_self_position")
-        print(new_self_position)
+        logger.debug(self.id)
+        logger.debug("new_self_position")
+        logger.debug(new_self_position)
         new_other_position = self.req_order
-        print(other.id)
-        print("new_other_position")
-        print(new_other_position)
+        logger.debug(other.id)
+        logger.debug("new_other_position")
+        logger.debug(new_other_position)
         # null out both values to prevent a db constraint error on save()
         self.req_order = None
         self.save()
@@ -4860,42 +4837,42 @@ def duplicate_object(self):
     # Iterate through all the fields in the parent object looking for related fields
     for field in self._meta.get_fields():
         if field.name in ["proposal", "approval"]:
-            print("Continuing ...")
+            logger.debug("Continuing ...")
             pass
         elif field.one_to_many:
             # One to many fields are backward relationships where many child objects are related to the
             # parent (i.e. SelectedPhrases). Enumerate them and save a list so we can copy them after
             # duplicating our parent object.
-            print(f"Found a one-to-many field: {field.name}")
+            logger.debug(f"Found a one-to-many field: {field.name}")
 
             # 'field' is a ManyToOneRel which is not iterable, we need to get the object attribute itself
             related_object_manager = getattr(self, field.name)
             related_objects = list(related_object_manager.all())
             if related_objects:
-                print(" - {len(related_objects)} related objects to copy")
+                logger.debug(" - {len(related_objects)} related objects to copy")
                 related_objects_to_copy += related_objects
 
         elif field.many_to_one:
             # In testing so far, these relationships are preserved when the parent object is copied,
             # so they don't need to be copied separately.
-            print(f"Found a many-to-one field: {field.name}")
+            logger.debug(f"Found a many-to-one field: {field.name}")
 
         elif field.many_to_many:
             # Many to many fields are relationships where many parent objects can be related to many
             # child objects. Because of this the child objects don't need to be copied when we copy
             # the parent, we just need to re-create the relationship to them on the copied parent.
-            print(f"Found a many-to-many field: {field.name}")
+            logger.debug(f"Found a many-to-many field: {field.name}")
             related_object_manager = getattr(self, field.name)
             relations = list(related_object_manager.all())
             if relations:
-                print(f" - {len(relations)} relations to set")
+                logger.debug(f" - {len(relations)} relations to set")
                 relations_to_set[field.name] = relations
 
     # Duplicate the parent object
     self.pk = None
     self.lodgement_number = ""
     self.save()
-    print(f"Copied parent object {str(self)}")
+    logger.debug(f"Copied parent object {str(self)}")
 
     # Copy the one-to-many child objects and relate them to the copied parent
     for related_object in related_objects_to_copy:
@@ -4913,7 +4890,7 @@ def duplicate_object(self):
                 #    related_object.lodgement_number = ''
 
                 setattr(related_object, related_object_field.name, self)
-                print(related_object_field)
+                logger.debug(related_object_field)
                 try:
                     related_object.save()
                 except Exception as e:
@@ -4921,7 +4898,7 @@ def duplicate_object(self):
 
                 text = str(related_object)
                 text = (text[:40] + "..") if len(text) > 40 else text
-                print(f"|- Copied child object {text}")
+                logger.debug(f"|- Copied child object {text}")
 
     # Set the many-to-many relations on the copied parent
     for field_name, relations in relations_to_set.items():
@@ -4931,7 +4908,7 @@ def duplicate_object(self):
         text_relations = []
         for relation in relations:
             text_relations.append(str(relation))
-        print(
+        logger.debug(
             "|- Set {} many-to-many relations on {} {}".format(
                 len(relations), field_name, text_relations
             )
