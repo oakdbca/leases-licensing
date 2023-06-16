@@ -10,4 +10,4 @@ class DetailsText(models.Model):
         verbose_name_plural = "Details Texts"
 
     def __str__(self):
-        return self.body
+        return self.target.replace("-", " ").replace("_", " ")

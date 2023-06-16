@@ -43,6 +43,10 @@ export default {
     watch: {
         detailsText: function () {
             // Parent component can subscribe this event in order to update text
+            if (this.proposalData == this.detailsText) {
+                // Only emit if the text was changed through input, not through the parent component
+                return;
+            }
             this.$emit('textChanged', this.detailsText)
         }
     },

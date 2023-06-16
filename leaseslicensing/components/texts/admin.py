@@ -1,8 +1,35 @@
 from django.contrib import admin
+from django import forms
+
 from leaseslicensing.components.texts.models import (
     DetailsText,
 )
 
+
+class DetailsTextForm(forms.ModelForm):
+    body = forms.CharField(widget=forms.Textarea)
+    target = forms.CharField(widget=forms.TextInput(attrs={"readonly": True}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields[
+            "target"
+        ].help_text = "The HTML target id of this text's detail text field"
+        self.fields["target"].widget.attrs["style"] = "width:400px; height:20px;"
+        self.fields[
+            "body"
+        ].help_text = "The standard text to be used on an empty text field"
+        self.fields["body"].widget.attrs["style"] = "width:400px; height:200px;"
+
+
 @admin.register(DetailsText)
 class DetailsTextsAdmin(admin.ModelAdmin):
-    list_display = ["target", "body"]
+    fields = (
+        "target",
+        "body",
+    )
+    list_display = ("target", "body")
+    list_filter = ("target",)
+
+    form = DetailsTextForm

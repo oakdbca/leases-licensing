@@ -25,8 +25,9 @@
                                 <div class="col-sm-9">
                                     <RichText
                                         :proposalData="proposedDecisionDetails"
+                                        placeholder_text="Add some details here"
                                         ref="registration_of_interest_details"
-                                        id="registration_of_interest_details_approve"
+                                        id="registration-of-interest-details-approve"
                                         :can_view_richtext_src=true
                                         :key="uuid"
                                         v-model="proposedDecisionDetails" @textChanged="updateProposedDecisionDetails"
@@ -113,8 +114,9 @@
                                 <div class="col-sm-9">
                                     <RichText
                                     :proposalData="proposedDecisionDetails"
+                                    placeholder_text="Add some details here"
                                     ref="lease_licence_details"
-                                    id="lease_licence_details_approve"
+                                    id="lease-licence-details-approve"
                                     :can_view_richtext_src=true
                                     :key="uuid"
                                     :placeholder_text="selectedApprovalTypeDetailsPlaceholder"

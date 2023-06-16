@@ -16,8 +16,9 @@
                                     <div class="col-sm-9">
                                         <RichText
                                         :proposalData="proposedDecisionDetails"
+                                        placeholder_text="Add some details here"
                                         ref="decline_reason"
-                                        :id="proposal.application_type.name=='lease_licence'?'lease_licence_details_decline':'registration_of_interest_details_decline'"
+                                        :id="proposal.application_type.name=='lease_licence'?'lease-licence-details-decline':'registration-of-interest-details-decline'"
                                         :can_view_richtext_src=true
                                         :key="uuid"
                                         />
