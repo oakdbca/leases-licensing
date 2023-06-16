@@ -13,6 +13,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.urls import reverse
 from django.utils.decorators import method_decorator
+from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_page
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
@@ -1063,21 +1064,12 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def action_log(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.action_logs.all()
-            serializer = ProposalUserActionSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.action_logs.all()
+        serializer = ProposalUserActionSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1085,21 +1077,12 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.comms_logs.all()
-            serializer = ProposalLogEntrySerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.comms_logs.all()
+        serializer = ProposalLogEntrySerializer(qs, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1108,40 +1091,27 @@ class ProposalViewSet(UserActionLoggingViewset):
         detail=True,
     )
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
-        print("request.data")
-        print(request.data)
-        print("request.FILES")
-        print(request.FILES)
-        try:
-            with transaction.atomic():
-                instance = self.get_object()
-                mutable = request.data._mutable
-                request.data._mutable = True
-                request.data["proposal"] = f"{instance.id}"
-                request.data["staff"] = f"{request.user.id}"
-                request.data._mutable = mutable
-                serializer = ProposalLogEntrySerializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                comms = serializer.save()
+        with transaction.atomic():
+            instance = self.get_object()
+            mutable = request.data._mutable
+            request.data._mutable = True
+            request.data["proposal"] = f"{instance.id}"
+            request.data["staff"] = f"{request.user.id}"
+            request.data._mutable = mutable
+            serializer = ProposalLogEntrySerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            comms = serializer.save()
 
-                # Save the files
-                for f in request.FILES.getlist("files"):
-                    document = comms.documents.create()
-                    document.name = str(f)
-                    document._file = f
-                    document.save()
+            # Save the files
+            for f in request.FILES.getlist("files"):
+                document = comms.documents.create()
+                document.name = str(f)
+                document._file = f
+                document.save()
 
-                return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            return Response(serializer.data)
 
     @detail_route(
         methods=["POST"],
@@ -1197,25 +1167,14 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def requirements(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            # qs = instance.requirements.all()
-            qs = instance.requirements.all().exclude(is_deleted=True)
-            # qs=qs.order_by('order')
-            serializer = ProposalRequirementSerializer(
-                qs, many=True, context={"request": request}
-            )
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.requirements.all().exclude(is_deleted=True)
+        serializer = ProposalRequirementSerializer(
+            qs, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1223,22 +1182,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def amendment_request(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.amendment_requests
-            qs = qs.filter(status="requested")
-            serializer = AmendmentRequestDisplaySerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.amendment_requests
+        qs = qs.filter(status="requested")
+        serializer = AmendmentRequestDisplaySerializer(qs, many=True)
+        return Response(serializer.data)
 
     @list_route(
         methods=[
@@ -1298,107 +1248,94 @@ class ProposalViewSet(UserActionLoggingViewset):
     # Documents on Activities(land)and Activities(Marine) tab for T-Class related to required document questions
     @detail_route(methods=["POST"], detail=True)
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_required_document(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            action = request.POST.get("action")
-            section = request.POST.get("input_name")
-            required_doc_id = request.POST.get("required_doc_id")
-            if action == "list" and "required_doc_id" in request.POST:
-                pass
+        instance = self.get_object()
+        action = request.POST.get("action")
+        section = request.POST.get("input_name")
+        required_doc_id = request.POST.get("required_doc_id")
+        if action == "list" and "required_doc_id" in request.POST:
+            pass
 
-            elif action == "delete" and "document_id" in request.POST:
-                document_id = request.POST.get("document_id")
-                document = instance.required_documents.get(id=document_id)
+        elif action == "delete" and "document_id" in request.POST:
+            document_id = request.POST.get("document_id")
+            document = instance.required_documents.get(id=document_id)
 
-                if (
-                    document._file
-                    and os.path.isfile(document._file.path)
-                    and document.can_delete
-                ):
-                    os.remove(document._file.path)
-
-                document.delete()
-                instance.save(
-                    version_comment="Required document File Deleted: {}".format(
-                        document.name
-                    )
-                )  # to allow revision to be added to reversion history
-                # instance.current_proposal.save(version_comment='File Deleted:
-                # {}'.format(document.name)) # to allow revision to be added to reversion history
-
-            elif action == "hide" and "document_id" in request.POST:
-                document_id = request.POST.get("document_id")
-                document = instance.required_documents.get(id=document_id)
-
-                document.hidden = True
-                document.save()
-                instance.save(
-                    version_comment=f"File hidden: {document.name}"
-                )  # to allow revision to be added to reversion history
-
-            elif (
-                action == "save"
-                and "input_name"
-                and "required_doc_id" in request.POST
-                and "filename" in request.POST
+            if (
+                document._file
+                and os.path.isfile(document._file.path)
+                and document.can_delete
             ):
-                proposal_id = request.POST.get("proposal_id")
-                filename = request.POST.get("filename")
-                _file = request.POST.get("_file")
-                if not _file:
-                    _file = request.FILES.get("_file")
+                os.remove(document._file.path)
 
-                required_doc_instance = RequiredDocument.objects.get(id=required_doc_id)
-                document = instance.required_documents.get_or_create(
-                    input_name=section,
-                    name=filename,
-                    required_doc=required_doc_instance,
-                )[0]
-                path = default_storage.save(
-                    "{}/proposals/{}/required_documents/{}".format(
-                        settings.MEDIA_APP_DIR, proposal_id, filename
-                    ),
-                    ContentFile(_file.read()),
+            document.delete()
+            instance.save(
+                version_comment="Required document File Deleted: {}".format(
+                    document.name
                 )
+            )  # to allow revision to be added to reversion history
+            # instance.current_proposal.save(version_comment='File Deleted:
+            # {}'.format(document.name)) # to allow revision to be added to reversion history
 
-                document._file = path
-                document.save()
-                instance.save(
-                    version_comment=f"File Added: {filename}"
-                )  # to allow revision to be added to reversion history
-                # instance.current_proposal.save(version_comment='File Added: {}'
-                # .format(filename)) # to allow revision to be added to reversion history
+        elif action == "hide" and "document_id" in request.POST:
+            document_id = request.POST.get("document_id")
+            document = instance.required_documents.get(id=document_id)
 
-            return Response(
-                [
-                    dict(
-                        input_name=d.input_name,
-                        name=d.name,
-                        file=d._file.url,
-                        id=d.id,
-                        can_delete=d.can_delete,
-                        can_hide=d.can_hide,
-                    )
-                    for d in instance.required_documents.filter(
-                        required_doc=required_doc_id, hidden=False
-                    )
-                    if d._file
-                ]
+            document.hidden = True
+            document.save()
+            instance.save(
+                version_comment=f"File hidden: {document.name}"
+            )  # to allow revision to be added to reversion history
+
+        elif (
+            action == "save"
+            and "input_name"
+            and "required_doc_id" in request.POST
+            and "filename" in request.POST
+        ):
+            proposal_id = request.POST.get("proposal_id")
+            filename = request.POST.get("filename")
+            _file = request.POST.get("_file")
+            if not _file:
+                _file = request.FILES.get("_file")
+
+            required_doc_instance = RequiredDocument.objects.get(id=required_doc_id)
+            document = instance.required_documents.get_or_create(
+                input_name=section,
+                name=filename,
+                required_doc=required_doc_instance,
+            )[0]
+            path = default_storage.save(
+                "{}/proposals/{}/required_documents/{}".format(
+                    settings.MEDIA_APP_DIR, proposal_id, filename
+                ),
+                ContentFile(_file.read()),
             )
 
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            document._file = path
+            document.save()
+            instance.save(
+                version_comment=f"File Added: {filename}"
+            )  # to allow revision to be added to reversion history
+            # instance.current_proposal.save(version_comment='File Added: {}'
+            # .format(filename)) # to allow revision to be added to reversion history
+
+        return Response(
+            [
+                dict(
+                    input_name=d.input_name,
+                    name=d.name,
+                    file=d._file.url,
+                    id=d.id,
+                    can_delete=d.can_delete,
+                    can_hide=d.can_hide,
+                )
+                for d in instance.required_documents.filter(
+                    required_doc=required_doc_id, hidden=False
+                )
+                if d._file
+            ]
+        )
 
     @detail_route(
         methods=["GET", "POST"],
@@ -1411,49 +1348,25 @@ class ProposalViewSet(UserActionLoggingViewset):
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def submit(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            save_proponent_data(instance, request, self)
-            # return redirect(reverse('external'))
-            instance = proposal_submit(instance, request)
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        save_proponent_data(instance, request, self)
+        instance = proposal_submit(instance, request)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def validate_map_files(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            valid_geometry_saved = instance.validate_map_files(request)
-            instance.save()
-            if valid_geometry_saved:
-                populate_gis_data(instance)
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-            # return redirect(reverse('external'))
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            from leaseslicensing.components.main.utils import handle_validation_error
-
-            handle_validation_error(e)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        valid_geometry_saved = instance.validate_map_files(request)
+        instance.save()
+        if valid_geometry_saved:
+            populate_gis_data(instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1461,23 +1374,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def assign_request_user(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.assign_officer(request, request.user)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.get_serializer_class()
-            serializer = serializer_class(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.assign_officer(request, request.user)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1485,33 +1388,24 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def assign_to(self, request, *args, **kwargs):
+        instance = self.get_object()
+        user_id = request.data.get("assessor_id", None)
+        user = None
+        if not user_id:
+            raise serializers.ValidationError("An assessor id is required")
         try:
-            instance = self.get_object()
-            user_id = request.data.get("assessor_id", None)
-            user = None
-            if not user_id:
-                raise serializers.ValidationError("An assessor id is required")
-            try:
-                user = EmailUser.objects.get(id=user_id)
-            except EmailUser.DoesNotExist:
-                raise serializers.ValidationError(
-                    "A user with the id passed in does not exist"
-                )
-            instance.assign_officer(request, user)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.get_serializer_class()
-            serializer = serializer_class(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            user = EmailUser.objects.get(id=user_id)
+        except EmailUser.DoesNotExist:
+            raise serializers.ValidationError(
+                "A user with the id passed in does not exist"
+            )
+        instance.assign_officer(request, user)
+        # serializer = InternalProposalSerializer(instance,context={'request':request})
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1519,23 +1413,14 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def unassign(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.unassign(request)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.get_serializer_class()
-            serializer = serializer_class(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.unassign(request)
+        # serializer = InternalProposalSerializer(instance,context={'request':request})
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1543,40 +1428,28 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def switch_status(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            status = request.data.get("status")
-            approver_comment = request.data.get("approver_comment")
-            if not status:
-                raise serializers.ValidationError("Status is required")
-            else:
-                if status not in [
-                    "with_assessor",
-                    "with_assessor_conditions",
-                    "with_approver",
-                    "with_referral",
-                    "with_referral_conditions",
-                ]:
-                    raise serializers.ValidationError(
-                        "The status provided is not allowed"
-                    )
-            instance.move_to_status(request, status, approver_comment)
-            serializer_class = self.get_serializer_class()
-            serializer = serializer_class(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        status = request.data.get("status")
+        approver_comment = request.data.get("approver_comment")
+        if not status:
+            raise serializers.ValidationError("Status is required")
+        else:
+            if status not in [
+                "with_assessor",
+                "with_assessor_conditions",
+                "with_approver",
+                "with_referral",
+                "with_referral_conditions",
+            ]:
+                raise serializers.ValidationError(
+                    "The status provided is not allowed"
+                )
+        instance.move_to_status(request, status, approver_comment)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1622,16 +1495,12 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def amend_approval(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance = instance.amend_approval(request)
-            serializer = SaveProposalSerializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except Exception as e:
-            print(traceback.print_exc())
-            if hasattr(e, "message"):
-                raise serializers.ValidationError(e.message)
+        instance = self.get_object()
+        instance = instance.amend_approval(request)
+        serializer = SaveProposalSerializer(instance, context={"request": request})
+        return Response(serializer.data)
 
     @basic_exception_handler
     @detail_route(
@@ -1682,26 +1551,14 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def approval_level_document(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance = instance.assing_approval_level_document(request)
-            serializer = InternalProposalSerializer(
-                instance, context={"request": request}
-            )
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance = instance.assing_approval_level_document(request)
+        serializer = InternalProposalSerializer(
+            instance, context={"request": request}
+        )
+        return Response(serializer.data)
 
     @basic_exception_handler
     @detail_route(
@@ -1729,28 +1586,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def proposed_decline(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            # serializer = PropedDeclineSerializer(data=request.data)
-            # serializer.is_valid(raise_exception=True)
-            instance.proposed_decline(request, request.data)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.get_serializer_class()
-            serializer = serializer_class(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.proposed_decline(request, request.data)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1758,28 +1600,15 @@ class ProposalViewSet(UserActionLoggingViewset):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def final_decline(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            serializer = PropedDeclineSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            instance.final_decline(request, serializer.validated_data)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer_class = self.get_serializer_class()
-            serializer = serializer_class(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        serializer = PropedDeclineSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance.final_decline(request, serializer.validated_data)
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1788,55 +1617,46 @@ class ProposalViewSet(UserActionLoggingViewset):
         detail=True,
     )
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def on_hold(self, request, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                instance = self.get_object()
-                is_onhold = eval(request.data.get("onhold"))
-                data = {}
-                if is_onhold:
-                    data["type"] = "onhold"
-                    instance.on_hold(request)
-                else:
-                    data["type"] = "onhold_remove"
-                    instance.on_hold_remove(request)
+        with transaction.atomic():
+            instance = self.get_object()
+            is_onhold = eval(request.data.get("onhold"))
+            data = {}
+            if is_onhold:
+                data["type"] = "onhold"
+                instance.on_hold(request)
+            else:
+                data["type"] = "onhold_remove"
+                instance.on_hold_remove(request)
 
-                data["proposal"] = f"{instance.id}"
-                data["staff"] = f"{request.user.id}"
-                data["text"] = request.user.get_full_name() + ": {}".format(
-                    request.data["text"]
-                )
-                data["subject"] = request.user.get_full_name() + ": {}".format(
-                    request.data["text"]
-                )
-                serializer = ProposalLogEntrySerializer(data=data)
-                serializer.is_valid(raise_exception=True)
-                comms = serializer.save()
+            data["proposal"] = f"{instance.id}"
+            data["staff"] = f"{request.user.id}"
+            data["text"] = request.user.get_full_name() + ": {}".format(
+                request.data["text"]
+            )
+            data["subject"] = request.user.get_full_name() + ": {}".format(
+                request.data["text"]
+            )
+            serializer = ProposalLogEntrySerializer(data=data)
+            serializer.is_valid(raise_exception=True)
+            comms = serializer.save()
 
-                # save the files
-                documents_qs = instance.onhold_documents.filter(
-                    input_name="on_hold_file", visible=True
-                )
-                for f in documents_qs:
-                    document = comms.documents.create(_file=f._file, name=f.name)
-                    # document = comms.documents.create()
-                    # document.name = f.name
-                    # document._file = f._file #.strip('/media')
-                    document.input_name = f.input_name
-                    document.can_delete = True
-                    document.save()
-                # end save documents
+            # save the files
+            documents_qs = instance.onhold_documents.filter(
+                input_name="on_hold_file", visible=True
+            )
+            for f in documents_qs:
+                document = comms.documents.create(_file=f._file, name=f.name)
+                # document = comms.documents.create()
+                # document.name = f.name
+                # document._file = f._file #.strip('/media')
+                document.input_name = f.input_name
+                document.can_delete = True
+                document.save()
+            # end save documents
 
-                return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1868,8 +1688,8 @@ class ProposalViewSet(UserActionLoggingViewset):
             email=request.data["email"]
         ).exists():
             raise serializers.ValidationError(
-                "An invitation has already been sent to this email address"
-            )
+                _("An external referee invitation has already been sent to {email}".format(email=request.data["email"])),
+                code="invalid")
         external_referee_invite = ExternalRefereeInvite.objects.create(**request.data)
         send_external_referee_invite_email(external_referee_invite, instance, request)
         serializer = self.get_serializer(instance)
@@ -1932,74 +1752,62 @@ class ProposalViewSet(UserActionLoggingViewset):
             data=request.data, context={"request": request}
         )
         serializer.is_valid(raise_exception=True)
-        # text=serializer.validated_data['text']
-        # instance.send_referral(request,serializer.validated_data['email'])
         instance.send_referral(
             request,
             serializer.validated_data["email"],
             serializer.validated_data["text"],
         )
-        # serializer = InternalProposalSerializer(instance,context={'request':request})
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
+    @basic_exception_handler
     def create(self, request, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                application_type_str = request.data.get("application_type", {}).get(
-                    "code"
-                )
-                application_type = ApplicationType.objects.get(
-                    name=application_type_str
-                )
-                proposal_type = ProposalType.objects.get(code="new")
-
-                data = {
-                    "org_applicant": request.data.get("org_applicant", None),
-                    "ind_applicant": request.user.id
-                    if not request.data.get("org_applicant")
-                    else None,  # if no org_applicant, assume this application is for individual.
-                    "application_type_id": application_type.id,
-                    "proposal_type_id": proposal_type.id,
-                }
-
-                serializer = CreateProposalSerializer(data=data)
-                serializer.is_valid(raise_exception=True)
-                instance = serializer.save()
-
-                serializer = SaveProposalSerializer(instance)
-                return Response(serializer.data)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
-
-    def update(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            serializer = SaveProposalSerializer(instance, data=request.data)
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
-
-    def destroy(self, request, *args, **kwargs):
-        try:
-            http_status = status.HTTP_200_OK
-            instance = self.get_object()
-            serializer = SaveProposalSerializer(
-                instance,
-                {"processing_status": "discarded", "previous_application": None},
-                partial=True,
+        with transaction.atomic():
+            application_type_str = request.data.get("application_type", {}).get(
+                "code"
             )
+            application_type = ApplicationType.objects.get(
+                name=application_type_str
+            )
+            proposal_type = ProposalType.objects.get(code="new")
+
+            data = {
+                "org_applicant": request.data.get("org_applicant", None),
+                "ind_applicant": request.user.id
+                if not request.data.get("org_applicant")
+                else None,  # if no org_applicant, assume this application is for individual.
+                "application_type_id": application_type.id,
+                "proposal_type_id": proposal_type.id,
+            }
+
+            serializer = CreateProposalSerializer(data=data)
             serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data, status=http_status)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            instance = serializer.save()
+
+            serializer = SaveProposalSerializer(instance)
+            return Response(serializer.data)
+
+    @basic_exception_handler
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = SaveProposalSerializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    @basic_exception_handler
+    def destroy(self, request, *args, **kwargs):
+        http_status = status.HTTP_200_OK
+        instance = self.get_object()
+        serializer = SaveProposalSerializer(
+            instance,
+            {"processing_status": "discarded", "previous_application": None},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=http_status)
 
     @detail_route(methods=["get"], detail=True)
     @basic_exception_handler
@@ -2150,51 +1958,38 @@ class ReferralViewSet(viewsets.ModelViewSet):
     )
     def referral_list(self, request, *args, **kwargs):
         instance = self.get_object()
-        # qs = self.get_queryset().all()
-        # qs=qs.filter(sent_by=instance.referral, proposal=instance.proposal)
-
         qs = Referral.objects.filter(
             referral_group__in=request.user.referralrecipientgroup_set.all(),
             proposal=instance.proposal,
         )
         serializer = DTReferralSerializer(qs, many=True)
-        # serializer = ProposalReferralSerializer(qs, many=True)
-
         return Response(serializer.data)
 
     @detail_route(methods=["GET", "POST"], detail=True)
+    @basic_exception_handler
     def complete(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.complete(request)
-            data = {}
-            data["type"] = "referral_complete"
-            data["fromm"] = f"{instance.referral_group.name}"
-            data["proposal"] = f"{instance.proposal.id}"
-            data["staff"] = f"{request.user.id}"
-            data["text"] = f"{instance.referral_text}"
-            data["subject"] = f"{instance.referral_text}"
-            serializer = ProposalLogEntrySerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            comms = serializer.save()
-            if instance.document:
-                document = comms.documents.create(
-                    _file=instance.document._file, name=instance.document.name
-                )
-                document.input_name = instance.document.input_name
-                document.can_delete = True
-                document.save()
+        instance = self.get_object()
+        instance.complete(request)
+        data = {}
+        data["type"] = "referral_complete"
+        data["fromm"] = f"{instance.referral_group.name}"
+        data["proposal"] = f"{instance.proposal.id}"
+        data["staff"] = f"{request.user.id}"
+        data["text"] = f"{instance.referral_text}"
+        data["subject"] = f"{instance.referral_text}"
+        serializer = ProposalLogEntrySerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        comms = serializer.save()
+        if instance.document:
+            document = comms.documents.create(
+                _file=instance.document._file, name=instance.document.name
+            )
+            document.input_name = instance.document.input_name
+            document.can_delete = True
+            document.save()
 
-            serializer = self.get_serializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        serializer = self.get_serializer(instance, context={"request": request})
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -2205,19 +2000,20 @@ class ReferralViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def remind(self, request, *args, **kwargs):
         instance = self.get_object()
+        logger.debug("instance: {}".format(instance))
         instance.remind(request)
         serializer = InternalProposalSerializer(
             instance.proposal, context={"request": request}
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def recall(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.recall(request)
@@ -2226,13 +2022,13 @@ class ReferralViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def resend(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.resend(request)
@@ -2241,112 +2037,73 @@ class ReferralViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @detail_route(methods=["post"], detail=True)
+    @ detail_route(methods=["post"], detail=True)
+    @basic_exception_handler
     def send_referral(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            serializer = SendReferralSerializer(
-                data=request.data, context={"request": request}
-            )
-            serializer.is_valid(raise_exception=True)
-            instance.send_referral(
-                request,
-                serializer.validated_data["email"],
-                serializer.validated_data["text"],
-            )
-            serializer = self.get_serializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        serializer = SendReferralSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        instance.send_referral(
+            request,
+            serializer.validated_data["email"],
+            serializer.validated_data["text"],
+        )
+        serializer = self.get_serializer(instance, context={"request": request})
+        return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
+    @basic_exception_handler
     def assign_request_user(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.assign_officer(request, request.user)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer = self.get_serializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.assign_officer(request, request.user)
+        # serializer = InternalProposalSerializer(instance,context={'request':request})
+        serializer = self.get_serializer(instance, context={"request": request})
+        return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
+    @basic_exception_handler
     def assign_to(self, request, *args, **kwargs):
+        instance = self.get_object()
+        user_id = request.data.get("user_id", None)
+        user = None
+        if not user_id:
+            raise serializers.ValidationError("An assessor id is required")
         try:
-            instance = self.get_object()
-            user_id = request.data.get("user_id", None)
-            user = None
-            if not user_id:
-                raise serializers.ValidationError("An assessor id is required")
-            try:
-                user = EmailUser.objects.get(id=user_id)
-            except EmailUser.DoesNotExist:
-                raise serializers.ValidationError(
-                    "A user with the id passed in does not exist"
-                )
-            instance.assign_officer(request, user)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer = self.get_serializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            user = EmailUser.objects.get(id=user_id)
+        except EmailUser.DoesNotExist:
+            raise serializers.ValidationError(
+                "A user with the id passed in does not exist"
+            )
+        instance.assign_officer(request, user)
+        # serializer = InternalProposalSerializer(instance,context={'request':request})
+        serializer = self.get_serializer(instance, context={"request": request})
+        return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
+    @basic_exception_handler
     def unassign(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.unassign(request)
-            # serializer = InternalProposalSerializer(instance,context={'request':request})
-            serializer = self.get_serializer(instance, context={"request": request})
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.unassign(request)
+        # serializer = InternalProposalSerializer(instance,context={'request':request})
+        serializer = self.get_serializer(instance, context={"request": request})
+        return Response(serializer.data)
 
 
 class ProposalRequirementViewSet(viewsets.ModelViewSet):
@@ -2358,160 +2115,103 @@ class ProposalRequirementViewSet(viewsets.ModelViewSet):
         qs = ProposalRequirement.objects.all().exclude(is_deleted=True)
         return qs
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
+    @basic_exception_handler
     def move_up(self, request, *args, **kwargs):
-        try:
-            print("move_up")
-            instance = self.get_object()
-            instance.move_up()
-            # instance.save()
-            # serializer = self.get_serializer(instance)
-            # return Response(serializer.data)
-            return Response()
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.move_up()
+        return Response()
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
+    @basic_exception_handler
     def move_down(self, request, *args, **kwargs):
-        try:
-            print("move_down")
-            instance = self.get_object()
-            instance.move_down()
-            # instance.save()
-            # serializer = self.get_serializer(instance)
-            # return Response(serializer.data)
-            return Response()
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.move_down()
+        # instance.save()
+        # serializer = self.get_serializer(instance)
+        # return Response(serializer.data)
+        return Response()
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
+    @basic_exception_handler
     def discard(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.is_deleted = True
-            instance.save()
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.is_deleted = True
+        instance.save()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @renderer_classes((JSONRenderer,))
+    @ renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def delete_document(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            RequirementDocument.objects.get(id=request.data.get("id")).delete()
-            return Response(
-                [
-                    dict(id=i.id, name=i.name, _file=i._file.url)
-                    for i in instance.requirement_documents.all()
-                ]
-            )
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        RequirementDocument.objects.get(id=request.data.get("id")).delete()
+        return Response(
+            [
+                dict(id=i.id, name=i.name, _file=i._file.url)
+                for i in instance.requirement_documents.all()
+            ]
+        )
 
+    @basic_exception_handler
     def update(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            # serializer = self.get_serializer(instance, data=json.loads(request.data.get('data')))
-            serializer = self.get_serializer(instance, data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            # TODO: requirements documents in LL?
-            # instance.add_documents(request)
-            return Response(serializer.data)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        # serializer = self.get_serializer(instance, data=json.loads(request.data.get('data')))
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        # TODO: requirements documents in LL?
+        # instance.add_documents(request)
+        return Response(serializer.data)
 
+    @basic_exception_handler
     def create(self, request, *args, **kwargs):
+        # serializer = self.get_serializer(data= json.loads(request.data.get('data')))
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
         try:
-            print(request.data)
-            # serializer = self.get_serializer(data= json.loads(request.data.get('data')))
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
+            referral = Referral.objects.get(
+                referral=user.id, proposal=request.data["proposal"]
+            )
+        except Referral.DoesNotExist:
+            referral = None
 
-            user = request.user
-            try:
-                referral = Referral.objects.get(
-                    referral=user.id, proposal=request.data["proposal"]
-                )
-            except Referral.DoesNotExist:
-                referral = None
-
-            # Set associated referral and source user on requirement creation
-            serializer.save(referral=referral, source=user.id)
-            # instance = serializer.save()
-            # TODO: requirements documents in LL?
-            # instance.add_documents(request)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        # Set associated referral and source user on requirement creation
+        serializer.save(referral=referral, source=user.id)
+        # instance = serializer.save()
+        # TODO: requirements documents in LL?
+        # instance.add_documents(request)
+        return Response(serializer.data)
 
 
 class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProposalStandardRequirement.objects.all()
     serializer_class = ProposalStandardRequirementSerializer
 
-    @list_route(
+    @ list_route(
         methods=[
             "POST",
         ],
@@ -2525,50 +2225,30 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    # def list(self, request, *args, **kwargs):
-    #    queryset = self.get_queryset()
-    #    search = request.GET.get("search")
-    #    if search:
-    #        queryset = queryset.filter(text__icontains=search)
-    #    serializer = self.get_serializer(queryset, many=True)
-    #    return Response(serializer.data)
-
 
 class AmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = AmendmentRequest.objects.all()
     serializer_class = AmendmentRequestSerializer
 
+    @basic_exception_handler
     def create(self, request, *args, **kwargs):
-        try:
-            reason_id = request.data.get("reason_id")
-            data = {
-                # 'schema': qs_proposal_type.order_by('-version').first().schema,
-                "text": request.data.get("text"),
-                "proposal": request.data.get("proposal_id"),
-                "officer": request.user.id,
-                "reason": reason_id  # AmendmentReason.objects.get(id=reason_id)
-                if reason_id
-                else None,
-            }
-            # serializer = self.get_serializer(data=request.data)
-            serializer = self.get_serializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
-            instance.generate_amendment(request)
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        reason_id = request.data.get("reason_id")
+        data = {
+            # 'schema': qs_proposal_type.order_by('-version').first().schema,
+            "text": request.data.get("text"),
+            "proposal": request.data.get("proposal_id"),
+            "officer": request.user.id,
+            "reason": reason_id  # AmendmentReason.objects.get(id=reason_id)
+            if reason_id
+            else None,
+        }
+        # serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        instance.generate_amendment(request)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class AmendmentRequestReasonChoicesView(views.APIView):
@@ -2673,41 +2353,29 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
     queryset = ProposalAssessment.objects.all()
     serializer_class = ProposalAssessmentSerializer
 
-    @detail_route(methods=["post"], detail=True)
+    @ detail_route(methods=["post"], detail=True)
+    @basic_exception_handler
     def update_assessment(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            request.data["submitter"] = request.user.id
-            serializer = ProposalAssessmentSerializer(instance, data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            checklist = request.data["checklist"]
-            if checklist:
-                for chk in checklist:
-                    try:
-                        chk_instance = ProposalAssessmentAnswer.objects.get(
-                            id=chk["id"]
-                        )
-                        serializer_chk = ProposalAssessmentAnswerSerializer(
-                            chk_instance, data=chk
-                        )
-                        serializer_chk.is_valid(raise_exception=True)
-                        serializer_chk.save()
-                    except ProposalAssessmentAnswer.DoesNotExist:
-                        logger.warning(
-                            f"ProposalAssessmentAnswer: {chk['id']} does not exist"
-                        )
-            # instance.proposal.log_user_action(ProposalUserAction.ACTION_EDIT_VESSEL.format(instance.id),request)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        request.data["submitter"] = request.user.id
+        serializer = ProposalAssessmentSerializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        checklist = request.data["checklist"]
+        if checklist:
+            for chk in checklist:
+                try:
+                    chk_instance = ProposalAssessmentAnswer.objects.get(
+                        id=chk["id"]
+                    )
+                    serializer_chk = ProposalAssessmentAnswerSerializer(
+                        chk_instance, data=chk
+                    )
+                    serializer_chk.is_valid(raise_exception=True)
+                    serializer_chk.save()
+                except ProposalAssessmentAnswer.DoesNotExist:
+                    logger.warning(
+                        f"ProposalAssessmentAnswer: {chk['id']} does not exist"
+                    )
+        # instance.proposal.log_user_action(ProposalUserAction.ACTION_EDIT_VESSEL.format(instance.id),request)
+        return Response(serializer.data)

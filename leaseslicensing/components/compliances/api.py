@@ -172,13 +172,10 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
 
         self.paginator.page_size = qs.count()
         result_page = self.paginator.paginate_queryset(qs, request)
-        # serializer = ListComplianceSerializer(result_page, context={'request': request}, many=True)
         serializer = ComplianceSerializer(
             result_page, context={"request": request}, many=True
         )
         result = self.paginator.get_paginated_response(serializer.data)
-        # print("result")
-        # print(result.__dict__)
         return result
 
     @list_route(
@@ -415,22 +412,13 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def amendment_request(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.amendment_requests
-            qs = qs.filter(status="requested")
-            serializer = CompAmendmentRequestDisplaySerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.amendment_requests
+        qs = qs.filter(status="requested")
+        serializer = CompAmendmentRequestDisplaySerializer(qs, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -438,21 +426,12 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def action_log(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.action_logs.all()
-            serializer = ComplianceActionSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.action_logs.all()
+        serializer = ComplianceActionSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -460,21 +439,12 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         ],
         detail=True,
     )
+    @basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.comms_logs.all()
-            serializer = ComplianceCommsSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.comms_logs.all()
+        serializer = ComplianceCommsSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -483,65 +453,43 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         detail=True,
     )
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                instance = self.get_object()
-                mutable = request.data._mutable
-                request.data._mutable = True
-                request.data["compliance"] = f"{instance.id}"
-                request.data["staff"] = f"{request.user.id}"
-                request.data._mutable = mutable
-                serializer = ComplianceCommsSerializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                comms = serializer.save()
+        with transaction.atomic():
+            instance = self.get_object()
+            mutable = request.data._mutable
+            request.data._mutable = True
+            request.data["compliance"] = f"{instance.id}"
+            request.data["staff"] = f"{request.user.id}"
+            request.data._mutable = mutable
+            serializer = ComplianceCommsSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            comms = serializer.save()
 
-                # Save the files
-                for f in request.FILES.getlist("files"):
-                    document = comms.documents.create()
-                    document.name = str(f)
-                    document._file = f
-                    document.save()
+            # Save the files
+            for f in request.FILES.getlist("files"):
+                document = comms.documents.create()
+                document.name = str(f)
+                document._file = f
+                document.save()
 
-                return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            return Response(serializer.data)
 
 
 class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = ComplianceAmendmentRequest.objects.all()
     serializer_class = ComplianceAmendmentRequestSerializer
 
+    @basic_exception_handler
     def create(self, request, *args, **kwargs):
-        try:
-            request_data = deepcopy(request.data)
-            request_data.update({"officer": request.user.id})
-            serializer = self.get_serializer(data=request_data)
-            serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
-            instance.generate_amendment(request)
-            serializer = self.get_serializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                # raise serializers.ValidationError(repr(e[0].encode('utf-8')))
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        request_data = deepcopy(request.data)
+        request_data.update({"officer": request.user.id})
+        serializer = self.get_serializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        instance.generate_amendment(request)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
 
 class ComplianceAmendmentReasonChoicesView(views.APIView):
@@ -551,7 +499,6 @@ class ComplianceAmendmentReasonChoicesView(views.APIView):
 
     def get(self, request, format=None):
         choices_list = []
-        # choices = ComplianceAmendmentRequest.REASON_CHOICES
         choices = ComplianceAmendmentReason.objects.all()
         if choices:
             for c in choices:
