@@ -102,7 +102,7 @@
                         <FileField :readonly="false" ref="shapefile_document" name="shapefile_document"
                             id="shapefile_document_document" :isRepeatable="true" :documentActionUrl="shapefileDocumentUrl"
                             :replace_button_by_text="true" fileTypes=".dbf, .prj, .shp, .shx" text_string="Attach File (.prj .dbf .shp
-                            .shx)" />
+                                .shx)" />
                     </div>
                 </div>
                 <div class="row">
@@ -166,7 +166,6 @@ import FileField from '@/components/forms/filefield_immediate.vue'
 import VueAlert from '@vue-utils/alert.vue'
 import { api_endpoints, helpers } from '@/utils/hooks'
 import RangeSlider from '@/components/forms/range_slider.vue'
-//import { getDisplayNameFromStatus, getDisplayNameOfCategory, getStatusForColour, getApiaryFeatureStyle } from '@/components/common/site_colours.js'
 import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/components/common/map_functions.js'
 import Swal from 'sweetalert2'
 
