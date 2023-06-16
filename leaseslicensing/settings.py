@@ -421,3 +421,9 @@ ACTION_VIEW = "View {} {}"
 ACTION_CREATE = "Create {} {}"
 ACTION_UPDATE = "Update {} {}"
 ACTION_DESTROY = "Destroy {} {}"
+
+# ---------- Error messages -------------
+
+# When debug is False, the following message will be sent to the user
+# The real exception will be logged
+API_EXCEPTION_MESSAGE = "An error occurred while processing your request."
