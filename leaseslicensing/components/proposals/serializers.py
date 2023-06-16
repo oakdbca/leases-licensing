@@ -1000,6 +1000,23 @@ class ProposalParkSerializer(BaseProposalSerializer):
         return obj.approval.id
 
 
+class ExternalRefereeInviteSerializer(serializers.ModelSerializer):
+    proposal_id = serializers.IntegerField(required=False)
+    full_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = ExternalRefereeInvite
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "full_name",
+            "email",
+            "organisation",
+            "proposal_id",
+        ]
+
+
 class InternalProposalSerializer(BaseProposalSerializer):
     applicant = serializers.CharField(read_only=True)
     org_applicant = OrganisationSerializer()
@@ -1012,7 +1029,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     can_edit_period = serializers.SerializerMethodField()
     current_assessor = serializers.SerializerMethodField()
     latest_referrals = ProposalReferralSerializer(many=True)
-
+    external_referee_invites = ExternalRefereeInviteSerializer(many=True)
     allowed_assessors = EmailUserSerializer(many=True)
     approval_level_document = serializers.SerializerMethodField()
     # application_type = serializers.CharField(source='application_type.name', read_only=True)
@@ -1145,6 +1162,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "proponent_reference_number",
             "site_name",
             "details_url",
+            "external_referee_invites",
             # "assessor_comment_map",
             # "deficiency_comment_map",
             # "assessor_comment_proposal_details",
@@ -1633,18 +1651,3 @@ class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdditionalDocumentType
         fields = "__all__"
-
-
-class ExternalRefereeInviteSerializer(serializers.ModelSerializer):
-    proposal_id = serializers.IntegerField(required=False)
-
-    class Meta:
-        model = ExternalRefereeInvite
-        fields = [
-            "id",
-            "first_name",
-            "last_name",
-            "email",
-            "organisation",
-            "proposal_id",
-        ]
