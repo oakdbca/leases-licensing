@@ -1504,6 +1504,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         return referrals.all()[:3]
 
     @property
+    def external_referral_invites(self):
+        return self.external_referee_invites.filter(datetime_first_logged_in__isnull=True)
+
+    @property
     def assessor_assessment(self):
         qs = self.assessment.filter(referral=None)
         return qs[0] if qs else None
@@ -1629,6 +1633,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     # Check if the user is member of assessor group for the Proposal
     def is_approver(self, user):
         return user.id in self.get_assessor_group().get_system_group_member_ids()
+
+    def can_action(self, user):
+        if not self.can_assess(user):
+            return False
 
     def can_assess(self, user):
         logger.info("can assess")
@@ -3885,7 +3893,7 @@ class Referral(RevisionedMixin):
     PROCESSING_STATUS_RECALLED = "recalled"
     PROCESSING_STATUS_COMPLETED = "completed"
     PROCESSING_STATUS_CHOICES = (
-        (PROCESSING_STATUS_WITH_REFERRAL, "Awaiting"),
+        (PROCESSING_STATUS_WITH_REFERRAL, "Pending"),
         (PROCESSING_STATUS_RECALLED, "Recalled"),
         (PROCESSING_STATUS_COMPLETED, "Completed"),
     )
@@ -4332,6 +4340,11 @@ class ExternalRefereeInvite(RevisionedMixin):
     proposal = models.ForeignKey(
         Proposal, related_name="external_referee_invites", on_delete=models.CASCADE
     )
+    sent_from = models.SmallIntegerField(
+        choices=Referral.SENT_CHOICES, default=Referral.SENT_CHOICES[0][0]
+    )
+    sent_by = models.IntegerField()
+    invite_text = models.TextField(blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4665,21 +4678,27 @@ class ProposalAssessment(RevisionedMixin):
         on_delete=models.SET_NULL,
     )  # When referral is none, this ProposalAssessment is for assessor.
     # comments and deficiencies
+
     assessor_comment_map = models.TextField(blank=True)
     deficiency_comment_map = models.TextField(blank=True)
     referrer_comment_map = models.TextField(blank=True)
+
     assessor_comment_proposal_details = models.TextField(blank=True)
     deficiency_comment_proposal_details = models.TextField(blank=True)
     referrer_comment_proposal_details = models.TextField(blank=True)
+
     assessor_comment_proposal_impact = models.TextField(blank=True)
     deficiency_comment_proposal_impact = models.TextField(blank=True)
     referrer_comment_proposal_impact = models.TextField(blank=True)
+
     assessor_comment_other = models.TextField(blank=True)
     deficiency_comment_other = models.TextField(blank=True)
     referrer_comment_other = models.TextField(blank=True)
+
     assessor_comment_deed_poll = models.TextField(blank=True)
     deficiency_comment_deed_poll = models.TextField(blank=True)
     referrer_comment_deed_poll = models.TextField(blank=True)
+
     assessor_comment_additional_documents = models.TextField(blank=True)
     deficiency_comment_additional_documents = models.TextField(blank=True)
     referrer_comment_additional_documents = models.TextField(blank=True)

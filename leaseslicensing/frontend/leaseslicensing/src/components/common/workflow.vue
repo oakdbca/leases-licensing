@@ -4,12 +4,12 @@
             <div class="card-header">
                 Workflow
             </div>
-            <div class="card-body border-bottom">
+            <div class="card-body">
                 <div class="fw-bold">Status</div>
                 {{ proposal.processing_status }}
             </div>
-            <div class="card-body border-bottom">
-                <div v-if="!isFinalised" class="col-sm-12">
+            <div v-if="!isFinalised && canAssess" class="card-body border-top">
+                <div class="col-sm-12">
                     <div class="fw-bold mb-1">Currently Assigned To</div>
                     <template v-if="proposal.processing_status_id == 'with_approver'">
                         <select ref=" assigned_officer" :disabled="!canAction" class="form-select"
@@ -54,8 +54,7 @@
                 </div>
             </div>
 
-            <div v-if="proposal.processing_status == 'With Assessor' || proposal.processing_status == 'With Referral'"
-                class="card-body border-bottom">
+            <div v-if="canAssess" class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Invite Referee</div>
                     <div class="mb-3">
@@ -82,15 +81,45 @@
                 </div>
             </div>
 
-            <div v-if="proposal.processing_status == 'With Assessor' || proposal.processing_status == 'With Referral'"
-                class="card-body border-bottom">
+            <div v-if="canAssess && proposal.external_referee_invites && proposal.external_referee_invites.length > 0"
+                class="card-body border-top">
+                <div class="fw-bold mb-1">External Referee Invites</div>
+                <table class="table table-sm table-referrals">
+                    <thead>
+                        <tr>
+                            <th scope="col">Referee</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="external_referee_invite in proposal.external_referee_invites" class="">
+                            <td scope="row">{{ external_referee_invite.full_name }}</td>
+                            <td>Pending</td>
+                            <td>
+                                <a @click.prevent="" role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                    :data-bs-content="'Send a reminder to ' + external_referee_invite.full_name"
+                                    data-bs-placement="bottom"><i class="fa fa-bell text-warning" aria-hidden="true"></i>
+                                </a>
+                                <a @click.prevent="" role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                    :data-bs-content="'Recall the external referee invite sent to ' + external_referee_invite.full_name"
+                                    data-bs-placement="bottom"><i class="fa fa-times-circle text-danger"
+                                        aria-hidden="true"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div v-if="canAssess && proposal.latest_referrals && proposal.latest_referrals.length > 0"
+                class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Referrals</div>
-                    <table v-if="proposal.latest_referrals && proposal.latest_referrals.length"
-                        class="table table-sm table-referrals">
+                    <table class="table table-sm table-referrals">
                         <thead>
                             <tr>
-                                <th>Referral</th>
+                                <th>Referee</th>
                                 <th>Status</th>
                                 <th>Actions</th>
                             </tr>
@@ -104,7 +133,8 @@
                                     {{ r.processing_status }}
                                 </td>
                                 <td>
-                                    <template v-if="r.processing_status == 'Awaiting'">
+                                    <template
+                                        v-if="constants.REFERRAL_STATUS.PROCESSING_STATUS_WITH_REFERRAL.TEXT == r.processing_status">
                                         <a v-if="canLimitedAction"
                                             @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])"
                                             role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
@@ -135,7 +165,7 @@
                         :canAction="canLimitedAction" :isFinalised="isFinalised" :referral_url="referralListURL" />
                 </div>
             </div>
-            <div class="card-body border-bottom">
+            <div v-if="canAssess && actionsVisible" class="card-body border-top">
                 <div class="row">
                     <div v-if="display_actions">
                         <div>
@@ -172,6 +202,7 @@ export default {
         let ROLES = constants.ROLES
 
         return {
+            constants: constants,
             showingProposal: false,
             showingRequirements: false,
 
@@ -484,6 +515,14 @@ export default {
         }
     },
     computed: {
+        actionsVisible: function () {
+            for (let i = 0; i < this.configurations_for_buttons.length; i++) {
+                if (this.configurations_for_buttons[i].function_to_show_hide()) {
+                    return true
+                }
+            }
+            return false
+        },
         latest_referrals: function () {
             return this.proposal.latest_referrals;
         },
