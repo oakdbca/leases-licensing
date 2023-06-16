@@ -306,7 +306,6 @@ class Compliance(RevisionedMixin, models.Model):
                     ):
                         # second part: if today is with 14 days of due_date, and email reminder is not sent
                         # (deals with Compliances created with the reminder period)
-                        print(self.id)
                         if self.requirement.notification_only:
                             send_notification_only_email(self)
                             send_internal_notification_only_email(self)
