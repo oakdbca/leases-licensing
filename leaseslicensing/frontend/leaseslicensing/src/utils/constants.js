@@ -70,7 +70,11 @@ module.exports = {
         EXTENDED_BASE_FEE_REVIEW: { ID: 'extended_base_fee_review', TEXT: 'Extended (base fee review)' },
         EXPIRED_LICENCE: { ID: 'expired_licence', TEXT: 'Expired (licence)' },
     },
-
+    REFERRAL_STATUS: {
+        PROCESSING_STATUS_WITH_REFERRAL: { ID: 'pending', TEXT: 'Pending' },
+        PROCESSING_STATUS_RECALLED: { ID: 'recalled', TEXT: 'Recalled' },
+        PROCESSING_STATUS_COMPLETED: { ID: 'completed', TEXT: 'Completed' },
+    },
     DATATABLE_PROCESSING_HTML: '<div class="d-flex justify-content-center"><div class="d-flex spinner-border text-primary my-4" role="status"><span class="visually-hidden">Loading...</span></div></div>',
 
     ERRORS: {
