@@ -17,7 +17,7 @@
                             <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{
                                 member.first_name }} {{ member.last_name }}</option>
                         </select>
-                        <div class="text-end mt-2">
+                        <div class="mt-2">
                             <a v-if="canAssess && proposal.assigned_approver != proposal.current_assessor.id"
                                 @click.prevent="assignRequestUser()" role="button" class="float-end">Assign to
                                 me</a>
@@ -29,7 +29,7 @@
                             <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{
                                 member.first_name }} {{ member.last_name }}</option>
                         </select>
-                        <div class="text-end mt-2">
+                        <div class="mt-2">
                             <a v-if="canAssess && proposal.assigned_officer != proposal.current_assessor.id"
                                 @click.prevent="assignRequestUser()" role="button" class="float-end">Assign to
                                 me</a>
@@ -53,11 +53,12 @@
                     <a class="actionBtn" v-else @click.prevent="toggleRequirements()">Hide Conditions</a>
                 </div>
             </div>
+
             <div v-if="proposal.processing_status == 'With Assessor' || proposal.processing_status == 'With Referral'"
                 class="card-body border-bottom">
                 <div class="col-sm-12">
-                    <div class="fw-bold mb-1">Referrals</div>
-                    <div class="form-group">
+                    <div class="fw-bold mb-1">Invite Referee</div>
+                    <div class="mb-3">
                         <select :disabled="!canLimitedAction" ref="department_users" class="form-control">
                         </select>
                         <template v-if='!sendingReferral'>
@@ -78,33 +79,53 @@
                             </span>
                         </template>
                     </div>
-                    <table v-if="proposal.latest_referrals && proposal.latest_referrals.length" class="table table-sm">
+                </div>
+            </div>
+
+            <div v-if="proposal.processing_status == 'With Assessor' || proposal.processing_status == 'With Referral'"
+                class="card-body border-bottom">
+                <div class="col-sm-12">
+                    <div class="fw-bold mb-1">Referrals</div>
+                    <table v-if="proposal.latest_referrals && proposal.latest_referrals.length"
+                        class="table table-sm table-referrals">
                         <thead>
                             <tr>
                                 <th>Referral</th>
-                                <th>Status/Action</th>
+                                <th>Status</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             <tr v-for="r in proposal.latest_referrals">
                                 <td>
-                                    <small>{{ r.referral_obj.first_name }} {{ r.referral_obj.last_name
-                                    }}</small><br />
-                                    <small>{{ formatDate(r.lodged_on) }}</small>
+                                    {{ r.referral_obj.first_name }} {{ r.referral_obj.last_name }}
                                 </td>
                                 <td>
-                                    <small>{{ r.processing_status }}</small><br />
+                                    {{ r.processing_status }}
+                                </td>
+                                <td>
                                     <template v-if="r.processing_status == 'Awaiting'">
-                                        <small v-if="canLimitedAction"><a
-                                                @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])"
-                                                href="#">Remind</a>/<a
-                                                @click.prevent="recallReferral.bind(this)(r.id, r.referral_obj['fullname'])"
-                                                href="#">Recall</a></small>
+                                        <a v-if="canLimitedAction"
+                                            @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                            role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                            :data-bs-content="'Send a reminder to ' + r.referral_obj['fullname']"
+                                            data-bs-placement="bottom"><i class="fa fa-bell text-warning"
+                                                aria-hidden="true"></i>
+                                        </a>
+                                        <a @click.prevent="recallReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                            role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                            :data-bs-content="'Recall the referral request sent to ' + r.referral_obj['fullname']"
+                                            data-bs-placement="bottom"><i class="fa fa-times-circle text-danger"
+                                                aria-hidden="true"></i>
+                                        </a>
                                     </template>
                                     <template v-else>
                                         <small v-if="canLimitedAction"><a
                                                 @click.prevent="resendReferral.bind(this)(r.id, r.referral_obj['fullname'])"
-                                                href="#">Resend</a></small>
+                                                role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                                :data-bs-content="'Resend this referral request to ' + r.referral_obj['fullname']"><i
+                                                    class="fa fa-envelope text-primary" aria-hidden="true"></i>
+                                            </a></small>
                                     </template>
                                 </td>
                             </tr>
@@ -455,9 +476,16 @@ export default {
         MoreReferrals,
         AddExternalReferral,
     },
+    watch: {
+        latest_referrals: function () {
+            this.$nextTick(() => {
+                this.initialisePopovers();
+            });
+        }
+    },
     computed: {
-        proposal_form_url: function () {
-            return (this.proposal) ? `/api/proposal/${this.proposal.id}/assessor_save.json` : '';
+        latest_referrals: function () {
+            return this.proposal.latest_referrals;
         },
         referralListURL: function () {
             return this.proposal != null ? helpers.add_endpoint_json(api_endpoints.referrals, 'datatable_list') + '?proposal=' + this.proposal.id : '';
@@ -666,7 +694,8 @@ export default {
             let my_headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
 
             vm.sendingReferral = true;
-            await fetch(vm.proposal_form_url, {
+            console.log(JSON.stringify(vm.proposal))
+            await fetch(`/api/proposal/${this.proposal.id}/assessor_save.json`, {
                 method: 'POST',
                 headers: my_headers,
                 body: JSON.stringify({ 'proposal': vm.proposal }),
@@ -768,12 +797,19 @@ export default {
         declineProposal: function () {
             this.$emit('declineProposal')
         },
+        initialisePopovers: function () {
+            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl)
+            })
+        },
     },
     mounted: function () {
         let vm = this
         this.$nextTick(() => {
             vm.initialiseSelects()
             vm.initialiseAssignedOfficerSelect()
+            vm.initialisePopovers();
         })
     },
 }
@@ -784,18 +820,16 @@ export default {
     cursor: pointer;
 }
 
-.separator {
-    border: 1px solid;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    width: 100%;
-}
-
-.referral_comment_textarea {
-    resize: vertical;
-}
-
 .comments_to_referral {
     resize: vertical;
+}
+
+.table-referrals {
+    font-size: 0.8em;
+}
+
+.fa-bell:hover,
+.fa-times-circle:hover {
+    opacity: 0.7;
 }
 </style>
