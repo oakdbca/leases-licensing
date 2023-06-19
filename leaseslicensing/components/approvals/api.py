@@ -339,9 +339,6 @@ class ApprovalPaymentFilterViewSet(generics.ListAPIView):
             | Q(org_applicant_id__in=user_org_ids)
             | Q(submitter_id=user)
         )
-        approval_qs = approval_qs.exclude(
-            current_proposal__application_type__name="E Class"
-        )
         approval_qs = approval_qs.exclude(expiry_date__lt=now)
         approval_qs = approval_qs.exclude(
             replaced_by__isnull=False
