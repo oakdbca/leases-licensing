@@ -7,12 +7,21 @@
 
         <FormSection :formCollapse="false" label="Leases and Licences"
             subtitle="- View existing leases / licences and renew them" Index="licences_and_permits">
-            <ApprovalsTable level="external" :approvalTypeFilter="allApprovalTypeFilter" />
+            <ApprovalsTable level="external" />
         </FormSection>
 
         <FormSection :formCollapse="false" label="Compliances"
             subtitle="- The obligations you must comply by to keep your lease / licence valid" Index="compliances">
             <CompliancesTable level="external" />
+        </FormSection>
+
+        <FormSection :formCollapse="false" label="Applications Referred to Me" Index="leases_and_licences">
+            <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" v-if="accessing_user" level="external"
+                :email_user_id_assigned="accessing_user.id"
+                filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
+                filterApplicationStatus_cache_name="filterApplicationStatusForApplicationReferredToMeTable"
+                filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
+                filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
         </FormSection>
     </div>
 </template>
@@ -20,25 +29,21 @@
 <script>
 import FormSection from "@/components/forms/section_toggle.vue"
 import ApplicationsTable from "@/components/common/table_proposals"
+import ApplicationsReferredToMeTable from "@/components/common/table_proposals"
 import ApprovalsTable from "@/components/common/table_approvals"
 import CompliancesTable from "@/components/common/table_compliances"
-import { api_endpoints, helpers } from '@/utils/hooks'
 
 export default {
     name: 'ExternalDashboard',
-    data() {
-        let vm = this;
+    data: function () {
         return {
-            proposals_url: api_endpoints.proposals_paginated_external,
-            approvals_url: api_endpoints.approvals_paginated_external,
-            compliances_url: api_endpoints.compliances_paginated_external,
-            allApprovalTypeFilter: ['ml', 'aap', 'aup'],
-            wlaApprovalTypeFilter: ['wla',],
+            accessing_user: null,
         }
     },
     components: {
         FormSection,
         ApplicationsTable,
+        ApplicationsReferredToMeTable,
         ApprovalsTable,
         CompliancesTable,
     },
@@ -50,7 +55,10 @@ export default {
             return this.level == 'internal'
         },
     },
-    mounted: function () {
+    mounted: async function () {
+        const res = await fetch('/api/profile');
+        const resData = await res.json();
+        this.accessing_user = resData
         // must be at top level of every page with <FormSection> component
         chevron_toggle.init();
     },
