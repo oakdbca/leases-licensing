@@ -1,13 +1,15 @@
 from django.contrib import admin
 from django import forms
 
+from ckeditor.widgets import CKEditorWidget
+
 from leaseslicensing.components.texts.models import (
     DetailsText,
 )
 
 
 class DetailsTextForm(forms.ModelForm):
-    body = forms.CharField(widget=forms.Textarea)
+    body = forms.CharField(widget=CKEditorWidget(config_name='toolbar_minimal'))
     target = forms.CharField(widget=forms.TextInput(attrs={"readonly": True}))
 
     def __init__(self, *args, **kwargs):
@@ -30,6 +32,5 @@ class DetailsTextsAdmin(admin.ModelAdmin):
         "body",
     )
     list_display = ("target", "body")
-    list_filter = ("target",)
 
     form = DetailsTextForm

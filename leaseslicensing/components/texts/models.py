@@ -1,7 +1,9 @@
 from django.db import models
 
+from ckeditor.fields import RichTextField
+
 class DetailsText(models.Model):
-    body = models.CharField("Text body", max_length=1024) # Text body
+    body = RichTextField(blank=False, null=False)
     target = models.CharField("Target", max_length=128) # HTML target
 
     class Meta:

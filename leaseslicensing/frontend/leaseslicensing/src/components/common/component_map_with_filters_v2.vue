@@ -118,12 +118,12 @@
                     </div>
                     <div v-if="showUndoButton" class="optional-layers-button-wrapper">
                         <div class="optional-layers-button" @click="undoLeaseLicensePoint()">
-                            <img class="svg-icon" src="../../assets/undo.svg" />
+                            <img class="svg-icon" src="../../assets/map-undo.svg" />
                         </div>
                     </div>
                     <div v-if="showRedoButton" class="optional-layers-button-wrapper">
                         <div class="optional-layers-button" @click="redoLeaseLicensePoint()">
-                            <img class="svg-icon" src="../../assets/redo.svg" />
+                            <img class="svg-icon" src="../../assets/map-redo.svg" />
                         </div>
                     </div>
                 </div>

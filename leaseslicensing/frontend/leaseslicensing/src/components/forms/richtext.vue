@@ -1,14 +1,14 @@
 <template lang="html">
     <div>
         <div class="form-group">
-            <ckeditor :editor="editor" v-model="detailsText" :config="editorConfig" :name="name" :required="isRequired"
+            <ckeditor :editor="editor" v-model="detailsText" :config="editor.defaultConfig" :name="name" :required="isRequired"
                 :disabled="readonly" :read-only="readonly" :id="id"/>
         </div>
     </div>
 </template>
 
 <script>
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
+import Editor from './ckeditor.js'
 
 export default {
     name: 'RichText',
@@ -32,12 +32,8 @@ export default {
         }
 
         return {
-            editorConfig: {
-                language: 'en',
-                placeholder: vm.placeholder_text,
-            },
             detailsText: '',
-            editor: ClassicEditor,
+            editor: Editor,
         }
     },
     watch: {
@@ -62,6 +58,7 @@ export default {
         if (this.proposalData) {
             this.detailsText = this.proposalData;
         }
+        this.editor.defaultConfig["placeholder"] = this.placeholder_text;
     },
 }
 </script>
