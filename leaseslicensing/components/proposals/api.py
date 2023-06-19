@@ -519,7 +519,10 @@ class ProposalViewSet(UserActionLoggingViewset):
             return Proposal.objects.all()
         elif is_customer(self.request):
             if Referral.objects.filter(referral=user.id).exists():
-                return Proposal.objects.filter(referrals__in=Referral.objects.filter(referral=user.id))
+                return Proposal.objects.filter(
+                    processing_status__in=[Proposal.PROCESSING_STATUS_WITH_REFERRAL,
+                                           Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS],
+                    referrals__in=Referral.objects.filter(referral=user.id))
             return Proposal.get_proposals_for_emailuser(user.id)
 
         logger.warn(

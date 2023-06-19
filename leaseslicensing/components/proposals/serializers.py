@@ -285,22 +285,16 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
             "belongs_to_accessing_user",
             "assessor_comment_map",
             "deficiency_comment_map",
-            "referrer_comment_map",
             "assessor_comment_proposal_details",
             "deficiency_comment_proposal_details",
-            "referrer_comment_proposal_details",
             "assessor_comment_proposal_impact",
             "deficiency_comment_proposal_impact",
-            "referrer_comment_proposal_impact",
             "assessor_comment_other",
             "deficiency_comment_other",
-            "referrer_comment_other",
             "assessor_comment_deed_poll",
             "deficiency_comment_deed_poll",
-            "referrer_comment_deed_poll",
             "assessor_comment_additional_documents",
             "deficiency_comment_additional_documents",
-            "referrer_comment_additional_documents",
         )
 
     def get_answerable_by_accessing_user(self, proposal_assessment):
@@ -768,13 +762,39 @@ class ListProposalSerializer(BaseProposalSerializer):
         return None
 
 
+class ProposalReferralSerializer(serializers.ModelSerializer):
+    processing_status = serializers.CharField(source="get_processing_status_display")
+    referral_obj = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Referral
+        fields = "__all__"
+
+    def get_referral_obj(self, obj):
+        referral_email_user = retrieve_email_user(obj.referral)
+        serializer = EmailUserSerializer(referral_email_user)
+        return serializer.data
+
+
 class ProposalSerializer(BaseProposalSerializer):
-    # submitter = serializers.CharField(source='submitter.get_full_name')
     submitter = serializers.SerializerMethodField(read_only=True)
     processing_status = serializers.SerializerMethodField(read_only=True)
-    # review_status = serializers.SerializerMethodField(read_only=True)
-    # customer_status = serializers.SerializerMethodField(read_only=True)
-    # application_type = serializers.CharField(source='application_type.name', read_only=True)
+    # Had to add assessor mode and lodgement versions for this serializer to work for
+    # external user that is a referral
+    assessor_mode = serializers.SerializerMethodField(read_only=True)
+    lodgement_versions = serializers.SerializerMethodField(read_only=True)
+    referrals = ProposalReferralSerializer(many=True)
+
+    class Meta:
+        model = Proposal
+        fields = "__all__"
+        extra_fields = ["assessor_mode", "lodgement_versions", "referrals"]
+
+    def get_field_names(self, declared_fields, info):
+        expanded_fields = super().get_field_names(declared_fields, info)
+        if getattr(self.Meta, 'extra_fields', None):
+            return expanded_fields + self.Meta.extra_fields
+        return expanded_fields
 
     def get_readonly(self, obj):
         return obj.can_user_view
@@ -786,15 +806,25 @@ class ProposalSerializer(BaseProposalSerializer):
         else:
             return None
 
+    def get_assessor_mode(self, obj):
+        # TODO check if the proposal has been accepted or declined
+        request = self.context["request"]
+        user = (
+            request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
+        )
+        return {
+            "assessor_mode": True,
+            "has_assessor_mode": obj.has_assessor_mode(user),
+            "assessor_can_assess": obj.can_assess(user),
+            "assessor_level": "assessor",
+            "assessor_box_view": obj.assessor_comments_view(user),
+            "user_is_referrer": obj.is_referrer(user),
+            "user_is_referrer_can_edit": obj.referrer_can_edit_referral(user),
+        }
 
-# class ProposalApplicantDetailsSerializer(serializers.ModelSerializer):
-#
-#    class Meta:
-#        model = ProposalApplicantDetails
-#        fields = (
-#                'id',
-#                'first_name',
-#                )
+    def get_lodgement_versions(self, obj):
+        # Just return the current version so that the frontend doesn't break
+        return [obj.lodgement_versions[0]]
 
 
 class CreateProposalSerializer(BaseProposalSerializer):

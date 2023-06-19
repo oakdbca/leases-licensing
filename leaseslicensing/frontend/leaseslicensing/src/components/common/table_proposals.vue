@@ -362,7 +362,7 @@ export default {
                         }
                         else if (full.can_user_view) {
                             if (vm.email_user_id_assigned) {
-                                links += `<a href='/external/proposal/${full.id}'>Process</a><br/>`;
+                                links += `<a href="/external/proposal/${full.id}/referral/">Process</a><br/>`;
                             } else {
                                 links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
                             }

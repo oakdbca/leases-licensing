@@ -1,5 +1,15 @@
 <template>
     <div class="container" id="externalDash">
+        <FormSection v-if="accessing_user && accessing_user.is_referee" :formCollapse="false"
+            label="Applications Referred to Me" Index="leases_and_licences">
+            <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" level="external"
+                :email_user_id_assigned="accessing_user.id"
+                filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
+                filterApplicationStatus_cache_name="filterApplicationStatusForApplicationReferredToMeTable"
+                filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
+                filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
+        </FormSection>
+
         <FormSection :formCollapse="false" label="Applications" subtitle="- View existing applications and lodge new ones"
             Index="applications">
             <ApplicationsTable level="external" />
@@ -13,15 +23,6 @@
         <FormSection :formCollapse="false" label="Compliances"
             subtitle="- The obligations you must comply by to keep your lease / licence valid" Index="compliances">
             <CompliancesTable level="external" />
-        </FormSection>
-
-        <FormSection :formCollapse="false" label="Applications Referred to Me" Index="leases_and_licences">
-            <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" v-if="accessing_user" level="external"
-                :email_user_id_assigned="accessing_user.id"
-                filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
-                filterApplicationStatus_cache_name="filterApplicationStatusForApplicationReferredToMeTable"
-                filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
-                filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
         </FormSection>
     </div>
 </template>

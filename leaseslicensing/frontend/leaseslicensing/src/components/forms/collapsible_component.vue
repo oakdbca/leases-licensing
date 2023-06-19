@@ -2,7 +2,7 @@
     <div>
         <div class="toggle_filters_wrapper rounded">
             <div data-bs-toggle="collapse" :data-bs-target="'#' + target_elem_id" :id="button_elem_id"
-                class="toggle_filters_button collapsed d-flex align-items-center" @click="toggle_filters_button_clicked">
+                class="toggle_filters_button d-flex align-items-center" @click="toggle_filters_button_clicked">
                 <div class="me-auto ps-1 title">{{ component_title }}</div>
                 <div class="me-2">
                     <i :id="warning_icon_id" :title="warning_icon_title"
@@ -13,7 +13,8 @@
                 </div>
             </div>
 
-            <div class="collapse border-top mt-1" :id="target_elem_id">
+            <div class="border-top mt-1" :class="collapsed ? 'collapse' : 'collapse show'"
+                :aria-expanded="collapsed ? 'false' : 'true'" :id="target_elem_id">
                 <slot></slot>
             </div>
         </div>
@@ -30,7 +31,11 @@ export default {
             type: String,
             required: false,
             default: '',
-        }
+        },
+        collapsed: {
+            type: Boolean,
+            default: true,
+        },
     },
     watch: {
         filters_expanded: function () {

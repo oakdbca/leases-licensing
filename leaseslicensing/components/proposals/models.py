@@ -3923,7 +3923,14 @@ class Referral(RevisionedMixin):
         on_delete=models.SET_NULL,
     )
     assigned_officer = models.IntegerField()  # EmailUserRO
-    referrer_comment_proposal_details = models.TextField(blank=True)
+
+    comment_map = models.TextField(blank=True)
+    comment_proposal_details = models.TextField(blank=True)
+    comment_proposal_impact = models.TextField(blank=True)
+    comment_other = models.TextField(blank=True)
+    comment_deed_poll = models.TextField(blank=True)
+    comment_additional_documents = models.TextField(blank=True)
+
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4681,27 +4688,21 @@ class ProposalAssessment(RevisionedMixin):
 
     assessor_comment_map = models.TextField(blank=True)
     deficiency_comment_map = models.TextField(blank=True)
-    referrer_comment_map = models.TextField(blank=True)
 
     assessor_comment_proposal_details = models.TextField(blank=True)
     deficiency_comment_proposal_details = models.TextField(blank=True)
-    referrer_comment_proposal_details = models.TextField(blank=True)
 
     assessor_comment_proposal_impact = models.TextField(blank=True)
     deficiency_comment_proposal_impact = models.TextField(blank=True)
-    referrer_comment_proposal_impact = models.TextField(blank=True)
 
     assessor_comment_other = models.TextField(blank=True)
     deficiency_comment_other = models.TextField(blank=True)
-    referrer_comment_other = models.TextField(blank=True)
 
     assessor_comment_deed_poll = models.TextField(blank=True)
     deficiency_comment_deed_poll = models.TextField(blank=True)
-    referrer_comment_deed_poll = models.TextField(blank=True)
 
     assessor_comment_additional_documents = models.TextField(blank=True)
     deficiency_comment_additional_documents = models.TextField(blank=True)
-    referrer_comment_additional_documents = models.TextField(blank=True)
 
     class Meta:
         app_label = "leaseslicensing"

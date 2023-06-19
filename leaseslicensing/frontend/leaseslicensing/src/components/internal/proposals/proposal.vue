@@ -22,7 +22,8 @@
                     @completeReferral="completeReferral" @amendmentRequest="amendmentRequest"
                     @proposedDecline="proposedDecline" @proposedApproval="proposedApproval" @issueApproval="issueApproval"
                     @declineProposal="declineProposal" @assignRequestUser="assignRequestUser" @assignTo="assignTo"
-                    @completeEditing="completeEditing" @cancelEditing="cancelEditing" class="mt-2" />
+                    @completeEditing="completeEditing" @cancelEditing="cancelEditing"
+                    @externalRefereeInviteSent="externalRefereeInviteSent" class="mt-2" />
             </div>
 
             <div class="col-md-9">
@@ -48,19 +49,21 @@
                             :leaseLicence="isLeaseLicence" @formMounted="applicationFormMounted">
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
                             <template v-slot:slot_map_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_map_comments"
-                                    @created="collapsible_map_comments_component_mounted" class="mb-2">
+                                <AssessmentComments :collapsed="collapseAssessmentComments" component_title="Comments"
+                                    ref="collapsible_map_comments" @created="collapsible_map_comments_component_mounted"
+                                    class="mb-2">
                                     <div class="container px-3">
                                         <div class="row mb-3 mt-3">
                                             <div class="col">
                                                 <div class="form-floating">
                                                     <textarea class="form-control" v-model="assessment.assessor_comment_map"
                                                         id="assessor_comment_map" :disabled="!canEditComments" />
-                                                    <label for="assessor_comment_map">Assessor Comments</label>
+                                                    <label for="assessor_comment_map">Assessor Comments {{ withReferral
+                                                    }}</label>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="row mb-3">
+                                        <div class="row mb-3 mt-3">
                                             <div class="col">
                                                 <div class="form-floating">
                                                     <textarea class="form-control"
@@ -70,33 +73,26 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div v-for="referral in proposal.referrals" class="row mb-3 mt-3"
+                                            :key="referral.id">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control referral-comment"
+                                                        :id="'comment_map_' + referral.id"
+                                                        :disabled="referral.referral !== profile.id" />
+                                                    <label :for="'comment_map_' + referral.id">Referral Comment by <span
+                                                            class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions
-                                    v-if="assessment_for_assessor_map.length > 0 && assessments_for_referrals_map.length > 0"
-                                    component_title="Checklist Questions" ref="collapsible_map_checklist_questions"
-                                    @created="collapsible_map_checklist_questions_component_mounted" class="mb-2">
-                                    <template v-if="assessment_for_assessor_map.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_map" :key="question.id">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_map" :key="assessment.id">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
-                                        </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                </AssessmentComments>
                             </template>
 
                             <template v-slot:slot_proposal_details_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_proposal_details_comments"
+                                <AssessmentComments :collapsed="collapseAssessmentComments" component_title="Comments"
+                                    ref="collapsible_proposal_details_comments"
                                     @created="collapsible_proposal_details_comments_component_mounted" class="mb-2">
                                     <div class="container px-3">
                                         <div class="row mb-3 mt-3">
@@ -136,31 +132,12 @@
                                             </div>
                                         </div>
                                     </div>
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_proposal_details_checklist_questions"
-                                    @created="collapsible_proposal_details_checklist_questions_component_mounted"
-                                    class="mb-2">
-                                    <template v-if="assessment_for_assessor_proposal_details.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_proposal_details">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_proposal_details">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers"> <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
-                                        </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                </AssessmentComments>
                             </template>
 
                             <template v-slot:slot_proposal_impact_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_proposal_impact_comments"
+                                <AssessmentComments :collapsed="collapseAssessmentComments" component_title="Comments"
+                                    ref="collapsible_proposal_impact_comments"
                                     @created="collapsible_proposal_impact_comments_component_mounted" class="mb-2">
                                     <div class="row">
                                         <div class="col-md-4">
@@ -183,32 +160,13 @@
                                         </div>
                                     </div>
 
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_proposal_impact_checklist_questions"
-                                    @created="collapsible_proposal_impact_checklist_questions_component_mounted"
-                                    class="mb-2">
-                                    <template v-if="assessment_for_assessor_proposal_impact.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_proposal_impact">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_proposal_impact">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers"> <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
-                                        </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                </AssessmentComments>
                             </template>
 
                             <template v-slot:slot_other_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_other_comments"
-                                    @created="collapsible_other_comments_component_mounted" class="mb-2">
+                                <AssessmentComments :collapsed="collapseAssessmentComments" component_title="Comments"
+                                    ref="collapsible_other_comments" @created="collapsible_other_comments_component_mounted"
+                                    class="mb-2">
                                     <div class="row">
                                         <div class="col-md-4">
                                             <label for="assessor_comment_other">Assessor Comment</label>
@@ -227,32 +185,12 @@
                                                 id="deficiency_comment_other" :readonly="!canEditComments" />
                                         </div>
                                     </div>
-
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_other_checklist_questions"
-                                    @created="collapsible_other_checklist_questions_component_mounted" class="mb-2">
-                                    <template v-if="assessment_for_assessor_other.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_other" :key="question.id">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_other" :key="assessment.id">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
-                                        </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                </AssessmentComments>
                             </template>
 
                             <template v-slot:slot_deed_poll_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_deed_poll_comments"
+                                <AssessmentComments :collapsed="collapseAssessmentComments" component_title="Comments"
+                                    ref="collapsible_deed_poll_comments"
                                     @created="collapsible_deed_poll_comments_component_mounted" class="mb-2">
                                     <div class="row">
                                         <div class="col-md-4">
@@ -273,31 +211,11 @@
                                         </div>
                                     </div>
 
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_deed_poll_checklist_questions"
-                                    @created="collapsible_deed_poll_checklist_questions_component_mounted" class="mb-2">
-                                    <template v-if="assessment_for_assessor_deed_poll.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_deed_poll" :key="question.id">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_deed_poll"
-                                        :key="assessment.id"> <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
-                                        </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                </AssessmentComments>
                             </template>
 
                             <template v-slot:slot_additional_documents_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments"
+                                <AssessmentComments :collapsed="collapseAssessmentComments" component_title="Comments"
                                     ref="collapsible_additional_documents_comments"
                                     @created="collapsible_additional_documents_comments_component_mounted" class="mb-2">
                                     <div class="row">
@@ -321,28 +239,7 @@
                                         </div>
                                     </div>
 
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_additional_documents_checklist_questions"
-                                    @created="collapsible_additional_documents_checklist_questions_component_mounted"
-                                    class="mb-2">
-                                    <template v-if="assessment_for_assessor_additional_documents.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_additional_documents"
-                                        :key="question.id"> <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_additional_documents"
-                                        :key="assessment.id"> <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
-                                        </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                </AssessmentComments>
 
                                 <strong>Select one or more documents that need to be provided by the applicant:</strong>
                                 <div v-show="select2AppliedToAdditionalDocumentTypes">
@@ -419,7 +316,7 @@ import Workflow from '@common-utils/workflow.vue'
 import { api_endpoints, helpers, constants } from '@/utils/hooks'
 import ApplicationForm from '@/components/form.vue';
 import FormSection from "@/components/forms/section_toggle.vue"
-import CollapsibleQuestions from '@/components/forms/collapsible_component.vue'
+import AssessmentComments from '@/components/forms/collapsible_component.vue'
 import ChecklistQuestion from '@/components/common/component_checklist_question.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
 require("select2/dist/css/select2.min.css");
@@ -432,6 +329,7 @@ export default {
     data: function () {
         let vm = this;
         return {
+            profile: null,
             detailsBody: 'detailsBody' + vm._.uid,
             addressBody: 'addressBody' + vm._.uid,
             contactsBody: 'contactsBody' + vm._.uid,
@@ -522,7 +420,7 @@ export default {
         Workflow,
         ApplicationForm,
         FormSection,
-        CollapsibleQuestions,
+        AssessmentComments,
         ChecklistQuestion,
         TableRelatedItems,
         ErrorRenderer,
@@ -536,6 +434,14 @@ export default {
 
     },
     computed: {
+        withReferral: function () {
+            console.log('computing withReferral')
+            return this.proposal && [constants.PROPOSAL_STATUS.WITH_REFERRAL.TEXT,
+            constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.TEXT].includes(this.proposal.processing_status);
+        },
+        collapseAssessmentComments: function () {
+            return !(this.withReferral && this.profile.is_referee);
+        },
         related_items_ajax_url: function () {
             return '/api/proposal/' + this.proposal.id + '/related_items/'
         },
@@ -820,12 +726,6 @@ export default {
                 ((this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID || this.isFinalised) && this.showingRequirements)
             return ret_val
         },
-        /*
-        showElectoralRoll: function(){
-            // TODO: implement
-            return true
-        },
-        */
         showElectoralRoll: function () {
             let show = false;
             if (this.proposal && ['wla', 'mla'].includes(this.proposal.application_type_code)) {
@@ -1177,6 +1077,9 @@ export default {
             this.$refs.proposed_decline.decline = this.proposal.proposaldeclineddetails != null ? helpers.copyObject(this.proposal.proposaldeclineddetails) : {};
             this.$refs.proposed_decline.isModalOpen = true;
         },
+        externalRefereeInviteSent: function (proposal) {
+            this.proposal = proposal;
+        },
         amendmentRequest: function () {
             let values = '';
             $('.deficiency').each((i, d) => {
@@ -1344,10 +1247,6 @@ export default {
                 $(vm.$refs.assigned_officer).data('select2') ? $(vm.$refs.assigned_officer).select2('destroy') : '';
             }
             // Assigned officer select
-            /*
-            console.log('Elem: ')
-            console.log(vm.$refs.assigned_officer)
-            */
             $(vm.$refs.assigned_officer).select2({
                 "theme": "bootstrap",
                 allowClear: true,
@@ -1381,21 +1280,6 @@ export default {
         initialiseSelects: function () {
             let vm = this;
             if (!vm.initialisedSelects) {
-                /*
-                $(vm.$refs.department_users).select2({
-                    "theme": "bootstrap",
-                    allowClear: true,
-                    //placeholder:"Select Referral"
-                }).
-                on("select2:select",function (e) {
-                    var selected = $(e.currentTarget);
-                    //vm.selected_referral = selected.val();
-                }).
-                on("select2:unselect",function (e) {
-                    var selected = $(e.currentTarget);
-                    //vm.selected_referral = ''
-                });
-                */
                 vm.initialiseAssignedOfficerSelect();
                 vm.initialisedSelects = true;
             }
@@ -1449,6 +1333,10 @@ export default {
                     if (vm.debug == true) {
                         this.showingProposal = true;
                     }
+                    if ([constants.PROPOSAL_STATUS.WITH_REFERRAL.TEXT,
+                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.TEXT].includes(vm.proposal.processing_status)) {
+                        $('textarea.referral-comment:enabled:visible:not([readonly="readonly"]):first').focus();
+                    }
                 })
                 .catch(error => {
                     console.log(error);
@@ -1475,7 +1363,8 @@ export default {
             }
         });
     },
-    created: function () {
+    created: async function () {
+        this.profile = Object.assign({}, await helpers.fetchWrapper(api_endpoints.profile));
         this.fetchProposal();
     },
 }

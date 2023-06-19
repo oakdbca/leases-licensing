@@ -77,7 +77,6 @@ import {
     helpers
 }
     from '@/utils/hooks'
-import utils from './utils'
 export default {
     data: function () {
         let vm = this;
@@ -209,9 +208,6 @@ export default {
         this.fetchLinkedOrganisations();
         this.applicationsLoading = false;
     },
-    mounted: function () {
-
-    }
 }
 </script>
 
@@ -224,16 +220,6 @@ select {
     min-height: 34px;
     padding: 0;
     height: auto;
-}
-
-.group-box {
-    border-style: solid;
-    border-width: thin;
-    border-color: #FFFFFF;
-}
-
-.radio-buttons {
-    padding: 5px;
 }
 
 button.continue {

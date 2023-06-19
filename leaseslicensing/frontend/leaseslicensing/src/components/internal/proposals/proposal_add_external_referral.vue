@@ -57,6 +57,17 @@
                             </div>
                         </div>
 
+                        <div class="row mb-4">
+                            <label for="mobile" class="col-sm-3 col-form-label">Invite Comments</label>
+                            <div class="col-sm-9">
+                                <textarea class="form-control" name="invite_text"
+                                    v-model="external_referee_invite.invite_text" required />
+                                <div class="invalid-feedback">
+                                    Please enter an invite comment.
+                                </div>
+                            </div>
+                        </div>
+
                         <BootstrapAlert>
                             <ul class="list-group">
                                 <li class="list-group-item">
@@ -86,7 +97,7 @@ export default {
         modal,
         ErrorRenderer
     },
-    emits: ['external-referee-invite-sent'],
+    emits: ['externalRefereeInviteSent'],
     props: {
         proposal_id: {
             type: Number,
@@ -162,7 +173,7 @@ export default {
                         icon: 'success',
                         confirmButtonText: 'OK'
                     })
-                    vm.$emit('external-referee-invite-sent');
+                    vm.$emit('externalRefereeInviteSent', data);
                     vm.close();
                 })
                 .catch(error => {

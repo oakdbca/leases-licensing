@@ -81,7 +81,7 @@
                 </div>
             </div>
 
-            <div v-if="canAssess && proposal.external_referee_invites && proposal.external_referee_invites.length > 0"
+            <div v-if="canAssess && proposal.external_referral_invites && proposal.external_referral_invites.length > 0"
                 class="card-body border-top">
                 <div class="fw-bold mb-1">External Referee Invites</div>
                 <table class="table table-sm table-referrals">
@@ -93,7 +93,8 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-for="external_referee_invite in proposal.external_referee_invites" class="">
+                        <tr v-for="external_referee_invite in proposal.external_referral_invites"
+                            :key="external_referee_invite.id">
                             <td scope="row">{{ external_referee_invite.full_name }}</td>
                             <td>Pending</td>
                             <td>
@@ -181,7 +182,8 @@
                 </div>
             </div>
         </div>
-        <AddExternalReferral ref="AddExternalReferral" :proposal_id="proposal.id" :email="external_referral_email" />
+        <AddExternalReferral ref="AddExternalReferral" @externalRefereeInviteSent="externalRefereeInviteSent"
+            :proposal_id="proposal.id" :email="external_referral_email" />
     </div>
 </template>
 
@@ -194,6 +196,21 @@ import Swal from 'sweetalert2';
 
 export default {
     name: 'Workflow',
+    emits: [
+        'completeEditing',
+        'assignRequestUser',
+        'assignTo',
+        'toggleProposal',
+        'toggleRequirements',
+        'switchStatus',
+        'amendmentRequest',
+        'completeReferral',
+        'proposedDecline',
+        'proposedApproval',
+        'issueApproval',
+        'declineProposal',
+        'externalRefereeInviteSent',
+    ],
     data: function () {
         let vm = this;
 
@@ -835,6 +852,9 @@ export default {
         },
         declineProposal: function () {
             this.$emit('declineProposal')
+        },
+        externalRefereeInviteSent: function (proposal) {
+            this.$emit('externalRefereeInviteSent', proposal)
         },
         initialisePopovers: function () {
             var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
