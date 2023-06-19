@@ -43,7 +43,7 @@
             </div>
         </CollapsibleFilters>
 
-        <div v-if="is_external" class="row">
+        <div v-if="is_external && !email_user_id_assigned" class="row">
             <div class="col-md-12">
                 <div class="text-end">
                     <button type="button" class="btn btn-primary mb-2" @click="new_application_button_clicked"><i
@@ -361,17 +361,12 @@ export default {
                             links += `<a href='#${full.id}' data-discard-proposal='${full.id}'>Discard</a><br/>`;
                         }
                         else if (full.can_user_view) {
-                            links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
+                            if (vm.email_user_id_assigned) {
+                                links += `<a href='/external/proposal/${full.id}'>Process</a><br/>`;
+                            } else {
+                                links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
+                            }
                         }
-                        //for (let invoice of full.invoices){
-                        //    console.log(invoice.payment_status.toLowerCase())
-                        //    if (invoice.payment_status.toLowerCase() === 'unpaid' || invoice.payment_status.toLowerCase() === 'partially paid'){
-                        //        links +=  `<a href='/application_fee_existing/${full.id}'>Pay</a>`
-                        //    }
-                        //}
-                        //if (full.document_upload_url){
-                        //    links +=  `<a href='${full.document_upload_url}'>Upload Documents</a>`
-                        //}
                     }
                     return links;
                 }
