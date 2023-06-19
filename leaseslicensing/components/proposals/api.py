@@ -323,13 +323,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
     serializer_class = ListProposalSerializer
     page_size = 10
 
-    @property
-    def excluded_type(self):
-        try:
-            return ApplicationType.objects.get(name="E Class")
-        except ApplicationType.DoesNotExist:
-            return ApplicationType.objects.none()
-
     def get_queryset(self):
         user = self.request.user
         if not is_internal(self.request) and not is_customer(self.request):
@@ -344,7 +337,20 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     referrals__in=Referral.objects.filter(referral=user.id)
                 )
         if is_customer(self.request):
-            qs = Proposal.get_proposals_for_emailuser(user.id)
+            # Queryset for application referred to external user
+            email_user_id_assigned = int(
+                self.request.query_params.get("email_user_id_assigned", "0")
+            )
+            if email_user_id_assigned:
+                qs = Proposal.objects.filter(
+                    Q(
+                        referrals__in=Referral.objects.filter(
+                            referral=email_user_id_assigned
+                        )
+                    )
+                )
+            else:
+                qs = Proposal.get_proposals_for_emailuser(user.id)
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
@@ -362,11 +368,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         return qs
 
     def list(self, request, *args, **kwargs):
-        """serializer.data = {ReturnList: 10} [OrderedDict([('id', 4), ('application_type', OrderedDict([('id', 1),
-        ('name_display', 'Registration of Interest'), ('confirmation_text', 'registration of interest'),
-        ('name', 'registration_of_interest'), ('order', 0), ('visible', True), ('application_fee'… View
-        User is accessing /external/ page
-        """
         qs = self.get_queryset()
         qs = self.filter_queryset(qs)
 
@@ -494,13 +495,6 @@ class ProposalSubmitViewSet(viewsets.ModelViewSet):
     serializer_class = ProposalSerializer
     lookup_field = "id"
 
-    @property
-    def excluded_type(self):
-        try:
-            return ApplicationType.objects.get(name="E Class")
-        except ApplicationType.DoesNotExist:
-            return ApplicationType.objects.none()
-
     def get_queryset(self):
         user = self.request.user
 
@@ -524,6 +518,8 @@ class ProposalViewSet(UserActionLoggingViewset):
         if is_internal(self.request):
             return Proposal.objects.all()
         elif is_customer(self.request):
+            if Referral.objects.filter(referral=user.id).exists():
+                return Proposal.objects.filter(referrals__in=Referral.objects.filter(referral=user.id))
             return Proposal.get_proposals_for_emailuser(user.id)
 
         logger.warn(
@@ -1680,9 +1676,8 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def external_referee_invite(self, request, *args, **kwargs):
         instance = self.get_object()
-        logger.debug(request.data)
         request.data["proposal_id"] = instance.id
-        serializer = ExternalRefereeInviteSerializer(data=request.data)
+        serializer = ExternalRefereeInviteSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         if ExternalRefereeInvite.objects.filter(
             email=request.data["email"]
@@ -1690,7 +1685,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             raise serializers.ValidationError(
                 _("An external referee invitation has already been sent to {email}".format(email=request.data["email"])),
                 code="invalid")
-        external_referee_invite = ExternalRefereeInvite.objects.create(**request.data)
+        external_referee_invite = ExternalRefereeInvite.objects.create(sent_by=request.user.id, **request.data)
         send_external_referee_invite_email(external_referee_invite, instance, request)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
