@@ -1,0 +1,50 @@
+[
+    {
+        "model": "leaseslicensing.detailstext",
+        "pk": 1,
+        "fields": {
+            "body": "Registration of Interest standard <b>approve</b> message.",
+            "target": "registration-of-interest-details-approve"
+        }
+    },
+    {
+        "model": "leaseslicensing.detailstext",
+        "pk": 2,
+        "fields": {
+            "body": "Registration of Interest standard <b>decline</b> message.",
+            "target": "registration-of-interest-details-decline"
+        }
+    },
+    {
+        "model": "leaseslicensing.detailstext",
+        "pk": 3,
+        "fields": {
+            "body": "Lease license standard <b>approve</b> message",
+            "target": "lease-licence-details-approve"
+        }
+    },
+    {
+        "model": "leaseslicensing.detailstext",
+        "pk": 4,
+        "fields": {
+            "body": "Lease license standard <b>decline</b> message",
+            "target": "lease-licence-details-decline"
+        }
+    },
+    {
+        "model": "leaseslicensing.detailstext",
+        "pk": 5,
+        "fields": {
+            "body": "<p>Competitive Process outcome <strong>winner</strong> details.</p>",
+            "target": "competitive-process-outcome-winner-details"
+        }
+    },
+    {
+        "model": "leaseslicensing.detailstext",
+        "pk": 6,
+        "fields": {
+            "body": "Competitive Process outcome <b>no winner</b> details.",
+            "target": "competitive-process-outcome-no-winner-details"
+        }
+    }
+]
