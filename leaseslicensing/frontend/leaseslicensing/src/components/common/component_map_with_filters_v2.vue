@@ -16,9 +16,9 @@
         - display polygons from the competitive process of an application that proceeded to a competitive process on the application page
         - implement map on approval details page and map tab
         - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
-        - mouse-over control tooltips (zoom-in, -out, toggle-fullscreen have tooltips by default, custom controls should as well)
         - delete old map files
         - rename this file
+        - automatic zoom to all on map load
      -->
     <div>
         <CollapsibleFilters v-if="filterable" :component_title="'Filters' + filterInformation" ref="collapsible_filters"
@@ -58,32 +58,37 @@
         </CollapsibleFilters>
 
         <div class="d-flex justify-content-end align-items-center mb-2">
-            <div @click="displayAllFeatures" class="btn mr-2">Zoom to All</div>
-            <button type="button" class="btn btn-primary" @click="geoJsonButtonClicked"><i class="fa-solid fa-download"></i>
-                Get GeoJSON</button>
+            <div class="col-md-12 text-end">
+                <button type="button" @click="displayAllFeatures" class="btn btn-primary btn-horizontal-align mr-2"
+                    title="Zoom map to the extent of all features">Zoom to All</button>
+                <button type="button" class="btn btn-primary" title="Download features as GeoJSON"
+                    @click="geoJsonButtonClicked"><i class="fa-solid fa-download"></i>
+                    Get GeoJSON</button>
+            </div>
         </div>
 
-        <VueAlert :show.sync="_errorMessage != null" type="danger" style="color: red"><strong> {{ _errorMessage }} </strong></VueAlert>
+        <VueAlert :show.sync="_errorMessage != null" type="danger" style="color: red"><strong> {{ _errorMessage }} </strong>
+        </VueAlert>
 
         <div :id="map_container_id" style="position: relative;">
             <div :id="elem_id" class="map">
-                <div class="basemap-button">
+                <div class="basemap-button" title="Toggle background map">
                     <img id="basemap_sat" src="../../assets/satellite_icon.jpg" @click="setBaseLayer('sat')" />
                     <img id="basemap_osm" src="../../assets/map_icon.png" @click="setBaseLayer('osm')" />
                 </div>
                 <div class="optional-layers-wrapper">
                     <!-- Toggle measure tool between active and not active -->
                     <div class="optional-layers-button-wrapper">
-                        <div :class="[
-                                mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
-                            ]" @click="set_mode.bind(this)('measure')">
+                        <div :title="mode == 'measure' ? 'Deactivate measure tool' : 'Activate measure tool'" :class="[
+                            mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('measure')">
                             <img class="svg-icon" src="../../assets/ruler.svg" />
                         </div>
                     </div>
                     <div v-if="drawable" class="optional-layers-button-wrapper">
-                        <div :class="[
-                                mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
-                            ]" @click="set_mode.bind(this)('draw')">
+                        <div :title="mode == 'draw' ? 'Deactivate draw tool' : 'Activate draw tool'" :class="[
+                            mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('draw')">
                             <img class="svg-icon" src="../../assets/pen-icon.svg" />
                         </div>
                     </div>
@@ -98,7 +103,7 @@
                         <transition v-if="optionalLayers.length">
                             <div div class="layer_options layer_menu" v-show="hover" @mouseleave="hover = false">
                                 <template v-for="layer in optionalLayers">
-                                    <div class="row">
+                                    <div class="row" :title="layer.values_.abstract">
                                         <input type="checkbox" :id="layer.ol_uid" :checked="layer.values_.visible"
                                             @change="changeLayerVisibility(layer)" class="layer_option col-md-1" />
                                         <label :for="layer.ol_uid" class="layer_option col-md-6">{{ layer.get('title')
@@ -109,20 +114,20 @@
                             </div>
                         </transition>
                     </div>
-                    <div v-if="selectedFeatureIds.length>0" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button">
-                            <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash"
-                                @click="removeModelFeatures()" />
-                            <span class='badge badge-warning' id='selectedFeatureCount'>{{ selectedFeatureIds.length }}</span>
+                    <div v-if="selectedFeatureIds.length > 0" class="optional-layers-button-wrapper">
+                        <div class="optional-layers-button" title="Delete selected features">
+                            <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash" @click="removeModelFeatures()" />
+                            <span class='badge badge-warning' id='selectedFeatureCount'>{{ selectedFeatureIds.length
+                            }}</span>
                         </div>
                     </div>
                     <div v-if="showUndoButton" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button" @click="undoLeaseLicensePoint()">
+                        <div class="optional-layers-button" @click="undoLeaseLicensePoint()" title="Undo last point">
                             <img class="svg-icon" src="../../assets/map-undo.svg" />
                         </div>
                     </div>
                     <div v-if="showRedoButton" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button" @click="redoLeaseLicensePoint()">
+                        <div class="optional-layers-button" @click="redoLeaseLicensePoint()" title="Redo last point">
                             <img class="svg-icon" src="../../assets/map-redo.svg" />
                         </div>
                     </div>
@@ -133,7 +138,9 @@
                         <div class="toast-header">
                             <img src="" class="rounded me-2" alt="">
                             <!-- FIXME: Can this be standardised into the same field name? -->
-                            <strong class="me-auto">{{ selectedModel.label || selectedModel.application_type_name_display || selectedModel.application_type.name_display }}: {{ selectedModel.lodgement_number }}</strong>
+                            <strong class="me-auto">{{ selectedModel.label || selectedModel.application_type_name_display ||
+                                selectedModel.application_type.name_display }}: {{ selectedModel.lodgement_number
+    }}</strong>
                         </div>
                         <div class="toast-body">
                             <table class="table table-sm">
@@ -141,15 +148,21 @@
                                     <tr>
                                         <th scope="row">Processing Status</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td>{{ selectedModel.status || selectedModel.status_display || selectedModel.processing_status_display || selectedModel.processing_status }}</td>
+                                        <td>{{ selectedModel.status || selectedModel.status_display ||
+                                            selectedModel.processing_status_display || selectedModel.processing_status }}
+                                        </td>
                                     </tr>
                                     <!-- TODO: `created_at` is not formatted to DD/MM/YYYY -->
-                                    <tr v-if="selectedModel.copied_from || selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at || selectedModel.created_at_display">
-                                        <th v-if="selectedModel.copied_from" scope="row">Lodgement (original application)</th>
+                                    <tr
+                                        v-if="selectedModel.copied_from || selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at || selectedModel.created_at_display">
+                                        <th v-if="selectedModel.copied_from" scope="row">Lodgement (original application)
+                                        </th>
                                         <th v-else scope="row">Lodgement Date</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td v-if="selectedModel.copied_from">{{ selectedModel.copied_from.lodgement_date_display }}</td>
-                                        <td v-else>{{ selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at || selectedModel.created_at_display
+                                        <td v-if="selectedModel.copied_from">{{
+                                            selectedModel.copied_from.lodgement_date_display }}</td>
+                                        <td v-else>{{ selectedModel.lodgement_date_display || selectedModel.lodgement_date
+                                            || selectedModel.created_at || selectedModel.created_at_display
                                         }}</td>
                                     </tr>
                                     <tr v-if="selectedModel.polygon_source">
@@ -209,9 +222,9 @@ import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/co
 export default {
     name: 'MapComponentWithFiltersV2',
     emits: [
-            'filter-appied',
-            'validate-feature',
-            ],
+        'filter-appied',
+        'validate-feature',
+    ],
     props: {
         level: {
             type: String,
@@ -268,7 +281,7 @@ export default {
         featureCollection: {
             type: Object,
             required: false,
-            default: {"features": [], "type": "FeatureCollection"},
+            default: { "features": [], "type": "FeatureCollection" },
             validator: function (val) {
                 return val.type == 'FeatureCollection' ? true : false;
             }
@@ -412,16 +425,16 @@ export default {
             sketchCoordinatesHistory: [[]],
             defaultColor: '#eeeeee',
             clickSelectStroke: new Stroke({
-                    color: 'rgba(255, 0, 0, 0.7)',
-                    width: 2,
-                }),
+                color: 'rgba(255, 0, 0, 0.7)',
+                width: 2,
+            }),
             hoverFill: new Fill({
-                    color: 'rgba(255, 255, 255, 0.5)',
-                }),
+                color: 'rgba(255, 255, 255, 0.5)',
+            }),
             hoverStroke: new Stroke({
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    width: 1,
-                }),
+                color: 'rgba(255, 255, 255, 0.5)',
+                width: 1,
+            }),
             set_mode: set_mode,
             _errorMessage: null,
         }
@@ -614,7 +627,7 @@ export default {
          * @param {dict} featureData A feature object
          * @param {Proxy} model A model object
          */
-        styleByColor: function(featureData, model) {
+        styleByColor: function (featureData, model) {
             let vm = this;
 
             if (vm.styleBy === 'assessor') {
@@ -627,7 +640,7 @@ export default {
                 return vm.featureColors["unknown"] || vm.defaultColor;
             }
         },
-        createStyle: function(color) {
+        createStyle: function (color) {
             let vm = this;
             if (!color) {
                 color = vm.defaultColor;
@@ -821,7 +834,7 @@ export default {
         },
         initialiseDrawLayer: function () {
             let vm = this;
-            if (!vm.drawable){
+            if (!vm.drawable) {
                 return;
             }
 
@@ -852,7 +865,7 @@ export default {
 
                     return geometry;
                 },
-                condition: function(evt) {
+                condition: function (evt) {
                     if (evt.originalEvent.buttons === 1) {
                         // Only allow drawing when the left mouse button is pressed
                         return true;
@@ -891,15 +904,15 @@ export default {
                 let model = vm.context || {};
 
                 let color = vm.featureColors["draw"] ||
-                            vm.featureColors["unknown"] ||
-                            vm.defaultColor;
+                    vm.featureColors["unknown"] ||
+                    vm.defaultColor;
                 evt.feature.setProperties({
                     id: vm.newFeatureId,
                     model: model,
                     polygon_source: "New",
                     name: model.id || -1,
                     // FIXME: Can this be standardised into the same field name?
-                    label: model.label || model.application_type_name_display || (model.application_type? model.application_type.name_display: undefined) || "Draw",
+                    label: model.label || model.application_type_name_display || (model.application_type ? model.application_type.name_display : undefined) || "Draw",
                     color: color,
                 })
                 vm.newFeatureId++;
@@ -922,7 +935,7 @@ export default {
             let _hoverFill = null;
             function hoverSelect(feature) {
                 const color = feature.get('color') || vm.defaultColor;
-                _hoverFill = new Fill({color: color});
+                _hoverFill = new Fill({ color: color });
 
                 // If the feature is already selected, use the select stroke when hovering
                 if (vm.selectedFeatureIds.includes(feature.getProperties().id)) {
@@ -962,7 +975,8 @@ export default {
                     }
                     vm.selectedModel = model
                     selected.setStyle(hoverSelect);
-                }, {layerFilter: function (layer) {
+                }, {
+                    layerFilter: function (layer) {
                         return layer.get('name') === 'query_layer';
                     }
                 });
@@ -975,7 +989,7 @@ export default {
         },
         initialiseSingleClickEvent: function () {
             let vm = this;
-            vm.map.on('singleclick', function(evt) {
+            vm.map.on('singleclick', function (evt) {
                 if (vm.drawing || vm.measuring) {
                     console.log(evt);
                     // TODO: must be a feature
@@ -1126,7 +1140,7 @@ export default {
             vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
                 id => !features.map(
                     feature => feature.getProperties().id
-                    ).includes(id));
+                ).includes(id));
         },
         collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
@@ -1179,7 +1193,7 @@ export default {
             }, (error) => {
             })
         },
-        addFeatureCollectionToMap: function(featureCollection) {
+        addFeatureCollectionToMap: function (featureCollection) {
             let vm = this;
             if (featureCollection == null) {
                 featureCollection = vm.featureCollection;
@@ -1297,7 +1311,7 @@ export default {
          * Returns a dictionary of query parameters for a given layer
          * @param {String} layerStr The dictionary key containing the layer information
          */
-        queryParamsDict: function(layerStr) {
+        queryParamsDict: function (layerStr) {
             let vm = this;
 
             if (!layerStr in vm.owsQuery) {
@@ -1346,9 +1360,9 @@ export default {
             // Transform list of flat coordinates into a list of coordinate pairs,
             // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
             let flatCoordinateStringPairs = flatCoordinates.map((coord, index) => index % 2 == 0 ?
-                    [flatCoordinates[index], flatCoordinates[index + 1]].join(" ") :
-                        "")
-                    .filter(item => item != "")
+                [flatCoordinates[index], flatCoordinates[index + 1]].join(" ") :
+                "")
+                .filter(item => item != "")
 
             // Create a Well-Known-Text polygon string from the coordinate pairs
             return `POLYGON ((${flatCoordinateStringPairs.join(", ")}))`;
@@ -1542,17 +1556,18 @@ export default {
 }
 
 .badge {
-  padding-left: 9px;
-  padding-right: 9px;
-  -webkit-border-radius: 9px;
-  -moz-border-radius: 9px;
-  border-radius: 9px;
+    padding-left: 9px;
+    padding-right: 9px;
+    -webkit-border-radius: 9px;
+    -moz-border-radius: 9px;
+    border-radius: 9px;
 }
 
 .label-warning[href],
 .badge-warning[href] {
-  background-color: #c67605;
+    background-color: #c67605;
 }
+
 #selectedFeatureCount {
     font-size: 12px;
     background: #ff0000;

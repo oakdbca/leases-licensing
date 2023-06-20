@@ -40,6 +40,7 @@ export function addOptionalLayers(map_component) {
             });
 
             let tileLayer = new TileLayer({
+                abstract: layer.Abstract.trim(),
                 title: layer.Title.trim(),
                 visible: false,
                 source: l,
