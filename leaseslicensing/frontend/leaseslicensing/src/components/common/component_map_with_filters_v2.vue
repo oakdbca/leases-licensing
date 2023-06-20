@@ -128,8 +128,8 @@
                         </transition>
                     </div>
                     <div v-if="selectedFeatureIds.length > 0" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button" title="Delete selected features">
-                            <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash" @click="removeModelFeatures()" />
+                        <div class="optional-layers-button" title="Delete selected features" @click="removeModelFeatures()">
+                            <img class="svg-icon" src="../../assets/trash-bin.svg" />
                             <span class='badge badge-warning' id='selectedFeatureCount'>{{ selectedFeatureIds.length
                             }}</span>
                         </div>
@@ -226,11 +226,10 @@ import VectorSource from 'ol/source/Vector';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { FullScreen as FullScreenControl } from 'ol/control';
 import { LineString, Point, Polygon } from 'ol/geom';
-import { fromLonLat, toLonLat, transform, Projection } from 'ol/proj';
 import GeoJSON from 'ol/format/GeoJSON';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js'
 import RangeSlider from '@/components/forms/range_slider.vue'
-import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/components/common/map_functions.js'
+import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
 
 export default {
     name: 'MapComponentWithFiltersV2',
@@ -1577,6 +1576,8 @@ export default {
 }
 
 .badge {
+    position: absolute;
+    z-index: 100;
     padding-left: 9px;
     padding-right: 9px;
     -webkit-border-radius: 9px;
