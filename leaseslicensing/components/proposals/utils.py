@@ -517,37 +517,34 @@ def save_referral_data(proposal, request, referral_completed=False):
         proposal_data = (
             request.data.get("proposal") if request.data.get("proposal") else {}
         )
+        if not proposal_data:
+            return
 
-        # Save checklist answers
-        if (
-            "referral_assessments" in proposal_data
-            and proposal_data["referral_assessments"]
-        ):
-            for assessment in proposal_data["referral_assessments"]:
-                # For each assessment
-                if assessment["referral"]["referral"]["id"] == request.user.id:
-                    # When this assessment is for the accessing user
-                    for section, answers in assessment["section_answers"].items():
-                        # Save answers
-                        if not assessment["completed"]:
-                            for answer_dict in answers:
-                                answer_obj = _save_answer_dict(answer_dict)
-                                # Not yet sure what the intention for answer_ob is
-                                # but just printing as it wasn't accessed.
-                                logger.debug(answer_obj)
-                    if referral_completed:
-                        # Make this assessment completed
-                        # TODO Why is `assessment` reassigned here?
-                        # There is already a `ProposalAssessment` object to work with.
-                        assessment = ProposalAssessment.objects.get(
-                            id=int(assessment["id"])
-                        )
-                        assessment.completed = True
-                        assessment.submitter = request.user.id
-                        assessment.save()
-                        assessment.referral.complete(request)
+        for referral in proposal_data["referrals"]:
+            logger.info("Saving referral data for {}".format(referral))
+            # Referee can only save changes to their own referral
+            if not referral["referral"] == request.user.id:
+                continue
 
-        # Referrals are not allowed to edit geometry
+            referral = Referral(
+                pk=referral["id"],
+                proposal=proposal,
+                comment_map=referral["comment_map"],
+                comment_proposal_details=referral["comment_proposal_details"],
+                comment_proposal_impact=referral["comment_proposal_impact"],
+                comment_other=referral["comment_other"],
+                comment_deed_poll=referral["comment_deed_poll"],
+                comment_additional_documents=referral["comment_additional_documents"],
+            )
+            # Only allow updating of comment fields
+            referral.save(update_fields=[
+                "comment_map",
+                "comment_proposal_details",
+                "comment_proposal_impact",
+                "comment_other",
+                "comment_deed_poll",
+                "comment_additional_documents"]
+            )
 
 
 def save_assessor_data(proposal, request, viewset):
