@@ -48,7 +48,8 @@
                         <MapComponent ref="component_map" :key="componentMapKey" :context="proposal"
                             :proposalIds="[proposal.id]" :owsQuery="owsQuery" styleBy="assessor" :filterable="false"
                             :drawable="true" :selectable="true" level="internal"
-                            @validate-feature="validateFeature.bind(this)()" />
+                            @validate-feature="validateFeature.bind(this)()"
+                            :mapInfoText="is_internal ? '' : 'Use the draw tool to draw the area of the proposal on the map'" />
 
                     </FormSection>
                 </div>

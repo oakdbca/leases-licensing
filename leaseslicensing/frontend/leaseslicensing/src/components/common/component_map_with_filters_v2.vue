@@ -57,13 +57,13 @@
             </div>
         </CollapsibleFilters>
 
-        <div class="d-flex justify-content-end align-items-center mb-2">
-            <div class="col-md-12 text-end">
-                <button type="button" @click="displayAllFeatures" class="btn btn-primary btn-horizontal-align mr-2"
-                    title="Zoom map to the extent of all features">Zoom to All</button>
-                <button type="button" class="btn btn-primary" title="Download features as GeoJSON"
-                    @click="geoJsonButtonClicked"><i class="fa-solid fa-download"></i>
-                    Get GeoJSON</button>
+        <div class="justify-content-end align-items-center mb-2">
+            <div v-if="mapInfoText.length > 0" class="row">
+                <div class="col-md-12">
+                    <BootstrapAlert class="mb-0">
+                        {{ mapInfoText }}
+                    </BootstrapAlert>
+                </div>
             </div>
         </div>
 
@@ -92,6 +92,19 @@
                             <img class="svg-icon" src="../../assets/pen-icon.svg" />
                         </div>
                     </div>
+                    <div class="optional-layers-button-wrapper">
+                        <div title="Zoom map to layer(s)" class="optional-layers-button" @click="displayAllFeatures">
+                            <img class="svg-icon" src="../../assets/map-zoom.svg" />
+                        </div>
+                    </div>
+                    <div class="optional-layers-button-wrapper">
+                        <div title="Download layers as GeoJSON" class="optional-layers-button"
+                            @click="geoJsonButtonClicked">
+                            <img class="svg-icon" src="../../assets/download.svg" />
+                        </div>
+                    </div>
+
+
                     <div style="position:relative">
                         <transition v-if="optionalLayers.length">
                             <div class="optional-layers-button-wrapper">
@@ -376,6 +389,14 @@ export default {
             type: Boolean,
             required: false,
             default: false,
+        },
+        /**
+         * A text that explains what is expected on the map
+         */
+        mapInfoText: {
+            type: String,
+            required: false,
+            default: '',
         },
     },
     data() {
