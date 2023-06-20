@@ -5,7 +5,7 @@ const { CKEditorTranslationsPlugin } = require('@ckeditor/ckeditor5-dev-translat
 const { styles } = require('@ckeditor/ckeditor5-dev-utils');
 
 // Useful plugin to find out what is making the bundle so big
-const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+// const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const port = process.env.PORT ? parseInt(process.env.PORT) : 9072;
 
 module.exports = {
@@ -74,7 +74,7 @@ module.exports = {
                 _: 'lodash',
             }),
             new MomentLocalesPlugin(),
-            new BundleAnalyzerPlugin(),
+            // new BundleAnalyzerPlugin(),
             // CKEditor 5 needs its own plugin to be built using webpack.
             new CKEditorTranslationsPlugin( {
                 // See https://ckeditor.com/docs/ckeditor5/latest/features/ui-language.html
