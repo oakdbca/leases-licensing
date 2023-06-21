@@ -3905,6 +3905,7 @@ class Referral(RevisionedMixin):
     )
     sent_by = models.IntegerField()  # EmailUserRO
     referral = models.IntegerField()  # EmailUserRO
+    is_external = models.BooleanField(default=False)
     linked = models.BooleanField(default=False)
     sent_from = models.SmallIntegerField(
         choices=SENT_CHOICES, default=SENT_CHOICES[0][0]
