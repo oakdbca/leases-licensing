@@ -337,7 +337,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     referrals__in=Referral.objects.filter(referral=user.id)
                 )
         if is_customer(self.request):
-            # Queryset for application referred to external user
+            # Queryset for applications referred to external user
             email_user_id_assigned = int(
                 self.request.query_params.get("email_user_id_assigned", "0")
             )
@@ -345,7 +345,8 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                 qs = Proposal.objects.filter(
                     Q(
                         referrals__in=Referral.objects.filter(
-                            referral=email_user_id_assigned
+                            referral=email_user_id_assigned,
+                            processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL
                         )
                     )
                 )
@@ -1697,12 +1698,24 @@ class ProposalViewSet(UserActionLoggingViewset):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def complete_referral(self, request, *args, **kwargs):
+        # TODO: There is also a 'complete' method on the Referral model.
+        # This could be confusing and if it doesn't end up being needed then it should be removed.
         instance = self.get_object()
+        referee_id = request.data.get("referee_id", None)
+        if not referee_id:
+            raise serializers.ValidationError(_("referee_id is required"), code="required")
+
+        if not instance.referrals.filter(referral=referee_id).exists():
+            msg = _(f"There is no referral for application: {instance.lodgement_number} and referee (email user): {referee_id}")
+            raise serializers.ValidationError(msg, code="invalid")
+
         save_referral_data(instance, request, True)
 
-        # TODO: complete referral here
+        referral = instance.referrals.get(referral=referee_id)
+        referral.complete(request)
 
-        return Response({})
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
