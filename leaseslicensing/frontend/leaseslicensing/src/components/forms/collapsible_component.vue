@@ -13,7 +13,7 @@
                 </div>
             </div>
 
-            <div class="border-top mt-1" :class="collapsed ? 'collapse' : 'collapse show'"
+            <div class="border-top body mt-1" :class="collapsed ? 'collapse' : 'collapse show'"
                 :aria-expanded="collapsed ? 'false' : 'true'" :id="target_elem_id">
                 <slot></slot>
             </div>
