@@ -1,6 +1,6 @@
 <template>
-    <div class="">
-        <div class="card card-default">
+    <div class="" v-bind="$attrs">
+        <div class="card card-default mb-2">
             <div class="card-header">
                 Workflow
             </div>
@@ -84,7 +84,7 @@
             <div v-if="canAssess && proposal.external_referral_invites && proposal.external_referral_invites.length > 0"
                 class="card-body border-top">
                 <div class="fw-bold mb-1">External Referee Invites</div>
-                <table class="table table-sm table-referrals">
+                <table class="table table-sm table-hover table-referrals">
                     <thead>
                         <tr>
                             <th scope="col">Referee</th>
@@ -95,9 +95,9 @@
                     <tbody>
                         <tr v-for="external_referee_invite in proposal.external_referral_invites"
                             :key="external_referee_invite.id">
-                            <td scope="row">{{ external_referee_invite.full_name }}</td>
+                            <td class="truncate-name">{{ external_referee_invite.full_name }}</td>
                             <td>Pending</td>
-                            <td>
+                            <td class="text-center">
                                 <a @click.prevent="" role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
                                     :data-bs-content="'Send a reminder to ' + external_referee_invite.full_name"
                                     data-bs-placement="bottom"><i class="fa fa-bell text-warning" aria-hidden="true"></i>
@@ -117,7 +117,7 @@
                 class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Referrals</div>
-                    <table class="table table-sm table-referrals">
+                    <table class="table table-sm table-hover table-referrals">
                         <thead>
                             <tr>
                                 <th>Referee</th>
@@ -127,13 +127,13 @@
                         </thead>
                         <tbody>
                             <tr v-for="r in proposal.latest_referrals">
-                                <td>
+                                <td class="truncate-name">
                                     {{ r.referral_obj.first_name }} {{ r.referral_obj.last_name }}
                                 </td>
                                 <td>
                                     {{ r.processing_status }}
                                 </td>
-                                <td>
+                                <td class="text-center">
                                     <template
                                         v-if="constants.REFERRAL_STATUS.PROCESSING_STATUS_WITH_REFERRAL.TEXT == r.processing_status">
                                         <a v-if="canLimitedAction"
@@ -166,9 +166,9 @@
                         :canAction="canLimitedAction" :isFinalised="isFinalised" :referral_url="referralListURL" />
                 </div>
             </div>
-            <div v-if="canAssess && actionsVisible" class="card-body border-top">
+            <div v-if="actionsVisible" class="card-body border-top">
                 <div class="row">
-                    <div v-if="display_actions">
+                    <div v-if="!this.isFinalised">
                         <div>
                             <strong>Action</strong>
                         </div>
@@ -184,6 +184,23 @@
         </div>
         <AddExternalReferral ref="AddExternalReferral" @externalRefereeInviteSent="externalRefereeInviteSent"
             :proposal_id="proposal.id" :email="external_referral_email" />
+
+    </div>
+    <div class="card sticky-top">
+        <div class="card-header">
+            Navigation Tools
+        </div>
+        <div class="card-body">
+            <div class="list-group">
+                <a role="button" class="list-group-item list-group-item-action link-primary"
+                    @click.prevent="toggleCollapse">Toggle
+                    Assessment Comments</a>
+                <a href="#" class="list-group-item list-group-item-action link-primary"
+                    @click.prevent="toggleFormSections">Toggle Form Sections</a>
+                <a href="#" class="list-group-item list-group-item-action link-primary">Scroll to top</a>
+            </div>
+
+        </div>
     </div>
 </template>
 
@@ -230,6 +247,7 @@ export default {
             referral_text: '',
             external_referral_email: '',
             sendingReferral: false,
+            formSectionsOpen: true,
             configurations_for_buttons: [
                 {
                     'key': 'enter_conditions',
@@ -242,9 +260,9 @@ export default {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
                                 // When application type is 'lease_licence'
                                 // When proposal status is 'with_assessor', 'assessor'/'referral' can see this button
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID, ROLES.REFERRAL.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID, ROLES.REFERRAL.ID,],
                                 // When proposal status is 'with_referral', 'assessor'/'referral' can see this button
-                                [PROPOSAL_STATUS.WITH_REFERRAL.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID, ROLES.REFERRAL.ID,],
+                                [PROPOSAL_STATUS.WITH_REFERRAL.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID, ROLES.REFERRAL.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -261,26 +279,7 @@ export default {
                     'button_title': 'Complete Referral',
                     'function_when_clicked': vm.completeReferral,
                     'function_to_show_hide': () => {
-                        let condition_to_display = {
-                            [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_REFERRAL.ID]: [ROLES.REFERRAL.ID,],
-                            },
-                            [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_REFERRAL.ID]: [ROLES.REFERRAL.ID,],
-                            }
-                        }
-                        let show1 = vm.check_role_conditions(condition_to_display)
-
-                        let show2 = false
-                        if (vm.proposal.referral_assessments) {
-                            for (let assessment of vm.proposal.referral_assessments) {
-                                console.log({ assessment })
-                                if (assessment.answerable_by_accessing_user)
-                                    show2 = true
-                            }
-                        }
-
-                        return show1 && show2
+                        return this.isReferee;
                     },
                     'function_to_disable': () => {
                         // TODO disable button under certain conditions
@@ -294,10 +293,10 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             },
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -325,8 +324,8 @@ export default {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
                                 // If either the assessor or referrer changes the status to `With Assessor/Referral (Conditions)`
                                 // both assessor and referrer should be able to return back to the Application
-                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID, ROLES.REFERRAL.ID,],
-                                [PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID, ROLES.REFERRAL.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID, ROLES.REFERRAL.ID,],
+                                [PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID, ROLES.REFERRAL.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -344,11 +343,11 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
-                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             },
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -367,12 +366,12 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
-                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             },
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
-                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -392,10 +391,10 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.REGISTRATION_OF_INTEREST_APPROVER.ID,],
+                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             },
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.LEASE_LICENCE_APPROVER.ID,],
+                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -413,10 +412,10 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.REGISTRATION_OF_INTEREST_APPROVER.ID,],
+                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             },
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.LEASE_LICENCE_APPROVER.ID,],
+                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -434,10 +433,10 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.REGISTRATION_OF_INTEREST_APPROVER.ID,],
+                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             },
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.LEASE_LICENCE_APPROVER.ID,],
+                                [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -455,7 +454,7 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -473,7 +472,7 @@ export default {
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                [PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID]: [ROLES.LEASE_LICENCE_ASSESSOR.ID,],
+                                [PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
                         let show = vm.check_role_conditions(condition_to_display)
@@ -515,6 +514,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        isReferee: {
+            type: Boolean,
+            default: false,
+        },
         can_user_edit: {
             type: Boolean,
             default: false,
@@ -533,6 +536,9 @@ export default {
     },
     computed: {
         actionsVisible: function () {
+            if (!(this.canAssess || this.isReferee)) {
+                return false;
+            }
             for (let i = 0; i < this.configurations_for_buttons.length; i++) {
                 if (this.configurations_for_buttons[i].function_to_show_hide()) {
                     return true
@@ -576,6 +582,27 @@ export default {
         },
     },
     methods: {
+        toggleCollapse: function (id) {
+            $('.toggle_filters_wrapper > .body').toggleClass('show');
+        },
+        toggleFormSections: function (id) {
+            if (this.formSectionsOpen) {
+                $('.section-toggle:not(:first) .chevron-toggle').removeClass('down-chevron-open');
+                $('.section-toggle:not(:first) .chevron-toggle').addClass('down-chevron-close');
+                $('.section-toggle:not(:first) > .card-body').css('display', 'none');
+            } else {
+                $('.section-toggle:not(:first) .chevron-toggle').removeClass('down-chevron-close');
+                $('.section-toggle:not(:first) .chevron-toggle').addClass('down-chevron-open');
+                $('.section-toggle:not(:first) > .card-body').css('display', 'block');
+            }
+            this.formSectionsOpen = !this.formSectionsOpen;
+
+            if ($('.section-toggle:not(:first) > .card-body').css('display') == 'none') {
+                $('html, body').animate({
+                    scrollTop: $('.section-toggle:first').offset().top
+                }, 0);
+            }
+        },
         formatDate: function (data) {
             return data ? moment(data).format('DD/MM/YYYY HH:mm:ss') : '';
         },
@@ -890,5 +917,12 @@ export default {
 .fa-bell:hover,
 .fa-times-circle:hover {
     opacity: 0.7;
+}
+
+.truncate-name {
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 </style>
