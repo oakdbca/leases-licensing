@@ -61,7 +61,7 @@
             <div v-if="mapInfoText.length > 0" class="row">
                 <div class="col-md-12">
                     <BootstrapAlert class="mb-0">
-                        {{ mapInfoText }}
+                        <p><span v-html="mapInfoText"></span></p>
                     </BootstrapAlert>
                 </div>
             </div>
@@ -127,6 +127,13 @@
                             </div>
                         </transition>
                     </div>
+                    <div v-if="optionalLayersActive" class="optional-layers-button-wrapper">
+                        <div :title="mode == 'info' ? 'Deactivate info tool' : 'Activate info tool'" :class="[
+                            mode == 'info' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('info')">
+                            <img class="svg-icon" src="../../assets/info-bubble.svg" />
+                        </div>
+                    </div>
                     <div v-if="selectedFeatureIds.length > 0" class="optional-layers-button-wrapper">
                         <div class="optional-layers-button" title="Delete selected features" @click="removeModelFeatures()">
                             <img class="svg-icon" src="../../assets/trash-bin.svg" />
@@ -189,6 +196,47 @@
                     </template>
                 </div>
 
+                <!-- Overlay popup bubble when clicking a DBCA layer feature -->
+                <div id="popup" class="ol-popup overlay-feature-popup">
+                    <template v-if="overlayFeatureInfo">
+                        <div class="toast-header">
+                            <img src="" class="rounded me-2" alt="">
+                            <strong class="me-auto">{{ overlayFeatureInfo.leg_name }}</strong>
+                        </div>
+                        <div id="popup-content toast-body">
+                            <table style="width: 100%; z-index:9999" class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">Identifier
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_identifier }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Vesting
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_vesting }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Legal Act
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_act }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Tenure
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_tenure }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Category
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.category }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                </div>
+
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
@@ -227,6 +275,7 @@ import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { FullScreen as FullScreenControl } from 'ol/control';
 import { LineString, Point, Polygon } from 'ol/geom';
 import GeoJSON from 'ol/format/GeoJSON';
+import Overlay from 'ol/Overlay.js';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js'
 import RangeSlider from '@/components/forms/range_slider.vue'
 import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
@@ -457,6 +506,7 @@ export default {
             }),
             set_mode: set_mode,
             _errorMessage: null,
+            overlayFeatureInfo: {},
         }
     },
     computed: {
@@ -497,6 +547,13 @@ export default {
                 this.drawForModel &&
                 this.drawForModel.getActive() &&
                 this.sketchCoordinatesHistory.length > this.sketchCoordinates.length
+        },
+        optionalLayersActive: function () {
+            if (this.optionalLayers.length == 0) {
+                return false;
+            }
+            let visible_layers = this.optionalLayers.filter(layer => layer.values_.visible === true);
+            return visible_layers.length > 0;
         },
     },
     components: {
@@ -765,11 +822,21 @@ export default {
                 source: satelliteTileWms,
             })
 
+            let container = document.getElementById('popup');
+            let overlay = new Overlay({
+                element: container,
+                autoPan: true,
+                autoPanAnimation: {
+                    duration: 150
+                }
+            });
+
             vm.map = new Map({
                 layers: [
                     vm.tileLayerMapbox,
                     vm.tileLayerSat,
                 ],
+                overlays: [overlay],
                 target: vm.elem_id,
                 view: new View({
                     center: [115.95, -31.95],
@@ -1432,10 +1499,30 @@ export default {
 
             vm.queryingGeoserver = false;
 
-            if (vm._errorMessage === null) {
+            // Only overwrite the current message if the new message is null (removes the message)
+            // Or the current message is null (no message is set)
+            if (message === null || vm._errorMessage === null) {
                 vm._errorMessage = message;
             }
         },
+        /**
+         * Sets or unsets overlay feature information bubble
+         * @param {Array} coordinate clicked coordinate pair
+         * @param {Dict} feature clicked feature properties or undefined
+         */
+        overlay: function (coordinate, feature) {
+            let vm = this;
+            let overlay = vm.map.overlays_.array_[0];
+            if (feature === undefined) {
+                vm.overlayFeatureInfo = {};
+            } else {
+                vm.overlayFeatureInfo = feature.getProperties();
+            }
+            overlay.setPosition(coordinate)
+
+            return overlay;
+        },
+
     },
     created: function () {
         console.log('created()')
