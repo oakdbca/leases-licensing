@@ -2,7 +2,7 @@
     <div>
         <div v-if="debug">components/form_registration_of_interest.vue</div>
         <FormSection :formCollapse="false" label="Proposal Details" Index="application_details" v-if="proposal">
-            <slot name="slot_proposal_details_checklist_questions"></slot>
+            <slot name="slot_proposal_details_assessment_comments"></slot>
 
             <div class="row mb-3">
                 <div class="col-12">
@@ -208,7 +208,7 @@
 
 
         <FormSection :formCollapse="false" label="Proposal Impact" Index="proposal_impact" v-if="proposal">
-            <slot name="slot_proposal_impact_checklist_questions"></slot>
+            <slot name="slot_proposal_impact_assessment_comments"></slot>
             <div class="row mb-3">
                 <div class="col-sm-8">
                     <label class="col-form-label">Will the proposal involve clearing of native vegetation?</label>
@@ -230,7 +230,7 @@
                         <input class="form-check-input" v-model="proposal.clearing_vegetation" type="radio"
                             name="clearing_vegetation_null" id="clearing_vegetation_null" :value="null"
                             data-parsley-required :disabled="readonly" />
-                        <label for="clearing_vegetation_null">Unknown at this stage</label>
+                        <label for="clearing_vegetation_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -276,7 +276,7 @@
                         <input class="form-check-input" v-model="proposal.ground_disturbing_works" type="radio"
                             name="ground_disturbing_works_null" id="ground_disturbing_works_null" :value="null"
                             data-parsley-required :disabled="readonly" />
-                        <label for="ground_disturbing_works_null">Unknown at this stage</label>
+                        <label for="ground_disturbing_works_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -324,7 +324,7 @@
                         <input class="form-check-input" v-model="proposal.heritage_site" type="radio"
                             name="heritage_site_null" id="heritage_site_null" :value="null" data-parsley-required
                             :disabled="readonly" />
-                        <label for="heritage_site_null">Unknown at this stage</label>
+                        <label for="heritage_site_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -373,7 +373,7 @@
                         <input class="form-check-input" v-model="proposal.environmentally_sensitive" type="radio"
                             name="environmentally_sensitive_null" id="environmentally_sensitive_null" :value="null"
                             data-parsley-required :disabled="readonly" />
-                        <label for="environmentally_sensitive_null">Unknown at this stage</label>
+                        <label for="environmentally_sensitive_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -423,7 +423,7 @@
                         <input class="form-check-input" v-model="proposal.wetlands_impact" type="radio"
                             name="wetlands_impact_null" id="wetlands_impact_null" :value="null" data-parsley-required
                             :disabled="readonly" />
-                        <label for="wetlands_impact_null">Unknown at this stage</label>
+                        <label for="wetlands_impact_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -472,7 +472,7 @@
                         <input class="form-check-input" v-model="proposal.building_required" type="radio"
                             name="building_required_null" id="building_required_null" :value="null" data-parsley-required
                             :disabled="readonly" />
-                        <label for="building_required_null">Unknown at this stage</label>
+                        <label for="building_required_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -525,7 +525,7 @@
                         <input class="form-check-input" v-model="proposal.significant_change" type="radio"
                             name="significant_change_null" id="significant_change_null" :value="null" data-parsley-required
                             :disabled="readonly" />
-                        <label for="significant_change_null">Unknown at this stage</label>
+                        <label for="significant_change_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -575,7 +575,7 @@
                         <input class="form-check-input" v-model="proposal.aboriginal_site" type="radio"
                             name="aboriginal_site_null" id="aboriginal_site_null" :value="null" data-parsley-required
                             :disabled="readonly" />
-                        <label for="aboriginal_site_null">Unknown at this stage</label>
+                        <label for="aboriginal_site_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -628,8 +628,7 @@
                         <input class="form-check-input" v-model="proposal.native_title_consultation" type="radio"
                             name="native_title_consultation_null" id="native_title_consultation_null" :value="null"
                             data-parsley-required :disabled="readonly" />
-                        <label for="native_title_consultation_null">Unknown at this
-                            stage</label>
+                        <label for="native_title_consultation_null">Unsure</label>
                     </div>
                 </div>
             </div>
@@ -681,7 +680,7 @@
                         <input class="form-check-input" v-model="proposal.mining_tenement" type="radio"
                             name="mining_tenement_null" id="mining_tenement_null" :value="null" data-parsley-required
                             :disabled="readonly" />
-                        <label for="mining_tenement_null">Unknown at this stage</label>
+                        <label for="mining_tenement_null">Unsure</label>
                     </div>
                 </div>
             </div>
