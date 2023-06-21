@@ -41,23 +41,6 @@
             </div>
         </CollapsibleFilters>
 
-        <!--
-        <div class="toggle_filters_wrapper">
-            <div @click="expandCollapseFilters" class="toggle_filters_button">
-                <div class="toggle_filters_icon">
-                    <span v-if="filters_expanded" class="text-right"><i class="fa fa-chevron-up"></i></span>
-                    <span v-else class="text-right"><i class="fa fa-chevron-down"></i></span>
-                </div>
-                <i v-if="filterApplied" title="filter(s) applied" class="fa fa-exclamation-circle fa-2x filter-warning-icon"></i>
-            </div>
-
-            <transition>
-                <div class="row" v-show="filters_expanded">
-                </div>
-            </transition>
-        </div>
-        -->
-
         <div v-if="is_internal" class="row">
             <div class="text-end mb-2">
                 <button type="button" class="btn btn-primary pull-right" @click="new_competitive_process_clicked"><i
