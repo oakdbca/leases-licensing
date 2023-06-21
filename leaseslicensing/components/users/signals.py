@@ -34,6 +34,7 @@ def process_external_referee_invite(sender, user, request, **kwargs):
             sent_by=external_referee_invite.sent_by,
             text=external_referee_invite.invite_text,
             assigned_officer=external_referee_invite.sent_by,
+            is_external=True,
         )
 
 
