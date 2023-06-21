@@ -458,26 +458,23 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @basic_exception_handler
     def update_address(self, request, *args, **kwargs):
         instance = self.get_object()
-        user = EmailUser.objects.get(id=request.user.id)
-        if user is None:
-            resp_json = {"status": 404, "message": "User not found!"}
-            return resp_json
+        if not can_admin_org(instance, request.user.id):
+            return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
 
-        org_id = request.data.get("organisation_id", None)
-        org_obj = Organisation.objects.get(id=org_id)
-        if org_obj is None:
-            resp_json = {"status": 404, "message": "Organisation not found!"}
-            return resp_json
-        data = request.data
-        response_ledger = update_organisation_obj(data)
+        response_ledger = update_organisation_obj(request.data)
 
         return Response(response_ledger)
 
     @logging_action(methods=['GET',], detail=True)
     @basic_exception_handler
     def get_org_address(self, request, *args, **kwargs):
-        org = self.get_object()
-        response_ledger = get_organisation(org.id)
+        instance = self.get_object()
+        if not instance.ledger_organisation_id:
+            msg = "Organisation: {} has no ledger organisation id".format(org.id)
+            logger.error(msg)
+            raise ValidationError(msg)
+
+        response_ledger = get_organisation(instance.ledger_organisation_id)
         return Response(response_ledger['data'])
 
     @logging_action(

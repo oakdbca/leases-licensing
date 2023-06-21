@@ -64,7 +64,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="postalAddressLine1"
                                                 name="postalAddressLine1" v-model="org.postal_address
-                                                    .line1
+                                                    .postal_line1
                                                     " required />
                                         </div>
                                     </div>
@@ -75,7 +75,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="postalLocality"
                                                 name="postalLocality" v-model="org.postal_address
-                                                    .locality
+                                                    .postal_locality
                                                     " required />
                                         </div>
                                     </div>
@@ -86,7 +86,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="postalState" name="postalState"
                                                 v-model="org.postal_address
-                                                    .state
+                                                    .postal_state
                                                     " required />
                                         </div>
                                     </div>
@@ -97,7 +97,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control" id="postalPostcode"
                                                 name="postalPostcode" v-model="org.postal_address
-                                                    .postcode
+                                                    .postal_postcode
                                                     " maxlength="10" required />
                                         </div>
                                     </div>
@@ -107,7 +107,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <select class="form-select" id="country" name="Country" v-model="org.postal_address
-                                                .country
+                                                .postal_country
                                                 " required>
                                                 <option v-for="c in countries" :value="c.code">
                                                     {{ c.name }}
@@ -143,7 +143,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control billing-address" id="billingAddressLine1"
                                                 name="billingAddressLine1" v-model="org.billing_address
-                                                    .line1
+                                                    .billing_line1
                                                     " required />
                                         </div>
                                     </div>
@@ -156,7 +156,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control billing-address" id="billingLocality"
                                                 name="billingLocality" v-model="org.billing_address
-                                                    .locality
+                                                    .billing_locality
                                                     " required />
                                         </div>
                                     </div>
@@ -168,7 +168,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control billing-address" id="billingState"
                                                 name="billingState" v-model="org.billing_address
-                                                    .state
+                                                    .billing_state
                                                     " required />
                                         </div>
                                     </div>
@@ -179,7 +179,7 @@
                                         <div class="col-md-4">
                                             <input type="text" class="form-control billing-address" id="billingPostcode"
                                                 name="billingPostcode" v-model="org.billing_address
-                                                    .postcode
+                                                    .billing_postcode
                                                     " maxlength="10" required />
                                         </div>
                                     </div>
@@ -189,7 +189,7 @@
                                         </div>
                                         <div class="col-md-4">
                                             <select class="form-select billing-address" id="country" name="Country" v-model="org.billing_address
-                                                .country
+                                                .billing_country
                                                 " required>
                                                 <option v-for="c in countries" :value="c.code">
                                                     {{ c.name }}
@@ -197,7 +197,6 @@
                                             </select>
                                         </div>
                                     </div>
-
                                 </div>
                             </fieldset>
 
@@ -616,7 +615,7 @@ export default {
             return this.isApplication ? 'row' : 'container';
         },
         isBillingAddressSame: function () {
-            return JSON.stringify(this.org.postal_address) == JSON.stringify(this.org.billing_address);
+            return Object.values(this.org.postal_address).toString() == Object.values(this.org.billing_address).toString();
         },
     },
     beforeRouteEnter: function (to, from, next) {
@@ -634,7 +633,6 @@ export default {
                 vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
                 vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
                 vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
-
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
@@ -662,16 +660,15 @@ export default {
             this.$refs.add_contact.isModalOpen = true;
         },
         toggleBillingAddressFieldsDisabled: function () {
-
             if (!this.org.billing_same_as_postal) {
                 $('.billing-address').first().focus();
             }
             else {
-                this.org.billing_address.line1 = this.org.postal_address.line1;
-                this.org.billing_address.locality = this.org.postal_address.locality;
-                this.org.billing_address.state = this.org.postal_address.state;
-                this.org.billing_address.postcode = this.org.postal_address.postcode;
-                this.org.billing_address.country = this.org.postal_address.country;
+                this.org.billing_address.billing_line1 = this.org.postal_address.postal_line1;
+                this.org.billing_address.billing_locality = this.org.postal_address.postal_locality;
+                this.org.billing_address.billing_state = this.org.postal_address.postal_state;
+                this.org.billing_address.billing_postcode = this.org.postal_address.postal_postcode;
+                this.org.billing_address.billing_country = this.org.postal_address.postal_country;
             }
         },
         eventListeners: function () {
@@ -1081,8 +1078,8 @@ export default {
             if (form.checkValidity()) {
                 console.log('Form valid');
                 if (formId == 'address-details') {
-                    const code1 = vm.org.postal_address.postcode;
-                    const code2 = vm.org.billing_address.postcode;
+                    const code1 = vm.org.postal_address.postal_postcode;
+                    const code2 = vm.org.billing_address.billing_postcode;
                     if (isNaN(Number.parseInt(code1)) || isNaN(Number.parseInt(code2))) {
                         swal.fire(
                             "Failure updating organisation details.",
@@ -1177,22 +1174,22 @@ export default {
             let vm = this;
             vm.updatingAddress = true;
             let payload = JSON.stringify({
-                'organisation_id': vm.org.id,
+                'organisation_id': vm.org.ledger_organisation_id,
                 'postal_address':
                 {
-                    "postal_line1": vm.org.postal_address.line1,
-                    "postal_locality": vm.org.postal_address.locality,
-                    "postal_state": vm.org.postal_address.state,
-                    "postal_postcode": vm.org.postal_address.postcode,
-                    "postal_country": vm.org.postal_address.country
+                    "postal_line1": vm.org.postal_address.postal_line1,
+                    "postal_locality": vm.org.postal_address.postal_locality,
+                    "postal_state": vm.org.postal_address.postal_state,
+                    "postal_postcode": vm.org.postal_address.postal_postcode,
+                    "postal_country": vm.org.postal_address.postal_country
                 },
                 "billing_address":
                 {
-                    "billing_line1": vm.org.billing_address.line1,
-                    "billing_locality": vm.org.billing_address.locality,
-                    "billing_state": vm.org.billing_address.state,
-                    "billing_postcode": vm.org.billing_address.postcode,
-                    "billing_country": vm.org.billing_address.country,
+                    "billing_line1": vm.org.billing_address.billing_line1,
+                    "billing_locality": vm.org.billing_address.billing_locality,
+                    "billing_state": vm.org.billing_address.billing_state,
+                    "billing_postcode": vm.org.billing_address.billing_postcode,
+                    "billing_country": vm.org.billing_address.billing_country,
                 }
             });
 
@@ -1266,6 +1263,8 @@ export default {
         let initialisers = [
             utils.fetchCountries(),
             utils.fetchOrganisation(vm.$route.params.org_id),
+            // Todo: It shouldn't be necessary to do an additional fetch to get the address details
+            // Ledger gw api has been updated to return the address details in the fetchOrganisation call
             utils.fetchOrganisationAddress(vm.$route.params.org_id),
             utils.fetchOrganisationPermissions(vm.$route.params.org_id)
         ]
@@ -1276,7 +1275,6 @@ export default {
             vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
             vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
             vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
-            //console.log('vm.org = ' + JSON.stringify(vm.org));
         });
     },
     mounted: function () {
