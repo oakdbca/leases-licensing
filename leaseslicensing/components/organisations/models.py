@@ -56,6 +56,12 @@ class Organisation(models.Model):
         editable=False,
         default="",
     )
+    ledger_organisation_trading_name = models.CharField(
+        max_length=255,
+        verbose_name="Ledger Organisation Trading Name",
+        editable=False,
+        default="",
+    )
     ledger_organisation_abn = models.CharField(
         max_length=50,
         verbose_name="Ledger Organisation ABN",
@@ -124,6 +130,9 @@ class Organisation(models.Model):
     def save(self, *args, **kwargs):
         self.ledger_organisation_name = self.ledger_organisation["organisation_name"]
         self.ledger_organisation_abn = self.ledger_organisation["organisation_abn"]
+        if self.ledger_organisation["organisation_trading_name"]:
+            self.ledger_organisation_name = self.ledger_organisation["organisation_trading_name"]
+
         if self.ledger_organisation["organisation_email"]:
             self.ledger_organisation_email = self.ledger_organisation[
                 "organisation_email"
@@ -674,6 +683,10 @@ class Organisation(models.Model):
     @property
     def name(self):
         return self.ledger_organisation_name
+
+    @property
+    def trading_name(self):
+        return self.ledger_organisation_trading_name
 
     @property
     def abn(self):
