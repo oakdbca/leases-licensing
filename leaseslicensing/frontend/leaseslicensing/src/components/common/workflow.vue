@@ -684,7 +684,7 @@ export default {
                 allowClear: true,
                 placeholder: "Search Referee by Email",
                 ajax: {
-                    url: api_endpoints.users + 'get_department_users/',
+                    url: api_endpoints.users + 'get_referees/',
                     dataType: 'json',
                     data: function (params) {
                         var query = {
