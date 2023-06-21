@@ -2,7 +2,7 @@
     <div>
         <div v-if="debug">components/form_lease_licence.vue</div>
         <FormSection :formCollapse="true" label="Tourism Proposal Details" Index="tourism_proposal_details" v-if="proposal">
-            <slot name="slot_proposal_details_checklist_questions"></slot>
+            <slot name="slot_proposal_details_assessment_comments"></slot>
 
             <div class="row mb-3 pt-3">
                 <div class="col">
