@@ -5,21 +5,22 @@
                 <div class="row">
                     <FormSection index="organisation-details" label="Organisation Details" :formCollapse="false">
                         <form @submit.prevent="" id="organisation-details" class="mb-2 needs-validation" novalidate>
-                   
+
                             <div class="row mb-3">
                                 <label for="ledger_organisation_name" class="col-sm-3 control-label">Organisation
                                     Name</label>
                                 <div class="col-sm-4">
                                     <input type="text" class="form-control" name="ledger_organisation_name"
-                                        v-model="org.organisation_name" required>
+                                        v-model="org.ledger_organisation_name" required>
                                 </div>
                             </div>
 
                             <div class="row mb-3">
-                                <label for="trading_name" class="col-sm-3 control-label">Trading
+                                <label for="ledger_organisation_trading_name" class="col-sm-3 control-label">Trading
                                     Name</label>
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="trading_name" v-model="org.trading_name">
+                                    <input type="text" class="form-control" name="ledger_organisation_trading_name"
+                                        v-model="org.ledger_organisation_trading_name">
                                 </div>
                             </div>
 
@@ -37,15 +38,16 @@
                                 </label>
                                 <div class="col-sm-4">
                                     <input type="email" class="form-control" name="ledger_organisation_email"
-                                        v-model="org.organisation_email">
+                                        v-model="org.ledger_organisation_email">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <div class="col-sm-12">
                                     <BootstrapLoadingButton text="Update" :isLoading="updatingDetails"
-                                @click="validateForm('organisation-details')" class="btn licensing-btn-primary float-end" />
-                                    </div>
+                                        @click="validateForm('organisation-details')"
+                                        class="btn licensing-btn-primary float-end" />
+                                </div>
                             </div>
                         </form>
                     </FormSection>
@@ -632,7 +634,7 @@ export default {
                 vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
                 vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
                 vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
-               
+
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
@@ -1082,11 +1084,11 @@ export default {
                     const code1 = vm.org.postal_address.postcode;
                     const code2 = vm.org.billing_address.postcode;
                     if (isNaN(Number.parseInt(code1)) || isNaN(Number.parseInt(code2))) {
-                     swal.fire(
-                        "Failure updating organisation details.",
-                        "Postcode should only contain numeric value.",
-                        "error"
-                    );
+                        swal.fire(
+                            "Failure updating organisation details.",
+                            "Postcode should only contain numeric value.",
+                            "error"
+                        );
                     }
                     else {
                         vm.updateAddress();
@@ -1105,13 +1107,13 @@ export default {
             let vm = this;
             vm.updatingDetails = true;
             let payload = JSON.stringify({
-                'organisation_id': vm.org.id,
-                'organisation_name': vm.org.organisation_name ? vm.org.organisation_name : null,
+                'organisation_id': vm.org.ledger_organisation_id,
+                'organisation_name': vm.org.ledger_organisation_name ? vm.org.ledger_organisation_name : null,
                 'organisation_abn': vm.org.ledger_organisation_abn,
-                'organisation_email': vm.org.organisation_email,
-                'organisation_trading_name': vm.org.trading_name,
+                'organisation_email': vm.org.ledger_organisation_email,
+                'organisation_trading_name': vm.org.ledger_organisation_trading_name,
             });
-
+            console.log(payload)
             fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_details')), {
                 method: 'PUT',
                 body: payload,

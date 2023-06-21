@@ -2,6 +2,7 @@ import logging
 import traceback
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Case, CharField, IntegerField, Q, Value, When
@@ -33,6 +34,7 @@ from leaseslicensing.components.organisations.models import (  # ledger_organisa
     OrganisationRequest,
     OrganisationRequestUserAction,
 )
+from leaseslicensing.components.organisations.utils import can_admin_org
 from leaseslicensing.components.organisations.serializers import (
     MyOrganisationsSerializer,
     OrganisationActionSerializer,
@@ -438,19 +440,16 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @logging_action(methods=['PUT',], detail=True)
     @basic_exception_handler
     def update_details(self, request, *args, **kwargs):
-        user = EmailUser.objects.get(id=request.user.id)
-        if user is None:
-            resp_json = {"status": 404, "message": "User not found!"}
-            return resp_json
-        org = self.get_object()
-        instance = Organisation.objects.get(id=org.id)
-        if instance is None:
-            resp_json = {"status": 404, "message": "Organisation not found!"}
-            return resp_json
-        data = request.data
-        response_ledger = update_organisation_obj(data)
-        logger.debug(f"response_ledger:{response_ledger['status']}")
-        serializer = OrganisationDetailsSerializer(instance, data=data)
+        instance = self.get_object()
+        if not can_admin_org(instance, request.user.id):
+            return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
+
+        response_ledger = update_organisation_obj(request.data)
+        cache.delete(settings.CACHE_KEY_LEDGER_ORGANISATION.format(
+            instance.ledger_organisation_id
+        ))
+        logger.debug("request.data: {}".format(request.data))
+        serializer = OrganisationDetailsSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(response_ledger)
@@ -458,6 +457,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @logging_action(methods=['POST',], detail=True)
     @basic_exception_handler
     def update_address(self, request, *args, **kwargs):
+        instance = self.get_object()
         user = EmailUser.objects.get(id=request.user.id)
         if user is None:
             resp_json = {"status": 404, "message": "User not found!"}
@@ -470,6 +470,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             return resp_json
         data = request.data
         response_ledger = update_organisation_obj(data)
+
         return Response(response_ledger)
 
     @logging_action(methods=['GET',], detail=True)

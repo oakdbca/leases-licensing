@@ -131,7 +131,7 @@ class Organisation(models.Model):
         self.ledger_organisation_name = self.ledger_organisation["organisation_name"]
         self.ledger_organisation_abn = self.ledger_organisation["organisation_abn"]
         if self.ledger_organisation["organisation_trading_name"]:
-            self.ledger_organisation_name = self.ledger_organisation["organisation_trading_name"]
+            self.ledger_organisation_trading_name = self.ledger_organisation["organisation_trading_name"]
 
         if self.ledger_organisation["organisation_email"]:
             self.ledger_organisation_email = self.ledger_organisation[
