@@ -2,9 +2,9 @@
 
 {%  block content %}
     {% if reminder %}
-        This is a reminder for a referral for Application <strong>{{proposal.lodgement_number}}</strong> that has been sent to you
+        Reminder: You still have a pending referral for {{ proposal.application_type.name_display }} Application: <strong>{{proposal.lodgement_number}}</strong> that has been sent to you
     {% else %}
-        {{ proposal.application_type.name_display }} Application: {{proposal.lodgement_number}} has been sent to you: 
+        {{ proposal.application_type.name_display }} Application: {{proposal.lodgement_number}} is ready for your advice.: 
 
         Comments: {{comments}}
     {% endif %}
