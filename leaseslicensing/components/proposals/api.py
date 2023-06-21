@@ -519,12 +519,14 @@ class ProposalViewSet(UserActionLoggingViewset):
         if is_internal(self.request):
             return Proposal.objects.all()
         elif is_customer(self.request):
+            qs = Proposal.get_proposals_for_emailuser(user.id)
             if Referral.objects.filter(referral=user.id).exists():
-                return Proposal.objects.filter(
+                # Allow external user access to proposals they have been referred
+                return qs | Proposal.objects.filter(
                     processing_status__in=[Proposal.PROCESSING_STATUS_WITH_REFERRAL,
                                            Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS],
                     referrals__in=Referral.objects.filter(referral=user.id))
-            return Proposal.get_proposals_for_emailuser(user.id)
+            return qs
 
         logger.warn(
             "User is neither customer nor internal user: {} <{}>".format(
