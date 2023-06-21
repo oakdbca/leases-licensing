@@ -67,7 +67,7 @@ def send_referral_complete_email_notification(referral, request):
         html_template="leaseslicensing/emails/proposals/send_referral_complete_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_complete_notification.txt",
     )
-    # email = ReferralCompleteNotificationEmail()
+
     email.subject = sent_by.email + ": " + email.subject
     url = request.build_absolute_uri(
         reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
@@ -83,7 +83,6 @@ def send_referral_complete_email_notification(referral, request):
     attachments = []
     if referral.document:
         file_name = referral.document._file.name
-        # attachment = (file_name, doc._file.file.read(), 'image/*')
         attachment = (file_name, referral.document._file.file.read())
         attachments.append(attachment)
 
@@ -98,6 +97,36 @@ def send_referral_complete_email_notification(referral, request):
         _log_user_email(
             msg, referral.proposal.ind_applicant, referral.referral, sender=sender
         )
+
+
+def send_pending_referrals_complete_email_notification(referral, request):
+    proposal = referral.proposal
+    application_type = proposal.application_type.name_display
+    email = TemplateEmailBase(
+        subject=f"All pending referrals for {application_type} Application: {proposal.lodgement_number} have been completed.",
+        html_template="leaseslicensing/emails/proposals/send_pending_referrals_complete_notification.html",
+        txt_template="leaseslicensing/emails/proposals/send_pending_referrals_complete_notification.txt",
+    )
+
+    url = request.build_absolute_uri(
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
+    )
+
+    context = {
+        "referral": referral,
+        "proposal": referral.proposal,
+        "url": url,
+    }
+    recipients = proposal.assessor_recipients
+    if referral.sent_from == 2:
+        # Referral was requested by approver group
+        recipients = proposal.approver_recipients
+
+    msg = email.send(recipients, context=context)
+
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
+    _log_proposal_email(msg, proposal, sender=sender)
 
 
 def send_amendment_email_notification(amendment_request, request, proposal):
