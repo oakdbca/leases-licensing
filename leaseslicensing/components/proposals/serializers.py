@@ -784,11 +784,12 @@ class ProposalSerializer(BaseProposalSerializer):
     assessor_mode = serializers.SerializerMethodField(read_only=True)
     lodgement_versions = serializers.SerializerMethodField(read_only=True)
     referrals = ProposalReferralSerializer(many=True)
+    processing_status_id = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Proposal
         fields = "__all__"
-        extra_fields = ["assessor_mode", "lodgement_versions", "referrals"]
+        extra_fields = ["assessor_mode", "lodgement_versions", "referrals", "processing_status_id"]
 
     def get_field_names(self, declared_fields, info):
         expanded_fields = super().get_field_names(declared_fields, info)
@@ -818,13 +819,16 @@ class ProposalSerializer(BaseProposalSerializer):
             "assessor_can_assess": obj.can_assess(user),
             "assessor_level": "assessor",
             "assessor_box_view": obj.assessor_comments_view(user),
-            "user_is_referrer": obj.is_referrer(user),
-            "user_is_referrer_can_edit": obj.referrer_can_edit_referral(user),
+            "is_referee": obj.is_referee(user),
+            "referee_can_edit": obj.referee_can_edit_referral(user),
         }
 
     def get_lodgement_versions(self, obj):
         # Just return the current version so that the frontend doesn't break
         return [obj.lodgement_versions[0]]
+
+    def get_processing_status_id(self, obj):
+        return obj.processing_status
 
 
 class CreateProposalSerializer(BaseProposalSerializer):
@@ -1060,6 +1064,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     can_edit_period = serializers.SerializerMethodField()
     current_assessor = serializers.SerializerMethodField()
     latest_referrals = ProposalReferralSerializer(many=True)
+    referrals = ProposalReferralSerializer(many=True)
     external_referral_invites = ExternalRefereeInviteSerializer(many=True)
     allowed_assessors = EmailUserSerializer(many=True)
     approval_level_document = serializers.SerializerMethodField()
@@ -1114,6 +1119,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "assessor_mode",
             "current_assessor",
             "latest_referrals",
+            "referrals",
             "allowed_assessors",
             "proposed_issuance_approval",
             "proposed_decline_status",
@@ -1277,8 +1283,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "assessor_can_assess": obj.can_assess(user),
             "assessor_level": "assessor",
             "assessor_box_view": obj.assessor_comments_view(user),
-            "user_is_referrer": obj.is_referrer(user),
-            "user_is_referrer_can_edit": obj.referrer_can_edit_referral(user),
+            "is_referee": obj.is_referee(user),
+            "referee_can_edit": obj.referee_can_edit_referral(user),
         }
 
     def get_can_edit_period(self, obj):
