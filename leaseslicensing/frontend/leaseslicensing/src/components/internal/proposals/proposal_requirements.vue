@@ -199,10 +199,10 @@ export default {
             return this.proposal.assessor_mode.has_assessor_mode;
         },
         isReferrer() {
-            return this.proposal.assessor_mode.user_is_referrer;
+            return this.proposal.assessor_mode.is_referee;
         },
         isReferrerCanEdit() {
-            return this.proposal.assessor_mode.user_is_referrer_can_edit;
+            return this.proposal.assessor_mode.referee_can_edit;
         }
     },
     methods: {
