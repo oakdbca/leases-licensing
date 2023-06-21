@@ -59,6 +59,7 @@ from leaseslicensing.components.proposals.email import (
     send_referral_email_notification,
     send_proposal_approval_email_notification,
     send_referral_complete_email_notification,
+    send_pending_referrals_complete_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
     LGA,
@@ -1617,7 +1618,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def approver_recipients(self):
-        logger.info("assessor_recipients")
+        logger.info("approver_recipients")
         recipients = []
         group_ids = self.get_approver_group().get_system_group_member_ids()
         for id in group_ids:
@@ -1649,8 +1650,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             "with_qa_officer",
             "with_assessor",
             "with_referral",
+            "with_referral_conditions",
             "with_assessor_conditions",
-            Referral.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             logger.info("self.__assessor_group().get_system_group_member_ids()")
             logger.info(self.get_assessor_group().get_system_group_member_ids())
@@ -1660,22 +1661,22 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         else:
             return False
 
-    def is_referrer(self, user):
+    def is_referee(self, user):
         """
         Returns whether `user` is a referrer for this proposal
         """
 
         return self.processing_status in [
-            Referral.PROCESSING_STATUS_WITH_REFERRAL,
-            Referral.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
+            self.PROCESSING_STATUS_WITH_REFERRAL,
+            self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ] and Referral.objects.filter(proposal=self, referral=user.id).exists()
 
-    def referrer_can_edit_referral(self, user):
+    def referee_can_edit_referral(self, user):
         """
         Returns whether `user` is a referrer who can still edit this proposal's referral
         """
 
-        if self.is_referrer(user):
+        if self.is_referee(user):
             # Get this proposal's referral where the requesting user is the referrer
             try:
                 referral = Referral.objects.get(proposal=self, referral=user.id)
@@ -2121,7 +2122,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         return ProposalRequirement.objects.filter(proposal=self)
 
     def move_to_status(self, request, status, approver_comment):
-        if not self.can_assess(request.user) and not self.is_referrer(request.user):
+        if not self.can_assess(request.user) and not self.is_referee(request.user):
             raise exceptions.ProposalNotAuthorized()
         if status in ["with_assessor", "with_assessor_conditions", "with_approver"]:
             if self.processing_status == "with_referral" or self.can_user_edit:
@@ -3888,10 +3889,11 @@ class QAOfficerGroup(models.Model):
 
 class Referral(RevisionedMixin):
     SENT_CHOICES = ((1, "Sent From Assessor"), (2, "Sent From Referral"))
+
     PROCESSING_STATUS_WITH_REFERRAL = "with_referral"
-    PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS = "with_referral_conditions"
     PROCESSING_STATUS_RECALLED = "recalled"
     PROCESSING_STATUS_COMPLETED = "completed"
+
     PROCESSING_STATUS_CHOICES = (
         (PROCESSING_STATUS_WITH_REFERRAL, "Pending"),
         (PROCESSING_STATUS_RECALLED, "Recalled"),
@@ -3930,7 +3932,6 @@ class Referral(RevisionedMixin):
     comment_other = models.TextField(blank=True)
     comment_deed_poll = models.TextField(blank=True)
     comment_additional_documents = models.TextField(blank=True)
-
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4135,38 +4136,38 @@ class Referral(RevisionedMixin):
 
     def complete(self, request):
         with transaction.atomic():
-            try:
-                self.processing_status = Referral.PROCESSING_STATUS_COMPLETED
-                self.referral = request.user.id
-                self.add_referral_document(request)
-                self.save()
+            self.processing_status = Referral.PROCESSING_STATUS_COMPLETED
+            self.add_referral_document(request)
+            self.save()
 
-                # TODO Log proposal action
-                # self.proposal.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
-                # .format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-                self.proposal.log_user_action(
-                    ProposalUserAction.CONCLUDE_REFERRAL.format(
-                        request.user.get_full_name(), self.id, self.proposal.id
-                    ),
-                    request,
-                )
+            # Log proposal action
+            self.proposal.log_user_action(
+                ProposalUserAction.CONCLUDE_REFERRAL.format(
+                    request.user.get_full_name(), self.id, self.proposal.lodgement_number
+                ),
+                request,
+            )
 
-                # TODO log organisation action
-                # self.proposal.applicant.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
-                # .format(self.id,self.proposal.id,'{}({})'
-                # .format(self.referral.get_full_name(),self.referral.email)),request)
-                applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-                applicant_field = retrieve_email_user(applicant_field)
+            # log applicant_field
+            self.applicant.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL.format(
+                request.user.get_full_name(), self.id, self.proposal.lodgement_number
+            ),request)
 
-                # TODO: logging applicant_field
-                # applicant_field.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
-                # .format(request.user.get_full_name(), self.id,self.proposal.id,'{}'
-                # .format(self.referral_group.name)),request)
+            send_referral_complete_email_notification(self, request)
 
-                send_referral_complete_email_notification(self, request)
-            except Exception as e:
-                logger.exception(e)
-                raise e
+            # Check if this was the last pending referral for the proposal
+            if not Referral.objects.filter(
+                    proposal=self.proposal,
+                    processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL).exists():
+
+                # Change the status back to what it was before this referral was requested
+                if self.sent_from == 1:
+                    self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                else:
+                    self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_APPROVER
+                self.proposal.save()
+
+                send_pending_referrals_complete_email_notification(self, request)
 
     def add_referral_document(self, request):
         with transaction.atomic():
@@ -4516,7 +4517,7 @@ class ProposalRequirement(RevisionedMixin):
                     return True
                 else:
                     return False
-            elif self.proposal.is_referrer(user):
+            elif self.proposal.is_referee(user):
                 # True if this referral user's requirement
                 if (
                     hasattr(self.referral, "referral")
