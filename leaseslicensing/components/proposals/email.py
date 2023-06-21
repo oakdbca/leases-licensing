@@ -22,7 +22,7 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 def send_referral_email_notification(referral, recipients, request, reminder=False):
     application_type = referral.proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject=f"A referral for a {application_type} has been sent to you.",
+        subject=f"Referral Request for DBCA {application_type} Application: {referral.proposal.lodgement_number}",
         html_template="leaseslicensing/emails/proposals/send_referral_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_notification.txt",
     )
@@ -38,13 +38,9 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
         "url": url,
         "reminder": reminder,
         "comments": referral.text,
-        # 'proposed_start_date': proposed_start_date,
         "proposed_start_date": "",
     }
 
-    # msg = email.send(referral.referral.email, context=context)
-    # recipients = list(ReferralRecipientGroup.objects.get(name=referral.email_group)
-    # .members.all().values_list('email', flat=True))
     msg = email.send(recipients, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, referral.proposal, sender=sender)
@@ -62,8 +58,10 @@ def send_referral_complete_email_notification(referral, request):
     sent_by = retrieve_email_user(referral.sent_by)
 
     application_type = referral.proposal.application_type.name_display
+    email_user = retrieve_email_user(referral.referral)
+
     email = TemplateEmailBase(
-        subject=f"A referral for a {application_type} has been completed.",
+        subject=f"{email_user.get_full_name()} has Completed Referral for {application_type} Application {referral.proposal.lodgement_number}",
         html_template="leaseslicensing/emails/proposals/send_referral_complete_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_complete_notification.txt",
     )
@@ -73,9 +71,9 @@ def send_referral_complete_email_notification(referral, request):
         reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
     )
 
-    email_user = retrieve_email_user(referral.referral)
     context = {
-        "completed_by": f"{email_user.first_name} {email_user.last_name}",
+        "completed_by": email_user.get_full_name(),
+        "application_type": application_type,
         "proposal": referral.proposal,
         "url": url,
         "referral_comments": referral.referral_text,
@@ -88,7 +86,9 @@ def send_referral_complete_email_notification(referral, request):
 
     msg = email.send(sent_by.email, attachments=attachments, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
     _log_proposal_email(msg, referral.proposal, sender=sender)
+
     if referral.proposal.org_applicant:
         _log_org_email(
             msg, referral.proposal.org_applicant, referral.referral, sender=sender
