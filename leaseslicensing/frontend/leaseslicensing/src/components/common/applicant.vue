@@ -40,7 +40,7 @@
                                     <div class="col-md-4">
                                         <input type="text" class="form-control" id="residentialAddressLine1"
                                             name="residentialAddressLine1" v-model="email_user.residential_address
-                                                    .line1
+                                                .line1
                                                 " :readonly="readonly" />
                                     </div>
                                 </div>
@@ -51,7 +51,7 @@
                                     <div class="col-md-4">
                                         <input type="text" class="form-control" id="residentialAddressLine2"
                                             name="residentialAddressLine2" v-model="email_user.residential_address
-                                                    .line2
+                                                .line2
                                                 " :readonly="readonly" />
                                     </div>
                                 </div>
@@ -62,7 +62,7 @@
                                     <div class="col-md-4">
                                         <input type="text" class="form-control" id="residentialLocality"
                                             name="residentialLocality" v-model="email_user.residential_address
-                                                    .locality
+                                                .locality
                                                 " :readonly="readonly" />
                                     </div>
                                 </div>
@@ -73,7 +73,7 @@
                                     <div class="col-md-4">
                                         <input type="text" class="form-control" id="residentialState"
                                             name="residentialState" v-model="email_user.residential_address
-                                                    .state
+                                                .state
                                                 " :readonly="readonly" />
                                     </div>
                                 </div>
@@ -84,7 +84,7 @@
                                     <div class="col-md-4">
                                         <input type="text" class="form-control" id="residentialPostcode"
                                             name="residentialPostcode" v-model="email_user.residential_address
-                                                    .postcode
+                                                .postcode
                                                 " :readonly="readonly" />
                                     </div>
                                 </div>
@@ -94,7 +94,7 @@
                                     </div>
                                     <div class="col-md-4">
                                         <select v-if="countries" class="form-select" id="country" name="Country" v-model="email_user.residential_address
-                                                .country
+                                            .country
                                             " :disabled="readonly">
                                             <option v-for="c in countries" :value="c.code">
                                                 {{ c.name }}
@@ -116,7 +116,7 @@
                                     <div class="col-md-4">
                                         <input :readonly="readonly" type="text" class="form-control" id="postal_line1"
                                             name="Street" placeholder="" v-model="email_user.postal_address
-                                                    .line1
+                                                .line1
                                                 " />
                                     </div>
                                 </div>
@@ -125,7 +125,7 @@
                                     <div class="col-md-4">
                                         <input :readonly="readonly" type="text" class="form-control" id="postal_locality"
                                             name="Town/Suburb" placeholder="" v-model="email_user.postal_address
-                                                    .locality
+                                                .locality
                                                 " />
                                     </div>
                                 </div>
@@ -134,7 +134,7 @@
                                     <div class="col-md-4">
                                         <input :readonly="readonly" type="text" class="form-control" id="postal_state"
                                             name="State" placeholder="" v-model="email_user.postal_address
-                                                    .state
+                                                .state
                                                 " />
                                     </div>
                                 </div>
@@ -143,7 +143,7 @@
                                     <div class="col-md-4">
                                         <input :readonly="readonly" type="text" class="form-control" id="postal_postcode"
                                             name="Postcode" placeholder="" v-model="email_user.postal_address
-                                                    .postcode
+                                                .postcode
                                                 " />
                                     </div>
                                 </div>
@@ -152,7 +152,7 @@
                                     <div class="col-sm-4">
                                         <select v-if="countries" :disabled="readonly" class="form-select"
                                             id="postal_country" name="Country" v-model="email_user.postal_address
-                                                    .country
+                                                .country
                                                 ">
                                             <option v-for="c in countries" :value="c.code">
                                                 {{ c.name }}
@@ -208,6 +208,7 @@
 
 <script>
 import { api_endpoints, helpers } from '@/utils/hooks'
+import FormSection from "@/components/forms/section_toggle.vue"
 
 export default {
     name: 'Applicant',
@@ -228,6 +229,9 @@ export default {
             type: Boolean,
             default: true,
         },
+    },
+    components: {
+        FormSection,
     },
     data: function () {
         let vm = this
