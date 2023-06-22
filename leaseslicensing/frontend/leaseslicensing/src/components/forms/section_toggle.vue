@@ -3,10 +3,10 @@
         <div class="card-header fw-bold h4 p-4">
             <div class="row" :id="'show_hide_switch_' + section_body_id" aria-expanded="true"
                 :aria-controls="section_body_id" @click="toggle_show_hide">
-                <div class='col-11' :style="'color:' + customColor">
+                <div class="col-11 label" :style="'color:' + customColor">
                     {{ label }} <small v-if="subtitle" class="text-muted">{{ subtitle }}</small>
                 </div>
-                <div class='col-1 text-end'>
+                <div class="col-1 text-end">
                     <i :id="chevron_elem_id" class="bi fw-bold chevron-toggle cursor-pointer" role="button"
                         :data-bs-target="'#' + section_body_id">
                     </i>
