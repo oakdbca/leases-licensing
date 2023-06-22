@@ -7,11 +7,20 @@
 {% endblock %}
 
 {%  block content %}
-    <p>
-        You have been invited to complete referral for DBCA {{proposal.application_type.name_display}} application: <strong>{{proposal.lodgement_number}}</strong>.
+    
+        {% if reminder %}
+        <p>
+            <strong>Reminder:</strong> You were invited to complete a referral for DBCA {{proposal.application_type.name_display}} application: <strong>{{proposal.lodgement_number}}</strong>.
+        </p>
+        <p>
+            We sent the original referral request to this email address on {{external_referee_invite.datetime_sent|date:'d/m/Y'}}.
+        </p>
+        {% else %}
+        <p>You have been invited to complete referral for DBCA {{proposal.application_type.name_display}} application: <strong>{{proposal.lodgement_number}}</strong>.</p>
+        {% endif %}
     </p>
 
-    <p>Comments: {{comments}}</p>
+    <p>Comments: {{external_referee_invite.invite_text}}</p>
 
     <p>
         In order to submit your comments regarding the application you will need to create an account with

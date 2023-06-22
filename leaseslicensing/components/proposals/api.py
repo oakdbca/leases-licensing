@@ -1693,7 +1693,7 @@ class ProposalViewSet(UserActionLoggingViewset):
                 _("An external referee invitation has already been sent to {email}".format(email=request.data["email"])),
                 code="invalid")
         external_referee_invite = ExternalRefereeInvite.objects.create(sent_by=request.user.id, **request.data)
-        send_external_referee_invite_email(external_referee_invite, instance, request)
+        send_external_referee_invite_email(instance, request, external_referee_invite)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
@@ -1977,32 +1977,6 @@ class ReferralViewSet(viewsets.ModelViewSet):
             proposal=instance.proposal,
         )
         serializer = DTReferralSerializer(qs, many=True)
-        return Response(serializer.data)
-
-    @ detail_route(methods=["GET", "POST"], detail=True)
-    @ basic_exception_handler
-    def complete(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.complete(request)
-        data = {}
-        data["type"] = "referral_complete"
-        data["fromm"] = f"{instance.referral_group.name}"
-        data["proposal"] = f"{instance.proposal.id}"
-        data["staff"] = f"{request.user.id}"
-        data["text"] = f"{instance.referral_text}"
-        data["subject"] = f"{instance.referral_text}"
-        serializer = ProposalLogEntrySerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        comms = serializer.save()
-        if instance.document:
-            document = comms.documents.create(
-                _file=instance.document._file, name=instance.document.name
-            )
-            document.input_name = instance.document.input_name
-            document.can_delete = True
-            document.save()
-
-        serializer = self.get_serializer(instance, context={"request": request})
         return Response(serializer.data)
 
     @ detail_route(
@@ -2363,7 +2337,6 @@ class AssessorChecklistViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class ProposalAssessmentViewSet(viewsets.ModelViewSet):
-    # queryset = ProposalRequirement.objects.all()
     queryset = ProposalAssessment.objects.all()
     serializer_class = ProposalAssessmentSerializer
 
@@ -2393,3 +2366,20 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
                     )
         # instance.proposal.log_user_action(ProposalUserAction.ACTION_EDIT_VESSEL.format(instance.id),request)
         return Response(serializer.data)
+
+
+class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
+    queryset = ExternalRefereeInvite.objects.all()
+    serializer_class = ExternalRefereeInviteSerializer
+
+    @ detail_route(methods=["post"], detail=True)
+    @ basic_exception_handler
+    def remind(self, request, *args, **kwargs):
+        instance = self.get_object()
+        send_external_referee_invite_email(instance.proposal, request, instance, reminder=True)
+        return Response(status=status.HTTP_200_OK, data={"message":f"Reminder sent to {instance.email} successfully"})
+
+    @ detail_route(methods=["delete"], detail=True)
+    @ basic_exception_handler
+    def retract(self, request, *args, **kwargs):
+        pass

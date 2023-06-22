@@ -98,7 +98,8 @@
                             <td class="truncate-name">{{ external_referee_invite.full_name }}</td>
                             <td>Pending</td>
                             <td class="text-center">
-                                <a @click.prevent="" role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                <a @click.prevent="remindExternalReferee(external_referee_invite)" role="button"
+                                    data-bs-toggle="popover" data-bs-trigger="hover focus"
                                     :data-bs-content="'Send a reminder to ' + external_referee_invite.full_name"
                                     data-bs-placement="bottom"><i class="fa fa-bell text-warning" aria-hidden="true"></i>
                                 </a>
@@ -858,6 +859,32 @@ export default {
         toggleRequirements: function () {
             this.showingRequirements = !this.showingRequirements;
             this.$emit('toggleRequirements', this.showingRequirements)
+        },
+        remindExternalReferee: function (external_referee_invite) {
+            fetch(helpers.add_endpoint_join(api_endpoints.external_referee_invites, `/${external_referee_invite.id}/remind/`), {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+            }).then(async (response) => {
+                const data = await response.json();
+                if (!response.ok) {
+                    const error =
+                        (data && data.message) || response.statusText;
+                    console.log(error);
+                    Promise.reject(error);
+                }
+                swal.fire({
+                    title: "Reminder Email Sent",
+                    text: `A reminder email was successfully sent to ${external_referee_invite.full_name} (${external_referee_invite.email}).`,
+                    icon: "success",
+                })
+            }).catch(error => {
+                console.log(`Error sending reminder. ${error}`);
+                swal.fire({
+                    title: "Reminder Email Failed",
+                    text: `${constants.API_ERROR}`,
+                    icon: "warning",
+                })
+            });
         },
         switchStatus: function (value) {
             this.$emit('switchStatus', value)

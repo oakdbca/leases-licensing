@@ -543,9 +543,12 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
 #    return email_entry
 
 
-def send_external_referee_invite_email(external_referee_invite, proposal, request):
+def send_external_referee_invite_email(proposal, request, external_referee_invite, reminder=False):
+    subject = f"Referral Request for DBCA {proposal.application_type.name_display} Application: {proposal.lodgement_number}"
+    if reminder:
+        subject = f"Reminder: {subject}"
     email = TemplateEmailBase(
-        subject=f"Referral Request for DBCA {proposal.application_type.name_display} Application: {proposal.lodgement_number}",
+        subject=subject,
         html_template="leaseslicensing/emails/proposals/send_external_referee_invite.html",
         txt_template="leaseslicensing/emails/proposals/send_external_referee_invite.txt",
     )
@@ -555,6 +558,7 @@ def send_external_referee_invite_email(external_referee_invite, proposal, reques
         "external_referee_invite": external_referee_invite,
         "proposal": proposal,
         "url": url,
+        "reminder": reminder,
     }
 
     msg = email.send(
