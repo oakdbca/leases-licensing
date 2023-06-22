@@ -2382,4 +2382,8 @@ class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
     @ detail_route(methods=["delete"], detail=True)
     @ basic_exception_handler
     def retract(self, request, *args, **kwargs):
-        pass
+        instance = self.get_object()
+        proposal = instance.proposal
+        instance.delete()
+        serializer = InternalProposalSerializer(proposal, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
