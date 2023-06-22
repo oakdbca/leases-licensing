@@ -23,7 +23,7 @@
                     @proposedDecline="proposedDecline" @proposedApproval="proposedApproval" @issueApproval="issueApproval"
                     @declineProposal="declineProposal" @assignRequestUser="assignRequestUser" @assignTo="assignTo"
                     @completeEditing="completeEditing" @cancelEditing="cancelEditing"
-                    @externalRefereeInviteSent="externalRefereeInviteSent" class="mt-2" />
+                    @updateProposalData="updateProposalData" class="mt-2" />
             </div>
 
             <div class="col-md-9">
@@ -994,7 +994,7 @@ export default {
             this.$refs.proposed_decline.decline = this.proposal.proposaldeclineddetails != null ? helpers.copyObject(this.proposal.proposaldeclineddetails) : {};
             this.$refs.proposed_decline.isModalOpen = true;
         },
-        externalRefereeInviteSent: function (proposal) {
+        updateProposalData: function (proposal) {
             this.proposal = proposal;
         },
         amendmentRequest: function () {
