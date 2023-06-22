@@ -92,7 +92,7 @@
                             <img class="svg-icon" src="../../assets/pen-icon.svg" />
                         </div>
                     </div>
-                    <div class="optional-layers-button-wrapper">
+                    <div v-if="polygonCount" class="optional-layers-button-wrapper">
                         <div title="Zoom map to layer(s)" class="optional-layers-button" @click="displayAllFeatures">
                             <img class="svg-icon" src="../../assets/map-zoom.svg" />
                         </div>
@@ -131,7 +131,7 @@
                         <div :title="mode == 'info' ? 'Deactivate info tool' : 'Activate info tool'" :class="[
                             mode == 'info' ? 'optional-layers-button-active' : 'optional-layers-button'
                         ]" @click="set_mode.bind(this)('info')">
-                            <img class="svg-icon" src="../../assets/info-bubble.svg" />
+                            <img class="svg-icon" src="../../assets/info-query.svg" />
                         </div>
                     </div>
                     <div v-if="selectedFeatureIds.length > 0" class="optional-layers-button-wrapper">
@@ -555,6 +555,13 @@ export default {
             let visible_layers = this.optionalLayers.filter(layer => layer.values_.visible === true);
             return visible_layers.length > 0;
         },
+        polygonCount: function () {
+            let vm = this;
+            if (!this.modelQuerySource) {
+                return 0;
+            }
+            return vm.modelQuerySource.getFeatures().length;
+        }
     },
     components: {
         CollapsibleFilters,
@@ -1062,11 +1069,26 @@ export default {
                     }
                     vm.selectedModel = model
                     selected.setStyle(hoverSelect);
+
+                    return true;
                 }, {
                     layerFilter: function (layer) {
                         return layer.get('name') === 'query_layer';
                     }
                 });
+
+                // Change to info cursor if hovering over an optional layer
+                let hit = vm.map.forEachLayerAtPixel(evt.pixel, function (layer) {
+                    layer.get("name") //dbca_legislated_lands_and_waters
+                    let optional_layer_names = vm.optionalLayers.map((layer) => { return layer.get("name") })
+
+                    if (vm.informing) {
+                        return optional_layer_names.includes(layer.get("name"))
+                    }
+                    return false;
+                });
+                vm.map.getTargetElement().style.cursor = hit ? 'help' : 'default';
+
                 if (selected) {
                     vm.featureToast.show()
                 } else {

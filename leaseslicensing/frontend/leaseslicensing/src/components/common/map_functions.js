@@ -122,6 +122,7 @@ export function set_mode(mode) {
     this.informing = false;
     this.errorMessage(null);
     this.overlay(undefined);
+    this.map.getTargetElement().style.cursor = "default";
 
     if (this.mode === 'layer') {
         this.clearMeasurementLayer();
