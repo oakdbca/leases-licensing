@@ -103,7 +103,8 @@
                                     :data-bs-content="'Send a reminder to ' + external_referee_invite.full_name"
                                     data-bs-placement="bottom"><i class="fa fa-bell text-warning" aria-hidden="true"></i>
                                 </a>
-                                <a @click.prevent="" role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
+                                <a @click.prevent="retractExternalRefereeInvite(external_referee_invite)" role="button"
+                                    data-bs-toggle="popover" data-bs-trigger="hover focus"
                                     :data-bs-content="'Recall the external referee invite sent to ' + external_referee_invite.full_name"
                                     data-bs-placement="bottom"><i class="fa fa-times-circle text-danger"
                                         aria-hidden="true"></i>
@@ -185,7 +186,6 @@
         </div>
         <AddExternalReferral ref="AddExternalReferral" @externalRefereeInviteSent="externalRefereeInviteSent"
             :proposal_id="proposal.id" :email="external_referral_email" />
-
     </div>
     <div class="card sticky-top">
         <div class="card-header">
@@ -193,14 +193,26 @@
         </div>
         <div class="card-body">
             <div class="list-group">
-                <a role="button" class="list-group-item list-group-item-action link-primary"
-                    @click.prevent="toggleCollapse">Toggle
-                    Assessment Comments</a>
-                <a href="#" class="list-group-item list-group-item-action link-primary"
-                    @click.prevent="toggleFormSections">Toggle Form Sections</a>
-                <a href="#" class="list-group-item list-group-item-action link-primary">Scroll to top</a>
+                <li class="list-group-item list-group-item-action" role="button" @click.prevent="toggleFormSections">
+                    <a href="#" class="text-primary text-decoration-none">{{
+                        formSectionsOpen ? 'Collapse' : 'Open' }} Form Sections</a>
+                </li>
+                <li v-if="formSectionsOpen" class="list-group-item">
+                    <ul class="list-group">
+                        <li v-for="form_section in formSectionLabels" class="list-group-item list-group-item-action"
+                            role="button" @click="scrollTo(form_section.id)"><a class="text-decoration-none">{{
+                                form_section.label }}</a>
+                        </li>
+                    </ul>
+                </li>
+                <li class="list-group-item list-group-item-action" role="button" @click.prevent="toggleCollapse">
+                    <a class="text-primary text-decoration-none">Toggle
+                        Assessment Comments</a>
+                </li>
+                <li class="list-group-item list-group-item-action" role="button" @click.prevent="scrollTop">
+                    <a href="#" class="text-primary text-decoration-none">Scroll to top</a>
+                </li>
             </div>
-
         </div>
     </div>
 </template>
@@ -227,7 +239,7 @@ export default {
         'proposedApproval',
         'issueApproval',
         'declineProposal',
-        'externalRefereeInviteSent',
+        'updateProposalData',
     ],
     data: function () {
         let vm = this;
@@ -249,6 +261,7 @@ export default {
             external_referral_email: '',
             sendingReferral: false,
             formSectionsOpen: true,
+            formSectionLabels: [],
             configurations_for_buttons: [
                 {
                     'key': 'enter_conditions',
@@ -599,10 +612,25 @@ export default {
             this.formSectionsOpen = !this.formSectionsOpen;
 
             if ($('.section-toggle:not(:first) > .card-body').css('display') == 'none') {
-                $('html, body').animate({
-                    scrollTop: $('.section-toggle:first').offset().top
-                }, 0);
+                this.scrollTop();
             }
+        },
+        getFormSectionLabels: function () {
+            return $('#pills-details .section-toggle').map(function () {
+                let obj = { id: $(this).attr("id"), label: $(this).find('.label').text() };
+                console.log(obj);
+                return obj
+            }).toArray();
+        },
+        scrollTop: function () {
+            $('html, body').animate({
+                scrollTop: $('.section-toggle:first').offset().top
+            }, 0);
+        },
+        scrollTo: function (id) {
+            $('html, body').animate({
+                scrollTop: $('#' + id).offset().top
+            }, 0);
         },
         formatDate: function (data) {
             return data ? moment(data).format('DD/MM/YYYY HH:mm:ss') : '';
@@ -695,7 +723,6 @@ export default {
                         return query;
                     },
                     processResults: function (data, params) {
-                        console.log(`data.results`, data.results)
                         if (Object.keys(data.results).length == 0) {
                             Swal.fire({
                                 title: "No Referee Found",
@@ -778,7 +805,6 @@ export default {
             let my_headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
 
             vm.sendingReferral = true;
-            console.log(JSON.stringify(vm.proposal))
             await fetch(`/api/proposal/${this.proposal.id}/assessor_save.json`, {
                 method: 'POST',
                 headers: my_headers,
@@ -808,7 +834,6 @@ export default {
                     return await response.json();
                 }
             }).then(async response => {
-                // console.log(`Data ${response}`);
                 vm.switchStatus(response.processing_status_id); // 'with_referral'
             }).catch(error => {
                 console.log(`Error sending referral. ${error}`);
@@ -886,6 +911,49 @@ export default {
                 })
             });
         },
+        retractExternalRefereeInvite: function (external_referee_invite) {
+            swal.fire({
+                title: "Retract External Referral Invite",
+                text: `Are you sure you want to retract the invite sent to ${external_referee_invite.full_name} (${external_referee_invite.email})?`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: 'Retract Email',
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
+                }
+            }).then(async result => {
+                if (result.isConfirmed) {
+                    fetch(helpers.add_endpoint_join(api_endpoints.external_referee_invites, `/${external_referee_invite.id}/retract/`), {
+                        method: 'DELETE',
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    }).then(async (response) => {
+                        const data = await response.json();
+                        if (!response.ok) {
+                            const error =
+                                (data && data.message) || response.statusText;
+                            console.log(error);
+                            Promise.reject(error);
+                        }
+                        this.$emit('updateProposalData', data)
+                        swal.fire({
+                            title: "External Referral Invite Retracted",
+                            text: `The external referee invite that was sent to ${external_referee_invite.full_name} (${external_referee_invite.email}) has been successfully retracted.`,
+                            icon: "success",
+                        })
+                    }).catch(error => {
+                        console.log(`Error retracting external referee invite. ${error}`);
+                        swal.fire({
+                            title: "Retract External Referee Invite Failed",
+                            text: `${constants.API_ERROR}`,
+                            icon: "error",
+                        })
+                    });
+                }
+            })
+        },
         switchStatus: function (value) {
             this.$emit('switchStatus', value)
         },
@@ -908,7 +976,7 @@ export default {
             this.$emit('declineProposal')
         },
         externalRefereeInviteSent: function (proposal) {
-            this.$emit('externalRefereeInviteSent', proposal)
+            this.$emit('updateProposalData', proposal)
         },
         initialisePopovers: function () {
             var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
@@ -923,6 +991,7 @@ export default {
             vm.initialiseSelects()
             vm.initialiseAssignedOfficerSelect()
             vm.initialisePopovers();
+            this.formSectionLabels = this.getFormSectionLabels();
         })
     },
 }
@@ -951,5 +1020,9 @@ export default {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.sticky-top {
+    top: 0.5em;
 }
 </style>
