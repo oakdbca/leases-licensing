@@ -1640,11 +1640,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             return False
 
     def can_assess(self, user):
-        logger.info("can assess")
-        logger.info("user")
-        logger.info(type(user))
-        logger.info(user)
-        logger.info(user.id)
         if self.processing_status in [
             "on_hold",
             "with_qa_officer",
@@ -3908,6 +3903,7 @@ class Referral(RevisionedMixin):
     referral = models.IntegerField()  # EmailUserRO
     is_external = models.BooleanField(default=False)
     linked = models.BooleanField(default=False)
+    # Todo: We may be able to remove sent_from now that only assessors can send referral requests
     sent_from = models.SmallIntegerField(
         choices=SENT_CHOICES, default=SENT_CHOICES[0][0]
     )
@@ -4097,13 +4093,6 @@ class Referral(RevisionedMixin):
                 raise exceptions.ProposalNotAuthorized()
             self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
             self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
-
-            # Set referral assessment incomplete again, so the referrer can Complete Referral
-            for assessment in self.proposal.referral_assessments:
-                if assessment.referral.referral == self.referral_as_email_user.id:
-                    assessment.completed = False
-                    assessment.save()
-
             self.proposal.save()
             self.sent_from = 1
             self.save()
