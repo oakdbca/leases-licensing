@@ -66,12 +66,20 @@ ADD_REVERSION_ADMIN = True
 # maximum number of days allowed for a booking
 WSGI_APPLICATION = "leaseslicensing.wsgi.application"
 
-REST_FRAMEWORK = {
-    "DEFAULT_RENDERER_CLASSES": (
+if DEBUG:
+    rest_framework_renderer_classes = (
         "rest_framework.renderers.JSONRenderer",
         "rest_framework.renderers.BrowsableAPIRenderer",
         "rest_framework_datatables.renderers.DatatablesRenderer",
-    ),
+    )
+else:
+    rest_framework_renderer_classes = (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework_datatables.renderers.DatatablesRenderer",
+    )
+
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": rest_framework_renderer_classes,
     "DEFAULT_FILTER_BACKENDS": (
         "rest_framework_datatables.filters.DatatablesFilterBackend",
     ),
@@ -327,23 +335,17 @@ LEDGER_TEMPLATE = "bootstrap5"
 GROUP_NAME_ASSESSOR = "proposal_assessor_group"
 GROUP_NAME_APPROVER = "proposal_approver_group"
 GROUP_NAME_ORGANISATION_ACCESS = "organisation_access_group"
-GROUP_REGISTRATION_OF_INTEREST_ASSESSOR = "registration_of_interest_assessor"
-GROUP_REGISTRATION_OF_INTEREST_APPROVER = "registration_of_interest_approver"
-GROUP_LEASE_LICENCE_ASSESSOR = "lease_licence_assessor"
-GROUP_LEASE_LICENCE_APPROVER = "lease_licence_approver"
 GROUP_COMPETITIVE_PROCESS_EDITOR = "competitive_process_editor"
 GROUP_FINANCE = "finance"
+
 GROUP_NAME_CHOICES = (
     (GROUP_NAME_ASSESSOR, "Proposal Assessor Group"),
     (GROUP_NAME_APPROVER, "Proposal Approver Group"),
     (GROUP_NAME_ORGANISATION_ACCESS, "Organisation Access Group"),
-    (GROUP_REGISTRATION_OF_INTEREST_ASSESSOR, "Registration of Interest Assessor"),
-    (GROUP_REGISTRATION_OF_INTEREST_APPROVER, "Registration of Interest Approver"),
-    (GROUP_LEASE_LICENCE_ASSESSOR, "Lease Licence Assessor"),
-    (GROUP_LEASE_LICENCE_APPROVER, "Lease Licence Approver"),
     (GROUP_COMPETITIVE_PROCESS_EDITOR, "Competitive Process Editor"),
     (GROUP_FINANCE, "Finance"),
 )
+
 CHARGE_METHOD_ONCE_OFF_CHARGE = "once_off_charge"
 CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT = (
     "base_fee_plus_fixed_annual_increment"
@@ -421,3 +423,9 @@ ACTION_VIEW = "View {} {}"
 ACTION_CREATE = "Create {} {}"
 ACTION_UPDATE = "Update {} {}"
 ACTION_DESTROY = "Destroy {} {}"
+
+# ---------- Error messages -------------
+
+# When debug is False, the following message will be sent to the user
+# The real exception will be logged
+API_EXCEPTION_MESSAGE = "An error occurred while processing your request."

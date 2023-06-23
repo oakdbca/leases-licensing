@@ -4,9 +4,10 @@ import TileLayer from 'ol/layer/Tile';
 import { Style, Fill, Stroke } from 'ol/style';
 
 // Tile server url
+// eslint-disable-next-line no-undef
 var url = `${env['kmi_server_url']}/geoserver/public/wms/?SERVICE=WMS&VERSION=1.0.0&REQUEST=GetCapabilities`;
 // Layer to use as map base layer
-export var baselayer_name = 'mapbox-emerald'
+export var baselayer_name = 'mapbox-emerald';
 // export var baselayer_name = 'mapbox-dark'
 
 
@@ -21,12 +22,13 @@ export function addOptionalLayers(map_component) {
         return response.text();
     }).then(function (text) {
         let result = parser.read(text);
-        let layers = result.Capability.Layer.Layer.filter(layer => { return layer['Name'] === 'dbca_legislated_lands_and_waters' });
+        let layers = result.Capability.Layer.Layer.filter(layer => { return layer['Name'] === 'dbca_legislated_lands_and_waters'; });
 
         for (let j in layers) {
             let layer = layers[j];
 
             let l = new TileWMS({
+                // eslint-disable-next-line no-undef
                 url: `${env['kmi_server_url']}/geoserver/public/wms`,
                 params: {
                     'FORMAT': 'image/png',
@@ -41,34 +43,34 @@ export function addOptionalLayers(map_component) {
                 title: layer.Title.trim(),
                 visible: false,
                 source: l,
-            })
+            });
 
             let legend_url = null;
             if (layer.Name == baselayer_name) {
                 // TODO don't add the baselayer to the optional layer control
             } else {
                 if (typeof (layer.Style) != 'undefined') {
-                    legend_url = layer.Style[0].LegendURL[0].OnlineResource
+                    legend_url = layer.Style[0].LegendURL[0].OnlineResource;
                 }
             }
 
             // Set additional attributes to the layer
-            tileLayer.set('columns', []) // []
-            tileLayer.set('display_all_columns', true) // true
+            tileLayer.set('columns', []); // []
+            tileLayer.set('display_all_columns', true); // true
             tileLayer.set('legend_url', legend_url);
 
-            map_component.optionalLayers.push(tileLayer)
-            map_component.map.addLayer(tileLayer)
+            map_component.optionalLayers.push(tileLayer);
+            map_component.map.addLayer(tileLayer);
 
-            tileLayer.on("change:visible", function (e) {
+            tileLayer.on('change:visible', function (e) {
                 if (e.oldValue == false) {
-                    $('#legend').find('img').attr('src', this.values_.legend_url)
+                    $('#legend').find('img').attr('src', this.values_.legend_url);
                     $('#legend_title').text(this.values_.title);
                 } else if (e.oldValue == true) {
                     $('#legend_title').text('');
-                    $('#legend').find('img').attr('src', "")
+                    $('#legend').find('img').attr('src', '');
                 } else {
-                    console.error("Cannot assess tile layer visibility change.")
+                    console.error('Cannot assess tile layer visibility change.');
                 }
             });
         }
@@ -82,28 +84,28 @@ export function addOptionalLayers(map_component) {
 export function set_mode(mode) {
     // Toggle map mode on/off when the new mode is the old one
     if (this.mode == mode) {
-        this.mode = 'layer'
+        this.mode = 'layer';
     } else {
-        this.mode = mode
+        this.mode = mode;
     }
 
     this.drawing = false;
     this.measuring = false;
 
     if (this.mode === 'layer') {
-        this.clearMeasurementLayer()
-        _helper.toggle_draw_measure_license.bind(this)(false, false)
+        this.clearMeasurementLayer();
+        _helper.toggle_draw_measure_license.bind(this)(false, false);
     } else if (this.mode === 'draw') {
-        this.clearMeasurementLayer()
-        this.sketchCoordinates = [[]]
-        this.sketchCoordinatesHistory = [[]]
-        _helper.toggle_draw_measure_license.bind(this)(false, true)
+        this.clearMeasurementLayer();
+        this.sketchCoordinates = [[]];
+        this.sketchCoordinatesHistory = [[]];
+        _helper.toggle_draw_measure_license.bind(this)(false, true);
         this.drawing = true;
     } else if (this.mode === 'measure') {
-        _helper.toggle_draw_measure_license.bind(this)(true, false)
+        _helper.toggle_draw_measure_license.bind(this)(true, false);
         this.measuring = true;
     } else {
-        console.error(`Cannot set mode ${mode}`)
+        console.error(`Cannot set mode ${mode}`);
     }
 }
 
@@ -113,8 +115,8 @@ export function set_mode(mode) {
 * @param {object} feature A single geometry feature (e.g. a drawn polygon)
 */
 export function polygon_style(feature) {
-    let strokecolor = "#3498DB";
-    let fillcolor = "#85C1E9"
+    let strokecolor = '#3498DB';
+    let fillcolor = '#85C1E9';
     if (feature.get('source') === 'registration_of_interest') {
         // yellowish
         strokecolor = [244, 208, 63, 1.0];
@@ -140,45 +142,46 @@ export function polygon_style(feature) {
 * when the feature is valid. A feature is condidered valid when it intersects with
 * the DBCS legislated land-water layer.
 */
-export function validateFeature () {
-   let vm = this;
-   console.log("Validate feature");
-   // Get the WKT representation of the drawn polygon
-   let polygon_wkt = vm.$refs.component_map.featureToWKT();
+export function validateFeature() {
+    let vm = this;
+    console.log('Validate feature');
+    // Get the WKT representation of the drawn polygon
+    let polygon_wkt = vm.$refs.component_map.featureToWKT();
 
-   // The geoserver url
-   var owsUrl = `${env['kmi_server_url']}/geoserver/public/ows/?`;
-   // Create a params dict for the WFS request to the land-water layer
-   let paramsDict = vm.$refs.component_map.queryParamsDict("landwater");
-   let geometry_name = vm.$refs.component_map.owsQuery.landwater.geometry;
-   paramsDict["CQL_FILTER"] = `INTERSECTS(${geometry_name},${polygon_wkt})`;
+    // The geoserver url
+    // eslint-disable-next-line no-undef
+    let owsUrl = `${env['kmi_server_url']}/geoserver/public/ows/?`;
+    // Create a params dict for the WFS request to the land-water layer
+    let paramsDict = vm.$refs.component_map.queryParamsDict('landwater');
+    let geometry_name = vm.$refs.component_map.owsQuery.landwater.geometry;
+    paramsDict['CQL_FILTER'] = `INTERSECTS(${geometry_name},${polygon_wkt})`;
 
-   // Turn params dict into a param query string
-   let params = new URLSearchParams(paramsDict).toString();
-   let query = `${owsUrl}${params}`;
+    // Turn params dict into a param query string
+    let params = new URLSearchParams(paramsDict).toString();
+    let query = `${owsUrl}${params}`;
 
-   vm.$refs.component_map.validateFeatureQuery(query).then(async (features) => {
-       if (features.length === 0) {
-           console.warn("New feature is not valid");
-           vm.$refs.component_map.errorMessage(
-               "The polygon you have drawn does not intersect with any DBCA lands or water.");
+    vm.$refs.component_map.validateFeatureQuery(query).then(async (features) => {
+        if (features.length === 0) {
+            console.warn('New feature is not valid');
+            vm.$refs.component_map.errorMessage(
+                'The polygon you have drawn does not intersect with any DBCA lands or water.');
 
-       } else {
-           console.log("New feature is valid", features);
-           vm.$refs.component_map.finishDrawing();
-       }
-   });
+        } else {
+            console.log('New feature is valid', features);
+            vm.$refs.component_map.finishDrawing();
+        }
+    });
 }
 
-export var owsQuery = {
-    "version": "1.0.0", // TODO: Change to 1.1.0 or 2.0.0 when supported by the geoserver
-    "landwater": {
-        "typeName": "public:dbca_legislated_lands_and_waters",
-        "srsName": "EPSG:4326",
-        "propertyName": "objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting",
-        "geometry": "wkb_geometry",
+export let owsQuery = {
+    'version': '1.0.0', // TODO: Change to 1.1.0 or 2.0.0 when supported by the geoserver
+    'landwater': {
+        'typeName': 'public:dbca_legislated_lands_and_waters',
+        'srsName': 'EPSG:4326',
+        'propertyName': 'objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting',
+        'geometry': 'wkb_geometry',
     },
-}
+};
 
 
 /**
@@ -192,10 +195,10 @@ const _helper = {
      */
     toggle_draw_measure_license: function (drawForMeasure, drawForModel) {
         if (this.drawForMeasure) {
-            this.drawForMeasure.setActive(drawForMeasure)
+            this.drawForMeasure.setActive(drawForMeasure);
         }
         if (this.drawForModel) {
-            this.drawForModel.setActive(drawForModel)
+            this.drawForModel.setActive(drawForModel);
         }
     }
-}
+};

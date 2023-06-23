@@ -1,6 +1,7 @@
 import { RouterView } from 'vue-router';
 import ExternalDashboard from '@/components/external/dashboard.vue';
 import Proposal from '@/components/external/proposal.vue';
+import ExternalReferralProposal from '@/components/internal/proposals/proposal.vue';
 import ProposalApply from '@/components/external/proposal_apply.vue';
 import ProposalSubmit from '@/components/external/proposal_submit.vue';
 import Organisation from '@/components/external/organisations/manage.vue';
@@ -45,9 +46,14 @@ export default {
             name: 'submit-proposal',
         },
         {
+            path: 'proposal/:proposal_id/referral/',
+            component: ExternalReferralProposal,
+            name: 'proposal_referral'
+        },
+        {
             path: 'proposal/:proposal_id',
             component: Proposal,
             name: 'draft_proposal'
         },
     ]
-}
+};

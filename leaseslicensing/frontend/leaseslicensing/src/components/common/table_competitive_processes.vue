@@ -2,7 +2,7 @@
     <div>
         <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
             class="mb-2">
-            <div class="row">
+            <div class="row mt-1 p-2">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Status</label>
@@ -40,23 +40,6 @@
                 </div>
             </div>
         </CollapsibleFilters>
-
-        <!--
-        <div class="toggle_filters_wrapper">
-            <div @click="expandCollapseFilters" class="toggle_filters_button">
-                <div class="toggle_filters_icon">
-                    <span v-if="filters_expanded" class="text-right"><i class="fa fa-chevron-up"></i></span>
-                    <span v-else class="text-right"><i class="fa fa-chevron-down"></i></span>
-                </div>
-                <i v-if="filterApplied" title="filter(s) applied" class="fa fa-exclamation-circle fa-2x filter-warning-icon"></i>
-            </div>
-
-            <transition>
-                <div class="row" v-show="filters_expanded">
-                </div>
-            </transition>
-        </div>
-        -->
 
         <div v-if="is_internal" class="row">
             <div class="text-end mb-2">
@@ -285,11 +268,11 @@ export default {
                 'render': function (row, type, full) {
                     console.log({ full })
                     let links = '';
-                    if (vm.is_internal){
-                        if (full.can_accessing_user_process){
+                    if (vm.is_internal) {
+                        if (full.can_accessing_user_process) {
                             links += '<a href="/internal/competitive_process/' + full.id + '">Process</a>'
                         }
-                        else if (full.can_accessing_user_view){
+                        else if (full.can_accessing_user_view) {
                             links += '<a href="/internal/competitive_process/' + full.id + '">View</a>'
                         }
                     }
@@ -380,7 +363,7 @@ export default {
         }
     },
     methods: {
-        createNewCompetitiveProcess: async function() {
+        createNewCompetitiveProcess: async function () {
             await fetch(api_endpoints.competitive_process, { method: 'POST' })
                 .then(async response => {
                     if (!response.ok) {
@@ -389,11 +372,11 @@ export default {
                         return await response.json();
                     }
                 })
-                .then (data => {
+                .then(data => {
                     const competitive_process = Object.assign({}, data);
                     this.$router.push({
-                        name:"internal-competitive-process",
-                        params:{competitive_process_id:competitive_process.id}
+                        name: "internal-competitive-process",
+                        params: { competitive_process_id: competitive_process.id }
                     });
                 })
                 .catch(error => {

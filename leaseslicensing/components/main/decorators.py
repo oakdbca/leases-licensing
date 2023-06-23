@@ -2,6 +2,7 @@ import functools
 import logging
 import time
 
+from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import connection, reset_queries
 from rest_framework import serializers
@@ -17,18 +18,15 @@ def basic_exception_handler(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-
-        except serializers.ValidationError as e:
+        except (serializers.ValidationError, ValidationError) as e:
             logger.error(str(e))
             raise
-        except ValidationError as e:
-            from leaseslicensing.components.main.utils import handle_validation_error
-
-            logger.error(str(e))
-            handle_validation_error(e)
         except Exception as e:
-            logger.error(str(e))
-            raise serializers.ValidationError(str(e))
+            logger.exception(str(e))
+            if settings.DEBUG:
+                raise serializers.ValidationError(e)
+            # Don't send complex exeption messages to the client when in production
+            raise serializers.ValidationError(settings.API_EXCEPTION_MESSAGE)
 
     return wrapper
 
@@ -88,8 +86,7 @@ def timeit(method):
             name = kw.get("log_name", method.__name__.upper())
             kw["log_time"][name] = int((te - ts) * 1000)
         else:
-            print(f"{method.__name__!r}  {(te - ts) * 1000:2.2f} ms")
-            # logger.error('%r  %2.2f ms' % (method.__name__, (te - ts) * 1000))
+            logger.debug(f"{method.__name__!r}  {(te - ts) * 1000:2.2f} ms")
         return result
 
     return timed
@@ -104,15 +101,12 @@ def query_debugger(func):
         result = func(*args, **kwargs)
         end = time.perf_counter()
         end_queries = len(connection.queries)
-        print(f"Function : {func.__name__}")
-        print(f"Number of Queries : {end_queries - start_queries}")
-        print(f"Finished in : {(end - start):.2f}s")
         function_name = f"Function : {func.__name__}"
         number_of_queries = f"Number of Queries : {end_queries - start_queries}"
         time_taken = f"Finished in : {(end - start):.2f}s"
-        logger.error(function_name)
-        logger.error(number_of_queries)
-        logger.error(time_taken)
+        logger.debug(function_name)
+        logger.debug(number_of_queries)
+        logger.debug(time_taken)
         return result
 
     return inner_func

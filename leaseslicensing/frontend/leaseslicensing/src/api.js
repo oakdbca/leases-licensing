@@ -16,6 +16,7 @@ module.exports = {
     compliances_paginated_external: '/api/compliance_paginated/list_external/',
     compliances: '/api/compliances.json',
     countries: '/api/countries',
+    external_referee_invites: '/api/external_referee_invites/',
     fee_configurations: '/api/fee_configurations',
     fee_seasons_dict: '/api/fee_seasons_dict',
     filtered_organisations: '/api/filtered_organisations',

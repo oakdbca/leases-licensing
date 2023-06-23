@@ -1,0 +1,15 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+    All pending referrals for {{ proposal.application_type.name_display }} Application: {{proposal.lodgement_number}} have been completed.
+
+    {% if referral.sent_from == 1 %}
+        The processing status has been changed back to 'With Assessor' and is ready for processing.
+    {% else %}
+        The processing status has been changed back to 'With Approver' and is ready for processing.
+    {% endif %}
+
+    You can access this {{ proposal.application_type.name_display }} Application using the following link:
+
+    {{ url }}
+{%  endblock %}

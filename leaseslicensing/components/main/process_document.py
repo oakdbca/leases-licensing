@@ -1,3 +1,4 @@
+import logging
 import os
 import traceback
 
@@ -9,6 +10,9 @@ from leaseslicensing.components.approvals.models import (
 )
 from leaseslicensing.components.main.models import upload_protected_files_storage
 from leaseslicensing.components.main.utils import get_secure_document_url
+
+
+logger = logging.getLogger(__name__)
 
 
 def process_generic_document(request, instance, document_type=None, *args, **kwargs):
@@ -169,7 +173,7 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
             return {"filedata": returned_file_data}
 
     except Exception as e:
-        print(traceback.print_exc())
+        logger.exception(e)
         raise e
 
 

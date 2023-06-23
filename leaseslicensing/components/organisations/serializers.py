@@ -115,9 +115,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
     delegate_organisation_contacts = serializers.ListField(
         child=OrganisationContactSerializer(), read_only=True
     )
-    trading_name = serializers.CharField(
-        source="ledger_organisation_name", read_only=True
-    )
+    ledger_organisation_name = serializers.CharField(read_only=True)
     apply_application_discount = serializers.SerializerMethodField(read_only=True)
     application_discount = serializers.SerializerMethodField(read_only=True)
     apply_licence_discount = serializers.SerializerMethodField(read_only=True)
@@ -135,9 +133,10 @@ class OrganisationSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "ledger_organisation_id",
+            "ledger_organisation_name",
+            "ledger_organisation_trading_name",
             "ledger_organisation_abn",
             "ledger_organisation_email",
-            "trading_name",
             "phone_number",
             "pins",
             "apply_application_discount",
@@ -200,6 +199,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
             read_only=True,
         ).data
 
+
 class OrganisationDetailsSerializer(serializers.ModelSerializer):
     organisation_name = serializers.CharField(
         source="ledger_organisation_name",
@@ -207,15 +207,15 @@ class OrganisationDetailsSerializer(serializers.ModelSerializer):
         default="",
     )
     organisation_email = serializers.EmailField(
-        source="ledger_organisation_email", 
-        required=False, 
+        source="ledger_organisation_email",
+        required=False,
         allow_blank=True
     )
     organisation_trading_name = serializers.CharField(
-        source="trading_name",
+        source="ledger_organisation_trading_name",
         required=False,
         allow_blank=True
-        )
+    )
 
     class Meta:
         model = Organisation
@@ -224,6 +224,7 @@ class OrganisationDetailsSerializer(serializers.ModelSerializer):
             "organisation_email",
             "organisation_trading_name",
         )
+
 
 class OrganisationKeyValueSerializer(serializers.ModelSerializer):
     class Meta:
@@ -276,7 +277,7 @@ class MyOrganisationsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Organisation
-        fields = ("id", "name", "abn", "is_admin", "is_consultant")
+        fields = ("id", "name", "email", "abn", "is_admin", "is_consultant")
 
     def get_is_consultant(self, obj):
         user = self.context["request"].user

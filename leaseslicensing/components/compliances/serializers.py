@@ -11,19 +11,14 @@ from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 
 class ComplianceSerializer(serializers.ModelSerializer):
-    # regions = serializers.CharField(source="proposal.region")
-    # activity = serializers.CharField(source="proposal.activity")
     title = serializers.CharField(source="proposal.title")
     holder = serializers.CharField(read_only=True)
     processing_status = serializers.CharField(source="get_processing_status_display")
     customer_status = serializers.CharField(source="get_customer_status_display")
     submitter = serializers.SerializerMethodField(read_only=True)
     documents = serializers.SerializerMethodField()
-    # submitter = serializers.CharField(source='submitter.get_full_name')
     submitter = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
-    # allowed_assessors = EmailUserSerializer(many=True)
-    # assigned_to = serializers.CharField(source='assigned_to.get_full_name')
     requirement = serializers.CharField(
         source="requirement.requirement", required=False, allow_null=True
     )
@@ -41,8 +36,6 @@ class ComplianceSerializer(serializers.ModelSerializer):
             "due_date",
             "processing_status",
             "customer_status",
-            # "regions",
-            # "activity",
             "title",
             "text",
             "holder",
@@ -72,8 +65,6 @@ class ComplianceSerializer(serializers.ModelSerializer):
             "due_date",
             "processing_status",
             "customer_status",
-            # "regions",
-            # "activity",
             "title",
             "text",
             "holder",
@@ -135,20 +126,14 @@ class ComplianceSerializer(serializers.ModelSerializer):
 
 
 class InternalComplianceSerializer(serializers.ModelSerializer):
-    # regions = serializers.CharField(source="proposal.region")
-    # activity = serializers.CharField(source="proposal.activity")
     title = serializers.CharField(source="proposal.title")
     holder = serializers.CharField(source="proposal.applicant")
     processing_status = serializers.CharField(source="get_processing_status_display")
     customer_status = serializers.CharField(source="get_customer_status_display")
     submitter = serializers.SerializerMethodField(read_only=True)
     documents = serializers.SerializerMethodField()
-    # submitter = serializers.CharField(source='submitter.get_full_name')
     submitter = serializers.SerializerMethodField(read_only=True)
-    # allowed_assessors = EmailUserSerializer(many=True)
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
-    # assigned_to = serializers.CharField(source='assigned_to.get_full_name')
-    # assigned_to = serializers.SerializerMethodField(read_only=True)
     requirement = serializers.CharField(
         source="requirement.requirement", required=False, allow_null=True
     )
@@ -163,8 +148,6 @@ class InternalComplianceSerializer(serializers.ModelSerializer):
             "due_date",
             "processing_status",
             "customer_status",
-            # "regions",
-            # "activity",
             "title",
             "text",
             "holder",
@@ -205,11 +188,6 @@ class InternalComplianceSerializer(serializers.ModelSerializer):
     def get_approval_lodgement_number(self, obj):
         return obj.approval.lodgement_number
 
-    # def get_assigned_to(self,obj):
-    #     if obj.assigned_to:
-    #         return obj.assigned_to.get_full_name()
-    #     return None
-
     def get_submitter(self, obj):
         if obj.submitter:
             return retrieve_email_user(obj.submitter).get_full_name()
@@ -247,14 +225,10 @@ class ComplianceCommsSerializer(serializers.ModelSerializer):
 
 
 class ComplianceAmendmentRequestSerializer(serializers.ModelSerializer):
-    # reason = serializers.SerializerMethodField()
 
     class Meta:
         model = ComplianceAmendmentRequest
         fields = "__all__"
-
-    # def get_reason (self,obj):
-    #     return obj.get_reason_display()
 
 
 class CompAmendmentRequestDisplaySerializer(serializers.ModelSerializer):
@@ -265,5 +239,4 @@ class CompAmendmentRequestDisplaySerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_reason(self, obj):
-        # return obj.get_reason_display()
         return obj.reason.reason if obj.reason else None

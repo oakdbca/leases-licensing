@@ -23,6 +23,7 @@ from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentRequest,
     ChecklistQuestion,
+    ExternalRefereeInvite,
     Proposal,
     ProposalAct,
     ProposalApplicantDetails,
@@ -282,24 +283,24 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
             "section_answers",
             "answerable_by_accessing_user",
             "belongs_to_accessing_user",
+
             "assessor_comment_map",
-            "deficiency_comment_map",
-            "referrer_comment_map",
+            "assessor_comment_tourism_proposal_details",
+            "assessor_comment_general_proposal_details",
             "assessor_comment_proposal_details",
-            "deficiency_comment_proposal_details",
-            "referrer_comment_proposal_details",
             "assessor_comment_proposal_impact",
-            "deficiency_comment_proposal_impact",
-            "referrer_comment_proposal_impact",
             "assessor_comment_other",
-            "deficiency_comment_other",
-            "referrer_comment_other",
             "assessor_comment_deed_poll",
-            "deficiency_comment_deed_poll",
-            "referrer_comment_deed_poll",
             "assessor_comment_additional_documents",
+
+            "deficiency_comment_map",
+            "deficiency_comment_tourism_proposal_details",
+            "deficiency_comment_general_proposal_details",
+            "deficiency_comment_proposal_details",
+            "deficiency_comment_proposal_impact",
+            "deficiency_comment_other",
+            "deficiency_comment_deed_poll",
             "deficiency_comment_additional_documents",
-            "referrer_comment_additional_documents",
         )
 
     def get_answerable_by_accessing_user(self, proposal_assessment):
@@ -392,7 +393,9 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     documents_url = serializers.SerializerMethodField()
     proposal_type = ProposalTypeSerializer()
     application_type = ApplicationTypeSerializer()
-    # is_qa_officer = serializers.SerializerMethodField()
+    accessing_user_roles = (
+        serializers.SerializerMethodField()
+    )
     proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
     applicant = serializers.SerializerMethodField()
     lodgement_date_display = serializers.SerializerMethodField()
@@ -440,6 +443,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "reference",
             "lodgement_number",
             "can_officer_process",
+            "accessing_user_roles",
             # 'allowed_assessors',
             # 'is_qa_officer',
             # 'pending_amendment_request',
@@ -613,6 +617,23 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     def get_customer_status(self, obj):
         return obj.get_processing_status_display()
 
+    def get_accessing_user_roles(self, proposal):
+        request = self.context.get("request")
+        accessing_user = request.user
+        roles = []
+
+        for choice in GROUP_NAME_CHOICES:
+            group = SystemGroup.objects.get(name=choice[0])
+            ids = group.get_system_group_member_ids()
+            if accessing_user.id in ids:
+                roles.append(group.name)
+
+        referral_ids = list(proposal.referrals.values_list("referral", flat=True))
+        if accessing_user.id in referral_ids:
+            roles.append("referral")
+
+        return roles
+
 
 class ListProposalMinimalSerializer(serializers.ModelSerializer):
     proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
@@ -767,13 +788,40 @@ class ListProposalSerializer(BaseProposalSerializer):
         return None
 
 
+class ProposalReferralSerializer(serializers.ModelSerializer):
+    processing_status = serializers.CharField(source="get_processing_status_display")
+    referral_obj = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Referral
+        fields = "__all__"
+
+    def get_referral_obj(self, obj):
+        referral_email_user = retrieve_email_user(obj.referral)
+        serializer = EmailUserSerializer(referral_email_user)
+        return serializer.data
+
+
 class ProposalSerializer(BaseProposalSerializer):
-    # submitter = serializers.CharField(source='submitter.get_full_name')
     submitter = serializers.SerializerMethodField(read_only=True)
     processing_status = serializers.SerializerMethodField(read_only=True)
-    # review_status = serializers.SerializerMethodField(read_only=True)
-    # customer_status = serializers.SerializerMethodField(read_only=True)
-    # application_type = serializers.CharField(source='application_type.name', read_only=True)
+    # Had to add assessor mode and lodgement versions for this serializer to work for
+    # external user that is a referral
+    assessor_mode = serializers.SerializerMethodField(read_only=True)
+    lodgement_versions = serializers.SerializerMethodField(read_only=True)
+    referrals = ProposalReferralSerializer(many=True)
+    processing_status_id = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = Proposal
+        fields = "__all__"
+        extra_fields = ["assessor_mode", "lodgement_versions", "referrals", "processing_status_id"]
+
+    def get_field_names(self, declared_fields, info):
+        expanded_fields = super().get_field_names(declared_fields, info)
+        if getattr(self.Meta, 'extra_fields', None):
+            return expanded_fields + self.Meta.extra_fields
+        return expanded_fields
 
     def get_readonly(self, obj):
         return obj.can_user_view
@@ -785,15 +833,28 @@ class ProposalSerializer(BaseProposalSerializer):
         else:
             return None
 
+    def get_assessor_mode(self, obj):
+        # TODO check if the proposal has been accepted or declined
+        request = self.context["request"]
+        user = (
+            request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
+        )
+        return {
+            "assessor_mode": True,
+            "has_assessor_mode": obj.has_assessor_mode(user),
+            "assessor_can_assess": obj.can_assess(user),
+            "assessor_level": "assessor",
+            "assessor_box_view": obj.assessor_comments_view(user),
+            "is_referee": obj.is_referee(user),
+            "referee_can_edit": obj.referee_can_edit_referral(user),
+        }
 
-# class ProposalApplicantDetailsSerializer(serializers.ModelSerializer):
-#
-#    class Meta:
-#        model = ProposalApplicantDetails
-#        fields = (
-#                'id',
-#                'first_name',
-#                )
+    def get_lodgement_versions(self, obj):
+        # Just return the current version so that the frontend doesn't break
+        return [obj.lodgement_versions[0]]
+
+    def get_processing_status_id(self, obj):
+        return obj.processing_status
 
 
 class CreateProposalSerializer(BaseProposalSerializer):
@@ -999,6 +1060,24 @@ class ProposalParkSerializer(BaseProposalSerializer):
         return obj.approval.id
 
 
+class ExternalRefereeInviteSerializer(serializers.ModelSerializer):
+    proposal_id = serializers.IntegerField(required=False)
+    full_name = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = ExternalRefereeInvite
+        fields = [
+            "id",
+            "first_name",
+            "last_name",
+            "full_name",
+            "email",
+            "organisation",
+            "invite_text",
+            "proposal_id",
+        ]
+
+
 class InternalProposalSerializer(BaseProposalSerializer):
     applicant = serializers.CharField(read_only=True)
     org_applicant = OrganisationSerializer()
@@ -1011,7 +1090,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
     can_edit_period = serializers.SerializerMethodField()
     current_assessor = serializers.SerializerMethodField()
     latest_referrals = ProposalReferralSerializer(many=True)
-
+    referrals = ProposalReferralSerializer(many=True)
+    external_referral_invites = ExternalRefereeInviteSerializer(many=True)
     allowed_assessors = EmailUserSerializer(many=True)
     approval_level_document = serializers.SerializerMethodField()
     # application_type = serializers.CharField(source='application_type.name', read_only=True)
@@ -1022,12 +1102,10 @@ class InternalProposalSerializer(BaseProposalSerializer):
 
     requirements_completed = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
-    accessing_user_roles = (
-        serializers.SerializerMethodField()
-    )  # Accessing user's roles for this proposal.
+
     approval_issue_date = (
         serializers.SerializerMethodField()
-    )  # Accessing user's roles for this proposal.
+    )
     invoicing_details = InvoicingDetailsSerializer()
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
@@ -1065,7 +1143,9 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "assessor_mode",
             "current_assessor",
             "latest_referrals",
+            "referrals",
             "allowed_assessors",
+            "accessing_user_roles",
             "proposed_issuance_approval",
             "proposed_decline_status",
             "proposaldeclineddetails",
@@ -1125,7 +1205,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "key_milestones_text",
             "risk_factors_text",
             "legislative_requirements_text",
-            "accessing_user_roles",
             "approval_issue_date",
             "invoicing_details",
             "all_lodgement_versions",
@@ -1144,6 +1223,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "proponent_reference_number",
             "site_name",
             "details_url",
+            "external_referral_invites",
             # "assessor_comment_map",
             # "deficiency_comment_map",
             # "assessor_comment_proposal_details",
@@ -1164,32 +1244,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "current_assessor",
         }
         read_only_fields = ("requirements",)
-
-    def get_accessing_user_roles(self, proposal):
-        request = self.context.get("request")
-        accessing_user = request.user
-        roles = []
-
-        for choice in GROUP_NAME_CHOICES:
-            group = SystemGroup.objects.get(name=choice[0])
-            ids = group.get_system_group_member_ids()
-            if accessing_user.id in ids:
-                roles.append(group.name)
-
-        # assessor_group = proposal.get_assessor_group()
-        # ids = assessor_group.get_system_group_member_ids()
-        # # if accessing_user.id in proposal.get_assessor_group().get_system_group_member_ids():
-        # if accessing_user.id in ids:
-        #     roles.append("assessor")
-        #
-        # if accessing_user.id in proposal.get_approver_group().get_system_group_member_ids():
-        #     roles.append("approver")
-
-        referral_ids = list(proposal.referrals.values_list("referral", flat=True))
-        if accessing_user.id in referral_ids:
-            roles.append("referral")
-
-        return roles
 
     def get_applicant_obj(self, obj):
         if isinstance(obj.applicant, Organisation):
@@ -1227,8 +1281,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "assessor_can_assess": obj.can_assess(user),
             "assessor_level": "assessor",
             "assessor_box_view": obj.assessor_comments_view(user),
-            "user_is_referrer": obj.is_referrer(user),
-            "user_is_referrer_can_edit": obj.referrer_can_edit_referral(user),
+            "is_referee": obj.is_referee(user),
+            "referee_can_edit": obj.referee_can_edit_referral(user),
         }
 
     def get_can_edit_period(self, obj):
@@ -1444,10 +1498,8 @@ class RequirementDocumentSerializer(serializers.ModelSerializer):
 
 
 class ProposalRequirementSerializer(serializers.ModelSerializer):
-    # due_date = serializers.DateField(input_formats=['%d/%m/%Y'],required=False,allow_null=True)
     can_referral_edit = serializers.SerializerMethodField()
     requirement_documents = RequirementDocumentSerializer(many=True, read_only=True)
-    # The user who created the requirement
     source = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -1467,7 +1519,6 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             "requirement",
             "is_deleted",
             "copied_from",
-            # 'referral_group',
             "can_referral_edit",
             "requirement_documents",
             "require_due_date",

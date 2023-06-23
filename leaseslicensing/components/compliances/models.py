@@ -47,21 +47,36 @@ class Compliance(RevisionedMixin, models.Model):
 
     MODEL_PREFIX = "C"
 
+    PROCESSING_STATUS_DUE = "due"
+    PROCESSING_STATUS_FUTURE = "future"
+    PROCESSING_STATUS_WITH_ASSESSOR = "with_assessor"
+    PROCESSING_STATUS_APPROVED = "approved"
+    PROCESSING_STATUS_DISCARDED = "discarded"
+    PROCESSING_STATUS_OVERDUE = "overdue"
+
     PROCESSING_STATUS_CHOICES = (
-        ("due", "Due"),
-        ("future", "Future"),
-        ("with_assessor", "With Assessor"),
-        ("approved", "Approved"),
-        ("discarded", "Discarded"),
+        (PROCESSING_STATUS_DUE, "Due Soon"),
+        (PROCESSING_STATUS_FUTURE, "Future"),
+        (PROCESSING_STATUS_WITH_ASSESSOR, "With Assessor"),
+        (PROCESSING_STATUS_APPROVED, "Approved"),
+        (PROCESSING_STATUS_DISCARDED, "Discarded"),
+        (PROCESSING_STATUS_OVERDUE, "Overdue"),
     )
 
+    CUSTOMER_STATUS_DUE = "due"
+    CUSTOMER_STATUS_FUTURE = "future"
+    CUSTOMER_STATUS_WITH_ASSESSOR = "with_assessor"
+    CUSTOMER_STATUS_APPROVED = "approved"
+    CUSTOMER_STATUS_DISCARDED = "discarded"
+    CUSTOMER_STATUS_OVERDUE = "overdue"
+
     CUSTOMER_STATUS_CHOICES = (
-        ("due", "Due"),
-        ("future", "Future"),
-        ("with_assessor", "Under Review"),
-        ("approved", "Approved"),
-        ("discarded", "Discarded"),
-        ("overdue", "Overdue"),
+        (CUSTOMER_STATUS_DUE, "Due Soon"),
+        (CUSTOMER_STATUS_FUTURE, "Future"),
+        (CUSTOMER_STATUS_WITH_ASSESSOR, "Under Review"),
+        (CUSTOMER_STATUS_APPROVED, "Approved"),
+        (CUSTOMER_STATUS_DISCARDED, "Discarded"),
+        (CUSTOMER_STATUS_OVERDUE, "Overdue"),
     )
 
     lodgement_number = models.CharField(max_length=9, blank=True, default="")
@@ -73,7 +88,6 @@ class Compliance(RevisionedMixin, models.Model):
     )
     due_date = models.DateField()
     text = models.TextField(blank=True)
-    # meta = JSONField(null=True, blank=True)
     num_participants = models.SmallIntegerField(
         "Number of participants", blank=True, null=True
     )
@@ -103,6 +117,7 @@ class Compliance(RevisionedMixin, models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ("approval__lodgement_number", "lodgement_number",)
 
     @property
     def approval_number(self):
@@ -291,7 +306,6 @@ class Compliance(RevisionedMixin, models.Model):
                     ):
                         # second part: if today is with 14 days of due_date, and email reminder is not sent
                         # (deals with Compliances created with the reminder period)
-                        print(self.id)
                         if self.requirement.notification_only:
                             send_notification_only_email(self)
                             send_internal_notification_only_email(self)
@@ -420,7 +434,6 @@ class CompRequest(models.Model):
     compliance = models.ForeignKey(Compliance, on_delete=models.CASCADE)
     subject = models.CharField(max_length=200, blank=True)
     text = models.TextField(blank=True)
-    # officer = models.ForeignKey(EmailUser, null=True, on_delete=models.SET_NULL)
     officer = models.IntegerField()  # EmailUserRO
 
     class Meta:
@@ -439,22 +452,9 @@ class ComplianceAmendmentReason(models.Model):
 
 class ComplianceAmendmentRequest(CompRequest):
     STATUS_CHOICES = (("requested", "Requested"), ("amended", "Amended"))
-    # try:
-    #     # model requires some choices if AmendmentReason does not yet exist or is empty
-    #     REASON_CHOICES = list(AmendmentReason.objects.values_list('id', 'reason'))
-    #     if not REASON_CHOICES:
-    #         REASON_CHOICES = ((0, 'The information provided was insufficient'),
-    #                           (1, 'There was missing information'),
-    #                           (2, 'Other'))
-    # except:
-    #     REASON_CHOICES = ((0, 'The information provided was insufficient'),
-    #                       (1, 'There was missing information'),
-    #                       (2, 'Other'))
-
     status = models.CharField(
         "Status", max_length=30, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
-    # reason = models.CharField('Reason', max_length=30, choices=REASON_CHOICES, default=REASON_CHOICES[0][0])
     reason = models.ForeignKey(
         ComplianceAmendmentReason, blank=True, null=True, on_delete=models.SET_NULL
     )

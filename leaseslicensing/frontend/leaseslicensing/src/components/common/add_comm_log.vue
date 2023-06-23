@@ -58,7 +58,7 @@
                                     <label class="col-form-label col-sm-3" for="">Attachments</label>
                                     <div class="col-sm-9">
                                         <template v-if="files && files.length">
-                                            <ul class="list-group list-group">
+                                            <ul class="list-group">
                                                 <li class="list-group-item rounded" v-for="(f, i) in files">
                                                     <div class="row">
                                                         <div class="col">

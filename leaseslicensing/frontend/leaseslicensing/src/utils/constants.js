@@ -4,37 +4,12 @@ module.exports = {
         LEASE_LICENCE: 'lease_licence',
     },
     ROLES: {
-        // GROUP_REGISTRATION_OF_INTEREST_ASSESSOR = "registration_of_interest_assessor"
-        // GROUP_REGISTRATION_OF_INTEREST_APPROVER = "registration_of_interest_approver"
-        // GROUP_LEASE_LICENCE_ASSESSOR = "lease_licence_assessor"
-        // GROUP_LEASE_LICENCE_APPROVER = "lease_licence_approver"
-        // GROUP_COMPETITIVE_PROCESS_EDITOR = "competitive_process_editor"
-        // GROUP_FINANCE = "finance"
-
-        // ASSESSOR: {ID: 'assessor', TEXT: 'Assessor'},
-        // APPROVER: {ID: 'approver', TEXT: 'Approver'},
-        // REFERRAL: {ID: 'referral', TEXT: 'Referral'},
-
-        REGISTRATION_OF_INTEREST_ASSESSOR: { ID: 'registration_of_interest_assessor', TEXT: 'Registration of Interest Assessor' },
-        REGISTRATION_OF_INTEREST_APPROVER: { ID: 'registration_of_interest_approver', TEXT: 'Registration of Interest Approver' },
-        LEASE_LICENCE_ASSESSOR: { ID: 'lease_licence_assessor', TEXT: 'Lease Licence Assessor' },
-        LEASE_LICENCE_APPROVER: { ID: 'lease_licence_approver', TEXT: 'Lease Licence Approver' },
+        GROUP_NAME_ASSESSOR: { ID: 'proposal_assessor_group', TEXT: 'Proposal Assessor Group' },
+        GROUP_NAME_APPROVER: { ID: 'proposal_approver_group', TEXT: 'Proposal Approver Group' },
         COMPETITIVE_PROCESS_EDITOR: { ID: 'competitive_process_editor', TEXT: 'Competitive Process Editor' },
         FINANCE: { ID: 'finance', TEXT: 'Finance' },
         REFERRAL: { ID: 'referral', TEXT: 'Referral' },
     },
-    // DRAFT: 'Draft',
-    // WITH_ASSESSOR: 'With Assessor',
-    // WITH_ASSESSOR_CONDITIONS: 'With Assessor (Conditions)',
-    // WITH_APPROVER: 'With Approver',
-    // WITH_REFERRAL: 'With Referral',
-    // WITH_REFERRAL_CONDITIONS: 'With Referral (Conditions)',
-    // APPROVED_APPLICATION: 'Approved (Application)',
-    // APPROVED_COMPETITIVE_PROCESS: 'Approved (Competitive Process)',
-    // APPROVED_EDITING_INVOICING: 'Approved (Editing Invoicing)',
-    // APPROVED: 'Approved',
-    // DECLINED: 'Declined',
-    // DISCARDED: 'Discarded',
     PROPOSAL_STATUS: {
         DRAFT: { ID: 'draft', TEXT: 'Draft' },
         AMENDMENT_REQUIRED: { ID: 'amendment_required', TEXT: 'Amendment Required' },
@@ -70,7 +45,11 @@ module.exports = {
         EXTENDED_BASE_FEE_REVIEW: { ID: 'extended_base_fee_review', TEXT: 'Extended (base fee review)' },
         EXPIRED_LICENCE: { ID: 'expired_licence', TEXT: 'Expired (licence)' },
     },
-
+    REFERRAL_STATUS: {
+        PROCESSING_STATUS_WITH_REFERRAL: { ID: 'pending', TEXT: 'Pending' },
+        PROCESSING_STATUS_RECALLED: { ID: 'recalled', TEXT: 'Recalled' },
+        PROCESSING_STATUS_COMPLETED: { ID: 'completed', TEXT: 'Completed' },
+    },
     DATATABLE_PROCESSING_HTML: '<div class="d-flex justify-content-center"><div class="d-flex spinner-border text-primary my-4" role="status"><span class="visually-hidden">Loading...</span></div></div>',
 
     ERRORS: {

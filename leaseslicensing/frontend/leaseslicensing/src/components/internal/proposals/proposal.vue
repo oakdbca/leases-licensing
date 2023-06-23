@@ -17,12 +17,13 @@
 
                 <Workflow ref='workflow' :proposal="proposal" :on_current_revision="on_current_revision"
                     :isFinalised="isFinalised" :canAction="canAction" :canLimitedAction="canLimitedAction"
-                    :canAssess="canAssess" :can_user_edit="proposal.can_user_edit" @toggleProposal="toggleProposal"
-                    @toggleRequirements="toggleRequirements" @switchStatus="switchStatus"
+                    :canAssess="canAssess" :isReferee="isReferee" :can_user_edit="proposal.can_user_edit" :profile="profile"
+                    @toggleProposal="toggleProposal" @toggleRequirements="toggleRequirements" @switchStatus="switchStatus"
                     @completeReferral="completeReferral" @amendmentRequest="amendmentRequest"
                     @proposedDecline="proposedDecline" @proposedApproval="proposedApproval" @issueApproval="issueApproval"
                     @declineProposal="declineProposal" @assignRequestUser="assignRequestUser" @assignTo="assignTo"
-                    @completeEditing="completeEditing" @cancelEditing="cancelEditing" class="mt-2" />
+                    @completeEditing="completeEditing" @cancelEditing="cancelEditing"
+                    @updateProposalData="updateProposalData" class="mt-2" />
             </div>
 
             <div class="col-md-9">
@@ -47,291 +48,386 @@
                             :show_additional_documents_tab="true" :registrationOfInterest="isRegistrationOfInterest"
                             :leaseLicence="isLeaseLicence" @formMounted="applicationFormMounted">
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
-                            <template v-slot:slot_map_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_map_comments"
+                            <template v-slot:slot_map_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Map Assessment Comments" ref="collapsible_map_comments"
                                     @created="collapsible_map_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_map">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control" v-model="assessment.assessor_comment_map"
+                                                        placeholder="" id="assessor_comment_map"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_map">Assessor Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.assessor_comment_map"
-                                                id="assessor_comment_map" :readonly="!canEditComments" />
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_map" placeholder=""
+                                                        id="deficiency_comment_map" :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_map">Deficiency Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_map">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.deficiency_comment_map"
-                                                id="deficiency_comment_map" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_map_checklist_questions"
-                                    @created="collapsible_map_checklist_questions_component_mounted" class="mb-2">
-                                    <template v-if="assessment_for_assessor_map.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_map" :key="question.id">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_map" :key="assessment.id">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
+                                        <template v-for="referral in proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_map_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_map" />
+                                                        <label :for="'comment_map_' + referral.id">Referral Comment by
+                                                            <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                    </div>
+                                </AssessmentComments>
                             </template>
 
-                            <template v-slot:slot_proposal_details_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_proposal_details_comments"
+                            <template v-slot:slot_proposal_tourism_details_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Tourism Proposal Details Assessment Comments"
+                                    ref="collapsible_proposal_tourism_details_comments"
+                                    @created="collapsible_proposal_tourism_details_comments_component_mounted" class="mb-2">
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.assessor_comment_tourism_proposal_details"
+                                                        id="assessor_comment_tourism_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_tourism_proposal_details">Assessor
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_tourism_proposal_details"
+                                                        id="deficiency_comment_tourism_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_tourism_proposal_details">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_proposal_details_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_proposal_details" />
+                                                        <label :for="'comment_proposal_details_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </AssessmentComments>
+                            </template>
+
+
+                            <template v-slot:slot_proposal_general_details_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="General Proposal Details Assessment Comments"
+                                    ref="collapsible_proposal_general_details_comments"
+                                    @created="collapsible_proposal_general_details_comments_component_mounted" class="mb-2">
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.assessor_comment_general_proposal_details"
+                                                        id="assessor_comment_general_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_general_proposal_details">Assessor
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_general_proposal_details"
+                                                        id="deficiency_comment_general_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_general_proposal_details">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_proposal_details_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_proposal_details" />
+                                                        <label :for="'comment_proposal_details_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </AssessmentComments>
+                            </template>
+
+                            <template v-slot:slot_proposal_details_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Proposal Details Assessment Comments"
+                                    ref="collapsible_proposal_details_comments"
                                     @created="collapsible_proposal_details_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_proposal_details">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control" v-model="assessment.assessor_comment_map"
+                                                        id="assessor_comment_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_proposal_details">Assessor Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.assessor_comment_proposal_details"
-                                                id="assessor_comment_proposal_details" :readonly="!canEditComments" />
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_map"
+                                                        id="deficiency_comment_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_proposal_details">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_proposal_details">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.deficiency_comment_proposal_details"
-                                                id="deficiency_comment_proposal_details" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="referrer_comment_proposal_details">Referrer Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.referrer_comment_proposal_details"
-                                                id="referrer_comment_proposal_details" />
-                                        </div>
-                                    </div>
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_proposal_details_checklist_questions"
-                                    @created="collapsible_proposal_details_checklist_questions_component_mounted"
-                                    class="mb-2">
-                                    <template v-if="assessment_for_assessor_proposal_details.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_proposal_details">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_proposal_details">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers"> <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_proposal_details_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_proposal_details" />
+                                                        <label :for="'comment_proposal_details_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                    </div>
+                                </AssessmentComments>
                             </template>
 
-                            <template v-slot:slot_proposal_impact_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_proposal_impact_comments"
+                            <template v-slot:slot_proposal_impact_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Proposal Impact Assessment Comments"
+                                    ref="collapsible_proposal_impact_comments"
                                     @created="collapsible_proposal_impact_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_proposal_impact">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.assessor_comment_proposal_impact"
+                                                        id="assessor_comment_proposal_impact"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_proposal_impact">Assessor Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.assessor_comment_proposal_impact"
-                                                id="assessor_comment_proposal_impact" :readonly="!canEditComments" />
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_proposal_impact"
+                                                        id="deficiency_comment_proposal_impact"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_proposal_impact">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_proposal_impact">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.deficiency_comment_proposal_impact"
-                                                id="deficiency_comment_proposal_impact" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_proposal_impact_checklist_questions"
-                                    @created="collapsible_proposal_impact_checklist_questions_component_mounted"
-                                    class="mb-2">
-                                    <template v-if="assessment_for_assessor_proposal_impact.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_proposal_impact">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_proposal_impact">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers"> <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_proposal_impact_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_proposal_impact" />
+                                                        <label :for="'comment_proposal_impact_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                    </div>
+                                </AssessmentComments>
                             </template>
 
-                            <template v-slot:slot_other_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_other_comments"
+                            <template v-slot:slot_other_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Geospatial Data Assessment Comments" ref="collapsible_other_comments"
                                     @created="collapsible_other_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_other">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control" v-model="assessment.assessor_comment_map"
+                                                        id="assessor_comment_other" :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_other">Assessor Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.assessor_comment_other"
-                                                id="assessor_comment_other" :readonly="!canEditComments" />
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_map"
+                                                        id="deficiency_comment_other" :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_other">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_other">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.deficiency_comment_other"
-                                                id="deficiency_comment_other" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_other_checklist_questions"
-                                    @created="collapsible_other_checklist_questions_component_mounted" class="mb-2">
-                                    <template v-if="assessment_for_assessor_other.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_other" :key="question.id">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_other" :key="assessment.id">
-                                        <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_other_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_other" />
+                                                        <label :for="'comment_other_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                    </div>
+                                </AssessmentComments>
                             </template>
 
-                            <template v-slot:slot_deed_poll_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments" ref="collapsible_deed_poll_comments"
+                            <template v-slot:slot_deed_poll_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Deed Poll Assessment Comments" ref="collapsible_deed_poll_comments"
                                     @created="collapsible_deed_poll_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_deed_poll">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control" v-model="assessment.assessor_comment_map"
+                                                        id="assessor_comment_deed_poll" :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_deed_poll">Assessor Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.assessor_comment_deed_poll"
-                                                id="assessor_comment_deed_poll" :readonly="!canEditComments" />
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_map"
+                                                        id="deficiency_comment_deed_poll" :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_deed_poll">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_deed_poll">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control" v-model="assessment.deficiency_comment_deed_poll"
-                                                id="deficiency_comment_deed_poll" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_deed_poll_checklist_questions"
-                                    @created="collapsible_deed_poll_checklist_questions_component_mounted" class="mb-2">
-                                    <template v-if="assessment_for_assessor_deed_poll.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_deed_poll" :key="question.id">
-                                        <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_deed_poll"
-                                        :key="assessment.id"> <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_deed_poll_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_deed_poll" />
+                                                        <label :for="'comment_deed_poll_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                    </div>
+                                </AssessmentComments>
                             </template>
 
-                            <template v-slot:slot_additional_documents_checklist_questions>
-                                <CollapsibleQuestions component_title="Comments"
+                            <template v-slot:slot_additional_documents_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Additional Documents Assessment Comments"
                                     ref="collapsible_additional_documents_comments"
                                     @created="collapsible_additional_documents_comments_component_mounted" class="mb-2">
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="assessor_comment_additional_documents">Assessor Comment</label>
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control" v-model="assessment.assessor_comment_map"
+                                                        id="assessor_comment_additional_documents"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_additional_documents">Assessor
+                                                        Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.assessor_comment_additional_documents"
-                                                id="assessor_comment_additional_documents" :readonly="!canEditComments" />
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_map"
+                                                        id="deficiency_comment_additional_documents"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_additional_documents">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div class="row">
-                                        <div class="col-md-2">
-                                            <label for="deficiency_comment_additional_documents">Deficiency Comment</label>
-                                        </div>
-                                        <div class="col-md-8">
-                                            <textarea class="form-control"
-                                                v-model="assessment.deficiency_comment_additional_documents"
-                                                id="deficiency_comment_additional_documents" :readonly="!canEditComments" />
-                                        </div>
-                                    </div>
-
-                                </CollapsibleQuestions>
-                                <CollapsibleQuestions component_title="Checklist Questions"
-                                    ref="collapsible_additional_documents_checklist_questions"
-                                    @created="collapsible_additional_documents_checklist_questions_component_mounted"
-                                    class="mb-2">
-                                    <template v-if="assessment_for_assessor_additional_documents.length > 0">
-                                        <div class="assessment_title">Assessor</div>
-                                    </template>
-                                    <template v-for="question in assessment_for_assessor_additional_documents"
-                                        :key="question.id"> <!-- There is only one assessor assessment -->
-                                        <ChecklistQuestion :question="question" />
-                                    </template>
-
-                                    <template v-for="assessment in assessments_for_referrals_additional_documents"
-                                        :key="assessment.id"> <!-- There can be multiple referral assessments -->
-                                        <div class="assessment_title">Referral: {{ assessment.referral_fullname }}</div>
-                                        <template v-for="question in assessment.answers" :key="question.id">
-                                            <!-- per question -->
-                                            <ChecklistQuestion :question="question" />
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="referral.referral_text || referral.referral == profile.id"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_additional_documents_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_additional_documents" />
+                                                        <label :for="'comment_additional_documents_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </template>
-                                    </template>
-                                </CollapsibleQuestions>
+                                    </div>
+                                </AssessmentComments>
 
                                 <strong>Select one or more documents that need to be provided by the applicant:</strong>
                                 <div v-show="select2AppliedToAdditionalDocumentTypes">
@@ -353,8 +449,6 @@
             </div>
         </div>
 
-
-
         <ProposedApproval v-if="proposal" :proposal="proposal" ref="proposed_approval"
             :processing_status="proposal.processing_status" :proposal_id="proposal.id"
             :proposal_type="proposal.proposal_type ? proposal.proposal_type.code : ''"
@@ -364,19 +458,15 @@
         <ProposedDecline ref="proposed_decline" :processing_status="proposal.processing_status" :proposal="proposal"
             :proposedApprovalKey="proposedApprovalKey" />
         <AmendmentRequest ref="amendment_request" :proposal="proposal" />
-        <!--
-        <input type="hidden" name="csrfmiddlewaretoken" :value="csrf_token"/>
-        <input type='hidden' name="schema" :value="JSON.stringify(proposal)" />
-        <input type='hidden' name="proposal_id" :value="1" />
-        -->
+
         <div v-if="displaySaveBtns" class="navbar fixed-bottom" style="background-color: #f5f5f5;">
             <div class="container">
                 <div class="col-md-12 text-end">
                     <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
                         Save and Exit&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
                     </button>
-                    <input v-else type="button" @click.prevent="save_and_exit" class="btn btn-primary" value="Save and Exit"
-                        :disabled="disableSaveAndExitBtn" />
+                    <input v-else type="button" @click.prevent="save_and_exit" class="btn btn-primary me-2"
+                        value="Save and Exit" :disabled="disableSaveAndExitBtn" />
 
                     <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
                         Save and Continue&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
@@ -395,23 +485,20 @@
 </template>
 
 <script>
-//import ProposalDisturbance from '../../form.vue'
-//import ProposalApiary from '@/components/form_apiary.vue'
-//import NewApply from '../../external/proposal_apply_new.vue'
 import ProposedDecline from '@/components/internal/proposals/proposal_proposed_decline.vue'
 import AmendmentRequest from '@/components/internal/proposals/amendment_request.vue'
 import datatable from '@vue-utils/datatable.vue'
 import Requirements from '@/components/internal/proposals/proposal_requirements.vue'
 import ProposedApproval from '@/components/internal/proposals/proposed_issuance.vue'
 import ApprovalScreen from '@/components/internal/proposals/proposal_approval.vue'
+import ErrorRenderer from '@common-utils/ErrorRenderer.vue'
 import CommsLogs from '@common-utils/comms_logs.vue'
 import Submission from '@common-utils/submission.vue'
 import Workflow from '@common-utils/workflow.vue'
 import { api_endpoints, helpers, constants } from '@/utils/hooks'
 import ApplicationForm from '@/components/form.vue';
 import FormSection from "@/components/forms/section_toggle.vue"
-import CollapsibleQuestions from '@/components/forms/collapsible_component.vue'
-import ChecklistQuestion from '@/components/common/component_checklist_question.vue'
+import AssessmentComments from '@/components/forms/collapsible_component.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
 require("select2/dist/css/select2.min.css");
 // CSS definitions to make sure workflow swal2 popovers are placed above any open bootstrap popover
@@ -423,6 +510,8 @@ export default {
     data: function () {
         let vm = this;
         return {
+            constants: constants,
+            profile: null,
             detailsBody: 'detailsBody' + vm._.uid,
             addressBody: 'addressBody' + vm._.uid,
             contactsBody: 'contactsBody' + vm._.uid,
@@ -502,8 +591,6 @@ export default {
         }
     },
     components: {
-        //ProposalDisturbance,
-        //ProposalApiary,
         datatable,
         ProposedDecline,
         AmendmentRequest,
@@ -513,14 +600,11 @@ export default {
         CommsLogs,
         Submission,
         Workflow,
-        //MoreReferrals,
-        //NewApply,
-        //MapLocations,
         ApplicationForm,
         FormSection,
-        CollapsibleQuestions,
-        ChecklistQuestion,
+        AssessmentComments,
         TableRelatedItems,
+        ErrorRenderer,
     },
     props: {
         proposalId: {
@@ -531,6 +615,15 @@ export default {
 
     },
     computed: {
+        withReferral: function () {
+            return this.proposal && [constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
+            constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID].includes(this.proposal.processing_status_id);
+        },
+        collapseAssessmentComments: function () {
+            return false;
+            // Todo: Decide under which conditions to collapse the assessment comments
+            // return !(this.withReferral && this.profile.is_referee);
+        },
         related_items_ajax_url: function () {
             return '/api/proposal/' + this.proposal.id + '/related_items/'
         },
@@ -542,11 +635,11 @@ export default {
             let canEdit = false;
             if ([constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID, constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID].includes(this.proposal.processing_status_id)) {
                 if (this.proposal.application_type.name === constants.APPLICATION_TYPES.LEASE_LICENCE) {
-                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.LEASE_LICENCE_ASSESSOR.ID)) {
+                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.GROUP_NAME_ASSESSOR.ID)) {
                         canEdit = true;
                     }
                 } else if (this.proposal.application_type.name === constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST) {
-                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID)) {
+                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.GROUP_NAME_ASSESSOR.ID)) {
                         canEdit = true;
                     }
                 }
@@ -558,18 +651,16 @@ export default {
 
             if ([constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID, constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID].includes(this.proposal.processing_status_id)) {
                 if (this.proposal.application_type.name === constants.APPLICATION_TYPES.LEASE_LICENCE) {
-                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.LEASE_LICENCE_ASSESSOR.ID)) {
+                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.GROUP_NAME_ASSESSOR.ID)) {
                         display = true
                     }
                 } else if (this.proposal.application_type.name === constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST) {
-                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.REGISTRATION_OF_INTEREST_ASSESSOR.ID)) {
+                    if (this.proposal.accessing_user_roles.includes(constants.ROLES.GROUP_NAME_ASSESSOR.ID)) {
                         display = true
                     }
                 }
-            } else if ([constants.PROPOSAL_STATUS.WITH_REFERRAL.ID, constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID].includes(this.proposal.processing_status_id)) {
-                if (this.proposal.accessing_user_roles.includes(constants.ROLES.REFERRAL.ID)) {
-                    display = true
-                }
+            } else if (this.withReferral && this.profile.is_referee) {
+                display = true
             } else if ([constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID].includes(this.proposal.processing_status_id)) {
                 if (this.proposal.accessing_user_roles.includes(constants.ROLES.FINANCE.ID)) {
                     display = true
@@ -633,156 +724,6 @@ export default {
         isLeaseLicence: function () {
             return this.proposal.application_type.name === constants.APPLICATION_TYPES.LEASE_LICENCE ? true : false
         },
-        assessment_for_assessor_map: function () {
-            try {
-                let answers = this.proposal.assessor_assessment.section_answers.map // This may return undefined
-                return answers ? answers : []  // Check if it's undefined
-            } catch (err) {
-                return []
-            }
-        },
-        assessment_for_assessor_proposal_details: function () {
-            try {
-                let answers = this.proposal.assessor_assessment.section_answers.proposal_details
-                return answers ? answers : []
-            } catch (err) {
-                return []
-            }
-        },
-        assessment_for_assessor_proposal_impact: function () {
-            try {
-                let answers = this.proposal.assessor_assessment.section_answers.proposal_impact
-                return answers ? answers : []
-            } catch (err) {
-                return []
-            }
-        },
-        assessment_for_assessor_other: function () {
-            try {
-                let answers = this.proposal.assessor_assessment.section_answers.other
-                return answers ? answers : []
-            } catch (err) {
-                return []
-            }
-        },
-        assessment_for_assessor_deed_poll: function () {
-            try {
-                let answers = this.proposal.assessor_assessment.section_answers.deed_poll
-                return answers ? answers : []
-            } catch (err) {
-                return []
-            }
-        },
-        assessment_for_assessor_additional_documents: function () {
-            try {
-                let answers = this.proposal.assessor_assessment.section_answers.additional_documents
-                return answers ? answers : []
-            } catch (err) {
-                return []
-            }
-        },
-        assessments_for_referrals_map: function () {
-            try {
-                let assessments = []
-                for (let assessment of this.proposal.referral_assessments) {
-                    if (assessment.section_answers.map) {  // Check if this is undefined
-                        let my_assessment = {
-                            'referral_fullname': assessment.referral.referral.fullname,
-                            'answers': assessment.section_answers.map
-                        }
-                        assessments.push(my_assessment)
-                    }
-                }
-                return assessments
-            } catch (err) {
-                return []
-            }
-        },
-        assessments_for_referrals_proposal_details: function () {
-            try {
-                let assessments = []
-                for (let assessment of this.proposal.referral_assessments) {
-                    if (assessment.section_answers.proposal_details) {
-                        let my_assessment = {
-                            'referral_fullname': assessment.referral.referral.fullname,
-                            'answers': assessment.section_answers.proposal_details
-                        }
-                        assessments.push(my_assessment)
-                    }
-                }
-                return assessments
-            } catch (err) {
-                return []
-            }
-        },
-        assessments_for_referrals_proposal_impact: function () {
-            try {
-                let assessments = []
-                for (let assessment of this.proposal.referral_assessments) {
-                    if (assessment.section_answers.proposal_impact) {
-                        let my_assessment = {
-                            'referral_fullname': assessment.referral.referral.fullname,
-                            'answers': assessment.section_answers.proposal_impact
-                        }
-                        assessments.push(my_assessment)
-                    }
-                }
-                return assessments
-            } catch (err) {
-                return []
-            }
-        },
-        assessments_for_referrals_other: function () {
-            try {
-                let assessments = []
-                for (let assessment of this.proposal.referral_assessments) {
-                    if (assessment.section_answers.other) {
-                        let my_assessment = {
-                            'referral_fullname': assessment.referral.referral.fullname,
-                            'answers': assessment.section_answers.other
-                        }
-                        assessments.push(my_assessment)
-                    }
-                }
-                return assessments
-            } catch (err) {
-                return []
-            }
-        },
-        assessments_for_referrals_deed_poll: function () {
-            try {
-                let assessments = []
-                for (let assessment of this.proposal.referral_assessments) {
-                    if (assessment.section_answers.deed_poll) {
-                        let my_assessment = {
-                            'referral_fullname': assessment.referral.referral.fullname,
-                            'answers': assessment.section_answers.deed_poll
-                        }
-                        assessments.push(my_assessment)
-                    }
-                }
-                return assessments
-            } catch (err) {
-                return []
-            }
-        },
-        assessments_for_referrals_additional_documents: function () {
-            try {
-                let assessments = []
-                for (let assessment of this.proposal.referral_assessments) {
-                    if (assessment.section_answers.additional_documents) {
-                        let my_assessment = {
-                            'referral_fullname': assessment.referral.referral.fullname,
-                            'answers': assessment.section_answers.additional_documents
-                        }
-                        assessments.push(my_assessment)
-                    }
-                }
-                return assessments
-            } catch (err) {
-                return []
-            }
-        },
         proposedApprovalKey: function () {
             return "proposed_approval_" + this.uuid;
         },
@@ -815,12 +756,6 @@ export default {
                 ((this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID || this.isFinalised) && this.showingRequirements)
             return ret_val
         },
-        /*
-        showElectoralRoll: function(){
-            // TODO: implement
-            return true
-        },
-        */
         showElectoralRoll: function () {
             let show = false;
             if (this.proposal && ['wla', 'mla'].includes(this.proposal.application_type_code)) {
@@ -847,24 +782,16 @@ export default {
             );
         },
         canAssess: function () {
-            return true  // TODO: Implement correctly.  May not be needed though
-
-            //return this.proposal && this.proposal.assessor_mode.assessor_can_assess ? true : false;
+            return this.proposal && this.proposal.assessor_mode.assessor_can_assess;
+        },
+        isReferee: function () {
+            return this.proposal && this.proposal.assessor_mode.is_referee;
         },
         hasAssessorMode: function () {
             return this.proposal && this.proposal.assessor_mode.has_assessor_mode ? true : false;
         },
         canAction: function () {
-
-            // For now returning true when viewing the current version of the Proposal
-            return this.on_current_revision;  // TODO: implement this.  This is just temporary solution
-
-            //if (this.proposal.processing_status == 'With Approver'){
-            //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_approver || this.proposal.assigned_approver == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //}
-            //else{
-            //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_officer || this.proposal.assigned_officer == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //}
+            return this.proposal.assessor_mode.assessor_can_assess;
         },
         canLimitedAction: function () {
 
@@ -973,50 +900,21 @@ export default {
                     })
                 vm.select2AppliedToAdditionalDocumentTypes = true
             }
-
-            // Set default selections
-            //$(vm.$refs.select_additional_document_types).val(vm.additionalDocumentTypesSelected).trigger('change')
-        },
-        addEventListeners: function () {
-        },
-        /*
-        applySelect2ToAdditionalDocumentType: function(option_data){
-            let vm = this
-            vm.additional_document_types = option_data
-
-            // TODO: Make select2 work...  Somehow the code below doesn't work...
-
-            $(vm.$refs.selectAdditionalDocumentTypes).select2({
-                "theme": "bootstrap-5",
-                allowClear: true,
-                placeholder: "Select Document Type(s)",
-                multiple: true,
-                minimumResultsForSearch: -1,  // This hide the search box below selections
-            //    data: option_data,
-            })
-            vm.select2AppliedToAdditionalDocumentTypes = true
-        },
-        */
-        collapsible_map_checklist_questions_component_mounted: function () {
-            this.$refs.collapsible_map_checklist_questions.show_warning_icon(false)
-        },
-        collapsible_other_checklist_questions_component_mounted: function () {
-            this.$refs.collapsible_other_checklist_questions.show_warning_icon(false)
-        },
-        collapsible_deed_poll_checklist_questions_component_mounted: function () {
-            this.$refs.collapsible_deed_poll_checklist_questions.show_warning_icon(false)
-        },
-        collapsible_additional_documents_checklist_questions_component_mounted: function () {
-            this.$refs.collapsible_additional_documents_checklist_questions.show_warning_icon(false)
-        },
-        collapsible_proposal_details_checklist_questions_component_mounted: function () {
-            this.$refs.collapsible_proposal_details_checklist_questions.show_warning_icon(false)
-        },
-        collapsible_proposal_impact_checklist_questions_component_mounted: function () {
-            this.$refs.collapsible_proposal_impact_checklist_questions.show_warning_icon(false)
         },
         collapsible_map_comments_component_mounted: function () {
             this.$refs.collapsible_map_comments.show_warning_icon(false)
+        },
+        collapsible_proposal_tourism_details_comments_component_mounted: function () {
+            this.$refs.collapsible_proposal_tourism_details_comments.show_warning_icon(false)
+        },
+        collapsible_proposal_general_details_comments_component_mounted: function () {
+            this.$refs.collapsible_proposal_general_details_comments.show_warning_icon(false)
+        },
+        collapsible_proposal_details_comments_component_mounted: function () {
+            this.$refs.collapsible_proposal_details_comments.show_warning_icon(false)
+        },
+        collapsible_proposal_impact_comments_component_mounted: function () {
+            this.$refs.collapsible_proposal_impact_comments.show_warning_icon(false)
         },
         collapsible_other_comments_component_mounted: function () {
             this.$refs.collapsible_other_comments.show_warning_icon(false)
@@ -1026,12 +924,6 @@ export default {
         },
         collapsible_additional_documents_comments_component_mounted: function () {
             this.$refs.collapsible_additional_documents_comments.show_warning_icon(false)
-        },
-        collapsible_proposal_details_comments_component_mounted: function () {
-            this.$refs.collapsible_proposal_details_comments.show_warning_icon(false)
-        },
-        collapsible_proposal_impact_comments_component_mounted: function () {
-            this.$refs.collapsible_proposal_impact_comments.show_warning_icon(false)
         },
         locationUpdated: function () {
             console.log('in locationUpdated()');
@@ -1056,15 +948,21 @@ export default {
                 icon: "question",
                 showCancelButton: true,
                 confirmButtonText: 'Submit',
+                reverseButtons: true,
+                buttonsStyling: false,
                 customClass: {
-                    container: 'swal2-popover'
+                    container: 'swal2-popover',
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2'
                 }
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     const res_save_data = await fetch(
                         vm.complete_referral_url,
                         {
-                            body: JSON.stringify({ 'proposal': this.proposal }),
+                            body: JSON.stringify({
+                                'proposal': this.proposal, 'referee_id': this.profile.id
+                            }),
                             method: 'POST',
                             headers: {
                                 'Accept': 'application/json',
@@ -1072,13 +970,11 @@ export default {
                             },
                         }
                     )
-                    // Get the id of the referral popover and hide it
-                    let modal_id = $(
-                        vm.$refs.workflow.$refs.more_referrals.$refs.showRef).attr(
-                            "aria-describedby");
-                    $(`#${modal_id}`).hide();
-
-                    this.$router.push({ name: 'internal-dashboard' })
+                    if (vm.profile.is_staff) {
+                        this.$router.push({ name: 'internal-dashboard' })
+                    } else {
+                        this.$router.push({ name: 'external-dashboard' })
+                    }
                 }
             }).catch(err => {
                 swal.fire({
@@ -1131,11 +1027,8 @@ export default {
         },
         checkAssessorData: function () {
             //check assessor boxes and clear value of hidden assessor boxes so it won't get printed on approval pdf.
-
             //select all fields including hidden fields
-            //console.log("here");
             var all_fields = $('input[type=text]:required, textarea:required, input[type=checkbox]:required, input[type=radio]:required, input[type=file]:required, select:required')
-
             all_fields.each(function () {
                 var ele = null;
                 //check the fields which has assessor boxes.
@@ -1144,7 +1037,6 @@ export default {
                     var visiblity = $("[name=" + this.name + "-Assessor]").is(':visible')
                     if (!visiblity) {
                         if (ele[0].value != '') {
-                            //console.log(visiblity, ele[0].name, ele[0].value)
                             ele[0].value = ''
                         }
                     }
@@ -1163,8 +1055,7 @@ export default {
             return s.replace(/[,;]/g, '\n');
         },
         proposedDecline: function () {
-            this.uuid++;
-            //this.$refs.proposed_decline.decline = this.proposal.proposaldeclineddetails != null ? Object.assign({}, this.proposal.proposaldeclineddetails): {};
+            // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
                 this.$refs.proposed_decline.isModalOpen = true;
             });
@@ -1173,13 +1064,10 @@ export default {
             this.proposedApprovalState = 'proposed_approval';
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
-                //this.$refs.proposed_approval.approval = this.proposal.proposed_issuance_approval != null ? Object.assign({}, this.proposal.proposed_issuance_approval) : {};
                 this.$refs.proposed_approval.isModalOpen = true;
             });
         },
         issueApproval: function () {
-            //this.$refs.proposed_approval.approval = helpers.copyObject(this.proposal.proposed_issuance_approval);
-
             //save approval level comment before opening 'issue approval' modal
             if (this.proposal && this.proposal.processing_status == 'With Approver' && this.proposal.approval_level != null && this.proposal.approval_level_document == null) {
                 if (this.proposal.approval_level_comment != '') {
@@ -1206,25 +1094,23 @@ export default {
                 this.proposedApprovalState = 'final_approval';
                 // this.uuid++; Why do we need to reload the whole form when we open a modal!?
                 this.$nextTick(() => {
-                    //this.$refs.proposed_approval.approval = this.proposal.proposed_issuance_approval != null ? helpers.copyObject(this.proposal.proposed_issuance_approval) : {};
-                    //this.$refs.proposed_approval.isApprovalLevelDocument = this.isApprovalLevelDocument;
                     this.$refs.proposed_approval.isModalOpen = true;
                 });
             }
-
         },
         declineProposal: function () {
             this.$refs.proposed_decline.decline = this.proposal.proposaldeclineddetails != null ? helpers.copyObject(this.proposal.proposaldeclineddetails) : {};
             this.$refs.proposed_decline.isModalOpen = true;
+        },
+        updateProposalData: function (proposal) {
+            this.proposal = proposal;
         },
         amendmentRequest: function () {
             let values = '';
             $('.deficiency').each((i, d) => {
                 values += $(d).val() != '' ? `Question - ${$(d).data('question')}\nDeficiency - ${$(d).val()}\n\n` : '';
             });
-            //this.deficientFields();
             this.$refs.amendment_request.amendment.text = values;
-
             this.$refs.amendment_request.isModalOpen = true;
         },
         highlight_deficient_fields: function (deficient_fields) {
@@ -1241,10 +1127,8 @@ export default {
                     var name = $(d)[0].name
                     var tmp = name.replace("-comment-field", "")
                     deficient_fields.push(tmp);
-                    //console.log('data', $("#"+"id_" + tmp))
                 }
             });
-            //console.log('deficient fields', deficient_fields);
             vm.highlight_deficient_fields(deficient_fields);
         },
         toggleProposal: function (value) {
@@ -1257,13 +1141,9 @@ export default {
             console.log('updateAssignedOfficerSelect')
             let vm = this;
             if (vm.proposal.processing_status == 'With Approver') {
-                //$(vm.$refs.assigned_officer).val(vm.proposal.assigned_approver);
-                //$(vm.$refs.assigned_officer).trigger('change');
                 vm.$refs.workflow.updateAssignedOfficerSelect(vm.proposal.assigned_approver)
             }
             else {
-                //$(vm.$refs.assigned_officer).val(vm.proposal.assigned_officer);
-                //$(vm.$refs.assigned_officer).trigger('change');
                 vm.$refs.workflow.updateAssignedOfficerSelect(vm.proposal.assigned_officer)
             }
         },
@@ -1392,10 +1272,6 @@ export default {
                 $(vm.$refs.assigned_officer).data('select2') ? $(vm.$refs.assigned_officer).select2('destroy') : '';
             }
             // Assigned officer select
-            /*
-            console.log('Elem: ')
-            console.log(vm.$refs.assigned_officer)
-            */
             $(vm.$refs.assigned_officer).select2({
                 "theme": "bootstrap",
                 allowClear: true,
@@ -1429,21 +1305,6 @@ export default {
         initialiseSelects: function () {
             let vm = this;
             if (!vm.initialisedSelects) {
-                /*
-                $(vm.$refs.department_users).select2({
-                    "theme": "bootstrap",
-                    allowClear: true,
-                    //placeholder:"Select Referral"
-                }).
-                on("select2:select",function (e) {
-                    var selected = $(e.currentTarget);
-                    //vm.selected_referral = selected.val();
-                }).
-                on("select2:unselect",function (e) {
-                    var selected = $(e.currentTarget);
-                    //vm.selected_referral = ''
-                });
-                */
                 vm.initialiseAssignedOfficerSelect();
                 vm.initialisedSelects = true;
             }
@@ -1497,17 +1358,23 @@ export default {
                     if (vm.debug == true) {
                         this.showingProposal = true;
                     }
+                    if ([constants.PROPOSAL_STATUS.WITH_REFERRAL.TEXT,
+                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.TEXT].includes(vm.proposal.processing_status)) {
+                        $('textarea.referral-comment:enabled:visible:not([readonly="readonly"]):first').focus();
+                    }
+                    this.$nextTick(() => {
+                        $("textarea").each(function (textarea) {
+                            console.log($(this)[0].scrollHeight)
+                            if ($(this)[0].scrollHeight > 70) {
+                                $(this).height($(this)[0].scrollHeight - 30);
+                            }
+                        });
+                    });
                 })
                 .catch(error => {
                     console.log(error);
                 })
         },
-    },
-    mounted: function () {
-        let vm = this
-        this.$nextTick(() => {
-            vm.addEventListeners()
-        })
     },
     updated: function () {
         let vm = this;
@@ -1529,25 +1396,19 @@ export default {
             }
         });
     },
-    created: function () {
+    created: async function () {
+        this.profile = Object.assign({}, await helpers.fetchWrapper(api_endpoints.profile));
         this.fetchProposal();
     },
 }
 </script>
 <style scoped>
-.horizontal_rule {
-    margin: 15px 0 10px 0;
-    border-top: 2px solid #888;
-}
-
-.assessment_title {
-    margin: 20px 0 10px 0;
-    border-bottom: 1px solid #888;
-    font-weight: bold;
-    font-size: 1.3em;
-}
-
-.btn-primary {
-    margin: 2px;
+.form-floating textarea {
+    padding-top: 40px;
+    height: 70px;
+    font-style: italic;
+    color: #999;
+    padding-top: 36px !important;
+    font-size: 14px;
 }
 </style>

@@ -1,37 +1,39 @@
-import { api_endpoints, helpers } from '@/utils/hooks'
-import '../../../../../static/leaseslicensing/css/workflow.css'
+import { api_endpoints, helpers } from '@/utils/hooks';
+import '../../../../../static/leaseslicensing/css/workflow.css';
 
 /**
  * Sends a referral reminder to the referrer
  * @param {number} _id The referral ID
  * * @param {string} user The referrer's username
  */
-export async function remindReferral(_id, user){
-    fetch(helpers.add_endpoint_json(api_endpoints.referrals,_id+'/remind')).then(async response => {
+export async function remindReferral(_id, user) {
+    fetch(helpers.add_endpoint_json(api_endpoints.referrals, _id + '/remind')).then(async response => {
         if (!response.ok) {
-                return response.json().then(json => { throw new Error(json); });
-            } else {
-                return response.json();
+            return response.json().then(json => { throw new Error(json); });
+        } else {
+            return response.json();
         }
-    }).then(data => {
+    }).then(() => {
+        // eslint-disable-next-line no-undef
         swal.fire({
             title: 'Referral Reminder',
-            text: 'A reminder has been sent to '+user,
+            text: 'A reminder has been sent to ' + user,
             icon: 'success',
             // Have swal2 popovers placed above bootstrap popovers
             customClass: {
                 container: 'swal2-popover'
             }
-        })
+        });
     }).catch(error => {
+        // eslint-disable-next-line no-undef
         swal.fire({
             title: 'Proposal Error',
-            text: error["message"],
+            text: error['message'],
             icon: 'error',
             customClass: {
                 container: 'swal2-popover'
             }
-        })
+        });
     });
 }
 
@@ -40,15 +42,17 @@ export async function remindReferral(_id, user){
  * @param {number} _id The referral ID
  * * @param {string} user The referrer's username
  */
-export async function recallReferral(_id, user){
+export async function recallReferral(_id, user) {
     let vm = this;
+    // eslint-disable-next-line no-undef
     const _loading = swal.fire({
-        icon: "info",
-        title: "Loading...",
+        icon: 'info',
+        title: 'Loading...',
         showConfirmButton: false,
         allowOutsideClick: false,
-        allowEscapeKey:false,
+        allowEscapeKey: false,
         didOpen: async () => {
+            // eslint-disable-next-line no-undef
             swal.showLoading();
         },
         customClass: {
@@ -64,7 +68,7 @@ export async function recallReferral(_id, user){
         }
     }).then(async (response) => {
         vm.switchStatus(response.processing_status_id); // 'with_assessor'
-        if (typeof(vm["table"]) !== 'undefined') {
+        if (typeof (vm['table']) !== 'undefined') {
             // Reload the Show Referrals Popover table if exists
             vm.table.ajax.reload();
         }
@@ -80,7 +84,7 @@ export async function recallReferral(_id, user){
         _loading.update({
             showConfirmButton: true,
             title: 'Proposal Error',
-            text: error["message"],
+            text: error['message'],
             icon: 'error'
         });
     }).finally(() => {
@@ -103,10 +107,11 @@ export async function resendReferral(_id, user) {
         }
     }).then(async response => {
         vm.switchStatus(response.processing_status_id); // 'with_referral'
-        if (typeof(vm["table"]) !== 'undefined') {
+        if (typeof (vm['table']) !== 'undefined') {
             // Reload the Show Referrals popover table if exists
             vm.table.ajax.reload();
         }
+        // eslint-disable-next-line no-undef
         swal.fire({
             title: 'Referral Resent',
             text: 'The referral has been resent to ' + user,
@@ -116,9 +121,10 @@ export async function resendReferral(_id, user) {
             }
         });
     }).catch(error => {
+        // eslint-disable-next-line no-undef
         swal.fire({
             title: 'Proposal Error',
-            text: error["message"],
+            text: error['message'],
             icon: 'error',
             customClass: {
                 container: 'swal2-popover'
@@ -127,14 +133,14 @@ export async function resendReferral(_id, user) {
     });
 }
 
- /**
+/**
  * Updates a list of, e.g. selected items, with `id` .
  * @param {int} id The id of the item to add or remove from the list.
  * @param {Array} list The list to add to.
  * @param {Array} available_items A list of available items of which `id` is a member.
  * @param {Boolean} remove Whether to remove the item from the list. Default false.
  */
- export function updateIdListFromAvailable(id, list, available_items, remove) {
+export function updateIdListFromAvailable(id, list, available_items, remove) {
     if (!remove) {
         remove = false;
     }
@@ -144,7 +150,7 @@ export async function resendReferral(_id, user) {
     if (!found) {
         let item = available_items.find(element => element.id === parseInt(id));
         if (!item) {
-            console.warn(`Selected item with id ${id} not found in available items.`)
+            console.warn(`Selected item with id ${id} not found in available items.`);
             return false;
         }
         console.log(`Adding item with id ${id} to list of selected items.`);
@@ -153,9 +159,9 @@ export async function resendReferral(_id, user) {
     }
 
     if (found && remove) {
-        console.log(`Removing item with id ${id} from list of selected items.`)
+        console.log(`Removing item with id ${id} from list of selected items.`);
         list = list.filter(element => element.id !== parseInt(id));
-        return list
+        return list;
     }
     return false;
 }

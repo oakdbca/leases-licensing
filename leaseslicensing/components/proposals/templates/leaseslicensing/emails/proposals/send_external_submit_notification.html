@@ -1,7 +1,8 @@
 {%  extends 'leaseslicensing/emails/base_email.html' %}
 
 {%  block content %}
-<p>Your {{ proposal.application_type.confirmation_text }} application was successfully submitted </p>
+    <p>Your {{ proposal.application_type.confirmation_text }} application was successfully submitted </p>
+    
     <p>
         <span>Reference Number:</span>
         <span style="margin-left:10px">{{ proposal.lodgement_number }}</span>

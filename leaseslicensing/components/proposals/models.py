@@ -59,6 +59,7 @@ from leaseslicensing.components.proposals.email import (
     send_referral_email_notification,
     send_proposal_approval_email_notification,
     send_referral_complete_email_notification,
+    send_pending_referrals_complete_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
     LGA,
@@ -1273,6 +1274,8 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             email_user = retrieve_email_user(self.ind_applicant)
         elif self.proxy_applicant:
             email_user = retrieve_email_user(self.proxy_applicant)
+        elif self.submitter:
+            email_user = retrieve_email_user(self.submitter)
         else:
             logger.error(
                 f"Applicant for the proposal {self.lodgement_number} not found"
@@ -1498,8 +1501,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def latest_referrals(self):
         referrals = self.referrals
         for referral in referrals.all():
-            print(referral)
+            logger.debug(referral)
         return referrals.all()[:3]
+
+    @property
+    def external_referral_invites(self):
+        return self.external_referee_invites.filter(datetime_first_logged_in__isnull=True)
 
     @property
     def assessor_assessment(self):
@@ -1611,7 +1618,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     @property
     def approver_recipients(self):
-        logger.info("assessor_recipients")
+        logger.info("approver_recipients")
         recipients = []
         group_ids = self.get_approver_group().get_system_group_member_ids()
         for id in group_ids:
@@ -1628,19 +1635,18 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def is_approver(self, user):
         return user.id in self.get_assessor_group().get_system_group_member_ids()
 
+    def can_action(self, user):
+        if not self.can_assess(user):
+            return False
+
     def can_assess(self, user):
-        logger.info("can assess")
-        logger.info("user")
-        logger.info(type(user))
-        logger.info(user)
-        logger.info(user.id)
         if self.processing_status in [
             "on_hold",
             "with_qa_officer",
             "with_assessor",
             "with_referral",
+            "with_referral_conditions",
             "with_assessor_conditions",
-            Referral.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             logger.info("self.__assessor_group().get_system_group_member_ids()")
             logger.info(self.get_assessor_group().get_system_group_member_ids())
@@ -1650,31 +1656,23 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         else:
             return False
 
-    def is_referrer(self, user):
+    def is_referee(self, user):
         """
-        Returns whether `user` is a referrer for this proposal
+        Returns whether `user` is a referee for this proposal
         """
 
-        if self.processing_status in [
-            Referral.PROCESSING_STATUS_WITH_REFERRAL,
-            Referral.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
-        ]:
-            # Get this proposal's referral where the requesting user is the referrer
-            try:
-                Referral.objects.get(proposal=self, referral=user.id)
-            except Referral.DoesNotExist:
-                logger.debug("Referral does not exist")
-                return False
+        return self.processing_status in [
+            self.PROCESSING_STATUS_WITH_REFERRAL,
+            self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
+        ] and Referral.objects.filter(proposal=self, referral=user.id).exists()
 
-            return True
-
-    def referrer_can_edit_referral(self, user):
+    def referee_can_edit_referral(self, user):
         """
         Returns whether `user` is a referrer who can still edit this proposal's referral
         """
 
-        if self.is_referrer(user):
-            # Get this proposal's referral where the requesting user is the referrer
+        if self.is_referee(user):
+            # Get this proposal's referral where the requesting user is the referee
             try:
                 referral = Referral.objects.get(proposal=self, referral=user.id)
             except Referral.DoesNotExist:
@@ -1864,7 +1862,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         proposal_assessment, created = ProposalAssessment.objects.get_or_create(
             proposal=self,
             referral=referral
-            # proposal=self
         )
         if created:
             for_referral_or_assessor = (
@@ -1901,85 +1898,83 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def send_referral(self, request, referral_email, referral_text):
         with transaction.atomic():
-            try:
-                referral_email = referral_email.lower()
-                if (
-                    self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                    or self.processing_status
-                    == Proposal.PROCESSING_STATUS_WITH_REFERRAL
-                ):
-                    self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
-                    self.save()
+            referral_email = referral_email.lower()
+            if (
+                self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                or self.processing_status
+                == Proposal.PROCESSING_STATUS_WITH_REFERRAL
+            ):
+                self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
+                self.save()
 
-                    # Check if the user is in ledger
-                    try:
-                        user = EmailUser.objects.get(email__icontains=referral_email)
-                    except EmailUser.DoesNotExist:
-                        # Validate if it is a deparment user
-                        department_user = get_department_user(referral_email)
-                        if not department_user:
-                            raise ValidationError(
-                                "The user you want to send the referral to is not a member of the department"
-                            )
-                        # Check if the user is in ledger or create
-
-                        user, created = EmailUser.objects.get_or_create(
-                            email=department_user["email"].lower()
-                        )
-                        if created:
-                            user.first_name = department_user["given_name"]
-                            user.last_name = department_user["surname"]
-                            user.save()
-
-                    referral = None
-                    try:
-                        referral = Referral.objects.get(referral=user.id, proposal=self)
+                # Check if the user is in ledger
+                try:
+                    user = EmailUser.objects.get(email__icontains=referral_email)
+                except EmailUser.DoesNotExist:
+                    # Validate if it is a deparment user
+                    department_user = get_department_user(referral_email)
+                    if not department_user:
                         raise ValidationError(
-                            "A referral has already been sent to this user"
+                            "The user you want to send the referral to is not a member of the department"
                         )
-                    except Referral.DoesNotExist:
-                        # Create Referral
-                        referral = Referral.objects.create(
-                            proposal=self,
-                            referral=user.id,
-                            sent_by=request.user.id,
-                            text=referral_text,
-                            assigned_officer=request.user.id,
-                        )
-                        # Create answers for this referral
-                        self.make_questions_ready(referral)
+                    # Check if the user is in ledger or create
 
-                    # Create a log entry for the proposal
-                    self.log_user_action(
-                        ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                            referral.id,
-                            self.lodgement_number,
-                            f"{user.get_full_name()}({user.email})",
-                        ),
-                        request,
+                    user, created = EmailUser.objects.get_or_create(
+                        email=department_user["email"].lower()
                     )
-                    # Create a log entry for the organisation
-                    if self.applicant:
-                        pass
-                        # TODO: implement logging to ledger/application???
-                        # self.applicant.log_user_action(
-                        #    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                        #        referral.id, self.lodgement_number, '{}({})'.format(user.get_full_name(), user.email)
-                        #    ), request
-                        # )
-                    # send email
-                    send_referral_email_notification(
-                        referral,
-                        [
-                            user.email,
-                        ],
-                        request,
+                    if created:
+                        user.first_name = department_user["given_name"]
+                        user.last_name = department_user["surname"]
+                        user.save()
+
+                referral = None
+                try:
+                    referral = Referral.objects.get(referral=user.id, proposal=self)
+                    raise ValidationError(
+                        "A referral has already been sent to this user"
                     )
-                else:
-                    raise exceptions.ProposalReferralCannotBeSent()
-            except Exception as e:
-                logger.exception(e)
-                raise e
+                except Referral.DoesNotExist:
+                    # Create Referral
+                    referral = Referral.objects.create(
+                        proposal=self,
+                        referral=user.id,
+                        sent_by=request.user.id,
+                        text=referral_text,
+                        assigned_officer=request.user.id,
+                    )
+                    # Create answers for this referral
+                    # Commenting the following line out as we are not using checklist questions for referrals
+                    # so I don't think we need this anymore Todo: Delete if I was correct
+                    # self.make_questions_ready(referral)
+
+                # Create a log entry for the proposal
+                self.log_user_action(
+                    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                        referral.id,
+                        self.lodgement_number,
+                        f"{user.get_full_name()}({user.email})",
+                    ),
+                    request,
+                )
+                # Create a log entry for the organisation
+                if self.applicant:
+                    pass
+                    # TODO: implement logging to ledger/application???
+                    # self.applicant.log_user_action(
+                    #    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                    #        referral.id, self.lodgement_number, '{}({})'.format(user.get_full_name(), user.email)
+                    #    ), request
+                    # )
+                # send email
+                send_referral_email_notification(
+                    referral,
+                    [
+                        user.email,
+                    ],
+                    request,
+                )
+            else:
+                raise exceptions.ProposalReferralCannotBeSent()
 
     def assign_officer(self, request, officer):
         with transaction.atomic():
@@ -2123,7 +2118,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         return ProposalRequirement.objects.filter(proposal=self)
 
     def move_to_status(self, request, status, approver_comment):
-        if not self.can_assess(request.user) and not self.is_referrer(request.user):
+        if not self.can_assess(request.user) and not self.is_referee(request.user):
             raise exceptions.ProposalNotAuthorized()
         if status in ["with_assessor", "with_assessor_conditions", "with_approver"]:
             if self.processing_status == "with_referral" or self.can_user_edit:
@@ -3620,13 +3615,11 @@ class Assessment(ProposalRequest):
         ("assessed", "Assessed"),
         ("assessment_expired", "Assessment Period Expired"),
     )
-    # assigned_assessor = models.ForeignKey(EmailUser, blank=True, null=True, on_delete=models.SET_NULL)
     assigned_assessor = models.IntegerField()  # EmailUserRO
     status = models.CharField(
         "Status", max_length=20, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
     date_last_reminded = models.DateField(null=True, blank=True)
-    # requirements = models.ManyToManyField('Requirement', through='AssessmentRequirement')
     comment = models.TextField(blank=True)
     purpose = models.TextField(blank=True)
 
@@ -3635,9 +3628,7 @@ class Assessment(ProposalRequest):
 
 
 class ProposalDeclinedDetails(models.Model):
-    # proposal = models.OneToOneField(Proposal, related_name='declined_details')
     proposal = models.OneToOneField(Proposal, on_delete=models.CASCADE)
-    # officer = models.ForeignKey(EmailUser, null=False, on_delete=models.CASCADE)
     officer = models.IntegerField()  # EmailUserRO
     reason = models.TextField(blank=True)
     cc_email = models.TextField(null=True)
@@ -3647,9 +3638,7 @@ class ProposalDeclinedDetails(models.Model):
 
 
 class ProposalOnHold(models.Model):
-    # proposal = models.OneToOneField(Proposal, related_name='onhold')
     proposal = models.OneToOneField(Proposal, on_delete=models.CASCADE)
-    # officer = models.ForeignKey(EmailUser, null=False, on_delete=models.CASCADE)
     officer = models.IntegerField()  # EmailUserRO
     comment = models.TextField(blank=True)
     documents = models.ForeignKey(
@@ -3664,7 +3653,6 @@ class ProposalOnHold(models.Model):
         app_label = "leaseslicensing"
 
 
-# class ProposalStandardRequirement(models.Model):
 class ProposalStandardRequirement(RevisionedMixin):
     text = models.TextField()
     code = models.CharField(max_length=10, unique=True)
@@ -3674,7 +3662,6 @@ class ProposalStandardRequirement(RevisionedMixin):
     )
     participant_number_required = models.BooleanField(default=False)
     default = models.BooleanField(default=False)
-    # require_due_date = models.BooleanField(default=False)
 
     def __str__(self):
         return self.code
@@ -3683,18 +3670,6 @@ class ProposalStandardRequirement(RevisionedMixin):
         app_label = "leaseslicensing"
         verbose_name = "Application Standard Requirement"
         verbose_name_plural = "Application Standard Requirements"
-
-    # def clean(self):
-    #     if self.application_type:
-    #         try:
-    #             default = ProposalStandardRequirement.objects
-    # .get(default=True, application_type=self.application_type)
-    #         except ProposalStandardRequirement.DoesNotExist:
-    #             default = None
-
-    #     if not self.pk:
-    #         if default and self.default:
-    #             raise ValidationError('There can only be one default Standard requirement per Application type')
 
 
 class ProposalUserAction(UserAction):
@@ -3910,12 +3885,13 @@ class QAOfficerGroup(models.Model):
 
 class Referral(RevisionedMixin):
     SENT_CHOICES = ((1, "Sent From Assessor"), (2, "Sent From Referral"))
+
     PROCESSING_STATUS_WITH_REFERRAL = "with_referral"
-    PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS = "with_referral_conditions"
     PROCESSING_STATUS_RECALLED = "recalled"
     PROCESSING_STATUS_COMPLETED = "completed"
+
     PROCESSING_STATUS_CHOICES = (
-        (PROCESSING_STATUS_WITH_REFERRAL, "Awaiting"),
+        (PROCESSING_STATUS_WITH_REFERRAL, "Pending"),
         (PROCESSING_STATUS_RECALLED, "Recalled"),
         (PROCESSING_STATUS_COMPLETED, "Completed"),
     )
@@ -3925,7 +3901,9 @@ class Referral(RevisionedMixin):
     )
     sent_by = models.IntegerField()  # EmailUserRO
     referral = models.IntegerField()  # EmailUserRO
+    is_external = models.BooleanField(default=False)
     linked = models.BooleanField(default=False)
+    # Todo: We may be able to remove sent_from now that only assessors can send referral requests
     sent_from = models.SmallIntegerField(
         choices=SENT_CHOICES, default=SENT_CHOICES[0][0]
     )
@@ -3945,7 +3923,13 @@ class Referral(RevisionedMixin):
         on_delete=models.SET_NULL,
     )
     assigned_officer = models.IntegerField()  # EmailUserRO
-    referrer_comment_proposal_details = models.TextField(blank=True)
+
+    comment_map = models.TextField(blank=True)
+    comment_proposal_details = models.TextField(blank=True)
+    comment_proposal_impact = models.TextField(blank=True)
+    comment_other = models.TextField(blank=True)
+    comment_deed_poll = models.TextField(blank=True)
+    comment_additional_documents = models.TextField(blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4057,16 +4041,15 @@ class Referral(RevisionedMixin):
                 raise exceptions.ProposalNotAuthorized()
             self.processing_status = Referral.PROCESSING_STATUS_RECALLED
             self.save()
-            # TODO Log proposal action
+
+            # Log an action for the proposal
             self.proposal.log_user_action(
                 ProposalUserAction.RECALL_REFERRAL.format(self.id, self.proposal.id),
                 request,
             )
-            # TODO log organisation action
-            applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-            applicant_field = retrieve_email_user(applicant_field)
-            # TODO: implement logging
-            # applicant_field.log_user_action(ProposalUserAction.RECALL_REFERRAL.format(self.id,self.proposal.id),request)
+
+            # Log an action for the applicant
+            self.proposal.applicant.log_user_action(ProposalUserAction.RECALL_REFERRAL.format(self.id,self.proposal.id),request)
 
     @property
     def referral_as_email_user(self):
@@ -4076,9 +4059,8 @@ class Referral(RevisionedMixin):
         with transaction.atomic():
             if not self.proposal.can_assess(request.user):
                 raise exceptions.ProposalNotAuthorized()
+
             # Create a log entry for the proposal
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_REMIND_REFERRAL.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_REMIND_REFERRAL.format(self.id,self.proposal.id,'{}'.format(self.referral_group.name)),request)
             self.proposal.log_user_action(
                 ProposalUserAction.ACTION_REMIND_REFERRAL.format(
                     self.id,
@@ -4087,21 +4069,15 @@ class Referral(RevisionedMixin):
                 ),
                 request,
             )
-            # Create a log entry for the organisation
-            applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-            applicant_field = retrieve_email_user(applicant_field)
-            # applicant_field.log_user_action(ProposalUserAction.ACTION_REMIND_REFERRAL.format(self.id,self.proposal.id,'{}'.format(self.referral_group.name)),request)
 
-            # TODO: logging applicant_field
-            # applicant_field.log_user_action(
-            #     ProposalUserAction.ACTION_REMIND_REFERRAL.format(
-            #         self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
-            #         ), request
-            #     )
+            # Create a log entry for the applicant
+            self.proposal.applicant.log_user_action(
+                ProposalUserAction.ACTION_REMIND_REFERRAL.format(
+                    self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
+                ), request
+            )
 
             # send email
-            # recipients = self.referral_group.members_list
-            # send_referral_email_notification(self,recipients,request,reminder=True)
             send_referral_email_notification(
                 self,
                 [
@@ -4117,19 +4093,11 @@ class Referral(RevisionedMixin):
                 raise exceptions.ProposalNotAuthorized()
             self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
             self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
-
-            # Set referral assessment incomplete again, so the referrer can Complete Referral
-            for assessment in self.proposal.referral_assessments:
-                if assessment.referral.referral == self.referral_as_email_user.id:
-                    assessment.completed = False
-                    assessment.save()
-
             self.proposal.save()
             self.sent_from = 1
             self.save()
+
             # Create a log entry for the proposal
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-            # self.proposal.log_user_action(ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(self.id,self.proposal.id,'{}'.format(self.referral_group.name)),request)
             self.proposal.log_user_action(
                 ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
                     self.id,
@@ -4138,21 +4106,17 @@ class Referral(RevisionedMixin):
                 ),
                 request,
             )
-            # Create a log entry for the organisation
-            # self.proposal.applicant.log_user_action(ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-            applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-            applicant_field = retrieve_email_user(applicant_field)
 
-            # TODO: logging applicant_field
-            # applicant_field.log_user_action(
-            #     ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
-            #         self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
-            #         ), request
-            #     )
+            # Create a log entry for the applicant
+            self.proposal.applicant.log_user_action(
+                ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
+                    self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
+                ), request
+            )
 
             # send email
             # recipients = self.referral_group.members_list
-            # send_referral_email_notification(self,recipients,request)
+            # ~leaving the comment above here in case we need to send to the whole group
             send_referral_email_notification(
                 self,
                 [
@@ -4163,38 +4127,38 @@ class Referral(RevisionedMixin):
 
     def complete(self, request):
         with transaction.atomic():
-            try:
-                self.processing_status = Referral.PROCESSING_STATUS_COMPLETED
-                self.referral = request.user.id
-                self.add_referral_document(request)
-                self.save()
+            self.processing_status = Referral.PROCESSING_STATUS_COMPLETED
+            self.add_referral_document(request)
+            self.save()
 
-                # TODO Log proposal action
-                # self.proposal.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
-                # .format(self.id,self.proposal.id,'{}({})'.format(self.referral.get_full_name(),self.referral.email)),request)
-                self.proposal.log_user_action(
-                    ProposalUserAction.CONCLUDE_REFERRAL.format(
-                        request.user.get_full_name(), self.id, self.proposal.id
-                    ),
-                    request,
-                )
+            # Log proposal action
+            self.proposal.log_user_action(
+                ProposalUserAction.CONCLUDE_REFERRAL.format(
+                    request.user.get_full_name(), self.id, self.proposal.lodgement_number
+                ),
+                request,
+            )
 
-                # TODO log organisation action
-                # self.proposal.applicant.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
-                # .format(self.id,self.proposal.id,'{}({})'
-                # .format(self.referral.get_full_name(),self.referral.email)),request)
-                applicant_field = getattr(self.proposal, self.proposal.applicant_field)
-                applicant_field = retrieve_email_user(applicant_field)
+            # log applicant_field
+            self.applicant.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL.format(
+                request.user.get_full_name(), self.id, self.proposal.lodgement_number
+            ),request)
 
-                # TODO: logging applicant_field
-                # applicant_field.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL
-                # .format(request.user.get_full_name(), self.id,self.proposal.id,'{}'
-                # .format(self.referral_group.name)),request)
+            send_referral_complete_email_notification(self, request)
 
-                send_referral_complete_email_notification(self, request)
-            except Exception as e:
-                logger.exception(e)
-                raise e
+            # Check if this was the last pending referral for the proposal
+            if not Referral.objects.filter(
+                    proposal=self.proposal,
+                    processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL).exists():
+
+                # Change the status back to what it was before this referral was requested
+                if self.sent_from == 1:
+                    self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                else:
+                    self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_APPROVER
+                self.proposal.save()
+
+                send_pending_referrals_complete_email_notification(self, request)
 
     def add_referral_document(self, request):
         with transaction.atomic():
@@ -4365,6 +4329,34 @@ class Referral(RevisionedMixin):
         return self.processing_status == "with_referral"
 
 
+class ExternalRefereeInvite(RevisionedMixin):
+    email = models.EmailField()
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    organisation = models.CharField(max_length=100)
+    datetime_sent = models.DateTimeField(null=True, blank=True)
+    datetime_first_logged_in = models.DateTimeField(null=True, blank=True)
+    proposal = models.ForeignKey(
+        Proposal, related_name="external_referee_invites", on_delete=models.CASCADE
+    )
+    sent_from = models.SmallIntegerField(
+        choices=Referral.SENT_CHOICES, default=Referral.SENT_CHOICES[0][0]
+    )
+    sent_by = models.IntegerField()
+    invite_text = models.TextField(blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        verbose_name = "External Referral"
+        verbose_name_plural = "External Referrals"
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.email}) [{self.organisation}]"
+
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+
 class ProposalRequirement(RevisionedMixin):
     RECURRENCE_PATTERNS = [(1, "Weekly"), (2, "Monthly"), (3, "Yearly")]
     standard_requirement = models.ForeignKey(
@@ -4480,13 +4472,13 @@ class ProposalRequirement(RevisionedMixin):
 
     def swap(self, other):
         new_self_position = other.req_order
-        print(self.id)
-        print("new_self_position")
-        print(new_self_position)
+        logger.debug(self.id)
+        logger.debug("new_self_position")
+        logger.debug(new_self_position)
         new_other_position = self.req_order
-        print(other.id)
-        print("new_other_position")
-        print(new_other_position)
+        logger.debug(other.id)
+        logger.debug("new_other_position")
+        logger.debug(new_other_position)
         # null out both values to prevent a db constraint error on save()
         self.req_order = None
         self.save()
@@ -4516,7 +4508,7 @@ class ProposalRequirement(RevisionedMixin):
                     return True
                 else:
                     return False
-            elif self.proposal.is_referrer(user):
+            elif self.proposal.is_referee(user):
                 # True if this referral user's requirement
                 if (
                     hasattr(self.referral, "referral")
@@ -4685,24 +4677,30 @@ class ProposalAssessment(RevisionedMixin):
         on_delete=models.SET_NULL,
     )  # When referral is none, this ProposalAssessment is for assessor.
     # comments and deficiencies
+
+    # ROI comment fields
     assessor_comment_map = models.TextField(blank=True)
-    deficiency_comment_map = models.TextField(blank=True)
-    referrer_comment_map = models.TextField(blank=True)
     assessor_comment_proposal_details = models.TextField(blank=True)
-    deficiency_comment_proposal_details = models.TextField(blank=True)
-    referrer_comment_proposal_details = models.TextField(blank=True)
     assessor_comment_proposal_impact = models.TextField(blank=True)
-    deficiency_comment_proposal_impact = models.TextField(blank=True)
-    referrer_comment_proposal_impact = models.TextField(blank=True)
     assessor_comment_other = models.TextField(blank=True)
-    deficiency_comment_other = models.TextField(blank=True)
-    referrer_comment_other = models.TextField(blank=True)
     assessor_comment_deed_poll = models.TextField(blank=True)
-    deficiency_comment_deed_poll = models.TextField(blank=True)
-    referrer_comment_deed_poll = models.TextField(blank=True)
     assessor_comment_additional_documents = models.TextField(blank=True)
+
+    # Lease License comment fields
+    assessor_comment_tourism_proposal_details = models.TextField(blank=True)
+    assessor_comment_general_proposal_details = models.TextField(blank=True)
+
+    # ROI comment fields
+    deficiency_comment_map = models.TextField(blank=True)
+    deficiency_comment_proposal_details = models.TextField(blank=True)
+    deficiency_comment_proposal_impact = models.TextField(blank=True)
+    deficiency_comment_other = models.TextField(blank=True)
+    deficiency_comment_deed_poll = models.TextField(blank=True)
     deficiency_comment_additional_documents = models.TextField(blank=True)
-    referrer_comment_additional_documents = models.TextField(blank=True)
+
+    # Lease License comment fields
+    deficiency_comment_tourism_proposal_details = models.TextField(blank=True)
+    deficiency_comment_general_proposal_details = models.TextField(blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -4857,42 +4855,42 @@ def duplicate_object(self):
     # Iterate through all the fields in the parent object looking for related fields
     for field in self._meta.get_fields():
         if field.name in ["proposal", "approval"]:
-            print("Continuing ...")
+            logger.debug("Continuing ...")
             pass
         elif field.one_to_many:
             # One to many fields are backward relationships where many child objects are related to the
             # parent (i.e. SelectedPhrases). Enumerate them and save a list so we can copy them after
             # duplicating our parent object.
-            print(f"Found a one-to-many field: {field.name}")
+            logger.debug(f"Found a one-to-many field: {field.name}")
 
             # 'field' is a ManyToOneRel which is not iterable, we need to get the object attribute itself
             related_object_manager = getattr(self, field.name)
             related_objects = list(related_object_manager.all())
             if related_objects:
-                print(" - {len(related_objects)} related objects to copy")
+                logger.debug(" - {len(related_objects)} related objects to copy")
                 related_objects_to_copy += related_objects
 
         elif field.many_to_one:
             # In testing so far, these relationships are preserved when the parent object is copied,
             # so they don't need to be copied separately.
-            print(f"Found a many-to-one field: {field.name}")
+            logger.debug(f"Found a many-to-one field: {field.name}")
 
         elif field.many_to_many:
             # Many to many fields are relationships where many parent objects can be related to many
             # child objects. Because of this the child objects don't need to be copied when we copy
             # the parent, we just need to re-create the relationship to them on the copied parent.
-            print(f"Found a many-to-many field: {field.name}")
+            logger.debug(f"Found a many-to-many field: {field.name}")
             related_object_manager = getattr(self, field.name)
             relations = list(related_object_manager.all())
             if relations:
-                print(f" - {len(relations)} relations to set")
+                logger.debug(f" - {len(relations)} relations to set")
                 relations_to_set[field.name] = relations
 
     # Duplicate the parent object
     self.pk = None
     self.lodgement_number = ""
     self.save()
-    print(f"Copied parent object {str(self)}")
+    logger.debug(f"Copied parent object {str(self)}")
 
     # Copy the one-to-many child objects and relate them to the copied parent
     for related_object in related_objects_to_copy:
@@ -4910,7 +4908,7 @@ def duplicate_object(self):
                 #    related_object.lodgement_number = ''
 
                 setattr(related_object, related_object_field.name, self)
-                print(related_object_field)
+                logger.debug(related_object_field)
                 try:
                     related_object.save()
                 except Exception as e:
@@ -4918,7 +4916,7 @@ def duplicate_object(self):
 
                 text = str(related_object)
                 text = (text[:40] + "..") if len(text) > 40 else text
-                print(f"|- Copied child object {text}")
+                logger.debug(f"|- Copied child object {text}")
 
     # Set the many-to-many relations on the copied parent
     for field_name, relations in relations_to_set.items():
@@ -4928,7 +4926,7 @@ def duplicate_object(self):
         text_relations = []
         for relation in relations:
             text_relations.append(str(relation))
-        print(
+        logger.debug(
             "|- Set {} many-to-many relations on {} {}".format(
                 len(relations), field_name, text_relations
             )

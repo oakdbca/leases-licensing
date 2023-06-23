@@ -2,6 +2,7 @@ import logging
 import traceback
 
 from django.conf import settings
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Case, CharField, IntegerField, Q, Value, When
@@ -33,6 +34,7 @@ from leaseslicensing.components.organisations.models import (  # ledger_organisa
     OrganisationRequest,
     OrganisationRequestUserAction,
 )
+from leaseslicensing.components.organisations.utils import can_admin_org
 from leaseslicensing.components.organisations.serializers import (
     MyOrganisationsSerializer,
     OrganisationActionSerializer,
@@ -50,7 +52,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestLogEntrySerializer,
     OrganisationRequestSerializer,
     OrganisationSerializer,
-    OrgUserAcceptSerializer, 
+    OrgUserAcceptSerializer,
     OrganisationDetailsSerializer
 )
 from leaseslicensing.components.proposals.api import ProposalRenderer
@@ -436,70 +438,44 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
     # Todo: Implement for segregatted system
     @logging_action(methods=['PUT',], detail=True)
+    @basic_exception_handler
     def update_details(self, request, *args, **kwargs):
-        try:
-            user = EmailUser.objects.get(id=request.user.id)
-            if user is None:
-                resp_json = {"status" : 404,  "message": "User not found!"}
-                return resp_json
-            org = self.get_object()
-            instance = Organisation.objects.get(id=org.id)
-            if instance is None:
-                resp_json = {"status" : 404,  "message": "Organisation not found!"}
-                return resp_json
-            data = request.data
-            response_ledger = update_organisation_obj(data)
-            logger.debug(f"response_ledger:{response_ledger['status']}")
-            serializer = OrganisationDetailsSerializer(instance, data=data)
-            serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
-            return Response(response_ledger)
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
-       
+        instance = self.get_object()
+        if not can_admin_org(instance, request.user.id):
+            return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
+
+        response_ledger = update_organisation_obj(request.data)
+        cache.delete(settings.CACHE_KEY_LEDGER_ORGANISATION.format(
+            instance.ledger_organisation_id
+        ))
+        logger.debug("request.data: {}".format(request.data))
+        serializer = OrganisationDetailsSerializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        return Response(response_ledger)
 
     @logging_action(methods=['POST',], detail=True)
+    @basic_exception_handler
     def update_address(self, request, *args, **kwargs):
-           try:
-                user = EmailUser.objects.get(id=request.user.id)
-                if user is None:
-                    resp_json = {"status" : 404,  "message": "User not found!"}
-                    return resp_json
-                
-                org_id = request.data.get("organisation_id", None)
-                org_obj = Organisation.objects.get(id=org_id)
-                if org_obj is None:
-                    resp_json = {"status" : 404,  "message": "Organisation not found!"}
-                    return resp_json
-                data = request.data
-                response_ledger = update_organisation_obj(data)
-                return Response(response_ledger)
-           except ValidationError as e:
-                   print(traceback.print_exc())
-                   raise serializers.ValidationError(repr(e.error_dict))
-           except Exception as e:
-                   print(traceback.print_exc())
-                   raise serializers.ValidationError(str(e))
-           
+        instance = self.get_object()
+        if not can_admin_org(instance, request.user.id):
+            return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
+
+        response_ledger = update_organisation_obj(request.data)
+
+        return Response(response_ledger)
+
     @logging_action(methods=['GET',], detail=True)
+    @basic_exception_handler
     def get_org_address(self, request, *args, **kwargs):
-           try:
-                   org = self.get_object()
-                   response_ledger = get_organisation(org.id)
-                   return Response(response_ledger['data'])
-           except serializers.ValidationError:
-                   print(traceback.print_exc())
-                   raise
-           except ValidationError as e:
-                   print(traceback.print_exc())
-                   raise serializers.ValidationError(repr(e.error_dict))
-           except Exception as e:
-                   print(traceback.print_exc())
-                   raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        if not instance.ledger_organisation_id:
+            msg = "Organisation: {} has no ledger organisation id".format(org.id)
+            logger.error(msg)
+            raise ValidationError(msg)
+
+        response_ledger = get_organisation(instance.ledger_organisation_id)
+        return Response(response_ledger['data'])
 
     @logging_action(
         methods=[
@@ -510,21 +486,6 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @basic_exception_handler
     def upload_id(self, request, *args, **kwargs):
         pass
-
-
-# from rest_framework import filters
-# class OrganisationListFilterView(generics.ListAPIView):
-#        """ https://cop-internal.dbca.wa.gov.au/api/filtered_organisations?search=Org1
-#        """
-#        #queryset = Organisation.objects.all()
-#        queryset = ledger_organisation.objects.none()
-#        serializer_class = LedgerOrganisationFilterSerializer
-#        filter_backends = (filters.SearchFilter,)
-#        search_fields = ('name', 'trading_name',)
-#
-#        def get_queryset(self):
-#                org_list = Organisation.objects.all().values_list('organisation_id', flat=True)
-#                return ledger_organisation.objects.filter(id__in=org_list)
 
 
 class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
@@ -597,39 +558,11 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=False,
     )
+    @basic_exception_handler
     def datatable_list(self, request, *args, **kwargs):
-        try:
-            qs = self.get_queryset()
-            serializer = OrganisationRequestDTSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
-
-    # @list_route(methods=['GET',])
-    # def user_organisation_request_list(self, request, *args, **kwargs):
-    #     try:
-    #         queryset = self.get_queryset()
-    #         queryset = queryset.filter(requester = request.user)
-
-    #         # instance = OrganisationRequest.objects.get(requester = request.user)
-    #         serializer = self.get_serializer(queryset, many=True)
-    #         return Response(serializer.data)
-    #     except serializers.ValidationError:
-    #         print(traceback.print_exc())
-    #         raise
-    #     except ValidationError as e:
-    #         print(traceback.print_exc())
-    #         raise serializers.ValidationError(repr(e.error_dict))
-    #     except Exception as e:
-    #         print(traceback.print_exc())
-    #         raise serializers.ValidationError(str(e))
+        qs = self.get_queryset()
+        serializer = OrganisationRequestDTSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @list_route(
         methods=[
@@ -637,22 +570,13 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=False,
     )
+    @basic_exception_handler
     def get_pending_requests(self, request, *args, **kwargs):
-        try:
-            qs = self.get_queryset().filter(
-                requester=request.user, status="with_assessor"
-            )
-            serializer = OrganisationRequestDTSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        qs = self.get_queryset().filter(
+            requester=request.user, status="with_assessor"
+        )
+        serializer = OrganisationRequestDTSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @list_route(
         methods=[
@@ -661,21 +585,11 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         detail=False,
     )
     def get_amendment_requested_requests(self, request, *args, **kwargs):
-        try:
-            qs = self.get_queryset().filter(
-                requester=request.user, status="amendment_requested"
-            )
-            serializer = OrganisationRequestDTSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        qs = self.get_queryset().filter(
+            requester=request.user, status="amendment_requested"
+        )
+        serializer = OrganisationRequestDTSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -683,21 +597,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def assign_request_user(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.assign_to(request.user.id, request)
-            serializer = OrganisationRequestDTSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.assign_to(request.user.id, request)
+        serializer = OrganisationRequestDTSerializer(instance)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -705,23 +610,14 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def assign_user(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            user_id = request.data.get("user_id")
-            logger.info("user_id: %s", user_id)
-            instance.assign_to(user_id, request)
-            serializer = OrganisationRequestDTSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        user_id = request.data.get("user_id")
+        logger.info("user_id: %s", user_id)
+        instance.assign_to(user_id, request)
+        serializer = OrganisationRequestDTSerializer(instance)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -729,21 +625,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def unassign(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.unassign(request)
-            serializer = OrganisationRequestDTSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.unassign(request)
+        serializer = OrganisationRequestDTSerializer(instance)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -751,26 +638,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def accept(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.accept(request)
-            serializer = OrganisationRequestDTSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            # print(traceback.print_exc())
-            # raise serializers.ValidationError(repr(e.error_dict))
-            if hasattr(e, "error_dict"):
-                raise serializers.ValidationError(repr(e.error_dict))
-            else:
-                if hasattr(e, "message"):
-                    raise serializers.ValidationError(e.message)
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.accept(request)
+        serializer = OrganisationRequestDTSerializer(instance)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -778,21 +651,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def amendment_request(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.amendment_request(request)
-            serializer = OrganisationRequestSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.amendment_request(request)
+        serializer = OrganisationRequestSerializer(instance)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -800,21 +664,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def reupload_identification_amendment_request(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            instance.reupload_identification_amendment_request(request)
-            serializer = OrganisationRequestSerializer(instance, partial=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        instance.reupload_identification_amendment_request(request)
+        serializer = OrganisationRequestSerializer(instance, partial=True)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -822,22 +677,13 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def decline(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            reason = ""
-            instance.decline(reason, request)
-            serializer = OrganisationRequestDTSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        reason = ""
+        instance.decline(reason, request)
+        serializer = OrganisationRequestDTSerializer(instance)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -845,31 +691,22 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def assign_to(self, request, *args, **kwargs):
+        instance = self.get_object()
+        user_id = request.data.get("user_id", None)
+        user = None
+        if not user_id:
+            raise serializers.ValiationError("A user id is required")
         try:
-            instance = self.get_object()
-            user_id = request.data.get("user_id", None)
-            user = None
-            if not user_id:
-                raise serializers.ValiationError("A user id is required")
-            try:
-                user = EmailUser.objects.get(id=user_id)
-            except EmailUser.DoesNotExist:
-                raise serializers.ValidationError(
-                    "A user with the id passed in does not exist"
-                )
-            instance.assign_to(user, request)
-            serializer = OrganisationRequestSerializer(instance)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+            user = EmailUser.objects.get(id=user_id)
+        except EmailUser.DoesNotExist:
+            raise serializers.ValidationError(
+                "A user with the id passed in does not exist"
+            )
+        instance.assign_to(user, request)
+        serializer = OrganisationRequestSerializer(instance)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -877,21 +714,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def action_log(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.action_logs.all()
-            serializer = OrganisationRequestActionSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.action_logs.all()
+        serializer = OrganisationRequestActionSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -899,21 +727,12 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         ],
         detail=True,
     )
+    @basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
-        try:
-            instance = self.get_object()
-            qs = instance.comms_logs.all()
-            serializer = OrganisationRequestCommsSerializer(qs, many=True)
-            return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+        instance = self.get_object()
+        qs = instance.comms_logs.all()
+        serializer = OrganisationRequestCommsSerializer(qs, many=True)
+        return Response(serializer.data)
 
     @logging_action(
         methods=[
@@ -922,69 +741,51 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         detail=True,
     )
     @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
-        try:
-            with transaction.atomic():
-                instance = self.get_object()
-                mutable = request.data._mutable
-                request.data._mutable = True
-                request.data["organisation"] = f"{instance.id}"
-                request.data["request"] = f"{instance.id}"
-                request.data["staff"] = f"{request.user.id}"
-                request.data._mutable = mutable
-                serializer = OrganisationRequestLogEntrySerializer(data=request.data)
-                serializer.is_valid(raise_exception=True)
-                comms = serializer.save()
-
-                # Save the files
-                for f in request.FILES.getlist("files"):
-                    document = comms.documents.create()
-                    document.name = str(f)
-                    document._file = f
-                    document.save()
-
-                return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
-
-    def create(self, request, *args, **kwargs):
-        try:
-            serializer = self.get_serializer(data=request.data)
+        with transaction.atomic():
+            instance = self.get_object()
+            mutable = request.data._mutable
+            request.data._mutable = True
+            request.data["organisation"] = f"{instance.id}"
+            request.data["request"] = f"{instance.id}"
+            request.data["staff"] = f"{request.user.id}"
+            request.data._mutable = mutable
+            serializer = OrganisationRequestLogEntrySerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
-            serializer.validated_data["requester"] = request.user.id
-            if request.data["role"] == "consultant":
-                # Check if consultant can be relinked to org.
-                data = Organisation.existence(request.data["abn"])
-                data.update([("user", request.user.id)])
-                data.update([("abn", request.data["abn"])])
-                existing_org = OrganisationCheckExistSerializer(data=data)
-                existing_org.is_valid(raise_exception=True)
-            with transaction.atomic():
-                instance = serializer.save()
-                instance.log_user_action(
-                    OrganisationRequestUserAction.ACTION_LODGE_REQUEST.format(
-                        instance.id
-                    ),
-                    request,
-                )
-                instance.send_organisation_request_email_notification(request)
+            comms = serializer.save()
+
+            # Save the files
+            for f in request.FILES.getlist("files"):
+                document = comms.documents.create()
+                document.name = str(f)
+                document._file = f
+                document.save()
+
             return Response(serializer.data)
-        except serializers.ValidationError:
-            print(traceback.print_exc())
-            raise
-        except ValidationError as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(repr(e.error_dict))
-        except Exception as e:
-            print(traceback.print_exc())
-            raise serializers.ValidationError(str(e))
+
+    @basic_exception_handler
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.validated_data["requester"] = request.user.id
+        if request.data["role"] == "consultant":
+            # Check if consultant can be relinked to org.
+            data = Organisation.existence(request.data["abn"])
+            data.update([("user", request.user.id)])
+            data.update([("abn", request.data["abn"])])
+            existing_org = OrganisationCheckExistSerializer(data=data)
+            existing_org.is_valid(raise_exception=True)
+        with transaction.atomic():
+            instance = serializer.save()
+            instance.log_user_action(
+                OrganisationRequestUserAction.ACTION_LODGE_REQUEST.format(
+                    instance.id
+                ),
+                request,
+            )
+            instance.send_organisation_request_email_notification(request)
+        return Response(serializer.data)
 
 
 class OrganisationAccessGroupMembers(views.APIView):
