@@ -1867,7 +1867,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         proposal_assessment, created = ProposalAssessment.objects.get_or_create(
             proposal=self,
             referral=referral
-            # proposal=self
         )
         if created:
             for_referral_or_assessor = (
@@ -1949,7 +1948,9 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                         assigned_officer=request.user.id,
                     )
                     # Create answers for this referral
-                    self.make_questions_ready(referral)
+                    # Commenting the following line out as we are not using checklist questions for referrals
+                    # so I don't think we need this anymore Todo: Delete if I was correct
+                    # self.make_questions_ready(referral)
 
                 # Create a log entry for the proposal
                 self.log_user_action(
@@ -4688,23 +4689,29 @@ class ProposalAssessment(RevisionedMixin):
     )  # When referral is none, this ProposalAssessment is for assessor.
     # comments and deficiencies
 
+    # ROI comment fields
     assessor_comment_map = models.TextField(blank=True)
-    deficiency_comment_map = models.TextField(blank=True)
-
     assessor_comment_proposal_details = models.TextField(blank=True)
-    deficiency_comment_proposal_details = models.TextField(blank=True)
-
     assessor_comment_proposal_impact = models.TextField(blank=True)
-    deficiency_comment_proposal_impact = models.TextField(blank=True)
-
     assessor_comment_other = models.TextField(blank=True)
-    deficiency_comment_other = models.TextField(blank=True)
-
     assessor_comment_deed_poll = models.TextField(blank=True)
-    deficiency_comment_deed_poll = models.TextField(blank=True)
-
     assessor_comment_additional_documents = models.TextField(blank=True)
+
+    # Lease License comment fields
+    assessor_comment_tourism_proposal_details = models.TextField(blank=True)
+    assessor_comment_general_proposal_details = models.TextField(blank=True)
+
+    # ROI comment fields
+    deficiency_comment_map = models.TextField(blank=True)
+    deficiency_comment_proposal_details = models.TextField(blank=True)
+    deficiency_comment_proposal_impact = models.TextField(blank=True)
+    deficiency_comment_other = models.TextField(blank=True)
+    deficiency_comment_deed_poll = models.TextField(blank=True)
     deficiency_comment_additional_documents = models.TextField(blank=True)
+
+    # Lease License comment fields
+    deficiency_comment_tourism_proposal_details = models.TextField(blank=True)
+    deficiency_comment_general_proposal_details = models.TextField(blank=True)
 
     class Meta:
         app_label = "leaseslicensing"

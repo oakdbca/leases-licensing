@@ -67,6 +67,13 @@
 
                     <LeaseLicence :proposal="proposal" :is_internal="is_internal" :readonly="readonly" ref="lease_licence"
                         v-if="leaseLicence">
+                        <template v-slot:slot_proposal_tourism_details_assessment_comments>
+                            <slot name="slot_proposal_tourism_details_assessment_comments"></slot>
+                        </template>
+
+                        <template v-slot:slot_proposal_general_details_assessment_comments>
+                            <slot name="slot_proposal_general_details_assessment_comments"></slot>
+                        </template>
                     </LeaseLicence>
 
                     <FormSection label="Geospatial Data" Index="other_section">

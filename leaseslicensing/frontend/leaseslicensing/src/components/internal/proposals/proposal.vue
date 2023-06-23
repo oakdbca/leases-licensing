@@ -93,6 +93,107 @@
                                 </AssessmentComments>
                             </template>
 
+                            <template v-slot:slot_proposal_tourism_details_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="Tourism Proposal Details Assessment Comments"
+                                    ref="collapsible_proposal_tourism_details_comments"
+                                    @created="collapsible_proposal_tourism_details_comments_component_mounted" class="mb-2">
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.assessor_comment_tourism_proposal_details"
+                                                        id="assessor_comment_tourism_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_tourism_proposal_details">Assessor
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_tourism_proposal_details"
+                                                        id="deficiency_comment_tourism_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_tourism_proposal_details">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="profile.is_staff || referral.referral == profile.id"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_proposal_details_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_proposal_details" />
+                                                        <label :for="'comment_proposal_details_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </AssessmentComments>
+                            </template>
+
+
+                            <template v-slot:slot_proposal_general_details_assessment_comments>
+                                <AssessmentComments :collapsed="collapseAssessmentComments"
+                                    component_title="General Proposal Details Assessment Comments"
+                                    ref="collapsible_proposal_general_details_comments"
+                                    @created="collapsible_proposal_general_details_comments_component_mounted" class="mb-2">
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.assessor_comment_general_proposal_details"
+                                                        id="assessor_comment_general_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="assessor_comment_general_proposal_details">Assessor
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea class="form-control"
+                                                        v-model="assessment.deficiency_comment_general_proposal_details"
+                                                        id="deficiency_comment_general_proposal_details"
+                                                        :disabled="!canEditComments" />
+                                                    <label for="deficiency_comment_general_proposal_details">Deficiency
+                                                        Comments</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <template v-for=" referral  in  proposal.referrals ">
+                                            <div v-if="profile.is_staff || referral.referral == profile.id"
+                                                class="row mb-3 mt-3" :key="referral.id">
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea class="form-control referral-comment"
+                                                            :id="'comment_proposal_details_' + referral.id"
+                                                            :disabled="referral.referral !== profile.id"
+                                                            v-model="referral.comment_proposal_details" />
+                                                        <label :for="'comment_proposal_details_' + referral.id">Referral
+                                                            Comment by <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </AssessmentComments>
+                            </template>
+
                             <template v-slot:slot_proposal_details_assessment_comments>
                                 <AssessmentComments :collapsed="collapseAssessmentComments"
                                     component_title="Proposal Details Assessment Comments"
@@ -802,6 +903,12 @@ export default {
         },
         collapsible_map_comments_component_mounted: function () {
             this.$refs.collapsible_map_comments.show_warning_icon(false)
+        },
+        collapsible_proposal_tourism_details_comments_component_mounted: function () {
+            this.$refs.collapsible_proposal_tourism_details_comments.show_warning_icon(false)
+        },
+        collapsible_proposal_general_details_comments_component_mounted: function () {
+            this.$refs.collapsible_proposal_general_details_comments.show_warning_icon(false)
         },
         collapsible_proposal_details_comments_component_mounted: function () {
             this.$refs.collapsible_proposal_details_comments.show_warning_icon(false)
