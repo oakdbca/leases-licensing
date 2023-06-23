@@ -285,8 +285,8 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
             "belongs_to_accessing_user",
 
             "assessor_comment_map",
-            "assessor_comment_proposal_tourism_details",
-            "assessor_comment_proposal_general_details",
+            "assessor_comment_tourism_proposal_details",
+            "assessor_comment_general_proposal_details",
             "assessor_comment_proposal_details",
             "assessor_comment_proposal_impact",
             "assessor_comment_other",
@@ -294,8 +294,8 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
             "assessor_comment_additional_documents",
 
             "deficiency_comment_map",
-            "deficiency_comment_proposal_tourism_details",
-            "deficiency_comment_proposal_general_details",
+            "deficiency_comment_tourism_proposal_details",
+            "deficiency_comment_general_proposal_details",
             "deficiency_comment_proposal_details",
             "deficiency_comment_proposal_impact",
             "deficiency_comment_other",
