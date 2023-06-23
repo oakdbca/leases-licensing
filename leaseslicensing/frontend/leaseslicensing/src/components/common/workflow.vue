@@ -55,7 +55,7 @@
                 </div>
             </div>
 
-            <div v-if="canAssess" class="card-body border-top">
+            <div v-if="isCurrentAssessor" class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Invite Referee</div>
                     <div class="mb-3">
@@ -82,7 +82,7 @@
                 </div>
             </div>
 
-            <div v-if="canAssess && proposal.external_referral_invites && proposal.external_referral_invites.length > 0"
+            <div v-if="isCurrentAssessor && proposal.external_referral_invites && proposal.external_referral_invites.length > 0"
                 class="card-body border-top">
                 <div class="fw-bold mb-1">External Referee Invites</div>
                 <table class="table table-sm table-hover table-referrals">
@@ -116,7 +116,7 @@
                 </table>
             </div>
 
-            <div v-if="canAssess && proposal.latest_referrals && proposal.latest_referrals.length > 0"
+            <div v-if="isCurrentAssessor && proposal.latest_referrals && proposal.latest_referrals.length > 0"
                 class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Referrals</div>
@@ -315,7 +315,7 @@ export default {
                                 [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
-                        let show = vm.check_role_conditions(condition_to_display)
+                        let show = vm.check_role_conditions(condition_to_display) && vm.isCurrentAssessor
                         return show
                     },
                     'function_to_disable': () => {
@@ -366,7 +366,7 @@ export default {
                                 [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
-                        let show = vm.check_role_conditions(condition_to_display)
+                        let show = vm.check_role_conditions(condition_to_display) && vm.isCurrentAssessor
                         return show
                     },
                     'function_to_disable': () => {
@@ -390,7 +390,7 @@ export default {
                                 [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
-                        let show = vm.check_role_conditions(condition_to_display)
+                        let show = vm.check_role_conditions(condition_to_display) && vm.isCurrentAssessor
                         return show
                     },
                     'function_to_disable': () => {
@@ -434,7 +434,7 @@ export default {
                                 [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             }
                         }
-                        let show = vm.check_role_conditions(condition_to_display)
+                        let show = vm.check_role_conditions(condition_to_display) && (vm.proposal.assigned_approver == vm.profile.id)
                         return show
                     },
                     'function_to_disable': () => {
@@ -455,7 +455,7 @@ export default {
                                 [PROPOSAL_STATUS.WITH_APPROVER.ID]: [ROLES.GROUP_NAME_APPROVER.ID,],
                             }
                         }
-                        let show = vm.check_role_conditions(condition_to_display)
+                        let show = vm.check_role_conditions(condition_to_display) && (vm.proposal.assigned_approver == vm.profile.id)
                         return show
                     },
                     'function_to_disable': () => {
@@ -473,7 +473,7 @@ export default {
                                 [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
-                        let show = vm.check_role_conditions(condition_to_display)
+                        let show = vm.check_role_conditions(condition_to_display) && vm.isCurrentAssessor
                         return show
                     },
                     'function_to_disable': () => {
@@ -491,7 +491,7 @@ export default {
                                 [PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
                             }
                         }
-                        let show = vm.check_role_conditions(condition_to_display)
+                        let show = vm.check_role_conditions(condition_to_display) // Do we have to restrict this to a specific assigned user as above?
                         return show
                     },
                     'function_to_disable': () => {
@@ -538,6 +538,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        profile: {
+            type: Object,
+            required: true,
+        },
     },
     components: {
         MoreReferrals,
@@ -567,6 +571,9 @@ export default {
         },
         referralListURL: function () {
             return this.proposal != null ? helpers.add_endpoint_json(api_endpoints.referrals, 'datatable_list') + '?proposal=' + this.proposal.id : '';
+        },
+        isCurrentAssessor: function () {
+            return this.proposal.assigned_officer == this.profile.id;
         },
         show_toggle_proposal: function () {
             if (
@@ -884,6 +891,9 @@ export default {
         },
         assignRequestUser: function () {
             this.$emit('assignRequestUser')
+            this.$nextTick(() => {
+                this.initialiseSelects();
+            })
         },
         assignTo: function () {
             this.$emit('assignTo')
