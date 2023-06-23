@@ -30,7 +30,7 @@ from reversion.models import Version
 from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.compliances.models import Compliance
-from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.api import UserActionLoggingViewset, LicensingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
@@ -94,6 +94,7 @@ from leaseslicensing.components.proposals.utils import (
     save_site_name,
 )
 from leaseslicensing.helpers import is_approver, is_assessor, is_customer, is_internal
+from leaseslicensing.permissions import IsAssessorOrReferrer
 from leaseslicensing.settings import APPLICATION_TYPES
 
 logger = logging.getLogger(__name__)
@@ -2094,14 +2095,12 @@ class ReferralViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class ProposalRequirementViewSet(viewsets.ModelViewSet):
-    # queryset = ProposalRequirement.objects.all()
+class ProposalRequirementViewSet(LicensingViewset):
     queryset = ProposalRequirement.objects.none()
     serializer_class = ProposalRequirementSerializer
 
     def get_queryset(self):
-        qs = ProposalRequirement.objects.all().exclude(is_deleted=True)
-        return qs
+        return ProposalRequirement.objects.all().exclude(is_deleted=True)
 
     @ detail_route(
         methods=[
@@ -2125,9 +2124,6 @@ class ProposalRequirementViewSet(viewsets.ModelViewSet):
     def move_down(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.move_down()
-        # instance.save()
-        # serializer = self.get_serializer(instance)
-        # return Response(serializer.data)
         return Response()
 
     @ detail_route(
@@ -2175,7 +2171,7 @@ class ProposalRequirementViewSet(viewsets.ModelViewSet):
 
     @ basic_exception_handler
     def create(self, request, *args, **kwargs):
-        # serializer = self.get_serializer(data= json.loads(request.data.get('data')))
+        logger.debug("ProposalRequirementViewSet.create()")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -2371,6 +2367,7 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
 class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
     queryset = ExternalRefereeInvite.objects.all()
     serializer_class = ExternalRefereeInviteSerializer
+    permission_classes = [IsAssessorOrReferrer]
 
     @ detail_route(methods=["post"], detail=True)
     @ basic_exception_handler
