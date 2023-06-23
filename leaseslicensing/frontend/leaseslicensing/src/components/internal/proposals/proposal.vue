@@ -17,7 +17,7 @@
 
                 <Workflow ref='workflow' :proposal="proposal" :on_current_revision="on_current_revision"
                     :isFinalised="isFinalised" :canAction="canAction" :canLimitedAction="canLimitedAction"
-                    :canAssess="canAssess" :isReferee="isReferee" :can_user_edit="proposal.can_user_edit"
+                    :canAssess="canAssess" :isReferee="isReferee" :can_user_edit="proposal.can_user_edit" :profile="profile"
                     @toggleProposal="toggleProposal" @toggleRequirements="toggleRequirements" @switchStatus="switchStatus"
                     @completeReferral="completeReferral" @amendmentRequest="amendmentRequest"
                     @proposedDecline="proposedDecline" @proposedApproval="proposedApproval" @issueApproval="issueApproval"
@@ -73,8 +73,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template v-for="referral in  proposal.referrals ">
-                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT && profile.is_staff || referral.referral == profile.id"
+                                        <template v-for="referral in proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
@@ -124,7 +124,7 @@
                                             </div>
                                         </div>
                                         <template v-for=" referral  in  proposal.referrals ">
-                                            <div v-if="profile.is_staff || referral.referral == profile.id"
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
@@ -175,7 +175,7 @@
                                             </div>
                                         </div>
                                         <template v-for=" referral  in  proposal.referrals ">
-                                            <div v-if="profile.is_staff || referral.referral == profile.id"
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
@@ -223,7 +223,7 @@
                                             </div>
                                         </div>
                                         <template v-for=" referral  in  proposal.referrals ">
-                                            <div v-if="profile.is_staff || referral.referral == profile.id"
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
@@ -272,7 +272,7 @@
                                             </div>
                                         </div>
                                         <template v-for=" referral  in  proposal.referrals ">
-                                            <div v-if="profile.is_staff || referral.referral == profile.id"
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
@@ -317,7 +317,7 @@
                                             </div>
                                         </div>
                                         <template v-for=" referral  in  proposal.referrals ">
-                                            <div v-if="referral.referral_text || referral.referral == profile.id"
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
@@ -362,7 +362,7 @@
                                             </div>
                                         </div>
                                         <template v-for=" referral  in  proposal.referrals ">
-                                            <div v-if="referral.referral_text || referral.referral == profile.id"
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
