@@ -8,7 +8,7 @@
                 <div class="fw-bold">Status</div>
                 {{ proposal.processing_status }}
             </div>
-            <div v-if="!isFinalised && canAssess" class="card-body border-top">
+            <div v-if="isAssessorOrApprover" class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Currently Assigned To</div>
                     <template v-if="proposal.processing_status_id == 'with_approver'">
@@ -23,7 +23,8 @@
                                 me</a>
                         </div>
                     </template>
-                    <template v-else>
+                    <template
+                        v-if="proposal.processing_status_id == 'with_assessor' || proposal.processing_status_id == 'with_assessor_conditions'">
                         <select ref="assigned_officer" :disabled="!canAction" class="form-select"
                             v-model="proposal.assigned_officer" @change="assignTo()">
                             <option v-for="member in proposal.allowed_assessors" :value="member.id" :key="member.id">{{
@@ -37,17 +38,17 @@
                     </template>
                 </div>
             </div>
-            <div v-if="show_toggle_proposal" class="card-body border-bottom">
+            <div v-if="show_toggle_proposal" class="card-body border-top">
                 <div class="col-sm-12">
-                    <strong>Proposal</strong><br />
+                    <div class="fw-bold">Application Visibility</div>
                     <a class="actionBtn" v-if="!showingProposal" @click.prevent="toggleProposal()">Show
                         Application</a>
                     <a class="actionBtn" v-else @click.prevent="toggleProposal()">Hide Application</a>
                 </div>
             </div>
-            <div v-if="show_toggle_requirements" class="card-body border-bottom">
+            <div v-if="show_toggle_requirements" class="card-body border-top">
                 <div class="col-sm-12">
-                    <strong>Conditions</strong><br />
+                    <div class="fw-bold">Conditions Visibility</div>
                     <a class="actionBtn" v-if="!showingRequirements" @click.prevent="toggleRequirements()">Show
                         Conditions</a>
                     <a class="actionBtn" v-else @click.prevent="toggleRequirements()">Hide Conditions</a>
@@ -168,6 +169,7 @@
                         :canAction="canLimitedAction" :isFinalised="isFinalised" :referral_url="referralListURL" />
                 </div>
             </div>
+
             <div v-if="actionsVisible" class="card-body border-top">
                 <div class="row">
                     <div v-if="!this.isFinalised">
@@ -187,7 +189,7 @@
         <AddExternalReferral ref="AddExternalReferral" @externalRefereeInviteSent="externalRefereeInviteSent"
             :proposal_id="proposal.id" :email="external_referral_email" />
     </div>
-    <div class="card sticky-top">
+    <div v-if="isAssessorOrApprover" class="card sticky-top">
         <div class="card-header">
             Navigation Tools
         </div>
@@ -197,7 +199,7 @@
                     <a href="#" class="text-primary text-decoration-none">{{
                         formSectionsOpen ? 'Collapse' : 'Open' }} Form Sections</a>
                 </li>
-                <li v-if="formSectionsOpen" class="list-group-item">
+                <li v-if="formSectionsOpen && formSectionLabels.length > 0" class="list-group-item">
                     <ul class="list-group">
                         <li v-for="form_section in formSectionLabels" class="list-group-item list-group-item-action"
                             role="button" @click="scrollTo(form_section.id)"><a class="text-decoration-none">{{
@@ -568,6 +570,8 @@ export default {
         },
         show_toggle_proposal: function () {
             if (
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
+                this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID ||
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                 this.proposal.processing_status_id == constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
                 this.isFinalised) {
@@ -582,6 +586,13 @@ export default {
             } else {
                 return false
             }
+        },
+        isAssessorOrApprover: function () {
+            return !this.isFinalised && this.canAssess && [
+                constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+            ].includes(this.proposal.processing_status_id)
         },
         debug: function () {
             return (this.$route.query.debug && this.$route.query.debug == 'true') ? true : false
