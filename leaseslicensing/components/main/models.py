@@ -312,24 +312,17 @@ class CommunicationsLogEntry(models.Model):
     ]
     DEFAULT_TYPE = TYPE_CHOICES[0][0]
 
-    # to = models.CharField(max_length=200, blank=True, verbose_name="To")
     to = models.TextField(blank=True, verbose_name="To")
     fromm = models.CharField(max_length=200, blank=True, verbose_name="From")
-    # cc = models.CharField(max_length=200, blank=True, verbose_name="cc")
     cc = models.TextField(blank=True, verbose_name="cc")
-
     type = models.CharField(max_length=35, choices=TYPE_CHOICES, default=DEFAULT_TYPE)
     reference = models.CharField(max_length=100, blank=True)
     subject = models.CharField(
         max_length=200, blank=True, verbose_name="Subject / Description"
     )
     text = models.TextField(blank=True)
-
-    # customer = models.ForeignKey(EmailUser, null=True, related_name='+', on_delete=models.SET_NULL)
     customer = models.IntegerField(null=True)  # EmailUserRO
-    # staff = models.ForeignKey(EmailUser, null=True, related_name='+', on_delete=models.SET_NULL)
     staff = models.IntegerField()  # EmailUserRO
-
     created = models.DateTimeField(auto_now_add=True, null=False, blank=False)
 
     class Meta:

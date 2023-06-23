@@ -29,6 +29,7 @@ from leaseslicensing.components.main.serializers import EmailUserSerializer
 from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestDTSerializer,
 )
+from leaseslicensing.components.proposals.models import Referral
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.components.users.serializers import (
     ContactSerializer,
@@ -200,39 +201,78 @@ class UserViewSet(UserActionLoggingViewset):
         detail=False,
     )
     @basic_exception_handler
-    def get_department_users(self, request, *args, **kwargs):
+    def get_referees(self, request, *args, **kwargs):
         search_term = request.GET.get("term", "")
 
+        # Todo: Filter out referees that are already assigned to the application
+        # proposal_id = request.GET.get("proposal_id", "")
+
         # Allow for search of first name, last name and concatenation of both
-        data = (
-            EmailUser.objects.annotate(
-                full_name=Concat("first_name", Value(" "), "last_name")
-            )
-            .filter(is_staff=True)
-            .filter(
-                Q(first_name__icontains=search_term)
-                | Q(last_name__icontains=search_term)
-                | Q(full_name__icontains=search_term)
-            )
-            .values("email", "first_name", "last_name")[:10]
+        department_users = EmailUser.objects.annotate(
+            search_term=Concat(
+                "first_name",
+                Value(" "),
+                "last_name",
+                Value(" "),
+                "email",
+                output_field=CharField(),
+            )).filter(is_staff=True)
+
+        department_users = department_users.filter(search_term__icontains=search_term).values(
+            "id", "email", "first_name", "last_name"
+        )[:10]
+        external_referee_ids = list(
+            Referral.objects.filter(is_external=True).values_list('referral', flat=True)
         )
-        data_transform = [
-            {
+        external_referees = EmailUser.objects.filter(id__in=external_referee_ids).annotate(
+            search_term=Concat(
+                "first_name",
+                Value(" "),
+                "last_name",
+                Value(" "),
+                "email",
+                output_field=CharField(),
+            )
+        )
+        external_referees = external_referees.filter(search_term__icontains=search_term).values(
+            "id", "email", "first_name", "last_name"
+        )[:10]
+
+        internal = {
+            "text": "Internal",
+            "children": [{
                 "id": person["email"],
-                "text": f"{person['first_name']} {person['last_name']}",
+                "text": f"{person['first_name']} {person['last_name']} ({person['email']})",
             }
-            for person in data
+                for person in department_users
+            ]
+        }
+        external = {
+            "text": "External ",
+            "children": [{
+                    "id": person["email"],
+                    "text": f"{person['first_name']} {person['last_name']} ({person['email']})",
+            }
+                for person in external_referees
+            ]
+        }
+
+        data_transform = [
         ]
+        if department_users.exists():
+            data_transform.append(internal)
+        if external_referees.exists():
+            data_transform.append(external)
 
         return Response({"results": data_transform})
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def update_personal(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = PersonalSerializer(instance, data=request.data)
@@ -241,13 +281,13 @@ class UserViewSet(UserActionLoggingViewset):
         serializer = UserSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def update_contact(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = ContactSerializer(instance, data=request.data)
@@ -256,13 +296,13 @@ class UserViewSet(UserActionLoggingViewset):
         serializer = UserSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def update_address(self, request, *args, **kwargs):
         instance = self.get_object()
         # residential address
@@ -302,13 +342,13 @@ class UserViewSet(UserActionLoggingViewset):
         serializer = UserSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def update_system_settings(self, request, *args, **kwargs):
         instance = self.get_object()
         user_setting, created = UserSystemSettings.objects.get_or_create(user=instance)
@@ -319,13 +359,13 @@ class UserViewSet(UserActionLoggingViewset):
         serializer = UserSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def pending_org_requests(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = OrganisationRequestDTSerializer(
@@ -335,40 +375,40 @@ class UserViewSet(UserActionLoggingViewset):
         )
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def action_log(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = EmailUserAction.objects.filter(email_user=instance.id)
         serializer = EmailUserActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = EmailUserLogEntry.objects.filter(email_user=instance.id)
         serializer = EmailUserLogEntrySerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @renderer_classes((JSONRenderer,))
-    @basic_exception_handler
+    @ renderer_classes((JSONRenderer,))
+    @ basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
         logger.debug("add_comms_log")
         with transaction.atomic():

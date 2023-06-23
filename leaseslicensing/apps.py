@@ -22,6 +22,7 @@ class LeasesLicensingConfig(AppConfig):
             from leaseslicensing.components.main.models import ApplicationType
             from leaseslicensing.components.organisations import signals  # noqa
             from leaseslicensing.components.proposals import signals  # noqa
+            from leaseslicensing.components.users import signals  # noqa
             from leaseslicensing.components.proposals.models import (
                 AdditionalDocumentType,
                 ApplicationFeeDiscount,

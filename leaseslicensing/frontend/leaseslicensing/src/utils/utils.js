@@ -1,23 +1,23 @@
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, helpers } from '@/utils/hooks';
 
 export default {
     fetchCountries: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.countries)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
         });
     },
     fetchRequestUserID: function () {
@@ -27,15 +27,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("account: ", data)
+                    resolve(data);
+                    console.log('account: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -46,15 +46,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("account: ", data)
+                    resolve(data);
+                    console.log('account: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -65,15 +65,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("account: ", data)
+                    resolve(data);
+                    console.log('account: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -81,52 +81,52 @@ export default {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    console.log('organisations: ', data)
-                    resolve(data)
+                    console.log('organisations: ', data);
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
         });
     },
     fetchOrganisation: function (id) {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations + id + '/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    console.log('organisation: ', data)
-                    resolve(data)
+                    console.log('organisation: ', data);
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
         });
     },
     fetchOrganisationAddress: function (id) {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations + id + '/get_org_address/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
                     let formatted_data = {};
                     formatted_data = {
@@ -144,13 +144,13 @@ export default {
                             billing_postcode: data.billing_address.postcode,
                             billing_country: data.billing_address.country,
                         }
-                    }
-                    resolve(data)
+                    };
+                    resolve(formatted_data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
         });
     },
     fetchOrganisationRequests: function () {
@@ -160,15 +160,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("organisation requests: ", data)
+                    resolve(data);
+                    console.log('organisation requests: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -179,15 +179,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("organisation permissions: ", data)
+                    resolve(data);
+                    console.log('organisation permissions: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -198,15 +198,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("LGA key value list: ", data)
+                    resolve(data);
+                    console.log('LGA key value list: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -217,15 +217,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("Districts list: ", data)
+                    resolve(data);
+                    console.log('Districts list: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -236,15 +236,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("Groups key value list: ", data)
+                    resolve(data);
+                    console.log('Groups key value list: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -255,15 +255,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("Approval type: ", data)
+                    resolve(data);
+                    console.log('Approval type: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -274,15 +274,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("Identifiers select2 list: ", data)
+                    resolve(data);
+                    console.log('Identifiers select2 list: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -293,15 +293,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("Acts key value list: ", data)
+                    resolve(data);
+                    console.log('Acts key value list: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -312,15 +312,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
-                    console.log("Vestings key value list: ", data)
+                    resolve(data);
+                    console.log('Vestings key value list: ', data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     },
@@ -328,20 +328,20 @@ export default {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.invoices + `${invoice_id}/transactions/`)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    console.log('transactions: ', data)
-                    resolve(data)
+                    console.log('transactions: ', data);
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
         });
     },
     /**
@@ -356,15 +356,15 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = (data && data.message) || response.statusText;
-                        console.log(error)
+                        console.log(error);
                         reject(error);
                     }
-                    resolve(data)
+                    resolve(data);
                 })
                 .catch(error => {
-                    console.error("There was an error!", error);
-                    reject(error)
+                    console.error('There was an error!', error);
+                    reject(error);
                 });
         });
     }
-}
+};

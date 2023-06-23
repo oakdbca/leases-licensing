@@ -2,7 +2,7 @@
     <div>
         <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
             class="mb-2">
-            <div class="row">
+            <div class="row mt-1 p-2">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Type</label>
@@ -246,18 +246,28 @@ export default {
                 name: "due_date",
             }
         },
-        statusColumn: function () {
+        processingStatusColumn: function () {
+            let vm = this;
             return {
-                // 6. Status
-                data: "id",
+                data: "processing_status",
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
-                    return full.processing_status
-                    //return full.id;
+                render: function (row, type, full) {
+                    return vm.getStatusHtml(full.processing_status)
                 },
-                name: "processing_status"
+            }
+        },
+        customerStatusColumn: function () {
+            let vm = this;
+            return {
+                data: "customer_status",
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return vm.getStatusHtml(full.customer_status)
+                },
             }
         },
         actionColumn: function () {
@@ -306,14 +316,13 @@ export default {
                 }
             }
         },
-
         applicableColumns: function () {
             let columns = [
                 this.lodgementNumberColumn, // Number
                 this.applicationTypeColumn, // Type
                 this.holderColumn, // Holder
                 this.licenceNumberColumn, // Approval
-                this.statusColumn, // Status
+                this.customerStatusColumn, // Status
                 this.dueDateColumn, // Due Date
                 this.actionColumn, //Action
             ]
@@ -322,7 +331,7 @@ export default {
                     this.lodgementNumberColumn,
                     this.applicationTypeColumn,
                     this.licenceNumberColumn,
-                    this.statusColumn,
+                    this.processingStatusColumn,
                     this.dueDateColumn,
                     this.actionColumn,
                 ]
@@ -333,7 +342,7 @@ export default {
                     this.applicationTypeColumn,
                     this.holderColumn,
                     this.licenceNumberColumn,
-                    this.statusColumn,
+                    this.processingStatusColumn,
                     this.dueDateColumn,
                     this.assignedToNameColumn,
                     this.actionColumn,
@@ -409,6 +418,37 @@ export default {
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded
         },
+        getStatusHtml: function (status) {
+            let class_name = '';
+            let icon = '';
+
+            if ('Future' == status) {
+                class_name = 'info';
+                icon = 'calendar-plus';
+            }
+            if ('Due Soon' == status) {
+                class_name = 'warning';
+                icon = 'clock';
+            }
+            if ('Overdue' == status) {
+                class_name = 'danger';
+                icon = 'exclamation-circle';
+            }
+            if ('With Assessor' == status) {
+                class_name = 'primary';
+                icon = 'clipboard';
+            }
+            if ('Under Review' == status) {
+                class_name = 'secondary';
+                icon = 'clipboard';
+            }
+            if ('Approved' == status) {
+                class_name = 'success';
+                icon = 'check';
+            }
+            return `<span class="badge bg-${class_name} py-2"><i class="fa fa-${icon}" aria-hidden="true"></i> ${status}</span>`
+
+        },
         fetchFilterLists: function () {
             let vm = this;
 
@@ -450,7 +490,28 @@ export default {
         },
     },
     created: function () {
-        this.fetchFilterLists()
+        this.fetchFilterLists();
+        $.fn.pulse = function (options) {
+            var options = $.extend({
+                times: 3,
+                duration: 1000
+            }, options);
+
+            var period = function (callback) {
+                $(this).animate({ opacity: 0 }, options.duration, function () {
+                    $(this).animate({ opacity: 1 }, options.duration, callback);
+                });
+            };
+            return this.each(function () {
+                var i = +options.times, self = this,
+                    repeat = function () { --i && period.call(self, repeat) };
+                period.call(this, repeat);
+            });
+        };
+        $('.pulsate').each(function (element) {
+            $(element).pulse({ times: 6, duration: 1000 });
+        });
     },
 }
 </script>
+

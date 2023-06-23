@@ -10,6 +10,7 @@ from leaseslicensing.components.main.models import (
 )
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
+from leaseslicensing.components.proposals.models import Referral
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.helpers import in_dbca_domain, is_leaseslicensing_admin
 
@@ -98,6 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     is_department_user = serializers.SerializerMethodField()
     is_leaseslicensing_admin = serializers.SerializerMethodField()
+    is_referee = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailUser
@@ -117,6 +119,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_department_user",
             "is_staff",
             "is_leaseslicensing_admin",
+            "is_referee",
         )
 
     def get_personal_details(self, obj):
@@ -150,6 +153,9 @@ class UserSerializer(serializers.ModelSerializer):
         if request:
             return is_leaseslicensing_admin(request)
         return False
+
+    def get_is_referee(self, obj):
+        return Referral.objects.filter(referral=obj.id).exists()
 
 
 class PersonalSerializer(serializers.ModelSerializer):

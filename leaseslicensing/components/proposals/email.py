@@ -7,6 +7,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.encoding import smart_text
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
@@ -17,67 +18,11 @@ logger = logging.getLogger(__name__)
 
 SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
-# class ReferralSendNotificationEmail(TemplateEmailBase):
-#    subject = 'A referral for an application has been sent to you.'
-#    html_template = 'leaseslicensing/emails/proposals/send_referral_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_referral_notification.txt'
-
-
-# class ReferralCompleteNotificationEmail(TemplateEmailBase):
-#    subject = 'A referral for an application has been completed.'
-#    html_template = 'leaseslicensing/emails/proposals/send_referral_complete_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_referral_complete_notification.txt'
-
-# class ProposalDeclineSendNotificationEmail(TemplateEmailBase):
-#    subject = 'Your Application has been declined.'
-#    html_template = 'leaseslicensing/emails/proposals/send_decline_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_decline_notification.txt'
-
-# class ProposalApprovalSendNotificationEmail(TemplateEmailBase):
-#    subject = '{} - Commercial Operations Licence Approved.'.format(settings.DEP_NAME)
-#    html_template = 'leaseslicensing/emails/proposals/send_approval_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_approval_notification.txt'
-
-# class ProposalAwaitingPaymentApprovalSendNotificationEmail(TemplateEmailBase):
-#    subject = '{} - Commercial Filming Application - Pending Payment.'.format(settings.DEP_NAME)
-#    html_template = 'leaseslicensing/emails/proposals/send_awaiting_payment_approval_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_awaiting_payment_approval_notification.txt'
-
-# class AmendmentRequestSendNotificationEmail(TemplateEmailBase):
-#    subject = '{} - Commercial Operations Incomplete application.'.format(settings.DEP_NAME)
-#    html_template = 'leaseslicensing/emails/proposals/send_amendment_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_amendment_notification.txt'
-
-# class SubmitSendNotificationEmail(TemplateEmailBase):
-#    subject = 'A new Application has been submitted.'
-#    html_template = 'leaseslicensing/emails/proposals/send_submit_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_submit_notification.txt'
-
-# class ExternalSubmitSendNotificationEmail(TemplateEmailBase):
-#    subject = '{} - Confirmation - Application submitted.'.format(settings.DEP_NAME)
-#    html_template = 'leaseslicensing/emails/proposals/send_external_submit_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_external_submit_notification.txt'
-
-# class ApproverDeclineSendNotificationEmail(TemplateEmailBase):
-#    subject = 'A {} has been recommended for decline.'.format(application_type)
-#    html_template = 'leaseslicensing/emails/proposals/send_approver_decline_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_approver_decline_notification.txt'
-
-# class ApproverApproveSendNotificationEmail(TemplateEmailBase):
-#    subject = 'A {} has been recommended for approval.'.format(application_type)
-#    html_template = 'leaseslicensing/emails/proposals/send_approver_approve_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_approver_approve_notification.txt'
-
-# class ApproverSendBackNotificationEmail(TemplateEmailBase):
-#    subject = 'An Application has been sent back by approver.'
-#    html_template = 'leaseslicensing/emails/proposals/send_approver_sendback_notification.html'
-#    txt_template = 'leaseslicensing/emails/proposals/send_approver_sendback_notification.txt'
-
 
 def send_referral_email_notification(referral, recipients, request, reminder=False):
     application_type = referral.proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject=f"A referral for a {application_type} has been sent to you.",
+        subject=f"Referral Request for DBCA {application_type} Application: {referral.proposal.lodgement_number}",
         html_template="leaseslicensing/emails/proposals/send_referral_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_notification.txt",
     )
@@ -93,13 +38,9 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
         "url": url,
         "reminder": reminder,
         "comments": referral.text,
-        # 'proposed_start_date': proposed_start_date,
         "proposed_start_date": "",
     }
 
-    # msg = email.send(referral.referral.email, context=context)
-    # recipients = list(ReferralRecipientGroup.objects.get(name=referral.email_group)
-    # .members.all().values_list('email', flat=True))
     msg = email.send(recipients, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, referral.proposal, sender=sender)
@@ -117,20 +58,22 @@ def send_referral_complete_email_notification(referral, request):
     sent_by = retrieve_email_user(referral.sent_by)
 
     application_type = referral.proposal.application_type.name_display
+    email_user = retrieve_email_user(referral.referral)
+
     email = TemplateEmailBase(
-        subject=f"A referral for a {application_type} has been completed.",
+        subject=f"{email_user.get_full_name()} has Completed Referral for {application_type} Application {referral.proposal.lodgement_number}",
         html_template="leaseslicensing/emails/proposals/send_referral_complete_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_complete_notification.txt",
     )
-    # email = ReferralCompleteNotificationEmail()
+
     email.subject = sent_by.email + ": " + email.subject
     url = request.build_absolute_uri(
         reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
     )
 
-    email_user = retrieve_email_user(referral.referral)
     context = {
-        "completed_by": f"{email_user.first_name} {email_user.last_name}",
+        "completed_by": email_user.get_full_name(),
+        "application_type": application_type,
         "proposal": referral.proposal,
         "url": url,
         "referral_comments": referral.referral_text,
@@ -138,13 +81,14 @@ def send_referral_complete_email_notification(referral, request):
     attachments = []
     if referral.document:
         file_name = referral.document._file.name
-        # attachment = (file_name, doc._file.file.read(), 'image/*')
         attachment = (file_name, referral.document._file.file.read())
         attachments.append(attachment)
 
     msg = email.send(sent_by.email, attachments=attachments, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
     _log_proposal_email(msg, referral.proposal, sender=sender)
+
     if referral.proposal.org_applicant:
         _log_org_email(
             msg, referral.proposal.org_applicant, referral.referral, sender=sender
@@ -153,6 +97,36 @@ def send_referral_complete_email_notification(referral, request):
         _log_user_email(
             msg, referral.proposal.ind_applicant, referral.referral, sender=sender
         )
+
+
+def send_pending_referrals_complete_email_notification(referral, request):
+    proposal = referral.proposal
+    application_type = proposal.application_type.name_display
+    email = TemplateEmailBase(
+        subject=f"All pending referrals for {application_type} Application: {proposal.lodgement_number} have been completed.",
+        html_template="leaseslicensing/emails/proposals/send_pending_referrals_complete_notification.html",
+        txt_template="leaseslicensing/emails/proposals/send_pending_referrals_complete_notification.txt",
+    )
+
+    url = request.build_absolute_uri(
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
+    )
+
+    context = {
+        "referral": referral,
+        "proposal": referral.proposal,
+        "url": url,
+    }
+    recipients = proposal.assessor_recipients
+    if referral.sent_from == 2:
+        # Referral was requested by approver group
+        recipients = proposal.approver_recipients
+
+    msg = email.send(recipients, context=context)
+
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
+    _log_proposal_email(msg, proposal, sender=sender)
 
 
 def send_amendment_email_notification(amendment_request, request, proposal):
@@ -567,6 +541,35 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
 #    email_entry = ProposalLogEntry.objects.create(**kwargs)
 #
 #    return email_entry
+
+
+def send_external_referee_invite_email(proposal, request, external_referee_invite, reminder=False):
+    subject = f"Referral Request for DBCA {proposal.application_type.name_display} Application: {proposal.lodgement_number}"
+    if reminder:
+        subject = f"Reminder: {subject}"
+    email = TemplateEmailBase(
+        subject=subject,
+        html_template="leaseslicensing/emails/proposals/send_external_referee_invite.html",
+        txt_template="leaseslicensing/emails/proposals/send_external_referee_invite.txt",
+    )
+
+    url = request.build_absolute_uri(reverse("external"))
+    context = {
+        "external_referee_invite": external_referee_invite,
+        "proposal": proposal,
+        "url": url,
+        "reminder": reminder,
+    }
+
+    msg = email.send(
+        external_referee_invite.email,
+        context=context,
+    )
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+    _log_proposal_email(msg, proposal, sender=sender)
+
+    external_referee_invite.datetime_sent = timezone.now()
+    external_referee_invite.save()
 
 
 def _log_proposal_email(

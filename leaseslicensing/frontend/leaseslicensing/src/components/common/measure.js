@@ -1,5 +1,5 @@
-import { Circle as CircleStyle, Fill, Stroke, Style, Text, RegularShape } from 'ol/style';
-import { getArea, getLength } from 'ol/sphere'
+import { Fill, Stroke, Style, Text, RegularShape } from 'ol/style';
+import { getLength } from 'ol/sphere';
 
 let MeasureStyles = {
     'defaultStyle': new Style({
@@ -12,15 +12,6 @@ let MeasureStyles = {
             //lineDash: [10, 10],
             width: 1,
         }),
-        //image: new CircleStyle({
-        //    radius: 5,
-        //    stroke: new Stroke({
-        //        color: 'rgba(0, 0, 0, 0.7)',
-        //    }),
-        //    fill: new Fill({
-        //        color: 'rgba(255, 255, 255, 0.2)',
-        //    }),
-        //}),
         image: new RegularShape({
             stroke: new Stroke({
                 color: 'red',
@@ -78,10 +69,10 @@ let MeasureStyles = {
             }),
         }),
     }),
-}
+};
 export function formatLength(line) {
-    let cloned_line = line.clone()
-    cloned_line.transform('EPSG:4326', 'EPSG:3857')
+    let cloned_line = line.clone();
+    cloned_line.transform('EPSG:4326', 'EPSG:3857');
     const length = getLength(cloned_line);
     let output;
     if (length > 100) {
@@ -92,5 +83,5 @@ export function formatLength(line) {
     return output;
 }
 
-export default MeasureStyles
+export default MeasureStyles;
 

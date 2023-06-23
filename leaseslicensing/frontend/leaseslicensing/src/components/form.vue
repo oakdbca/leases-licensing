@@ -44,20 +44,11 @@
                 </div>
                 <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
                     <FormSection :formCollapse="false" label="Map" Index="proposal_geometry">
-                        <slot name="slot_map_checklist_questions"></slot>
-                        <MapComponent
-                            ref="component_map"
-                            :key="componentMapKey"
-                            :context="proposal"
-                            :proposalIds="[proposal.id]"
-                            :owsQuery="owsQuery"
-                            styleBy="assessor"
-                            :filterable="false"
-                            :drawable="true"
-                            :selectable="true"
-                            level="internal"
-                            @validate-feature="validateFeature.bind(this)()"
-                        />
+                        <slot name="slot_map_assessment_comments"></slot>
+                        <MapComponent ref="component_map" :key="componentMapKey" :context="proposal"
+                            :proposalIds="[proposal.id]" :owsQuery="owsQuery" styleBy="assessor" :filterable="false"
+                            :drawable="true" :selectable="true" level="internal"
+                            @validate-feature="validateFeature.bind(this)()" />
 
                     </FormSection>
                 </div>
@@ -65,21 +56,28 @@
                     aria-labelledby="pills-details-tab">
                     <RegistrationOfInterest :proposal="proposal" :readonly="readonly" ref="registration_of_interest"
                         v-if="registrationOfInterest">
-                        <template v-slot:slot_proposal_details_checklist_questions>
-                            <slot name="slot_proposal_details_checklist_questions"></slot>
+                        <template v-slot:slot_proposal_details_assessment_comments>
+                            <slot name="slot_proposal_details_assessment_comments"></slot>
                         </template>
 
-                        <template v-slot:slot_proposal_impact_checklist_questions>
-                            <slot name="slot_proposal_impact_checklist_questions"></slot>
+                        <template v-slot:slot_proposal_impact_assessment_comments>
+                            <slot name="slot_proposal_impact_assessment_comments"></slot>
                         </template>
                     </RegistrationOfInterest>
 
                     <LeaseLicence :proposal="proposal" :is_internal="is_internal" :readonly="readonly" ref="lease_licence"
                         v-if="leaseLicence">
+                        <template v-slot:slot_proposal_tourism_details_assessment_comments>
+                            <slot name="slot_proposal_tourism_details_assessment_comments"></slot>
+                        </template>
+
+                        <template v-slot:slot_proposal_general_details_assessment_comments>
+                            <slot name="slot_proposal_general_details_assessment_comments"></slot>
+                        </template>
                     </LeaseLicence>
 
                     <FormSection label="Geospatial Data" Index="other_section">
-                        <slot name="slot_other_checklist_questions"></slot>
+                        <slot name="slot_other_assessment_comments"></slot>
 
                         <div class="row mb-3">
                             <div class="col-sm-3">
@@ -214,7 +212,7 @@
                     </FormSection>
 
                     <FormSection label="Deed Poll" Index="deed_poll">
-                        <slot name="slot_deed_poll_checklist_questions"></slot>
+                        <slot name="slot_deed_poll_assessment_comments"></slot>
                         <div class="col-sm-12 section-style">
                             <p>
                                 <strong>It is a requirement of all lease and licence holders to sign a deed poll to
@@ -237,7 +235,7 @@
 
                     <template v-if="show_additional_documents_tab">
                         <FormSection label="Additional Documents" Index="additional_documents">
-                            <slot name="slot_additional_documents_checklist_questions"></slot>
+                            <slot name="slot_additional_documents_assessment_comments"></slot>
                         </FormSection>
                     </template>
                 </div>

@@ -32,9 +32,9 @@
                                     <li v-for="(linkedOrganisation, index) in linkedOrganisations" class="list-group-item">
                                         <input class="form-check-input me-1" type="radio" name="behalf_of_org"
                                             :value="linkedOrganisation" v-model="selectedOrganisation"
-                                            :aria-label="linkedOrganisation.trading_name">
-                                        <label :for="linkedOrganisation.trading_name">{{
-                                            linkedOrganisation.trading_name }}</label>
+                                            :aria-label="linkedOrganisation.ledger_organisation_name">
+                                        <label :for="linkedOrganisation.ledger_organisation_name">{{
+                                            linkedOrganisation.ledger_organisation_name }}</label>
                                     </li>
                                 </template>
                                 <BootstrapSpinner v-if="loadingOrganisations" class="text-primary" :centerOfScreen="false"
@@ -77,7 +77,6 @@ import {
     helpers
 }
     from '@/utils/hooks'
-import utils from './utils'
 export default {
     data: function () {
         let vm = this;
@@ -209,9 +208,6 @@ export default {
         this.fetchLinkedOrganisations();
         this.applicationsLoading = false;
     },
-    mounted: function () {
-
-    }
 }
 </script>
 
@@ -224,16 +220,6 @@ select {
     min-height: 34px;
     padding: 0;
     height: auto;
-}
-
-.group-box {
-    border-style: solid;
-    border-width: thin;
-    border-color: #FFFFFF;
-}
-
-.radio-buttons {
-    padding: 5px;
 }
 
 button.continue {

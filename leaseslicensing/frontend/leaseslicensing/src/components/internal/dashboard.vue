@@ -26,7 +26,7 @@
                         filterProposalLodgedFrom_cache_name="filterApplicationLodgedFrom"
                         filterProposalLodgedTo_cache_name="filterApplicationLodgedTo" />
                 </FormSection>
-                <FormSection :formCollapse="false" label="Applications referred to me" Index="leases_and_licences">
+                <FormSection :formCollapse="false" label="Applications Referred to Me" Index="leases_and_licences">
                     <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" v-if="accessing_user"
                         level="internal" :email_user_id_assigned="accessing_user.id"
                         filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
@@ -78,7 +78,8 @@ export default {
         ApplicationsTable,
         ApplicationsReferredToMeTable,
         CompetitiveProcessesTable,
-        MapComponent,    },
+        MapComponent,
+    },
     computed: {
         is_debug: function () {
             return this.$route.query.hasOwnProperty('debug') && this.$route.query.debug == 'true' ? true : false

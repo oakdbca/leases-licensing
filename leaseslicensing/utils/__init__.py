@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from leaseslicensing.components.proposals.models import (
     Proposal,
@@ -8,6 +10,9 @@ from leaseslicensing.components.proposals.models import (
 from collections import OrderedDict
 from copy import deepcopy
 import sys
+
+
+logger = logging.getLogger(__name__)
 
 
 def are_migrations_running():
@@ -216,7 +221,7 @@ def create_helppage_object(
     try:
         application_type_id = ApplicationType.objects.get(name=application_type).id
     except Exception as e:
-        print("application type: {} does not exist, maybe!".format(application_type, e))
+        logger.exception("application type: {} does not exist, maybe!".format(application_type, e))
 
     try:
         help_page = HelpPage.objects.filter(
@@ -231,7 +236,7 @@ def create_helppage_object(
             "version"
         )
     except Exception as e:
-        print("proposal type: {} does not exist, maybe!".format(application_type, e))
+        logger.exception("proposal type: {} does not exist, maybe!".format(application_type, e))
     help_text = (
         "help_text_url"
         if help_type == HelpPage.HELP_TEXT_EXTERNAL
@@ -307,7 +312,7 @@ def search_keys(dictionary, search_list=["help_text", "label"]):
                             {search_item2: j[key_label], search_item1: i[key]}
                         )
         except Exception as e:
-            print(e)
+            logger.exception(e)
 
     return help_list
 
@@ -389,7 +394,7 @@ def search_multiple_keys(
                 #  help_list.append( {primary_search: tmp_dict} )
 
         except Exception as e:
-            print(e)
+            logger.exception(e)
 
     return help_list
 

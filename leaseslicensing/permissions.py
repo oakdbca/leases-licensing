@@ -2,7 +2,7 @@ import logging
 
 from rest_framework.permissions import BasePermission
 
-from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.helpers import is_customer, is_internal, is_assessor, is_approver
 
 logger = logging.getLogger(__name__)
 
@@ -33,3 +33,20 @@ class IsInternalOrHasObjectDocumentsPermission(BasePermission):
             return obj.user_has_object_permission(request.user.id)
 
         return False
+
+
+class IsAssessorOrReferrer(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        if request.user.is_superuser:
+            return True
+
+        if not is_internal(request):
+            return False
+
+        return is_assessor(request) or is_approver(request)

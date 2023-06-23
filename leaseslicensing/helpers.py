@@ -56,6 +56,15 @@ def is_finance_officer(request):
     return belongs_to(request, settings.GROUP_FINANCE)
 
 
+def is_referee(request, proposal=None):
+    from leaseslicensing.components.proposals.models import Referral
+    qs = Referral.objects.filter(referral=request.user.id)
+    if proposal:
+        qs = qs.filter(proposal=proposal)
+
+    return qs.exists()
+
+
 def in_dbca_domain(request):
     return request.user.is_staff
 
