@@ -2,10 +2,20 @@
     <FormSection :formCollapse="false" label="Details" index="details">
         <form>
             <div class="row mb-2">
-                <label for="trading_name" class="col-md-2 col-form-label">Trading
+                <label for="ledger_organisation_name" class="col-md-2 col-form-label">Organisation
                     Name</label>
                 <div class="col-md-6">
-                    <input type="text" class="form-control" id="trading_name" v-model="org.trading_name" disabled>
+                    <input type="text" class="form-control" id="ledger_organisation_name"
+                        v-model="org.ledger_organisation_name" disabled>
+                </div>
+            </div>
+            <div v-if="org.ledger_organisation_trading_name && org.ledger_organisation_trading_name != org.ledger_organisation_name"
+                class="row mb-2">
+                <label for="ledger_organisation_trading_name" class="col-md-2 col-form-label">Trading
+                    Name</label>
+                <div class="col-md-6">
+                    <input type="text" class="form-control" id="ledger_organisation_trading_name"
+                        v-model="org.ledger_organisation_trading_name" disabled>
                 </div>
             </div>
             <div class="row mb-2">
