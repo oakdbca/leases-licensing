@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import F
 from django.forms import ValidationError
 from django.http import FileResponse, Http404
-from rest_framework import views, viewsets
+from rest_framework import views, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
@@ -188,6 +188,13 @@ class NoPaginationListMixin:
         return Response(serializer.data)
 
 
+class LicensingViewset(viewsets.ModelViewSet):
+    http_method_names = ["head", "get", "post", "put", "patch"]
+
+    def destroy(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+
 class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet, KeyValueListMixin):
     queryset = ApplicationType.objects.all()
     serializer_class = ApplicationTypeSerializer
@@ -195,7 +202,7 @@ class ApplicationTypeViewSet(viewsets.ReadOnlyModelViewSet, KeyValueListMixin):
     key_value_serializer_class = ApplicationTypeKeyValueSerializer
 
 
-class UserActionLoggingViewset(viewsets.ModelViewSet):
+class UserActionLoggingViewset(LicensingViewset):
     """Class that extends the ModelViewSet to log the common user actions
 
     will scan the instance provided for the fields listed in settings
