@@ -73,8 +73,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template v-for="referral in proposal.referrals">
-                                            <div v-if="profile.is_staff || referral.referral == profile.id"
+                                        <template v-for="referral in  proposal.referrals ">
+                                            <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT && profile.is_staff || referral.referral == profile.id"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
                                                     <div class="form-floating">
@@ -82,9 +82,9 @@
                                                             :id="'comment_map_' + referral.id"
                                                             :disabled="referral.referral !== profile.id"
                                                             v-model="referral.comment_map" />
-                                                        <label :for="'comment_map_' + referral.id">Referral Comment by <span
-                                                                class="fw-bold">{{
-                                                                    referral.referral_obj.fullname }}</span></label>
+                                                        <label :for="'comment_map_' + referral.id">Referral Comment by
+                                                            <span class="fw-bold">{{
+                                                                referral.referral_obj.fullname }}</span></label>
                                                     </div>
                                                 </div>
                                             </div>
@@ -121,7 +121,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template v-for="referral in proposal.referrals">
+                                        <template v-for=" referral  in  proposal.referrals ">
                                             <div v-if="profile.is_staff || referral.referral == profile.id"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
@@ -170,7 +170,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template v-for="referral in proposal.referrals">
+                                        <template v-for=" referral  in  proposal.referrals ">
                                             <div v-if="profile.is_staff || referral.referral == profile.id"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
@@ -215,7 +215,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template v-for="referral in proposal.referrals">
+                                        <template v-for=" referral  in  proposal.referrals ">
                                             <div v-if="referral.referral_text || referral.referral == profile.id"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
@@ -260,7 +260,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template v-for="referral in proposal.referrals">
+                                        <template v-for=" referral  in  proposal.referrals ">
                                             <div v-if="referral.referral_text || referral.referral == profile.id"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
@@ -309,7 +309,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template v-for="referral in proposal.referrals">
+                                        <template v-for=" referral  in  proposal.referrals ">
                                             <div v-if="referral.referral_text || referral.referral == profile.id"
                                                 class="row mb-3 mt-3" :key="referral.id">
                                                 <div class="col">
@@ -409,6 +409,7 @@ export default {
     data: function () {
         let vm = this;
         return {
+            constants: constants,
             profile: null,
             detailsBody: 'detailsBody' + vm._.uid,
             addressBody: 'addressBody' + vm._.uid,
