@@ -70,7 +70,9 @@ export function addOptionalLayers(map_component) {
                     $('#legend_title').text(this.values_.title);
                 } else if (e.oldValue == true) {
                     $('#legend_title').text('');
-                    $('#legend').find('img').attr('src', '');
+                    $('#legend').find('img').attr('src', "")
+                    // Hide any overlays when the optional layer is turned off
+                    map_component.overlay(undefined);
                 } else {
                     console.error('Cannot assess tile layer visibility change.');
                 }

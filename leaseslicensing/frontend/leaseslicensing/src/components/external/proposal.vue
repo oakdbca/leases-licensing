@@ -318,6 +318,30 @@ export default {
                 payload.proposal.groups = this.proposal.groups;
             }
             payload.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
+            let deleted_features = this.$refs.application_form.$refs.component_map.deletedFeatures();
+            // Save right away if there are no deleted features, otherwise ask for confirmation
+            let commence_saving = deleted_features.length == 0 ? true : false;
+
+            let warning_text = `${deleted_features.length} ${deleted_features.length == 1 ? "feature" : "features"} will be deleted. Are you sure?`;
+            if (deleted_features.length > 0) {
+                await swal.fire({
+                    title: "Save Proposal",
+                    text: warning_text,
+                    icon: "warning",
+                    showCancelButton: true,
+                    confirmButtonText: 'Continue',
+                }).then(async result => {
+                    if (result.isConfirmed) {
+                        // When Yes
+                        commence_saving = true;
+                    }
+                })
+            }
+
+            if (!commence_saving) {
+                vm.savingProposal = false;
+                return;
+            }
 
             if (vm.submitting) {
                 // Provide an action to have the backend lock the geometry

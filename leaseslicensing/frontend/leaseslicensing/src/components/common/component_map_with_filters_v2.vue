@@ -2,7 +2,7 @@
     <!--
         TODO tasks (and ideas):
         - populate tenure, locality, and categorisation from geoserver response (see: map_functions::validateFeature for response values and owsQuery prop for query paramerters)
-        - prevent polygon delete after save (or save + status change)
+        - [DONE] prevent polygon delete after save (or save + status change)
         - polygon redo button
         - polygon edit button (move and add/remove vertices)
         - pass in map tab filterable proposals as prop (see: prop featureCollection)
@@ -12,8 +12,8 @@
         - prevent referrals from creating/editing polygons in the frontend (does not save in backend anyway)
         - disable draw tool for external when model is not in draft status
         - disable draw tool for referral when model is not in with referral status
-        - display polygons of approved application on new license application (external 017, internal 041)
-        - display polygons from the competitive process of an application that proceeded to a competitive process on the application page
+        - [] display polygons of approved application on new license application (external 017, internal 041)
+        - [] display polygons from the competitive process of an application that proceeded to a competitive process on the application page
         - implement map on approval details page and map tab
         - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
         - delete old map files
@@ -507,6 +507,7 @@ export default {
             set_mode: set_mode,
             _errorMessage: null,
             overlayFeatureInfo: {},
+            _deletedFeatures: [], // keep track of deleted features
         }
     },
     computed: {
@@ -595,6 +596,11 @@ export default {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            }
+        },
+        selectedFeatureIds: function () {
+            if (this.selectedFeatureIds.length == 0) {
+                this.errorMessage(null);
             }
         },
 
@@ -1008,6 +1014,7 @@ export default {
                     // FIXME: Can this be standardised into the same field name?
                     label: model.label || model.application_type_name_display || (model.application_type ? model.application_type.name_display : undefined) || "Draw",
                     color: color,
+                    locked: false,
                 })
                 vm.newFeatureId++;
                 console.log('newFeatureId = ' + vm.newFeatureId);
@@ -1236,13 +1243,25 @@ export default {
         },
         removeModelFeatures: function () {
             let vm = this;
+            let cannot_delete_features = []
             const features = vm.modelQuerySource.getFeatures().filter((feature) => {
                 if (vm.selectedFeatureIds.includes(feature.getProperties().id)) {
-                    return feature;
+                    if (feature.getProperties().locked === false) {
+                        return feature;
+                    } else {
+                        console.warn(`Cannot delete feature. ${feature.getProperties().id} is locked`);
+                        cannot_delete_features.push(feature.getProperties().id);
+                    }
                 }
             });
 
+            if (cannot_delete_features.length > 0) {
+                vm.errorMessage(null);
+                vm.errorMessage(`Cannot delete feature(s) ${cannot_delete_features.join(', ')} anymore.`);
+            }
+
             for (let feature of features) {
+                vm.deletedFeatures(feature);
                 vm.modelQuerySource.removeFeature(feature);
             }
             // Remove selected features (mapped by id) from `selectedFeatureIds`
@@ -1507,7 +1526,7 @@ export default {
             let vm = this;
             vm.queryingGeoserver = false;
             vm._errorMessage = null;
-            vm.drawForModel.finishDrawing()
+            vm.drawForModel.finishDrawing();
         },
         /**
          * Returns the current error message or sets it to the provided message.
@@ -1543,6 +1562,14 @@ export default {
             overlay.setPosition(coordinate)
 
             return overlay;
+        },
+        deletedFeatures: function (feature) {
+            let vm = this;
+            if (feature === undefined) {
+                return vm._deletedFeatures;
+            } else {
+                vm._deletedFeatures.push(feature);
+            }
         },
 
     },
