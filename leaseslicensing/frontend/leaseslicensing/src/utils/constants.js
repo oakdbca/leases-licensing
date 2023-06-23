@@ -4,8 +4,8 @@ module.exports = {
         LEASE_LICENCE: 'lease_licence',
     },
     ROLES: {
-        GROUP_NAME_ASSESSOR: { ID: 'proposal_assessor', TEXT: 'Proposal Assessor Group' },
-        GROUP_NAME_APPROVER: { ID: 'proposal_approver', TEXT: 'Proposal Approver Group' },
+        GROUP_NAME_ASSESSOR: { ID: 'proposal_assessor_group', TEXT: 'Proposal Assessor Group' },
+        GROUP_NAME_APPROVER: { ID: 'proposal_approver_group', TEXT: 'Proposal Approver Group' },
         COMPETITIVE_PROCESS_EDITOR: { ID: 'competitive_process_editor', TEXT: 'Competitive Process Editor' },
         FINANCE: { ID: 'finance', TEXT: 'Finance' },
         REFERRAL: { ID: 'referral', TEXT: 'Referral' },
