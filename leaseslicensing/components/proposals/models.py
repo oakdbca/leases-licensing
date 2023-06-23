@@ -1663,7 +1663,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def is_referee(self, user):
         """
-        Returns whether `user` is a referrer for this proposal
+        Returns whether `user` is a referee for this proposal
         """
 
         return self.processing_status in [
@@ -1677,7 +1677,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         """
 
         if self.is_referee(user):
-            # Get this proposal's referral where the requesting user is the referrer
+            # Get this proposal's referral where the requesting user is the referee
             try:
                 referral = Referral.objects.get(proposal=self, referral=user.id)
             except Referral.DoesNotExist:
