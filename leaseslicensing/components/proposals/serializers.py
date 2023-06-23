@@ -387,7 +387,9 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     documents_url = serializers.SerializerMethodField()
     proposal_type = ProposalTypeSerializer()
     application_type = ApplicationTypeSerializer()
-    # is_qa_officer = serializers.SerializerMethodField()
+    accessing_user_roles = (
+        serializers.SerializerMethodField()
+    )
     proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
     applicant = serializers.SerializerMethodField()
     lodgement_date_display = serializers.SerializerMethodField()
@@ -435,6 +437,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "reference",
             "lodgement_number",
             "can_officer_process",
+            "accessing_user_roles",
             # 'allowed_assessors',
             # 'is_qa_officer',
             # 'pending_amendment_request',
@@ -607,6 +610,23 @@ class BaseProposalSerializer(serializers.ModelSerializer):
 
     def get_customer_status(self, obj):
         return obj.get_processing_status_display()
+
+    def get_accessing_user_roles(self, proposal):
+        request = self.context.get("request")
+        accessing_user = request.user
+        roles = []
+
+        for choice in GROUP_NAME_CHOICES:
+            group = SystemGroup.objects.get(name=choice[0])
+            ids = group.get_system_group_member_ids()
+            if accessing_user.id in ids:
+                roles.append(group.name)
+
+        referral_ids = list(proposal.referrals.values_list("referral", flat=True))
+        if accessing_user.id in referral_ids:
+            roles.append("referral")
+
+        return roles
 
 
 class ListProposalMinimalSerializer(serializers.ModelSerializer):
@@ -1076,12 +1096,10 @@ class InternalProposalSerializer(BaseProposalSerializer):
 
     requirements_completed = serializers.SerializerMethodField()
     applicant_obj = serializers.SerializerMethodField()
-    accessing_user_roles = (
-        serializers.SerializerMethodField()
-    )  # Accessing user's roles for this proposal.
+
     approval_issue_date = (
         serializers.SerializerMethodField()
-    )  # Accessing user's roles for this proposal.
+    )
     invoicing_details = InvoicingDetailsSerializer()
     all_lodgement_versions = serializers.SerializerMethodField()
     approved_on = serializers.SerializerMethodField()
@@ -1180,7 +1198,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "key_milestones_text",
             "risk_factors_text",
             "legislative_requirements_text",
-            "accessing_user_roles",
             "approval_issue_date",
             "invoicing_details",
             "all_lodgement_versions",
@@ -1220,32 +1237,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "current_assessor",
         }
         read_only_fields = ("requirements",)
-
-    def get_accessing_user_roles(self, proposal):
-        request = self.context.get("request")
-        accessing_user = request.user
-        roles = []
-
-        for choice in GROUP_NAME_CHOICES:
-            group = SystemGroup.objects.get(name=choice[0])
-            ids = group.get_system_group_member_ids()
-            if accessing_user.id in ids:
-                roles.append(group.name)
-
-        # assessor_group = proposal.get_assessor_group()
-        # ids = assessor_group.get_system_group_member_ids()
-        # # if accessing_user.id in proposal.get_assessor_group().get_system_group_member_ids():
-        # if accessing_user.id in ids:
-        #     roles.append("assessor")
-        #
-        # if accessing_user.id in proposal.get_approver_group().get_system_group_member_ids():
-        #     roles.append("approver")
-
-        referral_ids = list(proposal.referrals.values_list("referral", flat=True))
-        if accessing_user.id in referral_ids:
-            roles.append("referral")
-
-        return roles
 
     def get_applicant_obj(self, obj):
         if isinstance(obj.applicant, Organisation):
