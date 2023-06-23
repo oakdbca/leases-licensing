@@ -1139,6 +1139,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "latest_referrals",
             "referrals",
             "allowed_assessors",
+            "accessing_user_roles",
             "proposed_issuance_approval",
             "proposed_decline_status",
             "proposaldeclineddetails",
