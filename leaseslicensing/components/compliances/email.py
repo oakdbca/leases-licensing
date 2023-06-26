@@ -256,23 +256,26 @@ def send_internal_reminder_email_notification(compliance, is_test=False):
 
 def send_due_email_notification(compliance, is_test=False):
     email = ComplianceDueNotificationEmail()
-    # url = request.build_absolute_uri(reverse('external-compliance-detail',kwargs={'compliance_pk': compliance.id}))
     url = settings.SITE_URL
     url += reverse(
         "external-compliance-detail", kwargs={"compliance_pk": compliance.id}
     )
     context = {"compliance": compliance, "url": url}
 
-    submitter = (
-        compliance.submitter.email
-        if compliance.submitter and compliance.submitter.email
-        else compliance.proposal.submitter.email
+    submitter_id = (
+        compliance.submitter
+        if compliance.submitter
+        else compliance.proposal.submitter
     )
+    submitter = retrieve_email_user(submitter_id)
+
     all_ccs = []
+
     if compliance.proposal.org_applicant and compliance.proposal.org_applicant.email:
         cc_list = compliance.proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
+
     msg = email.send(submitter, cc=all_ccs, context=context)
     if is_test:
         return
@@ -605,8 +608,6 @@ def _log_org_email(email_message, organisation, customer, sender=None):
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
-    customer = customer
-
     staff = sender
 
     if type(staff) is not int:
@@ -665,8 +666,6 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
         to = customer
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
-
-    customer = customer
 
     staff = sender
 
