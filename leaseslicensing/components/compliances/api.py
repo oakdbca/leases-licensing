@@ -324,14 +324,14 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                     raise serializers.ValidationError("No files attached")
 
                 document = instance.documents.get_or_create(name=filename)[0]
-                path = default_storage.save(
-                    "{}/{}/documents/{}".format(
-                        instance._meta.model_name, instance.id, filename
-                    ),
-                    ContentFile(_file.read()),
-                )
+                # path = default_storage.save(
+                #     "{}/{}/documents/{}".format(
+                #         instance._meta.model_name, instance.id, filename
+                #     ),
+                #     ContentFile(_file.read()),
+                # )
 
-                document._file = path
+                # document._file = path
                 document.save()
 
             return Response(serializer.data)

@@ -1228,7 +1228,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     def relevant_applicant_name(self):
         relevant_applicant = self.relevant_applicant
         if isinstance(relevant_applicant, EmailUser):
-            # ind_applicant/proxy_applicant/submitter
             return relevant_applicant.get_full_name()
         else:
             # Organisation
@@ -1468,14 +1467,13 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
-        if self.ind_applicant:
-            return user_id in [
-                self.applicant,
-                self.submitter,
-                self.proxy_applicant,
-            ]
         if self.org_applicant:
             return can_admin_org(self.org_applicant, user_id)
+        return user_id in [
+            self.ind_applicant,
+            self.submitter,
+            self.proxy_applicant,
+        ]
 
     @property
     def is_discardable(self):

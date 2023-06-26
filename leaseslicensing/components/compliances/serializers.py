@@ -3,11 +3,32 @@ from rest_framework import serializers
 from leaseslicensing.components.compliances.models import (
     Compliance,
     ComplianceAmendmentRequest,
+    ComplianceDocument,
     ComplianceLogEntry,
     ComplianceUserAction,
 )
 from leaseslicensing.components.main.serializers import EmailUserSerializer
+from leaseslicensing.components.main.utils import get_secure_document_url, get_secure_file_url
 from leaseslicensing.ledger_api_utils import retrieve_email_user
+
+
+class ComplianceDocumentSerializer(serializers.ModelSerializer):
+    secure_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ComplianceDocument
+        fields = (
+            "name",
+            "_file",
+            "secure_url",
+            "can_delete",
+            "id",
+        )
+
+    def get_secure_url(self, obj):
+        return [
+            get_secure_file_url(obj, "_file")
+        ]
 
 
 class ComplianceSerializer(serializers.ModelSerializer):
@@ -16,7 +37,7 @@ class ComplianceSerializer(serializers.ModelSerializer):
     processing_status = serializers.CharField(source="get_processing_status_display")
     customer_status = serializers.CharField(source="get_customer_status_display")
     submitter = serializers.SerializerMethodField(read_only=True)
-    documents = serializers.SerializerMethodField()
+    documents = ComplianceDocumentSerializer(many=True, read_only=True)
     submitter = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
     requirement = serializers.CharField(
@@ -100,9 +121,6 @@ class ComplianceSerializer(serializers.ModelSerializer):
         else:
             return ""
 
-    def get_documents(self, obj):
-        return [[d.name, d._file.url, d.can_delete, d.id] for d in obj.documents.all()]
-
     def get_approval_lodgement_number(self, obj):
         return obj.approval.lodgement_number
 
@@ -131,7 +149,7 @@ class InternalComplianceSerializer(serializers.ModelSerializer):
     processing_status = serializers.CharField(source="get_processing_status_display")
     customer_status = serializers.CharField(source="get_customer_status_display")
     submitter = serializers.SerializerMethodField(read_only=True)
-    documents = serializers.SerializerMethodField()
+    documents = ComplianceDocumentSerializer(many=True, read_only=True)
     submitter = serializers.SerializerMethodField(read_only=True)
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
     requirement = serializers.CharField(
@@ -181,9 +199,6 @@ class InternalComplianceSerializer(serializers.ModelSerializer):
 
     def get_lodgement_date(self, obj):
         return obj.lodgement_date.strftime("%d/%m/%Y") if obj.lodgement_date else ""
-
-    def get_documents(self, obj):
-        return [[d.name, d._file.url, d.can_delete, d.id] for d in obj.documents.all()]
 
     def get_approval_lodgement_number(self, obj):
         return obj.approval.lodgement_number

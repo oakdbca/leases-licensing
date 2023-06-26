@@ -82,7 +82,7 @@
                                     <template v-if="compliance.documents && compliance.documents.length">
                                         <ul class="list-group">
                                             <li class="list-group-item rounded" v-for="(d, i) in compliance.documents">
-                                                <a :href="d[1]" target="_blank" class="me-1">{{ d[0]
+                                                <a :href="d.secure_url" target="_blank" class="me-1">{{ d.name
                                                 }}</a>
                                                 <span v-if="!isFinalised && d.can_delete">
                                                     <a @click="delete_document(d)" class="fa fa-trash-o control-label"

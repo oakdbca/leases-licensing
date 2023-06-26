@@ -339,6 +339,9 @@ class Compliance(RevisionedMixin, models.Model):
     def log_user_action(self, action, request):
         return ComplianceUserAction.log_action(self, action, request.user.id)
 
+    def user_has_object_permission(self, user_id):
+        return self.approval.user_has_object_permission(user_id)
+
     def __str__(self):
         return self.lodgement_number
 
@@ -367,6 +370,9 @@ class ComplianceDocument(Document):
                 self.name
             )
         )
+
+    def user_has_object_permission(self, user_id):
+        return self.compliance.user_has_object_permission(user_id)
 
     class Meta:
         app_label = "leaseslicensing"

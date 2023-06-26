@@ -114,8 +114,8 @@
                                             <template v-if="compliance.documents && compliance.documents.length">
                                                 <ul class="list-group">
                                                     <li v-for="d in compliance.documents" class="list-group-item"><i
-                                                            class="fa-solid fa-file me-2"></i> <a :href="d[1]"
-                                                            target="_blank" class="col-form-label">{{ d[0]
+                                                            class="fa-solid fa-file me-2"></i> <a :href="d.secure_url"
+                                                            target="_blank" class="col-form-label">{{ d.name
                                                             }}</a></li>
                                                 </ul>
                                             </template>
