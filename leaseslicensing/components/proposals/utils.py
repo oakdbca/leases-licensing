@@ -882,8 +882,10 @@ def populate_gis_data_lands_and_waters(proposal):
         "leg_act",
         "category",
     ]
-    # Store the identifiers, names, acts, tenures and categories to that object to later remove any that are not in the GIS data
-    objects = {p: [] for p in properties}
+    # Start with storing the ids of existing identifiers, names, acts, tenures and categories of this proposal
+    # Remove any GIS data thtat is returned from querying the geoserver.
+    # Whatever remains in this list is no longer part of this proposal and will be deleted.
+    object_ids = gis_property_to_model_ids(proposal, properties)
     gis_data_lands_and_waters = get_gis_data_for_proposal(
         proposal, "public:dbca_legislated_lands_and_waters", properties
     )
@@ -892,7 +894,8 @@ def populate_gis_data_lands_and_waters(proposal):
             "No GIS Lands and waters data found for proposal %s",
             proposal.lodgement_number,
         )
-        delete_gis_data(proposal, objects_to_keep=objects)
+        # Delete all the GIS data for this proposal
+        delete_gis_data(proposal, ids_to_delete=object_ids)
         return
 
     logger.debug("gis_data_lands_and_waters = " + str(gis_data_lands_and_waters))
@@ -906,10 +909,12 @@ def populate_gis_data_lands_and_waters(proposal):
             identifier, created = Identifier.objects.get_or_create(name=identifier_name)
             if created:
                 logger.info(f"New Identifier created from GIS Data: {identifier}")
-            o, _ = ProposalIdentifier.objects.get_or_create(
+            obj, created = ProposalIdentifier.objects.get_or_create(
                 proposal=proposal, identifier=identifier
             )
-            objects[properties[index]].append(o.id)
+            if not created:
+                # Can only remove from to-delete list if this GIS data was already in the database
+                object_ids[properties[index]].remove(obj.id)
 
     index += 1
     if gis_data_lands_and_waters[properties[index]]:
@@ -919,10 +924,11 @@ def populate_gis_data_lands_and_waters(proposal):
             vesting, created = Vesting.objects.get_or_create(name=vesting_name)
             if created:
                 logger.info(f"New Vesting created from GIS Data: {vesting}")
-            o, _ = ProposalVesting.objects.get_or_create(
+            obj, created = ProposalVesting.objects.get_or_create(
                 proposal=proposal, vesting=vesting
             )
-            objects[properties[index]].append(o.id)
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
 
     index += 1
     if gis_data_lands_and_waters[properties[index]]:
@@ -933,8 +939,11 @@ def populate_gis_data_lands_and_waters(proposal):
             name, created = Name.objects.get_or_create(name=name_name)
             if created:
                 logger.info(f"New Name created from GIS Data: {name}")
-            o, _ = ProposalName.objects.get_or_create(proposal=proposal, name=name)
-            objects[properties[index]].append(o.id)
+            obj, created = ProposalName.objects.get_or_create(
+                proposal=proposal, name=name
+            )
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
 
     index += 1
     if gis_data_lands_and_waters[properties[index]]:
@@ -944,10 +953,11 @@ def populate_gis_data_lands_and_waters(proposal):
             tenure, created = Tenure.objects.get_or_create(name=tenure_name)
             if created:
                 logger.info(f"New Tenure created from GIS Data: {tenure}")
-            o, _ = ProposalTenure.objects.get_or_create(
+            obj, created = ProposalTenure.objects.get_or_create(
                 proposal=proposal, tenure=tenure
             )
-            objects[properties[index]].append(o.id)
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
 
     index += 1
     if gis_data_lands_and_waters[properties[index]]:
@@ -957,8 +967,9 @@ def populate_gis_data_lands_and_waters(proposal):
             act, created = Act.objects.get_or_create(name=act_name)
             if created:
                 logger.info(f"New Act created from GIS Data: {act}")
-            o, _ = ProposalAct.objects.get_or_create(proposal=proposal, act=act)
-            objects[properties[index]].append(o.id)
+            obj, created = ProposalAct.objects.get_or_create(proposal=proposal, act=act)
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
 
     index += 1
     if gis_data_lands_and_waters[properties[index]]:
@@ -968,19 +979,20 @@ def populate_gis_data_lands_and_waters(proposal):
             category, created = Category.objects.get_or_create(name=category_name)
             if created:
                 logger.info(f"New Category created from GIS Data: {category}")
-            o, _ = ProposalCategory.objects.get_or_create(
+            obj, created = ProposalCategory.objects.get_or_create(
                 proposal=proposal, category=category
             )
-            objects[properties[index]].append(o.id)
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
 
-    delete_gis_data(proposal, objects_to_keep=objects)
+    delete_gis_data(proposal, ids_to_delete=object_ids)
 
 
 def populate_gis_data_regions(proposal):
     properties = [
         "drg_region_name",
     ]
-    objects = {p: [] for p in properties}
+    object_ids = gis_property_to_model_ids(proposal, properties)
     gis_data_regions = get_gis_data_for_proposal(
         proposal, "cddp:dbca_regions", properties
     )
@@ -988,7 +1000,7 @@ def populate_gis_data_regions(proposal):
         logger.warn(
             "No GIS Region data found for proposal %s", proposal.lodgement_number
         )
-        delete_gis_data(proposal, objects_to_keep=objects)
+        delete_gis_data(proposal, ids_to_delete=object_ids)
         return
 
     logger.debug("gis_data_regions = " + str(gis_data_regions))
@@ -998,19 +1010,20 @@ def populate_gis_data_regions(proposal):
             region, created = Region.objects.get_or_create(name=region_name)
             if created:
                 logger.info(f"New Region created from GIS Data: {region}")
-            o, _ = ProposalRegion.objects.get_or_create(
+            obj, created = ProposalRegion.objects.get_or_create(
                 proposal=proposal, region=region
             )
-            objects[properties[0]].append(o.id)
+            if not created:
+                object_ids[properties[0]].remove(obj.id)
 
-    delete_gis_data(proposal, objects_to_keep=objects)
+    delete_gis_data(proposal, ids_to_delete=object_ids)
 
 
 def populate_gis_data_districts(proposal):
     properties = [
         "district",
     ]
-    objects = {p: [] for p in properties}
+    object_ids = gis_property_to_model_ids(proposal, properties)
     gis_data_districts = get_gis_data_for_proposal(
         proposal, "cddp:dbca_districts", properties
     )
@@ -1018,7 +1031,7 @@ def populate_gis_data_districts(proposal):
         logger.warn(
             "No GIS District data found for proposal %s", proposal.lodgement_number
         )
-        delete_gis_data(proposal, objects_to_keep=objects)
+        delete_gis_data(proposal, ids_to_delete=object_ids)
         return
 
     logger.debug("gis_data_districts = " + str(gis_data_districts))
@@ -1028,25 +1041,26 @@ def populate_gis_data_districts(proposal):
             district, created = District.objects.get_or_create(name=district_name)
             if created:
                 logger.info(f"New Region created from GIS Data: {district}")
-            o, _ = ProposalDistrict.objects.get_or_create(
+            obj, created = ProposalDistrict.objects.get_or_create(
                 proposal=proposal, district=district
             )
-            objects[properties[0]].append(o.id)
+            if not created:
+                object_ids[properties[0]].remove(obj.id)
 
-    delete_gis_data(proposal, objects_to_keep=objects)
+    delete_gis_data(proposal, ids_to_delete=object_ids)
 
 
 def populate_gis_data_lgas(proposal):
     properties = [
         "lga_label",
     ]
-    objects = {p: [] for p in properties}
+    object_ids = gis_property_to_model_ids(proposal, properties)
     gis_data_lgas = get_gis_data_for_proposal(
         proposal, "cddp:local_gov_authority", properties
     )
     if gis_data_lgas is None:
         logger.warn("No GIS LGA data found for proposal %s", proposal.lodgement_number)
-        delete_gis_data(proposal, objects_to_keep=objects)
+        delete_gis_data(proposal, ids_to_delete=object_ids)
         return
 
     logger.debug("gis_data_lgas = " + str(gis_data_lgas))
@@ -1056,42 +1070,103 @@ def populate_gis_data_lgas(proposal):
             lga, created = LGA.objects.get_or_create(name=lga_name)
             if created:
                 logger.info(f"New LGA created from GIS Data: {lga}")
-            o, _ = ProposalLGA.objects.get_or_create(proposal=proposal, lga=lga)
-            objects[properties[0]].append(o.id)
+            obj, created = ProposalLGA.objects.get_or_create(proposal=proposal, lga=lga)
+            if not created:
+                object_ids[properties[0]].remove(obj.id)
 
-    delete_gis_data(proposal, objects_to_keep=objects)
+    delete_gis_data(proposal, ids_to_delete=object_ids)
 
 
-def delete_gis_data(proposal, objects_to_keep=[]):
+def delete_gis_data(proposal, ids_to_delete=[]):
     """
-    Deletes all GIS data objects for the given proposal that are not in the objects_to_keep list.
-    The function tries to map GIS data property names to ProposalXyz model names.
+    Deletes all GIS data objects for the given proposal that are in the ids_to_delete list.
+    The function tries to map GIS data property names to ProposalXyz model names. E.g.
+    'leg_identifier' to ProposalIdentifier, 'category' to ProposalCategory
 
     Args:
-        proposal:
+        proposal (Proposal):
             A Proposal object
-        objects_to_keep:
-            A dictionary that map GIS data property names to lists of object ids to keep
+        ids_to_delete (dict):
+            A dictionary that maps GIS data property names to lists of object ids to delete
             Example: {'leg_identifier': [1,2,3], 'leg_vesting': [4,5], 'category': []}
     """
 
-    for key in objects_to_keep:
+    for key in ids_to_delete:
         # Proposal GIS data is stored in ProposalXyz models. This matches for the Xyz part of the model name from GIS data property name
-        match = re.match(r"^(?:leg_|drg_)?([a-zA-Z_]+?)(?:_name|_label)?$", key)
-        if match is None:
-            logger.warning(f"Could not match key {key}")
-            continue
-        # Compile the class name from the matched group
-        class_name = f"Proposal{match.group(1).capitalize()}"
-        # Get the class object from the globals() dict
-        class_class = apps.get_model(app_label="leaseslicensing", model_name=class_name)
+        class_class = _gis_property_to_model(key)
         if class_class is None:
-            logger.warning(f"Could not find class {class_name}")
             continue
-        # Delete all objects of the class belonging to this Proposal that are not in the objects_to_keep list
+        # Delete all objects of the class belonging to this Proposal that are in the ids_to_delete list
         deleted = class_class.objects.filter(
-            Q(proposal=proposal) & ~Q(id__in=objects_to_keep[key])
+            Q(proposal=proposal) & Q(id__in=ids_to_delete[key])
         ).delete()
         logger.debug(
-            f"Deleted {class_name} {deleted} from Proposal {proposal.lodgement_number}"
+            f"Deleted {class_class.__name__} {deleted} from Proposal {proposal.lodgement_number}"
         )
+
+
+def gis_property_to_model_ids(proposal, properties):
+    """
+    Maps GIS data property names to ProposalXyz model class names and returns a dictionary of
+    property names and lists of object ids for the respective ProposalXyz model that
+    belongs to the property.
+
+    Returns:
+        A dictionary that maps GIS data property names to lists of object ids
+        Example: {'leg_identifier': [1,2,3], 'leg_vesting': [4,5], 'category': []}
+
+    Args:
+        proposal (Proposal):
+            A Proposal object
+        properties (list)):
+            A list of GIS data property names
+    """
+
+    property_model_map = {p: _gis_property_to_model(p) for p in properties}
+
+    return {
+        p: []
+        if property_model_map[p] is None
+        else list(
+            property_model_map[p]
+            .objects.filter(proposal=proposal)
+            .distinct()
+            .values_list("id", flat=True)
+        )
+        for p in property_model_map
+    }
+
+
+def _gis_property_to_model(property):
+    """
+    Returns the respective model class for a GIS data property name.
+
+    Args:
+        property (str):
+            A GIS data property name
+    """
+
+    # Catches all GIS data property names currently returned by the geoserver
+    # Groups 1 and 3 are non-capturing prefixes and suffixes, with group 2 being
+    # the actual Xyz part of the class name.
+    # TODO: Likely needs to be adapted to the new GIS project?
+    regex = r"^(?:leg_|drg_)?([a-zA-Z_]+?)(?:_name|_label)?$"
+    match = re.match(regex, property)
+    if match is None:
+        logger.warning(f"Could not match property {property}")
+        return None
+
+    # Compile the class name from the matched group
+    class_name = f"Proposal{match.group(1).capitalize()}"
+    # Get the class object from the app registry
+    try:
+        class_class = apps.get_model(app_label="leaseslicensing", model_name=class_name)
+    except LookupError:
+        logger.exception(f"Could not find class {class_name}")
+        class_class = None
+
+    if class_class is None:
+        logger.warning(f"Could not find class {class_name}")
+        return None
+
+    return class_class
