@@ -47,7 +47,7 @@
             <input type='hidden' name="schema" :value="JSON.stringify(proposal)" />
             <input type='hidden' name="proposal_id" :value="1" />
 
-            <div class="navbar fixed-bottom me-1" style="background-color: #f5f5f5;">
+            <div class="navbar fixed-bottom bg-navbar me-1">
                 <div v-if="proposal && !proposal.readonly" class="container">
                     <div class="col-md-12 text-end">
                         <BootstrapButtonSpinner v-if="saveExitProposal" class="btn btn-primary me-1" :isLoading="true"

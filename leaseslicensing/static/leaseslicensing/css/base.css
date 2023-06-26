@@ -148,6 +148,10 @@ table.dataTable a:hover {
     max-width: 100%;
 }
 
+.bg-navbar {
+    background-color: #f5f5f5;
+}
+
 /* Styles for datatables */
 
 .top-buffer-s {
