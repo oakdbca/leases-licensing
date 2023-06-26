@@ -468,6 +468,9 @@ export default {
                     'button_title': 'Require DAS',
                     'function_when_clicked': vm.requireDas,
                     'function_to_show_hide': () => {
+                        // Pushing back DAS integration until a "Phase 2"
+                        return false;
+
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
                                 [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [ROLES.GROUP_NAME_ASSESSOR.ID,],
