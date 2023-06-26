@@ -229,8 +229,8 @@ const _helper = {
     },
     /**
      * Builds a query string for the geoserver based on the provided WKT
-     * @param {*} wkt A geometry in Well-known-text (WKT) format
-     * @param {*} map_component The map component
+     * @param {str} wkt A geometry in Well-known-text (WKT) format
+     * @param {Object} map_component The map component
      * @returns A query string for the geoserver
      */
     geoserverQuery: function (wkt, map_component) {
