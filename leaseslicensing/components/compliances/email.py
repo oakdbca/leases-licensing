@@ -151,9 +151,9 @@ def send_amendment_email_notification(
     all_ccs = []
     if (
         compliance.proposal.org_applicant
-        and retrieve_email_user(compliance.proposal.org_applicant).email
+        and compliance.proposal.org_applicant.email
     ):
-        cc_list = retrieve_email_user(compliance.proposal.org_applicant).email
+        cc_list = compliance.proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(submitter, cc=all_ccs, context=context)

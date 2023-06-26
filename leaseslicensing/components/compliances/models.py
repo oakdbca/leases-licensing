@@ -214,11 +214,14 @@ class Compliance(RevisionedMixin, models.Model):
                 self.customer_status = "with_assessor"
                 self.submitter = request.user.id
 
-                if request.FILES:
-                    for f in request.FILES:
-                        document = self.documents.create(name=str(request.FILES[f]))
-                        document._file = request.FILES[f]
-                        document.save()
+                # Removing the below as the uploaded files are processed in the submit action in the api
+                # which is leading to duplicate files. Todo: Remove if all goes well.
+                # if request.FILES:
+                #     for f in request.FILES:
+                #         document = self.documents.create(name=str(request.FILES[f]))
+                #         document._file = request.FILES[f]
+                #         document.save()
+
                 if self.amendment_requests:
                     qs = self.amendment_requests.filter(status="requested")
                     if qs:

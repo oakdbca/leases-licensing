@@ -21,6 +21,7 @@ from leaseslicensing.components.compliances.models import (
     Compliance,
     ComplianceAmendmentReason,
     ComplianceAmendmentRequest,
+    update_proposal_compliance_filename,
 )
 from leaseslicensing.components.compliances.serializers import (
     CompAmendmentRequestDisplaySerializer,
@@ -33,7 +34,7 @@ from leaseslicensing.components.compliances.serializers import (
 )
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
-from leaseslicensing.components.main.models import ApplicationType
+from leaseslicensing.components.main.models import ApplicationType, upload_protected_files_storage
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
 
@@ -313,8 +314,6 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 
             serializer = self.get_serializer(instance)
 
-            logger.debug(f"num_files: {request.data.get('num_files')}")
-
             num_files = request.data.get("num_files")
             for i in range(int(num_files)):
                 filename = request.data.get("name" + str(i))
@@ -324,30 +323,72 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                     raise serializers.ValidationError("No files attached")
 
                 document = instance.documents.get_or_create(name=filename)[0]
+                path = upload_protected_files_storage.save(
+                    update_proposal_compliance_filename(document, filename),
+                    ContentFile(_file.read())
+                )
+                document._file = path
                 document.save()
 
             return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    def save(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = {
+            "text": request.data.get("detail"),
+        }
+        serializer = SaveComplianceSerializer(
+            instance, data=data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        num_files = request.data.get("num_files")
+        logger.debug(f"num_files: {num_files}")
+        for i in range(int(num_files)):
+            filename = request.data.get("name" + str(i))
+            _file = request.data.get("file" + str(i))
+            logger.debug(f"file: {filename} {_file}")
+
+            if not isinstance(_file, InMemoryUploadedFile):
+                raise serializers.ValidationError("No files attached")
+
+            document = instance.documents.get_or_create(name=filename)[0]
+            path = upload_protected_files_storage.save(
+                update_proposal_compliance_filename(document, filename),
+                ContentFile(_file.read())
+            )
+            document._file = path
+            document.save()
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def assign_request_user(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.assign_to(request.user.id, request)
         serializer = InternalComplianceSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def delete_document(self, request, *args, **kwargs):
         instance = self.get_object()
         doc = request.data.get("document")
@@ -355,13 +396,13 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = ComplianceSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def assign_to(self, request, *args, **kwargs):
         instance = self.get_object()
         user_id = request.data.get("user_id", None)
@@ -371,13 +412,13 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = InternalComplianceSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def unassign(self, request, *args, **kwargs):
         logger.debug("unassign")
         instance = self.get_object()
@@ -385,26 +426,26 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = InternalComplianceSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def accept(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.accept(request)
         serializer = InternalComplianceSerializer(instance)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def amendment_request(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = instance.amendment_requests
@@ -412,40 +453,40 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer = CompAmendmentRequestDisplaySerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def action_log(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = instance.action_logs.all()
         serializer = ComplianceActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @basic_exception_handler
+    @ basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = instance.comms_logs.all()
         serializer = ComplianceCommsSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @detail_route(
+    @ detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @renderer_classes((JSONRenderer,))
-    @basic_exception_handler
+    @ renderer_classes((JSONRenderer,))
+    @ basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
         with transaction.atomic():
             instance = self.get_object()
@@ -472,7 +513,7 @@ class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = ComplianceAmendmentRequest.objects.all()
     serializer_class = ComplianceAmendmentRequestSerializer
 
-    @basic_exception_handler
+    @ basic_exception_handler
     def create(self, request, *args, **kwargs):
         request_data = deepcopy(request.data)
         request_data.update({"officer": request.user.id})

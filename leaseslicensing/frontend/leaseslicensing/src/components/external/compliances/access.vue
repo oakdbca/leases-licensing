@@ -143,22 +143,30 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row mt-3">
-                                <div class="col-sm-2"></div>
-                                <div class="col">
-                                    <button v-if="!isFinalised" @click.prevent="close()"
-                                        class="btn btn-secondary me-2">Return
-                                        to Dashboard</button>
-                                    <button v-if="!isFinalised" @click.prevent="validateForm()"
-                                        class="btn btn-primary">Submit</button>
-                                </div>
-                            </div>
+
                         </form>
                     </FormSection>
+                </div>
+
+            </div>
+            <div class="navbar fixed-bottom bg-navbar border-top">
+                <div class="container">
+                    <div class="col-md-12 text-end">
+                        <button v-if="!isFinalised"
+                            @click.prevent="validateForm(method = 'PATCH', custom_action = 'save', exit_after = true)"
+                            class="btn btn-primary me-2">Save and
+                            Exit</button>
+                        <button v-if="!isFinalised"
+                            @click.prevent="validateForm(method = 'PATCH', custom_action = 'save', exit_after = false)"
+                            class="btn btn-primary me-2">Save and
+                            Continue</button>
+                        <button v-if="!isFinalised" @click.prevent="validateForm()" class="btn btn-primary">Submit</button>
+                    </div>
                 </div>
             </div>
         </div>
         <BootstrapSpinner v-else :isLoading="true" class="text-primary" />
+
     </div>
 </template>
 <script>
@@ -255,7 +263,6 @@ export default {
                 'name': ''
             })
         },
-
         close: function () {
             this.$router.push({ name: 'external-dashboard' });
         },
@@ -281,14 +288,14 @@ export default {
                 });
             }
         },
-        validateForm: function () {
+        validateForm: function (method = 'POST', custom_action = 'submit', exit_after = false) {
             let vm = this;
             var form = document.getElementById('complianceForm')
 
             console.log('validateForm')
 
             if (form.checkValidity()) {
-                vm.sendData();
+                vm.sendData(method, custom_action, exit_after);
             } else {
                 form.classList.add('was-validated');
                 $('#complianceForm').find(":invalid").first().focus();
@@ -296,7 +303,7 @@ export default {
 
             return false;
         },
-        sendData: function () {
+        sendData: function (method = 'POST', custom_action = 'submit', exit_after = false) {
             this.$nextTick(() => {
                 this.errors = false;
                 let formData = new FormData();
@@ -313,8 +320,8 @@ export default {
                 formData.append('num_files', numFiles);
                 console.log('num_files: ' + numFiles)
 
-                fetch(helpers.add_endpoint_json(api_endpoints.compliances, this.compliance.id + '/submit'), {
-                    method: 'POST',
+                fetch(helpers.add_endpoint_json(api_endpoints.compliances, this.compliance.id + '/' + custom_action), {
+                    method: method,
                     body: formData
                 }).then(async response => {
                     if (!response.ok) {
@@ -327,10 +334,24 @@ export default {
                         this.addingCompliance = false;
                         this.refreshFromResponse(data);
                         this.compliance = Object.assign({}, data);
-                        this.$router.push({
-                            name: 'submit_compliance',
-                            params: { compliance_id: this.compliance.id }
-                        });
+
+                        if ('submit' == custom_action) {
+                            this.$router.push({
+                                name: 'submit_compliance',
+                                params: { compliance_id: this.compliance.id }
+                            });
+                        } else {
+                            swal.fire({
+                                title: `Compliance ${this.compliance.lodgement_number} Saved`,
+                                text: 'Compliance has been saved successfully',
+                                icon: 'success'
+                            })
+                            if (exit_after) {
+                                this.close();
+                            } else {
+                                this.files = [];
+                            }
+                        }
                     })
                     .catch(error => {
                         this.errors = true;
