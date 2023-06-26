@@ -705,11 +705,14 @@ class Organisation(models.Model):
         return self.ledger_organisation_email
 
     @property
-    def contact_emails(self):
+    def contact_emails(self, active=True, admin=False):
+        qs = self.contacts.all()
+        if active:
+            qs = qs.filter(user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE)
+        if admin:
+            qs = qs.filter(user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN)
         return list(
-            self.contacts.filter(
-                user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE
-            ).values_list("email", flat=True)
+            qs.values_list("email", flat=True).distinct()
         )
 
     @property
@@ -765,10 +768,14 @@ class OrganisationContact(models.Model):
         ),  # status 'contact_form' if org contact was added via 'Contact Details'
         # section in manage.vue (allows Org Contact to be distinguished from Org Delegate)
     )
+    USER_ROLE_CHOICE_ADMIN = "organisation_admin"
+    USER_ROLE_CHOICE_USER = "organisation_user"
+    USER_ROLE_CHOICE_CONSULTANT = "consultant"
+
     USER_ROLE_CHOICES = (
-        ("organisation_admin", "Organisation Admin"),
-        ("organisation_user", "Organisation User"),
-        ("consultant", "Consultant"),
+        (USER_ROLE_CHOICE_ADMIN, "Organisation Admin"),
+        (USER_ROLE_CHOICE_USER, "Organisation User"),
+        (USER_ROLE_CHOICE_CONSULTANT, "Consultant"),
     )
     user = models.IntegerField(
         default=0

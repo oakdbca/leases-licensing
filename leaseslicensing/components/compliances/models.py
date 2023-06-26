@@ -233,8 +233,11 @@ class Compliance(RevisionedMixin, models.Model):
             self.log_user_action(
                 ComplianceUserAction.ACTION_SUBMIT_REQUEST.format(self.id), request
             )
+
             send_external_submit_email_notification(request, self)
+
             send_submit_email_notification(request, self)
+
             self.documents.all().update(can_delete=False)
 
     def delete_document(self, request, document):

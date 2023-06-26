@@ -278,21 +278,20 @@ def send_due_email_notification(compliance, is_test=False):
         return
 
     sender = settings.DEFAULT_FROM_EMAIL
-    try:
-        sender_user = EmailUser.objects.get(email__icontains=sender)
-    except EmailUser.DoesNotExist:
-        sender_user = EmailUser.objects.create(email=sender, password="", is_staff=True)
+    sender_user = EmailUser.objects.get(email=sender)
+
     _log_compliance_email(msg, compliance, sender=sender_user)
+
     if compliance.proposal.org_applicant:
         _log_org_email(
             msg,
             compliance.proposal.org_applicant,
             compliance.submitter,
-            sender=sender_user,
+            sender=sender_user.id,
         )
     else:
         _log_user_email(
-            msg, compliance.proposal.submitter, compliance.submitter, sender=sender
+            msg, compliance.proposal.submitter, compliance.submitter, sender=sender_user.id
         )
 
 
@@ -370,34 +369,37 @@ def send_external_submit_email_notification(request, compliance, is_test=False):
     )
     url = "".join(url.split("-internal"))
 
-    submitter = (
+    submitter_id = (
         compliance.submitter if compliance.submitter else compliance.proposal.submitter
     )
+    submitter = retrieve_email_user(submitter_id)
     context = {
         "compliance": compliance,
-        # "submitter": submitter.get_full_name(),
-        "submitter": retrieve_email_user(submitter).get_full_name(),
+        "submitter": submitter.get_full_name(),
         "url": url,
     }
+
     all_ccs = []
-    if compliance.proposal.org_applicant:
-        cc_list = retrieve_email_user(compliance.proposal.org_applicant).email
-        if cc_list:
-            all_ccs = [cc_list]
-    msg = email.send(retrieve_email_user(submitter).email, cc=all_ccs, context=context)
+    organisation = compliance.proposal.org_applicant
+    if organisation and organisation.ledger_organisation_email:
+        all_ccs = [organisation.ledger_organisation_email]
+
+    msg = email.send(submitter.email, cc=all_ccs, context=context)
     if is_test:
         return
 
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
     _log_compliance_email(msg, compliance, sender=sender)
-    # if compliance.proposal.org_applicant:
-    #    _log_org_email(
-    #        msg, compliance.proposal.org_applicant, compliance.submitter, sender=sender
-    #    )
-    # else:
-    #    _log_user_email(
-    #        msg, compliance.proposal.submitter, compliance.submitter, sender=sender
-    #    )
+
+    if compliance.proposal.org_applicant:
+        _log_org_email(
+            msg, compliance.proposal.org_applicant, compliance.submitter, sender=sender
+        )
+    else:
+        _log_user_email(
+            msg, compliance.proposal.submitter, compliance.submitter, sender=sender
+        )
 
 
 def send_submit_email_notification(request, compliance, is_test=False):
@@ -419,14 +421,15 @@ def send_submit_email_notification(request, compliance, is_test=False):
 
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_compliance_email(msg, compliance, sender=sender)
-    # if compliance.proposal.org_applicant:
-    #    _log_org_email(
-    #        msg, compliance.proposal.org_applicant, compliance.submitter, sender=sender
-    #    )
-    # else:
-    #    _log_user_email(
-    #        msg, compliance.proposal.submitter, compliance.submitter, sender=sender
-    #    )
+
+    if compliance.proposal.org_applicant:
+        _log_org_email(
+            msg, compliance.proposal.org_applicant, compliance.submitter, sender=sender
+        )
+    else:
+        _log_user_email(
+            msg, compliance.proposal.submitter, compliance.submitter, sender=sender
+        )
 
 
 def send_notification_only_email(compliance, is_test=False):
@@ -449,16 +452,16 @@ def send_notification_only_email(compliance, is_test=False):
         cc_list = compliance.proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
+
     msg = email.send(submitter, cc=all_ccs, context=context)
     if is_test:
         return
 
     sender = settings.DEFAULT_FROM_EMAIL
-    try:
-        sender_user = EmailUser.objects.get(email__icontains=sender)
-    except EmailUser.DoesNotExist:
-        sender_user = EmailUser.objects.create(email=sender, password="", is_staff=True)
+    sender_user = EmailUser.objects.get(email=sender)
+
     _log_compliance_email(msg, compliance, sender=sender_user)
+
     if compliance.proposal.org_applicant:
         _log_org_email(
             msg,
@@ -547,12 +550,17 @@ def _log_compliance_email(email_message, compliance, sender=None):
 
     staff = sender
 
+    if type(staff) is not int:
+        if not hasattr(staff, "id"):
+            raise ValueError("staff must be an int (i.e. EmailUser.id)")
+        staff = staff.id
+
     kwargs = {
         "subject": subject,
         "text": text,
         "compliance": compliance,
         "customer": customer,
-        "staff": staff.id,
+        "staff": staff,
         "to": to,
         "fromm": fromm,
         "cc": all_ccs,
@@ -600,6 +608,11 @@ def _log_org_email(email_message, organisation, customer, sender=None):
     customer = customer
 
     staff = sender
+
+    if type(staff) is not int:
+        if not hasattr(staff, "id"):
+            raise ValueError("staff must be an int (i.e. EmailUser.id)")
+        staff = staff.id
 
     kwargs = {
         "subject": subject,
