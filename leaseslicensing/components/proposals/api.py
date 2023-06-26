@@ -93,7 +93,7 @@ from leaseslicensing.components.proposals.utils import (
     save_referral_data,
     save_site_name,
 )
-from leaseslicensing.helpers import is_approver, is_assessor, is_customer, is_internal
+from leaseslicensing.helpers import is_approver, is_assessor, is_customer, is_internal, is_referee
 from leaseslicensing.permissions import IsAssessorOrReferrer
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -2100,7 +2100,13 @@ class ProposalRequirementViewSet(LicensingViewset):
     serializer_class = ProposalRequirementSerializer
 
     def get_queryset(self):
-        return ProposalRequirement.objects.all().exclude(is_deleted=True)
+        user_id = self.request.user.id
+        if is_internal(self.request):
+            return ProposalRequirement.objects.all().exclude(is_deleted=True)
+        if is_referee(self.request):
+            proposal_ids = list(Referral.objects.filter(referral=user_id).values_list("proposal_id", flat=True))
+            return ProposalRequirement.objects.filter(proposal_id__in=proposal_ids).exclude(is_deleted=True)
+        return self.queryset
 
     @ detail_route(
         methods=[
