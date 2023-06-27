@@ -166,17 +166,25 @@ export default {
             return this.level == 'organisation_view'
         },
         compliancesHeaders: function () {
-            let headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
+            let headers = ['Id', 'Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Action'];
             if (this.is_organisation_view) {
-                headers = ['Number', 'Type', 'Approval', 'Status', 'Due Date', 'Action'];
+                headers = ['Id', 'Number', 'Type', 'Approval', 'Status', 'Due Date', 'Action'];
             } else if (this.level === 'internal') {
-                headers = ['Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Assigned To', 'Action'];
+                headers = ['Id', 'Number', 'Type', 'Holder', 'Approval', 'Status', 'Due Date', 'Assigned To', 'Action'];
             }
             return headers;
         },
-        holderColumn: function () {
+        columnId: function () {
             return {
                 data: "id",
+                orderable: false,
+                searchable: false,
+                visible: false,
+            }
+        },
+        holderColumn: function () {
+            return {
+                data: "holder",
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -189,7 +197,7 @@ export default {
         },
         applicationTypeColumn: function () {
             return {
-                data: "id",
+                data: "application_type",
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -204,20 +212,19 @@ export default {
         lodgementNumberColumn: function () {
             return {
                 // 2. Lodgement Number
-                data: "id",
+                data: "lodgement_number",
                 orderable: true,
                 searchable: true,
                 visible: true,
                 'render': function (row, type, full) {
                     return full.lodgement_number;
                 },
-                name: 'lodgement_number',
             }
         },
         licenceNumberColumn: function () {
             return {
                 // 3. Licence/Permit
-                data: "id",
+                data: "approval_lodgement_number",
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -231,7 +238,7 @@ export default {
         dueDateColumn: function () {
             return {
                 // 5. Due Date
-                data: "id",
+                data: "due_date",
                 orderable: true,
                 searchable: false,
                 visible: true,
@@ -254,7 +261,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return vm.getStatusHtml(full.processing_status)
+                    return vm.getStatusHtml(full.processing_status, full.due_date)
                 },
             }
         },
@@ -266,7 +273,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return vm.getStatusHtml(full.customer_status)
+                    return vm.getStatusHtml(full.customer_status, full.due_date)
                 },
             }
         },
@@ -307,7 +314,7 @@ export default {
         assignedToNameColumn: function () {
             return {
                 // 7. Action
-                data: "id",
+                data: "assigned_to_name",
                 orderable: true,
                 searchable: true,
                 visible: true,
@@ -318,6 +325,7 @@ export default {
         },
         applicableColumns: function () {
             let columns = [
+                this.columnId,
                 this.lodgementNumberColumn, // Number
                 this.applicationTypeColumn, // Type
                 this.holderColumn, // Holder
@@ -328,6 +336,7 @@ export default {
             ]
             if (this.is_organisation_view) {
                 columns = [
+                    this.columnId,
                     this.lodgementNumberColumn,
                     this.applicationTypeColumn,
                     this.licenceNumberColumn,
@@ -338,6 +347,7 @@ export default {
             }
             else if (this.level === 'internal') {
                 columns = [
+                    this.columnId,
                     this.lodgementNumberColumn,
                     this.applicationTypeColumn,
                     this.holderColumn,
@@ -426,7 +436,7 @@ export default {
                 class_name = 'info';
                 icon = 'calendar-plus';
             }
-            if ('Due Soon' == status) {
+            if ('Due' == status) {
                 class_name = 'warning';
                 icon = 'clock';
             }
