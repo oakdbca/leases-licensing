@@ -57,6 +57,7 @@ router.register(
     r"competitive_process", competitive_process_api.CompetitiveProcessViewSet
 )
 router.register(r"compliance_paginated", compliances_api.CompliancePaginatedViewSet)
+router.register(r"compliance_referrals", compliances_api.ComplianceReferralViewSet)
 router.register(r"referrals", proposal_api.ReferralViewSet)
 router.register(r"external_referee_invites", proposal_api.ExternalRefereeInviteViewSet)
 router.register(r"approvals", approval_api.ApprovalViewSet)

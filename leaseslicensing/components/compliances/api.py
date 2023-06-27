@@ -21,6 +21,7 @@ from leaseslicensing.components.compliances.models import (
     Compliance,
     ComplianceAmendmentReason,
     ComplianceAmendmentRequest,
+    ComplianceReferral,
     update_proposal_compliance_filename,
 )
 from leaseslicensing.components.compliances.serializers import (
@@ -29,6 +30,7 @@ from leaseslicensing.components.compliances.serializers import (
     ComplianceAmendmentRequestSerializer,
     ComplianceCommsSerializer,
     ComplianceSerializer,
+    ComplianceReferralSerializer,
     InternalComplianceSerializer,
     SaveComplianceSerializer,
 )
@@ -537,3 +539,13 @@ class ComplianceAmendmentReasonChoicesView(views.APIView):
             for c in choices:
                 choices_list.append({"key": c.id, "value": c.reason})
         return Response(choices_list)
+
+
+class ComplianceReferralViewSet(viewsets.ModelViewSet):
+    queryset = ComplianceReferral.objects.all()
+    serializer_class = ComplianceReferralSerializer
+
+    def get_queryset(self):
+        if is_internal(self.request):
+            return ComplianceReferral.objects.all()
+        return super().get_queryset()

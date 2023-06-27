@@ -13,6 +13,7 @@ module.exports = {
     competitive_process_statuses_dict: '/api/competitive_process_statuses_dict',
     competitive_process: '/api/competitive_process/',
     compliance_statuses_dict: '/api/compliance_statuses_dict',
+    compliance_referrals: '/api/compliance_referrals/',
     compliances_paginated_external: '/api/compliance_paginated/list_external/',
     compliances: '/api/compliances.json',
     countries: '/api/countries',
