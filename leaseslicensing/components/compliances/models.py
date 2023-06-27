@@ -55,7 +55,7 @@ class Compliance(RevisionedMixin, models.Model):
     PROCESSING_STATUS_OVERDUE = "overdue"
 
     PROCESSING_STATUS_CHOICES = (
-        (PROCESSING_STATUS_DUE, "Due Soon"),
+        (PROCESSING_STATUS_DUE, "Due"),
         (PROCESSING_STATUS_FUTURE, "Future"),
         (PROCESSING_STATUS_WITH_ASSESSOR, "With Assessor"),
         (PROCESSING_STATUS_APPROVED, "Approved"),
@@ -71,7 +71,7 @@ class Compliance(RevisionedMixin, models.Model):
     CUSTOMER_STATUS_OVERDUE = "overdue"
 
     CUSTOMER_STATUS_CHOICES = (
-        (CUSTOMER_STATUS_DUE, "Due Soon"),
+        (CUSTOMER_STATUS_DUE, "Due"),
         (CUSTOMER_STATUS_FUTURE, "Future"),
         (CUSTOMER_STATUS_WITH_ASSESSOR, "Under Review"),
         (CUSTOMER_STATUS_APPROVED, "Approved"),
@@ -166,8 +166,11 @@ class Compliance(RevisionedMixin, models.Model):
 
     @property
     def amendment_requests(self):
-        qs = ComplianceAmendmentRequest.objects.filter(compliance=self)
-        return qs
+        return ComplianceAmendmentRequest.objects.filter(compliance=self)
+
+    @property
+    def current_amendment_requests(self):
+        return self.amendment_requests.filter(status=ComplianceAmendmentRequest.STATUS_CHOICE_REQUESTED)
 
     @property
     def participant_number_required(self):
@@ -198,6 +201,10 @@ class Compliance(RevisionedMixin, models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
+        if not self.assessment:
+            ComplianceAssessment.objects.create(
+                compliance=self,
+            )
         if self.lodgement_number == "":
             new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
@@ -463,7 +470,10 @@ class ComplianceAmendmentReason(models.Model):
 
 
 class ComplianceAmendmentRequest(CompRequest):
-    STATUS_CHOICES = (("requested", "Requested"), ("amended", "Amended"))
+    STATUS_CHOICE_REQUESTED = "requested"
+    STATUS_CHOICE_AMENDED = "amended"
+
+    STATUS_CHOICES = ((STATUS_CHOICE_REQUESTED, "Requested"), (STATUS_CHOICE_AMENDED, "Amended"))
     status = models.CharField(
         "Status", max_length=30, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
@@ -494,3 +504,80 @@ class ComplianceAmendmentRequest(CompRequest):
                 # )
 
                 send_amendment_email_notification(self, request, compliance)
+
+
+class ComplianceAssessment(RevisionedMixin):
+    compliance = models.OneToOneField(
+        Compliance, related_name="assessment", on_delete=models.CASCADE
+    )
+    completed = models.BooleanField(default=False)
+    submitter = models.IntegerField(blank=True, null=True)  # EmailUserRO
+    assessor_comment = models.TextField(blank=True)
+    deficiency_comment = models.TextField(blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+
+class ComplianceReferral(RevisionedMixin):
+    PROCESSING_STATUS_WITH_REFERRAL = "with_referral"
+    PROCESSING_STATUS_RECALLED = "recalled"
+    PROCESSING_STATUS_COMPLETED = "completed"
+
+    PROCESSING_STATUS_CHOICES = (
+        (PROCESSING_STATUS_WITH_REFERRAL, "Pending"),
+        (PROCESSING_STATUS_RECALLED, "Recalled"),
+        (PROCESSING_STATUS_COMPLETED, "Completed"),
+    )
+    lodged_on = models.DateTimeField(auto_now_add=True)
+    compliance = models.ForeignKey(
+        Compliance, related_name="referrals", on_delete=models.CASCADE
+    )
+    sent_by = models.IntegerField()  # EmailUserRO
+    referral = models.IntegerField()  # EmailUserRO
+    is_external = models.BooleanField(default=False)
+    linked = models.BooleanField(default=False)
+    processing_status = models.CharField(
+        "Processing Status",
+        max_length=30,
+        choices=PROCESSING_STATUS_CHOICES,
+        default=PROCESSING_STATUS_CHOICES[0][0],
+    )
+    text = models.TextField(blank=True)
+    referral_text = models.TextField(blank=True)
+    assigned_officer = models.IntegerField()  # EmailUserRO
+    comment = models.TextField(blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ("-lodged_on",)
+
+
+def compliance_referral_document_upload_to(instance, filename):
+    return f"compliance_referral_documents/{instance.id}/{filename}"
+
+
+class ComplianceReferralDocument(Document):
+    compliance_referral = models.ForeignKey(
+        ComplianceReferral, related_name="referral_documents", on_delete=models.CASCADE
+    )
+    _file = SecureFileField(upload_to=compliance_referral_document_upload_to, max_length=512)
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    can_delete = models.BooleanField(
+        default=True
+    )  # after initial submit prevent document from being deleted
+
+    def delete(self):
+        if self.can_delete:
+            return super().delete()
+
+        logger.info(
+            "Cannot delete existing document object after Application has been submitted "
+            "(including document submitted before Application pushback to status Draft): {}".format(
+                self.name
+            )
+        )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ("compliance_referral","-uploaded_date")
