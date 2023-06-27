@@ -1402,13 +1402,3 @@ export default {
     },
 }
 </script>
-<style scoped>
-.form-floating textarea {
-    padding-top: 40px;
-    height: 70px;
-    font-style: italic;
-    color: #999;
-    padding-top: 36px !important;
-    font-size: 14px;
-}
-</style>
