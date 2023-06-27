@@ -31,6 +31,14 @@ module.exports = {
         COMPLETED_APPLICATION: { ID: 'completed_application', TEXT: 'Completed (Application)' },
         COMPLETED_DECLINED: { ID: 'completed_declined', TEXT: 'Completed (Declined)' },
     },
+    COMPLIANCE_PROCESSING_STATUS: {
+        DUE: { ID: 'due', TEXT: 'Due' },
+        FUTURE: { ID: 'future', TEXT: 'Future' },
+        WITH_ASSESSOR: { ID: 'with_assessor', TEXT: 'With Assessor' },
+        APPROVED: { ID: 'approved', TEXT: 'Approved' },
+        DISCARDED: { ID: 'discarded', TEXT: 'Discarded' },
+        OVERDUE: { ID: 'overdue', TEXT: 'Overdue' },
+    },
     APPROVAL_STATUS: {
         CURRENT: { ID: 'current', TEXT: 'Current' },
         CURRENT_BASE_FEE_REVIEW: { ID: 'current_base_fee_review', TEXT: 'Current (base fee review)' },
@@ -50,6 +58,7 @@ module.exports = {
         PROCESSING_STATUS_RECALLED: { ID: 'recalled', TEXT: 'Recalled' },
         PROCESSING_STATUS_COMPLETED: { ID: 'completed', TEXT: 'Completed' },
     },
+
     DATATABLE_PROCESSING_HTML: '<div class="d-flex justify-content-center"><div class="d-flex spinner-border text-primary my-4" role="status"><span class="visually-hidden">Loading...</span></div></div>',
 
     ERRORS: {
