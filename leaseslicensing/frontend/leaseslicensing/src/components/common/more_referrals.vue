@@ -21,10 +21,6 @@ export default {
             type: Boolean,
             required: true
         },
-        proposal: {
-            type: Object,
-            required: true
-        },
         referral_url: {
             type: String,
             default: null
