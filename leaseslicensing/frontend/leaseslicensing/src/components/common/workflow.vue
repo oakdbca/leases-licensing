@@ -59,7 +59,7 @@
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Invite Referee</div>
                     <div class="mb-3">
-                        <select :disabled="!canLimitedAction" ref="department_users" class="form-control">
+                        <select :disabled="!canLimitedAction" ref="department_users" class="form-select">
                         </select>
                         <template v-if='!sendingReferral'>
                             <template v-if="selected_referral">
@@ -165,8 +165,8 @@
                             </tr>
                         </tbody>
                     </table>
-                    <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :proposal="proposal"
-                        :canAction="canLimitedAction" :isFinalised="isFinalised" :referral_url="referralListURL" />
+                    <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :canAction="canLimitedAction"
+                        :isFinalised="isFinalised" :referral_url="referralListURL" />
                 </div>
             </div>
 
