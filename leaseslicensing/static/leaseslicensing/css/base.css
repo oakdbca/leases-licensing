@@ -161,6 +161,24 @@ table.dataTable a:hover {
     font-size: 14px !important;
 }
 
+/* Styles for mini referrals tables */
+
+.table-referrals {
+    font-size: 0.8em;
+}
+
+.fa-bell:hover,
+.fa-times-circle:hover {
+    opacity: 0.7;
+}
+
+.truncate-name {
+    max-width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Styles for datatables */
 
 .top-buffer-s {
