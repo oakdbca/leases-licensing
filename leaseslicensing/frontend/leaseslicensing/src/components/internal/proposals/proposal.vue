@@ -1104,9 +1104,23 @@ export default {
             let vm = this;
             console.log('discardProposal');
             await discardProposal(this.proposal).then(data => {
-                console.log(data)
-                vm.proposal = Object.assign({}, data);
-                vm.uuid++;
+                if (data != null) {
+                    // Only update the proposal if the discard was successful
+                    console.log(data)
+                    vm.proposal = Object.assign({}, data);
+                    vm.uuid++;
+                    swal.fire({
+                        title: 'Discarded',
+                        text: 'The application has been discarded',
+                        icon: 'success',
+                    });
+                }
+            }).catch(error => {
+                swal.fire({
+                    title: 'The proposal could not be discarded',
+                    text: error,
+                    icon: 'error',
+                });
             });
         },
         declineProposal: function () {

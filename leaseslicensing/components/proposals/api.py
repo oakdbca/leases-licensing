@@ -1823,18 +1823,31 @@ class ProposalViewSet(UserActionLoggingViewset):
         self.perform_update(serializer)
         return Response(serializer.data)
 
+    @detail_route(methods=["patch"], detail=True)
     @basic_exception_handler
-    def destroy(self, request, *args, **kwargs):
+    def discard(self, request, *args, **kwargs):
         http_status = status.HTTP_200_OK
         instance = self.get_object()
+        if not instance.can_discard(request):
+            raise serializers.ValidationError("Not allowed to discard this proposal.")
+
         serializer = SaveProposalSerializer(
             instance,
-            {"processing_status": "discarded", "previous_application": None},
+            {
+                "processing_status": Proposal.PROCESSING_STATUS_DISCARDED,
+                "previous_application": None,
+            },
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        return Response(serializer.data, status=http_status)
+
+        return Response(
+            ProposalSerializer(
+                Proposal.objects.get(id=instance.id), context={"request": request}
+            ).data,
+            status=http_status,
+        )
 
     @detail_route(methods=["get"], detail=True)
     @basic_exception_handler

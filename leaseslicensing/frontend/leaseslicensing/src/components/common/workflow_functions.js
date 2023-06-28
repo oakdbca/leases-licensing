@@ -1,4 +1,4 @@
-import { api_endpoints, helpers } from '@/utils/hooks';
+import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import '../../../../../static/leaseslicensing/css/workflow.css';
 
 /**
@@ -180,34 +180,16 @@ export async function discardProposal(proposal) {
         icon: "warning",
         showCancelButton: true,
         confirmButtonText: 'Discard Application',
-        confirmButtonColor: '#dc3545'
+        confirmButtonColor: '#dc3545',
     }).then(async result => {
-        return new Promise((resolve, reject) => {
-            if (result.isConfirmed) {
-                // Queries the delete endpoint
-                fetch(api_endpoints.discard_proposal(proposal_id), { method: 'DELETE', })
-                    .then(async response => {
-                        const data = await response.json();
-                        if (!response.ok) {
-                            const error = (data && data.message) || response.statusText;
-                            console.log(error)
-                            swal.fire({
-                                title: 'Error',
-                                text: 'The proposal could not be discarded',
-                                icon: 'error',
-                            });
-                            reject(error);
-                        }
-                        swal.fire({
-                            title: 'Discarded',
-                            text: 'The application has been discarded',
-                            icon: 'success',
-                        });
-                        resolve(data);
-                    });
-            } else {
-                resolve(proposal);
-            }
+        if (result.isConfirmed) {
+            // // Queries the discard proposal endpoint
+            return utils.fetchUrl(api_endpoints.discard_proposal(proposal_id), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+            });
+        } else {
+            return null;
         }
-    )});
+    });
 }

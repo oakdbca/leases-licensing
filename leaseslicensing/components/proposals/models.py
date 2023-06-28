@@ -75,7 +75,7 @@ from leaseslicensing.components.tenure.models import (
     Tenure,
     Vesting,
 )
-from leaseslicensing.helpers import user_ids_in_group
+from leaseslicensing.helpers import user_ids_in_group, is_approver, is_customer
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
     APPLICATION_TYPE_LEASE_LICENCE,
@@ -1421,16 +1421,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.org_applicant:
             return can_admin_org(self.org_applicant, user_id)
 
-    @property
-    def is_discardable(self):
-        """
-        An application can be discarded by a customer if:
-        1 - It is a draft
-        2- or if the application has been pushed back to the user
-        """
+    def can_discard(self, request):
         return (
-            self.processing_status == "draft"
-            or self.processing_status == "awaiting_applicant_response"
+            is_approver(request)
+            and self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER
+            or is_customer(request)
+            and request.user.id == self.submitter
         )
 
     @property

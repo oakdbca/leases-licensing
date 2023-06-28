@@ -240,7 +240,7 @@ export default {
         'proposedDecline',
         'proposedApproval',
         'issueApproval',
-        'declineProposal',
+        'discardProposal',
         'updateProposalData',
     ],
     data: function () {

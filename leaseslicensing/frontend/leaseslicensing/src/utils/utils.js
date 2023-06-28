@@ -347,24 +347,25 @@ export default {
     /**
      * Generic function to fetch data from an endpoint
      * @param {String} url The url endpoint to fetch data from
+     * @param {Object} options The options to pass to the fetch function (optional)
      * @returns a Promise
      */
-    fetchUrl: async function (url) {
+    fetchUrl: async function (url, options) {
         return new Promise((resolve, reject) => {
-            fetch(url)
-                .then(async response => {
-                    const data = await response.json();
-                    if (!response.ok) {
-                        const error = (data && data.message) || response.statusText;
-                        console.log(error);
-                        reject(error);
-                    }
-                    resolve(data);
-                })
-                .catch(error => {
-                    console.error('There was an error!', error);
+            let f = options === undefined? fetch(url): fetch(url, options);
+            f.then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    let error = (data.constructor.name === 'Array' && data) || (data && data.message) || response.statusText;
+                    console.log(error);
                     reject(error);
-                });
+                }
+                resolve(data);
+            })
+            .catch(error => {
+                console.error('There was an error!', error);
+                reject(error);
+            });
         });
     }
 };
