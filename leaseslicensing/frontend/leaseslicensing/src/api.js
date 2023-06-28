@@ -65,7 +65,7 @@ module.exports = {
         return `/api/approvals/${id}/approval_history?format=datatables`;
     },
     discard_proposal: function (id) {
-        return `/api/proposal/${id}.json`;
+        return `/api/proposal/${id}/discard/`;
     },
 
     // ------------------- ledger ui
@@ -74,5 +74,7 @@ module.exports = {
     account_details: '/api/account/',
     updateAccountDetails: function (id) {
         return `/ledger-ui/api/update-account-details/${id}/`;
-    }
+    },
+
+    details_text: '/api/detailstext/',
 };

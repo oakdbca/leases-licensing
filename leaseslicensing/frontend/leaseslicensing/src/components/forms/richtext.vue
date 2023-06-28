@@ -1,14 +1,14 @@
 <template lang="html">
     <div>
         <div class="form-group">
-            <ckeditor :editor="editor" v-model="detailsText" :config="editorConfig" :name="name" :required="isRequired"
-                :disabled="readonly" :read-only="readonly" />
+            <ckeditor :editor="editor" v-model="detailsText" :config="editor.defaultConfig" :name="name" :required="isRequired"
+                :disabled="readonly" :read-only="readonly" :id="id"/>
         </div>
     </div>
 </template>
 
 <script>
-import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
+import Editor from './ckeditor.js'
 
 export default {
     name: 'RichText',
@@ -32,17 +32,17 @@ export default {
         }
 
         return {
-            editorConfig: {
-                language: 'en',
-                placeholder: vm.placeholder_text,
-            },
             detailsText: '',
-            editor: ClassicEditor,
+            editor: Editor,
         }
     },
     watch: {
         detailsText: function () {
             // Parent component can subscribe this event in order to update text
+            if (this.proposalData == this.detailsText) {
+                // Only emit if the text was changed through input, not through the parent component
+                return;
+            }
             this.$emit('textChanged', this.detailsText)
         }
     },
@@ -58,6 +58,7 @@ export default {
         if (this.proposalData) {
             this.detailsText = this.proposalData;
         }
+        this.editor.defaultConfig["placeholder"] = this.placeholder_text;
     },
 }
 </script>

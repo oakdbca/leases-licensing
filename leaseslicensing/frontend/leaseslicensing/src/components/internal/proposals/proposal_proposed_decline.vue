@@ -15,11 +15,12 @@
                                     </div>
                                     <div class="col-sm-9">
                                         <RichText
-                                        :proposalData="decline.reason"
+                                        :proposalData="proposedDecisionDetails"
+                                        placeholder_text="Add some details here"
                                         ref="decline_reason"
-                                        id="decline_reason"
+                                        :id="proposal.application_type.name=='lease_licence'?'lease-licence-details-decline':'registration-of-interest-details-decline'"
                                         :can_view_richtext_src=true
-                                        :key="proposedApprovalKey"
+                                        :key="uuid"
                                         />
                                     </div>
                                 </div>
@@ -71,7 +72,8 @@ import modal from '@vue-utils/bootstrap-modal.vue'
 import VueAlert from '@vue-utils/alert.vue'
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
-import { helpers, api_endpoints, constants } from "@/utils/hooks.js"
+import { helpers, api_endpoints, utils } from "@/utils/hooks.js"
+import { v4 as uuid } from 'uuid';
 export default {
     name:'Decline-Proposal',
     components:{
@@ -93,10 +95,6 @@ export default {
             type: String,
             //default: ''
         },
-        proposal: {
-            type: Object,
-            required: true,
-        },
     },
     data:function () {
         let vm = this;
@@ -110,6 +108,8 @@ export default {
             errorString: '',
             successString: '',
             success:false,
+            uuid: uuid(),
+            detailsTexts: {},
         }
     },
     computed: {
@@ -155,6 +155,23 @@ export default {
         leaseLicence: function(){
             if (this.proposal && this.proposal.application_type.name === 'lease_licence') {
                 return true;
+            }
+        },
+        proposedDecisionDetails: function() {
+            /** Returns the decline message.
+             */
+
+            // This is here to re-evalute the computed property after fetching details texts
+            this.uuid;
+
+            if (this.decline.reason) {
+                return this.decline.reason;
+            } else {
+                // Use standard text from admin
+                let id = this.$refs.hasOwnProperty("decline_reason") ?
+                            this.$refs.decline_reason.id :
+                            "";
+                return this.detailsTexts[id] || "";
             }
         },
 
@@ -273,10 +290,20 @@ export default {
        */
    },
    created:function () {
-       let vm =this;
-       vm.form = document.forms.declineForm;
-       //vm.addFormValidations();
-       this.decline = Object.assign({}, this.proposal.proposaldeclineddetails);
+        let vm =this;
+        vm.form = document.forms.declineForm;
+        //vm.addFormValidations();
+        this.decline = Object.assign({}, this.proposal.proposaldeclineddetails);
+
+        let initialisers = [
+            utils.fetchUrl(`${api_endpoints.details_text}key-value-list/`),
+        ]
+        Promise.all(initialisers).then(data => {
+            for (let detailText of data[0]) {
+                vm.detailsTexts[detailText.target] = detailText.body;
+            }
+            vm.uuid = uuid();
+        });
    }
 }
 </script>

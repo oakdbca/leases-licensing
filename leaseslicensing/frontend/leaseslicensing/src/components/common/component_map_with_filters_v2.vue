@@ -2,7 +2,7 @@
     <!--
         TODO tasks (and ideas):
         - populate tenure, locality, and categorisation from geoserver response (see: map_functions::validateFeature for response values and owsQuery prop for query paramerters)
-        - prevent polygon delete after save (or save + status change)
+        - [DONE] prevent polygon delete after save (or save + status change)
         - polygon redo button
         - polygon edit button (move and add/remove vertices)
         - pass in map tab filterable proposals as prop (see: prop featureCollection)
@@ -12,13 +12,13 @@
         - prevent referrals from creating/editing polygons in the frontend (does not save in backend anyway)
         - disable draw tool for external when model is not in draft status
         - disable draw tool for referral when model is not in with referral status
-        - display polygons of approved application on new license application (external 017, internal 041)
-        - display polygons from the competitive process of an application that proceeded to a competitive process on the application page
+        - [] display polygons of approved application on new license application (external 017, internal 041)
+        - [] display polygons from the competitive process of an application that proceeded to a competitive process on the application page
         - implement map on approval details page and map tab
         - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
-        - mouse-over control tooltips (zoom-in, -out, toggle-fullscreen have tooltips by default, custom controls should as well)
         - delete old map files
         - rename this file
+        - automatic zoom to all on map load
      -->
     <div>
         <CollapsibleFilters v-if="filterable" :component_title="'Filters' + filterInformation" ref="collapsible_filters"
@@ -57,36 +57,54 @@
             </div>
         </CollapsibleFilters>
 
-        <div class="d-flex justify-content-end align-items-center mb-2">
-            <div @click="displayAllFeatures" class="btn mr-2">Zoom to All</div>
-            <button type="button" class="btn btn-primary" @click="geoJsonButtonClicked"><i class="fa-solid fa-download"></i>
-                Get GeoJSON</button>
+        <div class="justify-content-end align-items-center mb-2">
+            <div v-if="mapInfoText.length > 0" class="row">
+                <div class="col-md-12">
+                    <BootstrapAlert class="mb-0">
+                        <p><span v-html="mapInfoText"></span></p>
+                    </BootstrapAlert>
+                </div>
+            </div>
         </div>
 
-        <VueAlert :show.sync="_errorMessage != null" type="danger" style="color: red"><strong> {{ _errorMessage }} </strong></VueAlert>
+        <VueAlert :show.sync="_errorMessage != null" type="danger" style="color: red"><strong> {{ _errorMessage }} </strong>
+        </VueAlert>
 
         <div :id="map_container_id" style="position: relative;">
             <div :id="elem_id" class="map">
-                <div class="basemap-button">
+                <div class="basemap-button" title="Toggle background map">
                     <img id="basemap_sat" src="../../assets/satellite_icon.jpg" @click="setBaseLayer('sat')" />
                     <img id="basemap_osm" src="../../assets/map_icon.png" @click="setBaseLayer('osm')" />
                 </div>
                 <div class="optional-layers-wrapper">
                     <!-- Toggle measure tool between active and not active -->
                     <div class="optional-layers-button-wrapper">
-                        <div :class="[
-                                mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
-                            ]" @click="set_mode.bind(this)('measure')">
+                        <div :title="mode == 'measure' ? 'Deactivate measure tool' : 'Activate measure tool'" :class="[
+                            mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('measure')">
                             <img class="svg-icon" src="../../assets/ruler.svg" />
                         </div>
                     </div>
                     <div v-if="drawable" class="optional-layers-button-wrapper">
-                        <div :class="[
-                                mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
-                            ]" @click="set_mode.bind(this)('draw')">
+                        <div :title="mode == 'draw' ? 'Deactivate draw tool' : 'Activate draw tool'" :class="[
+                            mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('draw')">
                             <img class="svg-icon" src="../../assets/pen-icon.svg" />
                         </div>
                     </div>
+                    <div v-if="polygonCount" class="optional-layers-button-wrapper">
+                        <div title="Zoom map to layer(s)" class="optional-layers-button" @click="displayAllFeatures">
+                            <img class="svg-icon" src="../../assets/map-zoom.svg" />
+                        </div>
+                    </div>
+                    <div class="optional-layers-button-wrapper">
+                        <div title="Download layers as GeoJSON" class="optional-layers-button"
+                            @click="geoJsonButtonClicked">
+                            <img class="svg-icon" src="../../assets/download.svg" />
+                        </div>
+                    </div>
+
+
                     <div style="position:relative">
                         <transition v-if="optionalLayers.length">
                             <div class="optional-layers-button-wrapper">
@@ -98,7 +116,7 @@
                         <transition v-if="optionalLayers.length">
                             <div div class="layer_options layer_menu" v-show="hover" @mouseleave="hover = false">
                                 <template v-for="layer in optionalLayers">
-                                    <div class="row">
+                                    <div class="row" :title="layer.values_.abstract">
                                         <input type="checkbox" :id="layer.ol_uid" :checked="layer.values_.visible"
                                             @change="changeLayerVisibility(layer)" class="layer_option col-md-1" />
                                         <label :for="layer.ol_uid" class="layer_option col-md-6">{{ layer.get('title')
@@ -109,21 +127,28 @@
                             </div>
                         </transition>
                     </div>
-                    <div v-if="selectedFeatureIds.length>0" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button">
-                            <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash"
-                                @click="removeModelFeatures()" />
-                            <span class='badge badge-warning' id='selectedFeatureCount'>{{ selectedFeatureIds.length }}</span>
+                    <div v-if="optionalLayersActive" class="optional-layers-button-wrapper">
+                        <div :title="mode == 'info' ? 'Deactivate info tool' : 'Activate info tool'" :class="[
+                            mode == 'info' ? 'optional-layers-button-active' : 'optional-layers-button'
+                        ]" @click="set_mode.bind(this)('info')">
+                            <img class="svg-icon" src="../../assets/info-query.svg" />
+                        </div>
+                    </div>
+                    <div v-if="selectedFeatureIds.length > 0" class="optional-layers-button-wrapper">
+                        <div class="optional-layers-button" title="Delete selected features" @click="removeModelFeatures()">
+                            <img class="svg-icon" src="../../assets/trash-bin.svg" />
+                            <span class='badge badge-warning' id='selectedFeatureCount'>{{ selectedFeatureIds.length
+                            }}</span>
                         </div>
                     </div>
                     <div v-if="showUndoButton" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button" @click="undoLeaseLicensePoint()">
-                            <img class="svg-icon" src="../../assets/undo.svg" />
+                        <div class="optional-layers-button" @click="undoLeaseLicensePoint()" title="Undo last point">
+                            <img class="svg-icon" src="../../assets/map-undo.svg" />
                         </div>
                     </div>
                     <div v-if="showRedoButton" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button" @click="redoLeaseLicensePoint()">
-                            <img class="svg-icon" src="../../assets/redo.svg" />
+                        <div class="optional-layers-button" @click="redoLeaseLicensePoint()" title="Redo last point">
+                            <img class="svg-icon" src="../../assets/map-redo.svg" />
                         </div>
                     </div>
                 </div>
@@ -133,7 +158,9 @@
                         <div class="toast-header">
                             <img src="" class="rounded me-2" alt="">
                             <!-- FIXME: Can this be standardised into the same field name? -->
-                            <strong class="me-auto">{{ selectedModel.label || selectedModel.application_type_name_display || selectedModel.application_type.name_display }}: {{ selectedModel.lodgement_number }}</strong>
+                            <strong class="me-auto">{{ selectedModel.label || selectedModel.application_type_name_display ||
+                                selectedModel.application_type.name_display }}: {{ selectedModel.lodgement_number
+    }}</strong>
                         </div>
                         <div class="toast-body">
                             <table class="table table-sm">
@@ -141,19 +168,68 @@
                                     <tr>
                                         <th scope="row">Processing Status</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td>{{ selectedModel.status || selectedModel.processing_status_display || selectedModel.processing_status }}</td>
+                                        <td>{{ selectedModel.status || selectedModel.status_display ||
+                                            selectedModel.processing_status_display || selectedModel.processing_status }}
+                                        </td>
                                     </tr>
                                     <!-- TODO: `created_at` is not formatted to DD/MM/YYYY -->
-                                    <tr v-if="selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at">
-                                        <th scope="row">Lodgement Date</th>
+                                    <tr
+                                        v-if="selectedModel.copied_from || selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at || selectedModel.created_at_display">
+                                        <th v-if="selectedModel.copied_from" scope="row">Lodgement (original application)
+                                        </th>
+                                        <th v-else scope="row">Lodgement Date</th>
                                         <!-- FIXME: Can this be standardised into the same field name? -->
-                                        <td>{{ selectedModel.lodgement_date_display || selectedModel.lodgement_date || selectedModel.created_at
+                                        <td v-if="selectedModel.copied_from">{{
+                                            selectedModel.copied_from.lodgement_date_display }}</td>
+                                        <td v-else>{{ selectedModel.lodgement_date_display || selectedModel.lodgement_date
+                                            || selectedModel.created_at || selectedModel.created_at_display
                                         }}</td>
                                     </tr>
                                     <tr v-if="selectedModel.polygon_source">
                                         <th scope="row">Polygon Source</th>
                                         <td>{{ selectedModel.polygon_source
                                         }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- Overlay popup bubble when clicking a DBCA layer feature -->
+                <div id="popup" class="ol-popup overlay-feature-popup">
+                    <template v-if="overlayFeatureInfo">
+                        <div class="toast-header">
+                            <img src="" class="rounded me-2" alt="">
+                            <strong class="me-auto">{{ overlayFeatureInfo.leg_name }}</strong>
+                        </div>
+                        <div id="popup-content toast-body">
+                            <table style="width: 100%; z-index:9999" class="table table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th scope="row">Identifier
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_identifier }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Vesting
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_vesting }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Legal Act
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_act }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Tenure
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.leg_tenure }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Category
+                                        </th>
+                                        <td>{{ overlayFeatureInfo.category }}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -198,18 +274,18 @@ import VectorSource from 'ol/source/Vector';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { FullScreen as FullScreenControl } from 'ol/control';
 import { LineString, Point, Polygon } from 'ol/geom';
-import { fromLonLat, toLonLat, transform, Projection } from 'ol/proj';
 import GeoJSON from 'ol/format/GeoJSON';
+import Overlay from 'ol/Overlay.js';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js'
 import RangeSlider from '@/components/forms/range_slider.vue'
-import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/components/common/map_functions.js'
+import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
 
 export default {
     name: 'MapComponentWithFiltersV2',
     emits: [
-            'filter-appied',
-            'validate-feature',
-            ],
+        'filter-appied',
+        'validate-feature',
+    ],
     props: {
         level: {
             type: String,
@@ -266,7 +342,7 @@ export default {
         featureCollection: {
             type: Object,
             required: false,
-            default: {"features": [], "type": "FeatureCollection"},
+            default: { "features": [], "type": "FeatureCollection" },
             validator: function (val) {
                 return val.type == 'FeatureCollection' ? true : false;
             }
@@ -362,6 +438,14 @@ export default {
             required: false,
             default: false,
         },
+        /**
+         * A text that explains what is expected on the map
+         */
+        mapInfoText: {
+            type: String,
+            required: false,
+            default: '',
+        },
     },
     data() {
         let vm = this;
@@ -410,18 +494,20 @@ export default {
             sketchCoordinatesHistory: [[]],
             defaultColor: '#eeeeee',
             clickSelectStroke: new Stroke({
-                    color: 'rgba(255, 0, 0, 0.7)',
-                    width: 2,
-                }),
+                color: 'rgba(255, 0, 0, 0.7)',
+                width: 2,
+            }),
             hoverFill: new Fill({
-                    color: 'rgba(255, 255, 255, 0.5)',
-                }),
+                color: 'rgba(255, 255, 255, 0.5)',
+            }),
             hoverStroke: new Stroke({
-                    color: 'rgba(255, 255, 255, 0.5)',
-                    width: 1,
-                }),
+                color: 'rgba(255, 255, 255, 0.5)',
+                width: 1,
+            }),
             set_mode: set_mode,
             _errorMessage: null,
+            overlayFeatureInfo: {},
+            _deletedFeatures: [], // keep track of deleted features
         }
     },
     computed: {
@@ -463,6 +549,20 @@ export default {
                 this.drawForModel.getActive() &&
                 this.sketchCoordinatesHistory.length > this.sketchCoordinates.length
         },
+        optionalLayersActive: function () {
+            if (this.optionalLayers.length == 0) {
+                return false;
+            }
+            let visible_layers = this.optionalLayers.filter(layer => layer.values_.visible === true);
+            return visible_layers.length > 0;
+        },
+        polygonCount: function () {
+            let vm = this;
+            if (!this.modelQuerySource) {
+                return 0;
+            }
+            return vm.modelQuerySource.getFeatures().length;
+        }
     },
     components: {
         CollapsibleFilters,
@@ -496,6 +596,11 @@ export default {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            }
+        },
+        selectedFeatureIds: function () {
+            if (this.selectedFeatureIds.length == 0) {
+                this.errorMessage(null);
             }
         },
 
@@ -612,7 +717,7 @@ export default {
          * @param {dict} featureData A feature object
          * @param {Proxy} model A model object
          */
-        styleByColor: function(featureData, model) {
+        styleByColor: function (featureData, model) {
             let vm = this;
 
             if (vm.styleBy === 'assessor') {
@@ -625,7 +730,7 @@ export default {
                 return vm.featureColors["unknown"] || vm.defaultColor;
             }
         },
-        createStyle: function(color) {
+        createStyle: function (color) {
             let vm = this;
             if (!color) {
                 color = vm.defaultColor;
@@ -730,11 +835,21 @@ export default {
                 source: satelliteTileWms,
             })
 
+            let container = document.getElementById('popup');
+            let overlay = new Overlay({
+                element: container,
+                autoPan: true,
+                autoPanAnimation: {
+                    duration: 150
+                }
+            });
+
             vm.map = new Map({
                 layers: [
                     vm.tileLayerMapbox,
                     vm.tileLayerSat,
                 ],
+                overlays: [overlay],
                 target: vm.elem_id,
                 view: new View({
                     center: [115.95, -31.95],
@@ -819,7 +934,7 @@ export default {
         },
         initialiseDrawLayer: function () {
             let vm = this;
-            if (!vm.drawable){
+            if (!vm.drawable) {
                 return;
             }
 
@@ -850,7 +965,7 @@ export default {
 
                     return geometry;
                 },
-                condition: function(evt) {
+                condition: function (evt) {
                     if (evt.originalEvent.buttons === 1) {
                         // Only allow drawing when the left mouse button is pressed
                         return true;
@@ -889,16 +1004,17 @@ export default {
                 let model = vm.context || {};
 
                 let color = vm.featureColors["draw"] ||
-                            vm.featureColors["unknown"] ||
-                            vm.defaultColor;
+                    vm.featureColors["unknown"] ||
+                    vm.defaultColor;
                 evt.feature.setProperties({
                     id: vm.newFeatureId,
                     model: model,
                     polygon_source: "New",
                     name: model.id || -1,
                     // FIXME: Can this be standardised into the same field name?
-                    label: model.label || model.application_type_name_display || (model.application_type? model.application_type.name_display: undefined) || "Draw",
+                    label: model.label || model.application_type_name_display || (model.application_type ? model.application_type.name_display : undefined) || "Draw",
                     color: color,
+                    locked: false,
                 })
                 vm.newFeatureId++;
                 console.log('newFeatureId = ' + vm.newFeatureId);
@@ -920,7 +1036,7 @@ export default {
             let _hoverFill = null;
             function hoverSelect(feature) {
                 const color = feature.get('color') || vm.defaultColor;
-                _hoverFill = new Fill({color: color});
+                _hoverFill = new Fill({ color: color });
 
                 // If the feature is already selected, use the select stroke when hovering
                 if (vm.selectedFeatureIds.includes(feature.getProperties().id)) {
@@ -956,13 +1072,30 @@ export default {
                         console.error("No model found for feature");
                     } else {
                         model.polygon_source = selected.getProperties().polygon_source;
+                        model.copied_from = selected.getProperties().copied_from;
                     }
                     vm.selectedModel = model
                     selected.setStyle(hoverSelect);
-                }, {layerFilter: function (layer) {
+
+                    return true;
+                }, {
+                    layerFilter: function (layer) {
                         return layer.get('name') === 'query_layer';
                     }
                 });
+
+                // Change to info cursor if hovering over an optional layer
+                let hit = vm.map.forEachLayerAtPixel(evt.pixel, function (layer) {
+                    layer.get("name") //dbca_legislated_lands_and_waters
+                    let optional_layer_names = vm.optionalLayers.map((layer) => { return layer.get("name") })
+
+                    if (vm.informing) {
+                        return optional_layer_names.includes(layer.get("name"))
+                    }
+                    return false;
+                });
+                vm.map.getTargetElement().style.cursor = hit ? 'help' : 'default';
+
                 if (selected) {
                     vm.featureToast.show()
                 } else {
@@ -972,7 +1105,7 @@ export default {
         },
         initialiseSingleClickEvent: function () {
             let vm = this;
-            vm.map.on('singleclick', function(evt) {
+            vm.map.on('singleclick', function (evt) {
                 if (vm.drawing || vm.measuring) {
                     console.log(evt);
                     // TODO: must be a feature
@@ -1110,20 +1243,32 @@ export default {
         },
         removeModelFeatures: function () {
             let vm = this;
+            let cannot_delete_features = []
             const features = vm.modelQuerySource.getFeatures().filter((feature) => {
                 if (vm.selectedFeatureIds.includes(feature.getProperties().id)) {
-                    return feature;
+                    if (feature.getProperties().locked === false) {
+                        return feature;
+                    } else {
+                        console.warn(`Cannot delete feature. ${feature.getProperties().id} is locked`);
+                        cannot_delete_features.push(feature.getProperties().id);
+                    }
                 }
             });
 
+            if (cannot_delete_features.length > 0) {
+                vm.errorMessage(null);
+                vm.errorMessage(`Cannot delete feature(s) ${cannot_delete_features.join(', ')} anymore.`);
+            }
+
             for (let feature of features) {
+                vm.deletedFeatures(feature);
                 vm.modelQuerySource.removeFeature(feature);
             }
             // Remove selected features (mapped by id) from `selectedFeatureIds`
             vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
                 id => !features.map(
                     feature => feature.getProperties().id
-                    ).includes(id));
+                ).includes(id));
         },
         collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
@@ -1176,13 +1321,14 @@ export default {
             }, (error) => {
             })
         },
-        addFeatureCollectionToMap: function(featureCollection) {
+        addFeatureCollectionToMap: function (featureCollection) {
             let vm = this;
             if (featureCollection == null) {
                 featureCollection = vm.featureCollection;
             }
+            console.log("Adding features to map:", featureCollection);
 
-            for (let featureData of vm.featureCollection["features"]) {
+            for (let featureData of featureCollection["features"]) {
                 let feature = vm.featureFromDict(featureData, featureData.model);
 
                 vm.modelQuerySource.addFeature(feature);
@@ -1204,13 +1350,27 @@ export default {
             vm.modelQuerySource.clear();
             proposals.forEach(function (proposal) {
                 proposal.proposalgeometry.features.forEach(function (featureData) {
-
                     let feature = vm.featureFromDict(featureData, proposal);
+
+                    if (vm.modelQuerySource.getFeatureById(feature.getId())) {
+                        console.warn(`Feature ${feature.getId()} already exists in the source. Skipping...`);
+                        return;
+                    }
                     vm.modelQuerySource.addFeature(feature);
                     vm.newFeatureId++;
                 });
+                if (proposal.competitive_process) {
+                    proposal.competitive_process.competitive_process_geometries.features.forEach(function (featureData) {
+                        let feature = vm.featureFromDict(featureData, proposal.competitive_process);
+                        if (vm.modelQuerySource.getFeatureById(feature.getId())) {
+                            console.warn(`Feature ${feature.getId()} already exists in the source. Removing...`);
+                            vm.modelQuerySource.removeFeature(vm.modelQuerySource.getFeatureById(feature.getId()));
+                        }
+                        vm.modelQuerySource.addFeature(feature);
+                        vm.newFeatureId++;
+                    });
+                }
             });
-
             vm.addFeatureCollectionToMap();
         },
         /**
@@ -1234,7 +1394,9 @@ export default {
                 label: model.label || model.application_type_name_display,
                 color: color,
                 source: featureData.properties.source,
-                polygon_source: featureData.properties.polygon_source
+                polygon_source: featureData.properties.polygon_source,
+                locked: featureData.properties.locked,
+                copied_from: featureData.properties.proposal_copied_from,
             });
             // Id of the model object (https://datatracker.ietf.org/doc/html/rfc7946#section-3.2)
             feature.setId(featureData.id);
@@ -1277,7 +1439,7 @@ export default {
          * Returns a dictionary of query parameters for a given layer
          * @param {String} layerStr The dictionary key containing the layer information
          */
-        queryParamsDict: function(layerStr) {
+        queryParamsDict: function (layerStr) {
             let vm = this;
 
             if (!layerStr in vm.owsQuery) {
@@ -1326,9 +1488,9 @@ export default {
             // Transform list of flat coordinates into a list of coordinate pairs,
             // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
             let flatCoordinateStringPairs = flatCoordinates.map((coord, index) => index % 2 == 0 ?
-                    [flatCoordinates[index], flatCoordinates[index + 1]].join(" ") :
-                        "")
-                    .filter(item => item != "")
+                [flatCoordinates[index], flatCoordinates[index + 1]].join(" ") :
+                "")
+                .filter(item => item != "")
 
             // Create a Well-Known-Text polygon string from the coordinate pairs
             return `POLYGON ((${flatCoordinateStringPairs.join(", ")}))`;
@@ -1364,7 +1526,7 @@ export default {
             let vm = this;
             vm.queryingGeoserver = false;
             vm._errorMessage = null;
-            vm.drawForModel.finishDrawing()
+            vm.drawForModel.finishDrawing();
         },
         /**
          * Returns the current error message or sets it to the provided message.
@@ -1378,10 +1540,38 @@ export default {
 
             vm.queryingGeoserver = false;
 
-            if (vm._errorMessage === null) {
+            // Only overwrite the current message if the new message is null (removes the message)
+            // Or the current message is null (no message is set)
+            if (message === null || vm._errorMessage === null) {
                 vm._errorMessage = message;
             }
         },
+        /**
+         * Sets or unsets overlay feature information bubble
+         * @param {Array} coordinate clicked coordinate pair
+         * @param {Dict} feature clicked feature properties or undefined
+         */
+        overlay: function (coordinate, feature) {
+            let vm = this;
+            let overlay = vm.map.overlays_.array_[0];
+            if (feature === undefined) {
+                vm.overlayFeatureInfo = {};
+            } else {
+                vm.overlayFeatureInfo = feature.getProperties();
+            }
+            overlay.setPosition(coordinate)
+
+            return overlay;
+        },
+        deletedFeatures: function (feature) {
+            let vm = this;
+            if (feature === undefined) {
+                return vm._deletedFeatures;
+            } else {
+                vm._deletedFeatures.push(feature);
+            }
+        },
+
     },
     created: function () {
         console.log('created()')
@@ -1522,17 +1712,20 @@ export default {
 }
 
 .badge {
-  padding-left: 9px;
-  padding-right: 9px;
-  -webkit-border-radius: 9px;
-  -moz-border-radius: 9px;
-  border-radius: 9px;
+    position: absolute;
+    z-index: 100;
+    padding-left: 9px;
+    padding-right: 9px;
+    -webkit-border-radius: 9px;
+    -moz-border-radius: 9px;
+    border-radius: 9px;
 }
 
 .label-warning[href],
 .badge-warning[href] {
-  background-color: #c67605;
+    background-color: #c67605;
 }
+
 #selectedFeatureCount {
     font-size: 12px;
     background: #ff0000;

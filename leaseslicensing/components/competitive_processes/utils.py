@@ -1,4 +1,5 @@
 import json
+from django.db.models import Q
 from django.contrib.gis.gdal import SpatialReference
 from django.contrib.gis.geos import GEOSGeometry, Polygon, LinearRing
 
@@ -25,11 +26,15 @@ def save_geometry(request, instance, geometry, action_name):
     lands_geos_data = get_dbca_lands_and_waters_geos()
     e4283 = SpatialReference("EPSG:4283")  # EPSG string
     # Concat proposal geometries (if exist) and competitive process geometries
-    proposal_geometries = list(instance.originating_proposal.proposalgeometry.all()) \
-                    if hasattr(instance, "originating_proposal") \
-                    else []
-    polygons_to_delete = list(instance.competitive_process_geometries.all()) + \
-                            proposal_geometries
+    proposal_geometries = list(instance.originating_proposal.proposalgeometry.all()
+                               .exclude(Q(locked=True) | ~Q(drawn_by=request.user.id))
+                               ) \
+                                if hasattr(instance, "originating_proposal") \
+                                    else []
+    polygons_to_delete = list(instance.competitive_process_geometries.all()
+                              .exclude(Q(locked=True) | ~Q(drawn_by=request.user.id))
+                              ) + \
+                                proposal_geometries
 
     # Ability for assesssor to replace or adjust the polygons
     for feature in geometry.get("features"):
@@ -65,8 +70,10 @@ def save_geometry(request, instance, geometry, action_name):
                     f"Error fetching geometry for source {source}")
 
             data["drawn_by"] = geom.drawn_by if geom.drawn_by else request.user.id
+            data["locked"] = action_name in ["complete"] and geom.drawn_by == request.user.id or geom.locked
 
-            polygons_to_delete.remove(geom)
+            if geom in polygons_to_delete:
+                polygons_to_delete.remove(geom)
             serializer = CompetitiveProcessGeometrySerializer(
                 geom,
                 data=data,
@@ -76,6 +83,7 @@ def save_geometry(request, instance, geometry, action_name):
             serializer.save()
         elif geometry:
             data["drawn_by"] = request.user.id
+            data["locked"] = action_name in ["complete"]
             # Create new polygon
             serializer = CompetitiveProcessGeometrySerializer(
                 data=data,

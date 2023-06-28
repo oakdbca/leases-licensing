@@ -67,6 +67,7 @@ import { v4 as uuid } from 'uuid';
 import { api_endpoints, constants } from '@/utils/hooks'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import { expandToggle } from '@/components/common/table_functions.js'
+import { discardProposal } from '@/components/common/workflow_functions.js'
 
 export default {
     name: 'TableApplications',
@@ -529,30 +530,10 @@ export default {
             console.log(" new application")
         },
         discardProposal: function (proposal_id) {
-            let vm = this;
-            swal.fire({
-                title: "Discard Application",
-                text: "Are you sure you want to discard this application?",
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: 'Discard Application',
-                confirmButtonColor: '#dc3545'
-            }).then(async result => {
-                if (result.isConfirmed) {
-                    fetch(api_endpoints.discard_proposal(proposal_id), { method: 'DELETE', })
-                        .then((response) => {
-                            swal.fire(
-                                'Discarded',
-                                'Your application has been discarded',
-                                'success'
-                            )
-                            //vm.$refs.application_datatable.vmDataTable.ajax.reload();
-                            vm.$refs.application_datatable.vmDataTable.draw();
-                        }, (error) => {
-                        });
-                }
-            }, (error) => {
-
+            discardProposal(proposal_id).then(() => {
+                this.$refs.application_datatable.vmDataTable.draw();
+            }).catch(error => {
+                console.log(error)
             });
         },
         fetchFilterLists: async function () {

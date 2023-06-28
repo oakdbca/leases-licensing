@@ -240,7 +240,7 @@ export default {
         'proposedDecline',
         'proposedApproval',
         'issueApproval',
-        'declineProposal',
+        'discardProposal',
         'updateProposalData',
     ],
     data: function () {
@@ -443,9 +443,9 @@ export default {
                     }
                 },
                 {
-                    'key': 'decline',
-                    'button_title': 'Decline',
-                    'function_when_clicked': vm.declineProposal,
+                    'key': 'discard',
+                    'button_title': 'Discard',
+                    'function_when_clicked': vm.discardProposal,
                     'function_to_show_hide': () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
@@ -993,8 +993,8 @@ export default {
         issueApproval: function () {
             this.$emit('issueApproval')
         },
-        declineProposal: function () {
-            this.$emit('declineProposal')
+        discardProposal: function(){
+            this.$emit('discardProposal')
         },
         externalRefereeInviteSent: function (proposal) {
             this.$emit('updateProposalData', proposal)

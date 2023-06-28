@@ -21,7 +21,7 @@
                     @toggleProposal="toggleProposal" @toggleRequirements="toggleRequirements" @switchStatus="switchStatus"
                     @completeReferral="completeReferral" @amendmentRequest="amendmentRequest"
                     @proposedDecline="proposedDecline" @proposedApproval="proposedApproval" @issueApproval="issueApproval"
-                    @declineProposal="declineProposal" @assignRequestUser="assignRequestUser" @assignTo="assignTo"
+                    @discardProposal="discardProposal" @assignRequestUser="assignRequestUser" @assignTo="assignTo"
                     @completeEditing="completeEditing" @cancelEditing="cancelEditing"
                     @updateProposalData="updateProposalData" class="mt-2" />
             </div>
@@ -500,6 +500,7 @@ import ApplicationForm from '@/components/form.vue';
 import FormSection from "@/components/forms/section_toggle.vue"
 import AssessmentComments from '@/components/forms/collapsible_component.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
+import { discardProposal } from '@/components/common/workflow_functions.js'
 require("select2/dist/css/select2.min.css");
 // CSS definitions to make sure workflow swal2 popovers are placed above any open bootstrap popover
 // See: `swal.fire` `customClass` property
@@ -1055,6 +1056,7 @@ export default {
             return s.replace(/[,;]/g, '\n');
         },
         proposedDecline: function () {
+            this.proposedApprovalState = 'proposed_decline';
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
                 this.$refs.proposed_decline.isModalOpen = true;
@@ -1097,6 +1099,29 @@ export default {
                     this.$refs.proposed_approval.isModalOpen = true;
                 });
             }
+        },
+        discardProposal: async function () {
+            let vm = this;
+            console.log('discardProposal');
+            await discardProposal(this.proposal).then(data => {
+                if (data != null) {
+                    // Only update the proposal if the discard was successful
+                    console.log(data)
+                    vm.proposal = Object.assign({}, data);
+                    vm.uuid++;
+                    swal.fire({
+                        title: 'Discarded',
+                        text: 'The application has been discarded',
+                        icon: 'success',
+                    });
+                }
+            }).catch(error => {
+                swal.fire({
+                    title: 'The proposal could not be discarded',
+                    text: error,
+                    icon: 'error',
+                });
+            });
         },
         declineProposal: function () {
             this.$refs.proposed_decline.decline = this.proposal.proposaldeclineddetails != null ? helpers.copyObject(this.proposal.proposaldeclineddetails) : {};
@@ -1340,7 +1365,11 @@ export default {
         },
         fetchProposal: async function () {
             let vm = this;
-            fetch(`/api/proposal/${this.$route.params.proposal_id}/`).then(async response => {
+            let payload = {
+                "debug": this.debug
+            }
+            fetch(`/api/proposal/${this.$route.params.proposal_id}?${new URLSearchParams(payload)}`)
+            .then(async response => {
                 if (!response.ok) {
                     const text = await response.json();
                     throw new Error(text);

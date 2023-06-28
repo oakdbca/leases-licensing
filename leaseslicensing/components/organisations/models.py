@@ -1006,7 +1006,7 @@ class OrganisationRequest(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.lodgement_number == "":
+        if not self.lodgement_number:
             new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()

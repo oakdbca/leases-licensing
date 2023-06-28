@@ -55,10 +55,12 @@ INSTALLED_APPS += [
     "leaseslicensing.components.competitive_processes",
     "leaseslicensing.components.invoicing",
     "leaseslicensing.components.tenure",
+    "leaseslicensing.components.texts",
     "rest_framework",
     "rest_framework_datatables",
     "rest_framework_gis",
     "ledger_api_client",
+    "ckeditor",
 ]
 
 ADD_REVERSION_ADMIN = True
@@ -220,6 +222,34 @@ CKEDITOR_CONFIGS = {
     },
     "awesome_ckeditor": {
         "toolbar": "Basic",
+    },
+    "toolbar_minimal": {
+        "toolbar": "Custom",
+        "toolbar_Custom": [
+            ["Bold", "Italic", "Underline"],
+            [
+                "BulletedList",
+                "NumberedList",
+                "-",
+                "Outdent",
+                "Indent",
+                "-",
+                "Image",
+                "Blockquote",
+                "Table",
+                "MediaEmbed",
+                "-",
+                "Undo",
+                "Redo",
+                "-",
+                "JustifyLeft",
+                "JustifyCenter",
+                "JustifyRight",
+                "JustifyBlock",
+            ],
+            ["Link", "Unlink"],
+            ["RemoveFormat", "Source"],
+        ],
     },
 }
 

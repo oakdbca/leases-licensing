@@ -70,8 +70,17 @@ export default {
             default: null
         },
         approval_lodgement_number: {
-            type: String,
+            type: [String, null,],
             required: true,
+            validator: (p) => {
+                // Seems hacky but lets me have a required prop that can be null
+                let valid = ['string',].indexOf(typeof p) !== -1;
+                if (p === null) {
+                    console.warn(`Received approval_lodgement_number is null, this is probably an error.`);
+                    valid = true;
+                };
+                return valid;
+            },
         },
     },
     data: function () {

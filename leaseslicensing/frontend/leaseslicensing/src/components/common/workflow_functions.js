@@ -1,4 +1,4 @@
-import { api_endpoints, helpers } from '@/utils/hooks';
+import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import '../../../../../static/leaseslicensing/css/workflow.css';
 
 /**
@@ -164,4 +164,32 @@ export function updateIdListFromAvailable(id, list, available_items, remove) {
         return list;
     }
     return false;
+}
+
+/**
+ * Discards a proposal.
+ * @param {object} proposal A proposal object or a proposal ID
+ * @returns an api query Promise
+ */
+export async function discardProposal(proposal) {
+    let proposal_id = proposal.id || proposal;
+
+    return swal.fire({
+        title: "Discard Application",
+        text: "Are you sure you want to discard this application?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: 'Discard Application',
+        confirmButtonColor: '#dc3545',
+    }).then(async result => {
+        if (result.isConfirmed) {
+            // // Queries the discard proposal endpoint
+            return utils.fetchUrl(api_endpoints.discard_proposal(proposal_id), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+            });
+        } else {
+            return null;
+        }
+    });
 }
