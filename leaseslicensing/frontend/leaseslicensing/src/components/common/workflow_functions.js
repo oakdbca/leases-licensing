@@ -1,4 +1,4 @@
-import { api_endpoints, helpers } from '@/utils/hooks';
+import { helpers } from '@/utils/hooks';
 import '../../../../../static/leaseslicensing/css/workflow.css';
 
 /**
@@ -6,8 +6,8 @@ import '../../../../../static/leaseslicensing/css/workflow.css';
  * @param {number} _id The referral ID
  * * @param {string} user The referrer's username
  */
-export async function remindReferral(_id, user) {
-    fetch(helpers.add_endpoint_json(api_endpoints.referrals, _id + '/remind')).then(async response => {
+export async function remindReferral(api_endpoint, _id, user) {
+    fetch(helpers.add_endpoint_json(api_endpoint, _id + '/remind')).then(async response => {
         if (!response.ok) {
             return response.json().then(json => { throw new Error(json); });
         } else {
@@ -42,7 +42,7 @@ export async function remindReferral(_id, user) {
  * @param {number} _id The referral ID
  * * @param {string} user The referrer's username
  */
-export async function recallReferral(_id, user) {
+export async function recallReferral(api_endpoint, _id, user) {
     let vm = this;
     // eslint-disable-next-line no-undef
     const _loading = swal.fire({
@@ -60,7 +60,7 @@ export async function recallReferral(_id, user) {
         }
     });
 
-    await fetch(helpers.add_endpoint_json(api_endpoints.referrals, _id + '/recall')).then(async response => {
+    await fetch(helpers.add_endpoint_json(api_endpoint, _id + '/recall')).then(async response => {
         if (!response.ok) {
             return await response.json().then(json => { throw new Error(json); });
         } else {
@@ -97,9 +97,9 @@ export async function recallReferral(_id, user) {
  * @param {number} _id The referral ID
  * * @param {string} user The referrer's username
  */
-export async function resendReferral(_id, user) {
+export async function resendReferral(api_endpoint, _id, user) {
     let vm = this;
-    await fetch(helpers.add_endpoint_json(api_endpoints.referrals, _id + '/resend')).then(async response => {
+    await fetch(helpers.add_endpoint_json(api_endpoint, _id + '/resend')).then(async response => {
         if (!response.ok) {
             return await response.json().then(json => { throw new Error(json); });
         } else {
