@@ -1,0 +1,14 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+    {% if reminder %}
+        This is a reminder for a referral for Compliance <strong>{{compliance.lodgement_number}}</strong> that has been sent to you:
+    {% else %}
+        {{ proposal.application_type.name_display }} Compliance: <strong>{{ compliance.lodgement_number }}</strong> is ready for your advice.
+    {% endif %}
+        Comments: {{comments}}
+
+        You can access this Compliance using the following link:
+
+        {{url}}
+{%  endblock %}
