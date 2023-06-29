@@ -65,6 +65,15 @@ def is_referee(request, proposal=None):
     return qs.exists()
 
 
+def is_compliance_referee(request, compliance=None):
+    from leaseslicensing.components.compliances.models import ComplianceReferral
+    qs = ComplianceReferral.objects.filter(referral=request.user.id)
+    if compliance:
+        qs = qs.filter(compliance=compliance)
+
+    return qs.exists()
+
+
 def in_dbca_domain(request):
     return request.user.is_staff
 
