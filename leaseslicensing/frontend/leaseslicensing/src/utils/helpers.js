@@ -108,7 +108,40 @@ module.exports = {
         console.log('apiVueResourceError: ', error_str);
         return error_str;
     },
-
+    escapeHtml: function (htmlStr) {
+        return htmlStr.replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    },
+    formatErrorV2: function (error) {
+        if (typeof error === 'string') {
+            return error;
+        }
+        if (Array.isArray(error)) {
+            if (1 == error.length) {
+                return error[0];
+            } else {
+                let error_str = '';
+                for (let i = 0; i < error.length; i++) {
+                    error_str += error[i] + '<br/>';
+                }
+                return error_str;
+            }
+        }
+        if (typeof error === 'object') {
+            if (1 == Object.keys(error).length) {
+                return error[0];
+            } else {
+                let error_str = '<ul class="list-group text-start">';
+                for (const key of Object.keys(error)) {
+                    error_str += `<li class="list-group-item"><span class="fw-bold">${key}:</span> ${module.exports.escapeHtml(error[key])}</li>`;
+                }
+                return error_str + '</ul>';
+            }
+        }
+    },
     goBack: function (vm) {
         vm.$router.go(window.history.back());
     },
@@ -217,7 +250,7 @@ module.exports = {
     post_and_redirect: function (url, postData) {
         /* http.post and ajax do not allow redirect from Django View (post method),
            this function allows redirect by mimicking a form submit.
-
+     
            usage:  vm.post_and_redirect(vm.application_fee_url, {'csrfmiddlewaretoken' : vm.csrf_token});
         */
         var postFormStr = '<form method="POST" action="' + url + '">';
