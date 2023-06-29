@@ -1,12 +1,14 @@
 import functools
 import logging
 import time
+import traceback
 
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import connection, reset_queries
 from rest_framework import serializers
 from rest_framework.decorators import action
+from rest_framework.exceptions import APIException
 
 from leaseslicensing import helpers
 
@@ -19,14 +21,18 @@ def basic_exception_handler(func):
         try:
             return func(*args, **kwargs)
         except (serializers.ValidationError, ValidationError) as e:
-            logger.error(str(e))
-            raise
+            raise serializers.ValidationError(e)
         except Exception as e:
-            logger.exception(str(e))
             if settings.DEBUG:
-                raise serializers.ValidationError(e)
+                detail = {
+                    "user message (settings.API_EXCEPTION_MESSAGE)": settings.API_EXCEPTION_MESSAGE,
+                    "type": type(e),
+                    "error": str(e),
+                    "stacktrace": traceback.format_exc()
+                }
+                raise APIException(code=500, detail=detail)
             # Don't send complex exeption messages to the client when in production
-            raise serializers.ValidationError(settings.API_EXCEPTION_MESSAGE)
+            raise APIException(settings.API_EXCEPTION_MESSAGE)
 
     return wrapper
 
