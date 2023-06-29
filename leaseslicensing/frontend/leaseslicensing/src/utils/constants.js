@@ -54,7 +54,7 @@ module.exports = {
         EXPIRED_LICENCE: { ID: 'expired_licence', TEXT: 'Expired (licence)' },
     },
     REFERRAL_STATUS: {
-        PROCESSING_STATUS_WITH_REFERRAL: { ID: 'pending', TEXT: 'Pending' },
+        PROCESSING_STATUS_WITH_REFERRAL: { ID: 'with_referral', TEXT: 'Pending' },
         PROCESSING_STATUS_RECALLED: { ID: 'recalled', TEXT: 'Recalled' },
         PROCESSING_STATUS_COMPLETED: { ID: 'completed', TEXT: 'Completed' },
     },
