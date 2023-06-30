@@ -148,6 +148,19 @@ export default {
         }
     },
     computed: {
+        ajaxUrl: function () {
+            let url = api_endpoints.compliances_paginated_external + '?format=datatables'
+            if(this.target_email_user_id){
+                url += '&target_email_user_id=' + this.target_email_user_id
+            }
+            if(this.target_organisation_id){
+                url += '&target_organisation_id=' + this.target_organisation_id
+            }
+            if(this.compliances_referred_to_me){
+                url += '&compliances_referred_to_me=' + this.compliances_referred_to_me
+            }
+            return url;
+        },
         filterApplied: function () {
             if (this.filterComplianceType === 'all' && this.filterComplianceStatus.toLowerCase() === 'all' &&
                 this.filterComplianceDueDateFrom.toLowerCase() === '' && this.filterComplianceDueDateTo.toLowerCase() === '') {
@@ -395,8 +408,7 @@ export default {
                 searching: true,
 
                 ajax: {
-                    "url": api_endpoints.compliances_paginated_external + '?format=datatables&target_email_user_id=' + vm.target_email_user_id +
-                        '&target_organisation_id=' + vm.target_organisation_id + '&compliances_referred_to_me=' + vm.compliances_referred_to_me,
+                    "url": vm.ajaxUrl,
                     "dataSrc": 'data',
 
                     // adding extra GET params for Custom filtering
