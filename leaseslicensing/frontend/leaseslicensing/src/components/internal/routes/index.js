@@ -1,19 +1,18 @@
-
-import { RouterView } from 'vue-router';
-import InternalDashboard from '@/components/internal/dashboard.vue';
-import OrgAccessTable from '@/components/internal/organisations/dashboard.vue';
-import OrgAccess from '@/components/internal/organisations/access.vue';
-import Organisation from '@/components/internal/organisations/manage.vue';
-import Proposal from '@/components/internal/proposals/proposal.vue';
-import ApprovalDash from '@/components/internal/approvals/dashboard.vue';
-import ComplianceDash from '@/components/internal/compliances/dashboard.vue';
-import InvoicesDash from '@/components/internal/invoices/dashboard.vue';
-import Search from '@/components/internal/search/dashboard.vue';
-import PersonDetail from '@/components/internal/person/person_detail.vue';
-import Compliance from '../compliances/access.vue';
-import Reports from '@/components/reports/reports.vue';
-import Approval from '@/components/internal/approvals/approval.vue';
-import CompetitiveProcess from '@/components/internal/competitive_process/competitive_process.vue';
+import { RouterView } from 'vue-router'
+import InternalDashboard from '@/components/internal/dashboard.vue'
+import OrgAccessTable from '@/components/internal/organisations/dashboard.vue'
+import OrgAccess from '@/components/internal/organisations/access.vue'
+import Organisation from '@/components/internal/organisations/manage.vue'
+import Proposal from '@/components/internal/proposals/proposal.vue'
+import ApprovalDash from '@/components/internal/approvals/dashboard.vue'
+import ComplianceDash from '@/components/internal/compliances/dashboard.vue'
+import InvoicesDash from '@/components/internal/invoices/dashboard.vue'
+import Search from '@/components/internal/search/dashboard.vue'
+import PersonDetail from '@/components/internal/person/person_detail.vue'
+import Compliance from '../compliances/access.vue'
+import Reports from '@/components/reports/reports.vue'
+import Approval from '@/components/internal/approvals/approval.vue'
+import CompetitiveProcess from '@/components/internal/competitive_process/competitive_process.vue'
 
 export default {
     path: '/internal',
@@ -22,12 +21,12 @@ export default {
         {
             path: '/internal',
             component: InternalDashboard,
-            name: 'internal-dashboard'
+            name: 'internal-dashboard',
         },
         {
             path: 'approvals',
             component: ApprovalDash,
-            name: 'internal-approvals-dash'
+            name: 'internal-approvals-dash',
         },
         {
             path: 'approval/:approval_id',
@@ -37,32 +36,31 @@ export default {
         {
             path: 'compliances',
             component: ComplianceDash,
-            name: 'internal-compliances-dash'
+            name: 'internal-compliances-dash',
         },
         {
             path: 'compliance/:compliance_id',
             component: Compliance,
-
         },
         {
             path: 'invoices',
             component: InvoicesDash,
-            name: 'internal-invoices-dash'
+            name: 'internal-invoices-dash',
         },
         {
             path: 'search',
             component: Search,
-            name: 'internal-search'
+            name: 'internal-search',
         },
         {
             path: 'person/details/:id',
             component: PersonDetail,
-            name: 'internal-person-detail'
+            name: 'internal-person-detail',
         },
         {
             path: 'reports',
             name: 'reports',
-            component: Reports
+            component: Reports,
         },
         {
             path: 'organisations',
@@ -71,20 +69,19 @@ export default {
                 {
                     path: 'access',
                     component: OrgAccessTable,
-                    name: 'org-access-dash'
+                    name: 'org-access-dash',
                 },
                 {
                     path: 'access/:access_id',
                     component: OrgAccess,
-                    name: 'org-access'
+                    name: 'org-access',
                 },
                 {
                     path: ':org_id',
                     component: Organisation,
-                    name: 'internal-org-detail'
+                    name: 'internal-org-detail',
                 },
-
-            ]
+            ],
         },
         {
             path: 'proposal/:proposal_id',
@@ -96,5 +93,5 @@ export default {
             component: CompetitiveProcess,
             name: 'internal-competitive-process',
         },
-    ]
-};
+    ],
+}
