@@ -43,7 +43,7 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
 )
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.main.utils import (
-    get_department_user,
+    is_department_user,
     polygon_intersects_with_layer,
 )
 from leaseslicensing.components.organisations.models import Organisation
@@ -54,12 +54,12 @@ from leaseslicensing.components.organisations.utils import (
 from leaseslicensing.components.proposals.email import (
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
+    send_pending_referrals_complete_email_notification,
+    send_proposal_approval_email_notification,
     send_proposal_approver_sendback_email_notification,
     send_proposal_decline_email_notification,
-    send_referral_email_notification,
-    send_proposal_approval_email_notification,
     send_referral_complete_email_notification,
-    send_pending_referrals_complete_email_notification,
+    send_referral_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
     LGA,
@@ -1498,13 +1498,13 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
     @property
     def latest_referrals(self):
         referrals = self.referrals
-        for referral in referrals.all():
-            logger.debug(referral)
-        return referrals.all()[:3]
+        return referrals.all()[: settings.LATEST_REFERRAL_COUNT]
 
     @property
     def external_referral_invites(self):
-        return self.external_referee_invites.filter(datetime_first_logged_in__isnull=True)
+        return self.external_referee_invites.filter(
+            datetime_first_logged_in__isnull=True
+        )
 
     @property
     def assessor_assessment(self):
@@ -1659,10 +1659,14 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         Returns whether `user` is a referee for this proposal
         """
 
-        return self.processing_status in [
-            self.PROCESSING_STATUS_WITH_REFERRAL,
-            self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
-        ] and Referral.objects.filter(proposal=self, referral=user.id).exists()
+        return (
+            self.processing_status
+            in [
+                self.PROCESSING_STATUS_WITH_REFERRAL,
+                self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
+            ]
+            and Referral.objects.filter(proposal=self, referral=user.id).exists()
+        )
 
     def referee_can_edit_referral(self, user):
         """
@@ -1858,8 +1862,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         Assessment instance already exits then skip.
         """
         proposal_assessment, created = ProposalAssessment.objects.get_or_create(
-            proposal=self,
-            referral=referral
+            proposal=self, referral=referral
         )
         if created:
             for_referral_or_assessor = (
@@ -1899,8 +1902,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             referral_email = referral_email.lower()
             if (
                 self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                or self.processing_status
-                == Proposal.PROCESSING_STATUS_WITH_REFERRAL
+                or self.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL
             ):
                 self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
                 self.save()
@@ -1910,7 +1912,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     user = EmailUser.objects.get(email__icontains=referral_email)
                 except EmailUser.DoesNotExist:
                     # Validate if it is a deparment user
-                    department_user = get_department_user(referral_email)
+                    department_user = is_department_user(referral_email)
                     if not department_user:
                         raise ValidationError(
                             "The user you want to send the referral to is not a member of the department"
@@ -2710,7 +2712,7 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # send_license_ready_for_invoicing_notification(self, request)
 
                     # Send notification email to applicant
-                    send_proposal_approval_email_notification(self,request)
+                    send_proposal_approval_email_notification(self, request)
 
                     if self.approval:
                         self.save(
@@ -2788,62 +2790,58 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
 
         # for req in self.requirements.all():
         for req in requirement_set:
-            try:
-                if req.due_date and req.due_date >= today:
-                    current_date = req.due_date
-                    # create a first Compliance
-                    try:
-                        compliance = Compliance.objects.get(
-                            requirement=req, due_date=current_date
-                        )
-                    except Compliance.DoesNotExist:
-                        compliance = Compliance.objects.create(
-                            proposal=self,
-                            due_date=current_date,
-                            processing_status="future",
-                            approval=approval,
-                            requirement=req,
-                        )
-                        compliance.log_user_action(
-                            ComplianceUserAction.ACTION_CREATE.format(compliance.id),
-                            request,
-                        )
-                    if req.recurrence:
-                        while current_date < approval.expiry_date:
-                            for x in range(req.recurrence_schedule):
-                                # Weekly
-                                if req.recurrence_pattern == 1:
-                                    current_date += timedelta(weeks=1)
-                                # Monthly
-                                elif req.recurrence_pattern == 2:
-                                    current_date += timedelta(weeks=4)
-                                    pass
-                                # Yearly
-                                elif req.recurrence_pattern == 3:
-                                    current_date += timedelta(days=365)
-                            # Create the compliance
-                            if current_date <= approval.expiry_date:
-                                try:
-                                    compliance = Compliance.objects.get(
-                                        requirement=req, due_date=current_date
-                                    )
-                                except Compliance.DoesNotExist:
-                                    compliance = Compliance.objects.create(
-                                        proposal=self,
-                                        due_date=current_date,
-                                        processing_status="future",
-                                        approval=approval,
-                                        requirement=req,
-                                    )
-                                    compliance.log_user_action(
-                                        ComplianceUserAction.ACTION_CREATE.format(
-                                            compliance.id
-                                        ),
-                                        request,
-                                    )
-            except Exception as e:
-                logger.exception(e)
-                raise e
+            if req.due_date and req.due_date >= today:
+                current_date = req.due_date
+                # create a first Compliance
+                try:
+                    compliance = Compliance.objects.get(
+                        requirement=req, due_date=current_date
+                    )
+                except Compliance.DoesNotExist:
+                    compliance = Compliance.objects.create(
+                        proposal=self,
+                        due_date=current_date,
+                        processing_status="future",
+                        approval=approval,
+                        requirement=req,
+                    )
+                    compliance.log_user_action(
+                        ComplianceUserAction.ACTION_CREATE.format(compliance.id),
+                        request,
+                    )
+                if req.recurrence:
+                    while current_date < approval.expiry_date:
+                        for x in range(req.recurrence_schedule):
+                            # Weekly
+                            if req.recurrence_pattern == 1:
+                                current_date += timedelta(weeks=1)
+                            # Monthly
+                            elif req.recurrence_pattern == 2:
+                                current_date += timedelta(weeks=4)
+                                pass
+                            # Yearly
+                            elif req.recurrence_pattern == 3:
+                                current_date += timedelta(days=365)
+                        # Create the compliance
+                        if current_date <= approval.expiry_date:
+                            try:
+                                compliance = Compliance.objects.get(
+                                    requirement=req, due_date=current_date
+                                )
+                            except Compliance.DoesNotExist:
+                                compliance = Compliance.objects.create(
+                                    proposal=self,
+                                    due_date=current_date,
+                                    processing_status="future",
+                                    approval=approval,
+                                    requirement=req,
+                                )
+                                compliance.log_user_action(
+                                    ComplianceUserAction.ACTION_CREATE.format(
+                                        compliance.id
+                                    ),
+                                    request,
+                                )
 
     def renew_approval(self, request):
         with transaction.atomic():
@@ -4047,7 +4045,10 @@ class Referral(RevisionedMixin):
             )
 
             # Log an action for the applicant
-            self.proposal.applicant.log_user_action(ProposalUserAction.RECALL_REFERRAL.format(self.id,self.proposal.id),request)
+            self.proposal.applicant.log_user_action(
+                ProposalUserAction.RECALL_REFERRAL.format(self.id, self.proposal.id),
+                request,
+            )
 
     @property
     def referral_as_email_user(self):
@@ -4071,8 +4072,11 @@ class Referral(RevisionedMixin):
             # Create a log entry for the applicant
             self.proposal.applicant.log_user_action(
                 ProposalUserAction.ACTION_REMIND_REFERRAL.format(
-                    self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
-                ), request
+                    self.id,
+                    self.proposal.id,
+                    f"{self.referral_as_email_user.get_full_name()}",
+                ),
+                request,
             )
 
             # send email
@@ -4108,8 +4112,11 @@ class Referral(RevisionedMixin):
             # Create a log entry for the applicant
             self.proposal.applicant.log_user_action(
                 ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
-                    self.id, self.proposal.id, '{}'.format(self.referral_as_email_user.get_full_name())
-                ), request
+                    self.id,
+                    self.proposal.id,
+                    f"{self.referral_as_email_user.get_full_name()}",
+                ),
+                request,
             )
 
             # send email
@@ -4132,28 +4139,42 @@ class Referral(RevisionedMixin):
             # Log proposal action
             self.proposal.log_user_action(
                 ProposalUserAction.CONCLUDE_REFERRAL.format(
-                    request.user.get_full_name(), self.id, self.proposal.lodgement_number
+                    request.user.get_full_name(),
+                    self.id,
+                    self.proposal.lodgement_number,
                 ),
                 request,
             )
 
+            logger.debug("\n\n\n -------------->")
+            logger.debug(str(self.applicant))
+
             # log applicant_field
-            self.applicant.log_user_action(ProposalUserAction.CONCLUDE_REFERRAL.format(
-                request.user.get_full_name(), self.id, self.proposal.lodgement_number
-            ),request)
+            self.applicant.log_user_action(
+                ProposalUserAction.CONCLUDE_REFERRAL.format(
+                    request.user.get_full_name(),
+                    self.id,
+                    self.proposal.lodgement_number,
+                ),
+                request,
+            )
 
             send_referral_complete_email_notification(self, request)
 
             # Check if this was the last pending referral for the proposal
             if not Referral.objects.filter(
-                    proposal=self.proposal,
-                    processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL).exists():
-
+                proposal=self.proposal,
+                processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
+            ).exists():
                 # Change the status back to what it was before this referral was requested
                 if self.sent_from == 1:
-                    self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                    self.proposal.processing_status = (
+                        Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                    )
                 else:
-                    self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_APPROVER
+                    self.proposal.processing_status = (
+                        Proposal.PROCESSING_STATUS_WITH_APPROVER
+                    )
                 self.proposal.save()
 
                 send_pending_referrals_complete_email_notification(self, request)
@@ -4234,7 +4255,7 @@ class Referral(RevisionedMixin):
                         )
                     except EmailUser.DoesNotExist:
                         # Validate if it is a deparment user
-                        department_user = get_department_user(referral_email)
+                        department_user = is_department_user(referral_email)
                         if not department_user:
                             raise ValidationError(
                                 "The user you want to send the referral to is not a member of the department"
@@ -4349,7 +4370,9 @@ class ExternalRefereeInvite(RevisionedMixin):
         verbose_name_plural = "External Referrals"
 
     def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.email}) [{self.organisation}]"
+        return (
+            f"{self.first_name} {self.last_name} ({self.email}) [{self.organisation}]"
+        )
 
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
