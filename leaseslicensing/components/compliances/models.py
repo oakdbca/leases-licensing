@@ -506,7 +506,7 @@ class ComplianceUserAction(UserAction):
     ACTION_STATUS_CHANGE = "Change status to Due for compliance {}"
     ACTION_SEND_REFERRAL_TO = "Send referral to {} for compliance {}"
     ACTION_REMIND_REFERRAL = "Send reminder to {} for compliance {}"
-    ACTION_RESEND_REFERRAL = "Resend referral to {} for compliance {}"
+    ACTION_RESEND_REFERRAL_TO = "Resend referral to {} for compliance {}"
     RECALL_REFERRAL = "Referral {} for compliance {} has been recalled"
 
     ACTION_CONCLUDE_REQUEST = "Conclude request {}"
