@@ -18,6 +18,7 @@ from leaseslicensing.components.compliances.models import (
     Compliance,
     ComplianceAmendmentReason,
     ComplianceAmendmentRequest,
+    ComplianceAssessment,
     ComplianceReferral,
     update_proposal_compliance_filename,
 )
@@ -25,13 +26,17 @@ from leaseslicensing.components.compliances.serializers import (
     CompAmendmentRequestDisplaySerializer,
     ComplianceActionSerializer,
     ComplianceAmendmentRequestSerializer,
+    ComplianceAssessmentSerializer,
     ComplianceCommsSerializer,
     ComplianceReferralDatatableSerializer,
     ComplianceReferralSerializer,
     ComplianceSerializer,
     InternalComplianceSerializer,
     SaveComplianceSerializer,
+    UpdateComplianceAssessmentSerializer,
+    UpdateComplianceReferralSerializer,
 )
+from leaseslicensing.components.main.api import LicensingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import (
@@ -41,6 +46,7 @@ from leaseslicensing.components.main.models import (
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.serializers import SendReferralSerializer
 from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.permissions import IsAsignedAssessor, IsAssignedReferee
 
 logger = logging.getLogger(__name__)
 
@@ -590,11 +596,17 @@ class ComplianceAmendmentReasonChoicesView(views.APIView):
 class ComplianceReferralViewSet(viewsets.ModelViewSet):
     queryset = ComplianceReferral.objects.all()
     serializer_class = ComplianceReferralSerializer
+    permission_classes = [IsAssignedReferee]
 
     def get_queryset(self):
         if is_internal(self.request):
             return ComplianceReferral.objects.all()
         return super().get_queryset()
+
+    def get_serializer_class(self):
+        if self.action == "update" or self.action == "partial_update":
+            return UpdateComplianceReferralSerializer
+        return super().get_serializer_class()
 
     @list_route(
         methods=[
@@ -656,3 +668,15 @@ class ComplianceReferralViewSet(viewsets.ModelViewSet):
             instance.compliance, context={"request": request}
         )
         return Response(serializer.data)
+
+
+class ComplianceAssessmentViewSet(LicensingViewset):
+    queryset = ComplianceAssessment.objects.all()
+    serializer_class = ComplianceAssessmentSerializer
+    permission_classes = [IsAsignedAssessor]
+    http_method_names = ["head", "get", "patch"]
+
+    def get_serializer_class(self):
+        if self.action == "update" or self.action == "partial_update":
+            return UpdateComplianceAssessmentSerializer
+        return super().get_serializer_class()
