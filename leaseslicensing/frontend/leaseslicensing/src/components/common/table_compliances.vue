@@ -261,7 +261,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return vm.getStatusHtml(full.processing_status, full.due_date)
+                    return vm.getStatusHtml(full.processing_status_display, full.due_date)
                 },
             }
         },
@@ -273,7 +273,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return vm.getStatusHtml(full.customer_status, full.due_date)
+                    return vm.getStatusHtml(full.customer_status_display, full.due_date)
                 },
             }
         },
@@ -448,6 +448,10 @@ export default {
                 class_name = 'primary';
                 icon = 'clipboard';
             }
+            if ('With Referral' == status) {
+                class_name = 'secondary';
+                icon = 'users';
+            }
             if ('Under Review' == status) {
                 class_name = 'secondary';
                 icon = 'clipboard';
@@ -524,4 +528,3 @@ export default {
     },
 }
 </script>
-
