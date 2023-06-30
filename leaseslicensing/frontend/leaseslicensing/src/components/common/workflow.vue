@@ -64,8 +64,7 @@
                         <template v-if='!sendingReferral'>
                             <template v-if="selected_referral">
                                 <label class="control-label pull-left" for="Name">Comments</label>
-                                <textarea class="form-control comments_to_referral" name="name"
-                                    v-model="referral_text"></textarea>
+                                <textarea class="form-control" name="name" v-model="referral_text"></textarea>
                                 <div class="text-end">
                                     <a v-if="canLimitedAction" @click.prevent="sendReferral()" class="actionBtn">Send</a>
                                 </div>
@@ -119,7 +118,9 @@
             <div v-if="isCurrentAssessor && proposal.latest_referrals && proposal.latest_referrals.length > 0"
                 class="card-body border-top">
                 <div class="col-sm-12">
-                    <div class="fw-bold mb-1">Referrals</div>
+                    <div class="fw-bold mb-1">Recent Referrals <small class="text-secondary fw-lighter">(Showing
+                            {{
+                                proposal.latest_referrals.length }} of {{ proposal.referrals.length }})</small></div>
                     <table class="table table-sm table-hover table-referrals">
                         <thead>
                             <tr>
@@ -140,13 +141,13 @@
                                     <template
                                         v-if="constants.REFERRAL_STATUS.PROCESSING_STATUS_WITH_REFERRAL.TEXT == r.processing_status">
                                         <a v-if="canLimitedAction"
-                                            @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                            @click.prevent="remindReferral.bind(this)(referrals_api_endpoint, r.id, r.referral_obj['fullname'])"
                                             role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
                                             :data-bs-content="'Send a reminder to ' + r.referral_obj['fullname']"
                                             data-bs-placement="bottom"><i class="fa fa-bell text-warning"
                                                 aria-hidden="true"></i>
                                         </a>
-                                        <a @click.prevent="recallReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                        <a @click.prevent="recallReferral.bind(this)(referrals_api_endpoint, r.id, r.referral_obj['fullname'])"
                                             role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
                                             :data-bs-content="'Recall the referral request sent to ' + r.referral_obj['fullname']"
                                             data-bs-placement="bottom"><i class="fa fa-times-circle text-danger"
@@ -155,7 +156,7 @@
                                     </template>
                                     <template v-else>
                                         <small v-if="canLimitedAction"><a
-                                                @click.prevent="resendReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                                @click.prevent="resendReferral.bind(this)(referrals_api_endpoint, r.id, r.referral_obj['fullname'])"
                                                 role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
                                                 :data-bs-content="'Resend this referral request to ' + r.referral_obj['fullname']"><i
                                                     class="fa fa-envelope text-primary" aria-hidden="true"></i>
@@ -252,6 +253,7 @@ export default {
 
         return {
             constants: constants,
+            referrals_api_endpoint: api_endpoints.referrals,
             showingProposal: false,
             showingRequirements: false,
 
@@ -837,7 +839,7 @@ export default {
                     return await response.json();
                 }
             }).then(async () => {
-                return fetch(helpers.add_endpoint_json(api_endpoints.proposals, (vm.proposal.id + '/assesor_send_referral')), {
+                return fetch(helpers.add_endpoint_json(api_endpoints.proposals, (vm.proposal.id + '/assessor_send_referral')), {
                     method: 'POST',
                     headers: my_headers,
                     body: JSON.stringify({ 'email': vm.selected_referral, 'text': vm.referral_text }),
@@ -1026,25 +1028,6 @@ export default {
     cursor: pointer;
 }
 
-.comments_to_referral {
-    resize: vertical;
-}
-
-.table-referrals {
-    font-size: 0.8em;
-}
-
-.fa-bell:hover,
-.fa-times-circle:hover {
-    opacity: 0.7;
-}
-
-.truncate-name {
-    max-width: 100px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
 
 .sticky-top {
     top: 0.5em;
