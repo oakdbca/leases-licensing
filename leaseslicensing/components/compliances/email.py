@@ -21,10 +21,10 @@ class ComplianceExternalSubmitSendNotificationEmail(TemplateEmailBase):
             settings.DEP_NAME
         )
         self.html_template = (
-            "leaseslicensing/emails/send_external_submit_notification.html"
+            "leaseslicensing/emails/compliances/send_external_submit_notification.html"
         )
         self.txt_template = (
-            "leaseslicensing/emails/send_external_submit_notification.txt"
+            "leaseslicensing/emails/compliances/send_external_submit_notification.txt"
         )
 
 
@@ -32,8 +32,12 @@ class ComplianceSubmitSendNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
         self.subject = "A new Compliance has been submitted."
-        self.html_template = "leaseslicensing/emails/send_submit_notification.html"
-        self.txt_template = "leaseslicensing/emails/send_submit_notification.txt"
+        self.html_template = (
+            "leaseslicensing/emails/compliances/send_submit_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/compliances/send_submit_notification.txt"
+        )
 
 
 class ComplianceAcceptNotificationEmail(TemplateEmailBase):
@@ -43,9 +47,11 @@ class ComplianceAcceptNotificationEmail(TemplateEmailBase):
             settings.DEP_NAME
         )
         self.html_template = (
-            "leaseslicensing/emails/compliance_accept_notification.html"
+            "leaseslicensing/emails/compliances/compliance_accept_notification.html"
         )
-        self.txt_template = "leaseslicensing/emails/compliance_accept_notification.txt"
+        self.txt_template = (
+            "leaseslicensing/emails/compliances/compliance_accept_notification.txt"
+        )
 
 
 class ComplianceAmendmentRequestSendNotificationEmail(TemplateEmailBase):
@@ -54,8 +60,12 @@ class ComplianceAmendmentRequestSendNotificationEmail(TemplateEmailBase):
         self.subject = "{} - Commercial Operations licence requirement.".format(
             settings.DEP_NAME
         )
-        self.html_template = "leaseslicensing/emails/send_amendment_notification.html"
-        self.txt_template = "leaseslicensing/emails/send_amendment_notification.txt"
+        self.html_template = (
+            "leaseslicensing/emails/compliances/send_amendment_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/compliances/send_amendment_notification.txt"
+        )
 
 
 class ComplianceReminderNotificationEmail(TemplateEmailBase):
@@ -64,19 +74,21 @@ class ComplianceReminderNotificationEmail(TemplateEmailBase):
         self.subject = "{} - Commercial Operations Licence requirement overdue.".format(
             settings.DEP_NAME
         )
-        self.html_template = "leaseslicensing/emails/send_reminder_notification.html"
-        self.txt_template = "leaseslicensing/emails/send_reminder_notification.txt"
+        self.html_template = (
+            "leaseslicensing/emails/compliances/send_reminder_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/compliances/send_reminder_notification.txt"
+        )
 
 
 class ComplianceInternalReminderNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
         self.subject = "A Compliance with requirements has passed the due date."
-        self.html_template = (
-            "leaseslicensing/emails/send_internal_reminder_notification.html"
-        )
+        self.html_template = "leaseslicensing/emails/compliances/send_internal_reminder_notification.html"
         self.txt_template = (
-            "leaseslicensing/emails/send_internal_reminder_notification.txt"
+            "leaseslicensing/emails/compliances/send_internal_reminder_notification.txt"
         )
 
 
@@ -86,8 +98,12 @@ class ComplianceDueNotificationEmail(TemplateEmailBase):
         self.subject = "{} - Commercial Operations Licence requirement due.".format(
             settings.DEP_NAME
         )
-        self.html_template = "leaseslicensing/emails/send_due_notification.html"
-        self.txt_template = "leaseslicensing/emails/send_due_notification.txt"
+        self.html_template = (
+            "leaseslicensing/emails/compliances/send_due_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/compliances/send_due_notification.txt"
+        )
 
 
 class ComplianceInternalDueNotificationEmail(TemplateEmailBase):
@@ -95,9 +111,11 @@ class ComplianceInternalDueNotificationEmail(TemplateEmailBase):
         super().__init__()
         self.subject = "A Compliance with requirements is due for submission."
         self.html_template = (
-            "leaseslicensing/emails/send_internal_due_notification.html"
+            "leaseslicensing/emails/compliances/send_internal_due_notification.html"
         )
-        self.txt_template = "leaseslicensing/emails/send_internal_due_notification.txt"
+        self.txt_template = (
+            "leaseslicensing/emails/compliances/send_internal_due_notification.txt"
+        )
 
 
 class ComplianceNotificationOnlyEmail(TemplateEmailBase):
@@ -108,20 +126,20 @@ class ComplianceNotificationOnlyEmail(TemplateEmailBase):
                 settings.DEP_NAME
             )
         )
-        self.html_template = "leaseslicensing/emails/send_notification_only_email.html"
-        self.txt_template = "leaseslicensing/emails/send_notification_only_email.txt"
+        self.html_template = (
+            "leaseslicensing/emails/compliances/send_notification_only_email.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/compliances/send_notification_only_email.txt"
+        )
 
 
 class ComplianceInternalNotificationOnlyEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
         self.subject = "A Compliance with requirements is due for submission."
-        self.html_template = (
-            "leaseslicensing/emails/send_internal_notification_only_email.html"
-        )
-        self.txt_template = (
-            "leaseslicensing/emails/send_internal_notification_only_email.txt"
-        )
+        self.html_template = "leaseslicensing/emails/compliances/send_internal_notification_only_email.html"
+        self.txt_template = "leaseslicensing/emails/compliances/send_internal_notification_only_email.txt"
 
 
 def send_amendment_email_notification(
@@ -149,10 +167,7 @@ def send_amendment_email_notification(
         else retrieve_email_user(compliance.proposal.submitter).email
     )
     all_ccs = []
-    if (
-        compliance.proposal.org_applicant
-        and compliance.proposal.org_applicant.email
-    ):
+    if compliance.proposal.org_applicant and compliance.proposal.org_applicant.email:
         cc_list = compliance.proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
@@ -172,11 +187,129 @@ def send_amendment_email_notification(
     #    )
 
 
-# send reminder emails if Compliance has not been lodged by due date. Used in Cron job so cannot use 'request' parameter
+def send_referral_email_notification(referral, recipients, request, reminder=False):
+    compliance = referral.compliance
+    proposal = compliance.proposal
+    email = TemplateEmailBase(
+        subject=f"Referral Request for Compliance: {compliance.lodgement_number}",
+        html_template="leaseslicensing/emails/compliances/send_referral_notification.html",
+        txt_template="leaseslicensing/emails/compliances/send_referral_notification.txt",
+    )
+    url = request.build_absolute_uri(
+        reverse(
+            "internal-compliance-detail",
+            kwargs={"pk": compliance.id},
+        )
+    )
+
+    context = {
+        "proposal": proposal,
+        "compliance": compliance,
+        "url": url,
+        "reminder": reminder,
+        "comments": referral.text,
+        "proposed_start_date": "",
+    }
+
+    msg = email.send(recipients, context=context)
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
+    _log_compliance_email(msg, compliance, sender=sender)
+
+    if proposal.org_applicant:
+        _log_org_email(msg, proposal.org_applicant, referral.referral, sender=sender)
+    elif proposal.ind_applicant:
+        _log_user_email(msg, proposal.ind_applicant, referral.referral, sender=sender)
+
+
+def send_referral_complete_email_notification(referral, request):
+    sent_by = retrieve_email_user(referral.sent_by)
+
+    application_type = referral.proposal.application_type.name_display
+    email_user = retrieve_email_user(referral.referral)
+
+    email = TemplateEmailBase(
+        subject=(
+            f"{email_user.get_full_name()} has Completed Referral for {application_type} "
+            f"Compliance {referral.compliance.lodgement_number}"
+        ),
+        html_template="leaseslicensing/emails/compliances/send_referral_complete_notification.html",
+        txt_template="leaseslicensing/emails/compliances/send_referral_complete_notification.txt",
+    )
+
+    email.subject = sent_by.email + ": " + email.subject
+    url = request.build_absolute_uri(
+        reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
+    )
+
+    context = {
+        "completed_by": email_user.get_full_name(),
+        "application_type": application_type,
+        "compliance": referral.compliance,
+        "proposal": referral.compliance.proposal,
+        "url": url,
+        "referral_comments": referral.referral_text,
+    }
+    attachments = []
+    if referral.document:
+        file_name = referral.document._file.name
+        attachment = (file_name, referral.document._file.file.read())
+        attachments.append(attachment)
+
+    msg = email.send(sent_by.email, attachments=attachments, context=context)
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
+    _log_compliance_email(msg, referral.proposal, sender=sender)
+
+    if referral.compliance.proposal.org_applicant:
+        _log_org_email(
+            msg,
+            referral.compliance.proposal.org_applicant,
+            referral.referral,
+            sender=sender,
+        )
+    elif referral.compliance.proposal.ind_applicant:
+        _log_user_email(
+            msg,
+            referral.compliance.proposal.ind_applicant,
+            referral.referral,
+            sender=sender,
+        )
+
+
+def send_pending_referrals_complete_email_notification(referral, request):
+    compliance = referral.compliance
+    proposal = compliance.proposal
+    application_type = proposal.application_type.name_display
+    email = TemplateEmailBase(
+        subject=(
+            f"All Pending Referrals for {application_type} "
+            f"Compliance: {compliance.lodgement_number} have been completed."
+        ),
+        html_template="leaseslicensing/emails/compliances/send_pending_referrals_complete_notification.html",
+        txt_template="leaseslicensing/emails/compliances/send_pending_referrals_complete_notification.txt",
+    )
+
+    url = request.build_absolute_uri(
+        reverse("internal-compliance-detail", kwargs={"pk": compliance.id})
+    )
+
+    context = {
+        "referral": referral,
+        "compliance": referral.compliance,
+        "url": url,
+    }
+    recipients = proposal.assessor_recipients
+    msg = email.send(recipients, context=context)
+
+    sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
+    _log_compliance_email(msg, compliance, sender=sender)
+
+
 def send_reminder_email_notification(compliance, is_test=False):
     """Used by the management command, therefore have no request object - therefore explicitly defining base_url"""
     email = ComplianceReminderNotificationEmail()
-    # url = request.build_absolute_uri(reverse('external-compliance-detail',kwargs={'compliance_pk': compliance.id}))
     url = settings.SITE_URL if settings.SITE_URL else ""
     url += reverse(
         "external-compliance-detail", kwargs={"compliance_pk": compliance.id}
@@ -263,9 +396,7 @@ def send_due_email_notification(compliance, is_test=False):
     context = {"compliance": compliance, "url": url}
 
     submitter_id = (
-        compliance.submitter
-        if compliance.submitter
-        else compliance.proposal.submitter
+        compliance.submitter if compliance.submitter else compliance.proposal.submitter
     )
     submitter = retrieve_email_user(submitter_id)
 
@@ -294,7 +425,10 @@ def send_due_email_notification(compliance, is_test=False):
         )
     else:
         _log_user_email(
-            msg, compliance.proposal.submitter, compliance.submitter, sender=sender_user.id
+            msg,
+            compliance.proposal.submitter,
+            compliance.submitter,
+            sender=sender_user.id,
         )
 
 
@@ -348,7 +482,7 @@ def send_compliance_accept_email_notification(compliance, request, is_test=False
         cc_list = compliance.proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
-    # TODO `leaseslicensing/components/emails/templates/leaseslicensing/emails/base_email.txt` misses body text
+
     msg = email.send(submitter, cc=all_ccs, context=context)
     if is_test:
         return
@@ -481,9 +615,7 @@ def send_notification_only_email(compliance, is_test=False):
 def send_internal_notification_only_email(compliance, is_test=False):
     email = ComplianceInternalNotificationOnlyEmail()
     url = settings.SITE_URL
-    url += reverse(
-        "internal-compliance-detail", kwargs={"pk": compliance.id}
-    )
+    url += reverse("internal-compliance-detail", kwargs={"pk": compliance.id})
     if "-internal" not in url:
         # add it. This email is for internal staff
         url = f"-internal.{settings.SITE_DOMAIN}".join(
