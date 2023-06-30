@@ -1,9 +1,11 @@
 import datetime
 import logging
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.ledger_models import Invoice
 
 from leaseslicensing.components.compliances.email import (
@@ -15,6 +17,9 @@ from leaseslicensing.components.compliances.email import (
     send_internal_notification_only_email,
     send_internal_reminder_email_notification,
     send_notification_only_email,
+    send_pending_referrals_complete_email_notification,
+    send_referral_complete_email_notification,
+    send_referral_email_notification,
     send_reminder_email_notification,
     send_submit_email_notification,
 )
@@ -25,7 +30,10 @@ from leaseslicensing.components.main.models import (
     SecureFileField,
     UserAction,
 )
+from leaseslicensing.components.main.utils import is_department_user
 from leaseslicensing.components.proposals.models import ProposalRequirement
+from leaseslicensing.exceptions import ComplianceNotAuthorized
+from leaseslicensing.helpers import is_assessor, is_compliance_referee
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
@@ -50,6 +58,7 @@ class Compliance(RevisionedMixin, models.Model):
     PROCESSING_STATUS_DUE = "due"
     PROCESSING_STATUS_FUTURE = "future"
     PROCESSING_STATUS_WITH_ASSESSOR = "with_assessor"
+    PROCESSING_STATUS_WITH_REFERRAL = "with_referral"
     PROCESSING_STATUS_APPROVED = "approved"
     PROCESSING_STATUS_DISCARDED = "discarded"
     PROCESSING_STATUS_OVERDUE = "overdue"
@@ -58,6 +67,7 @@ class Compliance(RevisionedMixin, models.Model):
         (PROCESSING_STATUS_DUE, "Due"),
         (PROCESSING_STATUS_FUTURE, "Future"),
         (PROCESSING_STATUS_WITH_ASSESSOR, "With Assessor"),
+        (PROCESSING_STATUS_WITH_REFERRAL, "With Referral"),
         (PROCESSING_STATUS_APPROVED, "Approved"),
         (PROCESSING_STATUS_DISCARDED, "Discarded"),
         (PROCESSING_STATUS_OVERDUE, "Overdue"),
@@ -117,7 +127,13 @@ class Compliance(RevisionedMixin, models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
-        ordering = ("approval__lodgement_number", "lodgement_number",)
+        ordering = (
+            "approval__lodgement_number",
+            "lodgement_number",
+        )
+
+    def __str__(self):
+        return self.lodgement_number
 
     @property
     def approval_number(self):
@@ -170,7 +186,9 @@ class Compliance(RevisionedMixin, models.Model):
 
     @property
     def current_amendment_requests(self):
-        return self.amendment_requests.filter(status=ComplianceAmendmentRequest.STATUS_CHOICE_REQUESTED)
+        return self.amendment_requests.filter(
+            status=ComplianceAmendmentRequest.STATUS_CHOICE_REQUESTED
+        )
 
     @property
     def participant_number_required(self):
@@ -198,6 +216,12 @@ class Compliance(RevisionedMixin, models.Model):
         if self.proposal.application_type:
             return self.proposal.application_type.name_display
         return None
+
+    @property
+    def latest_referrals(self):
+        return ComplianceReferral.objects.filter(compliance=self).order_by(
+            "-lodged_on"
+        )[: settings.LATEST_REFERRAL_COUNT]
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -349,14 +373,94 @@ class Compliance(RevisionedMixin, models.Model):
                     )
                 )
 
+    @transaction.atomic
+    def send_referral(self, request, referral_email, referral_text):
+        if self.processing_status not in [
+            Compliance.PROCESSING_STATUS_WITH_ASSESSOR,
+            Compliance.PROCESSING_STATUS_WITH_REFERRAL,
+        ]:
+            raise ComplianceNotAuthorized()
+
+        referral_email = referral_email.lower()
+        self.processing_status = Compliance.PROCESSING_STATUS_WITH_REFERRAL
+        self.save()
+
+        # Check if the user is in ledger
+        try:
+            user = EmailUser.objects.get(email__icontains=referral_email)
+        except EmailUser.DoesNotExist:
+            # Validate if it is a deparment user
+            department_user = is_department_user(referral_email)
+            if not department_user:
+                raise ValidationError(
+                    "The user you want to send the referral to is not a member of the department"
+                )
+            # Check if the user is in ledger or create
+
+            user, created = EmailUser.objects.get_or_create(
+                email=department_user["email"].lower()
+            )
+            if created:
+                user.first_name = department_user["given_name"]
+                user.last_name = department_user["surname"]
+                user.save()
+
+        referral = None
+        try:
+            referral = ComplianceReferral.objects.get(referral=user.id, compliance=self)
+            raise ValidationError("A referral has already been sent to this user")
+        except ComplianceReferral.DoesNotExist:
+            # Create Referral
+            referral = ComplianceReferral.objects.create(
+                compliance=self,
+                referral=user.id,
+                sent_by=request.user.id,
+                text=referral_text,
+                assigned_officer=request.user.id,
+            )
+
+        # Create a log entry for the proposal
+        self.log_user_action(
+            ComplianceUserAction.ACTION_SEND_REFERRAL_TO.format(
+                referral.id,
+                self.lodgement_number,
+                f"{user.get_full_name()}({user.email})",
+            ),
+            request,
+        )
+
+        # Create a log entry for the applicant
+        self.proposal.applicant.log_user_action(
+            ComplianceUserAction.ACTION_SEND_REFERRAL_TO.format(
+                referral.id,
+                self.lodgement_number,
+                f"{user.get_full_name()}({user.email})",
+            ),
+            request,
+        )
+
+        send_referral_email_notification(
+            referral,
+            [
+                user.email,
+            ],
+            request,
+        )
+
     def log_user_action(self, action, request):
         return ComplianceUserAction.log_action(self, action, request.user.id)
 
     def user_has_object_permission(self, user_id):
         return self.approval.user_has_object_permission(user_id)
 
-    def __str__(self):
-        return self.lodgement_number
+    def switch_status(self, user_id, new_processing_status):
+        if self.processing_status == new_processing_status:
+            return
+
+        if not is_assessor(user_id) or not is_compliance_referee(user_id, self):
+            raise ValidationError(
+                "Only an assessor or referee can change the status of a compliance"
+            )
 
 
 def update_proposal_compliance_filename(instance, filename):
@@ -400,7 +504,10 @@ class ComplianceUserAction(UserAction):
     ACTION_ID_REQUEST_AMENDMENTS = "Request amendments"
     ACTION_REMINDER_SENT = "Reminder sent for compliance {}"
     ACTION_STATUS_CHANGE = "Change status to Due for compliance {}"
-    # Assessors
+    ACTION_SEND_REFERRAL_TO = "Send referral to {} for compliance {}"
+    ACTION_REMIND_REFERRAL = "Send reminder to {} for compliance {}"
+    ACTION_RESEND_REFERRAL = "Resend referral to {} for compliance {}"
+    RECALL_REFERRAL = "Referral {} for compliance {} has been recalled"
 
     ACTION_CONCLUDE_REQUEST = "Conclude request {}"
 
@@ -473,7 +580,10 @@ class ComplianceAmendmentRequest(CompRequest):
     STATUS_CHOICE_REQUESTED = "requested"
     STATUS_CHOICE_AMENDED = "amended"
 
-    STATUS_CHOICES = ((STATUS_CHOICE_REQUESTED, "Requested"), (STATUS_CHOICE_AMENDED, "Amended"))
+    STATUS_CHOICES = (
+        (STATUS_CHOICE_REQUESTED, "Requested"),
+        (STATUS_CHOICE_AMENDED, "Amended"),
+    )
     status = models.CharField(
         "Status", max_length=30, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
@@ -552,6 +662,136 @@ class ComplianceReferral(RevisionedMixin):
         app_label = "leaseslicensing"
         ordering = ("-lodged_on",)
 
+    @property
+    def applicant(self):
+        return self.compliance.proposal.applicant
+
+    @property
+    def referral_as_email_user(self):
+        return retrieve_email_user(self.referral)
+
+    @transaction.atomic
+    def recall(self, request):
+        if not is_assessor(request):
+            raise ComplianceNotAuthorized()
+
+        self.processing_status = ComplianceReferral.PROCESSING_STATUS_RECALLED
+        self.save()
+
+        # Log an action for the compliance
+        self.compliance.log_user_action(
+            ComplianceUserAction.RECALL_REFERRAL.format(self.id, self.compliance.id),
+            request,
+        )
+
+    @transaction.atomic
+    def remind(self, request):
+        if not is_assessor(request):
+            raise ComplianceNotAuthorized()
+
+        # Create a log entry for the proposal
+        self.compliance.log_user_action(
+            ComplianceUserAction.ACTION_REMIND_REFERRAL.format(
+                self.id,
+                self.compliance.id,
+                f"{self.referral_as_email_user.get_full_name()}",
+            ),
+            request,
+        )
+
+        # send email
+        send_referral_email_notification(
+            self,
+            [
+                self.referral_as_email_user.email,
+            ],
+            request,
+            reminder=True,
+        )
+
+    @transaction.atomic
+    def resend(self, request):
+        if not is_assessor(request):
+            raise ComplianceNotAuthorized()
+        self.processing_status = ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL
+        self.compliance.processing_status = Compliance.PROCESSING_STATUS_WITH_REFERRAL
+        self.compliance.save()
+        self.sent_from = 1
+        self.save()
+
+        # Create a log entry for the compliance
+        self.compliance.log_user_action(
+            ComplianceUserAction.ACTION_RESEND_REFERRAL_TO.format(
+                self.id,
+                self.compliance.id,
+                f"{self.referral_as_email_user.get_full_name()}",
+            ),
+            request,
+        )
+
+        # Create a log entry for the applicant
+        self.applicant.log_user_action(
+            ComplianceUserAction.ACTION_RESEND_REFERRAL_TO.format(
+                self.id,
+                self.compliance.id,
+                f"{self.referral_as_email_user.get_full_name()}",
+            ),
+            request,
+        )
+
+        # send email
+        # recipients = self.referral_group.members_list
+        # ~leaving the comment above here in case we need to send to the whole group
+        send_referral_email_notification(
+            self,
+            [
+                self.referral_as_email_user.email,
+            ],
+            request,
+        )
+
+    @transaction.atomic
+    def complete(self, request):
+        self.processing_status = ComplianceReferral.PROCESSING_STATUS_COMPLETED
+        self.add_referral_document(request)
+        self.save()
+
+        # Log proposal action
+        self.proposal.log_user_action(
+            ComplianceUserAction.CONCLUDE_REFERRAL.format(
+                request.user.get_full_name(), self.id, self.proposal.lodgement_number
+            ),
+            request,
+        )
+
+        # log applicant_field
+        self.applicant.log_user_action(
+            ComplianceUserAction.CONCLUDE_REFERRAL.format(
+                request.user.get_full_name(), self.id, self.proposal.lodgement_number
+            ),
+            request,
+        )
+
+        send_referral_complete_email_notification(self, request)
+
+        # Check if this was the last pending referral for the proposal
+        if not ComplianceReferral.objects.filter(
+            proposal=self.proposal,
+            processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
+        ).exists():
+            # Change the status back to what it was before this referral was requested
+            if self.sent_from == 1:
+                self.proposal.processing_status = (
+                    Compliance.PROCESSING_STATUS_WITH_ASSESSOR
+                )
+            else:
+                self.proposal.processing_status = (
+                    Compliance.PROCESSING_STATUS_WITH_APPROVER
+                )
+            self.proposal.save()
+
+            send_pending_referrals_complete_email_notification(self, request)
+
 
 def compliance_referral_document_upload_to(instance, filename):
     return f"compliance_referral_documents/{instance.id}/{filename}"
@@ -561,7 +801,9 @@ class ComplianceReferralDocument(Document):
     compliance_referral = models.ForeignKey(
         ComplianceReferral, related_name="referral_documents", on_delete=models.CASCADE
     )
-    _file = SecureFileField(upload_to=compliance_referral_document_upload_to, max_length=512)
+    _file = SecureFileField(
+        upload_to=compliance_referral_document_upload_to, max_length=512
+    )
     input_name = models.CharField(max_length=255, null=True, blank=True)
     can_delete = models.BooleanField(
         default=True
@@ -580,4 +822,4 @@ class ComplianceReferralDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
-        ordering = ("compliance_referral","-uploaded_date")
+        ordering = ("compliance_referral", "-uploaded_date")
