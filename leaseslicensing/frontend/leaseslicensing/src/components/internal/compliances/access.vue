@@ -13,7 +13,7 @@
                     </div>
                     <div class="card-body card-collapse">
                         <div class="mb-1 fw-bold">Status</div>
-                        <div>{{ compliance.processing_status }}</div>
+                        <div>{{ compliance.processing_status_display }}</div>
                     </div>
                     <div class="card-body card-collapse border-top">
                         <div class="mb-1 fw-bold">Currently assigned to
@@ -43,8 +43,7 @@
                                     <textarea class="form-control comments_to_referral" name="name"
                                         v-model="referral_text"></textarea>
                                     <div class="text-end">
-                                        <a v-if="canLimitedAction" @click.prevent="sendReferral()"
-                                            class="actionBtn">Send</a>
+                                        <a @click.prevent="sendReferral()" class="actionBtn" role="button">Send</a>
                                     </div>
                                 </template>
                             </template>
@@ -57,10 +56,12 @@
                         </div>
                     </div>
 
-                    <div v-if="compliance.assigned_to && compliance.referrals && compliance.referrals.length > 0"
+                    <div v-if="compliance.assigned_to && compliance.latest_referrals && compliance.latest_referrals.length > 0"
                         class="card-body border-top">
                         <div class="col-sm-12">
-                            <div class="fw-bold mb-1">Referrals</div>
+                            <div class="fw-bold mb-1">Recent Referrals <small class="text-secondary fw-lighter">(Showing
+                                    {{ compliance.latest_referrals.length }} of {{ compliance.referrals.length }})</small>
+                            </div>
                             <table class="table table-sm table-hover table-referrals">
                                 <thead>
                                     <tr>
@@ -70,35 +71,34 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="r in compliance.referrals">
+                                    <tr v-for="r in compliance.latest_referrals">
                                         <td class="truncate-name">
-                                            {{ r.referral_obj.first_name }} {{ r.referral_obj.last_name }}
+                                            {{ r.referee_obj.first_name }} {{ r.referee_obj.last_name }}
                                         </td>
                                         <td>
-                                            {{ r.processing_status }}
+                                            {{ r.processing_status_display }}
                                         </td>
                                         <td class="text-center">
                                             <template
-                                                v-if="constants.REFERRAL_STATUS.PROCESSING_STATUS_WITH_REFERRAL.TEXT == r.processing_status">
-                                                <a v-if="canLimitedAction"
-                                                    @click.prevent="remindReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                                v-if="constants.REFERRAL_STATUS.PROCESSING_STATUS_WITH_REFERRAL.ID == r.processing_status">
+                                                <a @click.prevent="remindReferral.bind(this)(referrals_api_endpoint, r.id, r.referee_obj['fullname'])"
                                                     role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
-                                                    :data-bs-content="'Send a reminder to ' + r.referral_obj['fullname']"
+                                                    :data-bs-content="'Send a reminder to ' + r.referee_obj['fullname']"
                                                     data-bs-placement="bottom"><i class="fa fa-bell text-warning"
                                                         aria-hidden="true"></i>
                                                 </a>
-                                                <a @click.prevent="recallReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                                <a @click.prevent="recallReferral.bind(this)(referrals_api_endpoint, r.id, r.referee_obj['fullname'])"
                                                     role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
-                                                    :data-bs-content="'Recall the referral request sent to ' + r.referral_obj['fullname']"
+                                                    :data-bs-content="'Recall the referral request sent to ' + r.referee_obj['fullname']"
                                                     data-bs-placement="bottom"><i class="fa fa-times-circle text-danger"
                                                         aria-hidden="true"></i>
                                                 </a>
                                             </template>
                                             <template v-else>
-                                                <small v-if="canLimitedAction"><a
-                                                        @click.prevent="resendReferral.bind(this)(r.id, r.referral_obj['fullname'])"
+                                                <small><a
+                                                        @click.prevent="resendReferral.bind(this)(referrals_api_endpoint, r.id, r.referee_obj['fullname'])"
                                                         role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
-                                                        :data-bs-content="'Resend this referral request to ' + r.referral_obj['fullname']"><i
+                                                        :data-bs-content="'Resend this referral request to ' + r.referee_obj['fullname']"><i
                                                             class="fa fa-envelope text-primary" aria-hidden="true"></i>
                                                     </a></small>
                                             </template>
@@ -106,14 +106,13 @@
                                     </tr>
                                 </tbody>
                             </table>
-                            <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :canAction="canLimitedAction"
+                            <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :canAction="true"
                                 :isFinalised="isFinalised" :referral_url="referralListURL" />
                         </div>
                     </div>
 
-                    <div class="card-body border-top"
-                        v-if="!canViewonly && check_assessor() && profile.id == compliance.assigned_to">
-                        <div class="mb-1"><strong>Actions</strong></div>
+                    <div class="card-body border-top" v-if="canViewActions">
+                        <div class="mb-1 fw-bold">Actions</div>
                         <div class="action-buttons">
                             <button class="btn btn-primary mb-2" @click.prevent="amendmentRequest()">Request
                                 Amendment</button>
@@ -171,7 +170,7 @@
                                                 </div>
                                             </div>
                                             <template v-for="referral in compliance.referrals ">
-                                                <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.TEXT"
+                                                <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.ID"
                                                     class="row mb-3 mt-3" :key="referral.id">
                                                     <div class="col">
                                                         <div class="form-floating">
@@ -181,7 +180,7 @@
                                                                 v-model="referral.comment_map" />
                                                             <label :for="'comment_map_' + referral.id">Referral Comment by
                                                                 <span class="fw-bold">{{
-                                                                    referral.referral_obj.fullname }}</span></label>
+                                                                    referral.referee_obj.fullname }}</span></label>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -268,6 +267,7 @@ import MoreReferrals from '@common-utils/more_referrals.vue'
 import FormSection from "@/components/forms/section_toggle.vue"
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
 import ApprovalsTable from "@/components/common/table_approvals.vue"
+import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
 
 import {
     api_endpoints,
@@ -281,6 +281,8 @@ export default {
     data() {
         let vm = this;
         return {
+            constants: constants,
+            referrals_api_endpoint: api_endpoints.compliance_referrals,
             loading: [],
             loadRelatedItems: false,
             profile: {},
@@ -289,10 +291,14 @@ export default {
             members: [],
             sendingReferral: false,
             selected_referral: null,
+            referral_text: '',
             // Filters
             logs_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/action_log'),
             comms_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/comms_log'),
             comms_add_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/add_comms_log'),
+            remindReferral: remindReferral,
+            recallReferral: recallReferral,
+            resendReferral: resendReferral,
         }
     },
     components: {
@@ -308,7 +314,7 @@ export default {
             return this.loading.length > 0;
         },
         referralListURL: function () {
-            return this.compliance != null ? api_endpoints.compliance_referrals + '?compliance_id=' + this.compliance.id : '';
+            return this.compliance != null ? api_endpoints.compliance_referrals + 'datatable_list/?compliance_id=' + this.compliance.id : '';
         },
         canViewonly: function () {
             return this.compliance.processing_status == 'Due' || this.compliance.processing_status == 'Future' || this.compliance.processing_status == 'Approved';
@@ -320,7 +326,16 @@ export default {
             return moment(this.compliance.due_date).format(this.DATE_FORMAT);
         },
         canEditComments: function () {
-            return constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.TEXT == this.compliance.processing_status;
+            return constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID == this.compliance.processing_status;
+        },
+        isFinalised: function () {
+            return this.compliance && [
+                constants.COMPLIANCE_PROCESSING_STATUS.APPROVED.ID,
+                constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED.ID
+            ].includes(this.compliance.processing_status);
+        },
+        canViewActions: function () {
+            return this.profile.is_assessor && constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID == this.compliance.processing_status && this.profile.id == this.compliance.assigned_to
         },
     },
     methods: {
@@ -376,58 +391,8 @@ export default {
                 this.compliance = Object.assign({}, await helpers.fetchWrapper(url));
             }
         },
-        performSendReferral: async function () {
-            let vm = this
-            let my_headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
-
-            vm.sendingReferral = true;
-            await fetch(`/api/compliance/${this.compliance.id}/save/`, {
-                method: 'POST',
-                headers: my_headers,
-                body: JSON.stringify({ 'proposal': vm.proposal }),
-            }).then(async response => {
-                if (!response.ok) {
-                    return await response.json().then(json => { throw new Error(json); });
-                } else {
-                    return await response.json();
-                }
-            }).then(async () => {
-                return fetch(helpers.add_endpoint_json(api_endpoints.proposals, (vm.compliance.id + '/assesor_send_referral')), {
-                    method: 'POST',
-                    headers: my_headers,
-                    body: JSON.stringify({ 'email': vm.selected_referral, 'text': vm.referral_text }),
-                });
-            }).then(async response => {
-                if (!response.ok) {
-                    return await response.json().then(json => {
-                        if (Array.isArray(json)) {
-                            throw new Error(json);
-                        } else {
-                            throw new Error(json["non_field_errors"]);
-                        }
-                    });
-                } else {
-                    return await response.json();
-                }
-            }).then(async response => {
-                vm.switchStatus(response.processing_status_id); // 'with_referral'
-            }).catch(error => {
-                console.log(`Error sending referral. ${error}`);
-                swal.fire({
-                    title: `${error}`,
-                    text: "Failed to send referral. Please contact your administrator.",
-                    icon: "warning",
-                })
-            }).finally(() => {
-                vm.sendingReferral = false;
-                vm.selected_referral = '';
-                vm.referral_text = '';
-                $(vm.$refs.referees).val(null).trigger('change');
-            });
-        },
         sendReferral: async function () {
             let vm = this
-            this.checkAssessorData();
             swal.fire({
                 title: "Send Referral",
                 text: "Are you sure you want to send to referral?",
@@ -447,8 +412,76 @@ export default {
                 }
             })
         },
-        initialiseSelects: function () {
+        performSendReferral: async function () {
+            let vm = this
+            let my_headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+            vm.sendingReferral = true;
+            await fetch(`/api/compliances/${this.compliance.id}/`, {
+                method: 'PUT',
+                headers: my_headers,
+                body: JSON.stringify(vm.compliance),
+            }).then(async response => {
+                if (!response.ok) {
+                    return await response.json().then(json => {
+                        throw new Error(json);
+                    });
+                } else {
+                    return await response.json();
+                }
+            }).then(async () => {
+                return fetch(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/assessor_send_referral')), {
+                    method: 'POST',
+                    headers: my_headers,
+                    body: JSON.stringify({ 'email': vm.selected_referral, 'text': vm.referral_text }),
+                });
+            }).then(async response => {
+                if (!response.ok) {
+                    return await response.json().then(json => {
+                        console.log('json', json)
+                        throw new Error(JSON.stringify(json));
+                    });
+                } else {
+                    return await response.json();
+                }
+            }).then(async response => {
+                console.log('settings updated compliance from response')
+                vm.compliance = Object.assign({}, response); // 'with_referral'
+            }).catch(error => {
+                let errorText = '';
+                try {
+                    // console.log(`error type. ${typeof error}`);
+                    // console.log(`Error sending referral. ${error}`);
+                    // console.log(`${error.type}`);
+                    // console.log(`${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+                    // console.log(`${JSON.parse(error.message).type}`);
+
+                    error = JSON.parse(error.message);
+                    console.log(`error type. ${typeof error}`);
+                    errorText = helpers.formatErrorV2(error);
+                    console.log(`errorText type. ${typeof errorText}`);
+
+                } catch (e) {
+                    errorText = error.message;
+                }
+                swal.fire({
+                    title: "Failed to send referral.",
+                    html: `${errorText}`,
+                    icon: "warning",
+                    customClass: 'swal-wide',
+                })
+            }).finally(() => {
+                vm.sendingReferral = false;
+                vm.selected_referral = '';
+                vm.referral_text = '';
+                $(vm.$refs.referees).val(null).trigger('change');
+            });
+        },
+        initialiseSelects: function (reinit = false) {
             let vm = this;
+            if (reinit) {
+                $(vm.$refs.referees).data('select2') ? $(vm.$refs.referees).select2('destroy') : '';
+            }
             $(vm.$refs.referees).select2({
                 minimumInputLength: 2,
                 "theme": "bootstrap-5",
@@ -521,11 +554,45 @@ export default {
             else
                 return false;
         },
+        switchStatus: function (new_processing_status) {
+            const requestOptions = {
+                method: 'POST',
+                body: JSON.stringify({ 'status': new_processing_status }),
+            };
+            fetch(helpers.add_endpoint_json(api_endpoints.compliances, (this.compliance.id + '/switch_status')), requestOptions)
+                .then(async response => {
+                    if (!response.ok) {
+                        return await response.json().then(json => { throw new Error(json); });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then(data => {
+                    this.compliance = Object.assign({}, data);
+                    this.$nextTick(() => {
+                        this.initialiseSelects();
+                        // this.updateAssignedOfficerSelect();
+                    });
+                })
+                .catch(error => {
+                    swal.fire({
+                        title: 'Compliance Error',
+                        text: error,
+                        icon: 'error'
+                    });
+                });
+        },
         fetchCompliance: function (compliance_id) {
             let vm = this;
             fetch(helpers.add_endpoint_json(api_endpoints.compliances, compliance_id + '/internal_compliance')).then(async response => {
                 if (!response.ok) {
-                    return await response.text().then(text => { throw new Error(text); });
+                    return await response.text().then(text => {
+                        swal.fire({
+                            title: 'Compliance Error',
+                            text: text,
+                            icon: 'error'
+                        })
+                    });
                 } else {
                     return await response.json();
                 }
@@ -539,16 +606,23 @@ export default {
                                 $(this).height($(this)[0].scrollHeight - 30);
                             }
                         });
+                        this.initialiseSelects();
+                        this.initialisePopovers();
                     });
                 })
                 .catch(error => {
-                    console.log(error);
                     swal.fire({
                         title: 'Compliance Error',
-                        text: error,
+                        text: constants.ERRORS.NETWORK_ERROR,
                         icon: 'error'
                     })
                 });
+        },
+        initialisePopovers: function () {
+            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                return new bootstrap.Popover(popoverTriggerEl)
+            })
         },
     },
     beforeRouteEnter: function (to, from, next) {
@@ -561,11 +635,6 @@ export default {
         if (!this.compliance) {
             this.fetchCompliance(this.$route.params.compliance_id);
         }
-    },
-    mounted: function () {
-        this.$nextTick(() => {
-            this.initialiseSelects();
-        });
     },
 }
 </script>
