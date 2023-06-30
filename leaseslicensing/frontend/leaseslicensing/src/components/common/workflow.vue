@@ -167,7 +167,7 @@
                         </tbody>
                     </table>
                     <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :canAction="canLimitedAction"
-                        :isFinalised="isFinalised" :referral_url="referralListURL" />
+                        :isFinalised="isFinalised" :referral_url="referralListURL" :api_endpoint="referrals_api_endpoint" />
                 </div>
             </div>
 

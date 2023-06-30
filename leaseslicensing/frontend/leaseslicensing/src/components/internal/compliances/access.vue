@@ -107,7 +107,8 @@
                                 </tbody>
                             </table>
                             <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :canAction="true"
-                                :isFinalised="isFinalised" :referral_url="referralListURL" />
+                                :isFinalised="isFinalised" :referral_url="referralListURL"
+                                :api_endpoint="referrals_api_endpoint" />
                         </div>
                     </div>
 
@@ -314,7 +315,7 @@ export default {
             return this.loading.length > 0;
         },
         referralListURL: function () {
-            return this.compliance != null ? api_endpoints.compliance_referrals + 'datatable_list/?compliance_id=' + this.compliance.id : '';
+            return this.compliance ? api_endpoints.compliance_referrals + 'datatable_list/?compliance_id=' + this.compliance.id : '';
         },
         canViewonly: function () {
             return this.compliance.processing_status == 'Due' || this.compliance.processing_status == 'Future' || this.compliance.processing_status == 'Approved';
