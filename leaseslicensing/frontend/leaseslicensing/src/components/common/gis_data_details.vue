@@ -1,6 +1,6 @@
 <template lang="html">
     <div
-        v-for="(data, idx) in selectedData"
+        v-for="(data, idx) in selected_data"
         :key="newKey(idx)"
         :set="(selected_data_item = selected_data(idx))"
     >
@@ -15,13 +15,11 @@
                 <div :class="bsClassSelection">
                     <Multiselect
                         :id="`txt-gis-data-${idx}`"
-                        v-model="selected_data_item"
+                        v-model="selected_data[idx]"
                         :label="label"
                         :track-by="trackBy"
-                        :placeholder="
-                            readonly ? 'N/A' : `Start typing to search ${idx}`
-                        "
-                        :options="gis_data[idx] || selectedData[idx]"
+                        :placeholder="taggedPlaceholder({'property': idx})"
+                        :options="gis_data[idx] || selected_data[idx]"
                         :hide-selected="hideSelected"
                         :multiple="multiple"
                         :searchable="searchable"
@@ -38,9 +36,9 @@
 </template>
 
 <script>
-import { v4 as uuid } from 'uuid'
+import { v4 as uuid } from 'uuid';
 import Multiselect from 'vue-multiselect'
-import { api_endpoints, utils } from '@/utils/hooks'
+import { api_endpoints, utils, helpers } from '@/utils/hooks'
 
 export default {
     name: 'GisDataDetails',
@@ -93,6 +91,7 @@ export default {
             type: String,
             required: false,
             default: 'col-9',
+            default: "Start typing to search ${property}",
         },
         searchable: {
             type: Boolean,
@@ -115,34 +114,31 @@ export default {
             default: true,
         },
     },
-    emits: ['update:selectedData'],
     data() {
         return {
             gis_data: {
-                default() {
+                default(rawProps) {
                     return {}
                 },
             },
             loading_indicators: {
-                default() {
+                default(rawProps) {
                     return {}
                 },
             },
             keys: {
-                default() {
+                default(rawProps) {
                     return {}
                 },
             },
         }
     },
-    computed: {
-        selected_data: {
-            get: function () {
-                return (idx) => {
-                    return this.selectedData[idx]
-                }
-            },
-        },
+    computed: {},
+    mounted: function () {
+        let vm = this
+        vm.$nextTick(() => {
+            //
+        })
     },
     methods: {
         /**
@@ -151,32 +147,65 @@ export default {
          * @param {*} query The query to search for
          */
         ajaxLookupGeodata: function (property, query) {
-            let vm = this
-            vm.loading_indicators[property] = true
+            let vm = this;
+            vm.loading_indicators[property] = true;
             utils
                 .fetchKeyValueLookup(api_endpoints[property], query)
                 .then((data) => {
-                    vm.loading_indicators[property] = false
-                    vm.gis_data[property] = data
+                    vm.loading_indicators[property] = false;
+                    vm.gis_data[property] = data;
                 })
         },
-        selectHandler: function (property, event) {
-            let vm = this
-            this.$emit('update:selectedData', property, event)
-            vm.keys[property] = uuid()
+        selectHandler: function (property, value) {
+            let vm = this;
+            vm.keys[property] = uuid();
         },
-        removeHandler: function (property, event) {
-            let vm = this
-            this.$emit('update:selectedData', property, event)
-            vm.keys[property] = uuid()
+        removeHandler: function (property, value) {
+            let vm = this;
+            vm.keys[property] = uuid();
+        },
+        /**
+         * Returns a placeholder string with dynamically inserted geodata property name
+         * @param {*} params A dictionary of a parameter to be used in the placeholder. e.g. {'property': 'Xyz'}
+         */
+        taggedPlaceholder: function (params) {
+            let vm = this;
+            // A reference to the template tag function
+            const template = helpers.template;
+            // Split
+            let parts = vm.placeholder.replace("${property}", "||${property}||").split("||");
+            // Remove empty parts
+            parts = parts.filter((part) => part !== "");
+            // Construct a template string for evaluation
+            let evalString = "template`";
+            for (let part of parts) {
+                if (part != "${property}") {
+                    // Don't overwrite. Property should already be in the params dictionary
+                    params[part] = part;
+                    evalString += "${\""+part+"\"}";
+                } else {
+                    evalString += "${\"property\"}";
+                }
+            }
+            evalString += "`";
+            // Evaluate the template string
+            const _placeholder = eval(evalString);
+            // Return the evaluated template string
+            return _placeholder(params);
         },
         newKey: function (idx) {
-            let vm = this
+            let vm = this;
             if (!vm.keys[idx]) {
-                vm.keys[idx] = uuid()
+                vm.keys[idx] = uuid();
             }
-            return vm.keys[idx]
+            return vm.keys[idx];
         },
     },
-}
+};
 </script>
+
+<style scoped>
+.capitalized {
+    text-transform: capitalize;
+}
+</style>
