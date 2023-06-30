@@ -11,7 +11,7 @@ from leaseslicensing.components.compliances.models import (
     ComplianceUserAction,
 )
 from leaseslicensing.components.main.serializers import EmailUserSerializer
-from leaseslicensing.components.main.utils import get_secure_document_url, get_secure_file_url
+from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 
@@ -29,9 +29,7 @@ class ComplianceDocumentSerializer(serializers.ModelSerializer):
         )
 
     def get_secure_url(self, obj):
-        return [
-            get_secure_file_url(obj, "_file")
-        ]
+        return [get_secure_file_url(obj, "_file")]
 
 
 class ComplianceReferralDocumentSerializer(serializers.ModelSerializer):
@@ -42,13 +40,14 @@ class ComplianceReferralDocumentSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_secure_url(self, obj):
-        return [
-            get_secure_file_url(obj, "_file")
-        ]
+        return [get_secure_file_url(obj, "_file")]
 
 
 class ComplianceReferralSerializer(serializers.ModelSerializer):
-    referral_obj = serializers.SerializerMethodField(read_only=True)
+    referee_obj = serializers.SerializerMethodField(read_only=True)
+    processing_status_display = serializers.CharField(
+        source="get_processing_status_display", read_only=True
+    )
 
     class Meta:
         model = ComplianceReferral
@@ -57,10 +56,26 @@ class ComplianceReferralSerializer(serializers.ModelSerializer):
             "id",
         ]
 
-    def get_referral_obj(self, obj):
-        referral_email_user = retrieve_email_user(obj.referral)
-        serializer = EmailUserSerializer(referral_email_user)
-        return serializer.data
+    def get_referee_obj(self, obj):
+        return EmailUserSerializer(retrieve_email_user(obj.referral)).data
+
+
+class ComplianceReferralDatatableSerializer(serializers.ModelSerializer):
+    # Have to use the same field names as the serializer used for datatables in the proposals component
+    referral = serializers.SerializerMethodField(read_only=True)
+    referral_status = serializers.CharField(
+        source="get_processing_status_display", read_only=True
+    )
+
+    class Meta:
+        model = ComplianceReferral
+        fields = "__all__"
+        datatables_always_serialize = [
+            "id",
+        ]
+
+    def get_referral(self, obj):
+        return EmailUserSerializer(retrieve_email_user(obj.referral)).data
 
 
 class ComplianceAssessmentSerializer(serializers.ModelSerializer):
@@ -70,27 +85,36 @@ class ComplianceAssessmentSerializer(serializers.ModelSerializer):
 
 
 class ComplianceAmendmentRequestSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = ComplianceAmendmentRequest
         fields = "__all__"
 
 
 class BaseComplianceSerializer(serializers.ModelSerializer):
-    title = serializers.CharField(source="proposal.title")
+    title = serializers.CharField(source="proposal.title", read_only=True)
     holder = serializers.CharField(read_only=True)
-    processing_status = serializers.CharField(source="get_processing_status_display")
-    customer_status = serializers.CharField(source="get_customer_status_display")
+    processing_status_display = serializers.CharField(
+        source="get_processing_status_display", read_only=True
+    )
+    customer_status_display = serializers.CharField(
+        source="get_customer_status_display", read_only=True
+    )
     submitter = serializers.SerializerMethodField(read_only=True)
     documents = ComplianceDocumentSerializer(many=True, read_only=True)
     allowed_assessors = serializers.SerializerMethodField(read_only=True)
     requirement = serializers.CharField(
-        source="requirement.requirement", required=False, allow_null=True
+        source="requirement.requirement",
+        required=False,
+        allow_null=True,
+        read_only=True,
     )
     approval_lodgement_number = serializers.SerializerMethodField()
-    current_amendment_requests = ComplianceAmendmentRequestSerializer(many=True, read_only=True)
+    current_amendment_requests = ComplianceAmendmentRequestSerializer(
+        many=True, read_only=True
+    )
     assessment = ComplianceAssessmentSerializer(read_only=True)
     referrals = ComplianceReferralSerializer(many=True, read_only=True)
+    latest_referrals = ComplianceReferralSerializer(many=True, read_only=True)
 
     class Meta:
         model = Compliance
@@ -101,7 +125,9 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
             "text",
             "holder",
             "processing_status",
+            "processing_status_display",
             "customer_status",
+            "customer_status_display",
             "submitter",
             "documents",
             "allowed_assessors",
@@ -112,9 +138,12 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
             "current_amendment_requests",
             "assessment",
             "referrals",
+            "latest_referrals",
         ]
         datatables_always_serialize = [
             "id",
+            "processing_status_display",
+            "customer_status_display",
             "can_process",
             "can_user_view",
         ]
@@ -151,7 +180,9 @@ class ComplianceSerializer(BaseComplianceSerializer):
             "lodgement_date_display",
             "assigned_to_name",
         ]
-        datatables_always_serialize = BaseComplianceSerializer.Meta.datatables_always_serialize
+        datatables_always_serialize = (
+            BaseComplianceSerializer.Meta.datatables_always_serialize
+        )
 
     def get_due_date(self, obj):
         return obj.due_date.strftime("%d/%m/%Y") if obj.due_date else ""
@@ -172,6 +203,10 @@ class ComplianceSerializer(BaseComplianceSerializer):
 
 class InternalComplianceSerializer(BaseComplianceSerializer):
     lodgement_date = serializers.SerializerMethodField()
+    # Only needed to match proposal field name so workflow_function.js can be used for both proposal and compliance
+    processing_status_id = serializers.CharField(
+        source="processing_status", read_only=True
+    )
 
     class Meta:
         model = Compliance
@@ -180,8 +215,11 @@ class InternalComplianceSerializer(BaseComplianceSerializer):
             "reference",
             "assigned_to",
             "lodgement_date",
+            "processing_status_id",
         ]
-        datatables_always_serialize = BaseComplianceSerializer.Meta.datatables_always_serialize
+        datatables_always_serialize = (
+            BaseComplianceSerializer.Meta.datatables_always_serialize
+        )
 
     def get_lodgement_date(self, obj):
         return obj.lodgement_date.strftime("%d/%m/%Y") if obj.lodgement_date else ""
