@@ -1,12 +1,10 @@
 import logging
 import os
-import traceback
 from collections import OrderedDict
 from datetime import datetime
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
@@ -30,14 +28,19 @@ from reversion.models import Version
 from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.compliances.models import Compliance
-from leaseslicensing.components.main.api import UserActionLoggingViewset, LicensingViewset
+from leaseslicensing.components.main.api import (
+    LicensingViewset,
+    UserActionLoggingViewset,
+)
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
-from leaseslicensing.components.proposals.email import send_external_referee_invite_email
+from leaseslicensing.components.proposals.email import (
+    send_external_referee_invite_email,
+)
 from leaseslicensing.components.proposals.models import (
     AdditionalDocumentType,
     AmendmentReason,
@@ -63,8 +66,8 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     AmendmentRequestSerializer,
     ChecklistQuestionSerializer,
     CreateProposalSerializer,
-    ExternalRefereeInviteSerializer,
     DTReferralSerializer,
+    ExternalRefereeInviteSerializer,
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
     ListProposalSerializer,
@@ -93,7 +96,13 @@ from leaseslicensing.components.proposals.utils import (
     save_referral_data,
     save_site_name,
 )
-from leaseslicensing.helpers import is_approver, is_assessor, is_customer, is_internal, is_referee
+from leaseslicensing.helpers import (
+    is_approver,
+    is_assessor,
+    is_customer,
+    is_internal,
+    is_referee,
+)
 from leaseslicensing.permissions import IsAssessorOrReferrer
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -347,7 +356,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     Q(
                         referrals__in=Referral.objects.filter(
                             referral=email_user_id_assigned,
-                            processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL
+                            processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
                         )
                     )
                 )
@@ -524,9 +533,12 @@ class ProposalViewSet(UserActionLoggingViewset):
             if Referral.objects.filter(referral=user.id).exists():
                 # Allow external user access to proposals they have been referred
                 qs = qs | Proposal.objects.filter(
-                    processing_status__in=[Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-                                           Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS],
-                    referrals__in=Referral.objects.filter(referral=user.id))
+                    processing_status__in=[
+                        Proposal.PROCESSING_STATUS_WITH_REFERRAL,
+                        Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
+                    ],
+                    referrals__in=Referral.objects.filter(referral=user.id),
+                )
                 return qs.distinct()
             return qs
 
@@ -543,7 +555,7 @@ class ProposalViewSet(UserActionLoggingViewset):
 
         return ProposalSerializer
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -573,12 +585,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         )
         return Response(data)
 
-    @ list_route(methods=["GET"], detail=False)
+    @list_route(methods=["GET"], detail=False)
     def list_for_map(self, request, *args, **kwargs):
         """Returns the proposals for the map"""
         proposal_ids = [
-            int(id) for id in request.query_params.get("proposal_ids", "").
-            split(",") if id.lstrip("-").isnumeric()
+            int(id)
+            for id in request.query_params.get("proposal_ids", "").split(",")
+            if id.lstrip("-").isnumeric()
         ]
         application_type = request.query_params.get("application_type", None)
         processing_status = request.query_params.get("processing_status", None)
@@ -616,7 +629,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         )
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
@@ -642,9 +655,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         ]
         return Response(urls)
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_shapefile_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -655,9 +668,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_legislative_requirements_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -668,9 +681,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_risk_factors_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -681,9 +694,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_key_milestones_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -694,9 +707,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_key_personnel_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -707,9 +720,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_staffing_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -720,9 +733,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_market_analysis_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -733,9 +746,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_available_activities_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -746,9 +759,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_financial_capacity_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -759,9 +772,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_capital_investment_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -772,9 +785,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_cash_flow_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -785,9 +798,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_profit_and_loss_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -798,9 +811,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_deed_poll_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -811,9 +824,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_proposed_approval_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -824,9 +837,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_supporting_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -837,9 +850,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_exclusive_use_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -850,9 +863,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_long_term_use_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -863,9 +876,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_consistent_purpose_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -876,9 +889,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_consistent_plan_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -889,9 +902,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_clearing_vegetation_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -902,9 +915,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_ground_disturbing_works_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -915,9 +928,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_heritage_site_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -928,9 +941,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_environmentally_sensitive_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -941,9 +954,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_wetlands_impact_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -954,9 +967,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_building_required_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -967,9 +980,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_significant_change_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -980,9 +993,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_aboriginal_site_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -993,9 +1006,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_native_title_consultation_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -1006,9 +1019,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_mining_tenement_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -1019,9 +1032,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_proposed_decline_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -1032,9 +1045,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_lease_licence_approval_document(self, request, *args, **kwargs):
         instance = self.get_object()
         returned_data = process_generic_document(
@@ -1062,40 +1075,40 @@ class ProposalViewSet(UserActionLoggingViewset):
         )
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def action_log(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = instance.action_logs.all()
         serializer = ProposalUserActionSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def comms_log(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = instance.comms_logs.all()
         serializer = ProposalLogEntrySerializer(qs, many=True)
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
         with transaction.atomic():
             instance = self.get_object()
@@ -1117,11 +1130,11 @@ class ProposalViewSet(UserActionLoggingViewset):
 
             return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=["POST"],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def revision_version(self, request, *args, **kwargs):
         """
         Returns the version of this model at `revision_id`
@@ -1165,13 +1178,13 @@ class ProposalViewSet(UserActionLoggingViewset):
 
         return Response(revision_data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def requirements(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = instance.requirements.all().exclude(is_deleted=True)
@@ -1180,13 +1193,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         )
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def amendment_request(self, request, *args, **kwargs):
         instance = self.get_object()
         qs = instance.amendment_requests
@@ -1194,7 +1207,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = AmendmentRequestDisplaySerializer(qs, many=True)
         return Response(serializer.data)
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -1205,7 +1218,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = ListProposalSerializer(qs, context={"request": request}, many=True)
         return Response(serializer.data)
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -1227,7 +1240,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         )
         return paginator.get_paginated_response(serializer.data)
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -1250,9 +1263,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         return paginator.get_paginated_response(serializer.data)
 
     # Documents on Activities(land)and Activities(Marine) tab for T-Class related to required document questions
-    @ detail_route(methods=["POST"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def process_required_document(self, request, *args, **kwargs):
         instance = self.get_object()
         action = request.POST.get("action")
@@ -1341,7 +1354,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             ]
         )
 
-    @ detail_route(
+    @detail_route(
         methods=["GET", "POST"],
         detail=True,
     )
@@ -1350,9 +1363,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = InternalProposalSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def submit(self, request, *args, **kwargs):
         instance = self.get_object()
         save_proponent_data(instance, request, self)
@@ -1360,9 +1373,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def validate_map_files(self, request, *args, **kwargs):
         instance = self.get_object()
         valid_geometry_saved = instance.validate_map_files(request)
@@ -1372,13 +1385,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def assign_request_user(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.assign_officer(request, request.user)
@@ -1386,13 +1399,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def assign_to(self, request, *args, **kwargs):
         instance = self.get_object()
         user_id = request.data.get("assessor_id", None)
@@ -1411,13 +1424,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def unassign(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.unassign(request)
@@ -1426,13 +1439,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def switch_status(self, request, *args, **kwargs):
         instance = self.get_object()
         status = request.data.get("status")
@@ -1447,21 +1460,19 @@ class ProposalViewSet(UserActionLoggingViewset):
                 "with_referral",
                 "with_referral_conditions",
             ]:
-                raise serializers.ValidationError(
-                    "The status provided is not allowed"
-                )
+                raise serializers.ValidationError("The status provided is not allowed")
         instance.move_to_status(request, status, approver_comment)
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def reissue_approval(self, request, *args, **kwargs):
         logger.debug("reissue_approval()")
         instance = self.get_object()
@@ -1480,34 +1491,34 @@ class ProposalViewSet(UserActionLoggingViewset):
         logger.debug("return Response(serializer.data)")
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def renew_approval(self, request, *args, **kwargs):
         instance = self.get_object()
         instance = instance.renew_approval(request)
         serializer = SaveProposalSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def amend_approval(self, request, *args, **kwargs):
         instance = self.get_object()
         instance = instance.amend_approval(request)
         serializer = SaveProposalSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ basic_exception_handler
-    @ detail_route(
+    @basic_exception_handler
+    @detail_route(
         methods=[
             "POST",
         ],
@@ -1529,8 +1540,8 @@ class ProposalViewSet(UserActionLoggingViewset):
         # return Response(serializer.data)
         return Response()
 
-    @ basic_exception_handler
-    @ detail_route(
+    @basic_exception_handler
+    @detail_route(
         methods=[
             "POST",
         ],
@@ -1549,23 +1560,21 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def approval_level_document(self, request, *args, **kwargs):
         instance = self.get_object()
         instance = instance.assing_approval_level_document(request)
-        serializer = InternalProposalSerializer(
-            instance, context={"request": request}
-        )
+        serializer = InternalProposalSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ basic_exception_handler
-    @ detail_route(
+    @basic_exception_handler
+    @detail_route(
         methods=[
             "POST",
         ],
@@ -1584,13 +1593,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def proposed_decline(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.proposed_decline(request, request.data)
@@ -1598,13 +1607,13 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def final_decline(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = PropedDeclineSerializer(data=request.data)
@@ -1614,14 +1623,14 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def on_hold(self, request, *args, **kwargs):
         with transaction.atomic():
             instance = self.get_object()
@@ -1662,15 +1671,15 @@ class ProposalViewSet(UserActionLoggingViewset):
 
             return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def draft(self, request, *args, **kwargs):
         logger.debug("proposal draft()")
         instance = self.get_object()
@@ -1679,38 +1688,50 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def external_referee_invite(self, request, *args, **kwargs):
         instance = self.get_object()
         request.data["proposal_id"] = instance.id
-        serializer = ExternalRefereeInviteSerializer(data=request.data, context={"request": request})
+        serializer = ExternalRefereeInviteSerializer(
+            data=request.data, context={"request": request}
+        )
         serializer.is_valid(raise_exception=True)
-        if ExternalRefereeInvite.objects.filter(
-            email=request.data["email"]
-        ).exists():
+        if ExternalRefereeInvite.objects.filter(email=request.data["email"]).exists():
             raise serializers.ValidationError(
-                _("An external referee invitation has already been sent to {email}".format(email=request.data["email"])),
-                code="invalid")
-        external_referee_invite = ExternalRefereeInvite.objects.create(sent_by=request.user.id, **request.data)
+                _(
+                    "An external referee invitation has already been sent to {email}".format(
+                        email=request.data["email"]
+                    )
+                ),
+                code="invalid",
+            )
+        external_referee_invite = ExternalRefereeInvite.objects.create(
+            sent_by=request.user.id, **request.data
+        )
         send_external_referee_invite_email(instance, request, external_referee_invite)
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def complete_referral(self, request, *args, **kwargs):
         # TODO: There is also a 'complete' method on the Referral model.
         # This could be confusing and if it doesn't end up being needed then it should be removed.
         instance = self.get_object()
         referee_id = request.data.get("referee_id", None)
         if not referee_id:
-            raise serializers.ValidationError(_("referee_id is required"), code="required")
+            raise serializers.ValidationError(
+                _("referee_id is required"), code="required"
+            )
 
         if not instance.referrals.filter(referral=referee_id).exists():
-            msg = _(f"There is no referral for application: {instance.lodgement_number} and referee (email user): {referee_id}")
+            msg = _(
+                f"There is no referral for application: {instance.lodgement_number} "
+                f"and referee (email user): {referee_id}"
+            )
             raise serializers.ValidationError(msg, code="invalid")
 
         save_referral_data(instance, request, True)
@@ -1721,9 +1742,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def referral_save(self, request, *args, **kwargs):
         instance = self.get_object()
         save_referral_data(instance, request, False)
@@ -1732,9 +1753,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def assessor_save(self, request, *args, **kwargs):
         instance = self.get_object()
         save_assessor_data(instance, request, self)
@@ -1743,25 +1764,25 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def finance_save(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.save_invoicing_details(request, self.action)
         return Response({})
 
-    @ detail_route(methods=["post"], detail=True)
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def finance_complete_editing(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.finance_complete_editing(request, self.action)
         return Response({})
 
-    @ detail_route(methods=["post"], detail=True)
-    @ basic_exception_handler
-    def assesor_send_referral(self, request, *args, **kwargs):
+    @detail_route(methods=["post"], detail=True)
+    @basic_exception_handler
+    def assessor_send_referral(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = SendReferralSerializer(
             data=request.data, context={"request": request}
@@ -1776,15 +1797,11 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ basic_exception_handler
+    @basic_exception_handler
     def create(self, request, *args, **kwargs):
         with transaction.atomic():
-            application_type_str = request.data.get("application_type", {}).get(
-                "code"
-            )
-            application_type = ApplicationType.objects.get(
-                name=application_type_str
-            )
+            application_type_str = request.data.get("application_type", {}).get("code")
+            application_type = ApplicationType.objects.get(name=application_type_str)
             proposal_type = ProposalType.objects.get(code="new")
 
             data = {
@@ -1803,7 +1820,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             serializer = SaveProposalSerializer(instance)
             return Response(serializer.data)
 
-    @ basic_exception_handler
+    @basic_exception_handler
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = SaveProposalSerializer(instance, data=request.data)
@@ -1811,7 +1828,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         self.perform_update(serializer)
         return Response(serializer.data)
 
-    @ basic_exception_handler
+    @basic_exception_handler
     def destroy(self, request, *args, **kwargs):
         http_status = status.HTTP_200_OK
         instance = self.get_object()
@@ -1824,15 +1841,15 @@ class ProposalViewSet(UserActionLoggingViewset):
         self.perform_update(serializer)
         return Response(serializer.data, status=http_status)
 
-    @ detail_route(methods=["get"], detail=True)
-    @ basic_exception_handler
+    @detail_route(methods=["get"], detail=True)
+    @basic_exception_handler
     def get_related_items(self, request, *args, **kwargs):
         instance = self.get_object()
         related_items = instance.get_related_items()
         serializer = RelatedItemsSerializer(related_items, many=True)
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=["GET"],
         detail=True,
         renderer_classes=[DatatablesRenderer],
@@ -1880,7 +1897,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
             return queryset
         return Referral.objects.none()
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -1929,7 +1946,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -1941,7 +1958,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
         # serializer = DTReferralSerializer(self.get_queryset(), many=True)
         return Response(serializer.data)
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -1951,7 +1968,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
         qs = ReferralRecipientGroup.objects.filter().values_list("name", flat=True)
         return Response(qs)
 
-    @ list_route(
+    @list_route(
         methods=[
             "GET",
         ],
@@ -1965,7 +1982,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
         serializer = DTReferralSerializer(qs, many=True, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
@@ -1980,29 +1997,29 @@ class ReferralViewSet(viewsets.ModelViewSet):
         serializer = DTReferralSerializer(qs, many=True)
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def remind(self, request, *args, **kwargs):
         instance = self.get_object()
-        logger.debug("instance: {}".format(instance))
+        logger.debug(f"instance: {instance}")
         instance.remind(request)
         serializer = InternalProposalSerializer(
             instance.proposal, context={"request": request}
         )
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def recall(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.recall(request)
@@ -2011,13 +2028,13 @@ class ReferralViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def resend(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.resend(request)
@@ -2026,8 +2043,8 @@ class ReferralViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
-    @ detail_route(methods=["post"], detail=True)
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @basic_exception_handler
     def send_referral(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = SendReferralSerializer(
@@ -2042,13 +2059,13 @@ class ReferralViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def assign_request_user(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.assign_officer(request, request.user)
@@ -2056,13 +2073,13 @@ class ReferralViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def assign_to(self, request, *args, **kwargs):
         instance = self.get_object()
         user_id = request.data.get("user_id", None)
@@ -2080,13 +2097,13 @@ class ReferralViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance, context={"request": request})
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def unassign(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.unassign(request)
@@ -2104,41 +2121,47 @@ class ProposalRequirementViewSet(LicensingViewset):
         if is_internal(self.request):
             return ProposalRequirement.objects.all().exclude(is_deleted=True)
         if is_referee(self.request):
-            proposal_ids = list(Referral.objects.filter(referral=user_id).values_list("proposal_id", flat=True))
-            return ProposalRequirement.objects.filter(proposal_id__in=proposal_ids).exclude(is_deleted=True)
+            proposal_ids = list(
+                Referral.objects.filter(referral=user_id).values_list(
+                    "proposal_id", flat=True
+                )
+            )
+            return ProposalRequirement.objects.filter(
+                proposal_id__in=proposal_ids
+            ).exclude(is_deleted=True)
         return self.queryset
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def move_up(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.move_up()
         return Response()
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def move_down(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.move_down()
         return Response()
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "GET",
         ],
         detail=True,
     )
-    @ basic_exception_handler
+    @basic_exception_handler
     def discard(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.is_deleted = True
@@ -2146,14 +2169,14 @@ class ProposalRequirementViewSet(LicensingViewset):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
-    @ detail_route(
+    @detail_route(
         methods=[
             "POST",
         ],
         detail=True,
     )
-    @ renderer_classes((JSONRenderer,))
-    @ basic_exception_handler
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
     def delete_document(self, request, *args, **kwargs):
         instance = self.get_object()
         RequirementDocument.objects.get(id=request.data.get("id")).delete()
@@ -2164,7 +2187,7 @@ class ProposalRequirementViewSet(LicensingViewset):
             ]
         )
 
-    @ basic_exception_handler
+    @basic_exception_handler
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
         # serializer = self.get_serializer(instance, data=json.loads(request.data.get('data')))
@@ -2175,7 +2198,7 @@ class ProposalRequirementViewSet(LicensingViewset):
         # instance.add_documents(request)
         return Response(serializer.data)
 
-    @ basic_exception_handler
+    @basic_exception_handler
     def create(self, request, *args, **kwargs):
         logger.debug("ProposalRequirementViewSet.create()")
         serializer = self.get_serializer(data=request.data)
@@ -2201,7 +2224,7 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = ProposalStandardRequirement.objects.all()
     serializer_class = ProposalStandardRequirementSerializer
 
-    @ list_route(
+    @list_route(
         methods=[
             "POST",
         ],
@@ -2220,7 +2243,7 @@ class AmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = AmendmentRequest.objects.all()
     serializer_class = AmendmentRequestSerializer
 
-    @ basic_exception_handler
+    @basic_exception_handler
     def create(self, request, *args, **kwargs):
         reason_id = request.data.get("reason_id")
         data = {
@@ -2342,8 +2365,8 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
     queryset = ProposalAssessment.objects.all()
     serializer_class = ProposalAssessmentSerializer
 
-    @ detail_route(methods=["post"], detail=True)
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @basic_exception_handler
     def update_assessment(self, request, *args, **kwargs):
         instance = self.get_object()
         request.data["submitter"] = request.user.id
@@ -2354,9 +2377,7 @@ class ProposalAssessmentViewSet(viewsets.ModelViewSet):
         if checklist:
             for chk in checklist:
                 try:
-                    chk_instance = ProposalAssessmentAnswer.objects.get(
-                        id=chk["id"]
-                    )
+                    chk_instance = ProposalAssessmentAnswer.objects.get(id=chk["id"])
                     serializer_chk = ProposalAssessmentAnswerSerializer(
                         chk_instance, data=chk
                     )
@@ -2375,15 +2396,21 @@ class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
     serializer_class = ExternalRefereeInviteSerializer
     permission_classes = [IsAssessorOrReferrer]
 
-    @ detail_route(methods=["post"], detail=True)
-    @ basic_exception_handler
+    @detail_route(methods=["post"], detail=True)
+    @basic_exception_handler
     def remind(self, request, *args, **kwargs):
         instance = self.get_object()
-        send_external_referee_invite_email(instance.proposal, request, instance, reminder=True)
-        return Response(status=status.HTTP_200_OK, data={"message":f"Reminder sent to {instance.email} successfully"})
+        send_external_referee_invite_email(
+            instance.proposal, request, instance, reminder=True
+        )
+        return Response(
+            status=status.HTTP_200_OK,
+            data={"message": f"Reminder sent to {instance.email} successfully"},
+        )
 
-    @ detail_route(methods=["delete"], detail=True)
-    @ basic_exception_handler
+    # Todo: Change this to a patch and archive the invite rather than delete
+    @detail_route(methods=["delete"], detail=True)
+    @basic_exception_handler
     def retract(self, request, *args, **kwargs):
         instance = self.get_object()
         proposal = instance.proposal
