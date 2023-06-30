@@ -43,6 +43,14 @@ class ComplianceReferralDocumentSerializer(serializers.ModelSerializer):
         return [get_secure_file_url(obj, "_file")]
 
 
+class UpdateComplianceReferralSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ComplianceReferral
+        fields = [
+            "comment",
+        ]
+
+
 class ComplianceReferralSerializer(serializers.ModelSerializer):
     referee_obj = serializers.SerializerMethodField(read_only=True)
     processing_status_display = serializers.CharField(
@@ -76,6 +84,15 @@ class ComplianceReferralDatatableSerializer(serializers.ModelSerializer):
 
     def get_referral(self, obj):
         return EmailUserSerializer(retrieve_email_user(obj.referral)).data
+
+
+class UpdateComplianceAssessmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ComplianceAssessment
+        fields = [
+            "assessor_comment",
+            "deficiency_comment",
+        ]
 
 
 class ComplianceAssessmentSerializer(serializers.ModelSerializer):
@@ -226,6 +243,17 @@ class InternalComplianceSerializer(BaseComplianceSerializer):
 
 
 class SaveComplianceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Compliance
+        fields = (
+            "id",
+            "title",
+            "text",
+            "num_participants",
+        )
+
+
+class AssessorSaveComplianceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Compliance
         fields = (
