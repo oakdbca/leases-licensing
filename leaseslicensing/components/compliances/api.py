@@ -156,9 +156,10 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             "compliances_referred_to_me", False
         )
         if compliances_referred_to_me:
-            # Todo: Once compliance referrals are completed use this to filter
-            # compliances that are referred to the request user
-            pass
+            ids = ComplianceReferral.objects.filter(
+                referral=self.request.user.id
+            ).values_list("compliance_id", flat=True)
+            return Compliance.objects.filter(id__in=ids)
 
         return qs
 
