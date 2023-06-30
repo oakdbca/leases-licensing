@@ -4,13 +4,14 @@
             <CompliancesTable level="internal" />
         </FormSection>
         <FormSection :formCollapse="false" label="Compliances Referred to Me" index="compliances-referred-to-me">
-            <CompliancesTable level="internal" />
+            <CompliancesTable level="internal" :compliances_referred_to_me="true" />
         </FormSection>
     </div>
 </template>
 
 <script>
 import CompliancesTable from "@/components/common/table_compliances.vue"
+
 export default {
     name: 'InternalCompliancesDashboard',
     components: {
