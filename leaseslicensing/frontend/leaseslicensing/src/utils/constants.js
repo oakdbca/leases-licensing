@@ -35,6 +35,7 @@ module.exports = {
         DUE: { ID: 'due', TEXT: 'Due' },
         FUTURE: { ID: 'future', TEXT: 'Future' },
         WITH_ASSESSOR: { ID: 'with_assessor', TEXT: 'With Assessor' },
+        WITH_REFERRAL: { ID: 'with_referral', TEXT: 'With Referral' },
         APPROVED: { ID: 'approved', TEXT: 'Approved' },
         DISCARDED: { ID: 'discarded', TEXT: 'Discarded' },
         OVERDUE: { ID: 'overdue', TEXT: 'Overdue' },
