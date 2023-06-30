@@ -12,7 +12,12 @@ from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
 from leaseslicensing.components.proposals.models import Referral
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
-from leaseslicensing.helpers import in_dbca_domain, is_leaseslicensing_admin
+from leaseslicensing.helpers import (
+    is_approver,
+    is_assessor,
+    is_internal,
+    is_leaseslicensing_admin,
+)
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -97,8 +102,10 @@ class UserSerializer(serializers.ModelSerializer):
     address_details = serializers.SerializerMethodField()
     contact_details = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
-    is_department_user = serializers.SerializerMethodField()
+    is_internal = serializers.SerializerMethodField()
     is_leaseslicensing_admin = serializers.SerializerMethodField()
+    is_assessor = serializers.SerializerMethodField()
+    is_approver = serializers.SerializerMethodField()
     is_referee = serializers.SerializerMethodField()
 
     class Meta:
@@ -116,9 +123,11 @@ class UserSerializer(serializers.ModelSerializer):
             "address_details",
             "contact_details",
             "full_name",
-            "is_department_user",
+            "is_internal",
             "is_staff",
             "is_leaseslicensing_admin",
+            "is_assessor",
+            "is_approver",
             "is_referee",
         )
 
@@ -141,11 +150,22 @@ class UserSerializer(serializers.ModelSerializer):
     def get_full_name(self, obj):
         return obj.get_full_name()
 
-    def get_is_department_user(self, obj):
-        if obj.email:
-            request = self.context["request"] if self.context else None
-            if request:
-                return in_dbca_domain(request)
+    def get_is_internal(self, obj):
+        request = self.context["request"] if self.context else None
+        if request:
+            return is_internal(request)
+        return False
+
+    def get_is_assessor(self, obj):
+        request = self.context["request"] if self.context else None
+        if request:
+            return is_assessor(request)
+        return False
+
+    def get_is_approver(self, obj):
+        request = self.context["request"] if self.context else None
+        if request:
+            return is_approver(request)
         return False
 
     def get_is_leaseslicensing_admin(self, obj):
