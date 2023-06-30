@@ -711,10 +711,8 @@ export default {
             let vm = this;
             fetch(api_endpoints.profile).then((response) => {
                 vm.profile = response.body
-
             }, (error) => {
                 console.log(error);
-
             })
         },
         refreshFromResponseApprovalModify: function () {
