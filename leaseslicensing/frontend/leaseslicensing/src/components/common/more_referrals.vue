@@ -1,6 +1,6 @@
 <template id="more-referrals">
     <div class="mt-2">
-        <a v-if="!isFinalised" ref="showRef" @click.prevent="" role="button" class="float-end">Show
+        <a v-if="!isFinalised" ref="showRef" @click.prevent="" role="button" class="float-end">Show All
             Referrals</a>
     </div>
 </template>
@@ -161,17 +161,17 @@ export default {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.resendReferral(_id, user);
+                    vm.resendReferral(api_endpoints.referrals, _id, user);
                 }).on('click', '.recallRef', function (e) {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.recallReferral(_id, user);
+                    vm.recallReferral(api_endpoints.referrals, _id, user);
                 }).on('click', '.remindRef', function (e) {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.remindReferral(_id, user);
+                    vm.remindReferral(api_endpoints.referrals, _id, user);
                 });
             })
             popover_elem.addEventListener('shown.bs.popover', function () {
