@@ -1,68 +1,120 @@
 <template>
-    <div class="container" id="internalCompliance">
+    <div id="internalCompliance" class="container">
         <div v-if="compliance" class="row">
             <h3>Compliance: {{ compliance.reference }}</h3>
             <div class="col-md-3">
-
-                <CommsLogs class="mb-3" :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
-                    :disable_add_entry="false" />
+                <CommsLogs
+                    class="mb-3"
+                    :comms_url="comms_url"
+                    :logs_url="logs_url"
+                    :comms_add_url="comms_add_url"
+                    :disable_add_entry="false"
+                />
 
                 <div class="card card-default mb-3">
-                    <div class="card-header">
-                        Workflow
-                    </div>
+                    <div class="card-header">Workflow</div>
                     <div class="card-body card-collapse">
                         <div class="mb-1 fw-bold">Status</div>
                         <div>{{ compliance.processing_status_display }}</div>
                     </div>
                     <div class="card-body card-collapse border-top">
-                        <div class="mb-1 fw-bold">Currently assigned to
-                        </div>
+                        <div class="mb-1 fw-bold">Currently assigned to</div>
                         <select v-show="isLoading" class="form-select">
                             <option value="">Loading...</option>
                         </select>
-                        <select @change="assignTo" :disabled="canViewonly || !check_assessor()" v-if="!isLoading"
-                            class="form-select mb-2" v-model="compliance.assigned_to">
+                        <select
+                            v-if="!isLoading"
+                            v-model="compliance.assigned_to"
+                            :disabled="canViewonly || !check_assessor()"
+                            class="form-select mb-2"
+                            @change="assignTo"
+                        >
                             <option value="null">Unassigned</option>
-                            <option v-for="member in compliance.allowed_assessors" :value="member.id">
-                                {{ member.first_name }} {{ member.last_name }}</option>
+                            <option
+                                v-for="member in compliance.allowed_assessors"
+                                :key="member.id"
+                                :value="member.id"
+                            >
+                                {{ member.first_name }} {{ member.last_name }}
+                            </option>
                         </select>
-                        <a v-if="showAssignToMeButton && !canViewonly && check_assessor()" @click.prevent="assignMyself()"
-                            class="float-end mb-2" role="button">Assign to
-                            me</a>
+                        <a
+                            v-if="
+                                showAssignToMeButton &&
+                                !canViewonly &&
+                                check_assessor()
+                            "
+                            class="float-end mb-2"
+                            role="button"
+                            @click.prevent="assignMyself()"
+                            >Assign to me</a
+                        >
                     </div>
 
-                    <div v-if="compliance.assigned_to" class="card-body border-top">
+                    <div
+                        v-if="compliance.assigned_to"
+                        class="card-body border-top"
+                    >
                         <div class="mb-1 fw-bold">Invite Referee</div>
                         <div class="mb-3">
-                            <select ref="referees" class="form-select">
-                            </select>
-                            <template v-if='!sendingReferral'>
+                            <select ref="referees" class="form-select" />
+                            <template v-if="!sendingReferral">
                                 <template v-if="selected_referral">
-                                    <label class="control-label pull-left" for="Name">Comments</label>
-                                    <textarea class="form-control comments_to_referral" name="name"
-                                        v-model="referral_text"></textarea>
+                                    <label
+                                        class="control-label pull-left"
+                                        for="Name"
+                                        >Comments</label
+                                    >
+                                    <textarea
+                                        v-model="referral_text"
+                                        class="form-control comments_to_referral"
+                                        name="name"
+                                    />
                                     <div class="text-end">
-                                        <a @click.prevent="sendReferral()" class="actionBtn" role="button">Send</a>
+                                        <a
+                                            class="actionBtn"
+                                            role="button"
+                                            @click.prevent="sendReferral()"
+                                            >Send</a
+                                        >
                                     </div>
                                 </template>
                             </template>
                             <template v-else>
-                                <span @click.prevent="sendReferral()" disabled class="actionBtn text-primary pull-right">
+                                <span
+                                    disabled
+                                    class="actionBtn text-primary pull-right"
+                                    @click.prevent="sendReferral()"
+                                >
                                     Sending Referral&nbsp;
-                                    <i class="fa fa-circle-o-notch fa-spin fa-fw"></i>
+                                    <i
+                                        class="fa fa-circle-o-notch fa-spin fa-fw"
+                                    />
                                 </span>
                             </template>
                         </div>
                     </div>
 
-                    <div v-if="compliance.assigned_to && compliance.latest_referrals && compliance.latest_referrals.length > 0"
-                        class="card-body border-top">
+                    <div
+                        v-if="
+                            compliance.assigned_to &&
+                            compliance.latest_referrals &&
+                            compliance.latest_referrals.length > 0
+                        "
+                        class="card-body border-top"
+                    >
                         <div class="col-sm-12">
-                            <div class="fw-bold mb-1">Recent Referrals <small class="text-secondary fw-lighter">(Showing
-                                    {{ compliance.latest_referrals.length }} of {{ compliance.referrals.length }})</small>
+                            <div class="fw-bold mb-1">
+                                Recent Referrals
+                                <small class="text-secondary fw-lighter"
+                                    >(Showing
+                                    {{ compliance.latest_referrals.length }} of
+                                    {{ compliance.referrals.length }})</small
+                                >
                             </div>
-                            <table class="table table-sm table-hover table-referrals">
+                            <table
+                                class="table table-sm table-hover table-referrals"
+                            >
                                 <thead>
                                     <tr>
                                         <th>Referee</th>
@@ -71,216 +123,558 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr v-for="r in compliance.latest_referrals">
+                                    <tr
+                                        v-for="r in compliance.latest_referrals"
+                                        :key="r.id"
+                                    >
                                         <td class="truncate-name">
-                                            {{ r.referee_obj.first_name }} {{ r.referee_obj.last_name }}
+                                            {{ r.referee_obj.first_name }}
+                                            {{ r.referee_obj.last_name }}
                                         </td>
                                         <td>
                                             {{ r.processing_status_display }}
                                         </td>
                                         <td class="text-center">
                                             <template
-                                                v-if="constants.REFERRAL_STATUS.PROCESSING_STATUS_WITH_REFERRAL.ID == r.processing_status">
-                                                <a @click.prevent="remindReferral.bind(this)(referrals_api_endpoint, r.id, r.referee_obj['fullname'])"
-                                                    role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
-                                                    :data-bs-content="'Send a reminder to ' + r.referee_obj['fullname']"
-                                                    data-bs-placement="bottom"><i class="fa fa-bell text-warning"
-                                                        aria-hidden="true"></i>
+                                                v-if="
+                                                    constants.REFERRAL_STATUS
+                                                        .PROCESSING_STATUS_WITH_REFERRAL
+                                                        .ID ==
+                                                    r.processing_status
+                                                "
+                                            >
+                                                <a
+                                                    role="button"
+                                                    data-bs-toggle="popover"
+                                                    data-bs-trigger="hover focus"
+                                                    :data-bs-content="
+                                                        'Send a reminder to ' +
+                                                        r.referee_obj[
+                                                            'fullname'
+                                                        ]
+                                                    "
+                                                    data-bs-placement="bottom"
+                                                    @click.prevent="
+                                                        remindReferral.bind(
+                                                            this
+                                                        )(
+                                                            referrals_api_endpoint,
+                                                            r.id,
+                                                            r.referee_obj[
+                                                                'fullname'
+                                                            ]
+                                                        )
+                                                    "
+                                                    ><i
+                                                        class="fa fa-bell text-warning"
+                                                        aria-hidden="true"
+                                                    />
                                                 </a>
-                                                <a @click.prevent="recallReferral.bind(this)(referrals_api_endpoint, r.id, r.referee_obj['fullname'])"
-                                                    role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
-                                                    :data-bs-content="'Recall the referral request sent to ' + r.referee_obj['fullname']"
-                                                    data-bs-placement="bottom"><i class="fa fa-times-circle text-danger"
-                                                        aria-hidden="true"></i>
+                                                <a
+                                                    role="button"
+                                                    data-bs-toggle="popover"
+                                                    data-bs-trigger="hover focus"
+                                                    :data-bs-content="
+                                                        'Recall the referral request sent to ' +
+                                                        r.referee_obj[
+                                                            'fullname'
+                                                        ]
+                                                    "
+                                                    data-bs-placement="bottom"
+                                                    @click.prevent="
+                                                        recallReferral.bind(
+                                                            this
+                                                        )(
+                                                            referrals_api_endpoint,
+                                                            r.id,
+                                                            r.referee_obj[
+                                                                'fullname'
+                                                            ]
+                                                        )
+                                                    "
+                                                    ><i
+                                                        class="fa fa-times-circle text-danger"
+                                                        aria-hidden="true"
+                                                    />
                                                 </a>
                                             </template>
                                             <template v-else>
-                                                <small><a
-                                                        @click.prevent="resendReferral.bind(this)(referrals_api_endpoint, r.id, r.referee_obj['fullname'])"
-                                                        role="button" data-bs-toggle="popover" data-bs-trigger="hover focus"
-                                                        :data-bs-content="'Resend this referral request to ' + r.referee_obj['fullname']"><i
-                                                            class="fa fa-envelope text-primary" aria-hidden="true"></i>
-                                                    </a></small>
+                                                <small
+                                                    ><a
+                                                        role="button"
+                                                        data-bs-toggle="popover"
+                                                        data-bs-trigger="hover focus"
+                                                        :data-bs-content="
+                                                            'Resend this referral request to ' +
+                                                            r.referee_obj[
+                                                                'fullname'
+                                                            ]
+                                                        "
+                                                        @click.prevent="
+                                                            resendReferral.bind(
+                                                                this
+                                                            )(
+                                                                referrals_api_endpoint,
+                                                                r.id,
+                                                                r.referee_obj[
+                                                                    'fullname'
+                                                                ]
+                                                            )
+                                                        "
+                                                        ><i
+                                                            class="fa fa-envelope text-primary"
+                                                            aria-hidden="true"
+                                                        /> </a
+                                                ></small>
                                             </template>
                                         </td>
                                     </tr>
                                 </tbody>
                             </table>
-                            <MoreReferrals ref="more_referrals" @switchStatus="switchStatus" :canAction="true"
-                                :isFinalised="isFinalised" :referral_url="referralListURL"
-                                :api_endpoint="referrals_api_endpoint" />
+                            <MoreReferrals
+                                ref="more_referrals"
+                                :can-action="true"
+                                :is-finalised="isFinalised"
+                                :referral_url="referralListURL"
+                                :api_endpoint="referrals_api_endpoint"
+                                @switchStatus="switchStatus"
+                            />
                         </div>
                     </div>
 
-                    <div class="card-body border-top" v-if="canViewActions">
+                    <div v-if="canViewActions" class="card-body border-top">
                         <div class="mb-1 fw-bold">Actions</div>
                         <div class="action-buttons">
-                            <button class="btn btn-primary mb-2" @click.prevent="amendmentRequest()">Request
-                                Amendment</button>
-                            <button class="btn btn-primary" @click.prevent="acceptCompliance()">Approve</button><br />
+                            <button
+                                class="btn btn-primary mb-2"
+                                @click.prevent="amendmentRequest()"
+                            >
+                                Request Amendment
+                            </button>
+                            <button
+                                class="btn btn-primary"
+                                @click.prevent="acceptCompliance()"
+                            >
+                                Approve</button
+                            ><br />
                         </div>
                     </div>
-
                 </div>
             </div>
             <div class="col-md-9">
                 <div class="row">
                     <div class="col">
-                        <ul class="nav nav-pills" id="pills-tab" role="tablist">
+                        <ul id="pills-tab" class="nav nav-pills" role="tablist">
                             <li class="nav-item">
-                                <a class="nav-link active" id="pills-compliance-tab" data-bs-toggle="pill"
-                                    href="#pills-compliance" role="tab" aria-controls="pills-compliance"
-                                    aria-selected="true" @click="tabClicked('compliance')">Compliance</a>
+                                <a
+                                    id="pills-compliance-tab"
+                                    class="nav-link active"
+                                    data-bs-toggle="pill"
+                                    href="#pills-compliance"
+                                    role="tab"
+                                    aria-controls="pills-compliance"
+                                    aria-selected="true"
+                                    @click="tabClicked('compliance')"
+                                    >Compliance</a
+                                >
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" id="pills-related-items-tab" data-bs-toggle="pill"
-                                    href="#pills-related-items" role="tab" aria-controls="pills-related-items"
-                                    aria-selected="true" @click="tabClicked('related-items')">Related
-                                    Items</a>
+                                <a
+                                    id="pills-related-items-tab"
+                                    class="nav-link"
+                                    data-bs-toggle="pill"
+                                    href="#pills-related-items"
+                                    role="tab"
+                                    aria-controls="pills-related-items"
+                                    aria-selected="true"
+                                    @click="tabClicked('related-items')"
+                                    >Related Items</a
+                                >
                             </li>
                         </ul>
 
-                        <div class="tab-content" id="pills-tabContent">
-                            <div class="tab-pane active" id="pills-compliance" role="tabpanel"
-                                aria-labelledby="pills-compliance-tab">
-                                <FormSection :formCollapse="false" :label="'Compliance ' + compliance.reference"
-                                    Index="compliance_with_requirements">
-                                    <CollapsibleFilters v-if="compliance.assessment" :collapsed="!canEditComments"
-                                        component_title="Assessor comments" ref="collapsible_filters"
-                                        @created="collapsible_component_mounted" class="mb-3">
+                        <div id="pills-tabContent" class="tab-content">
+                            <div
+                                id="pills-compliance"
+                                class="tab-pane active"
+                                role="tabpanel"
+                                aria-labelledby="pills-compliance-tab"
+                            >
+                                <FormSection
+                                    :form-collapse="false"
+                                    :label="
+                                        'Compliance ' + compliance.reference
+                                    "
+                                    index="compliance_with_requirements"
+                                >
+                                    <CollapsibleFilters
+                                        v-if="compliance.assessment"
+                                        ref="collapsible_filters"
+                                        :collapsed="collapseAssessmentComments"
+                                        component_title="Assessment Comments"
+                                        class="mb-3"
+                                        @created="collapsible_component_mounted"
+                                    >
                                         <div class="container px-3">
                                             <div class="row mb-3 mt-3">
                                                 <div class="col">
                                                     <div class="form-floating">
-                                                        <textarea class="form-control"
-                                                            v-model="compliance.assessment.assessor_comment" placeholder=""
-                                                            id="assessor_comment" :disabled="!canEditComments" />
-                                                        <label for="assessor_comment">Assessor Comments</label>
+                                                        <textarea
+                                                            id="assessor_comment"
+                                                            v-model="
+                                                                compliance
+                                                                    .assessment
+                                                                    .assessor_comment
+                                                            "
+                                                            class="form-control"
+                                                            placeholder=""
+                                                            :disabled="
+                                                                !canEditAssessorComments
+                                                            "
+                                                            :autofocus="
+                                                                canEditAssessorComments
+                                                            "
+                                                        />
+                                                        <label
+                                                            for="assessor_comment"
+                                                            >Assessor
+                                                            Comments</label
+                                                        >
                                                     </div>
                                                 </div>
                                             </div>
                                             <div class="row mb-3 mt-3">
                                                 <div class="col">
                                                     <div class="form-floating">
-                                                        <textarea class="form-control"
-                                                            v-model="compliance.assessment.deficiency_comment"
-                                                            placeholder="" id="deficiency_comment"
-                                                            :disabled="!canEditComments" />
-                                                        <label for="deficiency_comment">Deficiency Comments</label>
+                                                        <textarea
+                                                            id="deficiency_comment"
+                                                            v-model="
+                                                                compliance
+                                                                    .assessment
+                                                                    .deficiency_comment
+                                                            "
+                                                            class="form-control"
+                                                            placeholder=""
+                                                            :disabled="
+                                                                !canEditAssessorComments
+                                                            "
+                                                        />
+                                                        <label
+                                                            for="deficiency_comment"
+                                                            >Deficiency
+                                                            Comments</label
+                                                        >
                                                     </div>
                                                 </div>
                                             </div>
-                                            <template v-for="referral in compliance.referrals ">
-                                                <div v-if="referral.processing_status != constants.REFERRAL_STATUS.PROCESSING_STATUS_RECALLED.ID"
-                                                    class="row mb-3 mt-3" :key="referral.id">
+                                            <template
+                                                v-for="referral in compliance.referrals"
+                                            >
+                                                <div
+                                                    v-if="
+                                                        referral.processing_status !=
+                                                        constants
+                                                            .REFERRAL_STATUS
+                                                            .PROCESSING_STATUS_RECALLED
+                                                            .ID
+                                                    "
+                                                    :key="referral.id"
+                                                    class="row mb-3 mt-3"
+                                                >
                                                     <div class="col">
-                                                        <div class="form-floating">
-                                                            <textarea class="form-control referral-comment"
-                                                                :id="'comment_map_' + referral.id"
-                                                                :disabled="referral.referral !== profile.id"
-                                                                v-model="referral.comment_map" />
-                                                            <label :for="'comment_map_' + referral.id">Referral Comment by
-                                                                <span class="fw-bold">{{
-                                                                    referral.referee_obj.fullname }}</span></label>
+                                                        <div
+                                                            class="form-floating"
+                                                        >
+                                                            <textarea
+                                                                :id="
+                                                                    'comment_map_' +
+                                                                    referral.id
+                                                                "
+                                                                v-model="
+                                                                    referral.comment
+                                                                "
+                                                                class="form-control referral-comment"
+                                                                :disabled="
+                                                                    referral.referral !==
+                                                                    profile.id
+                                                                "
+                                                                :autofocus="
+                                                                    referral.referral ==
+                                                                    profile.id
+                                                                "
+                                                            />
+                                                            <label
+                                                                :for="
+                                                                    'comment_map_' +
+                                                                    referral.id
+                                                                "
+                                                                >Referral
+                                                                Comment by
+                                                                <span
+                                                                    class="fw-bold"
+                                                                    >{{
+                                                                        referral
+                                                                            .referee_obj
+                                                                            .fullname
+                                                                    }}</span
+                                                                ></label
+                                                            >
                                                         </div>
                                                     </div>
                                                 </div>
                                             </template>
                                         </div>
                                     </CollapsibleFilters>
-                                    <div v-if="compliance.approval" class="row mb-3">
-                                        <label for="" class="col-sm-3 col-form-label">Approval</label>
+                                    <div
+                                        v-if="compliance.approval"
+                                        class="row mb-3"
+                                    >
+                                        <label
+                                            for=""
+                                            class="col-sm-3 col-form-label"
+                                            >Approval</label
+                                        >
                                         <div class="col-sm-9">
-                                            <router-link class="form-control-text"
-                                                :to="{ name: 'internal-approval-detail', params: { approval_id: compliance.approval } }">{{
-                                                    compliance.approval_lodgement_number }}</router-link>
+                                            <router-link
+                                                class="form-control-text"
+                                                :to="{
+                                                    name: 'internal-approval-detail',
+                                                    params: {
+                                                        approval_id:
+                                                            compliance.approval,
+                                                    },
+                                                }"
+                                            >
+                                                {{
+                                                    compliance.approval_lodgement_number
+                                                }}
+                                            </router-link>
                                         </div>
                                     </div>
-                                    <div v-if="compliance.holder" class="row mb-3">
-                                        <label for="holder" class="col-sm-3 col-form-label">Holder</label>
+                                    <div
+                                        v-if="compliance.holder"
+                                        class="row mb-3"
+                                    >
+                                        <label
+                                            for="holder"
+                                            class="col-sm-3 col-form-label"
+                                            >Holder</label
+                                        >
                                         <div class="col-sm-9">
-                                            <input type="text" class="form-control-plaintext" id="holder" name="holder"
-                                                :value="compliance.holder">
+                                            <input
+                                                id="holder"
+                                                type="text"
+                                                class="form-control-plaintext"
+                                                name="holder"
+                                                :value="compliance.holder"
+                                            />
                                         </div>
                                     </div>
-                                    <div v-if="compliance.due_date" class="row mb-3">
-                                        <label for="holder" class="col-sm-3 col-form-label">Due Date</label>
+                                    <div
+                                        v-if="compliance.due_date"
+                                        class="row mb-3"
+                                    >
+                                        <label
+                                            for="holder"
+                                            class="col-sm-3 col-form-label"
+                                            >Due Date</label
+                                        >
                                         <div class="col-sm-9">
-                                            <div class="form-control-text">{{ dueDateFormatted }}</div>
+                                            <div class="form-control-text">
+                                                {{ dueDateFormatted }}
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="" class="col-sm-3 col-form-label">Requirement</label>
+                                        <label
+                                            for=""
+                                            class="col-sm-3 col-form-label"
+                                            >Requirement</label
+                                        >
                                         <div class="col-sm-9">
-                                            <input type="text" id="requirement" name="requirement" readonly
-                                                :value="compliance.requirement" class="form-control">
+                                            <input
+                                                id="requirement"
+                                                type="text"
+                                                name="requirement"
+                                                readonly
+                                                :value="compliance.requirement"
+                                                class="form-control"
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="details" class="col-sm-3 col-form-label">Details</label>
+                                        <label
+                                            for="details"
+                                            class="col-sm-3 col-form-label"
+                                            >Details</label
+                                        >
                                         <div class="col-sm-9">
-                                            <textarea disabled class="form-control" id="details" name="details"
-                                                v-model="compliance.text"></textarea>
+                                            <textarea
+                                                id="details"
+                                                v-model="compliance.text"
+                                                disabled
+                                                class="form-control"
+                                                name="details"
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-3">
-                                        <label for="" class="col-sm-3 col-form-label">Attachments</label>
+                                        <label
+                                            for=""
+                                            class="col-sm-3 col-form-label"
+                                            >Attachments</label
+                                        >
                                         <div class="col-sm-9">
-                                            <template v-if="compliance.documents && compliance.documents.length">
+                                            <template
+                                                v-if="
+                                                    compliance.documents &&
+                                                    compliance.documents.length
+                                                "
+                                            >
                                                 <ul class="list-group">
-                                                    <li v-for="d in compliance.documents" class="list-group-item"><i
-                                                            class="fa-solid fa-file me-2"></i> <a :href="d.secure_url"
-                                                            target="_blank" class="col-form-label">{{ d.name
-                                                            }}</a></li>
+                                                    <li
+                                                        v-for="d in compliance.documents"
+                                                        :key="d.id"
+                                                        class="list-group-item"
+                                                    >
+                                                        <i
+                                                            class="fa-solid fa-file me-2"
+                                                        />
+                                                        <a
+                                                            :href="d.secure_url"
+                                                            target="_blank"
+                                                            class="col-form-label"
+                                                            >{{ d.name }}</a
+                                                        >
+                                                    </li>
                                                 </ul>
                                             </template>
                                             <template v-else>
                                                 <div class="row">
-                                                    <div class="col-form-label">No attachments</div>
+                                                    <div class="col-form-label">
+                                                        No attachments
+                                                    </div>
                                                 </div>
                                             </template>
                                         </div>
                                     </div>
                                 </FormSection>
                             </div>
-                            <div class="tab-pane" id="pills-related-items" role="tabpanel"
-                                aria-labelledby="pills-related-items-tab">
-                                <FormSection v-if="loadRelatedItems" :formCollapse="false" label="Related Items"
-                                    Index="related-items">
-                                    <ApprovalsTable :target_compliance_id="compliance.id" ref="approvals_table"
-                                        level="internal" />
+                            <div
+                                id="pills-related-items"
+                                class="tab-pane"
+                                role="tabpanel"
+                                aria-labelledby="pills-related-items-tab"
+                            >
+                                <FormSection
+                                    v-if="loadRelatedItems"
+                                    :form-collapse="false"
+                                    label="Related Items"
+                                    index="related-items"
+                                >
+                                    <ApprovalsTable
+                                        ref="approvals_table"
+                                        :target_compliance_id="compliance.id"
+                                        level="internal"
+                                    />
                                 </FormSection>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <ComplianceAmendmentRequest ref="amendment_request" :compliance_id="compliance.id"
-                :compliance_lodgement_number="compliance.lodgement_number" v-if="compliance.id" />
+            <div class="navbar fixed-bottom bg-navbar me-1">
+                <div
+                    v-if="compliance && !compliance.readonly"
+                    class="container"
+                >
+                    <div class="col-md-12 text-end">
+                        <BootstrapButtonSpinner
+                            v-if="saveExitCompliance"
+                            class="btn btn-primary me-1"
+                            :is-loading="true"
+                            :small="true"
+                            :center-of-screen="false"
+                        />
+                        <button
+                            v-else
+                            class="btn btn-primary me-1"
+                            @click.prevent="saveAndExit"
+                        >
+                            Save and Exit
+                        </button>
+
+                        <BootstrapButtonSpinner
+                            v-if="savingCompliance"
+                            class="btn btn-primary me-1"
+                            :is-loading="true"
+                            :small="true"
+                            :center-of-screen="false"
+                        />
+                        <button
+                            v-else
+                            class="btn btn-primary me-1"
+                            @click.prevent="save"
+                        >
+                            Save and Continue
+                        </button>
+                    </div>
+                </div>
+                <div v-else class="container">
+                    <div class="col-md-12 text-end">
+                        <router-link
+                            class="btn btn-primary float-end"
+                            :to="{ name: 'external-dashboard' }"
+                        >
+                            Back to Dashboard
+                        </router-link>
+                    </div>
+                </div>
+            </div>
+            <ComplianceAmendmentRequest
+                v-if="compliance.id"
+                ref="amendment_request"
+                :compliance_id="compliance.id"
+                :compliance_lodgement_number="compliance.lodgement_number"
+            />
         </div>
         <BootstrapSpinner v-else :loading="true" class="text-primary" />
     </div>
 </template>
 <script>
+/*global swal, moment, bootstrap */
+
 import CommsLogs from '@common-utils/comms_logs.vue'
 import ComplianceAmendmentRequest from './compliance_amendment_request.vue'
 import MoreReferrals from '@common-utils/more_referrals.vue'
-import FormSection from "@/components/forms/section_toggle.vue"
+import FormSection from '@/components/forms/section_toggle.vue'
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
-import ApprovalsTable from "@/components/common/table_approvals.vue"
-import { remindReferral, recallReferral, resendReferral } from '@/components/common/workflow_functions.js'
-
+import ApprovalsTable from '@/components/common/table_approvals.vue'
 import {
-    api_endpoints,
-    constants,
-    helpers,
-}
-    from '@/utils/hooks'
+    remindReferral,
+    recallReferral,
+    resendReferral,
+} from '@/components/common/workflow_functions.js'
+
+import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import Swal from 'sweetalert2'
 export default {
-    name: 'complianceAccess',
+    name: 'ComplianceAccess',
+    components: {
+        ApprovalsTable,
+        CommsLogs,
+        ComplianceAmendmentRequest,
+        FormSection,
+        CollapsibleFilters,
+        MoreReferrals,
+    },
+    beforeRouteEnter: function (to, from, next) {
+        next((vm) => {
+            vm.fetchCompliance(to.params.compliance_id)
+        })
+    },
     data() {
-        let vm = this;
+        let vm = this
         return {
             constants: constants,
             referrals_api_endpoint: api_endpoints.compliance_referrals,
@@ -293,70 +687,211 @@ export default {
             sendingReferral: false,
             selected_referral: null,
             referral_text: '',
+            savingCompliance: false,
+            saveExitCompliance: false,
             // Filters
-            logs_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/action_log'),
-            comms_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/comms_log'),
-            comms_add_url: helpers.add_endpoint_json(api_endpoints.compliances, vm.$route.params.compliance_id + '/add_comms_log'),
+            logs_url: helpers.add_endpoint_json(
+                api_endpoints.compliances,
+                vm.$route.params.compliance_id + '/action_log'
+            ),
+            comms_url: helpers.add_endpoint_json(
+                api_endpoints.compliances,
+                vm.$route.params.compliance_id + '/comms_log'
+            ),
+            comms_add_url: helpers.add_endpoint_json(
+                api_endpoints.compliances,
+                vm.$route.params.compliance_id + '/add_comms_log'
+            ),
             remindReferral: remindReferral,
             recallReferral: recallReferral,
             resendReferral: resendReferral,
         }
     },
-    components: {
-        ApprovalsTable,
-        CommsLogs,
-        ComplianceAmendmentRequest,
-        FormSection,
-        CollapsibleFilters,
-        MoreReferrals,
-    },
     computed: {
         isLoading: function () {
-            return this.loading.length > 0;
+            return this.loading.length > 0
         },
         referralListURL: function () {
-            return this.compliance ? api_endpoints.compliance_referrals + 'datatable_list/?compliance_id=' + this.compliance.id : '';
+            return this.compliance
+                ? api_endpoints.compliance_referrals +
+                      'datatable_list/?compliance_id=' +
+                      this.compliance.id
+                : ''
         },
         canViewonly: function () {
-            return this.compliance.processing_status == 'Due' || this.compliance.processing_status == 'Future' || this.compliance.processing_status == 'Approved';
+            return (
+                this.compliance.processing_status == 'Due' ||
+                this.compliance.processing_status == 'Future' ||
+                this.compliance.processing_status == 'Approved'
+            )
         },
         showAssignToMeButton: function () {
             return this.compliance.assigned_to != this.profile.id
         },
         dueDateFormatted: function () {
-            return moment(this.compliance.due_date).format(this.DATE_FORMAT);
+            return moment(this.compliance.due_date).format(this.DATE_FORMAT)
         },
-        canEditComments: function () {
-            return constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID == this.compliance.processing_status;
+        collapseAssessmentComments: function () {
+            return ![
+                constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID,
+                constants.COMPLIANCE_PROCESSING_STATUS.WITH_REFERRAL.ID,
+            ].includes(this.compliance.processing_status)
+        },
+        canEditAssessorComments: function () {
+            return (
+                constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID ==
+                    this.compliance.processing_status &&
+                this.profile.is_assessor &&
+                this.profile.id == this.compliance.assigned_to
+            )
         },
         isFinalised: function () {
-            return this.compliance && [
-                constants.COMPLIANCE_PROCESSING_STATUS.APPROVED.ID,
-                constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED.ID
-            ].includes(this.compliance.processing_status);
+            return (
+                this.compliance &&
+                [
+                    constants.COMPLIANCE_PROCESSING_STATUS.APPROVED.ID,
+                    constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED.ID,
+                ].includes(this.compliance.processing_status)
+            )
         },
         canViewActions: function () {
-            return this.profile.is_assessor && constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID == this.compliance.processing_status && this.profile.id == this.compliance.assigned_to
+            return (
+                this.profile.is_assessor &&
+                constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID ==
+                    this.compliance.processing_status &&
+                this.profile.id == this.compliance.assigned_to
+            )
         },
+    },
+    created: function () {
+        this.fetchProfile()
+        if (!this.compliance) {
+            this.fetchCompliance(this.$route.params.compliance_id)
+        }
     },
     methods: {
         collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
         },
         commaToNewline(s) {
-            return s.replace(/[,;]/g, '\n');
+            return s.replace(/[,;]/g, '\n')
+        },
+        save: async function () {
+            if (
+                this.profile.is_assessor &&
+                this.compliance.assigned_to == this.profile.id
+            ) {
+                this.assessorSave()
+            }
+            if (this.profile.is_referee) {
+                this.refereeSave()
+            }
+        },
+        assessorSave: async function () {
+            let vm = this
+            vm.savingCompliance = true
+            fetch(
+                `${api_endpoints.compliance_assessments}${vm.compliance.assessment.id}/`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        assessor_comment:
+                            vm.compliance.assessment.assessor_comment,
+                        deficiency_comment:
+                            vm.compliance.assessment.deficiency_comment,
+                    }),
+                }
+            )
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                    }
+                    swal.fire({
+                        title: 'Success',
+                        text: 'Assessment Comments Saved',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                    })
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+                .finally(() => {
+                    vm.savingCompliance = false
+                })
+        },
+        refereeSave: function () {
+            let vm = this
+            vm.savingCompliance = true
+            console.log(vm.profile.id)
+            const referral = vm.compliance.referrals.filter((obj) => {
+                return obj['referral'] == vm.profile.id
+            })[0]
+
+            console.log(referral)
+            fetch(`${api_endpoints.compliance_referrals}${referral.id}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    comment: referral.comment,
+                }),
+            })
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText
+                        console.log(error)
+                    }
+                    swal.fire({
+                        title: 'Success',
+                        text: 'Referral Comments Saved',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                    })
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
+                .finally(() => {
+                    vm.savingCompliance = false
+                })
+        },
+        saveAndExit: async function () {
+            let vm = this
+            vm.saveExitCompliance = true
+            await this.save()
+            vm.$router.push({ name: 'internal-compliances-dash' })
         },
         tabClicked: function (param) {
             if (param == 'related-items') {
-                this.loadRelatedItems = true;
+                this.loadRelatedItems = true
                 this.$nextTick(() => {
                     this.$refs.approvals_table.adjust_table_width()
                 })
             }
         },
         assignMyself: async function () {
-            let vm = this;
-            this.compliance = Object.assign({}, await helpers.fetchWrapper(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/assign_request_user'))));
+            let vm = this
+            this.compliance = Object.assign(
+                {},
+                await helpers.fetchWrapper(
+                    helpers.add_endpoint_json(
+                        api_endpoints.compliances,
+                        vm.compliance.id + '/assign_request_user'
+                    )
+                )
+            )
             Swal.fire({
                 title: 'Success',
                 text: `Compliance ${this.compliance.reference} has been assigned to you`,
@@ -366,16 +901,24 @@ export default {
             })
         },
         assignTo: async function () {
-            let vm = this;
+            let vm = this
             console.log(vm.compliance.assigned_to)
             if (vm.compliance.assigned_to != 'null') {
-                const url = helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/assign_to'));
-                const data = { 'user_id': vm.compliance.assigned_to };
-                this.compliance = Object.assign({}, await helpers.fetchWrapper(url, 'POST', data));
-                let assessor_assigned = this.compliance.allowed_assessors.find(function (assessor) {
-                    console.log(assessor.id, vm.compliance.assigned_to)
-                    return assessor.id === vm.compliance.assigned_to;
-                });
+                const url = helpers.add_endpoint_json(
+                    api_endpoints.compliances,
+                    vm.compliance.id + '/assign_to'
+                )
+                const data = { user_id: vm.compliance.assigned_to }
+                this.compliance = Object.assign(
+                    {},
+                    await helpers.fetchWrapper(url, 'POST', data)
+                )
+                let assessor_assigned = this.compliance.allowed_assessors.find(
+                    function (assessor) {
+                        console.log(assessor.id, vm.compliance.assigned_to)
+                        return assessor.id === vm.compliance.assigned_to
+                    }
+                )
                 console.log(assessor_assigned)
                 Swal.fire({
                     title: 'Success',
@@ -385,28 +928,33 @@ export default {
                     timer: 2000,
                     showConfirmButton: false,
                 })
-            }
-            else {
+            } else {
                 console.log('unassign')
-                const url = await helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/unassign'));
-                this.compliance = Object.assign({}, await helpers.fetchWrapper(url));
+                const url = await helpers.add_endpoint_json(
+                    api_endpoints.compliances,
+                    vm.compliance.id + '/unassign'
+                )
+                this.compliance = Object.assign(
+                    {},
+                    await helpers.fetchWrapper(url)
+                )
             }
         },
         sendReferral: async function () {
             let vm = this
             swal.fire({
-                title: "Send Referral",
-                text: "Are you sure you want to send to referral?",
-                icon: "warning",
+                title: 'Send Referral',
+                text: 'Are you sure you want to send to referral?',
+                icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Send Referral',
                 reverseButtons: true,
                 buttonsStyling: false,
                 customClass: {
                     confirmButton: 'btn btn-primary',
-                    cancelButton: 'btn btn-secondary me-2'
-                }
-            }).then(async result => {
+                    cancelButton: 'btn btn-secondary me-2',
+                },
+            }).then(async (result) => {
                 if (result.isConfirmed) {
                     // When Yes
                     await vm.performSendReferral()
@@ -415,107 +963,124 @@ export default {
         },
         performSendReferral: async function () {
             let vm = this
-            let my_headers = { 'Accept': 'application/json', 'Content-Type': 'application/json' }
-
-            vm.sendingReferral = true;
+            let my_headers = {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            }
+            vm.sendingReferral = true
             await fetch(`/api/compliances/${this.compliance.id}/`, {
                 method: 'PUT',
                 headers: my_headers,
                 body: JSON.stringify(vm.compliance),
-            }).then(async response => {
-                if (!response.ok) {
-                    return await response.json().then(json => {
-                        throw new Error(json);
-                    });
-                } else {
-                    return await response.json();
-                }
-            }).then(async () => {
-                return fetch(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/assessor_send_referral')), {
-                    method: 'POST',
-                    headers: my_headers,
-                    body: JSON.stringify({ 'email': vm.selected_referral, 'text': vm.referral_text }),
-                });
-            }).then(async response => {
-                if (!response.ok) {
-                    return await response.json().then(json => {
-                        console.log('json', json)
-                        throw new Error(JSON.stringify(json));
-                    });
-                } else {
-                    return await response.json();
-                }
-            }).then(async response => {
-                console.log('settings updated compliance from response')
-                vm.compliance = Object.assign({}, response); // 'with_referral'
-            }).catch(error => {
-                let errorText = '';
-                try {
-                    // console.log(`error type. ${typeof error}`);
-                    // console.log(`Error sending referral. ${error}`);
-                    // console.log(`${error.type}`);
-                    // console.log(`${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
-                    // console.log(`${JSON.parse(error.message).type}`);
-
-                    error = JSON.parse(error.message);
-                    console.log(`error type. ${typeof error}`);
-                    errorText = helpers.formatErrorV2(error);
-                    console.log(`errorText type. ${typeof errorText}`);
-
-                } catch (e) {
-                    errorText = error.message;
-                }
-                swal.fire({
-                    title: "Failed to send referral.",
-                    html: `${errorText}`,
-                    icon: "warning",
-                    customClass: 'swal-wide',
+            })
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            throw new Error(json)
+                        })
+                    } else {
+                        return await response.json()
+                    }
                 })
-            }).finally(() => {
-                vm.sendingReferral = false;
-                vm.selected_referral = '';
-                vm.referral_text = '';
-                $(vm.$refs.referees).val(null).trigger('change');
-            });
+                .then(async () => {
+                    return fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.compliances,
+                            vm.compliance.id + '/assessor_send_referral'
+                        ),
+                        {
+                            method: 'POST',
+                            headers: my_headers,
+                            body: JSON.stringify({
+                                email: vm.selected_referral,
+                                text: vm.referral_text,
+                            }),
+                        }
+                    )
+                })
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            console.log('json', json)
+                            throw new Error(JSON.stringify(json))
+                        })
+                    } else {
+                        return await response.json()
+                    }
+                })
+                .then(async (response) => {
+                    console.log('settings updated compliance from response')
+                    vm.compliance = Object.assign({}, response) // 'with_referral'
+                })
+                .catch((error) => {
+                    let errorText = ''
+                    try {
+                        // console.log(`error type. ${typeof error}`);
+                        // console.log(`Error sending referral. ${error}`);
+                        // console.log(`${error.type}`);
+                        // console.log(`${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
+                        // console.log(`${JSON.parse(error.message).type}`);
+
+                        error = JSON.parse(error.message)
+                        console.log(`error type. ${typeof error}`)
+                        errorText = helpers.formatErrorV2(error)
+                        console.log(`errorText type. ${typeof errorText}`)
+                    } catch (e) {
+                        errorText = error.message
+                    }
+                    swal.fire({
+                        title: 'Failed to send referral.',
+                        html: `${errorText}`,
+                        icon: 'warning',
+                        customClass: 'swal-wide',
+                    })
+                })
+                .finally(() => {
+                    vm.sendingReferral = false
+                    vm.selected_referral = ''
+                    vm.referral_text = ''
+                    $(vm.$refs.referees).val(null).trigger('change')
+                })
         },
         initialiseSelects: function (reinit = false) {
-            let vm = this;
+            let vm = this
             if (reinit) {
-                $(vm.$refs.referees).data('select2') ? $(vm.$refs.referees).select2('destroy') : '';
+                $(vm.$refs.referees).data('select2')
+                    ? $(vm.$refs.referees).select2('destroy')
+                    : ''
             }
-            $(vm.$refs.referees).select2({
-                minimumInputLength: 2,
-                "theme": "bootstrap-5",
-                allowClear: true,
-                placeholder: "Search Referee by Email",
-                ajax: {
-                    url: api_endpoints.users + 'get_referees/',
-                    dataType: 'json',
-                    data: function (params) {
-                        var query = {
-                            term: params.term,
-                            type: 'public',
-                        }
-                        return query;
+            $(vm.$refs.referees)
+                .select2({
+                    minimumInputLength: 2,
+                    theme: 'bootstrap-5',
+                    allowClear: true,
+                    placeholder: 'Search Referee by Email',
+                    ajax: {
+                        url: api_endpoints.users + 'get_referees/',
+                        dataType: 'json',
+                        data: function (params) {
+                            var query = {
+                                term: params.term,
+                                type: 'public',
+                            }
+                            return query
+                        },
                     },
-                },
-
-            })
-                .on("select2:select", function (e) {
-                    let data = e.params.data.id;
-                    vm.selected_referral = data;
                 })
-                .on("select2:unselect", function (e) {
-                    var selected = $(e.currentTarget);
-                    vm.selected_referral = null;
+                .on('select2:select', function (e) {
+                    let data = e.params.data.id
+                    vm.selected_referral = data
+                })
+                .on('select2:unselect', function () {
+                    vm.selected_referral = null
                 })
         },
         acceptCompliance: async function () {
-            let vm = this;
+            let vm = this
             await swal.fire({
                 title: `Approve Compliance ${vm.compliance.lodgement_number}`,
-                text: "Are you sure you want to approve this compliance?",
-                icon: "question",
+                text: 'Are you sure you want to approve this compliance?',
+                icon: 'question',
                 showCancelButton: true,
                 reverseButtons: true,
                 confirmButtonText: 'Accept',
@@ -523,120 +1088,139 @@ export default {
                 buttonsStyling: false,
                 customClass: {
                     confirmButton: 'btn btn-primary',
-                    cancelButton: 'btn btn-secondary me-2'
+                    cancelButton: 'btn btn-secondary me-2',
                 },
-            });
-            await helpers.fetchWrapper(helpers.add_endpoint_json(api_endpoints.compliances, (vm.compliance.id + '/accept'))).then(function (response) {
-                vm.compliance = Object.assign({}, response);
-                Swal.fire({
-                    title: 'Success',
-                    text: `Compliance ${vm.compliance.reference} has been approved.`,
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false,
+            })
+            await helpers
+                .fetchWrapper(
+                    helpers.add_endpoint_json(
+                        api_endpoints.compliances,
+                        vm.compliance.id + '/accept'
+                    )
+                )
+                .then(function (response) {
+                    vm.compliance = Object.assign({}, response)
+                    Swal.fire({
+                        title: 'Success',
+                        text: `Compliance ${vm.compliance.reference} has been approved.`,
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false,
+                    })
+                    vm.$router.push({ name: 'internal-compliances-dash' })
                 })
-                vm.$router.push({ name: 'internal-compliances-dash' });
-            });
         },
         amendmentRequest: function () {
-            this.$refs.amendment_request.amendment.compliance = this.compliance.id;
-            this.$refs.amendment_request.isModalOpen = true;
+            this.$refs.amendment_request.amendment.compliance =
+                this.compliance.id
+            this.$refs.amendment_request.isModalOpen = true
         },
         fetchProfile: async function () {
-            this.profile = Object.assign({}, await helpers.fetchWrapper(api_endpoints.profile));
+            this.profile = Object.assign(
+                {},
+                await helpers.fetchWrapper(api_endpoints.profile)
+            )
         },
         check_assessor: function () {
-            let vm = this;
+            let vm = this
             var assessor = vm.members.filter(function (elem) {
-                return (elem.id == vm.profile.id);
-            });
-            if (assessor.length > 0)
-                return true;
-            else
-                return false;
+                return elem.id == vm.profile.id
+            })
+            if (assessor.length > 0) return true
+            else return false
         },
         switchStatus: function (new_processing_status) {
             const requestOptions = {
                 method: 'POST',
-                body: JSON.stringify({ 'status': new_processing_status }),
-            };
-            fetch(helpers.add_endpoint_json(api_endpoints.compliances, (this.compliance.id + '/switch_status')), requestOptions)
-                .then(async response => {
+                body: JSON.stringify({ status: new_processing_status }),
+            }
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.compliances,
+                    this.compliance.id + '/switch_status'
+                ),
+                requestOptions
+            )
+                .then(async (response) => {
                     if (!response.ok) {
-                        return await response.json().then(json => { throw new Error(json); });
+                        return await response.json().then((json) => {
+                            throw new Error(json)
+                        })
                     } else {
-                        return await response.json();
+                        return await response.json()
                     }
                 })
-                .then(data => {
-                    this.compliance = Object.assign({}, data);
+                .then((data) => {
+                    this.compliance = Object.assign({}, data)
                     this.$nextTick(() => {
-                        this.initialiseSelects();
+                        this.initialiseSelects()
                         // this.updateAssignedOfficerSelect();
-                    });
+                    })
                 })
-                .catch(error => {
+                .catch((error) => {
                     swal.fire({
                         title: 'Compliance Error',
                         text: error,
-                        icon: 'error'
-                    });
-                });
+                        icon: 'error',
+                    })
+                })
         },
         fetchCompliance: function (compliance_id) {
-            let vm = this;
-            fetch(helpers.add_endpoint_json(api_endpoints.compliances, compliance_id + '/internal_compliance')).then(async response => {
-                if (!response.ok) {
-                    return await response.text().then(text => {
-                        swal.fire({
-                            title: 'Compliance Error',
-                            text: text,
-                            icon: 'error'
+            let vm = this
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.compliances,
+                    compliance_id + '/internal_compliance'
+                )
+            )
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.text().then((text) => {
+                            swal.fire({
+                                title: 'Compliance Error',
+                                text: text,
+                                icon: 'error',
+                            })
                         })
-                    });
-                } else {
-                    return await response.json();
-                }
-            })
-                .then(async data => {
-                    vm.compliance = Object.assign({}, data);
-                    vm.members = vm.compliance.allowed_assessors;
-                    this.$nextTick(() => {
-                        $("textarea").each(function (textarea) {
-                            if ($(this)[0].scrollHeight > 70) {
-                                $(this).height($(this)[0].scrollHeight - 30);
-                            }
-                        });
-                        this.initialiseSelects();
-                        this.initialisePopovers();
-                    });
+                    } else {
+                        return await response.json()
+                    }
                 })
-                .catch(error => {
+                .then(async (data) => {
+                    vm.compliance = Object.assign({}, data)
+                    vm.members = vm.compliance.allowed_assessors
+                    this.$nextTick(() => {
+                        $('textarea').each(function () {
+                            if ($(this)[0].scrollHeight > 70) {
+                                $(this).height($(this)[0].scrollHeight - 30)
+                            }
+                        })
+                        this.initialiseSelects()
+                        this.initialisePopovers()
+                    })
+                })
+                .catch(() => {
                     swal.fire({
                         title: 'Compliance Error',
                         text: constants.ERRORS.NETWORK_ERROR,
-                        icon: 'error'
+                        icon: 'error',
                     })
-                });
+                })
         },
         initialisePopovers: function () {
-            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
-            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+            var popoverTriggerList = [].slice.call(
+                document.querySelectorAll('[data-bs-toggle="popover"]')
+            )
+            popoverTriggerList.map(function (popoverTriggerEl) {
                 return new bootstrap.Popover(popoverTriggerEl)
             })
         },
     },
-    beforeRouteEnter: function (to, from, next) {
-        next(vm => {
-            vm.fetchCompliance(to.params.compliance_id);
-        })
-    },
-    created: function () {
-        this.fetchProfile();
-        if (!this.compliance) {
-            this.fetchCompliance(this.$route.params.compliance_id);
-        }
-    },
+    // mounted: function () {
+    //     if(constants.COMPLIANCE_PROCESSING_STATUS.WITH_REFERRAL this.compliance){
+
+    //     }
+    // },
 }
 </script>
 <style scoped>
