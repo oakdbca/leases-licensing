@@ -58,6 +58,7 @@ router.register(
 )
 router.register(r"compliance_paginated", compliances_api.CompliancePaginatedViewSet)
 router.register(r"compliance_referrals", compliances_api.ComplianceReferralViewSet)
+router.register(r"compliance_assessments", compliances_api.ComplianceAssessmentViewSet)
 router.register(r"referrals", proposal_api.ReferralViewSet)
 router.register(r"external_referee_invites", proposal_api.ExternalRefereeInviteViewSet)
 router.register(r"approvals", approval_api.ApprovalViewSet)
