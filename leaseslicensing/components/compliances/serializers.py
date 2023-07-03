@@ -132,6 +132,7 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
     assessment = ComplianceAssessmentSerializer(read_only=True)
     referrals = ComplianceReferralSerializer(many=True, read_only=True)
     latest_referrals = ComplianceReferralSerializer(many=True, read_only=True)
+    is_referee = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Compliance
@@ -152,6 +153,7 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
             "approval_lodgement_number",
             "can_process",
             "can_user_view",
+            "is_referee",
             "current_amendment_requests",
             "assessment",
             "referrals",
@@ -163,6 +165,7 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
             "customer_status_display",
             "can_process",
             "can_user_view",
+            "is_referee",
         ]
 
     def get_submitter(self, obj):
@@ -181,6 +184,10 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
 
     def get_approval_lodgement_number(self, obj):
         return obj.approval.lodgement_number
+
+    def get_is_referee(self, obj):
+        request = self.context["request"]
+        return obj.is_referee(request.user.id)
 
 
 class ComplianceSerializer(BaseComplianceSerializer):
