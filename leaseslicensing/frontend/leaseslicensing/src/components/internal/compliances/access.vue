@@ -52,7 +52,10 @@
                     </div>
 
                     <div
-                        v-if="compliance.assigned_to"
+                        v-if="
+                            compliance.assigned_to &&
+                            compliance.assigned_to == profile.id
+                        "
                         class="card-body border-top"
                     >
                         <div class="mb-1 fw-bold">Invite Referee</div>
@@ -96,11 +99,7 @@
                     </div>
 
                     <div
-                        v-if="
-                            compliance.assigned_to &&
-                            compliance.latest_referrals &&
-                            compliance.latest_referrals.length > 0
-                        "
+                        v-if="showRecentReferrals"
                         class="card-body border-top"
                     >
                         <div class="col-sm-12">
@@ -241,22 +240,30 @@
                             />
                         </div>
                     </div>
-
                     <div v-if="canViewActions" class="card-body border-top">
                         <div class="mb-1 fw-bold">Actions</div>
                         <div class="action-buttons">
                             <button
+                                v-if="canViewAssessorActions"
                                 class="btn btn-primary mb-2"
                                 @click.prevent="amendmentRequest()"
                             >
                                 Request Amendment
                             </button>
                             <button
+                                v-if="canViewAssessorActions"
                                 class="btn btn-primary"
                                 @click.prevent="acceptCompliance()"
                             >
-                                Approve</button
-                            ><br />
+                                Approve
+                            </button>
+                            <button
+                                v-if="compliance.is_referee"
+                                class="btn btn-primary"
+                                @click.prevent="completeReferral()"
+                            >
+                                Complete Referral
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -396,7 +403,12 @@
                                                                 class="form-control referral-comment"
                                                                 :disabled="
                                                                     referral.referral !==
-                                                                    profile.id
+                                                                        profile.id ||
+                                                                    referral.processing_status !=
+                                                                        constants
+                                                                            .REFERRAL_STATUS
+                                                                            .PROCESSING_STATUS_WITH_REFERRAL
+                                                                            .ID
                                                                 "
                                                                 :autofocus="
                                                                     referral.referral ==
@@ -737,6 +749,15 @@ export default {
                 constants.COMPLIANCE_PROCESSING_STATUS.WITH_REFERRAL.ID,
             ].includes(this.compliance.processing_status)
         },
+        showRecentReferrals: function () {
+            return (
+                this.compliance &&
+                this.compliance.assigned_to &&
+                this.compliance.latest_referrals &&
+                this.compliance.latest_referrals.length > 0 &&
+                this.compliance.assigned_to == this.profile.id
+            )
+        },
         canEditAssessorComments: function () {
             return (
                 constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID ==
@@ -755,6 +776,9 @@ export default {
             )
         },
         canViewActions: function () {
+            return this.compliance.is_referee || this.canViewAssessorActions
+        },
+        canViewAssessorActions: function () {
             return (
                 this.profile.is_assessor &&
                 constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID ==
@@ -777,13 +801,17 @@ export default {
             return s.replace(/[,;]/g, '\n')
         },
         save: async function () {
+            console.log('save')
+            console.log(this.profile.is_compliance_referee)
+
             if (
                 this.profile.is_assessor &&
                 this.compliance.assigned_to == this.profile.id
             ) {
                 this.assessorSave()
             }
-            if (this.profile.is_referee) {
+            if (this.profile.is_compliance_referee) {
+                console.log('referee save')
                 this.refereeSave()
             }
         },
@@ -872,6 +900,48 @@ export default {
             vm.saveExitCompliance = true
             await this.save()
             vm.$router.push({ name: 'internal-compliances-dash' })
+        },
+        completeReferral: async function () {
+            let vm = this
+            const referral = vm.compliance.referrals.filter((obj) => {
+                return obj['referral'] == vm.profile.id
+            })[0]
+            fetch(
+                `${api_endpoints.compliance_referrals}${referral.id}/complete/`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        comment: referral.comment,
+                    }),
+                }
+            )
+                .then(async (response) => {
+                    const data = await response.json()
+                    if (!response.ok) {
+                        const error = data || response.statusText
+                        console.log(error)
+                        swal.fire({
+                            title: 'Error',
+                            html: helpers.formatErrorV2(error),
+                            icon: 'error',
+                        })
+                        return
+                    }
+                    swal.fire({
+                        title: 'Success',
+                        text: 'Referral Completed, the assigned assessor will be notified',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false,
+                    })
+                    vm.$router.push({ name: 'internal-compliances-dash' })
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error)
+                })
         },
         tabClicked: function (param) {
             if (param == 'related-items') {
