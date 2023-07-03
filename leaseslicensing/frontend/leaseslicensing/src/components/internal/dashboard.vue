@@ -1,50 +1,115 @@
 <template>
-    <div class="container" id="externalDash">
+    <div id="externalDash" class="container">
         <div v-if="is_debug">src/components/internal/dashboard.vue</div>
-        <ul class="nav nav-pills" id="pills-tab" role="tablist">
+        <ul id="pills-tab" class="nav nav-pills" role="tablist">
             <li class="nav-item">
-                <a class="nav-link" id="pills-applications-tab" data-bs-toggle="pill" href="#pills-applications" role="tab"
-                    aria-controls="pills-applications" aria-selected="true"
-                    @click="tabClicked('applications')">Applications</a>
+                <a
+                    id="pills-applications-tab"
+                    class="nav-link"
+                    data-bs-toggle="pill"
+                    href="#pills-applications"
+                    role="tab"
+                    aria-controls="pills-applications"
+                    aria-selected="true"
+                    @click="tabClicked('applications')"
+                    >Applications</a
+                >
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="pills-competitive-processes-tab" data-bs-toggle="pill"
-                    href="#pills-competitive-processes" role="tab" aria-controls="pills-competitive-processes"
-                    aria-selected="false" @click="tabClicked('competitive-processes')">Competitive Processes</a>
+                <a
+                    id="pills-competitive-processes-tab"
+                    class="nav-link"
+                    data-bs-toggle="pill"
+                    href="#pills-competitive-processes"
+                    role="tab"
+                    aria-controls="pills-competitive-processes"
+                    aria-selected="false"
+                    @click="tabClicked('competitive-processes')"
+                    >Competitive Processes</a
+                >
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="pills-map-tab" data-bs-toggle="pill" href="#pills-map" role="tab"
-                    aria-controls="pills-map" aria-selected="false" @click="mapTabClicked">Map</a>
+                <a
+                    id="pills-map-tab"
+                    class="nav-link"
+                    data-bs-toggle="pill"
+                    href="#pills-map"
+                    role="tab"
+                    aria-controls="pills-map"
+                    aria-selected="false"
+                    @click="mapTabClicked"
+                    >Map</a
+                >
             </li>
         </ul>
-        <div class="tab-content" id="pills-tabContent">
-            <div class="tab-pane active" id="pills-applications" role="tabpanel" aria-labelledby="pills-applications-tab">
-                <FormSection :formCollapse="false" label="Applications" Index="applications">
-                    <ApplicationsTable @filter-appied="filterAppliedApplications()" ref="applications_table"
-                        level="internal" filterApplicationType_cache_name="filterApplicationType"
-                        filterApplicationStatus_cache_name="filterApplicationStatus"
-                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFrom"
-                        filterProposalLodgedTo_cache_name="filterApplicationLodgedTo" />
+        <div id="pills-tabContent" class="tab-content">
+            <div
+                id="pills-applications"
+                class="tab-pane active"
+                role="tabpanel"
+                aria-labelledby="pills-applications-tab"
+            >
+                <FormSection
+                    :form-collapse="false"
+                    label="Applications"
+                    index="applications"
+                >
+                    <ApplicationsTable
+                        ref="applications_table"
+                        level="internal"
+                        filter-application-type-cache-name="filterApplicationType"
+                        filter-application-status-cache-name="filterApplicationStatus"
+                        filter-proposal-lodged-from-cache-name="filterApplicationLodgedFrom"
+                        filter-proposal-lodged-to-cache-name="filterApplicationLodgedTo"
+                        @filter-appied="filterAppliedApplications()"
+                    />
                 </FormSection>
-                <FormSection :formCollapse="false" label="Applications Referred to Me" Index="leases_and_licences">
-                    <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" v-if="accessing_user"
-                        level="internal" :email_user_id_assigned="accessing_user.id"
-                        filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
-                        filterApplicationStatus_cache_name="filterApplicationStatusForApplicationReferredToMeTable"
-                        filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
-                        filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
+                <FormSection
+                    :form-collapse="false"
+                    label="Applications Referred to Me"
+                    index="leases_and_licences"
+                >
+                    <ApplicationsReferredToMeTable
+                        v-if="accessing_user"
+                        ref="applications_referred_to_me_table"
+                        level="internal"
+                        :email_user_id_assigned="accessing_user.id"
+                        filter-application-type-cache-name="filterApplicationTypeForApplicationReferredToMeTable"
+                        filter-application-status-cache-name="filterApplicationStatusForApplicationReferredToMeTable"
+                        filter-proposal-lodged-from-cache-name="filterApplicationLodgedFromForApplicationReferredToMeTable"
+                        filter-proposal-lodged-to-cache-name="filterApplicationLodgedToForApplicationReferredToMeTable"
+                    />
                 </FormSection>
             </div>
-            <div class="tab-pane" id="pills-competitive-processes" role="tabpanel"
-                aria-labelledby="pills-competitive-processes-tab">
-                <FormSection :formCollapse="false" label="Competitive Processes" Index="competitive_processes">
-                    <CompetitiveProcessesTable ref="competitive_processes_table" level="internal" />
+            <div
+                id="pills-competitive-processes"
+                class="tab-pane"
+                role="tabpanel"
+                aria-labelledby="pills-competitive-processes-tab"
+            >
+                <FormSection
+                    :form-collapse="false"
+                    label="Competitive Processes"
+                    index="competitive_processes"
+                >
+                    <CompetitiveProcessesTable
+                        ref="competitive_processes_table"
+                    />
                 </FormSection>
             </div>
-            <div class="tab-pane" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
-                <FormSection :formCollapse="false" label="Map" Index="map">
-                    <MapComponent v-if="loadMap" @filter-appied="filterAppliedMap" ref="component_map_with_filters"
-                        level="internal" />
+            <div
+                id="pills-map"
+                class="tab-pane"
+                role="tabpanel"
+                aria-labelledby="pills-map-tab"
+            >
+                <FormSection :form-collapse="false" label="Map" index="map">
+                    <MapComponent
+                        v-if="loadMap"
+                        ref="component_map_with_filters"
+                        level="internal"
+                        @filter-appied="filterAppliedMap"
+                    />
                 </FormSection>
             </div>
         </div>
@@ -52,17 +117,24 @@
 </template>
 
 <script>
-import FormSection from "@/components/forms/section_toggle.vue"
-import ApplicationsTable from "@/components/common/table_proposals"
-import ApplicationsReferredToMeTable from "@/components/common/table_proposals"
-import CompetitiveProcessesTable from "@/components/common/table_competitive_processes"
-import MapComponent from "@/components/common/component_map_with_filters_v2"
-import { api_endpoints, helpers } from '@/utils/hooks'
+/*globals bootstrap */
+import FormSection from '@/components/forms/section_toggle.vue'
+import ApplicationsTable from '@/components/common/table_proposals'
+import ApplicationsReferredToMeTable from '@/components/common/table_proposals'
+import CompetitiveProcessesTable from '@/components/common/table_competitive_processes'
+import MapComponent from '@/components/common/component_map_with_filters_v2'
+import { api_endpoints } from '@/utils/hooks'
 
 export default {
     name: 'InternalDashboard',
+    components: {
+        FormSection,
+        ApplicationsTable,
+        ApplicationsReferredToMeTable,
+        CompetitiveProcessesTable,
+        MapComponent,
+    },
     data() {
-        let vm = this;
         return {
             empty_list: '/api/empty_list',
             accessing_user: null,
@@ -73,16 +145,14 @@ export default {
             system_name: api_endpoints.system_name,
         }
     },
-    components: {
-        FormSection,
-        ApplicationsTable,
-        ApplicationsReferredToMeTable,
-        CompetitiveProcessesTable,
-        MapComponent,
-    },
     computed: {
         is_debug: function () {
-            return this.$route.query.hasOwnProperty('debug') && this.$route.query.debug == 'true' ? true : false
+            return Object.prototype.hasOwnProperty.call(
+                this.$route.query,
+                'debug'
+            ) && this.$route.query.debug == 'true'
+                ? true
+                : false
         },
         is_external: function () {
             return this.level == 'external'
@@ -90,6 +160,16 @@ export default {
         is_internal: function () {
             return this.level == 'internal'
         },
+    },
+    mounted: async function () {
+        const res = await fetch('/api/profile')
+        const resData = await res.json()
+        this.accessing_user = resData
+        this.$nextTick(function () {
+            // eslint-disable-next-line no-undef
+            chevron_toggle.init()
+            this.set_active_tab('pills-applications')
+        })
     },
     methods: {
         tabClicked: function (param) {
@@ -101,33 +181,23 @@ export default {
             }
         },
         mapTabClicked: function () {
-            this.loadMap = true;
+            this.loadMap = true
         },
         set_active_tab: function (tab_href_name) {
             let elem = $('#pills-tab a[href="#' + tab_href_name + '"]')
             let tab = bootstrap.Tab.getInstance(elem)
-            if (!tab)
-                tab = new bootstrap.Tab(elem)
+            if (!tab) tab = new bootstrap.Tab(elem)
             tab.show()
         },
         filterAppliedApplications: function () {
             if (this.$refs.component_map_with_filters) {
-                this.$refs.component_map_with_filters.updateFilters();
-                this.$refs.component_map_with_filters.applyFiltersFrontEnd();
+                this.$refs.component_map_with_filters.updateFilters()
+                this.$refs.component_map_with_filters.applyFiltersFrontEnd()
             }
         },
         filterAppliedMap: function () {
-            this.$refs.applications_table.updateFilters();
-        }
-    },
-    mounted: async function () {
-        const res = await fetch('/api/profile');
-        const resData = await res.json();
-        this.accessing_user = resData
-        this.$nextTick(function () {
-            chevron_toggle.init();
-            this.set_active_tab('pills-applications')
-        })
+            this.$refs.applications_table.updateFilters()
+        },
     },
 }
 </script>
@@ -146,7 +216,7 @@ export default {
     top: 56px;
 }
 
-.admin>div {
+.admin > div {
     display: inline-block;
     vertical-align: top;
     margin-right: 1em;
