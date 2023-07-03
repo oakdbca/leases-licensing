@@ -491,6 +491,7 @@ export default {
                 initComplete: function () {
                     console.log('in initComplete')
                 },
+                order: [[0, 'desc']],
             }
         },
     },

@@ -1,5 +1,6 @@
-import { helpers } from '@/utils/hooks';
-import '../../../../../static/leaseslicensing/css/workflow.css';
+/*globals swal */
+import { api_endpoints, helpers, utils } from '@/utils/hooks'
+import '../../../../../static/leaseslicensing/css/workflow.css'
 
 /**
  * Sends a referral reminder to the referrer
@@ -7,34 +8,39 @@ import '../../../../../static/leaseslicensing/css/workflow.css';
  * * @param {string} user The referrer's username
  */
 export async function remindReferral(api_endpoint, _id, user) {
-    fetch(helpers.add_endpoint_json(api_endpoint, _id + '/remind')).then(async response => {
-        if (!response.ok) {
-            return response.json().then(json => { throw new Error(json); });
-        } else {
-            return response.json();
-        }
-    }).then(() => {
-        // eslint-disable-next-line no-undef
-        swal.fire({
-            title: 'Referral Reminder',
-            text: 'A reminder has been sent to ' + user,
-            icon: 'success',
-            // Have swal2 popovers placed above bootstrap popovers
-            customClass: {
-                container: 'swal2-popover'
+    fetch(helpers.add_endpoint_json(api_endpoint, _id + '/remind'))
+        .then(async (response) => {
+            if (!response.ok) {
+                return response.json().then((json) => {
+                    throw new Error(json)
+                })
+            } else {
+                return response.json()
             }
-        });
-    }).catch(error => {
-        // eslint-disable-next-line no-undef
-        swal.fire({
-            title: 'Proposal Error',
-            text: error['message'],
-            icon: 'error',
-            customClass: {
-                container: 'swal2-popover'
-            }
-        });
-    });
+        })
+        .then(() => {
+            // eslint-disable-next-line no-undef
+            swal.fire({
+                title: 'Referral Reminder',
+                text: 'A reminder has been sent to ' + user,
+                icon: 'success',
+                // Have swal2 popovers placed above bootstrap popovers
+                customClass: {
+                    container: 'swal2-popover',
+                },
+            })
+        })
+        .catch((error) => {
+            // eslint-disable-next-line no-undef
+            swal.fire({
+                title: 'Proposal Error',
+                text: error['message'],
+                icon: 'error',
+                customClass: {
+                    container: 'swal2-popover',
+                },
+            })
+        })
 }
 
 /**
@@ -43,7 +49,7 @@ export async function remindReferral(api_endpoint, _id, user) {
  * * @param {string} user The referrer's username
  */
 export async function recallReferral(api_endpoint, _id, user) {
-    let vm = this;
+    let vm = this
     // eslint-disable-next-line no-undef
     const _loading = swal.fire({
         icon: 'info',
@@ -53,43 +59,49 @@ export async function recallReferral(api_endpoint, _id, user) {
         allowEscapeKey: false,
         didOpen: async () => {
             // eslint-disable-next-line no-undef
-            swal.showLoading();
+            swal.showLoading()
         },
         customClass: {
-            container: 'swal2-popover'
-        }
-    });
+            container: 'swal2-popover',
+        },
+    })
 
-    await fetch(helpers.add_endpoint_json(api_endpoint, _id + '/recall')).then(async response => {
-        if (!response.ok) {
-            return await response.json().then(json => { throw new Error(json); });
-        } else {
-            return response.json();
-        }
-    }).then(async (response) => {
-        vm.switchStatus(response.processing_status_id); // 'with_assessor'
-        if (typeof (vm['table']) !== 'undefined') {
-            // Reload the Show Referrals Popover table if exists
-            vm.table.ajax.reload();
-        }
-        _loading.hideLoading();
-        _loading.update({
-            showConfirmButton: true,
-            title: 'Referral Recall',
-            text: 'The referral has been recalled from ' + user,
-            icon: 'success'
-        });
-    }).catch((error) => {
-        _loading.hideLoading();
-        _loading.update({
-            showConfirmButton: true,
-            title: 'Proposal Error',
-            text: error['message'],
-            icon: 'error'
-        });
-    }).finally(() => {
-        // _loading.close();
-    });
+    await fetch(helpers.add_endpoint_json(api_endpoint, _id + '/recall'))
+        .then(async (response) => {
+            if (!response.ok) {
+                return await response.json().then((json) => {
+                    throw new Error(json)
+                })
+            } else {
+                return response.json()
+            }
+        })
+        .then(async (response) => {
+            vm.switchStatus(response.processing_status_id) // 'with_assessor'
+            if (typeof vm['table'] !== 'undefined') {
+                // Reload the Show Referrals Popover table if exists
+                vm.table.ajax.reload()
+            }
+            _loading.hideLoading()
+            _loading.update({
+                showConfirmButton: true,
+                title: 'Referral Recall',
+                text: 'The referral has been recalled from ' + user,
+                icon: 'success',
+            })
+        })
+        .catch((error) => {
+            _loading.hideLoading()
+            _loading.update({
+                showConfirmButton: true,
+                title: 'Proposal Error',
+                text: error['message'],
+                icon: 'error',
+            })
+        })
+        .finally(() => {
+            // _loading.close();
+        })
 }
 
 /**
@@ -98,39 +110,44 @@ export async function recallReferral(api_endpoint, _id, user) {
  * * @param {string} user The referrer's username
  */
 export async function resendReferral(api_endpoint, _id, user) {
-    let vm = this;
-    await fetch(helpers.add_endpoint_json(api_endpoint, _id + '/resend')).then(async response => {
-        if (!response.ok) {
-            return await response.json().then(json => { throw new Error(json); });
-        } else {
-            return response.json();
-        }
-    }).then(async response => {
-        vm.switchStatus(response.processing_status_id); // 'with_referral'
-        if (typeof (vm['table']) !== 'undefined') {
-            // Reload the Show Referrals popover table if exists
-            vm.table.ajax.reload();
-        }
-        // eslint-disable-next-line no-undef
-        swal.fire({
-            title: 'Referral Resent',
-            text: 'The referral has been resent to ' + user,
-            icon: 'success',
-            customClass: {
-                container: 'swal2-popover'
+    let vm = this
+    await fetch(helpers.add_endpoint_json(api_endpoint, _id + '/resend'))
+        .then(async (response) => {
+            if (!response.ok) {
+                return await response.json().then((json) => {
+                    throw new Error(json)
+                })
+            } else {
+                return response.json()
             }
-        });
-    }).catch(error => {
-        // eslint-disable-next-line no-undef
-        swal.fire({
-            title: 'Proposal Error',
-            text: error['message'],
-            icon: 'error',
-            customClass: {
-                container: 'swal2-popover'
+        })
+        .then(async (response) => {
+            vm.switchStatus(response.processing_status_id) // 'with_referral'
+            if (typeof vm['table'] !== 'undefined') {
+                // Reload the Show Referrals popover table if exists
+                vm.table.ajax.reload()
             }
-        });
-    });
+            // eslint-disable-next-line no-undef
+            swal.fire({
+                title: 'Referral Resent',
+                text: 'The referral has been resent to ' + user,
+                icon: 'success',
+                customClass: {
+                    container: 'swal2-popover',
+                },
+            })
+        })
+        .catch((error) => {
+            // eslint-disable-next-line no-undef
+            swal.fire({
+                title: 'Proposal Error',
+                text: error['message'],
+                icon: 'error',
+                customClass: {
+                    container: 'swal2-popover',
+                },
+            })
+        })
 }
 
 /**
@@ -142,26 +159,63 @@ export async function resendReferral(api_endpoint, _id, user) {
  */
 export function updateIdListFromAvailable(id, list, available_items, remove) {
     if (!remove) {
-        remove = false;
+        remove = false
     }
 
-    let found = list.find(element => element.id === parseInt(id));
+    let found = list.find((element) => element.id === parseInt(id))
 
     if (!found) {
-        let item = available_items.find(element => element.id === parseInt(id));
+        let item = available_items.find(
+            (element) => element.id === parseInt(id)
+        )
         if (!item) {
-            console.warn(`Selected item with id ${id} not found in available items.`);
-            return false;
+            console.warn(
+                `Selected item with id ${id} not found in available items.`
+            )
+            return false
         }
-        console.log(`Adding item with id ${id} to list of selected items.`);
-        list.push(item);
-        return list;
+        console.log(`Adding item with id ${id} to list of selected items.`)
+        list.push(item)
+        return list
     }
 
     if (found && remove) {
-        console.log(`Removing item with id ${id} from list of selected items.`);
-        list = list.filter(element => element.id !== parseInt(id));
-        return list;
+        console.log(`Removing item with id ${id} from list of selected items.`)
+        list = list.filter((element) => element.id !== parseInt(id))
+        return list
     }
-    return false;
+    return false
+}
+
+/**
+ * Discards a proposal.
+ * @param {object} proposal A proposal object or a proposal ID
+ * @returns an api query Promise
+ */
+export async function discardProposal(proposal) {
+    let proposal_id = proposal.id || proposal
+
+    return swal
+        .fire({
+            title: 'Discard Application',
+            text: 'Are you sure you want to discard this application?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Discard Application',
+            confirmButtonColor: '#dc3545',
+        })
+        .then(async (result) => {
+            if (result.isConfirmed) {
+                // // Queries the discard proposal endpoint
+                return utils.fetchUrl(
+                    api_endpoints.discard_proposal(proposal_id),
+                    {
+                        method: 'PATCH',
+                        headers: { 'Content-Type': 'application/json' },
+                    }
+                )
+            } else {
+                return null
+            }
+        })
 }

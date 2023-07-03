@@ -21,6 +21,7 @@ from leaseslicensing.components.approvals.email import (
 )
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
+    LicensingModelVersioned,
     Document,
     RevisionedMixin,
     SecureFileField,
@@ -137,8 +138,7 @@ class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
         unique_together = ("approval_type", "approval_type_document_type")
 
 
-# class Approval(models.Model):
-class Approval(RevisionedMixin):
+class Approval(LicensingModelVersioned):
     MODEL_PREFIX = "L"
 
     APPROVAL_STATUS_CURRENT = "current"
@@ -163,11 +163,10 @@ class Approval(RevisionedMixin):
         (APPROVAL_STATUS_CANCELLED, "Cancelled"),
         (APPROVAL_STATUS_SURRENDERED, "Surrendered"),
         (APPROVAL_STATUS_SUSPENDED, "Suspended"),
-        (APPROVAL_STATUS_EXTENDED, "extended"),
+        (APPROVAL_STATUS_EXTENDED, "Extended"),
         (APPROVAL_STATUS_AWAITING_PAYMENT, "Awaiting Payment"),
         (APPROVAL_STATUS_CURRENT_EDITING_INVOICING, "Current (Editing Invoicing)"),
     )
-    lodgement_number = models.CharField(max_length=9, blank=True, default="")
     status = models.CharField(
         max_length=40, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
@@ -367,15 +366,6 @@ class Approval(RevisionedMixin):
         )
         ids = list(ids)
         return max(ids) + 1 if ids else 1
-
-    def save(self, *args, **kwargs):
-        if self.lodgement_number in ["", None]:
-            self.lodgement_number = f"{self.MODEL_PREFIX}{self.next_id:06d}"
-            # self.save()
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        return self.lodgement_number
 
     @property
     def reference(self):

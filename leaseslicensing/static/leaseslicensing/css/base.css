@@ -18,6 +18,11 @@ div#app .container h3 {
     border-color:#5393d2 !important;
 }
 
+.btn-horizontal-align {
+    margin-left: 2px;
+    margin-right: 2px;
+}
+
 .bg-primary{
     background-color: #226fbb !important;
 }

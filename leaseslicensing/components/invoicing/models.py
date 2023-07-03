@@ -9,7 +9,11 @@ from django.db.models import F, Sum, Window
 from django.db.models.functions import Coalesce
 from ledger_api_client import settings_base
 
-from leaseslicensing.components.main.models import RevisionedMixin, SecureFileField
+from leaseslicensing.components.main.models import (
+    LicensingModel,
+    RevisionedMixin,
+    SecureFileField,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -511,7 +515,7 @@ class InvoiceManager(models.Manager):
         )
 
 
-class Invoice(RevisionedMixin, models.Model):
+class Invoice(LicensingModel):
     objects = InvoiceManager()
 
     MODEL_PREFIX = "I"
@@ -524,7 +528,6 @@ class Invoice(RevisionedMixin, models.Model):
         (INVOICE_STATUS_PAID, "Paid"),
         (INVOICE_STATUS_VOID, "Void"),
     )
-    lodgement_number = models.CharField(max_length=9, null=True, blank=True)
     approval = models.ForeignKey(
         "Approval",
         blank=False,
@@ -550,12 +553,6 @@ class Invoice(RevisionedMixin, models.Model):
     class Meta:
         app_label = "leaseslicensing"
         ordering = ["-date_issued", "approval"]
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.lodgement_number == "":
-            self.lodgement_number = f"{self.MODEL_PREFIX}{self.pk:06d}"
-            self.save()
 
     def __str__(self):
         return (

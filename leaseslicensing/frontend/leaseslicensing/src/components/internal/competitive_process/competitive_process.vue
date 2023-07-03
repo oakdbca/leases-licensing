@@ -33,7 +33,8 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="pills-outcome-tab" data-bs-toggle="pill"
-                            data-bs-target="#pills-outcome" role="tab" aria-controls="pills-outcome" aria-selected="false">
+                            data-bs-target="#pills-outcome" role="tab" aria-controls="pills-outcome" aria-selected="false"
+                            @click="outcomeTabClicked">
                             Outcome
                         </button>
                     </li>
@@ -81,8 +82,9 @@
                                 </div>
                                 <div class="col-sm-4">
                                     <select class="form-control" v-model="competitive_process.winner_id"
-                                        id="competitive_process_winner" :disabled="elementDisabled">
-                                        <option :value=null>No winner</option>
+                                        id="competitive_process_winner" :disabled="elementDisabled"
+                                        ref="select_winner">
+                                        <option></option>
                                         <option v-for="party in possibleWinner" :value="party.id">
                                             <template v-if="party.id != 0">
                                                 <template v-if="party.is_person">
@@ -98,12 +100,20 @@
                             </div>
                             <div class="row mb-2">
                                 <div class="col-sm-3">
-                                    <label for="details" class="control-label">Details</label>
+                                    <label :for="hasWinner? 'competitive-process-outcome-winner-details': 'competitive-process-outcome-no-winner-details'" class="control-label">Details</label>
                                 </div>
                                 <div class="col-sm-9">
-                                    <RichText id="details" :proposalData="competitive_process.details" ref="details"
-                                        label="Rich text in here" :readonly="elementDisabled" :can_view_richtext_src=true
-                                        :key="cp_id" @textChanged="detailsTextChanged" />
+                                    <RichText
+                                        :id="hasWinner? 'competitive-process-outcome-winner-details': 'competitive-process-outcome-no-winner-details'"
+                                        :proposalData="outcomeDetails"
+                                        placeholder_text="Add some details here"
+                                        ref="details"
+                                        :readonly="elementDisabled"
+                                        :can_view_richtext_src=true
+                                        :key="cp_id"
+                                        v-model="competitive_process.details"
+                                        @textChanged="detailsTextChanged"
+                                    />
                                 </div>
                             </div>
                             <div class="row mb-2">
@@ -152,7 +162,12 @@
 </template>
 
 <script>
-import { api_endpoints, helpers, constants } from '@/utils/hooks'
+import {
+    api_endpoints,
+    helpers,
+    constants,
+    utils,
+} from '@/utils/hooks'
 import { v4 as uuid } from 'uuid'
 import CommsLogs from '@common-utils/comms_logs.vue'
 import Workflow from '@common-utils/workflow_competitive_process.vue'
@@ -183,6 +198,7 @@ export default {
             processing: false,
             owsQuery: owsQuery,
             validateFeature: validateFeature,
+            detailsTexts: {},
         }
     },
     components: {
@@ -354,9 +370,6 @@ export default {
             return this.competitive_process.competitive_process_parties.filter(
                 party => party.id > 0);
         },
-        incrementComponentMapKey: function () {
-            this.componentMapKey++;
-        },
         /**
          * Returns competitive process geometries as a FeatureCollection adding whether
          * the geometry is from the competitive process or from a proposal.
@@ -403,10 +416,65 @@ export default {
 
             return featureCollection;
         },
+        outcomeDetails: function () {
+            /** Returns the outcome details text
+             */
+
+            // This is here to re-evalute the computed property after fetching details texts
+            this.cp_id;
+
+            if (this.competitive_process.details) {
+                return this.competitive_process.details;
+            } else {
+                // Use standard text from admin
+                let id = this.$refs.hasOwnProperty("details") ?
+                                this.$refs.details.id : "";
+                return this.detailsTexts[id] || "";
+            }
+        },
     },
     methods: {
         mapTabClicked: function () {
             this.$refs.component_map.forceToRefreshMap()
+        },
+        outcomeTabClicked: function () {
+            let vm = this;
+            let initialisers = [
+                utils.fetchUrl(`${api_endpoints.details_text}key-value-list/`),
+            ]
+            Promise.all(initialisers).then(data => {
+                for (let detailText of data[0]) {
+                    vm.detailsTexts[detailText.target] = detailText.body;
+                }
+                vm.cp_id = uuid();
+            });
+
+            vm.initSelectWinner();
+        },
+        initSelectWinner: function () {
+            let vm = this;
+
+            $(vm.$refs.select_winner).select2({
+                "theme": "bootstrap-5",
+                allowClear: true,
+                placeholder: "No winner",
+            }).on("select2:select", function (e) {
+                var selected_winner = $(e.currentTarget);
+                vm.competitive_process.winner_id = Number(selected_winner.val());
+                vm.$nextTick(async () => {
+                    vm.cp_id = uuid();
+                });
+            }).on("select2:unselecting", function (e) {
+                var self = $(this);
+                setTimeout(() => {
+                    self.select2('close');
+                }, 0);
+            }).on("select2:unselect", function (e) {
+                vm.competitive_process.winner_id = null;
+                vm.$nextTick(async () => {
+                    vm.cp_id = uuid();
+                });
+            });
         },
         detailsTextChanged: function (new_text) {
             this.competitive_process.details = new_text
@@ -475,7 +543,7 @@ export default {
                     vm.set_custom_rows_property("processing", false);
                     vm.$nextTick(async () => {
                         vm.cp_id = uuid();
-                        vm.incrementComponentMapKey;
+                        vm.incrementComponentMapKey();
                     });
                 })
                 .catch(error => {
@@ -740,6 +808,7 @@ export default {
                     throw new Error(res.statusText)  // 400s or 500s error
                 let competitive_process = await res.json()
                 vm.competitive_process = competitive_process
+                console.log("Fetched competitive process", vm.competitive_process);5
             } catch (err) {
                 console.log({ err })
             } finally {
@@ -797,7 +866,10 @@ export default {
             } else {
                 console.error(`Can not add data to party with ID ${id}.`);
             }
-        }
+        },
+        incrementComponentMapKey: function () {
+            this.componentMapKey++;
+        },
     }
 }
 </script>

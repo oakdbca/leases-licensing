@@ -26,6 +26,7 @@ from leaseslicensing.components.compliances.email import (
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
+    LicensingModelVersioned,
     RevisionedMixin,
     SecureFileField,
     UserAction,
@@ -50,7 +51,7 @@ class ComplianceManager(models.Manager):
         )
 
 
-class Compliance(RevisionedMixin, models.Model):
+class Compliance(LicensingModelVersioned):
     objects = ComplianceManager()
 
     MODEL_PREFIX = "C"
@@ -89,7 +90,6 @@ class Compliance(RevisionedMixin, models.Model):
         (CUSTOMER_STATUS_OVERDUE, "Overdue"),
     )
 
-    lodgement_number = models.CharField(max_length=9, blank=True, default="")
     proposal = models.ForeignKey(
         "leaseslicensing.Proposal", related_name="compliances", on_delete=models.CASCADE
     )

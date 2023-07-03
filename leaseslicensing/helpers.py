@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.cache import cache
 from ledger_api_client.managed_models import SystemGroup, SystemGroupPermission
 from ledger_api_client.utils import get_all_organisation
+from rest_framework.serializers import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,7 @@ def is_finance_officer(request):
 
 def is_referee(request, proposal=None):
     from leaseslicensing.components.proposals.models import Referral
+
     qs = Referral.objects.filter(referral=request.user.id)
     if proposal:
         qs = qs.filter(proposal=proposal)
@@ -67,6 +69,7 @@ def is_referee(request, proposal=None):
 
 def is_compliance_referee(request, compliance=None):
     from leaseslicensing.components.compliances.models import ComplianceReferral
+
     qs = ComplianceReferral.objects.filter(referral=request.user.id)
     if compliance:
         qs = qs.filter(compliance=compliance)
@@ -200,9 +203,11 @@ def get_model_by_lodgement_number_prefix(prefix):
 
 def get_model_by_lodgement_number(lodgement_number):
     """Returns the model class for the lodgement number"""
-    lodgment_number = re.search("([A-Z]+)([0-9]+)", lodgement_number)
+    lodgment_number = re.search("([A-Z]+)([0-9]+)", lodgement_number or "")
     if not lodgment_number:
-        raise ValueError(
+        # Returning a ValidationError here, so the response text can be evaluated in the
+        # Ajax error handler of the respective datatable.
+        raise ValidationError(
             "A valid lodgement number starts with one or more capital letters followed by a series of digits."
         )
 

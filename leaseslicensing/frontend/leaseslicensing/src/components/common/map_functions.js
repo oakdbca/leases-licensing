@@ -40,6 +40,8 @@ export function addOptionalLayers(map_component) {
             });
 
             let tileLayer = new TileLayer({
+                name: layer.Name,
+                abstract: layer.Abstract.trim(),
                 title: layer.Title.trim(),
                 visible: false,
                 source: l,
@@ -68,10 +70,38 @@ export function addOptionalLayers(map_component) {
                     $('#legend_title').text(this.values_.title);
                 } else if (e.oldValue == true) {
                     $('#legend_title').text('');
-                    $('#legend').find('img').attr('src', '');
+                    $('#legend').find('img').attr('src', "")
+                    // Hide any overlays when the optional layer is turned off
+                    map_component.overlay(undefined);
                 } else {
                     console.error('Cannot assess tile layer visibility change.');
                 }
+            });
+
+            // Lets ol display a popup with clicked feature properties
+            map_component.map.on("singleclick", function (evt) {
+                if (map_component.mode !== 'info') {
+                    return;
+                }
+                let coordinate = evt.coordinate;
+                map_component.map.forEachLayerAtPixel(evt.pixel, function (lay) {
+                    if (lay.values_.name === tileLayer.values_.name) {
+                        console.log("Clicked on tile layer", lay);
+
+                        let point = `POINT (${coordinate.join(" ")})`;
+                        let query_str = _helper.geoserverQuery.bind(this)(point, map_component);
+                        map_component.validateFeatureQuery(query_str).then(async (features) => {
+                            if (features.length === 0) {
+                                console.warn("No features found at this location.");
+                                map_component.overlay(undefined);
+                            } else {
+                                console.log("Feature", features);
+                                map_component.overlay(coordinate, features[0]);
+                            }
+                            map_component.errorMessage(null);
+                        });
+                    }
+                });
             });
         }
     });
@@ -91,6 +121,10 @@ export function set_mode(mode) {
 
     this.drawing = false;
     this.measuring = false;
+    this.informing = false;
+    this.errorMessage(null);
+    this.overlay(undefined);
+    this.map.getTargetElement().style.cursor = "default";
 
     if (this.mode === 'layer') {
         this.clearMeasurementLayer();
@@ -104,6 +138,9 @@ export function set_mode(mode) {
     } else if (this.mode === 'measure') {
         _helper.toggle_draw_measure_license.bind(this)(true, false);
         this.measuring = true;
+    } else if (this.mode === 'info') {
+        _helper.toggle_draw_measure_license.bind(this)(false, false);
+        this.informing = true;
     } else {
         console.error(`Cannot set mode ${mode}`);
     }
@@ -144,30 +181,19 @@ export function polygon_style(feature) {
 */
 export function validateFeature() {
     let vm = this;
-    console.log('Validate feature');
+    console.log("Validate feature");
     // Get the WKT representation of the drawn polygon
     let polygon_wkt = vm.$refs.component_map.featureToWKT();
-
-    // The geoserver url
-    // eslint-disable-next-line no-undef
-    let owsUrl = `${env['kmi_server_url']}/geoserver/public/ows/?`;
-    // Create a params dict for the WFS request to the land-water layer
-    let paramsDict = vm.$refs.component_map.queryParamsDict('landwater');
-    let geometry_name = vm.$refs.component_map.owsQuery.landwater.geometry;
-    paramsDict['CQL_FILTER'] = `INTERSECTS(${geometry_name},${polygon_wkt})`;
-
-    // Turn params dict into a param query string
-    let params = new URLSearchParams(paramsDict).toString();
-    let query = `${owsUrl}${params}`;
+    let query = _helper.geoserverQuery.bind(vm)(polygon_wkt);
 
     vm.$refs.component_map.validateFeatureQuery(query).then(async (features) => {
         if (features.length === 0) {
-            console.warn('New feature is not valid');
+            console.warn("New feature is not valid");
             vm.$refs.component_map.errorMessage(
-                'The polygon you have drawn does not intersect with any DBCA lands or water.');
+                "The polygon you have drawn does not intersect with any DBCA lands or water.");
 
         } else {
-            console.log('New feature is valid', features);
+            console.log("New feature is valid", features);
             vm.$refs.component_map.finishDrawing();
         }
     });
@@ -200,5 +226,34 @@ const _helper = {
         if (this.drawForModel) {
             this.drawForModel.setActive(drawForModel);
         }
+    },
+    /**
+     * Builds a query string for the geoserver based on the provided WKT
+     * @param {str} wkt A geometry in Well-known-text (WKT) format
+     * @param {Object} map_component The map component
+     * @returns A query string for the geoserver
+     */
+    geoserverQuery: function (wkt, map_component) {
+        let vm = this;
+        if (wkt === undefined) {
+            console.warn("No WKT provided");
+            return;
+        }
+        if (map_component === undefined) {
+            map_component = vm.$refs.component_map;
+        }
+        // The geoserver url
+        // eslint-disable-next-line no-undef
+        var owsUrl = `${env['kmi_server_url']}/geoserver/public/ows/?`;
+        // Create a params dict for the WFS request to the land-water layer
+        let paramsDict = map_component.queryParamsDict("landwater");
+        let geometry_name = map_component.owsQuery.landwater.geometry;
+        paramsDict["CQL_FILTER"] = `INTERSECTS(${geometry_name},${wkt})`;
+
+        // Turn params dict into a param query string
+        let params = new URLSearchParams(paramsDict).toString();
+        let query = `${owsUrl}${params}`;
+
+        return query;
     }
 };

@@ -9,6 +9,7 @@ from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
+from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeSerializer,
@@ -84,6 +85,7 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
             "polygon",
             "intersects",
             "drawn_by",
+            "locked",
         )
         read_only_fields = ("id",)
 
@@ -104,6 +106,7 @@ class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
 class ProposalGeometrySerializer(GeoFeatureModelSerializer):
     proposal_id = serializers.IntegerField(write_only=True, required=False)
     polygon_source = serializers.SerializerMethodField()
+    proposal_copied_from = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = ProposalGeometry
@@ -114,11 +117,21 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
             "polygon",
             "intersects",
             "polygon_source",
+            "locked",
+            "proposal_copied_from",
         )
         read_only_fields = ("id",)
 
     def get_polygon_source(self, obj):
         return get_polygon_source(obj)
+
+    def get_proposal_copied_from(self, obj):
+        if obj.copied_from:
+            return ListProposalMinimalSerializer(
+                obj.copied_from.proposal, context=self.context
+            ).data
+
+        return None
 
 
 class ProposalTypeSerializer(serializers.ModelSerializer):
@@ -403,6 +416,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     allowed_assessors = EmailUserSerializer(many=True)
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     details_url = serializers.SerializerMethodField(read_only=True)
+    competitive_process = serializers.SerializerMethodField(read_only=True)
 
     # Gis data fields
     identifiers = serializers.SerializerMethodField()
@@ -508,6 +522,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "site_name",
             "proponent_reference_number",
             "details_url",
+            "competitive_process",
         )
         read_only_fields = ("supporting_documents",)
 
@@ -632,6 +647,70 @@ class BaseProposalSerializer(serializers.ModelSerializer):
 
         return roles
 
+    def get_competitive_process(self, obj):
+        if obj.originating_competitive_process:
+            return CompetitiveProcessSerializer(
+                obj.originating_competitive_process, context=self.context
+            ).data
+        else:
+            return None
+
+
+class CompetitiveProcessSerializer(serializers.ModelSerializer):
+    competitive_process_geometries = serializers.SerializerMethodField()
+    status_display = serializers.SerializerMethodField()
+    created_at_display = serializers.DateTimeField(
+        read_only=True, format="%d/%m/%Y", source="created_at"
+    )
+    label = serializers.SerializerMethodField(read_only=True)
+    details_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = CompetitiveProcess
+        fields = (
+            "id",
+            "lodgement_number",
+            "competitive_process_geometries",
+            "status_display",
+            "created_at_display",
+            "label",  # A static value to be used on the map
+            "details_url",
+        )
+
+    def get_status_display(self, obj):
+        return {i[0]: i[1] for i in CompetitiveProcess.STATUS_CHOICES}.get(
+            obj.status, None
+        )
+
+    def get_competitive_process_geometries(self, obj):
+        """
+        Returns geometries for this Competitive Process as FeatureCollection dict
+        """
+
+        from leaseslicensing.components.competitive_processes.serializers import (
+            CompetitiveProcessGeometrySerializer,
+        )
+
+        geometry_data = {"type": "FeatureCollection", "features": []}
+        for geometry in obj.competitive_process_geometries.all():
+            pg_serializer = CompetitiveProcessGeometrySerializer(geometry)
+            geometry_data["features"].append(pg_serializer.data)
+
+        return geometry_data
+
+    def get_label(self, obj):
+        return "Competitive Process"
+
+    def get_details_url(self, obj):
+        request = self.context["request"]
+        if request.user.is_authenticated:
+            if is_internal(request):
+                return reverse(
+                    "internal-competitiveprocess-detail", kwargs={"pk": obj.id}
+                )
+            else:
+                return ""
+
 
 class ListProposalMinimalSerializer(serializers.ModelSerializer):
     proposalgeometry = ProposalGeometrySerializer(many=True, read_only=True)
@@ -645,6 +724,7 @@ class ListProposalMinimalSerializer(serializers.ModelSerializer):
         read_only=True, format="%d/%m/%Y", source="lodgement_date"
     )
     details_url = serializers.SerializerMethodField(read_only=True)
+    competitive_process = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Proposal
@@ -659,6 +739,7 @@ class ListProposalMinimalSerializer(serializers.ModelSerializer):
             "lodgement_date",
             "lodgement_date_display",
             "details_url",
+            "competitive_process",
         )
 
     def get_details_url(self, obj):
@@ -670,6 +751,15 @@ class ListProposalMinimalSerializer(serializers.ModelSerializer):
                 return reverse(
                     "external-proposal-detail", kwargs={"proposal_pk": obj.id}
                 )
+
+    def get_competitive_process(self, obj):
+        if obj.originating_competitive_process:
+            return CompetitiveProcessSerializer(
+                obj.originating_competitive_process,
+                context=self.context,
+            ).data
+        else:
+            return None
 
 
 class ListProposalSerializer(BaseProposalSerializer):
@@ -1227,6 +1317,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "site_name",
             "details_url",
             "external_referral_invites",
+            "competitive_process",
             # "assessor_comment_map",
             # "deficiency_comment_map",
             # "assessor_comment_proposal_details",
@@ -1329,8 +1420,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
         Returns all lodgement versions of a proposal, when browsing in debug mode
         """
 
-        data = self.context.get("request").data
-        if data.get("debug", False):
+        query_params = self.context.get("request").query_params
+        if query_params.get("debug", False):
             return obj.versions_to_lodgement_dict(obj.revision_versions())
         else:
             return []

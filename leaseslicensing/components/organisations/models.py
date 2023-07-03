@@ -131,7 +131,9 @@ class Organisation(models.Model):
         self.ledger_organisation_name = self.ledger_organisation["organisation_name"]
         self.ledger_organisation_abn = self.ledger_organisation["organisation_abn"]
         if self.ledger_organisation["organisation_trading_name"]:
-            self.ledger_organisation_trading_name = self.ledger_organisation["organisation_trading_name"]
+            self.ledger_organisation_trading_name = self.ledger_organisation[
+                "organisation_trading_name"
+            ]
 
         if self.ledger_organisation["organisation_email"]:
             self.ledger_organisation_email = self.ledger_organisation[
@@ -711,9 +713,7 @@ class Organisation(models.Model):
             qs = qs.filter(user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE)
         if admin:
             qs = qs.filter(user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN)
-        return list(
-            qs.values_list("email", flat=True).distinct()
-        )
+        return list(qs.values_list("email", flat=True).distinct())
 
     @property
     def first_five(self):
@@ -1013,7 +1013,7 @@ class OrganisationRequest(models.Model):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if self.lodgement_number == "":
+        if not self.lodgement_number:
             new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
             self.lodgement_number = new_lodgment_id
             self.save()

@@ -37,6 +37,7 @@ from leaseslicensing.components.main.models import (  # Organisation as ledger_o
     ApplicationType,
     CommunicationsLogEntry,
     Document,
+    LicensingModelVersioned,
     RevisionedMixin,
     SecureFileField,
     UserAction,
@@ -74,7 +75,7 @@ from leaseslicensing.components.tenure.models import (
     Tenure,
     Vesting,
 )
-from leaseslicensing.helpers import user_ids_in_group
+from leaseslicensing.helpers import is_approver, is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
     APPLICATION_TYPE_LEASE_LICENCE,
@@ -935,7 +936,7 @@ class ProposalManager(models.Manager):
         )
 
 
-class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
+class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     objects = ProposalManager()
 
     MODEL_PREFIX = "A"
@@ -1043,7 +1044,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         on_delete=models.SET_NULL,
     )
     proxy_applicant = models.IntegerField(null=True, blank=True)  # EmailUserRO
-    lodgement_number = models.CharField(max_length=9, blank=True, default="")
     lodgement_sequence = models.IntegerField(blank=True, default=0)
     lodgement_date = models.DateTimeField(blank=True, null=True)
     submitter = models.IntegerField(null=True)  # EmailUserRO
@@ -1193,19 +1193,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         verbose_name = "Application"
         verbose_name_plural = "Applications"
 
-    def __str__(self):
-        return str(self.id)
-
-    # Append 'P' to Proposal id to generate Lodgement number.
-    # Lodgement number and lodgement sequence are used to generate Reference.
     def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)  # Call parent `save` to create a Proposal id
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
-        if self.lodgement_number == "":
-            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
-            self.lodgement_number = new_lodgment_id
-            self.save()
+        super().save(*args, **kwargs)
 
     @property
     def submitter_obj(self):
@@ -1396,54 +1387,6 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
         return history_list
 
     @property
-    def lodgement_versions(self):
-        """
-        Returns lodgement data for all commented versions of this model,
-        as well as the the most recent data set.
-        """
-
-        current_revision_id = Version.objects.get_for_object(self).first().revision_id
-        versions = self.revision_versions().filter(
-            ~Q(revision__comment="") | Q(revision_id=current_revision_id)
-        )
-
-        return self.versions_to_lodgement_dict(versions)
-
-    def versions_to_lodgement_dict(self, versions_qs):
-        """
-        Returns a dictionary of revision id, comment, lodgement number, lodgement sequence,
-        lodgement date for versions queryset of this model to be used in the fronend.
-        """
-
-        rr = []
-        for obj in versions_qs:
-            rr.append(
-                dict(
-                    revision_id=obj.revision_id,
-                    revision_comment=obj.revision.comment.strip(),
-                    lodgement_number=obj.field_dict.get("lodgement_number", None),
-                    lodgement_sequence=obj.field_dict.get("lodgement_sequence", None),
-                    lodgement_date=obj.field_dict.get("lodgement_date", None),
-                )
-            )
-
-        return rr
-
-    def revision_versions(self):
-        """
-        Returns all versions of this model
-        """
-
-        return Version.objects.get_for_object(self).select_related("revision")
-
-    def revision_version(self, revision_id):
-        """
-        Returns the version of this model for revision id `revision_id`
-        """
-
-        return self.revision_versions().filter(revision_id=revision_id)[0]
-
-    @property
     def is_assigned(self):
         return self.assigned_officer is not None
 
@@ -1475,16 +1418,12 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
             self.proxy_applicant,
         ]
 
-    @property
-    def is_discardable(self):
-        """
-        An application can be discarded by a customer if:
-        1 - It is a draft
-        2- or if the application has been pushed back to the user
-        """
+    def can_discard(self, request):
         return (
-            self.processing_status == "draft"
-            or self.processing_status == "awaiting_applicant_response"
+            is_approver(request)
+            and self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER
+            or is_customer(request)
+            and request.user.id == self.submitter
         )
 
     @property
@@ -2139,6 +2078,11 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                 if status == "with_assessor_conditions":
                     self.add_default_requirements()
 
+                # Lock the proposal geometries associated with this proposal and owned by the current user
+                ProposalGeometry.objects.filter(proposal=self).exclude(
+                    Q(locked=True) | ~Q(drawn_by=request.user.id)
+                ).update(**{"locked": True})
+
                 # Create a log entry for the proposal
                 if self.processing_status == self.PROCESSING_STATUS_WITH_ASSESSOR:
                     self.log_user_action(
@@ -2714,6 +2658,10 @@ class Proposal(RevisionedMixin, DirtyFieldsMixin, models.Model):
                     # Send notification email to applicant
                     send_proposal_approval_email_notification(self, request)
 
+                    # FIXME: Cramming all the branched decisions and dependencies into this one
+                    # function (and the same api endpoint) makes the flow of logic really hard to
+                    # follow and easy to introduce errors. Can we refactor the nested if/else
+                    # statements into dedicated api endpoints and functions?
                     if self.approval:
                         self.save(
                             version_comment=f"Final Approval: {self.approval.lodgement_number}"
@@ -3388,6 +3336,7 @@ class ProposalGeometry(models.Model):
         "self", on_delete=models.SET_NULL, blank=True, null=True
     )
     drawn_by = models.IntegerField(blank=True, null=True)  # EmailUserRO
+    locked = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"

@@ -154,3 +154,8 @@ input.layer_option {
 .close-icon:hover {
     filter: brightness(80%);
 }
+.overlay-feature-popup {
+    min-width: 340px;
+    font-size: 0.875rem;
+    pointer-events: auto;
+}

@@ -18,6 +18,7 @@ from leaseslicensing.components.main import api as main_api
 from leaseslicensing.components.organisations import api as org_api
 from leaseslicensing.components.proposals import api as proposal_api
 from leaseslicensing.components.tenure import api as tenure_api
+from leaseslicensing.components.texts import api as textbody_api
 from leaseslicensing.components.users import api as users_api
 from leaseslicensing.management.default_data_manager import DefaultDataManager
 from leaseslicensing.utils import are_migrations_running
@@ -87,6 +88,8 @@ router.register(r"required_documents", main_api.RequiredDocumentViewSet)
 router.register(r"questions", main_api.QuestionViewSet)
 router.register(r"map_layers", main_api.MapLayerViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
+
+router.register(r"detailstext", textbody_api.DetailsTextViewSet)
 
 router.registry.sort(key=lambda x: x[0])
 
@@ -292,9 +295,9 @@ urlpatterns = (
             name="internal-compliance-detail",
         ),
         url(
-            r"^internal/competitive_process/(?P<competitive_process_pk>\d+)/$",
+            r"^internal/competitive_process/(?P<pk>\d+)/$",
             views.InternalCompetitiveProcessView.as_view(),
-            name="internal-competitive-process-detail",
+            name="internal-competitiveprocess-detail",
         ),
     ]
     + ledger_patterns
