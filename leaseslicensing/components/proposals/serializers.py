@@ -1764,3 +1764,19 @@ class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdditionalDocumentType
         fields = "__all__"
+
+class ProposalGisDataSerializer(BaseProposalSerializer):
+
+    class Meta:
+        model = Proposal
+        fields = (
+            "identifiers",
+            "vestings",
+            "names",
+            "acts",
+            "tenures",
+            "categories",
+            "regions",
+            "districts",
+            "lgas",
+        )

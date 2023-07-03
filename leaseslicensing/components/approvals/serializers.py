@@ -9,6 +9,7 @@ from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
     ApprovalLogEntry,
+    ApprovalType,
     ApprovalUserAction,
 )
 from leaseslicensing.components.main.serializers import (
@@ -18,6 +19,7 @@ from leaseslicensing.components.main.serializers import (
 from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
+from leaseslicensing.components.proposals.serializers import ProposalGisDataSerializer
 from leaseslicensing.components.users.serializers import UserSerializer
 from leaseslicensing.helpers import is_approver, is_assessor
 
@@ -153,6 +155,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
     categories_list = serializers.ListField(
         source="current_proposal.categories_list", read_only=True
     )
+    approval_type = serializers.SerializerMethodField(read_only=True)
+    approval_type_obj = serializers.SerializerMethodField(read_only=True)
+    gis_data = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Approval
@@ -200,6 +205,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "categories_list",
             "site_name",
             "record_management_number",
+            "approval_type",
+            "approval_type_obj",
+            "gis_data",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -300,6 +308,27 @@ class ApprovalSerializer(serializers.ModelSerializer):
     def get_groups_comma_list(self, obj):
         return obj.current_proposal.groups_comma_list
 
+    def get_approval_type(self, obj):
+        approval_type_obj = self.get_approval_type_obj(obj)
+        if approval_type_obj is None:
+            return None
+        return approval_type_obj.get("name", None)
+
+    def get_approval_type_obj(self, obj):
+        approval_type_id = obj.current_proposal.proposed_issuance_approval.get("approval_type", None)
+        if approval_type_id is None:
+            logger.warn("ApprovalType not found")
+            return None
+        try:
+            approval_type = ApprovalType.objects.get(id=approval_type_id)
+        except ApprovalType.DoesNotExist:
+            return None
+        else:
+            return ApprovalTypeSerializer(approval_type).data
+
+    def get_gis_data(self, obj):
+        return ProposalGisDataSerializer(obj.current_proposal).data
+
 
 class ApprovalExtendSerializer(serializers.Serializer):
     extend_details = serializers.CharField()
@@ -359,3 +388,8 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
         # Todo: Change to secure file / document url
         url = obj._file.url
         return url
+
+class ApprovalTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovalType
+        fields = "__all__"
