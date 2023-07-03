@@ -132,9 +132,6 @@ class Compliance(LicensingModelVersioned):
             "lodgement_number",
         )
 
-    def __str__(self):
-        return self.lodgement_number
-
     @property
     def approval_number(self):
         return self.approval.lodgement_number if self.approval else ""
@@ -232,14 +229,10 @@ class Compliance(LicensingModelVersioned):
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
-        if not self.assessment:
+        if not hasattr(self, "assessment"):
             ComplianceAssessment.objects.create(
                 compliance=self,
             )
-        if self.lodgement_number == "":
-            new_lodgment_id = f"{self.MODEL_PREFIX}{self.pk:06d}"
-            self.lodgement_number = new_lodgment_id
-            self.save()
 
     def submit(self, request):
         with transaction.atomic():
