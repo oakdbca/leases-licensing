@@ -224,14 +224,15 @@ def send_referral_email_notification(referral, recipients, request, reminder=Fal
 
 def send_referral_complete_email_notification(referral, request):
     sent_by = retrieve_email_user(referral.sent_by)
-
-    application_type = referral.proposal.application_type.name_display
+    compliance = referral.compliance
+    proposal = compliance.proposal
+    application_type = proposal.application_type.name_display
     email_user = retrieve_email_user(referral.referral)
 
     email = TemplateEmailBase(
         subject=(
             f"{email_user.get_full_name()} has Completed Referral for {application_type} "
-            f"Compliance {referral.compliance.lodgement_number}"
+            f"Compliance {compliance.lodgement_number}"
         ),
         html_template="leaseslicensing/emails/compliances/send_referral_complete_notification.html",
         txt_template="leaseslicensing/emails/compliances/send_referral_complete_notification.txt",
@@ -239,39 +240,34 @@ def send_referral_complete_email_notification(referral, request):
 
     email.subject = sent_by.email + ": " + email.subject
     url = request.build_absolute_uri(
-        reverse("internal-proposal-detail", kwargs={"pk": referral.proposal.id})
+        reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
 
     context = {
         "completed_by": email_user.get_full_name(),
         "application_type": application_type,
-        "compliance": referral.compliance,
-        "proposal": referral.compliance.proposal,
+        "compliance": compliance,
+        "proposal": compliance.proposal,
         "url": url,
         "referral_comments": referral.referral_text,
     }
-    attachments = []
-    if referral.document:
-        file_name = referral.document._file.name
-        attachment = (file_name, referral.document._file.file.read())
-        attachments.append(attachment)
 
-    msg = email.send(sent_by.email, attachments=attachments, context=context)
+    msg = email.send(sent_by.email, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
 
-    _log_compliance_email(msg, referral.proposal, sender=sender)
+    _log_compliance_email(msg, compliance, sender=sender)
 
-    if referral.compliance.proposal.org_applicant:
+    if proposal.org_applicant:
         _log_org_email(
             msg,
-            referral.compliance.proposal.org_applicant,
+            proposal.org_applicant,
             referral.referral,
             sender=sender,
         )
-    elif referral.compliance.proposal.ind_applicant:
+    elif proposal.ind_applicant:
         _log_user_email(
             msg,
-            referral.compliance.proposal.ind_applicant,
+            proposal.ind_applicant,
             referral.referral,
             sender=sender,
         )
