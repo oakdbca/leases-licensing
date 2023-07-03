@@ -28,7 +28,7 @@
 <script>
 import FormSection from "@/components/forms/section_toggle.vue"
 import ApprovalsTable from "@/components/common/table_approvals.vue"
-import MapComponent from "@/components/common/component_map_with_filters"
+import MapComponent from "@/components/common/component_map_with_filters_v2"
 
 export default {
     name: 'InternalApprovalsDashboard',
