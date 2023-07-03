@@ -3,6 +3,7 @@ from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
+from leaseslicensing.components.compliances.models import ComplianceReferral
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
@@ -107,6 +108,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_assessor = serializers.SerializerMethodField()
     is_approver = serializers.SerializerMethodField()
     is_referee = serializers.SerializerMethodField()
+    is_compliance_referee = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailUser
@@ -129,6 +131,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_assessor",
             "is_approver",
             "is_referee",
+            "is_compliance_referee",
         )
 
     def get_personal_details(self, obj):
@@ -175,7 +178,15 @@ class UserSerializer(serializers.ModelSerializer):
         return False
 
     def get_is_referee(self, obj):
-        return Referral.objects.filter(referral=obj.id).exists()
+        return Referral.objects.filter(
+            referral=obj.id, processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL
+        ).exists()
+
+    def get_is_compliance_referee(self, obj):
+        return ComplianceReferral.objects.filter(
+            referral=obj.id,
+            processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
+        ).exists()
 
 
 class PersonalSerializer(serializers.ModelSerializer):
