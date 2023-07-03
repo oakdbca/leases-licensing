@@ -188,6 +188,7 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
 
     @basic_exception_handler
     def retrieve(self, request, *args, **kwargs):
+        super().retrieve(request, *args, **kwargs)
         competitive_process = self.get_object()
         serializer = self.get_serializer(
             competitive_process, context={"request": request}
@@ -233,7 +234,9 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
         instance = serializer.save()
         # Handle "geometry" data
         if competitive_process_geometry_data:
-            save_geometry(request, instance, competitive_process_geometry_data, self.action)
+            save_geometry(
+                request, instance, competitive_process_geometry_data, self.action
+            )
 
         # Return the serialized saved instance
         return CompetitiveProcessSerializer(
