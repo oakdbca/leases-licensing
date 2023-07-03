@@ -5,6 +5,7 @@ from rest_framework.permissions import BasePermission
 from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
+    is_compliance_referee,
     is_customer,
     is_internal,
     is_referee,
@@ -63,6 +64,7 @@ class IsAsignedAssessor(BasePermission):
 
 class IsAssignedReferee(BasePermission):
     def has_permission(self, request, view):
+        logger.debug(f"IsAssignedReferee: {request.user.id}")
         if not request.user.is_authenticated:
             return False
 
@@ -78,6 +80,29 @@ class IsAssignedReferee(BasePermission):
         if request.user.is_superuser:
             return True
 
+        logger.debug(f"Referee: {request.user.id} Referral: {obj.referral}")
+        return request.user.id == obj.referral
+
+
+class IsAssignedComplianceReferee(BasePermission):
+    def has_permission(self, request, view):
+        logger.debug(f"IsAssignedReferee: {request.user.id}")
+        if not request.user.is_authenticated:
+            return False
+
+        if request.user.is_superuser:
+            return True
+
+        if not is_internal(request):
+            return False
+
+        return is_compliance_referee(request)
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_superuser:
+            return True
+
+        logger.debug(f"Referee: {request.user.id} Referral: {obj.referral}")
         return request.user.id == obj.referral
 
 
