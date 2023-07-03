@@ -4,9 +4,9 @@ import re
 from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
-from rest_framework.serializers import ValidationError
 from ledger_api_client.managed_models import SystemGroup, SystemGroupPermission
 from ledger_api_client.utils import get_all_organisation
+from rest_framework.serializers import ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -59,9 +59,20 @@ def is_finance_officer(request):
 
 def is_referee(request, proposal=None):
     from leaseslicensing.components.proposals.models import Referral
+
     qs = Referral.objects.filter(referral=request.user.id)
     if proposal:
         qs = qs.filter(proposal=proposal)
+
+    return qs.exists()
+
+
+def is_compliance_referee(request, compliance=None):
+    from leaseslicensing.components.compliances.models import ComplianceReferral
+
+    qs = ComplianceReferral.objects.filter(referral=request.user.id)
+    if compliance:
+        qs = qs.filter(compliance=compliance)
 
     return qs.exists()
 

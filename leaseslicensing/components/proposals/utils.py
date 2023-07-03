@@ -2,13 +2,13 @@ import json
 import logging
 import re
 
+from django.apps import apps
 from django.conf import settings
 from django.contrib.gis.geos import Polygon
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-from django.apps import apps
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser  # , Document
 
 from leaseslicensing.components.approvals import email as approval_email
@@ -27,7 +27,6 @@ from leaseslicensing.components.proposals.email import (
 from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
     ProposalAct,
-    ProposalAssessment,
     ProposalAssessmentAnswer,
     ProposalCategory,
     ProposalDeclinedDetails,
@@ -523,7 +522,7 @@ def save_referral_data(proposal, request, referral_completed=False):
             return
 
         for referral in proposal_data["referrals"]:
-            logger.info("Saving referral data for {}".format(referral))
+            logger.info(f"Saving referral data for {referral}")
             # Referee can only save changes to their own referral
             if not referral["referral"] == request.user.id:
                 continue
@@ -539,47 +538,49 @@ def save_referral_data(proposal, request, referral_completed=False):
                 comment_additional_documents=referral["comment_additional_documents"],
             )
             # Only allow updating of comment fields
-            referral.save(update_fields=[
-                "comment_map",
-                "comment_proposal_details",
-                "comment_proposal_impact",
-                "comment_other",
-                "comment_deed_poll",
-                "comment_additional_documents"]
+            referral.save(
+                update_fields=[
+                    "comment_map",
+                    "comment_proposal_details",
+                    "comment_proposal_impact",
+                    "comment_other",
+                    "comment_deed_poll",
+                    "comment_additional_documents",
+                ]
             )
 
 
+@transaction.atomic
 def save_assessor_data(proposal, request, viewset):
     logger.debug("save_assessor_data")
-    with transaction.atomic():
-        proposal_data = {}
-        if request.data.get("proposal"):
-            # request.data is like {'proposal': {'id': ..., ...}}
-            proposal_data = request.data.get("proposal")
-        else:
-            # request.data is a dictionary of the proposal {'id': ..., ...}
-            proposal_data = request.data
+    proposal_data = {}
+    if request.data.get("proposal"):
+        # request.data is like {'proposal': {'id': ..., ...}}
+        proposal_data = request.data.get("proposal")
+    else:
+        # request.data is a dictionary of the proposal {'id': ..., ...}
+        proposal_data = request.data
 
-        save_site_name(proposal, proposal_data["site_name"])
-        save_groups_data(proposal, proposal_data["groups"])
+    save_site_name(proposal, proposal_data["site_name"])
+    save_groups_data(proposal, proposal_data["groups"])
 
-        # Save checklist answers
-        if is_assessor(request):
-            # When this assessment is for the accessing user
-            if (
-                "assessor_assessment" in proposal_data
-                and proposal_data["assessor_assessment"]
-            ):
-                for section, answers in proposal_data["assessor_assessment"][
-                    "section_answers"
-                ].items():
-                    for answer_dict in answers:
-                        answer_obj = _save_answer_dict(answer_dict)
-                        # Not yet sure what the intention for answer_ob is but just printing as it wasn't accessed.
-                        logger.debug(answer_obj)
-        # Save geometry
-        save_geometry(proposal, request)
-        populate_gis_data(proposal)
+    # Save checklist answers
+    if is_assessor(request):
+        # When this assessment is for the accessing user
+        if (
+            "assessor_assessment" in proposal_data
+            and proposal_data["assessor_assessment"]
+        ):
+            for section, answers in proposal_data["assessor_assessment"][
+                "section_answers"
+            ].items():
+                for answer_dict in answers:
+                    answer_obj = _save_answer_dict(answer_dict)
+                    # Not yet sure what the intention for answer_ob is but just printing as it wasn't accessed.
+                    logger.debug(answer_obj)
+    # Save geometry
+    save_geometry(proposal, request)
+    populate_gis_data(proposal)
 
 
 def check_geometry(instance):
@@ -1092,7 +1093,8 @@ def delete_gis_data(proposal, ids_to_delete=[]):
     """
 
     for key in ids_to_delete:
-        # Proposal GIS data is stored in ProposalXyz models. This matches for the Xyz part of the model name from GIS data property name
+        # Proposal GIS data is stored in ProposalXyz models.
+        # This matches for the Xyz part of the model name from GIS data property name
         class_class = _gis_property_to_model(key)
         if class_class is None:
             continue

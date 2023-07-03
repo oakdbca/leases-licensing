@@ -1,12 +1,10 @@
 import logging
 import os
-import traceback
 from collections import OrderedDict
 from datetime import datetime
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
@@ -31,8 +29,8 @@ from leaseslicensing.components.approvals.models import Approval
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.main.api import (
-    UserActionLoggingViewset,
     LicensingViewset,
+    UserActionLoggingViewset,
 )
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
@@ -68,8 +66,8 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     AmendmentRequestSerializer,
     ChecklistQuestionSerializer,
     CreateProposalSerializer,
-    ExternalRefereeInviteSerializer,
     DTReferralSerializer,
+    ExternalRefereeInviteSerializer,
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
     ListProposalSerializer,
@@ -98,7 +96,13 @@ from leaseslicensing.components.proposals.utils import (
     save_referral_data,
     save_site_name,
 )
-from leaseslicensing.helpers import is_approver, is_assessor, is_customer, is_internal
+from leaseslicensing.helpers import (
+    is_approver,
+    is_assessor,
+    is_customer,
+    is_internal,
+    is_referee,
+)
 from leaseslicensing.permissions import IsAssessorOrReferrer
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -1714,8 +1718,6 @@ class ProposalViewSet(UserActionLoggingViewset):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def complete_referral(self, request, *args, **kwargs):
-        # TODO: There is also a 'complete' method on the Referral model.
-        # This could be confusing and if it doesn't end up being needed then it should be removed.
         instance = self.get_object()
         referee_id = request.data.get("referee_id", None)
         if not referee_id:
@@ -1725,7 +1727,8 @@ class ProposalViewSet(UserActionLoggingViewset):
 
         if not instance.referrals.filter(referral=referee_id).exists():
             msg = _(
-                f"There is no referral for application: {instance.lodgement_number} and referee (email user): {referee_id}"
+                f"There is no referral for application: {instance.lodgement_number} "
+                f"and referee (email user): {referee_id}"
             )
             raise serializers.ValidationError(msg, code="invalid")
 
@@ -1777,7 +1780,7 @@ class ProposalViewSet(UserActionLoggingViewset):
 
     @detail_route(methods=["post"], detail=True)
     @basic_exception_handler
-    def assesor_send_referral(self, request, *args, **kwargs):
+    def assessor_send_referral(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = SendReferralSerializer(
             data=request.data, context={"request": request}
@@ -2014,7 +2017,7 @@ class ReferralViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def remind(self, request, *args, **kwargs):
         instance = self.get_object()
-        logger.debug("instance: {}".format(instance))
+        logger.debug(f"instance: {instance}")
         instance.remind(request)
         serializer = InternalProposalSerializer(
             instance.proposal, context={"request": request}
@@ -2125,7 +2128,19 @@ class ProposalRequirementViewSet(LicensingViewset):
     serializer_class = ProposalRequirementSerializer
 
     def get_queryset(self):
-        return ProposalRequirement.objects.all().exclude(is_deleted=True)
+        user_id = self.request.user.id
+        if is_internal(self.request):
+            return ProposalRequirement.objects.all().exclude(is_deleted=True)
+        if is_referee(self.request):
+            proposal_ids = list(
+                Referral.objects.filter(referral=user_id).values_list(
+                    "proposal_id", flat=True
+                )
+            )
+            return ProposalRequirement.objects.filter(
+                proposal_id__in=proposal_ids
+            ).exclude(is_deleted=True)
+        return self.queryset
 
     @detail_route(
         methods=[
@@ -2404,6 +2419,7 @@ class ExternalRefereeInviteViewSet(viewsets.ModelViewSet):
             data={"message": f"Reminder sent to {instance.email} successfully"},
         )
 
+    # Todo: Change this to a patch and archive the invite rather than delete
     @detail_route(methods=["delete"], detail=True)
     @basic_exception_handler
     def retract(self, request, *args, **kwargs):

@@ -1,0 +1,14 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+    {% if reminder %}
+        <p>This is a reminder for a referral for Compliance <strong>{{compliance.lodgement_number}}</strong> that has been sent to you:</p>
+    {% else %}
+        <p>{{ proposal.application_type.name_display }} Compliance: <strong>{{ compliance.lodgement_number }}</strong> is ready for your advice.</p>
+    {% endif %}
+        <p>Comments: {{comments}}</p>
+
+        <p>You can access this Compliance using the following link:</p>
+
+        <a href="{{ url }}">Access Compliance</a>
+{%  endblock %}

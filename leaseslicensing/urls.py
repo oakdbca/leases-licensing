@@ -18,10 +18,10 @@ from leaseslicensing.components.main import api as main_api
 from leaseslicensing.components.organisations import api as org_api
 from leaseslicensing.components.proposals import api as proposal_api
 from leaseslicensing.components.tenure import api as tenure_api
+from leaseslicensing.components.texts import api as textbody_api
 from leaseslicensing.components.users import api as users_api
 from leaseslicensing.management.default_data_manager import DefaultDataManager
 from leaseslicensing.utils import are_migrations_running
-from leaseslicensing.components.texts import api as textbody_api
 
 # API patterns
 router = routers.DefaultRouter()
@@ -58,6 +58,8 @@ router.register(
     r"competitive_process", competitive_process_api.CompetitiveProcessViewSet
 )
 router.register(r"compliance_paginated", compliances_api.CompliancePaginatedViewSet)
+router.register(r"compliance_referrals", compliances_api.ComplianceReferralViewSet)
+router.register(r"compliance_assessments", compliances_api.ComplianceAssessmentViewSet)
 router.register(r"referrals", proposal_api.ReferralViewSet)
 router.register(r"external_referee_invites", proposal_api.ExternalRefereeInviteViewSet)
 router.register(r"approvals", approval_api.ApprovalViewSet)

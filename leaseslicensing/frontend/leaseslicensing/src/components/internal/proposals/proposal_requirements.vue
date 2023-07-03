@@ -16,8 +16,8 @@
                 </div>
             </form>
 
-            <RequirementDetail v-if="proposal && requirements && requirements.length > 0" ref="requirement_detail"
-                :proposal_id="proposal.id" :requirements="requirements" :selectedRequirement="selectedRequirement"
+            <RequirementDetail v-if="proposal && requirements" ref="requirement_detail" :proposal_id="proposal.id"
+                :requirements="requirements" :selectedRequirement="selectedRequirement"
                 @updateRequirements="updatedRequirements" :key="uuid" />
         </FormSection>
     </div>
@@ -44,7 +44,7 @@ export default {
             uuid: 0,
             panelBody: "proposal-requirements-" + vm._uid,
             selectedRequirement: {},
-            requirements: [],
+            requirements: null,
             requirement_headers: ["Requirement", "Due Date", "Repeats", "Source", "Action", "Order"],
             requirement_options: {
                 autoWidth: false,

@@ -228,9 +228,8 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText
-                        vm.errorString = constants.ERRORS.NETWORK_ERROR
                         console.error(error)
-                        return Promise.reject(error)
+                        vm.errorString = error
                     }
                     Swal.fire(
                         'Success',
@@ -240,7 +239,7 @@ export default {
                     vm.close();
                 })
                 .catch((error) => {
-                    vm.errorString = constants.ERRORS.API_ERROR_INTERNAL
+                    vm.errorString = constants.ERRORS.NETWORK_ERROR
                     console.error('There was an error!', error)
                 }).finally(() => {
                     vm.addingComms = false;

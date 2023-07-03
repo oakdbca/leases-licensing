@@ -1,6 +1,11 @@
 from rest_framework.exceptions import APIException, PermissionDenied
 
 
+class ComplianceNotAuthorized(PermissionDenied):
+    default_detail = "You are not authorised to work on this compliance"
+    default_code = "compliance_not_authorized"
+
+
 class ReferralNotAuthorized(PermissionDenied):
     default_detail = "You are not authorised to work on this referral"
     default_code = "referral_not_authorized"

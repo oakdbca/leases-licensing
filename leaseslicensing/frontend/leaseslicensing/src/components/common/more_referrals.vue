@@ -1,6 +1,6 @@
 <template id="more-referrals">
     <div class="mt-2">
-        <a v-if="!isFinalised" ref="showRef" @click.prevent="" role="button" class="float-end">Show
+        <a v-if="!isFinalised" ref="showRef" @click.prevent="" role="button" class="float-end">Show All
             Referrals</a>
     </div>
 </template>
@@ -21,14 +21,14 @@ export default {
             type: Boolean,
             required: true
         },
-        proposal: {
-            type: Object,
-            required: true
-        },
         referral_url: {
             type: String,
-            default: null
-        }
+            required: true
+        },
+        api_endpoint: {
+            type: String,
+            required: true
+        },
     },
     data() {
         let vm = this;
@@ -62,7 +62,7 @@ export default {
                         }
                     },
                     {
-                        title: 'Referral',
+                        title: 'Referee',
                         data: 'referral',
                         render: function (data, type, full) {
                             return `<span>${data.first_name} ${data.last_name}</span>`;
@@ -81,7 +81,7 @@ export default {
                                 return result;
                             }
                             var user = full.referral.first_name + ' ' + full.referral.last_name;
-                            if (full.referral_status == 'Awaiting') {
+                            if (constants.REFERRAL_STATUS.PROCESSING_STATUS_WITH_REFERRAL.TEXT == full.referral_status) {
                                 result = `<a href="" data-id="${data}" data-user="${user}" class="remindRef">Remind</a>/<a href="" data-id="${data}" data-user="${user}" class="recallRef">Recall</a>`;
                             }
                             else {
@@ -165,17 +165,17 @@ export default {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.resendReferral(_id, user);
+                    vm.resendReferral(vm.api_endpoint, _id, user);
                 }).on('click', '.recallRef', function (e) {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.recallReferral(_id, user);
+                    vm.recallReferral(vm.api_endpoint, _id, user);
                 }).on('click', '.remindRef', function (e) {
                     e.preventDefault();
                     var _id = $(this).data('id');
                     var user = $(this).data('user');
-                    vm.remindReferral(_id, user);
+                    vm.remindReferral(vm.api_endpoint, _id, user);
                 });
             })
             popover_elem.addEventListener('shown.bs.popover', function () {

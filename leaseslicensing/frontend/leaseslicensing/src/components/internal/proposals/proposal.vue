@@ -459,7 +459,7 @@
             :proposedApprovalKey="proposedApprovalKey" />
         <AmendmentRequest ref="amendment_request" :proposal="proposal" />
 
-        <div v-if="displaySaveBtns" class="navbar fixed-bottom" style="background-color: #f5f5f5;">
+        <div v-if="displaySaveBtns" class="navbar fixed-bottom bg-navbar">
             <div class="container">
                 <div class="col-md-12 text-end">
                     <button v-if="savingProposal" type="button" class="btn btn-primary" disabled>
@@ -1431,13 +1431,3 @@ export default {
     },
 }
 </script>
-<style scoped>
-.form-floating textarea {
-    padding-top: 40px;
-    height: 70px;
-    font-style: italic;
-    color: #999;
-    padding-top: 36px !important;
-    font-size: 14px;
-}
-</style>

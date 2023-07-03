@@ -1,11 +1,8 @@
 import logging
-import traceback
 from copy import deepcopy
 from datetime import datetime
 
-from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db import transaction
 from django.db.models import Q
@@ -21,21 +18,35 @@ from leaseslicensing.components.compliances.models import (
     Compliance,
     ComplianceAmendmentReason,
     ComplianceAmendmentRequest,
+    ComplianceAssessment,
+    ComplianceReferral,
+    update_proposal_compliance_filename,
 )
 from leaseslicensing.components.compliances.serializers import (
     CompAmendmentRequestDisplaySerializer,
     ComplianceActionSerializer,
     ComplianceAmendmentRequestSerializer,
+    ComplianceAssessmentSerializer,
     ComplianceCommsSerializer,
+    ComplianceReferralDatatableSerializer,
+    ComplianceReferralSerializer,
     ComplianceSerializer,
     InternalComplianceSerializer,
     SaveComplianceSerializer,
+    UpdateComplianceAssessmentSerializer,
+    UpdateComplianceReferralSerializer,
 )
+from leaseslicensing.components.main.api import LicensingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
-from leaseslicensing.components.main.models import ApplicationType
+from leaseslicensing.components.main.models import (
+    ApplicationType,
+    upload_protected_files_storage,
+)
 from leaseslicensing.components.proposals.api import ProposalRenderer
+from leaseslicensing.components.proposals.serializers import SendReferralSerializer
 from leaseslicensing.helpers import is_customer, is_internal
+from leaseslicensing.permissions import IsAsignedAssessor, IsAssignedComplianceReferee
 
 logger = logging.getLogger(__name__)
 
@@ -151,9 +162,11 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             "compliances_referred_to_me", False
         )
         if compliances_referred_to_me:
-            # Todo: Once compliance referrals are completed use this to filter
-            # compliances that are referred to the request user
-            pass
+            ids = ComplianceReferral.objects.filter(
+                referral=self.request.user.id,
+                processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
+            ).values_list("compliance_id", flat=True)
+            return Compliance.objects.filter(id__in=ids)
 
         return qs
 
@@ -313,8 +326,6 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 
             serializer = self.get_serializer(instance)
 
-            logger.debug(f"num_files: {request.data.get('num_files')}")
-
             num_files = request.data.get("num_files")
             for i in range(int(num_files)):
                 filename = request.data.get("name" + str(i))
@@ -324,17 +335,49 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                     raise serializers.ValidationError("No files attached")
 
                 document = instance.documents.get_or_create(name=filename)[0]
-                path = default_storage.save(
-                    "{}/{}/documents/{}".format(
-                        instance._meta.model_name, instance.id, filename
-                    ),
+                path = upload_protected_files_storage.save(
+                    update_proposal_compliance_filename(document, filename),
                     ContentFile(_file.read()),
                 )
-
                 document._file = path
                 document.save()
 
             return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    def save(self, request, *args, **kwargs):
+        instance = self.get_object()
+        data = {
+            "text": request.data.get("detail"),
+        }
+        serializer = SaveComplianceSerializer(instance, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        num_files = request.data.get("num_files")
+        logger.debug(f"num_files: {num_files}")
+        for i in range(int(num_files)):
+            filename = request.data.get("name" + str(i))
+            _file = request.data.get("file" + str(i))
+            logger.debug(f"file: {filename} {_file}")
+
+            if not isinstance(_file, InMemoryUploadedFile):
+                raise serializers.ValidationError("No files attached")
+
+            document = instance.documents.get_or_create(name=filename)[0]
+            path = upload_protected_files_storage.save(
+                update_proposal_compliance_filename(document, filename),
+                ContentFile(_file.read()),
+            )
+            document._file = path
+            document.save()
+
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -475,6 +518,51 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 
             return Response(serializer.data)
 
+    @detail_route(methods=["post"], detail=True)
+    @basic_exception_handler
+    def assessor_send_referral(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = SendReferralSerializer(
+            data=request.data, context={"request": request}
+        )
+        serializer.is_valid(raise_exception=True)
+        instance.send_referral(
+            request,
+            serializer.validated_data["email"],
+            serializer.validated_data["text"],
+        )
+        serializer = InternalComplianceSerializer(
+            instance, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def switch_status(self, request, *args, **kwargs):
+        instance = self.get_object()
+        status = request.data.get("status")
+        if not status:
+            raise serializers.ValidationError("Status is required")
+        else:
+            if status not in [
+                Compliance.PROCESSING_STATUS_WITH_ASSESSOR,
+                Compliance.PROCESSING_STATUS_WITH_REFERRAL,
+            ]:
+                raise serializers.ValidationError("The status provided is not allowed")
+        instance.switch_status(request.user.id, status)
+        if is_internal(request):
+            serializer = InternalComplianceSerializer(
+                instance, context={"request": request}
+            )
+        else:
+            serializer = ComplianceSerializer(instance, context={"request": request})
+        return Response(serializer.data)
+
 
 class ComplianceAmendmentRequestViewSet(viewsets.ModelViewSet):
     queryset = ComplianceAmendmentRequest.objects.all()
@@ -504,3 +592,108 @@ class ComplianceAmendmentReasonChoicesView(views.APIView):
             for c in choices:
                 choices_list.append({"key": c.id, "value": c.reason})
         return Response(choices_list)
+
+
+class ComplianceReferralViewSet(viewsets.ModelViewSet):
+    queryset = ComplianceReferral.objects.all()
+    serializer_class = ComplianceReferralSerializer
+    permission_classes = [IsAssignedComplianceReferee]
+
+    def get_queryset(self):
+        if is_internal(self.request):
+            return ComplianceReferral.objects.all()
+        return super().get_queryset()
+
+    def get_serializer_class(self):
+        if self.action == "update" or self.action == "partial_update":
+            return UpdateComplianceReferralSerializer
+        return super().get_serializer_class()
+
+    @list_route(
+        methods=[
+            "GET",
+        ],
+        detail=False,
+    )
+    def datatable_list(self, request, *args, **kwargs):
+        compliance_id = request.GET.get("compliance_id", None)
+        qs = self.get_queryset()
+        if compliance_id:
+            qs = qs.filter(compliance_id=int(compliance_id))
+        serializer = ComplianceReferralDatatableSerializer(
+            qs, many=True, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def remind(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.remind(request)
+        serializer = InternalComplianceSerializer(
+            instance.compliance, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def recall(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.recall(request)
+        serializer = InternalComplianceSerializer(
+            instance.compliance, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def resend(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.resend(request)
+        serializer = InternalComplianceSerializer(
+            instance.compliance, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def complete(self, request, *args, **kwargs):
+        logger.debug("complete compliance referral")
+        instance = self.get_object()
+        instance.complete(request)
+        serializer = InternalComplianceSerializer(
+            instance.compliance, context={"request": request}
+        )
+        return Response(serializer.data)
+
+
+class ComplianceAssessmentViewSet(LicensingViewset):
+    queryset = ComplianceAssessment.objects.all()
+    serializer_class = ComplianceAssessmentSerializer
+    permission_classes = [IsAsignedAssessor]
+    http_method_names = ["head", "get", "patch"]
+
+    def get_serializer_class(self):
+        if self.action == "update" or self.action == "partial_update":
+            return UpdateComplianceAssessmentSerializer
+        return super().get_serializer_class()

@@ -129,3 +129,14 @@ def get_organisation_ids_for_user(email_user_id):
             "id", flat=True
         )
     )
+
+def get_admin_emails_for_organisation(organisation_id):
+    from leaseslicensing.components.organisations.models import OrganisationContact
+
+    return list(
+        OrganisationContact.objects.filter(
+            organisation_id=organisation_id,
+            user_status="active",
+            user_role="organisation_admin",
+        ).values_list("email", flat=True)
+    )

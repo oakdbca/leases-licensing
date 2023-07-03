@@ -63,20 +63,10 @@
                             <!--
                                 validate-feature: event callback function to execute code to validate a feature. Needs to call `finishDrawing` on the map component to complete the drawing
                              -->
-                            <MapComponent
-                                ref="component_map"
-                                :key="componentMapKey"
-                                :context="competitive_process"
-                                :proposalIds="[-1]"
-                                :owsQuery="owsQuery"
-                                :featureCollection="geometriesToFeatureCollection"
-                                styleBy="assessor"
-                                :filterable="false"
-                                :drawable="true"
-                                :selectable="true"
-                                level="internal"
-                                @validate-feature="validateFeature.bind(this)()"
-                            />
+                            <MapComponent ref="component_map" :key="componentMapKey" :context="competitive_process"
+                                :proposalIds="[-1]" :owsQuery="owsQuery" :featureCollection="geometriesToFeatureCollection"
+                                styleBy="assessor" :filterable="false" :drawable="true" :selectable="true" level="internal"
+                                @validate-feature="validateFeature.bind(this)()" />
                         </FormSection>
                     </div>
                     <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab">
@@ -148,7 +138,7 @@
                 </div>
             </div>
         </div>
-        <div v-if="displaySaveBtns" class="navbar fixed-bottom me-1" style="background-color: #f5f5f5;">
+        <div v-if="displaySaveBtns" class="navbar fixed-bottom bg-navbar me-1">
             <div class="container">
                 <div class="col-md-12 text-end">
                     <button v-if="processing" type="button" class="btn btn-primary me-1" disabled>
@@ -500,7 +490,7 @@ export default {
             let vm = this
 
             // Shallow (?) copy competitive_process object into payload
-            let payload = { 'competitive_process': {...vm.competitive_process} };
+            let payload = { 'competitive_process': { ...vm.competitive_process } };
             if (vm.$refs.component_map) {
                 // Update geometry data of the competitive process
                 let geojson_str = vm.$refs.component_map.getJSONFeatures()

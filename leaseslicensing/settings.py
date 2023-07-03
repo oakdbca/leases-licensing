@@ -409,6 +409,8 @@ REPETITION_TYPES = (
     (REPETITION_TYPE_MONTHLY, "Month"),
 )
 
+LATEST_REFERRAL_COUNT = 5
+
 # ---------- Identifier fields for logging ----------
 
 """ Fields that the logging functions will check for on the instance

@@ -496,53 +496,6 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
         _log_user_email(msg, proposal.ind_applicant, proposal.submitter, sender=sender)
 
 
-# def _log_proposal_referral_email(email_message, referral, sender=None):
-#    from leaseslicensing.components.proposals.models import ProposalLogEntry
-#    if isinstance(email_message, (EmailMultiAlternatives, EmailMessage,)):
-#        # TODO this will log the plain text body, should we log the html instead
-#        text = email_message.body
-#        subject = email_message.subject
-#        fromm = smart_text(sender) if sender else smart_text(email_message.from_email)
-#        # the to email is normally a list
-#        if isinstance(email_message.to, list):
-#            to = ','.join(email_message.to)
-#        else:
-#            to = smart_text(email_message.to)
-#        # we log the cc and bcc in the same cc field of the log entry as a ',' comma separated string
-#        all_ccs = []
-#        if email_message.cc:
-#            all_ccs += list(email_message.cc)
-#        if email_message.bcc:
-#            all_ccs += list(email_message.bcc)
-#        all_ccs = ','.join(all_ccs)
-#
-#    else:
-#        text = smart_text(email_message)
-#        subject = ''
-#        to = referral.proposal.applicant.email
-#        fromm = smart_text(sender) if sender else SYSTEM_NAME
-#        all_ccs = ''
-#
-#    customer = referral.referral
-#
-#    staff = sender
-#
-#    kwargs = {
-#        'subject': subject,
-#        'text': text,
-#        'proposal': referral.proposal,
-#        'customer': customer,
-#        'staff': staff.id,
-#        'to': to,
-#        'fromm': fromm,
-#        'cc': all_ccs
-#    }
-#
-#    email_entry = ProposalLogEntry.objects.create(**kwargs)
-#
-#    return email_entry
-
-
 def send_external_referee_invite_email(proposal, request, external_referee_invite, reminder=False):
     subject = f"Referral Request for DBCA {proposal.application_type.name_display} Application: {proposal.lodgement_number}"
     if reminder:
@@ -670,8 +623,6 @@ def _log_org_email(email_message, organisation, customer, sender=None):
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
 
-    customer = customer
-
     staff = sender.id
 
     kwargs = {
@@ -726,8 +677,6 @@ def _log_user_email(email_message, emailuser, customer, sender=None):
         to = customer
         fromm = smart_text(sender) if sender else SYSTEM_NAME
         all_ccs = ""
-
-    customer = customer
 
     staff = sender
 

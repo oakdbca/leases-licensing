@@ -1,16 +1,28 @@
 <template>
-    <div class="container" id="compliancesDash">
-        <FormSection :formCollapse="false" label="Compliances" index="compliances">
+    <div id="compliancesDash" class="container">
+        <FormSection
+            :form-collapse="false"
+            label="Compliances"
+            index="compliances"
+        >
             <CompliancesTable level="internal" />
         </FormSection>
-        <FormSection :formCollapse="false" label="Compliances Referred to Me" index="compliances-referred-to-me">
-            <CompliancesTable level="internal" />
+        <FormSection
+            :form-collapse="false"
+            label="Compliances Referred to Me"
+            index="compliances-referred-to-me"
+        >
+            <CompliancesTable
+                level="internal"
+                :compliances-referred-to-me="true"
+            />
         </FormSection>
     </div>
 </template>
 
 <script>
-import CompliancesTable from "@/components/common/table_compliances.vue"
+import CompliancesTable from '@/components/common/table_compliances.vue'
+
 export default {
     name: 'InternalCompliancesDashboard',
     components: {

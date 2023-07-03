@@ -1,4 +1,5 @@
 import datetime
+import logging
 
 from django.conf import settings
 from django.db.models import Q
@@ -7,17 +8,15 @@ from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 
+from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
 from leaseslicensing.components.main.serializers import (
     ApplicationTypeSerializer,
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
-from leaseslicensing.components.main.utils import (
-    get_polygon_source,
-)
+from leaseslicensing.components.main.utils import get_polygon_source
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.proposals.models import (
@@ -70,6 +69,8 @@ from leaseslicensing.components.users.serializers import (
 from leaseslicensing.helpers import is_assessor, is_internal
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import GROUP_NAME_CHOICES
+
+logger = logging.getLogger(__name__)
 
 
 class ProposalGeometrySaveSerializer(GeoFeatureModelSerializer):
@@ -281,7 +282,7 @@ class ReferralSimpleSerializer(serializers.ModelSerializer):
 
 class ProposalAssessmentSerializer(serializers.ModelSerializer):
     section_answers = serializers.SerializerMethodField()
-    referral = ReferralSimpleSerializer()
+    referral = ReferralSimpleSerializer(allow_null=True, read_only=True)
     answerable_by_accessing_user = serializers.SerializerMethodField()
     belongs_to_accessing_user = serializers.SerializerMethodField()
 
@@ -347,7 +348,8 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
 
     def get_belongs_to_accessing_user(self, proposal_assessment):
         request = self.context.get("request")
-
+        logger.debug(f"type proposal_assessment: {type(proposal_assessment)}")
+        logger.debug(f"proposal_assessment: {proposal_assessment}")
         assessment_belongs_to_accessing_user = False
         if proposal_assessment.referral:
             # This assessment is for referrals
@@ -1478,28 +1480,19 @@ class SendReferralSerializer(serializers.Serializer):
     text = serializers.CharField(allow_blank=True)
 
     def validate(self, data):
-        field_errors = {}
         non_field_errors = []
 
         request = self.context.get("request")
         if request.user.email == data["email"]:
             non_field_errors.append("You cannot send referral to yourself.")
-        elif not data["email"]:
+
+        try:
+            EmailUser.objects.get(email=data["email"])
+        except EmailUser.DoesNotExist:
             non_field_errors.append("Referral not found.")
 
-        # if not self.partial:
-        #     if not data['skipper']:
-        #         field_errors['skipper'] = ['Please enter the skipper name.',]
-        #     if not data['contact_number']:
-        #         field_errors['contact_number'] = ['Please enter the contact number.',]
-
-        # Raise errors
-        if field_errors:
-            raise serializers.ValidationError(field_errors)
         if non_field_errors:
             raise serializers.ValidationError(non_field_errors)
-        # else:
-        # pass
 
         return data
 
@@ -1730,10 +1723,9 @@ class ReferralProposalSerializer(InternalProposalSerializer):
 
 class ReferralSerializer(serializers.ModelSerializer):
     processing_status = serializers.CharField(source="get_processing_status_display")
-    latest_referrals = ProposalReferralSerializer(many=True)
     can_be_completed = serializers.BooleanField()
     can_process = serializers.SerializerMethodField()
-    referral_assessment = ProposalAssessmentSerializer(read_only=True)
+    assessment = ProposalAssessmentSerializer(many=True, read_only=True)
     application_type = serializers.CharField(read_only=True)
     allowed_assessors = EmailUserSerializer(many=True)
     current_assessor = serializers.SerializerMethodField()
@@ -1741,10 +1733,7 @@ class ReferralSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Referral
-        fields = [
-            "__all__",
-            "referral_obj",
-        ]
+        fields = "__all__"
 
     def get_referral_obj(self, obj):
         referral_email_user = retrieve_email_user(obj.referral)
@@ -1757,12 +1746,6 @@ class ReferralSerializer(serializers.ModelSerializer):
             "name": self.context["request"].user.get_full_name(),
             "email": self.context["request"].user.email,
         }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["proposal"] = ReferralProposalSerializer(
-            context={"request": self.context["request"]}
-        )
 
     def get_can_process(self, obj):
         request = self.context["request"]
