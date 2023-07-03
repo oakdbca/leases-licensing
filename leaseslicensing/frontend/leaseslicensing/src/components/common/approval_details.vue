@@ -170,7 +170,7 @@ export default {
                 'categories',
                 // 'identifiers',
                 // 'vestings',
-                // 'acts',-
+                // 'acts',
                 // 'tenures',
             ]
 

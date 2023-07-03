@@ -93,6 +93,32 @@ export default {
             default: 'col-9',
             default: "Start typing to search ${property}",
         },
+        /**
+         * The name of the property name to use as the label for the geodata.
+         */
+        label: {
+            type: String,
+            required: false,
+            default: "name",
+        },
+        /**
+         * The property to use as the unique identifier for the geodata.
+         */
+        trackBy: {
+            type: String,
+            required: false,
+            default: "id",
+        },
+        bsClassLabel: {
+            type: String,
+            required: false,
+            default: "col-3",
+        },
+        bsClassSelection: {
+            type: String,
+            required: false,
+            default: "col-9",
+        },
         searchable: {
             type: Boolean,
             required: false,
