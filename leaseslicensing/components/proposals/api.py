@@ -1718,8 +1718,6 @@ class ProposalViewSet(UserActionLoggingViewset):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def complete_referral(self, request, *args, **kwargs):
-        # TODO: There is also a 'complete' method on the Referral model.
-        # This could be confusing and if it doesn't end up being needed then it should be removed.
         instance = self.get_object()
         referee_id = request.data.get("referee_id", None)
         if not referee_id:
