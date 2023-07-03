@@ -173,190 +173,9 @@
 
                     <FormSection label="Geospatial Data" index="other_section">
                         <slot name="slot_other_assessment_comments"></slot>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label"
-                                    >Identifiers</label
-                                >
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.identifiers"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Identifiers"
-                                    :options="identifiers"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingIdentifiers"
-                                    @search-change="ajaxLookupIdentifiers"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Vestings</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.vestings"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Vestings"
-                                    :options="vestings"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingVestings"
-                                    @search-change="ajaxLookupVestings"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label"
-                                    >Feature Names</label
-                                >
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.names"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Feature Names"
-                                    :options="names"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingNames"
-                                    @search-change="ajaxLookupNames"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Legal Acts</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.acts"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Legal Acts"
-                                    :options="acts"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingActs"
-                                    @search-change="ajaxLookupActs"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Tenures</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.tenures"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Tenures"
-                                    :options="tenures"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingTenures"
-                                    @search-change="ajaxLookupTenures"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Categories</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.categories"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Categories"
-                                    :options="categories"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingCategories"
-                                    @search-change="ajaxLookupCategories"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Regions</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.regions"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Regions"
-                                    :options="regions"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingRegions"
-                                    @search-change="ajaxLookupRegions"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Districts</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.districts"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search Districts"
-                                    :options="districts"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingDistricts"
-                                    @search-change="ajaxLookupDistricts"
-                                />
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">LGAs</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.lgas"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Start typing to search LGAs"
-                                    :options="lgas"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingLGAs"
-                                    @search-change="ajaxLookupLGAs"
-                                />
-                            </div>
-                        </div>
+                        <GisDataDetails
+                            :selected_data="gis_data"
+                        />
                     </FormSection>
 
                     <FormSection label="Categorisation" index="categorisation">
@@ -468,6 +287,7 @@ import MapComponent from '@/components/common/component_map_with_filters_v2'
 import RegistrationOfInterest from './form_registration_of_interest.vue'
 import LeaseLicence from './form_lease_licence.vue'
 import Multiselect from 'vue-multiselect'
+import GisDataDetails from '@/components/common/gis_data_details.vue'
 
 import { api_endpoints, helpers, utils } from '@/utils/hooks'
 import { owsQuery, validateFeature } from '@/components/common/map_functions.js'
@@ -487,6 +307,7 @@ export default {
         FileField,
         MapComponent,
         Multiselect,
+        GisDataDetails,
     },
     props: {
         show_related_items_tab: {
@@ -575,28 +396,8 @@ export default {
             groups: null,
             api_endpoints: api_endpoints,
 
-            // data for the multiselects
-            identifiers: [],
-            names: [],
-            vestings: [],
-            acts: [],
-            tenures: [],
-            categories: [],
-            regions: [],
-            districts: [],
-            lgas: [],
             groups: [],
 
-            // Loaders for the multiselects
-            loadingIdentifiers: false,
-            loadingVestings: false,
-            loadingNames: false,
-            loadingActs: false,
-            loadingTenures: false,
-            loadingCategories: false,
-            loadingRegions: false,
-            loadingDistricts: false,
-            loadingLGAs: false,
             loadingGroups: false,
             owsQuery: owsQuery,
             validateFeature: validateFeature,
@@ -646,6 +447,21 @@ export default {
             }
             return text
         },
+        gis_data: function () {
+            if (this.proposal) {
+                return {
+                    'regions': this.proposal.regions,
+                    'districts': this.proposal.districts,
+                    'lgas': this.proposal.lgas,
+                    'names': this.proposal.names,
+                    'categories': this.proposal.categories,
+                    'identifiers': this.proposal.identifiers,
+                    'vestings': this.proposal.vestings,
+                    'acts': this.proposal.acts,
+                    'tenures': this.proposal.tenures,
+                }
+            }
+        },
     },
     created: function () {
         utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
@@ -654,6 +470,7 @@ export default {
     },
     mounted: function () {
         this.$emit('formMounted')
+
     },
     methods: {
         addAnotherLocality: function () {
@@ -682,87 +499,6 @@ export default {
         popupClosed: function () {},
         populateProfile: function (profile) {
             this.profile = Object.assign({}, profile)
-        },
-        ajaxLookupIdentifiers: function (query) {
-            this.loadingIdentifiers = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.identifiers, query)
-                .then((data) => {
-                    this.loadingIdentifiers = false
-                    this.identifiers = data
-                })
-        },
-        ajaxLookupVestings: function (query) {
-            this.loadingVestings = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.vestings, query)
-                .then((data) => {
-                    this.loadingVestings = false
-                    this.vestings = data
-                })
-        },
-        ajaxLookupNames: function (query) {
-            this.loadingNames = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.names, query)
-                .then((data) => {
-                    this.loadingNames = false
-                    this.names = data
-                })
-        },
-        ajaxLookupActs: function (query) {
-            this.loadingActs = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.acts, query)
-                .then((data) => {
-                    this.loadingActs = false
-                    this.acts = data
-                })
-        },
-        ajaxLookupTenures: function (query) {
-            this.loadingTenures = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.tenures, query)
-                .then((data) => {
-                    this.loadingTenures = false
-                    this.tenures = data
-                })
-        },
-        ajaxLookupCategories: function (query) {
-            this.loadingCategories = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.categories, query)
-                .then((data) => {
-                    this.loadingCategories = false
-                    this.categories = data
-                })
-        },
-        ajaxLookupRegions: function (query) {
-            this.loadingRegions = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.regions, query)
-                .then((data) => {
-                    this.loadingRegions = false
-                    this.regions = data
-                })
-        },
-        ajaxLookupDistricts: function (query) {
-            this.loadingDistricts = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.districts, query)
-                .then((data) => {
-                    this.loadingDistricts = false
-                    this.districts = data
-                })
-        },
-        ajaxLookupLGAs: function (query) {
-            this.loadingLGAs = true
-            utils
-                .fetchKeyValueLookup(api_endpoints.lgas, query)
-                .then((data) => {
-                    this.loadingLGAs = false
-                    this.lgas = data
-                })
         },
         refreshFromResponse: function (data) {
             this.$emit('refreshFromResponse', data)
