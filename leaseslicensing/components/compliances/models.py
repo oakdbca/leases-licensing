@@ -173,6 +173,13 @@ class Compliance(RevisionedMixin, models.Model):
             or self.customer_status == "approved"
         )
 
+    def is_referee(self, user_id):
+        return ComplianceReferral.objects.filter(
+            compliance=self,
+            processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
+            referral=user_id,
+        ).exists()
+
     @property
     def can_process(self):
         """
@@ -508,6 +515,7 @@ class ComplianceUserAction(UserAction):
     ACTION_REMIND_REFERRAL = "Send reminder to {} for compliance {}"
     ACTION_RESEND_REFERRAL_TO = "Resend referral to {} for compliance {}"
     RECALL_REFERRAL = "Referral {} for compliance {} has been recalled"
+    CONCLUDE_REFERRAL = "{}: Referral {} for compliance {} has been concluded"
 
     ACTION_CONCLUDE_REQUEST = "Conclude request {}"
 
@@ -684,6 +692,8 @@ class ComplianceReferral(RevisionedMixin):
             request,
         )
 
+        self.process_last_pending_referral(request)
+
     @transaction.atomic
     def remind(self, request):
         if not is_assessor(request):
@@ -753,13 +763,12 @@ class ComplianceReferral(RevisionedMixin):
     @transaction.atomic
     def complete(self, request):
         self.processing_status = ComplianceReferral.PROCESSING_STATUS_COMPLETED
-        self.add_referral_document(request)
         self.save()
 
         # Log proposal action
-        self.proposal.log_user_action(
+        self.compliance.log_user_action(
             ComplianceUserAction.CONCLUDE_REFERRAL.format(
-                request.user.get_full_name(), self.id, self.proposal.lodgement_number
+                request.user.get_full_name(), self.id, self.compliance.lodgement_number
             ),
             request,
         )
@@ -767,30 +776,26 @@ class ComplianceReferral(RevisionedMixin):
         # log applicant_field
         self.applicant.log_user_action(
             ComplianceUserAction.CONCLUDE_REFERRAL.format(
-                request.user.get_full_name(), self.id, self.proposal.lodgement_number
+                request.user.get_full_name(), self.id, self.compliance.lodgement_number
             ),
             request,
         )
 
         send_referral_complete_email_notification(self, request)
 
-        # Check if this was the last pending referral for the proposal
-        if not ComplianceReferral.objects.filter(
-            proposal=self.proposal,
+        self.process_last_pending_referral(request)
+
+    def process_last_pending_referral(self, request):
+        # If this was the last pending referral for the compliance update the status and send a notification
+        if ComplianceReferral.objects.filter(
+            compliance=self.compliance,
             processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
         ).exists():
-            # Change the status back to what it was before this referral was requested
-            if self.sent_from == 1:
-                self.proposal.processing_status = (
-                    Compliance.PROCESSING_STATUS_WITH_ASSESSOR
-                )
-            else:
-                self.proposal.processing_status = (
-                    Compliance.PROCESSING_STATUS_WITH_APPROVER
-                )
-            self.proposal.save()
+            return
+        self.compliance.processing_status = Compliance.PROCESSING_STATUS_WITH_ASSESSOR
+        self.compliance.save()
 
-            send_pending_referrals_complete_email_notification(self, request)
+        send_pending_referrals_complete_email_notification(self, request)
 
 
 def compliance_referral_document_upload_to(instance, filename):
