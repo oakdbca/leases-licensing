@@ -228,14 +228,7 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.registration_of_interest) {
-                        return (
-                            '<a href="' +
-                            api_endpoints.proposal +
-                            full.registration_of_interest.id +
-                            '">' +
-                            full.registration_of_interest.lodgement_number +
-                            '</a>'
-                        )
+                        return `<a href="/internal/proposal/${full.registration_of_interest.id}">${full.registration_of_interest.lodgement_number}</a>`
                     } else {
                         return ''
                     }
