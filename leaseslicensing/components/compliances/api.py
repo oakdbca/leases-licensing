@@ -46,7 +46,7 @@ from leaseslicensing.components.main.models import (
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.serializers import SendReferralSerializer
 from leaseslicensing.helpers import is_customer, is_internal
-from leaseslicensing.permissions import IsAsignedAssessor, IsAssignedReferee
+from leaseslicensing.permissions import IsAsignedAssessor, IsAssignedComplianceReferee
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,8 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
         )
         if compliances_referred_to_me:
             ids = ComplianceReferral.objects.filter(
-                referral=self.request.user.id
+                referral=self.request.user.id,
+                processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
             ).values_list("compliance_id", flat=True)
             return Compliance.objects.filter(id__in=ids)
 
@@ -596,7 +597,7 @@ class ComplianceAmendmentReasonChoicesView(views.APIView):
 class ComplianceReferralViewSet(viewsets.ModelViewSet):
     queryset = ComplianceReferral.objects.all()
     serializer_class = ComplianceReferralSerializer
-    permission_classes = [IsAssignedReferee]
+    permission_classes = [IsAssignedComplianceReferee]
 
     def get_queryset(self):
         if is_internal(self.request):
@@ -664,6 +665,22 @@ class ComplianceReferralViewSet(viewsets.ModelViewSet):
     def resend(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.resend(request)
+        serializer = InternalComplianceSerializer(
+            instance.compliance, context={"request": request}
+        )
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def complete(self, request, *args, **kwargs):
+        logger.debug("complete compliance referral")
+        instance = self.get_object()
+        instance.complete(request)
         serializer = InternalComplianceSerializer(
             instance.compliance, context={"request": request}
         )
