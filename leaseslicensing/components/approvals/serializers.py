@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Value
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
@@ -16,7 +17,11 @@ from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
-from leaseslicensing.components.main.utils import get_secure_file_url
+from leaseslicensing.components.main.utils import (
+    get_secure_file_url,
+    get_proposal_geometries_for_map_component,
+    get_competitive_process_geometries_for_map_component,
+)
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.proposals.serializers import ProposalGisDataSerializer
@@ -158,6 +163,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     approval_type = serializers.SerializerMethodField(read_only=True)
     approval_type_obj = serializers.SerializerMethodField(read_only=True)
     gis_data = serializers.SerializerMethodField(read_only=True)
+    geometry_objs = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Approval
@@ -208,6 +214,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "approval_type",
             "approval_type_obj",
             "gis_data",
+            "geometry_objs",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -328,6 +335,23 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     def get_gis_data(self, obj):
         return ProposalGisDataSerializer(obj.current_proposal).data
+
+    def get_geometry_objs(self, obj):
+        """
+        Returns proposal and competitive process geometry objects for this license
+        """
+
+        geometry_data = {"type": "FeatureCollection", "features": []}
+        geometry_data = get_proposal_geometries_for_map_component(
+            obj.current_proposal, self.context, geometry_data
+        )
+        geometry_data = get_competitive_process_geometries_for_map_component(
+            obj.current_proposal.originating_competitive_process,
+            self.context,
+            geometry_data,
+        )
+
+        return geometry_data
 
 
 class ApprovalExtendSerializer(serializers.Serializer):
