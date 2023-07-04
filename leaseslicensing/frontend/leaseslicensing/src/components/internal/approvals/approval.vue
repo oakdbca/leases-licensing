@@ -94,7 +94,7 @@
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="pills-map-tab" data-bs-toggle="pill" data-bs-target="#pills-map"
-                            role="tab" aria-controls="pills-map" aria-selected="true">
+                            role="tab" aria-controls="pills-map" aria-selected="true" @click="tabClicked('map')">
                             Map
                         </button>
                     </li>
@@ -185,7 +185,19 @@
                     </div>
 
                     <div class="tab-pane fade" id="pills-map" role="tabpanel">
-                        Map
+                        <MapComponent
+                            v-if="loadMap"
+                            ref="component_map"
+                            :key="componentMapKey"
+                            :context="approval"
+                            :proposalIds="[-1]"
+                            :featureCollection="approval.geometry_objs"
+                            styleBy="assessor"
+                            :filterable="false"
+                            :drawable="false"
+                            :selectable="true"
+                            level="internal"
+                        />
                     </div>
 
                     <div class="tab-pane fade" id="pills-invoicing" role="tabpanel" aria-labelledby="pills-invoicing-tab">
@@ -219,6 +231,7 @@ import { api_endpoints, constants, helpers } from '@/utils/hooks'
 import Swal from 'sweetalert2'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
 import InvoicingDetails from "@/components/common/invoicing_details.vue"
+import MapComponent from "@/components/common/component_map_with_filters_v2"
 
 export default {
     name: 'ApprovalDetail',
@@ -241,12 +254,14 @@ export default {
                 address: {}
             },
             loadInvoices: false,
+            loadMap: false,
             // Filters
             logs_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/action_log'),
             comms_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/comms_log'),
             comms_add_url: helpers.add_endpoint_json(api_endpoints.approvals, vm.$route.params.approval_id + '/add_comms_log'),
 
             related_items_ajax_url: helpers.add_endpoint_join(api_endpoints.approvals, vm.$route.params.approval_id + '/related_items'),
+            componentMapKey: 0,
         }
     },
     components: {
@@ -258,6 +273,7 @@ export default {
         InvoicesTable,
         TableRelatedItems,
         InvoicingDetails,
+        MapComponent,
     },
     computed: {
         debug: function () {
@@ -281,9 +297,14 @@ export default {
     },
     methods: {
         tabClicked: function (param) {
+            console.log(`${param} tab clicked`);
             if (param == 'invoicing') {
-                console.log('invoicing tab clicked')
                 this.loadInvoices = true;
+            } else if (param === 'map') {
+                this.loadMap = true;
+                this.$nextTick(() => {
+                    this.$refs.component_map.forceToRefreshMap();
+                });
             }
         },
         formatDate: function (data) {
