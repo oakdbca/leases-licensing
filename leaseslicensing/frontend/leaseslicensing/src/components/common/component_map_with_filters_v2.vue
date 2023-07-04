@@ -102,7 +102,7 @@
             ><strong> {{ errorMessage }} </strong>
         </VueAlert>
 
-        <div :id="map_container_id" style="position: relative">
+        <div :id="map_container_id" class="d-flex justify-content-center" style="position: relative;">
             <div :id="elem_id" class="map">
                 <div class="basemap-button" title="Toggle background map">
                     <img
@@ -439,13 +439,21 @@
                         </div>
                     </template>
                 </div>
+                <BootstrapSpinner
+                    v-if="
+                        redirectingToModelDetails ||
+                        queryingGeoserver ||
+                        fetchingProposals ||
+                        loadingMap
+                    "
+                    class="text-primary"
+                    id="map-spinner"
+                />
+
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
-            <BootstrapSpinner
-                v-if="redirectingToModelDetails || queryingGeoserver"
-                class="text-primary"
-            />
+
         </div>
         <div class="row">
             <div class="col-sm-6"></div>
@@ -660,6 +668,16 @@ export default {
             required: false,
             default: '',
         },
+        /**
+         * Whether to refresh the map when the component is mounted
+         * Defaults to false, as it might be advisable to load and refresh the map only when it is needed
+         * E.g. when the map tab is selected
+         */
+        refreshMapOnMounted: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
     },
     emits: ['filter-appied', 'validate-feature'],
     data() {
@@ -723,6 +741,8 @@ export default {
             selectedModel: null,
             redirectingToModelDetails: false,
             queryingGeoserver: false,
+            loadingMap: false,
+            fetchingProposals: false,
             proposals: [],
             filteredProposals: [],
             modelQuerySource: null,
@@ -865,24 +885,6 @@ export default {
                 this.errorMessageProperty(null)
             }
         },
-    },
-    created: function () {
-        console.log('created()')
-        this.fetchFilterLists()
-        this.fetchProposals()
-    },
-    mounted: function () {
-        console.log('mounted()')
-        let vm = this
-
-        this.$nextTick(() => {
-            vm.initialiseMap()
-            set_mode.bind(this)('layer')
-            vm.setBaseLayer('osm')
-            addOptionalLayers(this)
-            let toastEl = document.getElementById('featureToast')
-            vm.featureToast = new bootstrap.Toast(toastEl, { autohide: false })
-        })
     },
     methods: {
         updateFilters: function () {
@@ -1045,11 +1047,14 @@ export default {
                 vm.measurementLayer.getSource().removeFeature(feature)
             })
         },
-        forceToRefreshMap() {
+        forceToRefreshMap(timeout=700) {
             let vm = this
             setTimeout(function () {
-                vm.map.updateSize()
-            }, 700)
+                console.log('Refreshing map');
+                vm.map.updateSize();
+                // Unset loading map spinner here
+                vm.loadingMap = false;
+            }, timeout)
         },
         addJoint: function (point, styles) {
             let s = new Style({
@@ -1571,7 +1576,8 @@ export default {
                         console.log('already on model details page')
                         vm.redirectingToModelDetails = false
                     } else {
-                        window.location = model_path
+                        window.open(model_path, '_blank'); // Open in new tab
+                        vm.redirectingToModelDetails = false;
                     }
                 } else {
                     vm.redirectingToModelDetails = false
@@ -1702,11 +1708,8 @@ export default {
         },
         fetchProposals: async function () {
             let vm = this
-            let url = api_endpoints.proposal + 'list_for_map/?'
-            // if (0 == vm.proposalIds.length) {
-            //     vm.proposals = []
-            //     return
-            // }
+            vm.fetchingProposals = true;
+            let url = api_endpoints.proposal + 'list_for_map/'
             if (vm.proposalIds.length > 0) {
                 url += '&proposal_ids=' + vm.proposalIds.toString()
             }
@@ -1729,14 +1732,21 @@ export default {
                         console.log(error)
                         return Promise.reject(error)
                     }
-                    vm.proposals = data
-                    vm.filteredProposals = [...vm.proposals]
-                    vm.assignProposalFeatureColors(vm.proposals)
-                    vm.loadFeatures(vm.proposals)
-                    vm.applyFiltersFrontEnd()
+                    vm.proposals = data;
+                    vm.filteredProposals = [...vm.proposals];
+                    let initialisers = [
+                        vm.assignProposalFeatureColors(vm.proposals),
+                        vm.loadFeatures(vm.proposals),
+                        vm.applyFiltersFrontEnd(),
+                    ]
+                    Promise.all(initialisers).then(() => {
+                        console.log("Done loading features and applying filters");
+                        vm.fetchingProposals = false;
+                    })
                 })
                 .catch((error) => {
                     console.error('There was an error!', error)
+                    vm.fetchingProposals = false;
                 })
         },
         fetchFilterLists: function () {
@@ -2045,6 +2055,32 @@ export default {
             }
         },
     },
+    created: function () {
+        console.log('created()')
+        this.fetchFilterLists();
+        this.fetchProposals();
+    },
+    mounted: function () {
+        console.log('mounted()')
+        let vm = this;
+        vm.loadingMap = true;
+
+        this.$nextTick(() => {
+            $("#map-spinner").children().css("position", "static"); // Position spinner in center of map
+            vm.initialiseMap()
+            set_mode.bind(this)("layer")
+            vm.setBaseLayer('osm')
+            addOptionalLayers(this)
+            var toastEl = document.getElementById('featureToast');
+            vm.featureToast = new bootstrap.Toast(toastEl, { autohide: false });
+            if (vm.refreshMapOnMounted) {
+                vm.forceToRefreshMap();
+            } else {
+                console.log("Done initializing map (no refresh)");
+                vm.loadingMap = false;
+            }
+        });
+    }
 }
 </script>
 <style scoped>
@@ -2078,5 +2114,8 @@ export default {
     padding: 0 5px;
     vertical-align: top;
     margin-left: -10px;
+}
+.map-spinner {
+    position: absolute!important;
 }
 </style>
