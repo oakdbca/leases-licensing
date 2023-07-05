@@ -4,7 +4,7 @@
             <div class="col-md-12" id="approval-details">
                 <FormSection
                     :formCollapse="false"
-                    label="Details"
+                    :label="label"
                     Index="fs-details-details"
                 >
                     <div class="container">
@@ -154,6 +154,11 @@ export default {
             default(rawProps) {
                 return {}
             },
+        },
+        label: {
+            type: String,
+            required: false,
+            default: 'Details',
         },
     },
     components: {

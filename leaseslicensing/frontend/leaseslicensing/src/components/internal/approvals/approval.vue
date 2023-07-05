@@ -83,7 +83,7 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="pills-holder-tab" data-bs-toggle="pill"
                             data-bs-target="#pills-holder" role="tab" aria-controls="pills-holder" aria-selected="true">
-                            Applicant
+                            Holder
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -123,65 +123,10 @@
                     </div>
 
                     <div class="tab-pane fade" id="pills-details" role="tabpanel">
-                        <FormSection :formCollapse="false" label="License" Index="oBody">
-                            <div v-if="loading.length == 0" class="card-body" :id="oBody">
-                                <form class="form-horizontal" action="index.html" method="post">
-                                    <div class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Lodgement
-                                            Number</label>
-                                        <div class="col-sm-8">
-                                            <input class="form-control" type="text" :value="approval.lodgement_number"
-                                                readonly />
-                                        </div>
-                                    </div>
-                                    <div v-if="approval.original_leaselicense_number" class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Migrated from</label>
-                                        <div class="col-sm-8">
-                                            <input class="form-control" type="text"
-                                                :value="approval.original_leaselicense_number" readonly />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="lodgement_number" class="col-sm-4 col-form-label">Approval Type</label>
-                                        <div class="col-sm-8">
-                                            <input class="form-control" type="text" :value="approval.application_type"
-                                                readonly />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="start_date" class="col-sm-4 col-form-label">Commencement</label>
-                                        <div class="col-sm-8">
-                                            <input class="form-control" id="issue_date" type="text"
-                                                :value="formatDate(approval.start_date)" readonly />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="expiry_date" class="col-sm-4 col-form-label">Expiry</label>
-                                        <div class="col-sm-8">
-                                            <input class="form-control" id="issue_date" type="text"
-                                                :value="formatDate(approval.expiry_date)" readonly />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="record_management_number" class="col-sm-4 col-form-label">Record
-                                            Management
-                                            Number</label>
-                                        <div class="col-sm-8">
-                                            <input class="form-control" type="text" id="record_management_number"
-                                                :value="approval.record_management_number" readonly />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label for="" class="col-sm-4 col-form-label">{{ approvalLabel }}</label>
-                                        <div class="col-sm-4">
-                                            <p><a target="_blank" :href="approval.licence_document"
-                                                    class="form-label pull-left">Licence.pdf</a></p>
-                                        </div>
-                                    </div>
-
-                                </form>
-                            </div>
-                        </FormSection>
+                        <ApprovalDetails
+                            :approval_details="approval"
+                            label="License"
+                        />
                     </div>
 
                     <div class="tab-pane fade" id="pills-map" role="tabpanel">
@@ -232,6 +177,7 @@ import Swal from 'sweetalert2'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
 import InvoicingDetails from "@/components/common/invoicing_details.vue"
 import MapComponent from "@/components/common/component_map_with_filters_v2"
+import ApprovalDetails from '@/components/common/approval_details.vue'
 
 export default {
     name: 'ApprovalDetail',
@@ -274,6 +220,7 @@ export default {
         TableRelatedItems,
         InvoicingDetails,
         MapComponent,
+        ApprovalDetails,
     },
     computed: {
         debug: function () {
@@ -371,7 +318,7 @@ export default {
                     confirmButton: 'btn btn-primary',
                     cancelButton: 'btn btn-secondary me-2'
                 },
-            }).then(async (result) => {
+            }).then(async (result) => {ap
                 if (result.isConfirmed) {
                     let requestOptions = {
                         method: "PATCH",
