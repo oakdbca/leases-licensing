@@ -18,8 +18,8 @@
                         v-model="selected_data[idx]"
                         :label="label"
                         :track-by="trackBy"
-                        :placeholder="taggedPlaceholder({'property': idx})"
-                        :options="gis_data[idx] || selected_data[idx]"
+                        :placeholder="taggedPlaceholder({ property: idx })"
+                        :options="gis_data[idx] || selectedData[idx]"
                         :hide-selected="hideSelected"
                         :multiple="multiple"
                         :searchable="searchable"
@@ -37,8 +37,8 @@
 
 <script>
 import { v4 as uuid } from 'uuid';
-import Multiselect from 'vue-multiselect'
-import { api_endpoints, utils, helpers } from '@/utils/hooks'
+import Multiselect from 'vue-multiselect';
+import { api_endpoints, utils, helpers } from '@/utils/hooks';
 
 export default {
     name: 'GisDataDetails',
@@ -53,7 +53,7 @@ export default {
             type: Object,
             required: true,
             default: function () {
-                return {}
+                return {};
             },
         },
         /**
@@ -93,32 +93,6 @@ export default {
             default: 'col-9',
             default: "Start typing to search ${property}",
         },
-        /**
-         * The name of the property name to use as the label for the geodata.
-         */
-        label: {
-            type: String,
-            required: false,
-            default: "name",
-        },
-        /**
-         * The property to use as the unique identifier for the geodata.
-         */
-        trackBy: {
-            type: String,
-            required: false,
-            default: "id",
-        },
-        bsClassLabel: {
-            type: String,
-            required: false,
-            default: "col-3",
-        },
-        bsClassSelection: {
-            type: String,
-            required: false,
-            default: "col-9",
-        },
         searchable: {
             type: Boolean,
             required: false,
@@ -140,31 +114,55 @@ export default {
             default: true,
         },
     },
+    emits: ['update:selectedData'],
     data() {
         return {
             gis_data: {
-                default(rawProps) {
-                    return {}
+                default() {
+                    return {};
                 },
             },
             loading_indicators: {
-                default(rawProps) {
-                    return {}
+                default() {
+                    return {};
                 },
             },
             keys: {
-                default(rawProps) {
-                    return {}
+                default() {
+                    return {};
                 },
             },
-        }
+            selected_data: {
+                default() {
+                    return {};
+                },
+            },
+        };
     },
     computed: {},
+    watch: {
+        selectedData: {
+            handler: function (val) {
+                let vm = this;
+                console.log('Received selectedData:', val);
+                vm.selected_data = Object.assign({}, val);
+            },
+            deep: true,
+        },
+        selected_data: {
+            handler: function (val) {
+                let vm = this;
+                console.log('Sending selectedData update:', val);
+                vm.$emit('update:selectedData', val);
+            },
+            deep: true,
+        },
+    },
     mounted: function () {
-        let vm = this
+        let vm = this;
         vm.$nextTick(() => {
-            //
-        })
+            vm.selected_data = Object.assign({}, vm.selectedData);
+        });
     },
     methods: {
         /**
@@ -180,13 +178,13 @@ export default {
                 .then((data) => {
                     vm.loading_indicators[property] = false;
                     vm.gis_data[property] = data;
-                })
+                });
         },
-        selectHandler: function (property, value) {
+        selectHandler: function (property) {
             let vm = this;
             vm.keys[property] = uuid();
         },
-        removeHandler: function (property, value) {
+        removeHandler: function (property) {
             let vm = this;
             vm.keys[property] = uuid();
         },
@@ -197,23 +195,26 @@ export default {
         taggedPlaceholder: function (params) {
             let vm = this;
             // A reference to the template tag function
+            // eslint-disable-next-line no-unused-vars
             const template = helpers.template;
             // Split
-            let parts = vm.placeholder.replace("${property}", "||${property}||").split("||");
+            let parts = vm.placeholder
+                .replace('${property}', '||${property}||')
+                .split('||');
             // Remove empty parts
-            parts = parts.filter((part) => part !== "");
+            parts = parts.filter((part) => part !== '');
             // Construct a template string for evaluation
-            let evalString = "template`";
+            let evalString = 'template`';
             for (let part of parts) {
-                if (part != "${property}") {
+                if (part != '${property}') {
                     // Don't overwrite. Property should already be in the params dictionary
                     params[part] = part;
-                    evalString += "${\""+part+"\"}";
+                    evalString += '${"' + part + '"}';
                 } else {
-                    evalString += "${\"property\"}";
+                    evalString += '${"property"}';
                 }
             }
-            evalString += "`";
+            evalString += '`';
             // Evaluate the template string
             const _placeholder = eval(evalString);
             // Return the evaluated template string
