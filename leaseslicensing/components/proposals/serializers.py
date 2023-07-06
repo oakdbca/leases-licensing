@@ -1780,3 +1780,16 @@ class ProposalGisDataSerializer(BaseProposalSerializer):
             "districts",
             "lgas",
         )
+
+class ProposalMapFeatureInfoSerializer(ListProposalMinimalSerializer):
+
+    class Meta:
+        model = Proposal
+        fields = (
+            "id",
+            "application_type_name_display",
+            "details_url",
+            "lodgement_number",
+            "lodgement_date_display",
+            "processing_status_display",
+        )
