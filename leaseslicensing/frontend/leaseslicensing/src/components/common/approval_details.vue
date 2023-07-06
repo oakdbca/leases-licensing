@@ -1,11 +1,11 @@
 <template lang="html">
     <div class="container m-0 p-0">
         <div class="row">
-            <div class="col-md-12" id="approval-details">
+            <div id="approval-details" class="col-md-12">
                 <FormSection
-                    :formCollapse="false"
+                    :form-collapse="false"
                     :label="label"
-                    Index="fs-details-details"
+                    index="fs-details-details"
                 >
                     <div class="container">
                         <div class="row">
@@ -22,14 +22,14 @@
                                         >
                                         <div class="col-6">
                                             <input
-                                                type="text"
-                                                class="form-control"
-                                                name="ApprovalType"
                                                 id="txt-approval-type"
-                                                :readonly="true"
                                                 v-model="
                                                     approval_details.approval_type
                                                 "
+                                                type="text"
+                                                class="form-control"
+                                                name="ApprovalType"
+                                                :readonly="true"
                                             />
                                         </div>
                                     </div>
@@ -70,11 +70,11 @@
                                                 &nbsp;
                                             </span>
                                             <a
+                                                id="txt-license-document"
                                                 target="_blank"
                                                 :href="
                                                     approval_details.licence_document
                                                 "
-                                                id="txt-license-document"
                                                 class="form-label pull-left"
                                                 >Approval.pdf</a
                                             >
@@ -96,12 +96,12 @@
                                 >
                                 <div class="col-3">
                                     <input
+                                        id="txt-start-date"
+                                        v-model="approval_details.start_date"
                                         type="text"
                                         class="form-control"
                                         name="StartDate"
-                                        id="txt-start-date"
                                         :readonly="true"
-                                        v-model="approval_details.start_date"
                                     />
                                 </div>
                             </div>
@@ -119,19 +119,23 @@
                                 >
                                 <div class="col-3">
                                     <input
+                                        id="txt-expiry-date"
+                                        v-model="approval_details.expiry_date"
                                         type="text"
                                         class="form-control"
                                         name="ExpiryDate"
-                                        id="txt-expiry-date"
                                         :readonly="true"
-                                        v-model="approval_details.expiry_date"
                                     />
                                 </div>
                             </div>
                         </form>
 
+                        <!-- TODO: Infinite loop when directly updating the prop -->
+                        <!-- @update:selectedData="
+                            approval_details.gis_data = $event
+                        " -->
                         <GisDataDetails
-                            :selected_data="externalApprovalGisData"
+                            :selected-data="externalApprovalGisData"
                             :searchable="false"
                             :readonly="true"
                             placeholder="N/A"
@@ -143,16 +147,20 @@
     </div>
 </template>
 <script>
-import FormSection from '@/components/forms/section_toggle.vue'
-import GisDataDetails from '@/components/common/gis_data_details.vue'
+import FormSection from '@/components/forms/section_toggle.vue';
+import GisDataDetails from '@/components/common/gis_data_details.vue';
 
 export default {
     name: 'ApprovalDetails',
+    components: {
+        FormSection,
+        GisDataDetails,
+    },
     props: {
-        approval_details: {
+        approvalDetails: {
             type: Object,
-            default(rawProps) {
-                return {}
+            default() {
+                return {};
             },
         },
         label: {
@@ -161,9 +169,10 @@ export default {
             default: 'Details',
         },
     },
-    components: {
-        FormSection,
-        GisDataDetails,
+    data: function () {
+        return {
+            approval_details: {},
+        };
     },
     computed: {
         externalApprovalGisData() {
@@ -177,17 +186,23 @@ export default {
                 // 'vestings',
                 // 'acts',
                 // 'tenures',
-            ]
+            ];
 
-            if (this.approval_details.gis_data === undefined) return {}
+            if (this.approval_details.gis_data === undefined) return {};
 
             // Return a GIS data dictionary of only the properties we want
             return Object.fromEntries(
                 Object.entries(
                     JSON.parse(JSON.stringify(this.approval_details.gis_data))
-                ).filter(([k, v]) => properties.includes(k))
-            )
+                ).filter(([k]) => properties.includes(k))
+            );
         },
     },
-}
+    mounted: function () {
+        let vm = this;
+        vm.$nextTick(() => {
+            vm.approval_details = Object.assign({}, vm.approvalDetails);
+        });
+    },
+};
 </script>
