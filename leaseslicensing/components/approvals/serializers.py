@@ -19,8 +19,12 @@ from leaseslicensing.components.main.serializers import (
 )
 from leaseslicensing.components.main.utils import (
     get_secure_file_url,
-    get_proposal_geometries_for_map_component,
+)
+from leaseslicensing.components.competitive_processes.utils import (
     get_competitive_process_geometries_for_map_component,
+)
+from leaseslicensing.components.proposals.utils import (
+    get_proposal_geometries_for_map_component,
 )
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
