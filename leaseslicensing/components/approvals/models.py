@@ -38,6 +38,7 @@ from leaseslicensing.components.proposals.models import (
 )
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
 
 logger = logging.getLogger(__name__)
@@ -295,7 +296,12 @@ class Approval(LicensingModelVersioned):
     @property
     def holder(self):
         # TODO Is it correct to return the applicant as the approval/license holder?
-        return self.current_proposal.applicant_name
+        if isinstance(self.applicant, Organisation):
+            return self.applicant.ledger_organisation_name
+        elif isinstance(self.applicant, EmailUser):
+            return f"{self.applicant.first_name} {self.applicant.last_name}"
+        else:
+            return "Applicant not yet assigned"
 
     @property
     def linked_applications(self):

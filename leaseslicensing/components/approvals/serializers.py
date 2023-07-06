@@ -273,12 +273,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return None
 
     def get_holder(self, obj):
-        if isinstance(obj.applicant, Organisation):
-            return obj.applicant.ledger_organisation_name
-        elif isinstance(obj.applicant, EmailUser):
-            return f"{obj.applicant.first_name} {obj.applicant.last_name}"
-        else:
-            return "Applicant not yet assigned"
+        return obj.holder
 
     def get_applicant_type(self, obj):
         if isinstance(obj.applicant, Organisation):
