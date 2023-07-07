@@ -116,11 +116,11 @@
                                 ref="competitive_process_parties"
                                 :key="cp_id"
                                 level="internal"
-                                :competitive_process_parties="
+                                :competitive-process-parties="
                                     competitive_process.competitive_process_parties
                                 "
-                                :competitive_process_id="competitive_process.id"
-                                :accessing_user="
+                                :competitive-process-id="competitive_process.id"
+                                :accessing-user="
                                     competitive_process.accessing_user
                                 "
                                 :processing="processing"
@@ -129,6 +129,7 @@
                                 :completed="completed"
                                 :finalised="finalised"
                                 @add-detail="addDetail"
+                                @add-party="addParty"
                             />
                         </FormSection>
                     </div>
@@ -175,6 +176,65 @@
                             label="Details"
                             index="details"
                         >
+                            <FormSection
+                                :form-collapse="false"
+                                label="Categorisation"
+                                index="categorisation"
+                            >
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                        <label class="col-form-label"
+                                            >Site Name</label
+                                        >
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <input
+                                            id="site_name"
+                                            v-model="
+                                                competitive_process.site_name
+                                            "
+                                            class="form-control"
+                                            type="text"
+                                            name="site_name"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                        <label class="col-form-label"
+                                            >Groups</label
+                                        >
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <Multiselect
+                                            v-model="competitive_process.groups"
+                                            label="name"
+                                            track-by="id"
+                                            placeholder="Select Groups"
+                                            :options="groups"
+                                            :hide-selected="true"
+                                            :multiple="true"
+                                            :searchable="true"
+                                            :loading="loadingGroups"
+                                        />
+                                    </div>
+                                </div>
+                            </FormSection>
+                            <FormSection
+                                :form-collapse="false"
+                                label="Geospatial Data"
+                                index="geospatial-data"
+                            >
+                                <GISDataDetails
+                                    v-if="competitive_process.gis_data"
+                                    :selected-data="
+                                        competitive_process.gis_data
+                                    "
+                                    :searchable="true"
+                                    :readonly="false"
+                                    @update:selectedData="updateGISData"
+                                />
+                            </FormSection>
                         </FormSection>
                     </div>
                     <div
@@ -223,7 +283,7 @@
                                                 >
                                                     {{
                                                         party.organisation
-                                                            .trading_name
+                                                            .ledger_organisation_name
                                                     }}
                                                 </template>
                                             </template>
@@ -364,16 +424,21 @@ import MapComponent from '@/components/common/component_map_with_filters_v2'
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
+import GISDataDetails from '@/components/common/gis_data_details.vue'
+import Multiselect from 'vue-multiselect'
+
 import { owsQuery, validateFeature } from '@/components/common/map_functions.js'
 
 export default {
     name: 'CompetitiveProcess',
     components: {
         CommsLogs,
+        GISDataDetails,
         Workflow,
         TableParties,
         FormSection,
         MapComponent,
+        Multiselect,
         RichText,
         FileField,
         TableRelatedItems,
@@ -386,7 +451,6 @@ export default {
             can_modify: true,
             show_col_status_when_submitted: true,
             componentMapKey: 0,
-
             // For Comms Log
             comms_url: helpers.add_endpoint_json(
                 api_endpoints.competitive_process,
@@ -400,7 +464,8 @@ export default {
                 api_endpoints.competitive_process,
                 vm.$route.params.competitive_process_id + '/action_log'
             ),
-
+            loadingGroups: false,
+            groups: [],
             processing: false,
             owsQuery: owsQuery,
             validateFeature: validateFeature,
@@ -627,11 +692,7 @@ export default {
             let featureCollection = {
                 ...vm.competitive_process.competitive_process_geometries,
             }
-            Object.keys(featureCollection['features']).forEach(function (
-                key,
-                _
-            ) {
-                console.log(_)
+            Object.keys(featureCollection['features']).forEach(function (key) {
                 featureCollection['features'][key]['properties']['source'] =
                     'competitive_process'
                 // Create competitive process model object using the same field names as for proposal
@@ -706,6 +767,9 @@ export default {
     },
     created: function () {
         this.fetchCompetitiveProcess()
+        utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
+            this.groups = data
+        })
     },
     mounted: function () {},
     methods: {
@@ -771,13 +835,11 @@ export default {
             let vm = this
 
             // Shallow (?) copy competitive_process object into payload
-            let payload = { competitive_process: { ...vm.competitive_process } }
+            let payload = { ...vm.competitive_process }
             if (vm.$refs.component_map) {
                 // Update geometry data of the competitive process
                 let geojson_str = vm.$refs.component_map.getJSONFeatures()
-                payload['competitive_process'][
-                    'competitive_process_geometries'
-                ] = geojson_str
+                payload['competitive_process_geometries'] = geojson_str
             }
 
             let custom_row_apps = {}
@@ -869,7 +931,8 @@ export default {
                             } else if (party.is_organisation) {
                                 description =
                                     '<strong>' +
-                                    party.organisation.trading_name +
+                                    party.organisation
+                                        .ledger_organisation_name +
                                     '</strong> is selected as a winner.'
                                 break
                             }
@@ -1129,7 +1192,7 @@ export default {
             let vm = this
             try {
                 const res = await fetch(
-                    `${api_endpoints.competitive_process}${vm.$route.params.competitive_process_id}`
+                    `${api_endpoints.competitive_process}${vm.$route.params.competitive_process_id}/`
                 )
                 if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
                 let competitive_process = await res.json()
@@ -1138,7 +1201,6 @@ export default {
                     'Fetched competitive process',
                     vm.competitive_process
                 )
-                5
             } catch (err) {
                 console.log({ err })
             }
@@ -1194,8 +1256,34 @@ export default {
                 console.error(`Can not add data to party with ID ${id}.`)
             }
         },
+        addParty: function (new_party_data) {
+            /** Callback for `add-party` event emitted by custom-row */
+
+            console.log('add party: new_party_data', new_party_data)
+            // Add new party
+            this.competitive_process.competitive_process_parties.push(
+                new_party_data
+            )
+        },
         incrementComponentMapKey: function () {
             this.componentMapKey++
+        },
+        updateGISData: function (property, val) {
+            if (
+                this.competitive_process.gis_data[property].find(
+                    (item) => item.id == val.id
+                )
+            ) {
+                this.competitive_process.gis_data[property] =
+                    this.competitive_process.gis_data[property].filter(
+                        (item) => item.id != val.id
+                    )
+            } else {
+                this.competitive_process.gis_data[property].push({
+                    id: val.id,
+                    name: val.name,
+                })
+            }
         },
     },
 }
