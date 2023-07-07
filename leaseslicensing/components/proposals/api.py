@@ -38,6 +38,7 @@ from leaseslicensing.components.main.models import ApplicationType, RequiredDocu
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
+from leaseslicensing.components.main.utils import save_site_name
 from leaseslicensing.components.proposals.email import (
     send_external_referee_invite_email,
 )
@@ -94,7 +95,6 @@ from leaseslicensing.components.proposals.utils import (
     save_assessor_data,
     save_proponent_data,
     save_referral_data,
-    save_site_name,
 )
 from leaseslicensing.helpers import (
     is_approver,
@@ -1381,7 +1381,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         valid_geometry_saved = instance.validate_map_files(request)
         instance.save()
         if valid_geometry_saved:
-            populate_gis_data(instance)
+            populate_gis_data(instance, "proposalgeometry")
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
