@@ -1,74 +1,64 @@
 <template>
     <div class="card card-default">
         <div class="card-header">Workflow</div>
-        <div v-if="competitiveProcess" class="card-body card-collapse">
-            <div class="row">
-                <div class="col-sm-12">
-                    <strong>Status</strong><br />
-                    {{ competitiveProcess.status }}
-                </div>
-                <div v-if="!finalised" class="col-sm-12">
-                    <div class="col-sm-12">
-                        <div class="separator"></div>
-                    </div>
-                    <strong>Currently assigned to</strong><br />
-                    <div class="form-group">
-                        <select
-                            ref="assigned_officer"
-                            v-model="assigned_officer_id"
-                            :disabled="elementDisabled"
-                            class="form-control"
-                            @change="assignTo()"
-                        >
-                            <option
-                                v-for="member in competitiveProcess.allowed_editors"
-                                :key="member.id"
-                                :value="member.id"
-                            >
-                                {{ member.first_name }} {{ member.last_name }}
-                            </option>
-                        </select>
-                        <div class="text-end">
-                            <a
-                                v-if="
-                                    canAssess &&
-                                    competitiveProcess.assigned_officer !=
-                                        competitiveProcess.accessing_user.id &&
-                                    !elementDisabled
-                                "
-                                class="actionBtn pull-right"
-                                @click.prevent="assignRequestUser()"
-                                >Assign to me</a
-                            >
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="display_actions">
-                    <div class="col-sm-12">
-                        <div class="separator"></div>
-                    </div>
-
-                    <div>
-                        <strong>Action</strong>
-                    </div>
-
-                    <template
-                        v-for="configuration in configurations_for_buttons"
-                        :key="configuration.key"
+        <template v-if="competitiveProcess">
+            <div class="card-body">
+                <div class="fw-bold">Status</div>
+                {{ competitiveProcess.status }}
+            </div>
+            <div v-if="showCurrentlyAssignedTo" class="card-body border-top">
+                <div class="fw-bold">Currently Assigned To</div>
+                <div class="form-group">
+                    <select
+                        ref="assigned_officer"
+                        v-model="assigned_officer_id"
+                        :disabled="
+                            elementDisabled ||
+                            !competitiveProcess.accessing_user_is_competitive_process_editor
+                        "
+                        class="form-control"
+                        @change="assignTo()"
                     >
-                        <button
-                            v-if="configuration.function_to_show_hide()"
-                            class="btn btn-primary w-75 my-1"
-                            :disabled="configuration.function_to_disable()"
-                            @click.prevent="configuration.function_when_clicked"
+                        <option
+                            v-for="member in competitiveProcess.allowed_editors"
+                            :key="member.id"
+                            :value="member.id"
                         >
-                            {{ configuration.button_title }}
-                        </button>
-                    </template>
+                            {{ member.first_name }} {{ member.last_name }}
+                        </option>
+                    </select>
+                    <div
+                        v-if="
+                            competitiveProcess.accessing_user_is_competitive_process_editor
+                        "
+                        class="text-end"
+                    >
+                        <a
+                            v-if="showAssignToMe"
+                            class="actionBtn pull-right"
+                            @click.prevent="assignRequestUser()"
+                            >Assign to me</a
+                        >
+                    </div>
                 </div>
             </div>
-        </div>
+            <div v-if="display_actions" class="card-body border-top">
+                <div class="fw-bold">Action</div>
+                <template
+                    v-for="configuration in configurations_for_buttons"
+                    :key="configuration.key"
+                >
+                    <button
+                        v-if="configuration.function_to_show_hide()"
+                        class="btn btn-primary w-75 my-1"
+                        :disabled="configuration.function_to_disable()"
+                        @click.prevent="configuration.function_when_clicked"
+                    >
+                        {{ configuration.button_title }}
+                    </button>
+                </template>
+            </div>
+        </template>
     </div>
 </template>
 
@@ -125,6 +115,7 @@ export default {
         let vm = this
 
         return {
+            constants: constants,
             showingProposal: false,
             showingRequirements: false,
 
@@ -179,6 +170,13 @@ export default {
         }
     },
     computed: {
+        showCurrentlyAssignedTo: function () {
+            return (
+                !this.finalised &&
+                constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID ==
+                    this.competitiveProcess.processing_status_id
+            )
+        },
         proposal_form_url: function () {
             return this.competitiveProcess
                 ? `/api/competitiveProcess/${this.competitiveProcess.id}/assessor_save.json`
@@ -204,6 +202,20 @@ export default {
             } else {
                 return null
             }
+        },
+        currentUserIsAssignedUser: function () {
+            return (
+                this.competitiveProcess.assigned_officer &&
+                this.competitiveProcess.assigned_officer.id ==
+                    this.competitiveProcess.accessing_user.id
+            )
+        },
+        showAssignToMe: function () {
+            return (
+                this.canAssess &&
+                !this.elementDisabled &&
+                !this.currentUserIsAssignedUser
+            )
         },
         elementDisabled: function () {
             /** Returns whether an element is disabled
@@ -395,15 +407,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-.actionBtn {
-    cursor: pointer;
-}
-.separator {
-    border: 1px solid;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    width: 100%;
-}
-</style>
