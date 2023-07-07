@@ -1,26 +1,38 @@
 from django.core.files.storage import default_storage
-from ledger_api_client.managed_models import SystemGroup
 from django.urls import reverse
+from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
 from rest_framework_gis.serializers import GeoFeatureModelSerializer
 
 from leaseslicensing.components.competitive_processes.models import (
     CompetitiveProcess,
+    CompetitiveProcessAct,
+    CompetitiveProcessCategory,
+    CompetitiveProcessDistrict,
     CompetitiveProcessGeometry,
+    CompetitiveProcessIdentifier,
+    CompetitiveProcessLGA,
     CompetitiveProcessLogEntry,
+    CompetitiveProcessName,
     CompetitiveProcessParty,
+    CompetitiveProcessRegion,
+    CompetitiveProcessTenure,
     CompetitiveProcessUserAction,
+    CompetitiveProcessVesting,
     PartyDetail,
 )
 from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
+from leaseslicensing.components.main.utils import get_polygon_source
 from leaseslicensing.components.proposals.models import Proposal
 from leaseslicensing.components.proposals.serializers import (
     ProposalGeometrySerializer,
     ProposalSerializer,
 )
+from leaseslicensing.components.tenure.models import Group
+from leaseslicensing.components.tenure.serializers import GroupSerializer
 from leaseslicensing.components.users.serializers import UserSerializerSimple
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import GROUP_NAME_CHOICES
@@ -28,16 +40,6 @@ from leaseslicensing.settings import GROUP_NAME_CHOICES
 from ... import settings
 from ..main.models import TemporaryDocumentCollection
 from ..organisations.serializers import OrganisationSerializer
-from leaseslicensing.components.proposals.models import Proposal
-from leaseslicensing.components.main.serializers import CommunicationLogEntrySerializer, EmailUserSerializer
-from leaseslicensing.components.main.utils import (
-    get_polygon_source,
-)
-from leaseslicensing.components.users.serializers import UserSerializerSimple
-from ... import settings
-from rest_framework_gis.serializers import GeoFeatureModelSerializer
-from ledger_api_client.managed_models import SystemGroup
-from leaseslicensing.settings import GROUP_NAME_CHOICES
 
 
 class RegistrationOfInterestSerializer(serializers.ModelSerializer):
@@ -57,20 +59,20 @@ class RegistrationOfInterestSerializer(serializers.ModelSerializer):
     class Meta:
         model = Proposal
         fields = (
-            'id',
-            'lodgement_number',
-            'relevant_applicant_name',
-            'proposalgeometry',
-            'applicant_id',
-            'processing_status',
-            'application_type_name_display',
-            'processing_status_display',
-            'lodgement_date_display',
-            'details_url',
+            "id",
+            "lodgement_number",
+            "relevant_applicant_name",
+            "proposalgeometry",
+            "applicant_id",
+            "processing_status",
+            "application_type_name_display",
+            "processing_status_display",
+            "lodgement_date_display",
+            "details_url",
         )
 
     def get_details_url(self, obj):
-        return reverse('internal-proposal-detail', kwargs={'pk': obj.id})
+        return reverse("internal-proposal-detail", kwargs={"pk": obj.id})
 
     def get_proposalgeometry(self, obj):
         """
@@ -255,7 +257,7 @@ class CompetitiveProcessPartySerializer(serializers.ModelSerializer):
                 new_detail.save()
 
 
-class CompetitiveProcessGeometrySerializer(GeoFeatureModelSerializer):
+class CompetitiveProcessGeometrySaveSerializer(GeoFeatureModelSerializer):
     competitive_process_id = serializers.IntegerField(write_only=True, required=False)
     polygon_source = serializers.SerializerMethodField()
 
@@ -277,46 +279,164 @@ class CompetitiveProcessGeometrySerializer(GeoFeatureModelSerializer):
         return get_polygon_source(obj)
 
 
+class CompetitiveProcessIdentifierSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="identifier.id", read_only=True)
+    name = serializers.CharField(source="identifier.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessIdentifier
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessVestingSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="vesting.id", read_only=True)
+    name = serializers.CharField(source="vesting.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessVesting
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessNameSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="name.id", read_only=True)
+    name = serializers.CharField(source="name.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessName
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessActSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="act.id", read_only=True)
+    name = serializers.CharField(source="act.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessAct
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessTenureSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="tenure.id", read_only=True)
+    name = serializers.CharField(source="tenure.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessTenure
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessCategorySerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="category.id", read_only=True)
+    name = serializers.CharField(source="category.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessCategory
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessRegionSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="region.id", read_only=True)
+    name = serializers.CharField(source="region.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessRegion
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessDistrictSerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="district.id", read_only=True)
+    name = serializers.CharField(source="district.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessDistrict
+        fields = ["id", "name"]
+
+
+class CompetitiveProcessLGASerializer(serializers.ModelSerializer):
+    id = serializers.CharField(source="lga.id", read_only=True)
+    name = serializers.CharField(source="lga.name", read_only=True)
+
+    class Meta:
+        model = CompetitiveProcessLGA
+        fields = ["id", "name"]
+
+
+class CompetititiveProcessGisDataSerializer(serializers.ModelSerializer):
+    identifiers = CompetitiveProcessIdentifierSerializer(many=True, read_only=True)
+    vestings = CompetitiveProcessVestingSerializer(many=True, read_only=True)
+    names = CompetitiveProcessNameSerializer(many=True, read_only=True)
+    acts = CompetitiveProcessActSerializer(many=True, read_only=True)
+    tenures = CompetitiveProcessTenureSerializer(many=True, read_only=True)
+    categories = CompetitiveProcessCategorySerializer(many=True, read_only=True)
+    regions = CompetitiveProcessRegionSerializer(many=True, read_only=True)
+    districts = CompetitiveProcessDistrictSerializer(many=True, read_only=True)
+    lgas = CompetitiveProcessLGASerializer(many=True, read_only=True)
+
+    class Meta:
+        model = CompetitiveProcess
+        fields = (
+            "identifiers",
+            "vestings",
+            "names",
+            "acts",
+            "tenures",
+            "categories",
+            "regions",
+            "districts",
+            "lgas",
+        )
+
+
 class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
     registration_of_interest = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
     status_id = serializers.CharField(source="status", required=False)
     assigned_officer = serializers.SerializerMethodField()
-    site = serializers.CharField(read_only=True)  # For property
-    group = serializers.CharField(read_only=True)  # For property
+    site_name = serializers.CharField(
+        source="site_name.name", allow_null=True, read_only=True
+    )
+    groups = serializers.SerializerMethodField(read_only=True)
     can_accessing_user_view = serializers.SerializerMethodField()
     can_accessing_user_process = serializers.SerializerMethodField()
     details_url = serializers.SerializerMethodField(read_only=True)
 
+    # Gis data fields
+    gis_data = serializers.SerializerMethodField()
+
     class Meta:
         model = CompetitiveProcess
         fields = (
-            'id',
-            'lodgement_number',
-            'registration_of_interest',
-            'generated_proposal',
-            'status',
-            'created_at',
-            'assigned_officer',
-            'site',
-            'group',
-            'can_accessing_user_view',
-            'can_accessing_user_process',
-            'details_url',
+            "id",
+            "lodgement_number",
+            "registration_of_interest",
+            "generated_proposal",
+            "status",
+            "created_at",
+            "assigned_officer",
+            "site_name",
+            "groups",
+            "can_accessing_user_view",
+            "can_accessing_user_process",
+            "details_url",
+            "gis_data",
         )
         # additional data to be returned for datatable
         # fields listed here should be listed 'fields' above, otherwise not returned
         datatables_always_serialize = (
             "registration_of_interest",
             "created_at",
-            "group",
-            "site",
+            "groups",
+            "site_name",
             "can_accessing_user_view",
             "can_accessing_user_process",
         )
 
+    def get_groups(self, obj):
+        group_ids = obj.groups.values_list("group__id", flat=True)
+        group_qs = Group.objects.filter(id__in=group_ids).values("id", "name")
+        return GroupSerializer(group_qs, many=True).data
+
     def get_details_url(self, obj):
-        return reverse('internal-competitiveprocess-detail', kwargs={'pk': obj.id})
+        return reverse("internal-competitiveprocess-detail", kwargs={"pk": obj.id})
 
     def get_registration_of_interest(self, obj):
         if obj.generated_from_registration_of_interest:
@@ -346,6 +466,9 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
         can_process = obj.can_user_process(user)
         return can_process
 
+    def get_gis_data(self, obj):
+        return CompetititiveProcessGisDataSerializer(obj).data
+
 
 class ListCompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     class Meta:
@@ -357,8 +480,8 @@ class ListCompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             "status",
             "created_at",
             "assigned_officer",
-            "site",
-            "group",
+            "site_name",
+            "groups",
             "can_accessing_user_view",
             "can_accessing_user_process",
         )
@@ -369,8 +492,8 @@ class ListCompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             "lodgement_number",
             "registration_of_interest",
             "created_at",
-            "group",
-            "site",
+            "site_name",
+            "groups",
             "can_accessing_user_view",
             "can_accessing_user_process",
         )
@@ -381,11 +504,12 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     competitive_process_parties = CompetitiveProcessPartySerializer(
         many=True, required=False
     )
-    competitive_process_geometries = CompetitiveProcessGeometrySerializer(
-        many=True, required=False
+    competitive_process_geometries = CompetitiveProcessGeometrySaveSerializer(
+        many=True, read_only=True
     )
     allowed_editors = serializers.SerializerMethodField(read_only=True)
     accessing_user_roles = serializers.SerializerMethodField()
+    accessing_user_is_competitive_process_editor = serializers.SerializerMethodField()
     generated_proposal = ProposalSerializer(many=True, required=False, read_only=True)
     winner = CompetitiveProcessPartySerializer(allow_null=True, required=False)
     label = serializers.SerializerMethodField(read_only=True)
@@ -393,28 +517,30 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
     class Meta:
         model = CompetitiveProcess
         fields = (
-            'id',
-            'lodgement_number',
-            'registration_of_interest',
-            'generated_proposal',
-            'status',
-            'status_id',
-            'created_at',
-            'assigned_officer',
-            'site',
-            'group',
-            'can_accessing_user_view',
-            'can_accessing_user_process',
-            'accessing_user',
-            'competitive_process_parties',
-            'winner',
-            'winner_id',
-            'details',
-            'competitive_process_geometries',
-            'allowed_editors',
-            'accessing_user_roles',
-            'label',  # A static value to be used on the map
-            'details_url',
+            "id",
+            "lodgement_number",
+            "registration_of_interest",
+            "generated_proposal",
+            "status",
+            "status_id",
+            "created_at",
+            "assigned_officer",
+            "site_name",
+            "groups",
+            "gis_data",
+            "can_accessing_user_view",
+            "can_accessing_user_process",
+            "accessing_user_is_competitive_process_editor",
+            "accessing_user",
+            "competitive_process_parties",
+            "winner",
+            "winner_id",
+            "details",
+            "competitive_process_geometries",
+            "allowed_editors",
+            "accessing_user_roles",
+            "label",  # A static value to be used on the map
+            "details_url",
         )
         extra_kwargs = {
             "winner_id": {
@@ -430,6 +556,10 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
         user = self.context.get("request").user
         serializer = UserSerializerSimple(user)
         return serializer.data
+
+    def get_accessing_user_is_competitive_process_editor(self, obj):
+        request = self.context.get("request")
+        return obj.is_user_competitive_process_editor(request.user.id)
 
     def get_accessing_user_roles(self, obj):
         request = self.context.get("request")
