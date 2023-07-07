@@ -41,6 +41,10 @@ def belongs_to(request, group_name):
     return belongs_to_by_user_id(request.user.id, group_name)
 
 
+def is_competitive_process_editor(request):
+    return belongs_to(request, settings.GROUP_COMPETITIVE_PROCESS_EDITOR)
+
+
 def is_leaseslicensing_admin(request):
     return belongs_to(request, settings.ADMIN_GROUP)
 
