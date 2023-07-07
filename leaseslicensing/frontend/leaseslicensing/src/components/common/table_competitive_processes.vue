@@ -452,33 +452,6 @@ export default {
         collapsible_component_mounted: function () {
             this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
         },
-        //getActionDetailTable: function(sticker){
-        //    let thead = `<thead>
-        //                    <tr>
-        //                        <th scope="col">Date</th>
-        //                        <th scope="col">User</th>
-        //                        <th scope="col">Action</th>
-        //                        <th scope="col">Date of Lost</th>
-        //                        <th scope="col">Date of Returned</th>
-        //                        <th scope="col">Reason</th>
-        //                    </tr>
-        //                <thead>`
-        //    let tbody = ''
-        //    for (let detail of sticker.sticker_action_details){
-        //        tbody += `<tr>
-        //            <td>${moment(detail.date_updated).format('DD/MM/YYYY')}</td>
-        //            <td>${detail.user_detail ? detail.user_detail.first_name : ''} ${detail.user_detail ? detail.user_detail.last_name : ''} </td>
-        //            <td>${detail.action ? detail.action : ''}</td>
-        //            <td>${detail.date_of_lost_sticker ? moment(detail.date_of_lost_sticker, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}</td>
-        //            <td>${detail.date_of_returned_sticker ? moment(detail.date_of_returned_sticker, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}</td>
-        //            <td>${detail.reason}</td>
-        //        </tr>`
-        //    }
-        //    tbody = '<tbody>' + tbody + '</tbody>'
-
-        //    let details = '<table class="table table-striped table-bordered table-sm table-sticker-details" id="table-sticker-details-' + sticker.id + '">' + thead + tbody + '</table>'
-        //    return details
-        //},
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded
         },
@@ -527,35 +500,6 @@ export default {
         },
         addEventListeners: function () {
             let vm = this
-
-            // Lodged From
-            //$(vm.$refs.proposalDateFromPicker).datetimepicker(vm.datepickerOptions);
-            //$(vm.$refs.proposalDateFromPicker).on('dp.change',function (e) {
-            //    if ($(vm.$refs.proposalDateFromPicker).data('DateTimePicker').date()) {
-            //        // DateFrom has been picked
-            //        vm.filterCompetitiveProcessCreatedFrom = e.date.format('DD/MM/YYYY');
-            //        $(vm.$refs.proposalDateToPicker).data("DateTimePicker").minDate(e.date);
-            //    }
-            //    else if ($(vm.$refs.proposalDateFromPicker).data('date') === "") {
-            //        vm.filterCompetitiveProcessCreatedFrom = "";
-            //        $(vm.$refs.proposalDateToPicker).data("DateTimePicker").minDate(false);
-            //    }
-            //});
-
-            // Lodged To
-            //$(vm.$refs.proposalDateToPicker).datetimepicker(vm.datepickerOptions);
-            //$(vm.$refs.proposalDateToPicker).on('dp.change',function (e) {
-            //    if ($(vm.$refs.proposalDateToPicker).data('DateTimePicker').date()) {
-            //        // DateTo has been picked
-            //        vm.filterCompetitiveProcessCreatedTo = e.date.format('DD/MM/YYYY');
-            //        $(vm.$refs.proposalDateFromPicker).data("DateTimePicker").maxDate(e.date);
-            //    }
-            //    else if ($(vm.$refs.proposalDateToPicker).data('date') === "") {
-            //        vm.filterCompetitiveProcessCreatedTo = "";
-            //        $(vm.$refs.proposalDateFromPicker).data("DateTimePicker").maxDate(false);
-            //    }
-            //});
-
             // Listener for thr row
             vm.$refs.competitive_process_datatable.vmDataTable.on(
                 'click',
@@ -568,55 +512,9 @@ export default {
     },
 }
 </script>
-
 <style scoped>
-.collapse-icon {
-    cursor: pointer;
-}
-
-.collapse-icon::before {
-    top: 5px;
-    left: 4px;
-    height: 14px;
-    width: 14px;
-    border-radius: 14px;
-    line-height: 14px;
-    border: 2px solid white;
-    line-height: 14px;
-    content: '-';
-    color: white;
-    background-color: #d33333;
-    display: inline-block;
-    box-shadow: 0px 0px 3px #444;
-    box-sizing: content-box;
-    text-align: center;
-    text-indent: 0 !important;
-    font-family: 'Courier New', Courier monospace;
-    margin: 5px;
-}
-
 .expand-icon {
-    cursor: pointer;
-}
-
-.expand-icon::before {
-    top: 5px;
-    left: 4px;
-    height: 14px;
-    width: 14px;
-    border-radius: 14px;
-    line-height: 14px;
-    border: 2px solid white;
-    line-height: 14px;
-    content: '+';
-    color: white;
-    background-color: #337ab7;
-    display: inline-block;
-    box-shadow: 0px 0px 3px #444;
-    box-sizing: content-box;
-    text-align: center;
-    text-indent: 0 !important;
-    font-family: 'Courier New', Courier monospace;
-    margin: 5px;
+    background-color: blue !important;
+    color: tomato !important;
 }
 </style>
