@@ -1,5 +1,4 @@
-
-import { createApp, h, reactive, toRefs } from 'vue';
+import { createApp, h, reactive, toRefs } from 'vue'
 import CustomRow from '@/components/common/custom_row.vue'
 
 /**
@@ -9,8 +8,13 @@ import CustomRow from '@/components/common/custom_row.vue'
  * @returns jQuery objects for table row and first cell, or an empty list if not expandable
  */
 function tr_first_td(vm, obj) {
-    let td_link = $(obj);
-    if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))) {
+    let td_link = $(obj)
+    if (
+        !(
+            td_link.hasClass(vm.td_expand_class_name) ||
+            td_link.hasClass(vm.td_collapse_class_name)
+        )
+    ) {
         // This row is not configured as expandable row (at the rowCallback)
         return []
     }
@@ -37,14 +41,27 @@ function collapse_row(vm, tr, first_td) {
         })
     }
     // Change icon class name to vm.td_expand_class_name
-    first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
+    first_td
+        .removeClass(vm.td_collapse_class_name)
+        .addClass(vm.td_expand_class_name)
 }
 
+function getGroupsHtml(groups) {
+    let groups_html = 'N/A'
+    if (groups && groups.length > 0) {
+        groups_html = ''
+        for (let i = 0; i < groups.length; i++) {
+            groups_html +=
+                '<span class="badge bg-primary">' + groups[i] + '</span>&nbsp;'
+        }
+    }
+    return groups_html
+}
 
 export function expandToggle(vm, obj) {
-    let [tr, first_td] = tr_first_td(vm, obj);
-    if (typeof (tr) === 'undefined' || typeof (first_td) === 'undefined') {
-        return;
+    let [tr, first_td] = tr_first_td(vm, obj)
+    if (typeof tr === 'undefined' || typeof first_td === 'undefined') {
+        return
     }
 
     if (first_td.hasClass(vm.td_expand_class_name)) {
@@ -52,70 +69,101 @@ export function expandToggle(vm, obj) {
         // Get group names from the row data
         let $row = vm.$refs.application_datatable.vmDataTable.row(tr)
         let full_data = $row.data()
-        let site_name = full_data.site_name;
-        let groups = full_data.groups.map(({ name }) => name);
+        let site_name = full_data.site_name
+        let groups = full_data.groups.map(({ name }) => name)
 
         if (!site_name) {
             site_name = 'N/A'
         }
 
-        let groups_html = 'N/A';
-        if (groups && groups.length > 0) {
-            groups_html = '';
-            for (let i = 0; i < groups.length; i++) {
-                groups_html += '<span class="badge bg-primary">' + groups[i] + '</span>&nbsp;'
-            }
-        }
+        let groups_html = getGroupsHtml(groups)
 
         // If we don't need to retrieve the data from the server, follow the code below
         let contents = `<div><strong>Site Name: </strong>${site_name}</div><div><strong>Groups: </strong>${groups_html}</div>`
-        let details_elem = $('<tr class="' + vm.expandable_row_class_name + '"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
+        let details_elem = $(
+            '<tr class="' +
+                vm.expandable_row_class_name +
+                '"><td colspan="' +
+                vm.number_of_columns +
+                '">' +
+                contents +
+                '</td></tr>'
+        )
         details_elem.hide()
         details_elem.insertAfter(tr)
         details_elem.fadeIn(1000)
 
         // Change icon class name to vm.td_collapse_class_name
-        first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
+        first_td
+            .removeClass(vm.td_expand_class_name)
+            .addClass(vm.td_collapse_class_name)
     } else {
-        collapse_row(vm, tr, first_td);
+        collapse_row(vm, tr, first_td)
     }
 }
 
 // used by competitive process
 export function expandToggleCP(vm, obj) {
-    let [tr, first_td] = tr_first_td(vm, obj);
-    if (typeof (tr) === 'undefined' || typeof (first_td) === 'undefined') {
-        return;
+    let [tr, first_td] = tr_first_td(vm, obj)
+    if (typeof tr === 'undefined' || typeof first_td === 'undefined') {
+        return
     }
 
     let $row = vm.$refs.competitive_process_datatable.vmDataTable.row(tr)
     let full_data = $row.data()
+    let site_name = full_data.site_name
+    let groups = full_data.groups.map(({ name }) => name)
+
     if (first_td.hasClass(vm.td_expand_class_name)) {
+        if (!site_name) {
+            site_name = 'N/A'
+        }
+
+        let groups_html = getGroupsHtml(groups)
+
         // Expand
         // If we don't need to retrieve the data from the server, follow the code below
-        let elem_group = '<div>Group: ' + full_data.group + '</div>'
-        let elem_site = '<div>Site: ' + full_data.site + '</div>'
+        let elem_site = '<div>Site name: ' + site_name + '</div>'
+        let elem_group = `<div>Groups: ${groups_html}</div>`
         let elem_applicant = ''
         if (full_data.registration_of_interest) {
-            elem_applicant = '<div>Applicant: ' + full_data.registration_of_interest.relevant_applicant_name + '</div>'
+            elem_applicant =
+                '<div>Applicant: ' +
+                full_data.registration_of_interest.relevant_applicant_name +
+                '</div>'
         }
-        let contents = elem_group + elem_site + elem_applicant
-        let details_elem = $('<tr class="' + vm.expandable_row_class_name + '"><td colspan="' + vm.number_of_columns + '">' + contents + '</td></tr>')
+        let contents = elem_site + elem_group + elem_applicant
+        let details_elem = $(
+            '<tr class="' +
+                vm.expandable_row_class_name +
+                '"><td colspan="' +
+                vm.number_of_columns +
+                '">' +
+                contents +
+                '</td></tr>'
+        )
         details_elem.hide()
         details_elem.insertAfter(tr)
         details_elem.fadeIn(1000)
 
         // Change icon class name to vm.td_collapse_class_name
-        first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
+        first_td
+            .removeClass(vm.td_expand_class_name)
+            .addClass(vm.td_collapse_class_name)
     } else {
-        collapse_row(vm, tr, first_td);
+        collapse_row(vm, tr, first_td)
     }
 }
 
 // used by `table_parties.vue`
 export function expandToggleParties(vm, obj) {
     let td_link = $(obj)
-    if (!(td_link.hasClass(vm.td_expand_class_name) || td_link.hasClass(vm.td_collapse_class_name))) {
+    if (
+        !(
+            td_link.hasClass(vm.td_expand_class_name) ||
+            td_link.hasClass(vm.td_collapse_class_name)
+        )
+    ) {
         // This row is not configured as expandable row (at the rowCallback)
         return
     }
@@ -132,12 +180,13 @@ export function expandToggleParties(vm, obj) {
         siblings.fadeOut(500, function () {
             siblings.remove()
             // Change icon
-            first_td.removeClass(vm.td_collapse_class_name).addClass(vm.td_expand_class_name)
+            first_td
+                .removeClass(vm.td_collapse_class_name)
+                .addClass(vm.td_expand_class_name)
             // Hide child row, where hidden columns are
             $row.child.hide()
             // Toggle flag
             full_data.expanded = false
-
 
             if (full_data.id in vm.custom_row_apps) {
                 vm.custom_row_apps[full_data.id].unmount()
@@ -151,7 +200,13 @@ export function expandToggleParties(vm, obj) {
         })
     } else {
         // Expand
-        let details_elem = $('<tr class="' + vm.expandable_row_class_name + '"><td id="custom_row_' + full_data.id + '"></td></tr>')
+        let details_elem = $(
+            '<tr class="' +
+                vm.expandable_row_class_name +
+                '"><td id="custom_row_' +
+                full_data.id +
+                '"></td></tr>'
+        )
         details_elem.hide()
         details_elem.insertAfter(tr)
         vm.updateCustomRowColSpan()
@@ -170,9 +225,9 @@ export function expandToggleParties(vm, obj) {
             completed: vm.completed,
         }
         // Make the props reactive
-        const react = reactive(props);
+        const react = reactive(props)
         // Keep an instance of this custom row
-        let instance;
+        let instance
         let custom_row_app = createApp({
             setup() {
                 return {
@@ -181,30 +236,31 @@ export function expandToggleParties(vm, obj) {
             },
             created() {
                 // Get a reference to this custom row instance
-                instance = this;
+                instance = this
             },
             // Render the dynamically added custom row and catch
             // events of newly added details and emit them to the
             // `competitive_process` vue files
-            render: () => h(CustomRow,
-                {
+            render: () =>
+                h(CustomRow, {
                     ...react,
-                    onAddDetail: e => vm.$emit("add-detail", e)
-                })
-
+                    onAddDetail: (e) => vm.$emit('add-detail', e),
+                }),
         })
         custom_row_app.mount('#custom_row_' + full_data.id)
         // -----------------------
 
         // Store custom_row_app in order to unmount when being hidden
         // full_data.custom_row_app = custom_row_app
-        custom_row_app["instance"] = instance;
+        custom_row_app['instance'] = instance
         vm.custom_row_apps[full_data.id] = custom_row_app
 
         details_elem.fadeIn(1000)
 
         // Change icon
-        first_td.removeClass(vm.td_expand_class_name).addClass(vm.td_collapse_class_name)
+        first_td
+            .removeClass(vm.td_expand_class_name)
+            .addClass(vm.td_collapse_class_name)
         // Show child row, where hidden columns are
         $row.child.show()
         // Toggle flag
