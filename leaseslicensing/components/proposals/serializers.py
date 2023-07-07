@@ -688,12 +688,12 @@ class CompetitiveProcessSerializer(serializers.ModelSerializer):
         """
 
         from leaseslicensing.components.competitive_processes.serializers import (
-            CompetitiveProcessGeometrySerializer,
+            CompetitiveProcessGeometrySaveSerializer,
         )
 
         geometry_data = {"type": "FeatureCollection", "features": []}
         for geometry in obj.competitive_process_geometries.all():
-            pg_serializer = CompetitiveProcessGeometrySerializer(geometry)
+            pg_serializer = CompetitiveProcessGeometrySaveSerializer(geometry)
             geometry_data["features"].append(pg_serializer.data)
 
         return geometry_data
