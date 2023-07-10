@@ -19,7 +19,7 @@
                         :label="label"
                         :track-by="trackBy"
                         :placeholder="taggedPlaceholder({ property: idx })"
-                        :options="gis_data[idx] || selectedData[idx]"
+                        :options="gis_data[idx] || selected_data[idx] || []"
                         :hide-selected="hideSelected"
                         :multiple="multiple"
                         :searchable="searchable"
@@ -132,43 +132,53 @@ export default {
                     return {};
                 },
             },
-            selected_data: {
+            gis_data_selected: {
                 default() {
                     return {};
                 },
             },
         };
     },
-    computed: {},
+    computed: {
+        selected_data: {
+            get() {
+                let vm = this;
+                if (!vm.gis_data_selected) {
+                    vm.gis_data_selected = {};
+                }
+                return vm.gis_data_selected;
+            },
+            set(data) {
+                let vm = this;
+                let [property, value] = data;
+                if (!vm.gis_data_selected[property]) {
+                    vm.gis_data_selected[property] = [];
+                }
+                vm.gis_data_selected[property].push(value);
+            },
+        },
+    },
     watch: {
         selectedData: {
             handler: function (val) {
                 let vm = this;
                 console.log('Received selectedData:', val);
-                vm.selected_data = Object.assign({}, val);
+                vm.gis_data_selected = Object.assign({}, val);
             },
-            deep: true,
-        },
-        selected_data: {
-            handler: function (val) {
-                let vm = this;
-                console.log('Sending selectedData update:', val);
-                vm.$emit('update:selectedData', val);
-            },
-            deep: true,
+            deep: false,
         },
     },
     mounted: function () {
         let vm = this;
         vm.$nextTick(() => {
-            vm.selected_data = Object.assign({}, vm.selectedData);
+            vm.gis_data_selected = Object.assign({}, vm.selectedData);
         });
     },
     methods: {
         /**
          * Sets a list of geodata for a given property (e.g. 'regions', 'districts', 'vestings')
-         * @param {*} property The property to lookup
-         * @param {*} query The query to search for
+         * @param {String} property The property to lookup
+         * @param {String} query The query to search for
          */
         ajaxLookupGeodata: function (property, query) {
             let vm = this;
@@ -180,13 +190,17 @@ export default {
                     vm.gis_data[property] = data;
                 });
         },
-        selectHandler: function (property) {
+        selectHandler: function (property, value) {
             let vm = this;
+            console.log('Selected', property, value);
             vm.keys[property] = uuid();
+            vm.$emit('update:selectedData', vm.gis_data_selected);
         },
-        removeHandler: function (property) {
+        removeHandler: function (property, value) {
             let vm = this;
+            console.log('Removed', property, value);
             vm.keys[property] = uuid();
+            vm.$emit('update:selectedData', vm.gis_data_selected);
         },
         /**
          * Returns a placeholder string with dynamically inserted geodata property name
