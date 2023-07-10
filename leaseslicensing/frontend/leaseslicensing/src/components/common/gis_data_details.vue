@@ -1,6 +1,6 @@
 <template lang="html">
     <div
-        v-for="(data, idx) in selected_data"
+        v-for="(data, idx) in selectedData"
         :key="newKey(idx)"
         :set="(selected_data_item = selected_data(idx))"
     >
@@ -15,7 +15,7 @@
                 <div :class="bsClassSelection">
                     <Multiselect
                         :id="`txt-gis-data-${idx}`"
-                        v-model="selected_data[idx]"
+                        v-model="selected_data_item"
                         :label="label"
                         :track-by="trackBy"
                         :placeholder="taggedPlaceholder({ property: idx })"
@@ -91,7 +91,6 @@ export default {
             type: String,
             required: false,
             default: 'col-9',
-            default: "Start typing to search ${property}",
         },
         searchable: {
             type: Boolean,
@@ -132,40 +131,15 @@ export default {
                     return {};
                 },
             },
-            gis_data_selected: {
-                default() {
-                    return {};
-                },
-            },
         };
     },
     computed: {
         selected_data: {
-            get() {
-                let vm = this;
-                if (!vm.gis_data_selected) {
-                    vm.gis_data_selected = {};
-                }
-                return vm.gis_data_selected;
+            get: function () {
+                return (idx) => {
+                    return this.selectedData[idx];
+                };
             },
-            set(data) {
-                let vm = this;
-                let [property, value] = data;
-                if (!vm.gis_data_selected[property]) {
-                    vm.gis_data_selected[property] = [];
-                }
-                vm.gis_data_selected[property].push(value);
-            },
-        },
-    },
-    watch: {
-        selectedData: {
-            handler: function (val) {
-                let vm = this;
-                console.log('Received selectedData:', val);
-                vm.gis_data_selected = Object.assign({}, val);
-            },
-            deep: false,
         },
     },
     mounted: function () {
@@ -193,14 +167,14 @@ export default {
         selectHandler: function (property, value) {
             let vm = this;
             console.log('Selected', property, value);
+            vm.$emit('update:selectedData', property, value);
             vm.keys[property] = uuid();
-            vm.$emit('update:selectedData', vm.gis_data_selected);
         },
         removeHandler: function (property, value) {
             let vm = this;
             console.log('Removed', property, value);
+            vm.$emit('update:selectedData', property, value);
             vm.keys[property] = uuid();
-            vm.$emit('update:selectedData', vm.gis_data_selected);
         },
         /**
          * Returns a placeholder string with dynamically inserted geodata property name

@@ -1,5 +1,5 @@
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcessGeometry
-from leaseslicensing.components.competitive_processes.serializers import CompetitiveProcessGeometrySerializer, CompetitiveProcessMapFeatureInfoSerializer
+from leaseslicensing.components.competitive_processes.serializers import CompetitiveProcessGeometrySaveSerializer, CompetitiveProcessMapFeatureInfoSerializer
 
 def get_competitive_process_geometries_for_map_component(
     competitive_process, context, feature_collection
@@ -15,7 +15,7 @@ def get_competitive_process_geometries_for_map_component(
         )
 
     for geom in cp_geoms:
-        g = CompetitiveProcessGeometrySerializer(geom, context=context).data
+        g = CompetitiveProcessGeometrySaveSerializer(geom, context=context).data
         g["properties"]["source"] = "competitive_process"
         g["model"] = CompetitiveProcessMapFeatureInfoSerializer(
             geom.competitive_process, context=context
