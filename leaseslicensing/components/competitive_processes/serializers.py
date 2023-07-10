@@ -1,4 +1,5 @@
-from django.core.files.storage import default_storage
+import logging
+
 from django.urls import reverse
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
@@ -21,11 +22,15 @@ from leaseslicensing.components.competitive_processes.models import (
     CompetitiveProcessVesting,
     PartyDetail,
 )
+from leaseslicensing.components.main.models import upload_protected_files_storage
 from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
-from leaseslicensing.components.main.utils import get_polygon_source
+from leaseslicensing.components.main.utils import (
+    get_polygon_source,
+    get_secure_file_url,
+)
 from leaseslicensing.components.proposals.models import Proposal
 from leaseslicensing.components.proposals.serializers import (
     ProposalGeometrySerializer,
@@ -40,6 +45,8 @@ from leaseslicensing.settings import GROUP_NAME_CHOICES
 from ... import settings
 from ..main.models import TemporaryDocumentCollection
 from ..organisations.serializers import OrganisationSerializer
+
+logger = logging.getLogger(__name__)
 
 
 class RegistrationOfInterestSerializer(serializers.ModelSerializer):
@@ -118,7 +125,10 @@ class PartyDetailSerializer(serializers.ModelSerializer):
     def get_party_detail_documents(self, obj):
         ret_array = []
         for item in obj.party_detail_documents.all():
-            ret_array.append({"name": item.name, "file": item._file.url})
+            secure_url = get_secure_file_url(item, "_file")
+            ret_array.append(
+                {"name": item.name, "file": item._file.url, "secure_url": secure_url}
+            )
         return ret_array
 
     def get_created_by(self, obj):
@@ -148,27 +158,25 @@ class PartyDetailSerializer(serializers.ModelSerializer):
                 )[0]
                 if temp_doc_collection:
                     for doc in temp_doc_collection.documents.all():
-                        self.save_vessel_registration_document_obj(instance, doc)
+                        logger.debug(f"\n --- doc.name={doc.name}")
+                        self.save_party_detail_document_obj(instance, doc)
                     temp_doc_collection.delete()
                     # instance.temporary_document_collection_id = None
                     # instance.save()
 
         return instance
 
-    def save_vessel_registration_document_obj(self, instance, temp_document):
+    def save_party_detail_document_obj(self, instance, temp_document):
         new_document = instance.party_detail_documents.get_or_create(
-            # input_name="party_detail_document",
             name=temp_document.name
         )[0]
-        # new_document = PartyDetailDocument.objects.create(party_detail=instance)
-        save_path = "{}/competitive_process/{}/party_detail/{}/{}".format(
-            settings.MEDIA_APP_DIR,
-            self.context.get("competitive_process").id,
-            self.context.get("competitive_process_party").id,
+        save_path = "{}/party_detail_document/{}/{}".format(
+            settings.PROTECTED_MEDIA_ROOT,
+            new_document.id,
             temp_document.name,
         )
 
-        path = default_storage.save(save_path, temp_document._file)
+        path = upload_protected_files_storage.save(save_path, temp_document._file)
         new_document._file = path
         new_document.save()
 
