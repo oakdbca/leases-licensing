@@ -21,8 +21,9 @@ from django.db import models, transaction
 from django.db.models import JSONField, Max, Min, Q
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from ledger_api_client.ledger_models import Invoice
+from ledger_api_client.ledger_models import Invoice as LedgerInvoice
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
 from reversion.models import Version
@@ -32,7 +33,7 @@ from leaseslicensing.components.competitive_processes.email import (
     send_competitive_process_create_notification,
 )
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
-from leaseslicensing.components.invoicing.models import InvoicingDetails
+from leaseslicensing.components.invoicing.models import Invoice, InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
     ApplicationType,
     CommunicationsLogEntry,
@@ -3050,34 +3051,36 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         self.invoicing_details = new_invoicing_details
         self.save()
 
+    @transaction.atomic
     def save_invoicing_details(self, request, action):
         from leaseslicensing.components.invoicing.serializers import (
             InvoicingDetailsSerializer,
         )
 
-        with transaction.atomic():
-            try:
-                # Retrieve invoicing_details data
-                proposal_data = request.data.get("proposal", {})
-                invoicing_details_data = (
-                    proposal_data.get("invoicing_details", {}) if proposal_data else {}
-                )
+        # Retrieve invoicing_details data
+        proposal_data = request.data.get("proposal", {})
+        invoicing_details_data = (
+            proposal_data.get("invoicing_details", {}) if proposal_data else {}
+        )
 
-                # Save invoicing details
-                invoicing_details = InvoicingDetails.objects.get(
-                    id=invoicing_details_data.get("id")
-                )
-                serializer = InvoicingDetailsSerializer(
-                    invoicing_details,
-                    data=invoicing_details_data,
-                    context={"action": action},
-                )
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-            except Exception as e:
-                logger.exception(e)
-                raise ValidationError("Couldn't save invoicing details.")
+        # Save invoicing details
+        id = invoicing_details_data.get("id")
+        try:
+            invoicing_details = InvoicingDetails.objects.get(id=id)
+        except InvoicingDetails.DoesNotExist:
+            raise serializers.ValidationError(
+                _("Invoicing details with id {id} not found", code="invalid")
+            )
 
+        serializer = InvoicingDetailsSerializer(
+            invoicing_details,
+            data=invoicing_details_data,
+            context={"action": action},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+    @transaction.atomic
     def finance_complete_editing(self, request, action):
         from leaseslicensing.components.approvals.models import Approval
 
@@ -3095,8 +3098,51 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 "proxy_applicant": self.proxy_applicant,
             },
         )
-
+        logger.debug(f"About to generate invoices for Proposal {self}")
+        self.generate_invoices(approval)
         self.generate_compliances(approval, request)
+        self.save()
+
+    def generate_invoices(self, approval):
+        invoicing_details = self.invoicing_details
+        logger.debug(f"Charge method {invoicing_details.charge_method} for Proposal")
+        if not invoicing_details:
+            raise ValidationError(
+                "Couldn't generate an invoice. "
+                f"Proposal {self} has no invoicing details"
+            )
+
+        if (
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
+            == invoicing_details.charge_method.key
+        ):
+            logger.info(
+                f"No invoices need generating as the Proposal {self} has no rent or licence charge"
+            )
+            return
+
+        if (
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE
+            == invoicing_details.charge_method.key
+        ):
+            due_date = timezone.now().date() + relativedelta(
+                days=settings.DEFAULT_DAYS_BEFORE_PAYMENT_DUE
+            )
+            invoice = Invoice.objects.create(
+                approval=approval,
+                status=Invoice.INVOICE_STATUS_UNPAID,
+                amount=invoicing_details.once_off_charge_amount,
+                date_due=due_date,
+            )
+            logger.info(f"Created invoice {invoice} for Proposal {self}")
+            return
+
+        logger.warn(
+            f"Unknown charge method {invoicing_details.charge_method} for Proposal {self}"
+        )
+
+    def finance_cancel_editing(self, request, action):
+        self.processing_status = Proposal.PROCESSING_STATUS_CURRENT
         self.save()
 
     @classmethod
@@ -3312,9 +3358,11 @@ class ApplicationFeeDiscount(RevisionedMixin):
     @property
     def invoice(self):
         try:
-            invoice = Invoice.objects.get(reference=self.proposal.fee_invoice_reference)
+            invoice = LedgerInvoice.objects.get(
+                reference=self.proposal.fee_invoice_reference
+            )
             return invoice
-        except Invoice.DoesNotExist:
+        except LedgerInvoice.DoesNotExist:
             pass
         return False
 
