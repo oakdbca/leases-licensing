@@ -216,9 +216,9 @@ export function expandToggleParties(vm, obj) {
         // -----------------------
         // Configure event listener (Ref: https://stackoverflow.com/questions/67516974/vue3-listen-to-event-from-dynamically-created-child-component-on-replacement)
         const props = {
-            party_full_data: full_data,
-            competitive_process_id: vm.competitive_process_id,
-            accessing_user: vm.accessing_user,
+            partyFullData: full_data,
+            competitiveProcessId: vm.competitiveProcessId,
+            accessingUser: vm.accessingUser,
             processing: vm.processing,
             discarded: vm.discarded,
             declined: vm.declined,
@@ -245,6 +245,7 @@ export function expandToggleParties(vm, obj) {
                 h(CustomRow, {
                     ...react,
                     onAddDetail: (e) => vm.$emit('add-detail', e),
+                    onUpdatePartyDate: (e) => vm.$emit('update-party-date', e),
                 }),
         })
         custom_row_app.mount('#custom_row_' + full_data.id)
