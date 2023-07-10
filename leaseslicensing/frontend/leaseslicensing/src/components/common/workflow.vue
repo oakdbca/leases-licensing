@@ -820,21 +820,8 @@ export default {
                     function_to_show_hide: () => {
                         // Pushing back DAS integration until a "Phase 2"
                         return false
-
-                        // let condition_to_display = {
-                        //     [APPLICATION_TYPE.LEASE_LICENCE]: {
-                        //         [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [
-                        //             ROLES.GROUP_NAME_ASSESSOR.ID,
-                        //         ],
-                        //     },
-                        // }
-                        // let show =
-                        //     vm.check_role_conditions(condition_to_display) &&
-                        //     vm.isCurrentAssessor
-                        // return show
                     },
                     function_to_disable: () => {
-                        // TODO disable button under certain conditions
                         return false
                     },
                 },
@@ -882,7 +869,13 @@ export default {
             },
         },
         actionsVisible: function () {
-            if (!(this.canAssess || this.isReferee)) {
+            if (
+                !(
+                    this.canAssess ||
+                    this.isReferee ||
+                    this.proposal.can_edit_invoicing_details
+                )
+            ) {
                 return false
             }
             for (let i = 0; i < this.configurations_for_buttons.length; i++) {
@@ -1023,7 +1016,6 @@ export default {
                         id: $(this).attr('id'),
                         label: $(this).find('.label').text(),
                     }
-                    console.log(obj)
                     return obj
                 })
                 .toArray()
