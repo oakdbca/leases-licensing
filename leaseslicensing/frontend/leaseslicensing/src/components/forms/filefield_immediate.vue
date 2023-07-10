@@ -1,82 +1,136 @@
 <template lang="html">
     <div :class="headerCSS">
         <div v-if="numDocuments > 0">
-            <div v-for="v in documents">
+            <div v-for="v in documents" :key="v.id">
                 <div>
-                    <span v-if="v.name.endsWith('.pdf')" class="fa fa-file-pdf" style='color: red'>
+                    <span
+                        v-if="v.name.endsWith('.pdf')"
+                        class="fa fa-file-pdf"
+                        style="color: red"
+                    >
                         &nbsp;
                     </span>
-                    <span v-else class="fa fa-file" style='color: red'>
+                    <span v-else class="fa fa-file" style="color: red">
                         &nbsp;
                     </span>
-                    <a :href="v.file" target="_blank">
+                    <a :href="v.secure_url" target="_blank">
                         {{ v.name }}
                     </a>
                     <span v-if="!readonly">
-                        &nbsp;<a @click="delete_document(v)" class="bi bi-trash3" title="Remove file" :filename="v.name"
-                            style="cursor: pointer; color:red;"></a>
+                        &nbsp;<a
+                            class="bi bi-trash3"
+                            title="Remove file"
+                            :filename="v.name"
+                            style="cursor: pointer; color: red"
+                            @click="delete_document(v)"
+                        ></a>
                     </span>
                 </div>
             </div>
         </div>
-        <div v-if="show_spinner"><i class='fa fa-2x fa-spinner fa-spin'></i></div>
-        <div v-if="(isRepeatable || (!isRepeatable && numDocuments === 0)) && !show_spinner && !readonly">
-            <input :id="name" :key="name" :name="name" type="file" :accept="fileTypes" @change="handleChangeWrapper"
-                :class="ffu_input_element_classname" />
+        <div v-if="show_spinner">
+            <i class="fa fa-2x fa-spinner fa-spin"></i>
+        </div>
+        <div
+            v-if="
+                (isRepeatable || (!isRepeatable && numDocuments === 0)) &&
+                !show_spinner &&
+                !readonly
+            "
+        >
+            <input
+                :id="name"
+                :key="name"
+                :name="name"
+                type="file"
+                :accept="fileTypes"
+                class=""
+                :class="ffu_input_element_classname"
+                @change="handleChangeWrapper"
+            />
             <div v-if="replace_button_by_text">
-                <span :id="'button-' + name" @click="button_clicked(name)" class="ffu-input-text">{{ text_string }}</span>
+                <span
+                    :id="'button-' + name"
+                    class="btn btn-primary ffu-input-text"
+                    @click="button_clicked(name)"
+                >
+                    <i class="fa fa-upload" aria-hidden="true"></i>&nbsp;
+                    {{ text_string }}</span
+                >
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import {
-    api_endpoints,
-    helpers
-}
-    from '@/utils/hooks';
+/*globals swal */
+import { api_endpoints, helpers } from '@/utils/hooks'
 export default {
-    name: "FileField",
+    name: 'FileField',
     props: {
-        headerCSS: String,
-        name: String,
-        label: String,
-        id: String,
+        headerCSS: {
+            type: String,
+            default: '',
+        },
+        name: {
+            type: String,
+            default: '',
+        },
+        label: {
+            type: String,
+            default: '',
+        },
+        id: {
+            type: String,
+            default: '',
+        },
         fileTypes: {
+            type: String,
             default: function () {
                 var file_types =
-                    "image/*," +
-                    "video/*," +
-                    "audio/*," +
-                    "application/pdf,text/csv,application/msword,application/vnd.ms-excel,application/x-msaccess," +
-                    "application/x-7z-compressed,application/x-bzip,application/x-bzip2,application/zip," +
-                    ".dbf,.gdb,.gpx,.prj,.shp,.shx," +
-                    ".json,.kml,.gpx";
-                return file_types;
-            }
+                    'image/*,' +
+                    'video/*,' +
+                    'audio/*,' +
+                    'application/pdf,text/csv,application/msword,application/vnd.ms-excel,application/x-msaccess,' +
+                    'application/x-7z-compressed,application/x-bzip,application/x-bzip2,application/zip,' +
+                    '.dbf,.gdb,.gpx,.prj,.shp,.shx,' +
+                    '.json,.kml,.gpx'
+                return file_types
+            },
         },
-        isRepeatable: Boolean,
-        readonly: Boolean,
-        documentActionUrl: String,
-        temporaryDocumentCollectionId: Number,
+        isRepeatable: {
+            type: Boolean,
+            default: false,
+        },
+        readonly: {
+            type: Boolean,
+            default: false,
+        },
+        documentActionUrl: {
+            type: String,
+            required: true,
+        },
+        temporaryDocumentCollectionId: {
+            type: Number,
+            default: 0,
+        },
 
         // For optional text button
         replace_button_by_text: {
             type: Boolean,
-            default: false
+            default: false,
         },
         text_string: {
             type: String,
-            default: 'Attach Document'
+            default: 'Attach Document',
         },
         approval_type: {
             type: Number,
-            required: false
+            required: false,
         },
         approval_type_document_type: {
             type: Number,
-            required: false
+            required: false,
         },
     },
     data: function () {
@@ -112,29 +166,44 @@ export default {
                 if (!this.temporary_document_collection_id) {
                     url = api_endpoints.temporary_document
                 } else {
-                    url = api_endpoints.temporary_document + this.temporary_document_collection_id + '/process_temp_document/'
+                    url =
+                        api_endpoints.temporary_document +
+                        this.temporary_document_collection_id +
+                        '/process_temp_document/'
                 }
             } else {
                 url = this.documentActionUrl
             }
-            return url;
+            return url
         },
     },
     watch: {
         documents: {
             handler: async function () {
-                await this.$emit('update-parent');
+                await this.$emit('update-parent')
             },
-            deep: true
+            deep: true,
         },
         temporaryDocumentCollectionId: function () {
             // read in prop value
             if (this.temporaryDocumentCollectionId) {
-                this.temporary_document_collection_id = this.temporaryDocumentCollectionId;
-                this.get_documents();
+                this.temporary_document_collection_id =
+                    this.temporaryDocumentCollectionId
+                this.get_documents()
             }
         },
-
+    },
+    mounted: async function () {
+        await this.$nextTick(async () => {
+            if (
+                this.documentActionUrl === 'temporary_document' &&
+                !this.temporary_document_collection_id
+            ) {
+                // pass
+            } else {
+                await this.get_documents()
+            }
+        })
     },
 
     methods: {
@@ -143,37 +212,35 @@ export default {
                 // Input field id contains the document name which may contain
                 // special characters (e.g. !"#$%&'()*+,./:;<=>?@[]^`{|}~)
                 // Exact match treats values as strings.
-                $(`input[id='${value}']`).trigger('click');
+                $(`input[id='${value}']`).trigger('click')
             }
         },
         handleChange: async function (e) {
-            console.log("Change", e.target.files);
-            let vm = this;
+            console.log('Change', e.target.files)
             if (e.target.files.length > 0) {
-                await this.save_document(e);
+                await this.save_document(e)
             }
         },
         get_documents: async function () {
-            this.show_spinner = true;
+            var formData = new FormData()
+            this.show_spinner = true
 
             if (this.document_action_url) {
-                var formData = new FormData();
-                formData.append('action', 'list');
+                formData.append('action', 'list')
                 if (this.commsLogId) {
-                    formData.append('comms_log_id', this.commsLogId);
+                    formData.append('comms_log_id', this.commsLogId)
                 }
-                formData.append('input_name', this.name);
-                formData.append('csrfmiddlewaretoken', this.csrf_token);
+                formData.append('input_name', this.name)
+                formData.append('csrfmiddlewaretoken', this.csrf_token)
                 const res = await fetch(this.document_action_url, {
                     body: formData,
-                    method: 'POST'
+                    method: 'POST',
                 })
                 const resData = await res.json()
-                this.documents = resData.filedata;
-                this.commsLogId = resData.comms_instance_id;
+                this.documents = resData.filedata
+                this.commsLogId = resData.comms_instance_id
             }
-            this.show_spinner = false;
-
+            this.show_spinner = false
         },
         delete_all_documents: function () {
             console.log('aho')
@@ -182,120 +249,132 @@ export default {
             }
         },
         delete_document: async function (file) {
-            this.show_spinner = true;
+            var formData = new FormData()
+            this.show_spinner = true
 
-            var formData = new FormData();
-            formData.append('action', 'delete');
-            formData.append('input_name', this.name);
+            formData.append('action', 'delete')
+            formData.append('input_name', this.name)
             if (this.commsLogId) {
-                formData.append('comms_log_id', this.commsLogId);
+                formData.append('comms_log_id', this.commsLogId)
             }
-            formData.append('document_id', file.id);
-            formData.append('csrfmiddlewaretoken', this.csrf_token);
+            formData.append('document_id', file.id)
+            formData.append('csrfmiddlewaretoken', this.csrf_token)
             if (this.document_action_url) {
-                const res = await fetch(this.document_action_url, { body: formData, method: 'POST' })
+                const res = await fetch(this.document_action_url, {
+                    body: formData,
+                    method: 'POST',
+                })
                 const resData = await res.json()
-                this.documents = resData.filedata;
-                this.commsLogId = resData.comms_instance_id;
+                this.documents = resData.filedata
+                this.commsLogId = resData.comms_instance_id
             }
-            this.show_spinner = false;
-
+            this.show_spinner = false
         },
-        cancel: async function (file) {
-            this.show_spinner = true;
+        cancel: async function () {
+            this.show_spinner = true
 
-            let formData = new FormData();
-            formData.append('action', 'cancel');
-            formData.append('input_name', this.name);
+            let formData = new FormData()
+            formData.append('action', 'cancel')
+            formData.append('input_name', this.name)
             if (this.commsLogId) {
-                formData.append('comms_log_id', this.commsLogId);
+                formData.append('comms_log_id', this.commsLogId)
             }
-            formData.append('csrfmiddlewaretoken', this.csrf_token);
+            formData.append('csrfmiddlewaretoken', this.csrf_token)
             if (this.document_action_url) {
-                let res = await fetch(this.document_action_url, { body: formData, method: 'POST' })
+                await fetch(this.document_action_url, {
+                    body: formData,
+                    method: 'POST',
+                })
             }
-            this.show_spinner = false;
+            this.show_spinner = false
         },
         uploadFile(e) {
-            let _file = null;
+            let _file = null
 
             if (e.target.files && e.target.files[0]) {
-                var reader = new FileReader();
-                reader.readAsDataURL(e.target.files[0]);
+                let reader = new FileReader()
+                reader.readAsDataURL(e.target.files[0])
                 reader.onload = function (e) {
-                    _file = e.target.result;
-                };
-                _file = e.target.files[0];
+                    _file = e.target.result
+                }
+                _file = e.target.files[0]
             }
             return _file
         },
         handleChangeWrapper: async function (e) {
-            this.show_spinner = true;
-            if (this.documentActionUrl === 'temporary_document' && !this.temporary_document_collection_id) {
+            this.show_spinner = true
+            if (
+                this.documentActionUrl === 'temporary_document' &&
+                !this.temporary_document_collection_id
+            ) {
                 // If temporary_document, create TemporaryDocumentCollection object and allow document_action_url to update
-                const res = await fetch(this.document_action_url, { method: 'POST' })
+                const res = await fetch(this.document_action_url, {
+                    method: 'POST',
+                })
                 const resData = await res.json()
                 this.temporary_document_collection_id = resData.id
-                await this.handleChange(e);
-                await this.$emit('update-temp-doc-coll-id', this.temporary_document_collection_id);
+                await this.handleChange(e)
+                await this.$emit(
+                    'update-temp-doc-coll-id',
+                    this.temporary_document_collection_id
+                )
             } else {
-                await this.handleChange(e);
+                await this.handleChange(e)
             }
-            this.show_spinner = false;
+            this.show_spinner = false
         },
 
         save_document: async function (e) {
+            var formData = new FormData()
             if (this.document_action_url) {
-                var formData = new FormData();
-                formData.append('action', 'save');
+                formData.append('action', 'save')
                 if (this.commsLogId) {
-                    formData.append('comms_log_id', this.commsLogId);
+                    formData.append('comms_log_id', this.commsLogId)
                 }
                 if (this.temporary_document_collection_id) {
-                    formData.append('temporary_document_collection_id', this.temporary_document_collection_id);
+                    formData.append(
+                        'temporary_document_collection_id',
+                        this.temporary_document_collection_id
+                    )
                 }
-                formData.append('input_name', this.name);
-                formData.append('approval_type', this.approval_type);
-                formData.append('approval_type_document_type', this.approval_type_document_type);
-                formData.append('filename', e.target.files[0].name);
-                formData.append('_file', this.uploadFile(e));
-                formData.append('csrfmiddlewaretoken', this.csrf_token);
+                formData.append('input_name', this.name)
+                formData.append('approval_type', this.approval_type)
+                formData.append(
+                    'approval_type_document_type',
+                    this.approval_type_document_type
+                )
+                formData.append('filename', e.target.files[0].name)
+                formData.append('_file', this.uploadFile(e))
+                formData.append('csrfmiddlewaretoken', this.csrf_token)
 
-                await fetch(this.document_action_url,
-                    { body: formData, method: 'POST' })
-                    .then(async response => {
+                await fetch(this.document_action_url, {
+                    body: formData,
+                    method: 'POST',
+                })
+                    .then(async (response) => {
                         if (!response.ok) {
-                            return await response.json().then(json => { throw new Error(json); });
+                            return await response.json().then((json) => {
+                                throw new Error(json)
+                            })
                         } else {
-                            return await response.json();
+                            return await response.json()
                         }
                     })
-                    .then(data => {
-                        this.documents = data.filedata;
-                        this.commsLogId = data.comms_instance_id;
+                    .then((data) => {
+                        this.documents = data.filedata
+                        this.commsLogId = data.comms_instance_id
                     })
-                    .catch(error => {
+                    .catch((error) => {
                         swal.fire({
-                        title: 'File Error',
-                        text: error,
-                        icon: 'error'
+                            title: 'File Error',
+                            text: error,
+                            icon: 'error',
+                        })
                     })
-                    });
-            } else {
             }
         },
     },
-    mounted: async function () {
-        await this.$nextTick(async () => {
-            if (this.documentActionUrl === 'temporary_document' && !this.temporary_document_collection_id) {
-                // pass
-            } else {
-                await this.get_documents();
-            }
-        });
-    },
 }
-
 </script>
 
 <style scoped lang="css">
@@ -303,47 +382,11 @@ input {
     box-shadow: none;
 }
 
-.ffu-wrapper {}
-
 .ffu-input-elem {
     display: none !important;
 }
-
 .ffu-input-text {
     color: #337ab7;
     cursor: pointer;
-}
-
-.ffu-input-text:hover {
-    color: #23527c;
-    text-decoration: underline;
-}
-
-.ml-1 {
-    margin-left: 0.25em !important;
-}
-
-.ml-2 {
-    margin-left: 0.5em !important;
-}
-
-.ml-3 {
-    margin-left: 1em !important;
-}
-
-.mt-2 {
-    margin-top: 0.5em !important;
-}
-
-.mt-3 {
-    margin-top: 1em !important;
-}
-
-.mb-3 {
-    margin-bottom: 1em !important;
-}
-
-.mb-4 {
-    margin-bottom: 2em !important;
 }
 </style>
