@@ -84,6 +84,8 @@ class CompetitiveProcess(LicensingModelVersioned):
     site_name = models.ForeignKey(
         SiteName, blank=True, null=True, on_delete=models.PROTECT
     )
+    site_comments = models.TextField(blank=True)
+
     winner = models.ForeignKey(
         "CompetitiveProcessParty", null=True, blank=True, on_delete=models.CASCADE
     )

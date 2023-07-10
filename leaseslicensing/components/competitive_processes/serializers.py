@@ -421,6 +421,7 @@ class CompetitiveProcessSerializerBase(serializers.ModelSerializer):
             "created_at",
             "assigned_officer",
             "site_name",
+            "site_comments",
             "groups",
             "can_accessing_user_view",
             "can_accessing_user_process",
@@ -534,6 +535,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             "created_at",
             "assigned_officer",
             "site_name",
+            "site_comments",
             "groups",
             "gis_data",
             "can_accessing_user_view",
@@ -586,6 +588,8 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
         competitive_process_parties_data = validated_data.pop(
             "competitive_process_parties"
         )
+
+        super().update(instance, validated_data)
 
         # competitive_process
         if isinstance(validated_data["winner"], dict):

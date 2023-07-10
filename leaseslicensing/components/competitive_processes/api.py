@@ -166,7 +166,7 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def perform_update(self, serializer):
         instance = serializer.save()
-
+        logger.debug(f"\n\n\nSite comments: {instance.site_comments}\n\n\n")
         request = self.request
         competitive_process_data = request.data
         # Pop "geometry" data to handle it independently of the "competitive process"

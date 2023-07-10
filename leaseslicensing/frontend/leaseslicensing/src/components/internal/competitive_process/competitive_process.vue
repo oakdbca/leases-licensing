@@ -203,6 +203,25 @@
                                 <div class="row mb-3">
                                     <div class="col-sm-3">
                                         <label class="col-form-label"
+                                            >Site Comments</label
+                                        >
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <textarea
+                                            id="site_comments"
+                                            v-model="
+                                                competitive_process.site_comments
+                                            "
+                                            class="form-control"
+                                            type="text"
+                                            name="site_comments"
+                                            style="height: 200px"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                        <label class="col-form-label"
                                             >Groups</label
                                         >
                                     </div>
