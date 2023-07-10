@@ -377,9 +377,10 @@
                             label="Edit Invoicing Details"
                         >
                             <InvoicingDetails
-                                :invoicing_details="
+                                :invoicing-details="
                                     approval.current_proposal.invoicing_details
                                 "
+                                @updateInvoicingDetails="updateInvoicingDetails"
                             />
                         </FormSection>
                     </div>
@@ -406,7 +407,7 @@
     </div>
 </template>
 <script>
-import datatable from '@vue-utils/datatable.vue'
+/*globals bootstrap, moment */
 import CommsLogs from '@common-utils/comms_logs.vue'
 import Applicant from '@/components/common/applicant.vue'
 import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
@@ -420,7 +421,6 @@ import InvoicingDetails from '@/components/common/invoicing_details.vue'
 export default {
     name: 'ApprovalDetail',
     components: {
-        datatable,
         CommsLogs,
         FormSection,
         Applicant,
@@ -471,7 +471,7 @@ export default {
     },
     computed: {
         debug: function () {
-            return this.$route.query.hasOwnProperty('debug') &&
+            return Object.hasOwnProperty.call(this.$route.query, 'debug') &&
                 this.$route.query.debug === 'true'
                 ? true
                 : false
@@ -514,8 +514,8 @@ export default {
                 console.log(this.approval)
                 console.log('opening invoicing tab')
                 this.loadInvoices = true
-                var tab_element = document.querySelector('#pills-invoicing-tab')
-                var tab = new bootstrap.Tab(tab_element)
+                let tab_element = document.querySelector('#pills-invoicing-tab')
+                let tab = new bootstrap.Tab(tab_element)
                 tab.show()
                 window.scrollTo(0, document.body.scrollHeight)
             }
@@ -591,6 +591,9 @@ export default {
                     )
                 }
             })
+        },
+        updateInvoicingDetails: function (value) {
+            this.approval.current_proposal.invoicing_details = value
         },
         completeEditingInvoicing: function () {
             alert('Call api to modify invoices based on new invoicing details')
