@@ -108,6 +108,7 @@
 </template>
 
 <script>
+/*globals moment */
 import datatable from '@/utils/vue/datatable.vue'
 import { v4 as uuid } from 'uuid'
 import { api_endpoints, constants } from '@/utils/hooks'
@@ -263,19 +264,17 @@ export default {
                     'Action',
                 ]
             }
-            if (this.is_internal) {
-                return [
-                    'id',
-                    'Number',
-                    'Type',
-                    'Submitter',
-                    'Applicant',
-                    'Status',
-                    'Lodged On',
-                    'Assigned Officer',
-                    'Action',
-                ]
-            }
+            return [
+                'id',
+                'Number',
+                'Type',
+                'Submitter',
+                'Applicant',
+                'Status',
+                'Lodged On',
+                'Assigned Officer',
+                'Action',
+            ]
         },
         column_id: function () {
             let vm = this
@@ -416,6 +415,8 @@ export default {
                     if (vm.is_internal) {
                         if (full.accessing_user_can_process) {
                             links += `<a href='/internal/proposal/${full.id}'>Process</a><br/>`
+                        } else if (full.can_edit_invoicing_details) {
+                            links += `<a href='/internal/proposal/${full.id}'>Edit Invoicing</a><br/>`
                         } else {
                             links += `<a href='/internal/proposal/${full.id}'>View</a><br/>`
                         }
@@ -440,7 +441,6 @@ export default {
             let vm = this
 
             let columns = []
-            let search = null
             let buttons = [
                 {
                     extend: 'excel',
@@ -468,7 +468,6 @@ export default {
                     vm.column_lodged_on,
                     vm.column_action,
                 ]
-                search = true
             }
 
             if (vm.is_external) {
@@ -483,7 +482,6 @@ export default {
                     //vm.column_assigned_officer,
                     vm.column_action,
                 ]
-                search = false
             }
             if (vm.is_internal) {
                 columns = [
@@ -497,7 +495,6 @@ export default {
                     vm.column_assigned_officer,
                     vm.column_action,
                 ]
-                search = true
             }
 
             return {
@@ -688,7 +685,7 @@ export default {
                     const resData = await response.json()
                     vm.application_types = resData
                 },
-                (error) => {}
+                () => {}
             )
 
             // Application Statuses
