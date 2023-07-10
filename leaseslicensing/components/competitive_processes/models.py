@@ -492,7 +492,7 @@ class PartyDetail(models.Model):
 
     @property
     def created_by(self):
-        if self.create_by_id:
+        if self.created_by_id:
             person = retrieve_email_user(self.created_by_id)
             return person
         return None
@@ -514,6 +514,12 @@ class PartyDetailDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
+
+    @property
+    def secure_url(self):
+        from leaseslicensing.components.main.utils import get_secure_file_url
+
+        return get_secure_file_url(self, "_file")
 
 
 def update_competitive_process_comms_log_filename(instance, filename):
