@@ -7,7 +7,7 @@ from django.db import transaction
 from django.db.models import F
 from django.forms import ValidationError
 from django.http import FileResponse, Http404
-from rest_framework import views, viewsets, status
+from rest_framework import status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
@@ -126,6 +126,7 @@ class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
                 file=d._file.url,
                 id=d.id,
                 name=d.name,
+                secure_url=d.secure_url,
             )
             for d in instance.documents.all()
             if d._file
