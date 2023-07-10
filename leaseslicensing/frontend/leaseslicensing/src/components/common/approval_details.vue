@@ -130,15 +130,14 @@
                             </div>
                         </form>
 
-                        <!-- TODO: Infinite loop when directly updating the prop -->
-                        <!-- @update:selectedData="
-                            approval_details.gis_data = $event
-                        " -->
                         <GisDataDetails
                             :selected-data="externalApprovalGisData"
                             :searchable="false"
                             :readonly="true"
                             placeholder="N/A"
+                            @update:selectedData="
+                                approval_details.gis_data = $event // Update gis data example
+                            "
                         />
                     </div>
                 </FormSection>
