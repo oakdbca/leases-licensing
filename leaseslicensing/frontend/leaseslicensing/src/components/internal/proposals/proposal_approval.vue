@@ -117,11 +117,15 @@
             label="Invoicing Details"
             index="proposal_invoicing_details"
         >
-            <InvoicingDetails :invoicing_details="proposal.invoicing_details" />
+            <InvoicingDetails
+                :invoicing-details="proposal.invoicing_details"
+                @updateInvoicingDetails="$emit('updateInvoicingDetails')"
+            />
         </FormSection>
     </div>
 </template>
 <script>
+/*globals moment, swal */
 import { api_endpoints, helpers } from '@/utils/hooks'
 import { constants } from '@/utils/hooks'
 import ProposedIssuanceForm from '@/components/internal/proposals/proposed_issuance_form.vue'
@@ -138,14 +142,24 @@ export default {
         InvoicingDetails,
     },
     props: {
-        proposal: Object,
-        proposedApprovalState: '',
-        proposedApprovalKey: null,
+        proposal: {
+            type: Object,
+            required: true,
+        },
+        proposedApprovalState: {
+            type: String,
+            default: '',
+        },
+        proposedApprovalKey: {
+            type: Object,
+            default: null,
+        },
         readonly: {
             type: Boolean,
             default: false,
         },
     },
+    emits: ['updateInvoicingDetails'],
     data: function () {
         let vm = this
         return {
@@ -182,12 +196,6 @@ export default {
                     this.showingRequirements)
             return ret_val
         },
-        /*
-        showElectoralRoll: function(){
-            // TODO: implement
-            return true
-        },
-        */
         showElectoralRoll: function () {
             let show = false
             if (
@@ -222,8 +230,6 @@ export default {
         },
         canAssess: function () {
             return true // TODO: Implement correctly.  May not be needed though
-
-            //return this.proposal && this.proposal.assessor_mode.assessor_can_assess ? true : false;
         },
         hasAssessorMode: function () {
             return this.proposal &&
@@ -233,46 +239,7 @@ export default {
         },
         canAction: function () {
             return true // TODO: implement this.  This is just temporary solution
-
-            //if (this.proposal.processing_status == 'With Approver'){
-            //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_approver || this.proposal.assigned_approver == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //}
-            //else{
-            //    return this.proposal && (this.proposal.processing_status == 'With Approver' || this.proposal.processing_status == 'With Assessor' || this.proposal.processing_status == 'With Assessor (Requirements)') && !this.isFinalised && !this.proposal.can_user_edit && (this.proposal.current_assessor.id == this.proposal.assigned_officer || this.proposal.assigned_officer == null ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-            //}
         },
-        //canLimitedAction: function(){
-
-        //    //return false  // TODO: implement this.  This is just temporary solution
-
-        //    if (this.proposal.processing_status == 'With Approver'){
-        //        return
-        //            this.proposal
-        //            && (
-        //                this.proposal.processing_status == 'With Assessor' ||
-        //                //this.proposal.processing_status == 'With Referral' ||
-        //                this.proposal.processing_status == 'With Assessor (Requirements)'
-        //            )
-        //            && !this.isFinalised && !this.proposal.can_user_edit
-        //            && (
-        //                this.proposal.current_assessor.id == this.proposal.assigned_approver ||
-        //                this.proposal.assigned_approver == null
-        //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-        //    }
-        //    else{
-        //        return
-        //            this.proposal
-        //            && (
-        //                this.proposal.processing_status == 'With Assessor' ||
-        //                //this.proposal.processing_status == 'With Referral' ||
-        //                this.proposal.processing_status == 'With Assessor (Requirements)'
-        //            ) && !this.isFinalised && !this.proposal.can_user_edit
-        //            && (
-        //                this.proposal.current_assessor.id == this.proposal.assigned_officer ||
-        //                this.proposal.assigned_officer == null
-        //            ) && this.proposal.assessor_mode.assessor_can_assess? true : false;
-        //    }
-        //},
         canSeeSubmission: function () {
             return (
                 this.proposal &&
@@ -294,6 +261,7 @@ export default {
             if (this.proposal) {
                 return this.proposal.approval_issue_date
             }
+            return ''
         },
         proposalApprovedOn: function () {
             return this.proposal.approved_on
@@ -354,6 +322,7 @@ export default {
                     return `This application for a ${this.proposal.application_type.name_display}`
                 }
             }
+            return ''
         },
         displayAwaitingPaymentMsg: function () {
             let display = false
@@ -394,15 +363,6 @@ export default {
             }
             return returnDate
         },
-        hasAssessorMode() {
-            return this.proposal.assessor_mode.has_assessor_mode
-        },
-        isFinalised: function () {
-            return (
-                this.proposal.processing_status == 'Approved' ||
-                this.proposal.processing_status == 'Declined'
-            )
-        },
         isApprovalLevel: function () {
             return this.proposal.approval_level != null ? true : false
         },
@@ -417,17 +377,13 @@ export default {
             return decision_label
         },
     },
-    watch: {},
-    mounted: function () {
-        let vm = this
-    },
     methods: {
         readFile: function () {
             let vm = this
             let _file = null
             var input = $(vm.$refs.uploadedFile)[0]
             if (input.files && input.files[0]) {
-                var reader = new FileReader()
+                let reader = new FileReader()
                 reader.readAsDataURL(input.files[0])
                 reader.onload = function (e) {
                     _file = e.target.result
@@ -503,14 +459,16 @@ export default {
                         )
                         .then(
                             (response) => {
-                                vm.$refs.requirements_datatable.vmDataTable.ajax.reload()
+                                if (response.ok) {
+                                    vm.$refs.requirements_datatable.vmDataTable.ajax.reload()
+                                }
                             },
                             (error) => {
                                 console.log(error)
                             }
                         )
                 },
-                (error) => {}
+                () => {}
             )
         },
     },
