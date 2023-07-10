@@ -68,9 +68,6 @@ class ConsumerPriceIndexAdmin(admin.ModelAdmin):
         "year",
         "name",
     ]
-    exclude = [
-        "year",
-    ]
 
 
 @admin.register(models.RepetitionType)

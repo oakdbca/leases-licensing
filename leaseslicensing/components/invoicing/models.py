@@ -228,6 +228,8 @@ class ConsumerPriceIndex(BaseModel):
 
     class Meta:
         app_label = "leaseslicensing"
+        verbose_name = "Consumer Price Index"
+        verbose_name_plural = "Consumer Price Indexes"
 
     def __str__(self):
         return f"{self.name}"
@@ -235,7 +237,7 @@ class ConsumerPriceIndex(BaseModel):
     @property
     def name(self):
         if self.year:
-            return f"{str(self.year)} --- {str(self.year + 1)}"
+            return f"{str(self.year)} - {str(self.year + 1)}"
         else:
             return "---"
 
