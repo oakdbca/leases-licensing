@@ -867,12 +867,10 @@ export default {
         },
     },
     created: function () {
-        console.log('created()')
         this.fetchFilterLists()
         this.fetchProposals()
     },
     mounted: function () {
-        console.log('mounted()')
         let vm = this
 
         this.$nextTick(() => {
@@ -933,16 +931,6 @@ export default {
         },
         applyFiltersFrontEnd: function () {
             this.filteredProposals = [...this.proposals]
-            console.log('applyFiltersFrontEnd', this.filteredProposals)
-            console.log('this.filteredProposals', this.filteredProposals)
-            console.log(
-                'this.filterApplicationsMapApplicationType',
-                this.filterApplicationsMapApplicationType
-            )
-            console.log(
-                'this.filterApplicationsMapApplicationType typeof',
-                typeof this.filterApplicationsMapApplicationType
-            )
             if ('all' != this.filterApplicationsMapApplicationType) {
                 this.filteredProposals = [
                     ...this.filteredProposals.filter(
@@ -1005,7 +993,6 @@ export default {
             )
         },
         displayAllFeatures: function () {
-            console.log('in displayAllFeatures()')
             let vm = this
             if (vm.map) {
                 if (vm.modelQuerySource.getFeatures().length > 0) {
@@ -1780,13 +1767,10 @@ export default {
             let vm = this
             proposals.forEach(function (proposal) {
                 proposal.color = vm.getRandomRGBAColor()
-                console.log(proposal.lodgement_date)
-                console.log(typeof proposal.lodgement_date)
             })
         },
         loadFeatures: function (proposals) {
             let vm = this
-            console.log(proposals)
             // Remove all features from the layer
             vm.modelQuerySource.clear()
             proposals.forEach(function (proposal) {
