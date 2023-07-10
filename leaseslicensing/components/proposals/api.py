@@ -1776,7 +1776,8 @@ class ProposalViewSet(UserActionLoggingViewset):
     def finance_complete_editing(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.finance_complete_editing(request, self.action)
-        return Response({})
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @basic_exception_handler
