@@ -387,6 +387,8 @@ export default {
                 'colspan',
                 this.number_of_columns()
             )
+            // The tr padding was breaking the bounds of the containing element
+            $('tr.' + this.expandable_row_class_name + ' td').addClass('p-0')
         },
         add_party_clicked: function () {
             this.openAddPartyModal()
