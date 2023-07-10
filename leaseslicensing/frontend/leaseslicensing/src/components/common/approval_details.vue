@@ -44,20 +44,20 @@
                                     <div class="mb-3 row">
                                         <label
                                             for="txt-license-document"
-                                            class="col-6 col-form-label"
+                                            class="col-6 col-form-label pull-right"
                                             >{{
                                                 approval_details.approval_type
                                             }}</label
                                         >
 
-                                        <div class="col-6">
+                                        <div class="col-6 col-form-label">
                                             <span
                                                 v-if="
                                                     approval_details.licence_document.endsWith(
                                                         '.pdf'
                                                     )
                                                 "
-                                                class="fa fa-file-pdf"
+                                                class="fa fa-file-pdf form-label"
                                                 style="color: red"
                                             >
                                                 &nbsp;
@@ -81,6 +81,14 @@
                                         </div>
                                     </div>
                                 </form>
+                                <BootstrapAlert
+                                    v-else
+                                    class="alert alert-danger mb-0"
+                                    role="alert"
+                                    icon="exclamation-triangle-fill"
+                                >
+                                    NO LICENSE DOCUMENT
+                                </BootstrapAlert>
                             </div>
                         </div>
 
