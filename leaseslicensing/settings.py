@@ -349,6 +349,8 @@ KMI_AUTH_PASSWORD = env("KMI_AUTH_PASSWORD")
 
 APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY = 90
 
+DEFAULT_DAYS_BEFORE_PAYMENT_DUE = 30  # Net 30 Payment terms
+
 template_title = "Leases and Licensing"
 template_group = "parkswildlife"
 
