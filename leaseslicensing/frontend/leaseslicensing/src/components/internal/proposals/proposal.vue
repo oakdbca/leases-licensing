@@ -1,5 +1,6 @@
 <template lang="html">
     <div v-if="proposal" id="internalProposal" class="container">
+        {{ proposal.invoicing_details }}
         <div v-if="debug">internal/proposals/proposal.vue</div>
         <div class="row">
             <h3>
@@ -60,8 +61,7 @@
                     @discardProposal="discardProposal"
                     @assignRequestUser="assignRequestUser"
                     @assignTo="assignTo"
-                    @completeEditing="completeEditing"
-                    @cancelEditing="cancelEditing"
+                    @completeEditing="validateInvoicingForm"
                     @updateProposalData="updateProposalData"
                     @updateAssignedApprover="updateAssignedApprover"
                     @updateAssignedOfficer="updateAssignedOfficer"
@@ -71,7 +71,11 @@
             <div class="col-md-9">
                 <!-- Main contents -->
                 <template v-if="display_approval_screen">
-                    <ApprovalScreen :proposal="proposal" :readonly="readonly" />
+                    <ApprovalScreen
+                        :proposal="proposal"
+                        :readonly="readonly"
+                        @updateInvoicingDetails="updateInvoicingDetails"
+                    />
                 </template>
 
                 <template v-if="display_requirements">
@@ -1114,12 +1118,6 @@ export default {
         AssessmentComments,
         TableRelatedItems,
     },
-    props: {
-        proposalId: {
-            type: Number,
-            required: true,
-        },
-    },
     data: function () {
         let vm = this
         return {
@@ -1188,9 +1186,6 @@ export default {
             },
             contacts_table: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
-            //comms_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/comms_log'),
-            //comms_add_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/add_comms_log'),
-            //logs_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/action_log'),
             comms_url: helpers.add_endpoint_json(
                 api_endpoints.proposal,
                 vm.$route.params.proposal_id + '/comms_log'
@@ -1548,7 +1543,6 @@ export default {
                 : ''
         },
     },
-    watch: {},
     updated: function () {
         let vm = this
         if (!vm.panelClickersInitialised) {
@@ -1579,6 +1573,19 @@ export default {
         this.fetchProposal()
     },
     methods: {
+        validateInvoicingForm: function () {
+            let vm = this
+            var form = document.getElementById('invoicing-form')
+
+            if (form.checkValidity()) {
+                vm.completeEditing()
+            } else {
+                form.classList.add('was-validated')
+                $('#invoicing-form').find(':invalid').first().focus()
+            }
+
+            return false
+        },
         completeEditing: async function () {
             let payload = { proposal: this.proposal }
 
@@ -1590,11 +1597,13 @@ export default {
             )
 
             if (res.ok) {
-                await swal.fire({
+                swal.fire({
                     title: 'Saved',
                     text: 'Your proposal has been saved',
                     icon: 'success',
                 })
+                let data = await res.json()
+                this.proposal = Object.assign({}, data)
             } else {
                 let errors = []
                 await res.json().then((json) => {
@@ -1614,9 +1623,6 @@ export default {
                     })
                 })
             }
-        },
-        cancelEditing: function () {
-            alert('cancelEditing')
         },
         applicationFormMounted: function () {
             this.fetchAdditionalDocumentTypesDict() // <select> element for the additional document type exists in the ApplicationForm component, which is a child component of this component.
@@ -1888,7 +1894,6 @@ export default {
                 .then((data) => {
                     if (data != null) {
                         // Only update the proposal if the discard was successful
-                        console.log(data)
                         vm.proposal = Object.assign({}, data)
                         vm.uuid++
                         swal.fire({
@@ -2205,7 +2210,6 @@ export default {
                     }
                 })
                 .then((response) => {
-                    console.log(response.reference)
                     this.proposal = Object.assign({}, response)
                     this.current_revision_id = revision.revision_id
                     this.uuid++
@@ -2258,7 +2262,6 @@ export default {
                     }
                     this.$nextTick(() => {
                         $('textarea').each(function () {
-                            console.log($(this)[0].scrollHeight)
                             if ($(this)[0].scrollHeight > 70) {
                                 $(this).height($(this)[0].scrollHeight - 30)
                             }
@@ -2268,6 +2271,9 @@ export default {
                 .catch((error) => {
                     console.log(error)
                 })
+        },
+        updateInvoicingDetails: function (value) {
+            this.proposal.invoicing_details = value
         },
     },
 }
