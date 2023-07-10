@@ -9,14 +9,27 @@
             :ok-disabled="disableOkButton"
             @ok="okClicked"
             @cancel="cancel"
-            @mounted="modalMounted"
         >
             <div class="container-fluid">
-                <div class="row modal-input-row">
+                <div class="row mb-3">
                     <div class="col-sm-3">
                         <label class="form-label">Add party</label>
                     </div>
                     <div class="col-sm-9">
+                        <div class="form-check form-check-inline">
+                            <input
+                                id="inlineRadio2"
+                                v-model="type_to_add"
+                                class="form-check-input"
+                                type="radio"
+                                name="inlineRadioOptions"
+                                value="organisation"
+                                checked
+                            />
+                            <label class="form-check-label" for="inlineRadio2"
+                                >Organisation</label
+                            >
+                        </div>
                         <div class="form-check form-check-inline">
                             <input
                                 id="inlineRadio1"
@@ -30,25 +43,9 @@
                                 >Person</label
                             >
                         </div>
-                        <div class="form-check form-check-inline">
-                            <input
-                                id="inlineRadio2"
-                                v-model="type_to_add"
-                                class="form-check-input"
-                                type="radio"
-                                name="inlineRadioOptions"
-                                value="organisation"
-                            />
-                            <label class="form-check-label" for="inlineRadio2"
-                                >Organisation</label
-                            >
-                        </div>
                     </div>
                 </div>
-                <div
-                    v-show="type_to_add == 'person'"
-                    class="row modal-input-row"
-                >
+                <div v-show="type_to_add == 'person'" class="row mb-3">
                     <div class="col-sm-3">
                         <label class="form-label">Person</label>
                     </div>
@@ -71,15 +68,13 @@
                         </select>
                     </div>
                 </div>
-                <div
-                    v-show="type_to_add == 'organisation'"
-                    class="row modal-input-row"
-                >
+                <div v-show="type_to_add == 'organisation'" class="row mb-3">
                     <div class="col-sm-3">
                         <label class="form-label">Organisation</label>
                     </div>
                     <div class="col-sm-7">
                         <select
+                            id="select_organisations"
                             ref="organisations"
                             class="form-select"
                             aria-label="Select organisation to add"
@@ -115,13 +110,12 @@ export default {
     data: function () {
         return {
             isModalOpen: false,
-            errors: false,
             errorString: '',
             successString: '',
             success: false,
             saving: false,
 
-            type_to_add: '',
+            type_to_add: 'organisation',
             // Person
             email_users: [],
             selected_email_user: null,
@@ -132,10 +126,6 @@ export default {
         }
     },
     computed: {
-        showError: function () {
-            var vm = this
-            return vm.errors
-        },
         disableOkButton: function () {
             let disabled = true
             if (this.selected_email_user || this.selected_organisation) {
@@ -144,7 +134,26 @@ export default {
             return disabled
         },
     },
-    watch: {},
+    watch: {
+        isModalOpen: function (newVal) {
+            if (newVal) {
+                this.$nextTick(() => {
+                    $(this.$refs.organisations).select2('open')
+                })
+            }
+        },
+        type_to_add: function (newVal) {
+            if (newVal == 'person') {
+                this.$nextTick(() => {
+                    $(this.$refs.email_users).select2('open')
+                })
+            } else {
+                this.$nextTick(() => {
+                    $(this.$refs.organisations).select2('open')
+                })
+            }
+        },
+    },
     mounted: function async() {
         let vm = this
         vm.$nextTick(async () => {
@@ -152,20 +161,16 @@ export default {
             vm.initialiseSelectOrganisation()
         })
     },
-    created: async function () {},
     methods: {
-        modalMounted: function () {
-            console.log('Add-party mounted.')
-        },
         initialiseSelectPerson: function () {
             let vm = this
             $(vm.$refs.email_users)
                 .select2({
+                    dropdownParent: $('#modal_add_party'),
                     minimumInputLength: 2,
                     theme: 'bootstrap-5',
                     allowClear: true,
                     placeholder: 'Type and select Person',
-                    // dropdownParent: $('#modal_add_party'),
                     ajax: {
                         url: api_endpoints.person_lookup,
                         dataType: 'json',
@@ -192,6 +197,7 @@ export default {
             let vm = this
             $(vm.$refs.organisations)
                 .select2({
+                    dropdownParent: $('#modal_add_party'),
                     minimumInputLength: 2,
                     theme: 'bootstrap-5',
                     allowClear: true,
@@ -243,21 +249,11 @@ export default {
             this.selected_organisation = null
             $(this.$refs.email_users).empty()
             $(this.$refs.organisations).empty()
+            this.type_to_add = 'organisation'
             this.isModalOpen = false
-            this.errors = false
             $('.has-error').removeClass('has-error')
             this.$emit('closeModal')
         },
-        addEventListeners: function () {},
     },
 }
 </script>
-
-<style lang="css">
-.modal-input-row {
-    margin-bottom: 1em;
-}
-.select2-container--bootstrap-5 {
-    z-index: 99999;
-}
-</style>
