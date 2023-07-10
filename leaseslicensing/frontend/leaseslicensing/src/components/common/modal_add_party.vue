@@ -170,7 +170,7 @@ export default {
                     minimumInputLength: 2,
                     theme: 'bootstrap-5',
                     allowClear: true,
-                    placeholder: 'Type and select Person',
+                    placeholder: 'Start typing to find a Person (Esc to close)',
                     ajax: {
                         url: api_endpoints.person_lookup,
                         dataType: 'json',
@@ -192,6 +192,8 @@ export default {
                 .on('select2:unselect', function () {
                     vm.selected_email_user = null
                 })
+                .empty()
+                .trigger('change')
         },
         initialiseSelectOrganisation: function () {
             let vm = this
@@ -201,7 +203,8 @@ export default {
                     minimumInputLength: 2,
                     theme: 'bootstrap-5',
                     allowClear: true,
-                    placeholder: 'Type and select Organisation',
+                    placeholder:
+                        'Start typing to find an Organisation (Esc to close)',
                     ajax: {
                         url: api_endpoints.organisation_lookup,
                         dataType: 'json',
@@ -224,6 +227,8 @@ export default {
                 .on('select2:unselect', function () {
                     vm.selected_organisation = null
                 })
+                .empty()
+                .trigger('change')
         },
         okClicked: function () {
             let party_to_add = null
