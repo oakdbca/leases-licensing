@@ -13,14 +13,27 @@ from leaseslicensing.components.competitive_processes.email import (
 from leaseslicensing.components.main.models import (
     ApplicationType,
     CommunicationsLogEntry,
-    LicensingModelVersioned,
     Document,
+    LicensingModelVersioned,
     SecureFileField,
     UserAction,
 )
 from leaseslicensing.components.main.related_item import RelatedItem
 from leaseslicensing.components.organisations.models import Organisation
-from leaseslicensing.helpers import is_internal
+from leaseslicensing.components.tenure.models import (
+    LGA,
+    Act,
+    Category,
+    District,
+    Group,
+    Identifier,
+    Name,
+    Region,
+    SiteName,
+    Tenure,
+    Vesting,
+)
+from leaseslicensing.helpers import belongs_to_by_user_id, is_internal
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger("leaseslicensing")
@@ -68,6 +81,11 @@ class CompetitiveProcess(LicensingModelVersioned):
     assigned_officer_id = models.IntegerField(null=True, blank=True)  # EmailUserRO
     created_at = models.DateTimeField(auto_now_add=True, null=True)
     modified_at = models.DateTimeField(auto_now=True, null=True)
+    site_name = models.ForeignKey(
+        SiteName, blank=True, null=True, on_delete=models.PROTECT
+    )
+    site_comments = models.TextField(blank=True)
+
     winner = models.ForeignKey(
         "CompetitiveProcessParty", null=True, blank=True, on_delete=models.CASCADE
     )
@@ -101,7 +119,7 @@ class CompetitiveProcess(LicensingModelVersioned):
             # add geometry
             from copy import deepcopy
 
-            if self.originating_proposal is not None:
+            if hasattr(self, "originating_proposal"):
                 for geo in self.originating_proposal.proposalgeometry.all():
                     new_geo = deepcopy(geo)
                     new_geo.proposal = lease_licence
@@ -315,6 +333,9 @@ class CompetitiveProcess(LicensingModelVersioned):
             return True
         return False
 
+    def is_user_competitive_process_editor(self, user_id):
+        return belongs_to_by_user_id(user_id, settings.GROUP_COMPETITIVE_PROCESS_EDITOR)
+
     def assign_to(self, user_id, request):
         with transaction.atomic():
             self.assigned_officer_id = user_id
@@ -422,6 +443,11 @@ class CompetitiveProcessParty(models.Model):
             )
         ]
 
+    def __str__(self):
+        if self.person_id:
+            return f"Person: {self.person} is a party to Competitive Process: {self.competitive_process}"
+        return f"Organisation: {self.organisation} is a party to Competitive Process: {self.competitive_process}"
+
     @property
     def is_person(self):
         if self.person_id:
@@ -468,7 +494,7 @@ class PartyDetail(models.Model):
 
     @property
     def created_by(self):
-        if self.create_by_id:
+        if self.created_by_id:
             person = retrieve_email_user(self.created_by_id)
             return person
         return None
@@ -490,6 +516,12 @@ class PartyDetailDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
+
+    @property
+    def secure_url(self):
+        from leaseslicensing.components.main.utils import get_secure_file_url
+
+        return get_secure_file_url(self, "_file")
 
 
 def update_competitive_process_comms_log_filename(instance, filename):
@@ -546,4 +578,172 @@ class CompetitiveProcessUserAction(UserAction):
     def log_action(cls, competitive_process, action, user):
         return cls.objects.create(
             competitive_process=competitive_process, who=user, what=str(action)
+        )
+
+
+class CompetitiveProcessGroup(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="groups"
+    )
+    group = models.ForeignKey(Group, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "group")
+
+    def __str__(self):
+        return f"Competitive Process: {self.competitive_process.lodgement_number} is in Group: {self.group}"
+
+
+class CompetitiveProcessIdentifier(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="identifiers"
+    )
+    identifier = models.ForeignKey(Identifier, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "identifier")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land covered by legal act: {self.identifier}"
+        )
+
+
+class CompetitiveProcessVesting(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="vestings"
+    )
+    vesting = models.ForeignKey(
+        Vesting, on_delete=models.PROTECT, null=True, blank=True
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "vesting")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land covered by Vesting: {self.vesting}"
+        )
+
+
+class CompetitiveProcessName(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="names"
+    )
+    name = models.ForeignKey(Name, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "name")
+
+    def __str__(self):
+        return f"Competitive Process: {self.competitive_process.lodgement_number} includes land named: {self.name}"
+
+
+class CompetitiveProcessAct(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="acts"
+    )
+    act = models.ForeignKey(Act, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "act")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land covered by legal act: {self.act}"
+        )
+
+
+class CompetitiveProcessTenure(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="tenures"
+    )
+    tenure = models.ForeignKey(Tenure, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "tenure")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land of tenure: {self.tenure}"
+        )
+
+
+class CompetitiveProcessCategory(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="categories"
+    )
+    category = models.ForeignKey(Category, on_delete=models.PROTECT)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "category")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land categorised as: {self.category}"
+        )
+
+
+class CompetitiveProcessRegion(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="regions"
+    )
+    region = models.ForeignKey(Region, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "region")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land located in Region: {self.region}"
+        )
+
+
+class CompetitiveProcessDistrict(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="districts"
+    )
+    district = models.ForeignKey(
+        District, on_delete=models.PROTECT, null=True, blank=True
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "district")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land located in District: {self.district}"
+        )
+
+
+class CompetitiveProcessLGA(models.Model):
+    competitive_process = models.ForeignKey(
+        CompetitiveProcess, on_delete=models.CASCADE, related_name="lgas"
+    )
+    lga = models.ForeignKey(LGA, on_delete=models.PROTECT, null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        unique_together = ("competitive_process", "lga")
+
+    def __str__(self):
+        return (
+            f"Competitive Process: {self.competitive_process.lodgement_number} "
+            f"includes land located in LGA: {self.lga}"
         )

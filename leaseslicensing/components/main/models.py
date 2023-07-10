@@ -421,18 +421,6 @@ class TemporaryDocumentCollection(models.Model):
         app_label = "leaseslicensing"
 
 
-class TemporaryDocument(Document):
-    temp_document_collection = models.ForeignKey(
-        TemporaryDocumentCollection,
-        related_name="documents",
-        on_delete=models.CASCADE,
-    )
-    _file = models.FileField(max_length=255)
-
-    class Meta:
-        app_label = "leaseslicensing"
-
-
 upload_protected_files_storage = FileSystemStorage(
     location=settings.PROTECTED_MEDIA_ROOT, base_url="/protected_media"
 )
@@ -442,6 +430,24 @@ class SecureFileField(models.FileField):
     def __init__(self, *args, **kwargs):
         kwargs["storage"] = upload_protected_files_storage
         super().__init__(*args, **kwargs)
+
+
+class TemporaryDocument(Document):
+    temp_document_collection = models.ForeignKey(
+        TemporaryDocumentCollection,
+        related_name="documents",
+        on_delete=models.CASCADE,
+    )
+    _file = SecureFileField(max_length=255)
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+    @property
+    def secure_url(self):
+        from leaseslicensing.components.main.utils import get_secure_file_url
+
+        return get_secure_file_url(self, "_file")
 
 
 class LicensingModel(models.Model):
@@ -472,8 +478,8 @@ class LicensingModel(models.Model):
             self.lodgement_number = new_lodgement_id
             self.save()
 
-class LicensingModelVersioned(LicensingModel, RevisionedMixin):
 
+class LicensingModelVersioned(LicensingModel, RevisionedMixin):
     class Meta:
         abstract = True
         app_label = "leaseslicensing"

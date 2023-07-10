@@ -1,97 +1,310 @@
 <template lang="html">
-    <div class="container" v-if="competitive_process">
+    <div v-if="competitive_process" class="container">
         <div class="row">
-            <h3>Competitive Process: {{ competitive_process.lodgement_number }}</h3>
+            <h3>
+                Competitive Process: {{ competitive_process.lodgement_number }}
+            </h3>
             <div class="col-md-3">
-                <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
-                    :disable_add_entry="false" />
-                <Workflow ref='workflow' :competitive_process="competitive_process" :processing="processing"
-                    :discarded="discarded" :declined="declined" :finalised="finalised" :canAction="canAction"
-                    :canAssess="canAssess" :can_user_edit="competitive_process.can_user_edit"
-                    @assignRequestUser="assignRequestUser" @assignTo="assignTo" @issueComplete="issueComplete"
-                    @issueDiscard="issueDiscard" @issueUnlock="issueUnlock" :key="cp_id" class="mt-2" />
+                <CommsLogs
+                    :comms_url="comms_url"
+                    :logs_url="logs_url"
+                    :comms_add_url="comms_add_url"
+                    :disable_add_entry="false"
+                />
+                <Workflow
+                    ref="workflow"
+                    :key="cp_id"
+                    :competitive-process="competitive_process"
+                    :processing="processing"
+                    :discarded="discarded"
+                    :declined="declined"
+                    :finalised="finalised"
+                    :can-action="canAction"
+                    :can-assess="canAssess"
+                    :can_user_edit="competitive_process.can_user_edit"
+                    class="mt-2"
+                    @assignRequestUser="assignRequestUser"
+                    @assignTo="assignTo"
+                    @issueComplete="issueComplete"
+                    @issueDiscard="issueDiscard"
+                    @issueUnlock="issueUnlock"
+                />
             </div>
             <div class="col-md-9">
-                <ul class="nav nav-pills" id="pills-tab" role="tablist">
+                <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item mr-1" role="presentation">
-                        <button class="nav-link active" id="pills-parties-tab" data-bs-toggle="pill"
-                            data-bs-target="#pills-parties" role="tab" aria-controls="pills-parties" aria-selected="true">
+                        <button
+                            id="pills-parties-tab"
+                            class="nav-link active"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-parties"
+                            role="tab"
+                            aria-controls="pills-parties"
+                            aria-selected="true"
+                        >
                             Parties
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-map-tab" data-bs-toggle="pill" data-bs-target="#pills-map"
-                            role="tab" aria-controls="pills-map" aria-selected="false" @click="mapTabClicked">
+                        <button
+                            id="pills-map-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-map"
+                            role="tab"
+                            aria-controls="pills-map"
+                            aria-selected="false"
+                            @click="mapTabClicked"
+                        >
                             Map
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-details-tab" data-bs-toggle="pill"
-                            data-bs-target="#pills-details" role="tab" aria-controls="pills-details" aria-selected="false">
+                        <button
+                            id="pills-details-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-details"
+                            role="tab"
+                            aria-controls="pills-details"
+                            aria-selected="false"
+                        >
                             Details
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-outcome-tab" data-bs-toggle="pill"
-                            data-bs-target="#pills-outcome" role="tab" aria-controls="pills-outcome" aria-selected="false"
-                            @click="outcomeTabClicked">
+                        <button
+                            id="pills-outcome-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-outcome"
+                            role="tab"
+                            aria-controls="pills-outcome"
+                            aria-selected="false"
+                            @click="outcomeTabClicked"
+                        >
                             Outcome
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="pills-related-items-tab" data-bs-toggle="pill"
-                            data-bs-target="#pills-related-items" role="tab" aria-controls="pills-related-items"
-                            aria-selected="false">
+                        <button
+                            id="pills-related-items-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-related-items"
+                            role="tab"
+                            aria-controls="pills-related-items"
+                            aria-selected="false"
+                        >
                             Related Items
                         </button>
                     </li>
                 </ul>
-                <div class="tab-content" id="pills-tabContent">
-                    <div class="tab-pane fade show active" id="pills-parties" role="tabpanel"
-                        aria-labelledby="pills-parties-tab">
-                        <FormSection :formCollapse="false" label="Parties" Index="parties">
-                            <TableParties ref="competitive_process_parties" level=internal
-                                :competitive_process_parties="competitive_process.competitive_process_parties"
-                                :competitive_process_id="competitive_process.id"
-                                :accessing_user="competitive_process.accessing_user" :processing="processing"
-                                :discarded="discarded" :declined="declined" :completed="completed" :finalised="finalised"
-                                :key="cp_id" @add-detail="addDetail" />
+                <div id="pills-tabContent" class="tab-content">
+                    <div
+                        id="pills-parties"
+                        class="tab-pane fade show active"
+                        role="tabpanel"
+                        aria-labelledby="pills-parties-tab"
+                    >
+                        <FormSection
+                            :form-collapse="false"
+                            label="Parties"
+                            index="parties"
+                        >
+                            <TableParties
+                                ref="competitive_process_parties"
+                                :key="cp_id"
+                                level="internal"
+                                :competitive-process-parties="
+                                    competitive_process.competitive_process_parties
+                                "
+                                :competitive-process-id="competitive_process.id"
+                                :accessing-user="
+                                    competitive_process.accessing_user
+                                "
+                                :processing="processing"
+                                :discarded="discarded"
+                                :declined="declined"
+                                :completed="completed"
+                                :finalised="finalised"
+                                @add-detail="addDetail"
+                                @update-party-date="updatePartyDate"
+                                @add-party="addParty"
+                            />
                         </FormSection>
                     </div>
-                    <div class="tab-pane fade" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
-                        <FormSection :formCollapse="false" label="Map" Index="map">
+                    <div
+                        id="pills-map"
+                        class="tab-pane fade"
+                        role="tabpanel"
+                        aria-labelledby="pills-map-tab"
+                    >
+                        <FormSection
+                            :form-collapse="false"
+                            label="Map"
+                            index="map"
+                        >
                             <!--
                                 validate-feature: event callback function to execute code to validate a feature. Needs to call `finishDrawing` on the map component to complete the drawing
                              -->
-                            <MapComponent ref="component_map" :key="componentMapKey" :context="competitive_process"
-                                :proposalIds="[-1]" :owsQuery="owsQuery" :featureCollection="geometriesToFeatureCollection"
-                                styleBy="assessor" :filterable="false" :drawable="true" :selectable="true" level="internal"
-                                @validate-feature="validateFeature.bind(this)()" />
+                            <MapComponent
+                                ref="component_map"
+                                :key="componentMapKey"
+                                :context="competitive_process"
+                                :proposal-ids="[-1]"
+                                :ows-query="owsQuery"
+                                :feature-collection="
+                                    geometriesToFeatureCollection
+                                "
+                                style-by="assessor"
+                                :filterable="false"
+                                :drawable="true"
+                                :selectable="true"
+                                level="internal"
+                                @validate-feature="validateFeature.bind(this)()"
+                            />
                         </FormSection>
                     </div>
-                    <div class="tab-pane fade" id="pills-details" role="tabpanel" aria-labelledby="pills-details-tab">
-                        <FormSection :formCollapse="false" label="Details" Index="details">
-
+                    <div
+                        id="pills-details"
+                        class="tab-pane fade"
+                        role="tabpanel"
+                        aria-labelledby="pills-details-tab"
+                    >
+                        <FormSection
+                            :form-collapse="false"
+                            label="Details"
+                            index="details"
+                        >
+                            <FormSection
+                                :form-collapse="false"
+                                label="Categorisation"
+                                index="categorisation"
+                            >
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                        <label class="col-form-label"
+                                            >Site Name</label
+                                        >
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <input
+                                            id="site_name"
+                                            v-model="
+                                                competitive_process.site_name
+                                            "
+                                            class="form-control"
+                                            type="text"
+                                            name="site_name"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                        <label class="col-form-label"
+                                            >Site Comments</label
+                                        >
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <textarea
+                                            id="site_comments"
+                                            v-model="
+                                                competitive_process.site_comments
+                                            "
+                                            class="form-control"
+                                            type="text"
+                                            name="site_comments"
+                                            style="height: 200px"
+                                        />
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-3">
+                                        <label class="col-form-label"
+                                            >Groups</label
+                                        >
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <Multiselect
+                                            v-model="competitive_process.groups"
+                                            label="name"
+                                            track-by="id"
+                                            placeholder="Select Groups"
+                                            :options="groups"
+                                            :hide-selected="true"
+                                            :multiple="true"
+                                            :searchable="true"
+                                            :loading="loadingGroups"
+                                        />
+                                    </div>
+                                </div>
+                            </FormSection>
+                            <FormSection
+                                :form-collapse="false"
+                                label="Geospatial Data"
+                                index="geospatial-data"
+                            >
+                                <GISDataDetails
+                                    v-if="competitive_process.gis_data"
+                                    :selected-data="
+                                        competitive_process.gis_data
+                                    "
+                                    :searchable="true"
+                                    :readonly="false"
+                                    @update:selectedData="updateGISData"
+                                />
+                            </FormSection>
                         </FormSection>
                     </div>
-                    <div class="tab-pane fade" id="pills-outcome" role="tabpanel" aria-labelledby="pills-outcome-tab">
-                        <FormSection :formCollapse="false" label="Outcome" Index="outcome">
+                    <div
+                        id="pills-outcome"
+                        class="tab-pane fade"
+                        role="tabpanel"
+                        aria-labelledby="pills-outcome-tab"
+                    >
+                        <FormSection
+                            :form-collapse="false"
+                            label="Outcome"
+                            index="outcome"
+                        >
                             <div class="row mb-2">
                                 <div class="col-sm-3">
-                                    <label for="competitive_process_winner" class="control-label">Winner</label>
+                                    <label
+                                        for="competitive_process_winner"
+                                        class="control-label"
+                                        >Winner</label
+                                    >
                                 </div>
                                 <div class="col-sm-4">
-                                    <select class="form-control" v-model="competitive_process.winner_id"
-                                        id="competitive_process_winner" :disabled="elementDisabled"
-                                        ref="select_winner">
+                                    <select
+                                        id="competitive_process_winner"
+                                        ref="select_winner"
+                                        v-model="competitive_process.winner_id"
+                                        class="form-control"
+                                        :disabled="elementDisabled"
+                                    >
                                         <option></option>
-                                        <option v-for="party in possibleWinner" :value="party.id">
+                                        <option
+                                            v-for="party in possibleWinner"
+                                            :key="party.id"
+                                            :value="party.id"
+                                        >
                                             <template v-if="party.id != 0">
-                                                <template v-if="party.is_person">
+                                                <template
+                                                    v-if="party.is_person"
+                                                >
                                                     {{ party.person.fullname }}
                                                 </template>
-                                                <template v-else-if="party.is_organisation">
-                                                    {{ party.organisation.trading_name }}
+                                                <template
+                                                    v-else-if="
+                                                        party.is_organisation
+                                                    "
+                                                >
+                                                    {{
+                                                        party.organisation
+                                                            .ledger_organisation_name
+                                                    }}
                                                 </template>
                                             </template>
                                         </option>
@@ -100,39 +313,74 @@
                             </div>
                             <div class="row mb-2">
                                 <div class="col-sm-3">
-                                    <label :for="hasWinner? 'competitive-process-outcome-winner-details': 'competitive-process-outcome-no-winner-details'" class="control-label">Details</label>
+                                    <label
+                                        :for="
+                                            hasWinner
+                                                ? 'competitive-process-outcome-winner-details'
+                                                : 'competitive-process-outcome-no-winner-details'
+                                        "
+                                        class="control-label"
+                                        >Details</label
+                                    >
                                 </div>
                                 <div class="col-sm-9">
                                     <RichText
-                                        :id="hasWinner? 'competitive-process-outcome-winner-details': 'competitive-process-outcome-no-winner-details'"
-                                        :proposalData="outcomeDetails"
-                                        placeholder_text="Add some details here"
+                                        :id="
+                                            hasWinner
+                                                ? 'competitive-process-outcome-winner-details'
+                                                : 'competitive-process-outcome-no-winner-details'
+                                        "
                                         ref="details"
-                                        :readonly="elementDisabled"
-                                        :can_view_richtext_src=true
                                         :key="cp_id"
                                         v-model="competitive_process.details"
+                                        :proposal-data="outcomeDetails"
+                                        placeholder_text="Add some details here"
+                                        :readonly="elementDisabled"
+                                        :can_view_richtext_src="true"
                                         @textChanged="detailsTextChanged"
                                     />
                                 </div>
                             </div>
                             <div class="row mb-2">
                                 <div class="col-sm-3">
-                                    <label for="competitive_process_documents" class="control-label">Documents</label>
+                                    <label
+                                        for="competitive_process_documents"
+                                        class="control-label"
+                                        >Documents</label
+                                    >
                                 </div>
                                 <div class="col-sm-9">
-                                    <FileField :readonly="elementDisabled" ref="competitive_process_document"
-                                        name="competitive_process_document" id="competitive_process_document"
-                                        :isRepeatable="true" :documentActionUrl="competitiveProcessDocumentUrl"
-                                        :replace_button_by_text="true" :key="cp_id" />
+                                    <FileField
+                                        id="competitive_process_document"
+                                        ref="competitive_process_document"
+                                        :key="cp_id"
+                                        :readonly="elementDisabled"
+                                        name="competitive_process_document"
+                                        :is-repeatable="true"
+                                        :document-action-url="
+                                            competitiveProcessDocumentUrl
+                                        "
+                                        :replace_button_by_text="true"
+                                    />
                                 </div>
                             </div>
                         </FormSection>
                     </div>
-                    <div class="tab-pane fade" id="pills-related-items" role="tabpanel"
-                        aria-labelledby="pills-related-items-tab">
-                        <FormSection :formCollapse="false" label="Related Items" Index="related_items">
-                            <TableRelatedItems :ajax_url="related_items_ajax_url" :key="cp_id" />
+                    <div
+                        id="pills-related-items"
+                        class="tab-pane fade"
+                        role="tabpanel"
+                        aria-labelledby="pills-related-items-tab"
+                    >
+                        <FormSection
+                            :form-collapse="false"
+                            label="Related Items"
+                            index="related_items"
+                        >
+                            <TableRelatedItems
+                                :key="cp_id"
+                                :ajax_url="related_items_ajax_url"
+                            />
                         </FormSection>
                     </div>
                 </div>
@@ -141,20 +389,43 @@
         <div v-if="displaySaveBtns" class="navbar fixed-bottom bg-navbar me-1">
             <div class="container">
                 <div class="col-md-12 text-end">
-                    <button v-if="processing" type="button" class="btn btn-primary me-1" disabled>
-                        Save and Continue&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
+                    <button
+                        v-if="processing"
+                        type="button"
+                        class="btn btn-primary me-1"
+                        disabled
+                    >
+                        Save and Continue&nbsp;<i
+                            class="fa-solid fa-spinner fa-spin"
+                        ></i>
                     </button>
-                    <input v-else type="button" @click.prevent="save_and_continue()" class="btn btn-primary me-1"
-                        value="Save and Continue" ::disabled="disableSaveAndContinueBtn" />
+                    <input
+                        v-else
+                        type="button"
+                        class="btn btn-primary me-1"
+                        value="Save and Continue"
+                        ::disabled="disableSaveAndContinueBtn"
+                        @click.prevent="save_and_continue()"
+                    />
 
-                    <button v-if="processing" type="button" class="btn btn-primary me-1" disabled>
-                        Save and Exit&nbsp;<i class="fa-solid fa-spinner fa-spin"></i>
+                    <button
+                        v-if="processing"
+                        type="button"
+                        class="btn btn-primary me-1"
+                        disabled
+                    >
+                        Save and Exit&nbsp;<i
+                            class="fa-solid fa-spinner fa-spin"
+                        ></i>
                     </button>
-                    <input v-else type="button" @click.prevent="save_and_exit()" class="btn btn-primary me-1"
-                        value="Save and Exit" :disabled="disableSaveAndExitBtn" />
-
-                    <!-- <button class="btn btn-primary" @click.prevent="save_and_continue()" :disabled="disableSaveAndContinueBtn">Save and Continue</button> -->
-                    <!-- <button class="btn btn-primary ml-2" @click.prevent="save_and_exit()" :disabled="disableSaveAndExitBtn">Save and Exit</button> -->
+                    <input
+                        v-else
+                        type="button"
+                        class="btn btn-primary me-1"
+                        value="Save and Exit"
+                        :disabled="disableSaveAndExitBtn"
+                        @click.prevent="save_and_exit()"
+                    />
                 </div>
             </div>
         </div>
@@ -162,77 +433,81 @@
 </template>
 
 <script>
-import {
-    api_endpoints,
-    helpers,
-    constants,
-    utils,
-} from '@/utils/hooks'
+/*globals swal */
+import { api_endpoints, helpers, constants, utils } from '@/utils/hooks'
 import { v4 as uuid } from 'uuid'
 import CommsLogs from '@common-utils/comms_logs.vue'
 import Workflow from '@common-utils/workflow_competitive_process.vue'
 import FormSection from '@/components/forms/section_toggle.vue'
 import TableParties from '@common-utils/table_parties'
-import MapComponent from "@/components/common/component_map_with_filters_v2"
+import MapComponent from '@/components/common/component_map_with_filters_v2'
 import RichText from '@/components/forms/richtext.vue'
 import FileField from '@/components/forms/filefield_immediate.vue'
 import TableRelatedItems from '@/components/common/table_related_items.vue'
+import GISDataDetails from '@/components/common/gis_data_details.vue'
+import Multiselect from 'vue-multiselect'
+
 import { owsQuery, validateFeature } from '@/components/common/map_functions.js'
 
 export default {
     name: 'CompetitiveProcess',
+    components: {
+        CommsLogs,
+        GISDataDetails,
+        Workflow,
+        TableParties,
+        FormSection,
+        MapComponent,
+        Multiselect,
+        RichText,
+        FileField,
+        TableRelatedItems,
+    },
     data: function () {
-        let vm = this;
+        let vm = this
         return {
             cp_id: uuid(), // competitive process id
             competitive_process: null,
             can_modify: true,
             show_col_status_when_submitted: true,
             componentMapKey: 0,
-
             // For Comms Log
-            comms_url: helpers.add_endpoint_json(api_endpoints.competitive_process, vm.$route.params.competitive_process_id + '/comms_log'),
-            comms_add_url: helpers.add_endpoint_json(api_endpoints.competitive_process, vm.$route.params.competitive_process_id + '/add_comms_log'),
-            logs_url: helpers.add_endpoint_json(api_endpoints.competitive_process, vm.$route.params.competitive_process_id + '/action_log'),
-
+            comms_url: helpers.add_endpoint_json(
+                api_endpoints.competitive_process,
+                vm.$route.params.competitive_process_id + '/comms_log'
+            ),
+            comms_add_url: helpers.add_endpoint_json(
+                api_endpoints.competitive_process,
+                vm.$route.params.competitive_process_id + '/add_comms_log'
+            ),
+            logs_url: helpers.add_endpoint_json(
+                api_endpoints.competitive_process,
+                vm.$route.params.competitive_process_id + '/action_log'
+            ),
+            loadingGroups: false,
+            groups: [],
             processing: false,
             owsQuery: owsQuery,
             validateFeature: validateFeature,
             detailsTexts: {},
         }
     },
-    components: {
-        CommsLogs,
-        Workflow,
-        TableParties,
-        FormSection,
-        MapComponent,
-        RichText,
-        FileField,
-        TableRelatedItems,
-    },
-    created: function () {
-        this.fetchCompetitiveProcess()
-    },
-    mounted: function () {
-
-    },
     computed: {
         disableSaveAndContinueBtn: function () {
-            if (this.processing)
-                return true
+            if (this.processing) return true
             return false
         },
         disableSaveAndExitBtn: function () {
-            if (this.processing)
-                return true
+            if (this.processing) return true
             return false
         },
         hasWinner: function () {
             /** Returns whether this CP has a winner */
 
-            return ![null, ''].includes(this.competitive_process.winner_id) &&
-                !isNaN(this.competitive_process.winner_id);
+            return (
+                ![null, ''].includes(this.competitive_process.winner_id) &&
+                !isNaN(this.competitive_process.winner_id)
+            )
         },
         winnerApplicationApproved: function () {
             /** Returns whether the winner's lease/license Application has been approved
@@ -240,31 +515,41 @@ export default {
              *  applicant.
              */
 
-            let winner_party_id = this.competitive_process.winner_id;
-            let winner_party = this.partyById(winner_party_id);
+            let winner_party_id = this.competitive_process.winner_id
+            let winner_party = this.partyById(winner_party_id)
             // The ID of the winning party's applicant
-            let winner_applicant_id;
+            let winner_applicant_id
             if (winner_party) {
-                winner_applicant_id = winner_party.is_person ? winner_party.person_id :
-                    winner_party.is_organisation ? winner_party.organisation_id :
-                        -1
+                winner_applicant_id = winner_party.is_person
+                    ? winner_party.person_id
+                    : winner_party.is_organisation
+                    ? winner_party.organisation_id
+                    : -1
             } else {
-                console.warn(`No related party found for winner ID ${winner_party_id}.`);
-                return false;
+                console.warn(
+                    `No related party found for winner ID ${winner_party_id}.`
+                )
+                return false
             }
 
-            let generated_proposals = this.competitive_process.generated_proposal;
+            let generated_proposals =
+                this.competitive_process.generated_proposal
             if (!generated_proposals) {
-                console.log(`No Applications have been generated for this competitive process.`);
-                return false;
+                console.log(
+                    `No Applications have been generated for this competitive process.`
+                )
+                return false
             }
 
             // The winner's lease/license Applications
             let winner_applications = generated_proposals.filter(
-                proposal => proposal.applicant_obj.id == winner_applicant_id);
+                (proposal) => proposal.applicant_obj.id == winner_applicant_id
+            )
             if (!winner_applications || winner_applications.length == 0) {
-                console.log(`No related Application found for winner ID ${winner_party_id}.`);
-                return false;
+                console.log(
+                    `No related Application found for winner ID ${winner_party_id}.`
+                )
+                return false
             }
 
             // Statuses that indicate an Application has been approved
@@ -273,24 +558,34 @@ export default {
                 constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.TEXT,
                 constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.TEXT,
                 constants.PROPOSAL_STATUS.DISCARDED.TEXT,
-            ];
+            ]
 
             // The winner's lease/license Applications that have not been approved
             let open_applications = winner_applications.filter(
-                proposal => !status_approved.includes(proposal.processing_status));
+                (proposal) =>
+                    !status_approved.includes(proposal.processing_status)
+            )
 
             if (open_applications.length == 0) {
-                console.log(`No open Applications found for winner ID ${winner_party_id}.`);
-                return true;
+                console.log(
+                    `No open Applications found for winner ID ${winner_party_id}.`
+                )
+                return true
             } else if (open_applications.length == 1) {
-                console.log(`An open Application found for winner ID ${winner_party_id}.`);
-                return false;
+                console.log(
+                    `An open Application found for winner ID ${winner_party_id}.`
+                )
+                return false
             } else {
-                let winner_name = winner_party.is_person ? winner_party.person.fullname :
-                    winner_party.is_organisation ? winner_party.organisation.trading_name :
-                        'Unknown';
-                console.warn(`Multiple open Applications found for winner ID ${winner_party_id}. (${winner_name})`);
-                return false;
+                let winner_name = winner_party.is_person
+                    ? winner_party.person.fullname
+                    : winner_party.is_organisation
+                    ? winner_party.organisation.trading_name
+                    : 'Unknown'
+                console.warn(
+                    `Multiple open Applications found for winner ID ${winner_party_id}. (${winner_name})`
+                )
+                return false
             }
         },
         finalised: function () {
@@ -299,28 +594,36 @@ export default {
              *  when a winner has been selected and when the winner's license Application has
              *  been approved.
              *  A finalized CP can not be unlocked anymore.
-            */
+             */
 
-            return (this.completed || this.discarded) &&
+            return (
+                (this.completed || this.discarded) &&
                 this.hasWinner &&
-                this.winnerApplicationApproved;
+                this.winnerApplicationApproved
+            )
         },
         canAction: function () {
-            return this.competitive_process.can_accessing_user_process;
+            return this.competitive_process.can_accessing_user_process
         },
         canLimitedAction: function () {
-            return this.competitive_process.can_accessing_user_process;
+            return this.competitive_process.can_accessing_user_process
         },
         canAssess: function () {
-            return this.competitive_process.can_accessing_user_view;
+            return this.competitive_process.can_accessing_user_view
         },
         related_items_ajax_url: function () {
-            return '/api/competitive_process/' + this.competitive_process.id + '/related_items/'
+            return (
+                '/api/competitive_process/' +
+                this.competitive_process.id +
+                '/related_items/'
+            )
         },
         competitiveProcessDocumentUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.competitive_process,
-                '/' + this.competitive_process.id + '/process_competitive_process_document/'
+                '/' +
+                    this.competitive_process.id +
+                    '/process_competitive_process_document/'
             )
         },
         readonly: function () {
@@ -330,56 +633,88 @@ export default {
             return true
         },
         competitive_process_form_url: function () {
-            return helpers.add_endpoint_json(api_endpoints.competitive_process, (this.competitive_process.id))
+            return helpers.add_endpoint_json(
+                api_endpoints.competitive_process,
+                this.competitive_process.id
+            )
         },
         competitive_process_discard_url: function () {
-            return '/api/competitive_process/' + this.competitive_process.id + '/discard/'
+            return (
+                '/api/competitive_process/' +
+                this.competitive_process.id +
+                '/discard/'
+            )
         },
         competitive_process_complete_url: function () {
-            return '/api/competitive_process/' + this.competitive_process.id + '/complete/'
+            return (
+                '/api/competitive_process/' +
+                this.competitive_process.id +
+                '/complete/'
+            )
         },
         competitive_process_unlock_url: function () {
-            return '/api/competitive_process/' + this.competitive_process.id + '/unlock/'
+            return (
+                '/api/competitive_process/' +
+                this.competitive_process.id +
+                '/unlock/'
+            )
         },
         discarded: function () {
-            return this.competitive_process && (
+            return (
+                this.competitive_process &&
                 this.competitive_process.status_id ===
-                constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.ID);
+                    constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.ID
+            )
         },
         declined: function () {
-            return this.competitive_process && (
+            return (
+                this.competitive_process &&
                 this.competitive_process.status_id ===
-                constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID);
+                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID
+            )
         },
         completed: function () {
             /** Returns whether this CP is completed */
 
-            return this.competitive_process &&
+            return (
+                this.competitive_process &&
                 [
-                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_APPLICATION.ID,
+                    constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_APPLICATION
+                        .ID,
                     constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID,
                 ].includes(this.competitive_process.status_id)
+            )
         },
         elementDisabled: function () {
             // Returns whether an element is disabled
             // True while processing (saving), when discarded, or when finalized
-            return this.processing || this.discarded || this.finalised || this.declined || this.completed;
+            return (
+                this.processing ||
+                this.discarded ||
+                this.finalised ||
+                this.declined ||
+                this.completed
+            )
         },
         possibleWinner: function () {
             // Returns list of possible winners without newly added parties
             return this.competitive_process.competitive_process_parties.filter(
-                party => party.id > 0);
+                (party) => party.id > 0
+            )
         },
         /**
          * Returns competitive process geometries as a FeatureCollection adding whether
          * the geometry is from the competitive process or from a proposal.
          */
         geometriesToFeatureCollection: function () {
-            let vm = this;
+            let vm = this
 
-            let featureCollection = { ...vm.competitive_process.competitive_process_geometries };
-            Object.keys(featureCollection["features"]).forEach(function (key, _) {
-                featureCollection["features"][key]["properties"]["source"] = "competitive_process";
+            let featureCollection = {
+                ...vm.competitive_process.competitive_process_geometries,
+            }
+            Object.keys(featureCollection['features']).forEach(function (key) {
+                featureCollection['features'][key]['properties']['source'] =
+                    'competitive_process'
                 // Create competitive process model object using the same field names as for proposal
                 let model = {
                     id: vm.competitive_process.id,
@@ -388,93 +723,123 @@ export default {
                     lodgement_number: vm.competitive_process.lodgement_number,
                     lodgement_date_display: vm.competitive_process.created_at,
                     processing_status_display: vm.competitive_process.status,
-                };
-                featureCollection["features"][key]["model"] = model;
-            });
+                }
+                featureCollection['features'][key]['model'] = model
+            })
 
             // Append proposal geometries to competitive process geometries
             if (vm.competitive_process.registration_of_interest) {
-                let proposalgeometries = { ...vm.competitive_process.registration_of_interest.proposalgeometry };
+                let proposalgeometries = {
+                    ...vm.competitive_process.registration_of_interest
+                        .proposalgeometry,
+                }
 
-                for (let feature of proposalgeometries["features"]) {
-                    feature["properties"]["source"] = "registration_of_interest";
+                for (let feature of proposalgeometries['features']) {
+                    feature['properties']['source'] = 'registration_of_interest'
                     // Build proposal model object for geometry feature (i.e. the proposal that this geometry belongs to)
                     // Have to omit proposalgeometry from model object to avoid circular reference in the form `a.features[i].b = a`
                     let model = {
                         id: vm.competitive_process.registration_of_interest.id,
-                        details_url: vm.competitive_process.registration_of_interest.details_url,
-                        application_type_name_display: vm.competitive_process.registration_of_interest.application_type_name_display,
-                        lodgement_number: vm.competitive_process.registration_of_interest.lodgement_number,
-                        lodgement_date_display: vm.competitive_process.registration_of_interest.lodgement_date_display,
-                        processing_status_display: vm.competitive_process.registration_of_interest.processing_status_display,
-                    };
+                        details_url:
+                            vm.competitive_process.registration_of_interest
+                                .details_url,
+                        application_type_name_display:
+                            vm.competitive_process.registration_of_interest
+                                .application_type_name_display,
+                        lodgement_number:
+                            vm.competitive_process.registration_of_interest
+                                .lodgement_number,
+                        lodgement_date_display:
+                            vm.competitive_process.registration_of_interest
+                                .lodgement_date_display,
+                        processing_status_display:
+                            vm.competitive_process.registration_of_interest
+                                .processing_status_display,
+                    }
 
-                    feature["model"] = model;
-                    featureCollection["features"].push(feature);
+                    feature['model'] = model
+                    featureCollection['features'].push(feature)
                 }
             }
 
-            return featureCollection;
+            return featureCollection
         },
         outcomeDetails: function () {
             /** Returns the outcome details text
              */
 
             // This is here to re-evalute the computed property after fetching details texts
-            this.cp_id;
+            this.cp_id
 
             if (this.competitive_process.details) {
-                return this.competitive_process.details;
+                return this.competitive_process.details
             } else {
                 // Use standard text from admin
-                let id = this.$refs.hasOwnProperty("details") ?
-                                this.$refs.details.id : "";
-                return this.detailsTexts[id] || "";
+                let id = Object.prototype.hasOwnProperty.call(
+                    this.$refs,
+                    'details'
+                )
+                    ? this.$refs.details.id
+                    : ''
+                return this.detailsTexts[id] || ''
             }
         },
     },
+    created: function () {
+        this.fetchCompetitiveProcess()
+        utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
+            this.groups = data
+        })
+    },
+    mounted: function () {},
     methods: {
         mapTabClicked: function () {
             this.$refs.component_map.forceToRefreshMap()
         },
         outcomeTabClicked: function () {
-            let vm = this;
+            let vm = this
             let initialisers = [
                 utils.fetchUrl(`${api_endpoints.details_text}key-value-list/`),
             ]
-            Promise.all(initialisers).then(data => {
+            Promise.all(initialisers).then((data) => {
                 for (let detailText of data[0]) {
-                    vm.detailsTexts[detailText.target] = detailText.body;
+                    vm.detailsTexts[detailText.target] = detailText.body
                 }
-                vm.cp_id = uuid();
-            });
+                vm.cp_id = uuid()
+            })
 
-            vm.initSelectWinner();
+            vm.initSelectWinner()
         },
         initSelectWinner: function () {
-            let vm = this;
+            let vm = this
 
-            $(vm.$refs.select_winner).select2({
-                "theme": "bootstrap-5",
-                allowClear: true,
-                placeholder: "No winner",
-            }).on("select2:select", function (e) {
-                var selected_winner = $(e.currentTarget);
-                vm.competitive_process.winner_id = Number(selected_winner.val());
-                vm.$nextTick(async () => {
-                    vm.cp_id = uuid();
-                });
-            }).on("select2:unselecting", function (e) {
-                var self = $(this);
-                setTimeout(() => {
-                    self.select2('close');
-                }, 0);
-            }).on("select2:unselect", function (e) {
-                vm.competitive_process.winner_id = null;
-                vm.$nextTick(async () => {
-                    vm.cp_id = uuid();
-                });
-            });
+            $(vm.$refs.select_winner)
+                .select2({
+                    theme: 'bootstrap-5',
+                    allowClear: true,
+                    placeholder: 'No winner',
+                })
+                .on('select2:select', function (e) {
+                    var selected_winner = $(e.currentTarget)
+                    vm.competitive_process.winner_id = Number(
+                        selected_winner.val()
+                    )
+                    vm.$nextTick(async () => {
+                        vm.cp_id = uuid()
+                    })
+                })
+                .on('select2:unselecting', function () {
+                    var self = $(this)
+                    setTimeout(() => {
+                        self.select2('close')
+                    }, 0)
+                })
+                .on('select2:unselect', function () {
+                    vm.competitive_process.winner_id = null
+                    vm.$nextTick(async () => {
+                        vm.cp_id = uuid()
+                    })
+                })
         },
         detailsTextChanged: function (new_text) {
             this.competitive_process.details = new_text
@@ -490,86 +855,105 @@ export default {
             let vm = this
 
             // Shallow (?) copy competitive_process object into payload
-            let payload = { 'competitive_process': { ...vm.competitive_process } };
+            let payload = { ...vm.competitive_process }
             if (vm.$refs.component_map) {
                 // Update geometry data of the competitive process
                 let geojson_str = vm.$refs.component_map.getJSONFeatures()
-                payload['competitive_process']['competitive_process_geometries'] = geojson_str
+                payload['competitive_process_geometries'] = geojson_str
             }
 
             let custom_row_apps = {}
-            for (let a_party of vm.competitive_process.competitive_process_parties) {
+            for (let a_party of vm.competitive_process
+                .competitive_process_parties) {
                 if (Object.hasOwn(a_party, 'custom_row_app')) {
-                    custom_row_apps[a_party.id] = JSON.parse(JSON.stringify(a_party.custom_row_app))
-                    a_party.custom_row_app = undefined  // Remove custom_row_app in order to JSON.stringify()
+                    custom_row_apps[a_party.id] = JSON.parse(
+                        JSON.stringify(a_party.custom_row_app)
+                    )
+                    a_party.custom_row_app = undefined // Remove custom_row_app in order to JSON.stringify()
                 }
             }
 
             return payload
         },
         set_custom_rows_property(property, value) {
-            let vm = this;
-            Object.keys(vm.$refs.competitive_process_parties.custom_row_apps).forEach(function (key) {
-                vm.$refs.competitive_process_parties.custom_row_apps[key]["instance"][property] = value;
-            });
-
+            let vm = this
+            Object.keys(
+                vm.$refs.competitive_process_parties.custom_row_apps
+            ).forEach(function (key) {
+                vm.$refs.competitive_process_parties.custom_row_apps[key][
+                    'instance'
+                ][property] = value
+            })
         },
         save: async function () {
-            let vm = this;
+            let vm = this
 
-            vm.processing = true;
+            vm.processing = true
             // Saving, so set custom row to processing
-            vm.set_custom_rows_property("processing", true);
+            vm.set_custom_rows_property('processing', true)
 
-            let payload = vm.constructPayload();
-            fetch(vm.competitive_process_form_url, { body: JSON.stringify(payload), method: 'PUT' })
-                .then(async response => {
+            let payload = vm.constructPayload()
+            fetch(vm.competitive_process_form_url, {
+                body: JSON.stringify(payload),
+                method: 'PUT',
+            })
+                .then(async (response) => {
                     if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text) });
+                        return response.text().then((text) => {
+                            throw new Error(text)
+                        })
                     } else {
-                        return await response.json();
+                        return await response.json()
                     }
                 })
-                .then(data => {
-                    vm.competitive_process = Object.assign(data, {});
+                .then((data) => {
+                    vm.competitive_process = Object.assign(data, {})
                     swal.fire({
                         title: 'Saved',
                         text: 'Competitive process has been saved',
                         icon: 'success',
                         confirmButtonColor: '#0d6efd',
-                    });
-                    vm.processing = false;
+                    })
+                    vm.processing = false
                     // Done save, set custom row back to not processing
-                    vm.set_custom_rows_property("processing", false);
+                    vm.set_custom_rows_property('processing', false)
                     vm.$nextTick(async () => {
-                        vm.cp_id = uuid();
-                        vm.incrementComponentMapKey();
-                    });
+                        vm.cp_id = uuid()
+                        vm.incrementComponentMapKey()
+                    })
                 })
-                .catch(error => {
+                .catch((error) => {
                     swal.fire({
-                        title: "Please fix following errors before saving",
+                        title: 'Please fix following errors before saving',
                         text: JSON.parse(error.message),
                         icon: 'error',
                         confirmButtonColor: '#0d6efd',
                     })
-                    vm.processing = false;
-                    vm.set_custom_rows_property("processing", false);
-                });
+                    vm.processing = false
+                    vm.set_custom_rows_property('processing', false)
+                })
         },
         issueComplete: async function () {
-            let vm = this;
+            let vm = this
             try {
                 vm.processing = true
                 let description = ''
                 if (vm.competitive_process.winner_id) {
-                    for (let party of vm.competitive_process.competitive_process_parties) {
+                    for (let party of vm.competitive_process
+                        .competitive_process_parties) {
                         if (party.id === vm.competitive_process.winner_id) {
                             if (party.is_person) {
-                                description = '<strong>' + party.person.fullname + '</strong> is selected as a winner.'
+                                description =
+                                    '<strong>' +
+                                    party.person.fullname +
+                                    '</strong> is selected as a winner.'
                                 break
                             } else if (party.is_organisation) {
-                                description = '<strong>' + party.organisation.trading_name + '</strong> is selected as a winner.'
+                                description =
+                                    '<strong>' +
+                                    party.organisation
+                                        .ledger_organisation_name +
+                                    '</strong> is selected as a winner.'
                                 break
                             }
                             return
@@ -579,18 +963,23 @@ export default {
                     description = '<strong>No winner</strong> selected'
                 }
                 swal.fire({
-                    title: "Complete this competitive process",
+                    title: 'Complete this competitive process',
                     // text: "Are you sure you want to complete this competitive process?<br />" + description,
-                    html: "Are you sure you want to complete this competitive process?<br />" + description,
-                    icon: "warning",
+                    html:
+                        'Are you sure you want to complete this competitive process?<br />' +
+                        description,
+                    icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Complete',
                     confirmButtonColor: '#0d6efd',
-                }).then(async result => {
+                }).then(async (result) => {
                     if (result.isConfirmed) {
                         // When Yes
                         let payload = vm.constructPayload()
-                        const res = await fetch(vm.competitive_process_complete_url, { body: JSON.stringify(payload), method: 'POST' })
+                        const res = await fetch(
+                            vm.competitive_process_complete_url,
+                            { body: JSON.stringify(payload), method: 'POST' }
+                        )
 
                         if (res.ok) {
                             await new swal({
@@ -601,15 +990,11 @@ export default {
                             this.$router.push({ name: 'internal-dashboard' })
                         } else {
                             await new swal({
-                                title: "Please fix following errors before completing",
-                                text: err.bodyText,
+                                title: 'Please fix following errors before completing',
+                                text: res.text,
                                 icon: 'error',
                             })
                         }
-                    } else if (result.isDenied) {
-                        // When No
-                    } else {
-                        // When cancel
                     }
                     vm.processing = false
                 })
@@ -618,43 +1003,53 @@ export default {
             }
         },
         issueDiscard: async function () {
-            let vm = this;
+            let vm = this
             try {
                 vm.processing = true
                 swal.fire({
-                    title: "Discard this competitive process",
-                    text: "Are you sure you want to discard this competitive process?",
-                    icon: "warning",
+                    title: 'Discard this competitive process',
+                    text: 'Are you sure you want to discard this competitive process?',
+                    icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Discard',
                     confirmButtonColor: '#0d6efd',
-                }).then(async result => {
+                }).then(async (result) => {
                     if (result.isConfirmed) {
                         // When Yes
-                        let payload = vm.constructPayload();
-                        await fetch(vm.competitive_process_discard_url,
-                            { body: JSON.stringify(payload), method: 'POST' }).then(async response => {
+                        let payload = vm.constructPayload()
+                        await fetch(vm.competitive_process_discard_url, {
+                            body: JSON.stringify(payload),
+                            method: 'POST',
+                        })
+                            .then(async (response) => {
                                 if (!response.ok) {
-                                    return response.text().then(text => { throw new Error(text) });
+                                    return response.text().then((text) => {
+                                        throw new Error(text)
+                                    })
                                 } else {
-                                    return await response.json();
+                                    return await response.json()
                                 }
-                            }).then(async data => {
+                            })
+                            .then(async (data) => {
+                                console.log(data)
                                 await swal.fire({
                                     title: 'Discarded',
                                     text: 'Competitive process has been discarded',
                                     icon: 'success',
-                                });
-                                this.$router.push({ name: 'internal-dashboard' });
-                            }).catch(error => {
+                                })
+                                this.$router.push({
+                                    name: 'internal-dashboard',
+                                })
+                            })
+                            .catch((error) => {
                                 swal.fire({
-                                    title: "Please fix following errors before discarding",
+                                    title: 'Please fix following errors before discarding',
                                     text: JSON.parse(error.message),
                                     icon: 'error',
                                     confirmButtonColor: '#0d6efd',
                                 })
-                                vm.processing = false;
-                            });
+                                vm.processing = false
+                            })
                     }
                     vm.processing = false
                 })
@@ -663,48 +1058,55 @@ export default {
             }
         },
         issueUnlock: async function () {
-            let vm = this;
-            console.log("issue unlock");
+            let vm = this
+            console.log('issue unlock')
             swal.fire({
-                title: "Unlock this competitive process",
+                title: 'Unlock this competitive process',
                 text: "Unlocking this competitive process will change the status to 'In Progress'\
                             and discard the application of the previous winner.\
                             Are you sure you want to unlock this competitive process?",
-                icon: "warning",
+                icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Unlock',
                 confirmButtonColor: '#0d6efd',
-            }).then(async result => {
+            }).then(async (result) => {
                 if (result.isConfirmed) {
-                    vm.processing = true;
+                    vm.processing = true
                     // When Yes
-                    let payload = vm.constructPayload();
-                    await fetch(vm.competitive_process_unlock_url,
-                        { body: JSON.stringify(payload), method: 'POST' }).then(async response => {
+                    let payload = vm.constructPayload()
+                    await fetch(vm.competitive_process_unlock_url, {
+                        body: JSON.stringify(payload),
+                        method: 'POST',
+                    })
+                        .then(async (response) => {
                             if (!response.ok) {
-                                return response.text().then(text => { throw new Error(text) });
+                                return response.text().then((text) => {
+                                    throw new Error(text)
+                                })
                             } else {
-                                return await response.json();
+                                return await response.json()
                             }
-                        }).then(async data => {
-                            console.log("success", data);
-                            vm.competitive_process = Object.assign({}, data);
+                        })
+                        .then(async (data) => {
+                            console.log('success', data)
+                            vm.competitive_process = Object.assign({}, data)
                             await swal.fire({
                                 title: 'Unlocked',
                                 text: 'Competitive process has been unlocked',
                                 icon: 'success',
-                            });
-                            vm.processing = false;
+                            })
+                            vm.processing = false
                             vm.$nextTick(async () => {
-                                vm.cp_id = uuid();
-                            });
-                        }).catch(async error => {
+                                vm.cp_id = uuid()
+                            })
+                        })
+                        .catch(async (error) => {
                             await swal.fire({
-                                title: "Error unlocking competitive process",
+                                title: 'Error unlocking competitive process',
                                 text: JSON.parse(error.message),
                                 icon: 'error',
-                            });
-                            vm.processing = false;
+                            })
+                            vm.processing = false
                         })
                 } else if (result.isDenied) {
                     // When No
@@ -713,118 +1115,125 @@ export default {
                 }
             })
         },
-        updateTableByFeatures: function () {
-
-        },
-        featureGeometryUpdated: function () {
-
-        },
-        popupClosed: function () {
-
-        },
+        updateTableByFeatures: function () {},
+        featureGeometryUpdated: function () {},
+        popupClosed: function () {},
         assignedOfficerPayload: function (user) {
             /* Return the payload for assigning an officer to a competitive process.
-            *  If the user is a number, it is assumed to be a user ID.
-            *  Creates a user dictionary from the user ID if user is not already
-            *  a dictionary.
-            *  Else if the user is null, it is assumed to be unassigning the officer.
-            */
+             *  If the user is a number, it is assumed to be a user ID.
+             *  Creates a user dictionary from the user ID if user is not already
+             *  a dictionary.
+             *  Else if the user is null, it is assumed to be unassigning the officer.
+             */
 
-            let assigned_officer = user;
+            let assigned_officer = user
             if (user != null && !isNaN(Number(user))) {
                 // Get the assigned officer dictionary from the user ID if user isa number
                 // or string representation of a number
-                assigned_officer = this.partyById(Number(user),
-                    this.competitive_process.allowed_editors);
+                assigned_officer = this.partyById(
+                    Number(user),
+                    this.competitive_process.allowed_editors
+                )
             }
             // Return the payload
             return {
-                body: JSON.stringify({ 'assigned_officer': assigned_officer }),
+                body: JSON.stringify({ assigned_officer: assigned_officer }),
                 method: 'POST',
-            };
+            }
         },
         assignTo: async function () {
             let vm = this
             console.log('in assignTo')
-            let unassign = true;
+            let unassign = true
 
-            unassign = this.competitive_process.assigned_officer != null &&
-                this.competitive_process.assigned_officer != 'undefined' ?
-                false :
-                true;
+            unassign =
+                this.competitive_process.assigned_officer != null &&
+                this.competitive_process.assigned_officer != 'undefined'
+                    ? false
+                    : true
 
             let payload = this.assignedOfficerPayload(
-                this.competitive_process.assigned_officer);
+                this.competitive_process.assigned_officer
+            )
 
             if (unassign) {
-                vm.assign_api_call('unassign');
-            }
-            else {
-                vm.assign_api_call('assign_user', payload);
+                vm.assign_api_call('unassign')
+            } else {
+                vm.assign_api_call('assign_user', payload)
             }
         },
         assignRequestUser: async function () {
-            let payload = this.assignedOfficerPayload(this.competitive_process.accessing_user);
-            this.assign_api_call('assign_user', payload);
+            let payload = this.assignedOfficerPayload(
+                this.competitive_process.accessing_user
+            )
+            this.assign_api_call('assign_user', payload)
         },
         assign_api_call: async function (api_function, payload) {
             let vm = this
-            if (typeof (api_function) === 'undefined') {
-                api_function = 'assign_user';
+            if (typeof api_function === 'undefined') {
+                api_function = 'assign_user'
             }
-            if (typeof (payload) === 'undefined') {
-                payload = {};
+            if (typeof payload === 'undefined') {
+                payload = {}
             }
             console.log('in assignRequestUser')
 
-            fetch(helpers.add_endpoint_json(api_endpoints.competitive_process, (`${vm.competitive_process.id}/${api_function}`)),
-                payload)
-                .then(async response => {
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.competitive_process,
+                    `${vm.competitive_process.id}/${api_function}`
+                ),
+                payload
+            )
+                .then(async (response) => {
                     if (!response.ok) {
-                        return response.text().then(text => { throw new Error(text) });
+                        return response.text().then((text) => {
+                            throw new Error(text)
+                        })
                     } else {
-                        return await response.json();
+                        return await response.json()
                     }
                 })
-                .then(data => {
-                    vm.competitive_process = Object.assign({}, data);
-                    vm.updateAssignedOfficerSelect();
+                .then((data) => {
+                    vm.competitive_process = Object.assign({}, data)
+                    vm.updateAssignedOfficerSelect()
                 })
-                .catch(error => {
-                    this.updateAssignedOfficerSelect();
-                    console.log(error);
+                .catch((error) => {
+                    this.updateAssignedOfficerSelect()
+                    console.log(error)
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
-                        icon: 'error'
+                        icon: 'error',
                     })
                 })
         },
         fetchCompetitiveProcess: async function () {
             let vm = this
             try {
-                const res = await fetch(`${api_endpoints.competitive_process}${vm.$route.params.competitive_process_id}`)
-                if (!res.ok)
-                    throw new Error(res.statusText)  // 400s or 500s error
+                const res = await fetch(
+                    `${api_endpoints.competitive_process}${vm.$route.params.competitive_process_id}/`
+                )
+                if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
                 let competitive_process = await res.json()
                 vm.competitive_process = competitive_process
-                console.log("Fetched competitive process", vm.competitive_process);5
+                console.log(
+                    'Fetched competitive process',
+                    vm.competitive_process
+                )
             } catch (err) {
                 console.log({ err })
-            } finally {
-
             }
         },
         updateAssignedOfficerSelect: function () {
-            let vm = this;
+            let vm = this
             if (vm.competitive_process.status === 'In Progress') {
                 console.log('updateAssignedOfficerSelect')
-                let assigned_officer = vm.competitive_process.assigned_officer;
-                let _id = assigned_officer ? assigned_officer.id : null;
-                vm.$refs.workflow.updateAssignedOfficerSelect(_id);
-            }
-            else {
-                console.log("Skipping assignment of selected officer")
+                let assigned_officer = vm.competitive_process.assigned_officer
+                let _id = assigned_officer ? assigned_officer.id : null
+                vm.$refs.workflow.updateAssignedOfficerSelect(_id)
+            } else {
+                console.log('Skipping assignment of selected officer')
             }
         },
         partyById: function (party_id, party_dict) {
@@ -835,41 +1244,74 @@ export default {
              */
 
             if (party_id == null) {
-                console.log("No party ID. Returning null.");
-                return null; // e.g. no winner outcome
+                console.log('No party ID. Returning null.')
+                return null // e.g. no winner outcome
             }
 
             if (party_dict == null) {
-                party_dict = this.competitive_process.competitive_process_parties;
+                party_dict =
+                    this.competitive_process.competitive_process_parties
             }
 
-            let idx = party_dict.findIndex(
-                p => p.id == party_id);
+            let idx = party_dict.findIndex((p) => p.id == party_id)
             if (idx == -1) {
-                console.warn(`There is no party with ID ${party_id}.`);
-                return null;
+                console.warn(`There is no party with ID ${party_id}.`)
+                return null
             }
             // Return the party
-            return party_dict[idx];
+            return party_dict[idx]
         },
         addDetail: function (new_party_data) {
             /** Callback for `add-detail` event emitted by custom-row */
 
-            console.log("add detail: new_party_data", new_party_data);
+            console.log('add detail: new_party_data', new_party_data)
             // This party's ID
-            let id = Object.keys(new_party_data)[0];
+            let id = Object.keys(new_party_data)[0]
             // Get the related competitive process party
-            let party = this.partyById(id);
+            let party = this.partyById(id)
             if (party) {
                 // Add new party detail
-                party.party_details.push(new_party_data[id]);
+                party.party_details.push(new_party_data[id])
             } else {
-                console.error(`Can not add data to party with ID ${id}.`);
+                console.error(`Can not add data to party with ID ${id}.`)
             }
         },
-        incrementComponentMapKey: function () {
-            this.componentMapKey++;
+        addParty: function (new_party_data) {
+            /** Callback for `add-party` event emitted by custom-row */
+
+            console.log('add party: new_party_data', new_party_data)
+            // Add new party
+            this.competitive_process.competitive_process_parties.push(
+                new_party_data
+            )
         },
-    }
+        updatePartyDate: function (e) {
+            let party =
+                this.competitive_process.competitive_process_parties.find(
+                    (party) => party.id == e.party_id
+                )
+            party[e.date_field] = e.date
+        },
+        incrementComponentMapKey: function () {
+            this.componentMapKey++
+        },
+        updateGISData: function (property, val) {
+            if (
+                this.competitive_process.gis_data[property].find(
+                    (item) => item.id == val.id
+                )
+            ) {
+                this.competitive_process.gis_data[property] =
+                    this.competitive_process.gis_data[property].filter(
+                        (item) => item.id != val.id
+                    )
+            } else {
+                this.competitive_process.gis_data[property].push({
+                    id: val.id,
+                    name: val.name,
+                })
+            }
+        },
+    },
 }
 </script>

@@ -1,17 +1,35 @@
+import json
 import logging
+import re
+import sys
 
 import pytz
 import requests
+from django.apps import apps
 from django.conf import settings
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, Polygon
 from django.contrib.gis.geos.collections import MultiPolygon
 from django.core.cache import cache
+from django.db.models import Q
 from ledger_api_client.managed_models import SystemGroup
 from ledger_api_client.models import EmailUser
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from leaseslicensing.components.competitive_processes.models import (
     CompetitiveProcessParty,
+)
+from leaseslicensing.components.tenure.models import (
+    LGA,
+    Act,
+    Category,
+    District,
+    Identifier,
+    Name,
+    Region,
+    SiteName,
+    Tenure,
+    Vesting,
 )
 from leaseslicensing.settings import GROUP_NAME_CHOICES
 
@@ -163,21 +181,33 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
     return response.json()
 
 
-def get_gis_data_for_proposal(proposal, layer_name, properties):
-    """Takes a proposal object and a list of property names and returns a dict of unique values for each property"""
-    if not proposal.proposalgeometry.exists():
-        logger.debug("ProposalGeometry does not exist for proposal: %s", proposal.id)
+def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, properties):
+    """Takes a model instance, the name of the related geometries attribute, the layer name
+    and a list of property names and returns a dict of unique values for each property
+    """
+    if not hasattr(instance, geometries_attribute):
+        raise AttributeError(
+            f"{instance} does not have attribute {geometries_attribute}"
+        )
+
+    geometries = getattr(instance, geometries_attribute)
+
+    if not geometries.exists():
+        logger.debug(
+            f"No Geometries found for {instance._meta.model.__name__} {instance.lodgement_number}"
+        )
         return None
 
     multipolygon = MultiPolygon(
-        list(proposal.proposalgeometry.all().values_list("polygon", flat=True))
+        list(geometries.all().values_list("polygon", flat=True))
     )
     if not multipolygon.valid:
         from shapely import wkt
         from shapely.validation import explain_validity, make_valid
 
         logger.debug(
-            f"Invalid multipolygon for proposal: {proposal.id}: {multipolygon.valid_reason}"
+            "Invalid multipolygon for"
+            f"{instance._meta.model.__name__} {instance.lodgement_number}: {multipolygon.valid_reason}"
         )
 
         multipolygon = make_valid(wkt.loads(multipolygon.wkt))
@@ -196,7 +226,10 @@ def get_gis_data_for_proposal(proposal, layer_name, properties):
         return None
 
     logger.info(
-        "Found %s features for proposal: %s", features["totalFeatures"], proposal.id
+        "Found %s features for %s: %s",
+        features["totalFeatures"],
+        instance._meta.model.__name__,
+        instance.lodgement_number,
     )
     data = {}
     for prop in properties:
@@ -240,6 +273,502 @@ def multipolygon_intersects_with_layer(multipolygon, layer_name):
         return False
 
     return True
+
+
+def save_geometry(request, instance, component, geometry_data, foreign_key_field=None):
+    instance_name = instance._meta.model.__name__
+    logger.debug(f"\n\n\nSaving {instance_name} geometry")
+
+    if not geometry_data:
+        logger.debug(f"No {instance_name} geometry to save")
+        return
+
+    if not foreign_key_field:
+        # this is the name of the foreign key field on the <Instance Type>Geometry model
+        # Had to add this as no way to know for sure the name of the foreign key field based on introspection
+        # i.e. competitive_process contains an underscore but the django model name does not
+        foreign_key_field = instance_name.lower()
+
+    geometry = json.loads(geometry_data)
+    InstanceGeometry = apps.get_model("leaseslicensing", f"{instance_name}Geometry")
+    if (
+        0 == len(geometry["features"])
+        and 0
+        == InstanceGeometry.objects.filter(**{foreign_key_field: instance}).count()
+    ):
+        # No feature to save and no feature to delete
+        logger.debug(f"{instance_name} geometry has no features to save or delete")
+        return
+
+    action = request.data.get("action", None)
+
+    geometry_ids = []
+    for feature in geometry.get("features"):
+        logger.debug("feature = " + str(feature))
+        # check if feature is a polygon, continue if not
+        if feature.get("geometry").get("type") != "Polygon":
+            logger.warn(
+                f"{instance_name}: {instance} contains a feature that is not a polygon: {feature}"
+            )
+            continue
+
+        # Create a Polygon object from the open layers feature
+        polygon = Polygon(feature.get("geometry").get("coordinates")[0])
+
+        # check if it intersects with any of the lands geos
+        if not polygon_intersects_with_layer(
+            polygon, "public:dbca_legislated_lands_and_waters"
+        ):
+            # if it doesn't, raise a validation error (this should be prevented in the front end
+            # and is here just in case
+            raise ValidationError(
+                "One or more polygons do not intersect with the DBCA Lands and Waters layer"
+            )
+
+        # If it does intersect, save it and set intersects to true
+        geometry_data = {
+            f"{foreign_key_field}_id": instance.id,
+            "polygon": polygon,
+            "intersects": True,  # probably redunant now that we are not allowing non-intersecting geometries
+        }
+        InstanceGeometrySaveSerializer = getattr(
+            sys.modules[f"leaseslicensing.components.{component}.serializers"],
+            f"{instance_name}GeometrySaveSerializer",
+        )
+        if feature.get("id"):
+            logger.info(
+                f"Updating existing {instance_name} geometry: {feature.get('id')} for Proposal: {instance}"
+            )
+            try:
+                geometry = InstanceGeometry.objects.get(id=feature.get("id"))
+            except InstanceGeometry.DoesNotExist:
+                logger.warn(
+                    f"{instance_name} geometry does not exist: {feature.get('id')}"
+                )
+                continue
+            geometry_data["drawn_by"] = geometry.drawn_by
+            geometry_data["locked"] = (
+                action in ["submit"]
+                and geometry.drawn_by == request.user.id
+                or geometry.locked
+            )
+            serializer = InstanceGeometrySaveSerializer(geometry, data=geometry_data)
+        else:
+            logger.info(f"Creating new geometry for {instance_name}: {instance}")
+            geometry_data["drawn_by"] = request.user.id
+            geometry_data["locked"] = action in ["submit"]
+            serializer = InstanceGeometrySaveSerializer(data=geometry_data)
+
+        serializer.is_valid(raise_exception=True)
+        proposalgeometry_instance = serializer.save()
+        logger.debug(f"Saved {instance_name} geometry: {proposalgeometry_instance}")
+        geometry_ids.append(proposalgeometry_instance.id)
+
+    # Remove any proposal geometries from the db that are no longer in the proposal_geometry that was submitted
+    # Prevent deletion of polygons that are locked after status change (e.g. after submit)
+    # or have been drawn by another user
+    deleted_geometries = (
+        InstanceGeometry.objects.filter(**{foreign_key_field: instance})
+        .exclude(Q(id__in=geometry_ids) | Q(locked=True) | ~Q(drawn_by=request.user.id))
+        .delete()
+    )
+    logger.debug(f"Deleted {instance_name} geometries: {deleted_geometries}\n\n\n")
+
+
+def populate_gis_data(instance, geometries_attribute, foreign_key_field=None):
+    """Fetches required GIS data from KMI and saves it to the instance (Proposal or Competitive Process)
+    Todo: Will need to update this to use the new KB GIS modernisation API"""
+    instance_name = instance._meta.model.__name__
+
+    logger.debug(
+        "-> Populating GIS data for %s: %s", instance_name, instance.lodgement_number
+    )
+
+    if not foreign_key_field:
+        foreign_key_field = instance_name.lower()
+
+    populate_gis_data_lands_and_waters(
+        instance, geometries_attribute, foreign_key_field
+    )  # Covers Identifiers, Names, Acts, Tenures and Categories
+    populate_gis_data_regions(instance, geometries_attribute, foreign_key_field)
+    populate_gis_data_districts(instance, geometries_attribute, foreign_key_field)
+    populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field)
+    logger.debug(
+        "-> Finished populating GIS data for %s: %s",
+        instance_name,
+        instance.lodgement_number,
+    )
+
+
+def populate_gis_data_lands_and_waters(
+    instance, geometries_attribute, foreign_key_field
+):
+    properties = [
+        "leg_identifier",
+        "leg_vesting",
+        "leg_name",
+        "leg_tenure",
+        "leg_act",
+        "category",
+    ]
+    # Start with storing the ids of existing identifiers, names, acts, tenures and categories of this instance
+    # Remove any GIS data thtat is returned from querying the geoserver.
+    # Whatever remains in this list is no longer part of this instance and will be deleted.
+    object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
+    gis_data_lands_and_waters = get_gis_data_for_geometries(
+        instance,
+        geometries_attribute,
+        "public:dbca_legislated_lands_and_waters",
+        properties,
+    )
+    if gis_data_lands_and_waters is None:
+        logger.warn(
+            "No GIS Lands and waters data found for %s %s",
+            instance._meta.model.__name__,
+            instance.lodgement_number,
+        )
+        # Delete all the GIS data for this proposal
+        delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+        return
+
+    logger.debug("gis_data_lands_and_waters = " + str(gis_data_lands_and_waters))
+
+    # This part could be refactored to be more generic
+    index = 0
+    if gis_data_lands_and_waters[properties[index]]:
+        for identifier_name in gis_data_lands_and_waters[properties[index]]:
+            if not identifier_name.strip():
+                continue
+            identifier, created = Identifier.objects.get_or_create(name=identifier_name)
+            if created:
+                logger.info(f"New Identifier created from GIS Data: {identifier}")
+            InstanceIdentifier = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}Identifier"
+            )
+            obj, created = InstanceIdentifier.objects.get_or_create(
+                **{foreign_key_field: instance}, identifier=identifier
+            )
+            if not created:
+                # Can only remove from to-delete list if this GIS data was already in the database
+                object_ids[properties[index]].remove(obj.id)
+
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for vesting_name in gis_data_lands_and_waters[properties[index]]:
+            if not vesting_name.strip():
+                continue
+            vesting, created = Vesting.objects.get_or_create(name=vesting_name)
+            if created:
+                logger.info(f"New Vesting created from GIS Data: {vesting}")
+            InstanceVesting = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}Vesting"
+            )
+            obj, created = InstanceVesting.objects.get_or_create(
+                **{foreign_key_field: instance}, vesting=vesting
+            )
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
+
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for name_name in gis_data_lands_and_waters[properties[index]]:
+            # Yes, name_name is a pretty silly variable name, what would you call it?
+            if not name_name.strip():
+                continue
+            name, created = Name.objects.get_or_create(name=name_name)
+            if created:
+                logger.info(f"New Name created from GIS Data: {name}")
+            InstanceName = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}Name"
+            )
+            obj, created = InstanceName.objects.get_or_create(
+                **{foreign_key_field: instance}, name=name
+            )
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
+
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for tenure_name in gis_data_lands_and_waters[properties[index]]:
+            if not tenure_name.strip():
+                continue
+            tenure, created = Tenure.objects.get_or_create(name=tenure_name)
+            if created:
+                logger.info(f"New Tenure created from GIS Data: {tenure}")
+            InstanceTenure = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}Tenure"
+            )
+            obj, created = InstanceTenure.objects.get_or_create(
+                **{foreign_key_field: instance}, tenure=tenure
+            )
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
+
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for act_name in gis_data_lands_and_waters[properties[index]]:
+            if not act_name.strip():
+                continue
+            act, created = Act.objects.get_or_create(name=act_name)
+            if created:
+                logger.info(f"New Act created from GIS Data: {act}")
+            InstanceAct = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}Act"
+            )
+            obj, created = InstanceAct.objects.get_or_create(
+                **{foreign_key_field: instance}, act=act
+            )
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
+
+    index += 1
+    if gis_data_lands_and_waters[properties[index]]:
+        for category_name in gis_data_lands_and_waters[properties[index]]:
+            if not category_name.strip():
+                continue
+            category, created = Category.objects.get_or_create(name=category_name)
+            if created:
+                logger.info(f"New Category created from GIS Data: {category}")
+            InstanceCategory = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}Category"
+            )
+            obj, created = InstanceCategory.objects.get_or_create(
+                **{foreign_key_field: instance}, category=category
+            )
+            if not created:
+                object_ids[properties[index]].remove(obj.id)
+
+    delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+
+
+def populate_gis_data_regions(instance, geometries_attribute, foreign_key_field):
+    properties = [
+        "drg_region_name",
+    ]
+    object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
+    gis_data_regions = get_gis_data_for_geometries(
+        instance, geometries_attribute, "cddp:dbca_regions", properties
+    )
+    if gis_data_regions is None:
+        logger.warn(
+            "No GIS Region data found for instance %s", instance.lodgement_number
+        )
+        delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+        return
+
+    logger.debug("gis_data_regions = " + str(gis_data_regions))
+
+    if gis_data_regions[properties[0]]:
+        for region_name in gis_data_regions[properties[0]]:
+            region, created = Region.objects.get_or_create(name=region_name)
+            if created:
+                logger.info(f"New Region created from GIS Data: {region}")
+            InstanceDistrict = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}Region"
+            )
+            obj, created = InstanceDistrict.objects.get_or_create(
+                **{foreign_key_field: instance}, region=region
+            )
+            if not created:
+                object_ids[properties[0]].remove(obj.id)
+
+    delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+
+
+def populate_gis_data_districts(instance, geometries_attribute, foreign_key_field):
+    properties = [
+        "district",
+    ]
+    object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
+    gis_data_districts = get_gis_data_for_geometries(
+        instance, geometries_attribute, "cddp:dbca_districts", properties
+    )
+    if gis_data_districts is None:
+        logger.warn(
+            "No GIS District data found for instance %s", instance.lodgement_number
+        )
+        delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+        return
+
+    logger.debug("gis_data_districts = " + str(gis_data_districts))
+
+    if gis_data_districts[properties[0]]:
+        for district_name in gis_data_districts[properties[0]]:
+            district, created = District.objects.get_or_create(name=district_name)
+            if created:
+                logger.info(f"New Region created from GIS Data: {district}")
+            InstanceDistrict = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}District"
+            )
+            obj, created = InstanceDistrict.objects.get_or_create(
+                **{foreign_key_field: instance}, district=district
+            )
+            if not created:
+                object_ids[properties[0]].remove(obj.id)
+
+    delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+
+
+def populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field):
+    properties = [
+        "lga_label",
+    ]
+    object_ids = gis_property_to_model_ids(instance, properties, foreign_key_field)
+    gis_data_lgas = get_gis_data_for_geometries(
+        instance, geometries_attribute, "cddp:local_gov_authority", properties
+    )
+    if gis_data_lgas is None:
+        logger.warn("No GIS LGA data found for instance %s", instance.lodgement_number)
+        delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+        return
+
+    logger.debug("gis_data_lgas = " + str(gis_data_lgas))
+
+    if gis_data_lgas[properties[0]]:
+        for lga_name in gis_data_lgas[properties[0]]:
+            lga, created = LGA.objects.get_or_create(name=lga_name)
+            if created:
+                logger.info(f"New LGA created from GIS Data: {lga}")
+            InstanceLGA = apps.get_model(
+                "leaseslicensing", f"{instance.__class__.__name__}LGA"
+            )
+            obj, created = InstanceLGA.objects.get_or_create(
+                **{foreign_key_field: instance}, lga=lga
+            )
+            if not created:
+                object_ids[properties[0]].remove(obj.id)
+
+    delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
+
+
+def delete_gis_data(instance, foreign_key_field, ids_to_delete=[]):
+    """
+    Deletes all GIS data objects for the given instance that are in the ids_to_delete list.
+    The function tries to map GIS data property names to InstanceXyz model names. E.g.
+    'leg_identifier' to InstanceIdentifier, 'category' to InstanceCategory
+
+    Args:
+        instance (Proposal or CompetitiveProcess model at this stage):
+            An instance of a proposal or competitive process model object
+        ids_to_delete (dict):
+            A dictionary that maps GIS data property names to lists of object ids to delete
+            Example: {'leg_identifier': [1,2,3], 'leg_vesting': [4,5], 'category': []}
+    """
+
+    for key in ids_to_delete:
+        # Instance GIS data is stored in InstanceXyz models.
+        # This matches for the Xyz part of the model name from GIS data property name
+        class_class = _gis_property_to_model(
+            instance, key
+        )  # ----< missing arguement !J?!
+        if class_class is None:
+            continue
+        # Delete all objects of the class belonging to this instance that are in the ids_to_delete list
+        deleted = class_class.objects.filter(
+            Q(**{foreign_key_field: instance}) & Q(id__in=ids_to_delete[key])
+        ).delete()
+        logger.debug(
+            f"Deleted {class_class.__name__} {deleted} from {instance._meta.model.__name__} {instance.lodgement_number}"
+        )
+
+
+def gis_property_to_model_ids(instance, properties, foreign_key_field):
+    """
+    Maps GIS data property names to <Instance>Xyz model class names and returns a dictionary of
+    property names and lists of object ids for the respective <Instance>Xyz model that
+    belongs to the property.
+
+    Returns:
+        A dictionary that maps GIS data property names to lists of object ids
+        Example: {'leg_identifier': [1,2,3], 'leg_vesting': [4,5], 'category': []}
+
+    Args:
+        instance (object):
+            A Proposal or CompetitiveProcess object
+        properties (list)):
+            A list of GIS data property names
+    """
+
+    property_model_map = {p: _gis_property_to_model(instance, p) for p in properties}
+
+    return {
+        p: []
+        if property_model_map[p] is None
+        else list(
+            property_model_map[p]
+            .objects.filter(**{foreign_key_field: instance})
+            .distinct()
+            .values_list("id", flat=True)
+        )
+        for p in property_model_map
+    }
+
+
+def _gis_property_to_model(instance, property):
+    """
+    Returns the respective model class for a GIS data property name.
+
+    Args:
+        instance (object):
+            A Proposal or CompetitiveProcess model instance
+        property (str):
+            A GIS data property name
+    """
+
+    # Catches all GIS data property names currently returned by the geoserver
+    # Groups 1 and 3 are non-capturing prefixes and suffixes, with group 2 being
+    # the actual Xyz part of the class name.
+    # TODO: Likely needs to be adapted to the new GIS project?
+    regex = r"^(?:leg_|drg_)?([a-zA-Z_]+?)(?:_name|_label)?$"
+    match = re.match(regex, property)
+    if match is None:
+        logger.warning(f"Could not match property {property}")
+        return None
+
+    # Compile the class name from the matched group
+    class_name = f"{instance.__class__.__name__.lower()}{match.group(1)}"
+    # Get the class object from the app registry
+    try:
+        class_class = apps.get_model(app_label="leaseslicensing", model_name=class_name)
+    except LookupError:
+        logger.exception(f"Could not find class {class_name}")
+        return None
+
+    return class_class
+
+
+def save_site_name(instance, site_name):
+    if not site_name:
+        return
+    site_name, created = SiteName.objects.get_or_create(name=site_name)
+    if created:
+        logger.info(f"New Site Name created from GIS Data: {site_name}")
+    instance.site_name = site_name
+    instance.save()
+    logger.debug("Created new site name: " + str(site_name))
+
+
+def save_groups_data(instance, groups_data, foreign_key_field=None):
+    logger.debug("groups_data = " + str(groups_data))
+    instance_name = instance.__class__.__name__
+    if not foreign_key_field:
+        foreign_key_field = instance_name.lower()
+
+    if not groups_data or 0 == len(groups_data):
+        return
+    group_ids = []
+    for group in groups_data:
+        logger.debug("group: %s", group)
+        InstanceGroup = apps.get_model("leaseslicensing", f"{instance_name}Group")
+        instance_group, created = InstanceGroup.objects.get_or_create(
+            **{foreign_key_field: instance}, group_id=group["id"]
+        )
+        if created:
+            logger.info(f"Added Application: {instance} to Group: {instance_group}")
+        group_ids.append(group["id"])
+    InstanceGroup.objects.filter(**{foreign_key_field: instance}).exclude(
+        group_id__in=group_ids
+    ).delete()
 
 
 def get_secure_file_url(instance, file_field_name):
