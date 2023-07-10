@@ -173,9 +173,7 @@
 
                     <FormSection label="Geospatial Data" index="other_section">
                         <slot name="slot_other_assessment_comments"></slot>
-                        <GisDataDetails
-                            :selected_data="gis_data"
-                        />
+                        <GisDataDetails :selected-data="gis_data" />
                     </FormSection>
 
                     <FormSection label="Categorisation" index="categorisation">
