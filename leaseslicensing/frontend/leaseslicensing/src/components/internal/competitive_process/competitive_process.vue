@@ -129,6 +129,7 @@
                                 :completed="completed"
                                 :finalised="finalised"
                                 @add-detail="addDetail"
+                                @update-party-date="updatePartyDate"
                                 @add-party="addParty"
                             />
                         </FormSection>
@@ -1264,6 +1265,13 @@ export default {
             this.competitive_process.competitive_process_parties.push(
                 new_party_data
             )
+        },
+        updatePartyDate: function (e) {
+            let party =
+                this.competitive_process.competitive_process_parties.find(
+                    (party) => party.id == e.party_id
+                )
+            party[e.date_field] = e.date
         },
         incrementComponentMapKey: function () {
             this.componentMapKey++
