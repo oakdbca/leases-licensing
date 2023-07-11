@@ -3045,7 +3045,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.invoicing_details:
             raise ValidationError(
                 "Couldn't generate an invoicing details. "
-                f"Proposal {self} has already generated a Invoicing Details: {self.generated_competitive_process}"
+                f"Proposal {self} has already generated a Invoicing Details: {self.invoicing_details}"
             )
 
         new_invoicing_details = InvoicingDetails.objects.create()
@@ -3079,13 +3079,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             context={"action": action},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        return serializer.save()
 
     @transaction.atomic
     def finance_complete_editing(self, request, action):
         from leaseslicensing.components.approvals.models import Approval
 
-        self.save_invoicing_details(request, action)
+        invoicing_details = self.save_invoicing_details(request, action)
         self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
 
         approval, created = Approval.objects.update_or_create(
@@ -3100,17 +3100,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             },
         )
         logger.debug(f"About to generate invoices for Proposal {self}")
-        self.generate_invoices(approval)
+        self.generate_invoices(approval, invoicing_details)
         self.generate_compliances(approval, request)
         self.save()
 
-    def generate_invoices(self, approval):
-        invoicing_details = self.invoicing_details
-        logger.debug(f"Charge method {invoicing_details.charge_method} for Proposal")
+    def generate_invoices(self, approval, invoicing_details, save=True):
         if not invoicing_details:
             raise ValidationError(
-                "Couldn't generate an invoice. "
-                f"Proposal {self} has no invoicing details"
+                "Required parameter invoicing_details not provided to generate_invoices"
             )
 
         if (
@@ -3120,7 +3117,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             logger.info(
                 f"No invoices need generating as the Proposal {self} has no rent or licence charge"
             )
-            return
+            return None
 
         if (
             settings.CHARGE_METHOD_ONCE_OFF_CHARGE
@@ -3129,14 +3126,17 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             due_date = timezone.now().date() + relativedelta(
                 days=settings.DEFAULT_DAYS_BEFORE_PAYMENT_DUE
             )
-            invoice = Invoice.objects.create(
+            invoice = Invoice(
                 approval=approval,
                 status=Invoice.INVOICE_STATUS_UNPAID,
                 amount=invoicing_details.once_off_charge_amount,
                 date_due=due_date,
             )
+            if save:
+                invoice.save()
+
             logger.info(f"Created invoice {invoice} for Proposal {self}")
-            return
+            return invoice
 
         logger.warn(
             f"Unknown charge method {invoicing_details.charge_method} for Proposal {self}"
