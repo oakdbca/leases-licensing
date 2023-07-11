@@ -56,6 +56,7 @@ from leaseslicensing.components.organisations.utils import (
 from leaseslicensing.components.proposals.email import (
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
+    send_license_ready_for_invoicing_notification,
     send_pending_referrals_complete_email_notification,
     send_proposal_approval_email_notification,
     send_proposal_approver_sendback_email_notification,
@@ -2647,6 +2648,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         self.processing_status = (
                             Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                         )
+                        send_license_ready_for_invoicing_notification(self, request)
 
                     # TODO: additional logic required for amendment, reissue, etc?
 
@@ -2654,7 +2656,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     # self.create_approval_pdf(request)
                     # TODO: Send notification email to approver after the finance team
                     # has created the invoice
-                    # send_license_ready_for_invoicing_notification(self, request)
 
                     # Send notification email to applicant
                     send_proposal_approval_email_notification(self, request)
