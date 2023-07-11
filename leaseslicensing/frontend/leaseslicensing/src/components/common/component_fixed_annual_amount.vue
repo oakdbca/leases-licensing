@@ -5,40 +5,84 @@
                 <div class="card mb-3">
                     <div class="card-body">
                         <div class="row mb-2 row_wrapper align-items-center">
-                            <label class="col-sm-2 col-form-label">Increment <span v-if="debug" class="debug_msg">id:{{
-                                item.id }}</span></label>
+                            <label class="col-sm-2 col-form-label"
+                                >Increment
+                                <span v-if="debug" class="debug_msg"
+                                    >id:{{ item.id }}</span
+                                ></label
+                            >
                             <label class="col-sm-1 col-form-label">year</label>
                             <div class="col-sm-2 align-items-center">
-                                <input type="number" :min="min_year" :max="max_year" :step="step_year"
-                                    class="form-control form-control-sm" v-model="item.year" :disabled="item.readonly" />
+                                <input
+                                    v-model="item.year"
+                                    type="number"
+                                    :min="min_year"
+                                    :max="max_year"
+                                    :step="step_year"
+                                    class="form-control form-control-sm"
+                                    :disabled="item.readonly"
+                                />
                             </div>
-                            <label class="col-sm-3 col-form-label">{{ value_title }}</label>
+                            <label class="col-sm-3 col-form-label">{{
+                                value_title
+                            }}</label>
                             <div class="col-sm-2">
-                                <input v-if="increment_type === 'annual_increment_amount'" type="number"
-                                    :min="min_increment" :max="max_increment" :step="step_increment"
-                                    class="form-control form-control-sm" v-model="item.increment_amount"
-                                    :disabled="item.readonly" />
-                                <input v-else-if="increment_type === 'annual_increment_percentage'" type="number"
-                                    :min="min_increment" :max="max_increment" :step="step_increment"
-                                    class="form-control form-control-sm" v-model="item.increment_percentage"
-                                    :disabled="item.readonly" />
-                                <input v-else-if="increment_type === 'gross_turnover_percentage'" type="number"
-                                    :min="min_increment" :max="max_increment" :step="step_increment"
-                                    class="form-control form-control-sm" v-model="item.percentage"
-                                    :disabled="item.readonly" />
+                                <input
+                                    v-if="
+                                        increment_type ===
+                                        'annual_increment_amount'
+                                    "
+                                    v-model="item.increment_amount"
+                                    type="number"
+                                    :min="min_increment"
+                                    :max="max_increment"
+                                    :step="step_increment"
+                                    class="form-control form-control-sm"
+                                    :disabled="item.readonly"
+                                />
+                                <input
+                                    v-else-if="
+                                        increment_type ===
+                                        'annual_increment_percentage'
+                                    "
+                                    v-model="item.increment_percentage"
+                                    type="number"
+                                    :min="min_increment"
+                                    :max="max_increment"
+                                    :step="step_increment"
+                                    class="form-control form-control-sm"
+                                    :disabled="item.readonly"
+                                />
+                                <input
+                                    v-else-if="
+                                        increment_type ===
+                                        'gross_turnover_percentage'
+                                    "
+                                    v-model="item.percentage"
+                                    type="number"
+                                    :min="min_increment"
+                                    :max="max_increment"
+                                    :step="step_increment"
+                                    class="form-control form-control-sm"
+                                    :disabled="item.readonly"
+                                />
                             </div>
                             <div class="col-sm-1">
                                 <template v-if="deletable(item)">
-                                    <span class="remove_a_row text-danger" @click="remove_a_row(item, $event)"><i
-                                            class="bi bi-x-circle-fill"></i></span>
+                                    <span
+                                        class="remove_a_row text-danger"
+                                        @click="remove_a_row(item, $event)"
+                                        ><i class="bi bi-x-circle-fill"></i
+                                    ></span>
                                 </template>
                             </div>
                         </div>
                     </div>
                 </div>
             </template>
-            <button class="btn btn-primary" @click="addAnotherYearClicked"><i class="fa fa-add"></i> Add increment
-                year</button>
+            <button class="btn btn-primary" @click="addAnotherYearClicked">
+                <i class="fa fa-add"></i> Add increment year
+            </button>
         </div>
     </div>
 </template>
@@ -49,38 +93,26 @@ import { v4 as uuid } from 'uuid'
 export default {
     name: 'AnnualAmount',
     props: {
-        increment_type: {
+        incrementType: {
             type: String,
             required: true,
         },
-        years_array: {
+        yearsArray: {
             type: Array,
             required: true,
         },
-        min_year: {
+        minYear: {
             type: Number,
             default: 2021,
         },
-        max_year: {
+        maxYear: {
             type: Number,
             default: 2100,
         },
-        step_year: {
+        stepYear: {
             type: Number,
             default: 1,
-        }
-    },
-    data: function () {
-        let vm = this;
-        return {
-
-        }
-    },
-    created: function () {
-
-    },
-    mounted: function () {
-
+        },
     },
     computed: {
         debug: function () {
@@ -89,28 +121,32 @@ export default {
             }
             return false
         },
-        // temp: function(){
-        //     if (this.increment_type === 'annual_increment_amount')
-        //         return this.years_array.increment_amount
-        //     else if (this.increment_type === 'annual_increment_percentage')
-        //         return this.years_array.increment_percentage
-        //     else if (this.increment_type === 'gross_turnover_percentage')
-        //         return this.years_array.percentage
-        //     return 5
-        // },
         value_title: function () {
             if (this.increment_type === 'annual_increment_amount')
                 return 'amount [AU$]'
-            else if (['annual_increment_percentage', 'gross_turnover_percentage'].includes(this.increment_type))
+            else if (
+                [
+                    'annual_increment_percentage',
+                    'gross_turnover_percentage',
+                ].includes(this.increment_type)
+            )
                 return 'percentage [%]'
+            return 'Error: Unkown increment type'
         },
         step_increment: function () {
-            if (this.increment_type === 'annual_increment_amount')
-                return 100
-            else if (['annual_increment_percentage', 'gross_turnover_percentage'].includes(this.increment_type))
+            if (this.increment_type === 'annual_increment_amount') return 100
+            else if (
+                [
+                    'annual_increment_percentage',
+                    'gross_turnover_percentage',
+                ].includes(this.increment_type)
+            )
                 return 0.1
+            return 'Error: Unkown increment type'
         },
     },
+    created: function () {},
+    mounted: function () {},
     methods: {
         deletable: function (item) {
             if (item.id === 0 || !item.readonly)
@@ -130,13 +166,12 @@ export default {
                 key_name = 'percentage'
 
             this.years_array.push({
-                'id': 0,
-                'key': uuid(),
-                'year': null,
+                id: 0,
+                key: uuid(),
+                year: null,
                 [key_name]: null,
-                'readonly': false,
+                readonly: false,
             })
-
         },
         remove_a_row: function (item, e) {
             let vm = this
