@@ -164,7 +164,6 @@ SYSTEM_NAME = env("SYSTEM_NAME", "Leases and Licensing")
 SYSTEM_NAME_SHORT = env("SYSTEM_NAME_SHORT", "LALS")
 SITE_PREFIX = env("SITE_PREFIX")
 SITE_DOMAIN = env("SITE_DOMAIN")
-SUPPORT_EMAIL = env("SUPPORT_EMAIL", "licensing@" + SITE_DOMAIN).lower()
 DEP_URL = env("DEP_URL", "www." + SITE_DOMAIN)
 DEP_PHONE = env("DEP_PHONE", "(08) 9219 9978")
 DEP_PHONE_FILMING = env("DEP_PHONE_FILMING", "(08) 9219 8411")
@@ -179,12 +178,19 @@ BRANCH_NAME = env("BRANCH_NAME", "Leases and Licensing Branch")
 DEP_ADDRESS = env("DEP_ADDRESS", "17 Dick Perry Avenue, Kensington WA 6151")
 SITE_URL = env("SITE_URL", "https://" + SITE_PREFIX + "." + SITE_DOMAIN)
 PUBLIC_URL = env("PUBLIC_URL", SITE_URL)
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@" + SITE_DOMAIN).lower()
 MEDIA_APP_DIR = env("MEDIA_APP_DIR", "leaseslicensing")
 CRON_RUN_AT_TIMES = env("CRON_RUN_AT_TIMES", "04:05")
-CRON_EMAIL = env("CRON_EMAIL", "cron@" + SITE_DOMAIN).lower()
 # for ORACLE Job Notification - override settings_base.py
+
+CRON_EMAIL = env("CRON_EMAIL", "cron@" + SITE_DOMAIN).lower()
+CRON_NOTIFICATION_EMAIL = env("CRON_NOTIFICATION_EMAIL", NOTIFICATION_EMAIL).lower()
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@" + SITE_DOMAIN).lower()
+SUPPORT_EMAIL = env("SUPPORT_EMAIL", "licensing@" + SITE_DOMAIN).lower()
 EMAIL_FROM = DEFAULT_FROM_EMAIL
+LEASING_FINANCE_NOTIFICATION_EMAIL = env(
+    "LEASING_FINANCE_NOTIFICATION_EMAIL", "leasing@dbca.wa.gov.au"
+)
+
 OTHER_PAYMENT_ALLOWED = env("OTHER_PAYMENT_ALLOWED", False)  # Cash/Cheque
 
 OSCAR_BASKET_COOKIE_OPEN = "cols_basket"
@@ -195,7 +201,6 @@ PAYMENT_SYSTEM_PREFIX = env(
 os.environ[
     "LEDGER_PRODUCT_CUSTOM_FIELDS"
 ] = "('ledger_description','quantity','price_incl_tax','price_excl_tax','oracle_code')"
-CRON_NOTIFICATION_EMAIL = env("CRON_NOTIFICATION_EMAIL", NOTIFICATION_EMAIL).lower()
 
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
