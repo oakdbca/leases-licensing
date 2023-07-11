@@ -275,20 +275,21 @@
 </template>
 
 <script>
-import Profile from '@/components/user/profile.vue'
-import Applicant from '@/components/common/applicant.vue'
-import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
-import FormSection from '@/components/forms/section_toggle.vue'
-import RichText from '@/components/forms/richtext.vue'
-import FileField from '@/components/forms/filefield_immediate.vue'
-import MapComponent from '@/components/common/component_map_with_filters_v2'
-import RegistrationOfInterest from './form_registration_of_interest.vue'
-import LeaseLicence from './form_lease_licence.vue'
-import Multiselect from 'vue-multiselect'
-import GisDataDetails from '@/components/common/gis_data_details.vue'
+import Applicant from '@/components/common/applicant.vue';
+import OrganisationApplicant from '@/components/common/organisation_applicant.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
+import FileField from '@/components/forms/filefield_immediate.vue';
+import MapComponent from '@/components/common/component_map_with_filters_v2';
+import RegistrationOfInterest from './form_registration_of_interest.vue';
+import LeaseLicence from './form_lease_licence.vue';
+import Multiselect from 'vue-multiselect';
+import GisDataDetails from '@/components/common/gis_data_details.vue';
 
-import { api_endpoints, helpers, utils } from '@/utils/hooks'
-import { owsQuery, validateFeature } from '@/components/common/map_functions.js'
+import { api_endpoints, helpers, utils } from '@/utils/hooks';
+import {
+    owsQuery,
+    validateFeature,
+} from '@/components/common/map_functions.js';
 /*
 import Confirmation from '@/components/common/confirmation.vue'
 */
@@ -299,9 +300,7 @@ export default {
         LeaseLicence,
         Applicant,
         OrganisationApplicant,
-        Profile,
         FormSection,
-        RichText,
         FileField,
         MapComponent,
         Multiselect,
@@ -326,6 +325,7 @@ export default {
         },
         submitterId: {
             type: Number,
+            default: null,
         },
         canEditActivities: {
             type: Boolean,
@@ -354,6 +354,7 @@ export default {
         referral: {
             type: Object,
             required: false,
+            default: null,
         },
         readonly: {
             type: Boolean,
@@ -391,118 +392,121 @@ export default {
             },
             districts: null,
             lgas: null,
-            groups: null,
-            api_endpoints: api_endpoints,
-
             groups: [],
+            api_endpoints: api_endpoints,
 
             loadingGroups: false,
             owsQuery: owsQuery,
             validateFeature: validateFeature,
-        }
+        };
     },
     computed: {
         email_user_applicant: function () {
-            return this.proposal.applicant_obj
+            return this.proposal.applicant_obj;
         },
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
         proposalId: function () {
-            return this.proposal ? this.proposal.id : null
+            return this.proposal ? this.proposal.id : null;
         },
         deedPollDocumentUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_deed_poll_document/'
-            )
+            );
         },
         supportingDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_deed_poll_document/'
-            )
+            );
         },
         profileVar: function () {
             if (this.is_external) {
-                return this.profile
+                return this.profile;
             } else if (this.proposal) {
-                return this.proposal.submitter
+                return this.proposal.submitter;
+            } else {
+                return null;
             }
         },
         applicantType: function () {
             if (this.proposal) {
-                return this.proposal.applicant_type
+                return this.proposal.applicant_type;
+            } else {
+                return null;
             }
         },
         applicationTypeText: function () {
-            let text = ''
+            let text = '';
             if (this.proposal) {
-                text = this.proposal.application_type.name_display
+                text = this.proposal.application_type.name_display;
             }
-            return text
+            return text;
         },
         gis_data: function () {
             if (this.proposal) {
                 return {
-                    'regions': this.proposal.regions,
-                    'districts': this.proposal.districts,
-                    'lgas': this.proposal.lgas,
-                    'names': this.proposal.names,
-                    'categories': this.proposal.categories,
-                    'identifiers': this.proposal.identifiers,
-                    'vestings': this.proposal.vestings,
-                    'acts': this.proposal.acts,
-                    'tenures': this.proposal.tenures,
-                }
+                    regions: this.proposal.regions,
+                    districts: this.proposal.districts,
+                    lgas: this.proposal.lgas,
+                    names: this.proposal.names,
+                    categories: this.proposal.categories,
+                    identifiers: this.proposal.identifiers,
+                    vestings: this.proposal.vestings,
+                    acts: this.proposal.acts,
+                    tenures: this.proposal.tenures,
+                };
+            } else {
+                return {};
             }
         },
     },
     created: function () {
         utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
-            this.groups = data
-        })
+            this.groups = data;
+        });
     },
     mounted: function () {
-        this.$emit('formMounted')
-
+        this.$emit('formMounted');
     },
     methods: {
         addAnotherLocality: function () {
-            this.localities.push(Object.assign({}, this.defaultLocality))
+            this.localities.push(Object.assign({}, this.defaultLocality));
         },
         removeLocality: function (locality, index) {
-            console.log('removeLocality', locality, index)
+            console.log('removeLocality', locality, index);
             if (locality.id) {
-                alert('Remove locality from database')
+                alert('Remove locality from database');
             }
-            this.localities.splice(index, 1)
+            this.localities.splice(index, 1);
         },
 
         incrementComponentMapKey: function () {
-            this.componentMapKey++
+            this.componentMapKey++;
         },
         toggleComponentMapOn: function () {
             //this.incrementComponentMapKey()
             //this.componentMapOn = true;
             this.$nextTick(() => {
-                this.$refs.component_map.forceToRefreshMap()
-            })
+                this.$refs.component_map.forceToRefreshMap();
+            });
         },
         updateTableByFeatures: function () {},
         featureGeometryUpdated: function () {},
         popupClosed: function () {},
         populateProfile: function (profile) {
-            this.profile = Object.assign({}, profile)
+            this.profile = Object.assign({}, profile);
         },
         refreshFromResponse: function (data) {
-            this.$emit('refreshFromResponse', data)
+            this.$emit('refreshFromResponse', data);
         },
     },
-}
+};
 </script>
 
 <style lang="css" scoped>
