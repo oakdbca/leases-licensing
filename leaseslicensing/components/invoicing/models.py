@@ -306,7 +306,9 @@ class InvoicingDetails(BaseModel):
     once_off_charge_amount = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True
     )
-    review_once_every = models.PositiveSmallIntegerField(null=True, blank=True)
+    review_once_every = models.PositiveSmallIntegerField(
+        null=True, blank=True, default=1
+    )
     review_repetition_type = models.ForeignKey(
         RepetitionType,
         null=True,
@@ -315,7 +317,7 @@ class InvoicingDetails(BaseModel):
         related_name="invoicing_details_set_for_review",
     )
     invoicing_once_every = models.PositiveSmallIntegerField(
-        null=True, blank=True
+        null=True, blank=True, default=1
     )  # Probably better to call this times per repetition?
     invoicing_repetition_type = models.ForeignKey(
         RepetitionType,
@@ -325,7 +327,11 @@ class InvoicingDetails(BaseModel):
         related_name="invoicing_details_set_for_invoicing",
     )
     approval = models.ForeignKey(
-        "Approval", null=True, blank=True, on_delete=models.SET_NULL
+        "Approval",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="invoicing_details",
     )
     previous_invoicing_details = models.OneToOneField(
         "self",
