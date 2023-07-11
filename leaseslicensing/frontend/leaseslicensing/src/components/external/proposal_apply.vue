@@ -3,7 +3,7 @@
         <div v-if="!applicationsLoading" class="row">
             <div class="col-sm-12">
                 <form class="form-horizontal" name="personal_form" method="post">
-                    <FormSection label="Apply for a">
+                    <FormSection label="Apply for a" index="propsal_apply_for">
                         <div class="col-sm-6">
                             <div v-if="application_types && application_types.length" class="form-group">
                                 <ul class="list-group">
@@ -20,7 +20,7 @@
                             </div>
                         </div>
                     </FormSection>
-                    <FormSection label="on behalf of">
+                    <FormSection label="on behalf of" index="proposal_apply_on_behalf_of">
                         <div class="col-sm-6">
                             <ul class="list-group">
                                 <li class="list-group-item">

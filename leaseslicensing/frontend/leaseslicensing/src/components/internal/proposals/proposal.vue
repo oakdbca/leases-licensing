@@ -41,7 +41,7 @@
                     (canSeeSubmission && !['with_approver', 'approved_application', 'approved', 'declined'].
                         includes(proposal.processing_status_id)) ||
                     (!canSeeSubmission && showingProposal)">
-                    <FormSection :formCollapse="false" label="Application" Index="application">
+                    <FormSection :formCollapse="false" label="Application" index="application">
                         <ApplicationForm v-if="proposal" :proposal="proposal" :show_application_title="false"
                             :is_external="false" :is_internal="true" ref="application_form" :readonly="readonly"
                             :submitterId="submitter_id" :key="computedProposalId" :show_related_items_tab="true"
@@ -437,7 +437,7 @@
 
                             <!-- Inserted into the slot on the form.vue: Related Items -->
                             <template v-slot:slot_section_related_items>
-                                <FormSection :formCollapse="false" label="Related Items" Index="related_items">
+                                <FormSection :formCollapse="false" label="Related Items" index="related_items">
                                     <TableRelatedItems :ajax_url="related_items_ajax_url" />
                                 </FormSection>
                             </template>

@@ -1,7 +1,7 @@
 <template>
     <div class="container" id="externalDash">
         <FormSection v-if="accessing_user && accessing_user.is_referee" :formCollapse="false"
-            label="Applications Referred to Me" Index="leases_and_licences">
+            label="Applications Referred to Me" index="leases_and_licences">
             <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" level="external"
                 :email_user_id_assigned="accessing_user.id"
                 filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
@@ -11,17 +11,17 @@
         </FormSection>
 
         <FormSection :formCollapse="false" label="Applications" subtitle="- View existing applications and lodge new ones"
-            Index="applications">
+            index="applications">
             <ApplicationsTable level="external" />
         </FormSection>
 
         <FormSection :formCollapse="false" label="Leases and Licences"
-            subtitle="- View existing leases / licences and renew them" Index="licences_and_permits">
+            subtitle="- View existing leases / licences and renew them" index="licences_and_permits">
             <ApprovalsTable level="external" />
         </FormSection>
 
         <FormSection :formCollapse="false" label="Compliances"
-            subtitle="- The obligations you must comply by to keep your lease / licence valid" Index="compliances">
+            subtitle="- The obligations you must comply by to keep your lease / licence valid" index="compliances">
             <CompliancesTable level="external" />
         </FormSection>
     </div>

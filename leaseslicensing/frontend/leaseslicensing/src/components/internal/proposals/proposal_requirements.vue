@@ -1,6 +1,6 @@
 <template id="proposal_requirements">
     <div>
-        <FormSection :formCollapse="false" label="Conditions" Index="conditions">
+        <FormSection :formCollapse="false" label="Conditions" index="conditions">
             <form class="form-horizontal" action="index.html" method="post">
                 <div class="row">
                     <div class="col-sm-12">

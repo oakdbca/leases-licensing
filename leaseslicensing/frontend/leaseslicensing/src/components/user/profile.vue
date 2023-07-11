@@ -268,7 +268,7 @@
                     </div>
                 </div>
             </div>
-            <FormSection v-if="showElectoralRoll" label="WA State Electoral Roll" :Index="electoralRollSectionIndex">
+            <FormSection v-if="showElectoralRoll" label="WA State Electoral Roll" :index="electoralRollSectionIndex">
                 <div class="form-group">
                     <div class="col-sm-8 mb-3">
                         <strong>

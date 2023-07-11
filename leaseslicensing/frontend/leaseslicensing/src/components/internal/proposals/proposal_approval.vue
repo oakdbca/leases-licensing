@@ -45,7 +45,7 @@
                 </div>
             </div>
         </div-->
-        <FormSection :formCollapse="false" :label="decisionLabel" Index="proposal_decision">
+        <FormSection :formCollapse="false" :label="decisionLabel" index="proposal_decision">
             <ProposedIssuanceForm v-if="proposal" :proposal="proposal" ref="proposed_approval_form"
                 :decisionLabel="decisionLabel" :processing_status="proposal.processing_status" :proposal_id="proposal.id"
                 :proposal_type="proposal.proposal_type ? proposal.proposal_type.code : ''"
@@ -57,7 +57,7 @@
 
         <!-- Can only have proposed documents (from the assessor) when applying for a lease/license -->
         <FormSection v-if="proposal.application_type && proposal.application_type.name == 'lease_licence'"
-            :formCollapse="false" label="Documents" Index="proposal_documents">
+            :formCollapse="false" label="Documents" index="proposal_documents">
             <ProposedApprovalDocuments v-if="proposal" :proposal="proposal" ref="proposed_issuance_documents"
                 :processing_status="proposal.processing_status" :proposal_id="proposal.id"
                 :selectedDocumentTypes="proposal.proposed_issuance_approval ? proposal.proposed_issuance_approval.selected_document_types : []"
@@ -65,7 +65,7 @@
         </FormSection>
 
         <FormSection v-if="show_invoicing_details" :formCollapse="false" label="Invoicing Details"
-            Index="proposal_invoicing_details">
+            index="proposal_invoicing_details">
             <InvoicingDetails :invoicing_details="proposal.invoicing_details" />
         </FormSection>
     </div>

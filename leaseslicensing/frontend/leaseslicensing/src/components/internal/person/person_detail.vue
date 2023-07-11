@@ -28,16 +28,16 @@
                         <Applicant v-if="user" :email_user="user" id="proposalStartApplicant" :readonly="readonly" />
                     </div>
                     <div class="tab-pane fade" id="pills-approvals" role="tabpanel" aria-labelledby="pills-approvals-tab">
-                        <FormSection :formCollapse="true" label="Applications" subtitle="" Index="applications">
+                        <FormSection :formCollapse="true" label="Applications" subtitle="" index="applications">
                             <ApplicationsTable v-if="user" level="organisation_view" :target_id="user.id" />
                         </FormSection>
 
-                        <FormSection :formCollapse="true" label="Approvals" subtitle="" Index="approvals">
+                        <FormSection :formCollapse="true" label="Approvals" subtitle="" index="approvals">
                             <AppprovalsTable v-if="user" level="organisation_view" :target_id="user.id" />
                         </FormSection>
 
                         <FormSection :formCollapse="true" label="Compliances with Requirements" subtitle=""
-                            Index="compliances">
+                            index="compliances">
                             <CompliancesTable v-if="user" level="internal" :target_id="user.id" />
                         </FormSection>
                     </div>
