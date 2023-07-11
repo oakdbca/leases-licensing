@@ -119,7 +119,9 @@
         >
             <InvoicingDetails
                 :invoicing-details="proposal.invoicing_details"
-                @updateInvoicingDetails="$emit('updateInvoicingDetails')"
+                @updateInvoicingDetails="
+                    $emit('updateInvoicingDetails', $event)
+                "
             />
         </FormSection>
     </div>

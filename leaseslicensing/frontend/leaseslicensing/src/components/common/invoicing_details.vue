@@ -12,14 +12,15 @@
                         class="list-group-item"
                     >
                         <input
-                            v-if="invoicing_details"
+                            v-if="invoicingDetailsComputed"
                             :id="charge_method.key"
-                            v-model="invoicing_details.charge_method"
+                            v-model="invoicingDetailsComputed.charge_method"
                             type="radio"
                             class="form-check-input me-2"
                             name="charge_method"
                             :value="charge_method.id"
                             required
+                            @change="focusNextInput"
                         />
                         <label
                             :for="charge_method.key"
@@ -36,7 +37,7 @@
                 </ul>
             </div>
         </div>
-        <div v-if="show_once_off_charge_amount" class="row mb-2">
+        <div v-if="show_once_off_charge_amount" class="row mb-3">
             <div class="col-sm-4">
                 <label for="once_off_charge_amount" class="control-label"
                     >Once-off Charge ($AUD)</label
@@ -44,52 +45,58 @@
             </div>
             <div class="col-sm-8">
                 <input
-                    v-if="invoicing_details"
+                    v-if="invoicingDetailsComputed"
                     id="once_off_charge_amount"
-                    v-model="invoicing_details.once_off_charge_amount"
+                    v-model="invoicingDetailsComputed.once_off_charge_amount"
                     type="number"
-                    min="0"
-                    step="100"
+                    min="1"
                     class="form-control"
                     required
                 />
             </div>
         </div>
-        <div v-if="show_base_fee" class="row mb-4">
+        <div v-if="show_base_fee" class="row mb-3 pb-3 border-bottom">
             <label for="base_fee_amount" class="col-form-label col-sm-4"
                 >Base Fee ($AUD)</label
             >
             <div class="col-sm-8">
                 <input
-                    v-if="invoicing_details"
+                    v-if="invoicingDetailsComputed"
                     id="base_fee_amount"
-                    v-model="invoicing_details.base_fee_amount"
+                    v-model="invoicingDetailsComputed.base_fee_amount"
                     type="number"
-                    min="0"
-                    step="100"
+                    min="1"
                     class="form-control"
+                    required
                 />
             </div>
         </div>
         <div v-if="show_fixed_annual_increment">
             <AnnualIncrement
-                v-if="invoicing_details"
-                increment_type="annual_increment_amount"
-                :years_array="invoicing_details.annual_increment_amounts"
+                v-if="invoicingDetailsComputed"
+                increment-type="annual_increment_amount"
+                :years-array="invoicingDetailsComputed.annual_increment_amounts"
+                @updateYearsArray="updateYearsArray"
             />
         </div>
         <div v-if="show_fixed_annual_percentage">
             <AnnualIncrement
-                v-if="invoicing_details"
-                increment_type="annual_increment_percentage"
-                :years_array="invoicing_details.annual_increment_percentages"
+                v-if="invoicingDetailsComputed"
+                increment-type="annual_increment_percentage"
+                :years-array="
+                    invoicingDetailsComputed.annual_increment_percentages
+                "
+                @updateYearsArray="updateYearsArray"
             />
         </div>
         <div v-if="show_percentage_of_gross_turnover">
             <AnnualIncrement
-                v-if="invoicing_details"
-                increment_type="gross_turnover_percentage"
-                :years_array="invoicing_details.gross_turnover_percentages"
+                v-if="invoicingDetailsComputed"
+                increment-type="gross_turnover_percentage"
+                :years-array="
+                    invoicingDetailsComputed.gross_turnover_percentages
+                "
+                @updateYearsArray="updateYearsArray"
             />
             <div class="row mb-2">
                 <div class="col-sm-12">
@@ -100,53 +107,63 @@
                 </div>
             </div>
         </div>
-        <div v-if="show_review_of_base_fee" class="row mb-2">
-            <label class="col-form-label col-sm-3">Review of base fee</label>
-            <div class="col-sm-2">
-                <label for="review_once_every" class="control-label"
-                    >Once every</label
-                >
-            </div>
-            <div class="col-sm-2">
-                <input
-                    v-if="invoicing_details"
-                    id="review_once_every"
-                    v-model="invoicing_details.review_once_every"
-                    type="number"
-                    min="0"
-                    max="5"
-                    step="1"
-                    class="form-control"
-                />
-            </div>
-            <div class="col-sm-2">
-                <div
-                    v-for="repetition_type in repetition_types"
-                    :id="repetition_type.id"
-                    :key="repetition_type.id"
-                    class="form-check"
-                >
-                    <input
-                        v-if="invoicing_details"
-                        :id="'review_' + repetition_type.key"
-                        v-model="invoicing_details.review_repetition_type"
-                        type="radio"
-                        name="repetition_type_review"
-                        class="form-check-input"
-                        :value="repetition_type.id"
-                    />
-                    <label
-                        :for="'review_' + repetition_type.key"
-                        class="form-check-label"
-                        >{{ repetition_type.display_name }}</label
-                    >
+        <div v-if="show_review_of_base_fee" class="row mb-3 pb-3 border-bottom">
+            <label class="col-form-label col-sm-4">Review of Base Fee</label>
+            <div class="col-sm-8">
+                <div class="d-flex align-items-center">
+                    <div class="pe-3">
+                        <input
+                            v-if="invoicingDetailsComputed"
+                            id="review_once_every"
+                            v-model="invoicingDetailsComputed.review_once_every"
+                            type="number"
+                            min="0"
+                            max="5"
+                            step="1"
+                            class="form-control"
+                            required
+                        />
+                    </div>
+                    <div class="pe-3">
+                        time<span
+                            v-if="
+                                invoicingDetailsComputed.review_once_every > 1
+                            "
+                            >s</span
+                        >
+                        per
+                    </div>
+                    <div class="">
+                        <select
+                            v-model="
+                                invoicingDetailsComputed.review_repetition_type
+                            "
+                            class="form-select"
+                            aria-label="Repetition Type"
+                            required
+                        >
+                            <option disabled :value="null">
+                                Select a Frequency
+                            </option>
+                            <option
+                                v-for="repetition_type in repetition_types"
+                                :key="repetition_type.id"
+                                :value="repetition_type.id"
+                            >
+                                {{ repetition_type.display_name }}
+                            </option>
+                        </select>
+                    </div>
                 </div>
             </div>
         </div>
         <div v-if="show_crown_land_rent_review_date">
             <CrownLandRentReviewDate
-                v-if="invoicing_details"
-                :review_dates="invoicing_details.crown_land_rent_review_dates"
+                v-if="invoicingDetailsComputed"
+                :review-dates="
+                    invoicingDetailsComputed.crown_land_rent_review_dates
+                "
+                @updateReviewDates="updateReviewDates"
             />
         </div>
         <div v-if="show_invoicing_frequency" class="row mb-2">
@@ -157,19 +174,25 @@
                 <div class="d-flex align-items-center">
                     <div class="pe-3">
                         <input
-                            v-if="invoicing_details"
+                            v-if="invoicingDetailsComputed"
                             id="invoicing_once_every"
-                            v-model="invoicing_details.invoicing_once_every"
+                            v-model="
+                                invoicingDetailsComputed.invoicing_once_every
+                            "
                             type="number"
                             min="1"
                             max="5"
                             step="1"
                             class="form-control"
+                            required
                         />
                     </div>
                     <div class="pe-3">
                         time<span
-                            v-if="invoicing_details.invoicing_once_every > 1"
+                            v-if="
+                                invoicingDetailsComputed.invoicing_once_every >
+                                1
+                            "
                             >s</span
                         >
                         per
@@ -177,12 +200,13 @@
                     <div class="">
                         <select
                             v-model="
-                                invoicing_details.invoicing_repetition_type
+                                invoicingDetailsComputed.invoicing_repetition_type
                             "
                             class="form-select"
                             aria-label="Repetition Type"
+                            required
                         >
-                            <option disabled :value="null">
+                            <option selected disabled :value="null">
                                 Select a Frequency
                             </option>
                             <option
@@ -232,11 +256,12 @@ export default {
             }
             return false
         },
-        invoicing_details: {
+        invoicingDetailsComputed: {
             get() {
                 return this.invoicingDetails
             },
             set(value) {
+                console.log('emitting updateInvoicingDetails = ', value)
                 this.$emit('updateInvoicingDetails', value)
             },
         },
@@ -326,6 +351,27 @@ export default {
     },
     mounted: function () {},
     methods: {
+        focusNextInput: function (event) {
+            this.$nextTick(() => {
+                $(event.target)
+                    .closest('.row')
+                    .next('.row')
+                    .find('input')
+                    .focus()
+            })
+        },
+        updateReviewDates: function (review_dates) {
+            this.invoicingDetailsComputed = {
+                ...this.invoicingDetailsComputed,
+                crown_land_rent_review_dates: review_dates,
+            }
+        },
+        updateYearsArray: function (years_array) {
+            this.invoicingDetailsComputed = {
+                ...this.invoicingDetailsComputed,
+                annual_increment_amounts: years_array,
+            }
+        },
         getChargeMethodIdByKey: function (key) {
             let charge_method = this.charge_methods.find(
                 (charge_method) => charge_method.key === key
@@ -351,6 +397,22 @@ export default {
                 if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
                 let repetition_types = await res.json()
                 vm.repetition_types = repetition_types
+                vm.$nextTick(function () {
+                    if (!vm.invoicingDetailsComputed.review_once_every) {
+                        vm.invoicingDetailsComputed.review_once_every = 1
+                    }
+                    if (!vm.invoicingDetailsComputed.invoicing_once_every) {
+                        vm.invoicingDetailsComputed.invoicing_once_every = 1
+                    }
+                    if (!vm.invoicingDetailsComputed.review_repetition_type) {
+                        vm.invoicingDetailsComputed.review_repetition_type = 1
+                    }
+                    if (
+                        !vm.invoicingDetailsComputed.invoicing_repetition_type
+                    ) {
+                        vm.invoicingDetailsComputed.invoicing_repetition_type = 1
+                    }
+                })
             } catch (err) {
                 console.log({ err })
             }

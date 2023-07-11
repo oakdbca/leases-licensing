@@ -1,6 +1,5 @@
 <template lang="html">
     <div v-if="proposal" id="internalProposal" class="container">
-        {{ proposal.invoicing_details }}
         <div v-if="debug">internal/proposals/proposal.vue</div>
         <div class="row">
             <h3>
@@ -2261,11 +2260,20 @@ export default {
                         ).focus()
                     }
                     this.$nextTick(() => {
+                        /* Modify the scroll height of the assessment comments to fit the content */
                         $('textarea').each(function () {
                             if ($(this)[0].scrollHeight > 70) {
                                 $(this).height($(this)[0].scrollHeight - 30)
                             }
                         })
+                        if (
+                            constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING
+                                .ID == vm.proposal.processing_status_id
+                        ) {
+                            $(document).scrollTop(
+                                $('#invoicing-form').offset().top - 300
+                            )
+                        }
                     })
                 })
                 .catch((error) => {
@@ -2273,7 +2281,8 @@ export default {
                 })
         },
         updateInvoicingDetails: function (value) {
-            this.proposal.invoicing_details = value
+            console.log('updateInvoicingDetails', value)
+            Object.assign(this.proposal.invoicing_details, value)
         },
     },
 }
