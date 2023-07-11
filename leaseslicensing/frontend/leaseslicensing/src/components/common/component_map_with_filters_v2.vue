@@ -1710,18 +1710,22 @@ export default {
             let vm = this
             vm.fetchingProposals = true;
             let url = api_endpoints.proposal + 'list_for_map/'
+            // Characters to concatenate pseudo url elements
+            let chars = ['&', '&', '?'];
+
             if (vm.proposalIds.length > 0) {
-                url += '&proposal_ids=' + vm.proposalIds.toString()
+                url +=
+                    `${chars.pop()}proposal_ids=` + vm.proposalIds.toString();
             }
             if (vm.filterApplicationsMapApplicationType != 'all') {
                 url +=
-                    '&application_type=' +
-                    vm.filterApplicationsMapApplicationType
+                    `${chars.pop()}application_type=` +
+                    vm.filterApplicationsMapApplicationType;
             }
             if (vm.filterApplicationsMapProcessingStatus != 'all') {
                 url +=
-                    '&processing_status=' +
-                    vm.filterApplicationsMapProcessingStatus
+                    `${chars.pop()}processing_status=` +
+                    vm.filterApplicationsMapProcessingStatus;
             }
             fetch(url)
                 .then(async (response) => {
