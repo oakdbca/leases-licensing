@@ -47,7 +47,7 @@
                         <Applicant
                             v-if="'individual' == approval.applicant_type"
                             id="licenseHolder"
-                            :email_user="approval.holder_obj"
+                            :email-user="approval.holder_obj"
                             :readonly="readonly"
                             :collapse-form-sections="false"
                             :proposal-id="approval.id"

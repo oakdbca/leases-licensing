@@ -25,7 +25,7 @@
                 <div class="tab-content" id="pills-tabContent">
                     <div class="tab-pane show active" id="pills-details" role="tabpanel"
                         aria-labelledby="pills-details-tab">
-                        <Applicant v-if="user" :email_user="user" id="proposalStartApplicant" :readonly="readonly" />
+                        <Applicant v-if="user" :email-user="user" id="proposalStartApplicant" :readonly="readonly" />
                     </div>
                     <div class="tab-pane fade" id="pills-approvals" role="tabpanel" aria-labelledby="pills-approvals-tab">
                         <FormSection :formCollapse="true" label="Applications" subtitle="" index="applications">

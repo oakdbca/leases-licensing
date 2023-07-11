@@ -187,9 +187,10 @@
                         <Applicant
                             v-if="'individual' == approval.applicant_type"
                             id="approvalHolder"
-                            :email_user="approval.holder_obj"
+                            :email-user="approval.holder_obj"
                             :readonly="true"
                             :collapse-form-sections="false"
+                            customer-type="holder"
                         />
                         <OrganisationApplicant
                             v-else
