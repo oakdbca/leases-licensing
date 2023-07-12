@@ -74,6 +74,7 @@ class DelegateSerializer(serializers.ModelSerializer):
 class OrganisationContactSerializer(serializers.ModelSerializer):
     user_status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
+    full_name = serializers.ReadOnlyField()
 
     class Meta:
         model = OrganisationContact
@@ -149,6 +150,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "delegates",
             "delegate_organisation_contacts",
             "contacts",
+            "address",
         )
 
     def get_apply_application_discount(self, obj):
