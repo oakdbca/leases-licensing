@@ -8,6 +8,7 @@ class ChargeMethodAdmin(admin.ModelAdmin):
     list_display = [
         "key",
         "display_name",
+        "display_order",
     ]
     # max_num = 0  # This removes 'Add another ...' button
     readonly_fields = ("key",)
@@ -57,16 +58,12 @@ class InvoicingDateMonthlyAdmin(admin.ModelAdmin):
 @admin.register(models.ConsumerPriceIndex)
 class ConsumerPriceIndexAdmin(admin.ModelAdmin):
     list_display = [
-        "year",
-        "name",
-        "cpi_value_q1",
-        "cpi_value_q2",
-        "cpi_value_q3",
-        "cpi_value_q4",
+        "time_period",
+        "value",
     ]
     list_display_links = [
-        "year",
-        "name",
+        "time_period",
+        "value",
     ]
 
 
