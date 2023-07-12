@@ -1,46 +1,60 @@
 <template>
-    <div class="container" id="externalDash">
-        <FormSection v-if="accessing_user && accessing_user.is_referee" :formCollapse="false"
-            label="Applications Referred to Me" index="leases_and_licences">
-            <ApplicationsReferredToMeTable ref="applications_referred_to_me_table" level="external"
+    <div id="externalDash" class="container">
+        <FormSection
+            v-if="accessing_user && accessing_user.is_referee"
+            :form-collapse="false"
+            label="Applications Referred to Me"
+            index="leases_and_licences"
+        >
+            <ApplicationsReferredToMeTable
+                ref="applications_referred_to_me_table"
+                level="external"
                 :email_user_id_assigned="accessing_user.id"
-                filterApplicationType_cache_name="filterApplicationTypeForApplicationReferredToMeTable"
-                filterApplicationStatus_cache_name="filterApplicationStatusForApplicationReferredToMeTable"
-                filterProposalLodgedFrom_cache_name="filterApplicationLodgedFromForApplicationReferredToMeTable"
-                filterProposalLodgedTo_cache_name="filterApplicationLodgedToForApplicationReferredToMeTable" />
+                filter-application-type-cache-name="filterApplicationTypeForApplicationReferredToMeTable"
+                filter-application-status-cache-name="filterApplicationStatusForApplicationReferredToMeTable"
+                filter-proposal-lodged-from-cache-name="filterApplicationLodgedFromForApplicationReferredToMeTable"
+                filter-proposal-lodged-to-cache-name="filterApplicationLodgedToForApplicationReferredToMeTable"
+            />
         </FormSection>
 
-        <FormSection :formCollapse="false" label="Applications" subtitle="- View existing applications and lodge new ones"
-            index="applications">
+        <FormSection
+            :form-collapse="false"
+            label="Applications"
+            subtitle="- View existing applications and lodge new ones"
+            index="applications"
+        >
             <ApplicationsTable level="external" />
         </FormSection>
 
-        <FormSection :formCollapse="false" label="Leases and Licences"
-            subtitle="- View existing leases / licences and renew them" index="licences_and_permits">
+        <FormSection
+            :form-collapse="false"
+            label="Leases and Licences"
+            subtitle="- View existing leases / licences and renew them"
+            index="licences_and_permits"
+        >
             <ApprovalsTable level="external" />
         </FormSection>
 
-        <FormSection :formCollapse="false" label="Compliances"
-            subtitle="- The obligations you must comply by to keep your lease / licence valid" index="compliances">
+        <FormSection
+            :form-collapse="false"
+            label="Compliances"
+            subtitle="- The obligations you must comply by to keep your lease / licence valid"
+            index="compliances"
+        >
             <CompliancesTable level="external" />
         </FormSection>
     </div>
 </template>
 
 <script>
-import FormSection from "@/components/forms/section_toggle.vue"
-import ApplicationsTable from "@/components/common/table_proposals"
-import ApplicationsReferredToMeTable from "@/components/common/table_proposals"
-import ApprovalsTable from "@/components/common/table_approvals"
-import CompliancesTable from "@/components/common/table_compliances"
+import FormSection from '@/components/forms/section_toggle.vue';
+import ApplicationsTable from '@/components/common/table_proposals';
+import ApplicationsReferredToMeTable from '@/components/common/table_proposals';
+import ApprovalsTable from '@/components/common/table_approvals';
+import CompliancesTable from '@/components/common/table_compliances';
 
 export default {
     name: 'ExternalDashboard',
-    data: function () {
-        return {
-            accessing_user: null,
-        }
-    },
     components: {
         FormSection,
         ApplicationsTable,
@@ -48,20 +62,26 @@ export default {
         ApprovalsTable,
         CompliancesTable,
     },
+    data: function () {
+        return {
+            accessing_user: null,
+        };
+    },
     computed: {
         is_external: function () {
-            return this.level == 'external'
+            return this.level == 'external';
         },
         is_internal: function () {
-            return this.level == 'internal'
+            return this.level == 'internal';
         },
     },
     mounted: async function () {
         const res = await fetch('/api/profile');
         const resData = await res.json();
-        this.accessing_user = resData
+        this.accessing_user = resData;
         // must be at top level of every page with <FormSection> component
+        // eslint-disable-next-line no-undef
         chevron_toggle.init();
     },
-}
+};
 </script>
