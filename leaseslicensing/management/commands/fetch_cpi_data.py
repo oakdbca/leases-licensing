@@ -38,7 +38,7 @@ class Command(BaseCommand):
     help = "This script will fetch the latest cpi data from the ABS api."
 
     def handle(self, *args, **options):
-        url = ABS_API_URL + ABS_API_CPI_SUBDIRECTORY + ABS_API_CPI_PATH
+        url = f"{ABS_API_URL}{ABS_API_CPI_SUBDIRECTORY}{ABS_API_CPI_PATH}"
         logger.info(f"Querying {url} for CPI Data")
         cpi_data = requests.get(url)
         logger.info(f"Request took: {cpi_data.elapsed.total_seconds()} seconds.")
