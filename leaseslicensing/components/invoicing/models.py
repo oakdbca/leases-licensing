@@ -31,9 +31,11 @@ class ChargeMethod(models.Model):
     display_name = models.CharField(
         max_length=200,
     )
+    display_order = models.IntegerField(default=0)
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ["display_order"]
 
     def __str__(self):
         return self.display_name
@@ -220,58 +222,18 @@ def get_year():
 class ConsumerPriceIndex(BaseModel):
     start_year = 2021
 
-    year = models.PositiveSmallIntegerField(null=True, blank=True, default=get_year)
-    cpi_value_q1 = models.FloatField("CPI (Q1)", null=True, blank=True)
-    cpi_value_q2 = models.FloatField("CPI (Q2)", null=True, blank=True)
-    cpi_value_q3 = models.FloatField("CPI (Q3)", null=True, blank=True)
-    cpi_value_q4 = models.FloatField("CPI (Q4)", null=True, blank=True)
+    time_period = models.CharField(max_length=7, help_text="Year and Quarter")
+    value = models.FloatField(
+        help_text="Percentage Change from Corresponding Quarter of the Previous Year"
+    )
 
     class Meta:
         app_label = "leaseslicensing"
-        verbose_name = "Consumer Price Index"
-        verbose_name_plural = "Consumer Price Indexes"
+        verbose_name = "CPI Data"
+        verbose_name_plural = "CPI Data"
 
     def __str__(self):
-        return f"{self.name}"
-
-    @property
-    def name(self):
-        if self.year:
-            return f"{str(self.year)} - {str(self.year + 1)}"
-        else:
-            return "---"
-
-    @property
-    def q1_start_date(self):
-        return datetime.strptime(str(self.year) + "/07/01", "%Y/%m/%d")
-
-    @property
-    def q2_start_date(self):
-        return datetime.strptime(str(self.year) + "/10/01", "%Y/%m/%d")
-
-    @property
-    def q3_start_date(self):
-        return datetime.strptime(str(self.year + 1) + "/01/01", "%Y/%m/%d")
-
-    @property
-    def q4_start_date(self):
-        return datetime.strptime(str(self.year + 1) + "/04/01", "%Y/%m/%d")
-
-    @property
-    def q1_end_date(self):
-        return self.q1_start_date + relativedelta(months=3) - relativedelta(days=1)
-
-    @property
-    def q2_end_date(self):
-        return self.q2_start_date + relativedelta(months=3) - relativedelta(days=1)
-
-    @property
-    def q3_end_date(self):
-        return self.q3_start_date + relativedelta(months=3) - relativedelta(days=1)
-
-    @property
-    def q4_end_date(self):
-        return self.q4_start_date + relativedelta(months=3) - relativedelta(days=1)
+        return f"{self.time_period}: {self.value}"
 
 
 class InvoicingDetailsManager(models.Manager):
