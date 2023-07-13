@@ -1,5 +1,4 @@
 import logging
-import traceback
 
 from django.conf import settings
 from django.core.cache import cache
@@ -9,6 +8,7 @@ from django.db.models import Case, CharField, IntegerField, Q, Value, When
 from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroupPermission
+from ledger_api_client.utils import get_organisation, update_organisation_obj
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
@@ -16,7 +16,6 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
-from ledger_api_client.utils import update_organisation_obj, get_organisation
 
 from leaseslicensing.components.main.api import (
     KeyValueListMixin,
@@ -34,7 +33,6 @@ from leaseslicensing.components.organisations.models import (  # ledger_organisa
     OrganisationRequest,
     OrganisationRequestUserAction,
 )
-from leaseslicensing.components.organisations.utils import can_admin_org
 from leaseslicensing.components.organisations.serializers import (
     MyOrganisationsSerializer,
     OrganisationActionSerializer,
@@ -43,6 +41,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationCommsSerializer,
     OrganisationContactAdminCountSerializer,
     OrganisationContactSerializer,
+    OrganisationDetailsSerializer,
     OrganisationKeyValueSerializer,
     OrganisationLogEntrySerializer,
     OrganisationPinCheckSerializer,
@@ -53,8 +52,8 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestSerializer,
     OrganisationSerializer,
     OrgUserAcceptSerializer,
-    OrganisationDetailsSerializer
 )
+from leaseslicensing.components.organisations.utils import can_admin_org
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.helpers import is_customer, is_internal
 
@@ -437,7 +436,12 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
         return Response(serializer.data)
 
     # Todo: Implement for segregatted system
-    @logging_action(methods=['PUT',], detail=True)
+    @logging_action(
+        methods=[
+            "PUT",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def update_details(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -445,16 +449,23 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
             return {"status": status.HTTP_403_FORBIDDEN, "message": "Forbidden."}
 
         response_ledger = update_organisation_obj(request.data)
-        cache.delete(settings.CACHE_KEY_LEDGER_ORGANISATION.format(
-            instance.ledger_organisation_id
-        ))
-        logger.debug("request.data: {}".format(request.data))
+        cache.delete(
+            settings.CACHE_KEY_LEDGER_ORGANISATION.format(
+                instance.ledger_organisation_id
+            )
+        )
+        logger.debug(f"request.data: {request.data}")
         serializer = OrganisationDetailsSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         return Response(response_ledger)
 
-    @logging_action(methods=['POST',], detail=True)
+    @logging_action(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def update_address(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -465,17 +476,22 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
         return Response(response_ledger)
 
-    @logging_action(methods=['GET',], detail=True)
+    @logging_action(
+        methods=[
+            "GET",
+        ],
+        detail=True,
+    )
     @basic_exception_handler
     def get_org_address(self, request, *args, **kwargs):
         instance = self.get_object()
         if not instance.ledger_organisation_id:
-            msg = "Organisation: {} has no ledger organisation id".format(org.id)
+            msg = f"Organisation: {instance.id} has no ledger organisation id"
             logger.error(msg)
             raise ValidationError(msg)
 
         response_ledger = get_organisation(instance.ledger_organisation_id)
-        return Response(response_ledger['data'])
+        return Response(response_ledger["data"])
 
     @logging_action(
         methods=[
@@ -572,9 +588,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
     )
     @basic_exception_handler
     def get_pending_requests(self, request, *args, **kwargs):
-        qs = self.get_queryset().filter(
-            requester=request.user, status="with_assessor"
-        )
+        qs = self.get_queryset().filter(requester=request.user, status="with_assessor")
         serializer = OrganisationRequestDTSerializer(qs, many=True)
         return Response(serializer.data)
 
@@ -779,9 +793,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
         with transaction.atomic():
             instance = serializer.save()
             instance.log_user_action(
-                OrganisationRequestUserAction.ACTION_LODGE_REQUEST.format(
-                    instance.id
-                ),
+                OrganisationRequestUserAction.ACTION_LODGE_REQUEST.format(instance.id),
                 request,
             )
             instance.send_organisation_request_email_notification(request)
