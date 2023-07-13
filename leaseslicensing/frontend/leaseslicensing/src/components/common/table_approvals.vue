@@ -4,8 +4,8 @@
             ref="collapsible_filters"
             component_title="Filters"
             class="mb-2"
-        >
             @created="collapsible_component_mounted"
+        >
             <div class="row mt-1 p-2">
                 <div class="col-md-3">
                     <div class="form-group">
@@ -231,17 +231,17 @@ export default {
                 return options.indexOf(val) != -1 ? true : false;
             },
         },
-        target_email_user_id: {
+        targetEmailUserId: {
             type: Number,
             required: false,
             default: 0,
         },
-        target_organisation_id: {
+        targetOrganisationId: {
             type: Number,
             required: false,
             default: 0,
         },
-        target_compliance_id: {
+        targetComplianceId: {
             type: Number,
             required: false,
             default: 0,
@@ -747,11 +747,11 @@ export default {
                     url:
                         api_endpoints.approvals_paginated_list +
                         '?format=datatables&target_email_user_id=' +
-                        vm.target_email_user_id +
+                        vm.targetEmailUserId +
                         '&target_organisation_id=' +
-                        vm.target_organisation_id +
+                        vm.targetOrganisationId +
                         '&target_compliance_id=' +
-                        vm.target_compliance_id,
+                        vm.targetComplianceId,
                     //"url": api_endpoints.approvals,
                     dataSrc: 'data',
 

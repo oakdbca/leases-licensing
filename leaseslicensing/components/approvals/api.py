@@ -232,6 +232,23 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             # | Q(submitter = self.request.user))
             qs = Approval.objects.filter(Q(submitter=self.request.user.id))
 
+        target_email_user_id = self.request.query_params.get(
+            "target_email_user_id", None
+        )
+        if (
+            target_email_user_id
+            and target_email_user_id.isnumeric()
+            and int(target_email_user_id) > 0
+        ):
+            logger.debug(f"target_email_user_id: {target_email_user_id}")
+            target_email_user_id = int(target_email_user_id)
+            # TODO: Do we need to exclude org applications here? Would lead to no results
+            # when the query is parametrized for user id and org id
+            # qs = qs.exclude(org_applicant__isnull=False)
+            qs = qs.filter(
+                submitter=target_email_user_id
+            )
+
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
         )
