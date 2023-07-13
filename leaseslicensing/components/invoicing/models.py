@@ -3,9 +3,9 @@ from datetime import datetime
 from decimal import Decimal
 
 import pytz
-from dateutil.relativedelta import relativedelta
+from django.conf import settings
 from django.db import models
-from django.db.models import F, Sum, Window
+from django.db.models import Avg, F, Sum, Window
 from django.db.models.functions import Coalesce
 from ledger_api_client import settings_base
 
@@ -220,12 +220,11 @@ def get_year():
 
 
 class ConsumerPriceIndex(BaseModel):
-    start_year = 2021
-
     time_period = models.CharField(max_length=7, help_text="Year and Quarter")
     value = models.FloatField(
         help_text="Percentage Change from Corresponding Quarter of the Previous Year"
     )
+    datetime_created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -234,6 +233,19 @@ class ConsumerPriceIndex(BaseModel):
 
     def __str__(self):
         return f"{self.time_period}: {self.value}"
+
+
+class CPICalculationMethod(models.Model):
+    name = models.CharField(max_length=255, null=False, blank=False, editable=False)
+    display_name = models.CharField(max_length=255, null=False, blank=False)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        verbose_name = "CPI Calculation Method"
+        verbose_name_plural = "CPI Calculation Methods"
+
+    def __str__(self):
+        return f"{self.display_name}"
 
 
 class InvoicingDetailsManager(models.Manager):
@@ -275,7 +287,7 @@ class InvoicingDetails(BaseModel):
         RepetitionType,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         related_name="invoicing_details_set_for_review",
     )
     invoicing_once_every = models.PositiveSmallIntegerField(
@@ -285,7 +297,7 @@ class InvoicingDetails(BaseModel):
         RepetitionType,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         related_name="invoicing_details_set_for_invoicing",
     )
     approval = models.ForeignKey(
@@ -302,33 +314,81 @@ class InvoicingDetails(BaseModel):
         related_name="next_invoicing_details",
         on_delete=models.SET_NULL,
     )
+    cpi_calculation_method = models.ForeignKey(
+        CPICalculationMethod,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="invoicing_details",
+    )
 
     class Meta:
         app_label = "leaseslicensing"
 
-        # constraints = [
-        #     models.CheckConstraint(
-        #         check=Q(base_fee_amount=0) | Q(once_off_charge_amount=0),
-        #         name='either_one_null',
-        #     )
-        # ]
+    def calculate_amount_plus_cpi(self, amount):
+        if not self.cpi_calculation_method:
+            logger.warn(
+                f"No CPI calculation method set for Invoicing Details: {self.id}"
+            )
+            return amount
 
-    def calculate_amount(
-        self,
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-        span=relativedelta(years=1),
-    ):
-        pass
-        # TODO: Calculate invoice amount
-        # 1. Check if it has been already created
-        #   OR
-        # 1. Calculate the last date which is covered by the invoices
-        # CHARGE_METHOD_ONCE_OFF_CHARGE
-        # CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT
-        # CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE
-        # CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI
-        # CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
-        # CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
+        if (
+            settings.CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER
+            == self.cpi_calculation_method.display_name
+        ):
+            cpi_value = (
+                ConsumerPriceIndex.objects.filter(time_period__contains="Q1")
+                .last()
+                .value
+            )
+
+        if (
+            settings.CPI_CALCULATION_METHOD_LATEST_JUN_QUARTER
+            == self.cpi_calculation_method.name
+        ):
+            cpi_value = (
+                ConsumerPriceIndex.objects.filter(time_period__contains="Q2")
+                .last()
+                .value
+            )
+
+        if (
+            settings.CPI_CALCULATION_METHOD_LATEST_SEP_QUARTER
+            == self.cpi_calculation_method.name
+        ):
+            cpi_value = (
+                ConsumerPriceIndex.objects.filter(time_period__contains="Q3")
+                .last()
+                .value
+            )
+
+        if (
+            settings.CPI_CALCULATION_METHOD_LATEST_DEC_QUARTER
+            == self.cpi_calculation_method.name
+        ):
+            cpi_value = (
+                ConsumerPriceIndex.objects.filter(time_period__contains="Q4")
+                .last()
+                .value
+            )
+
+        if (
+            settings.CPI_CALCULATION_METHOD_LATEST_QUARTER
+            == self.cpi_calculation_method.name
+        ):
+            cpi_value = ConsumerPriceIndex.objects.last().value
+
+        if (
+            settings.CPI_CALCULATION_METHOD_AVERAGE_LATEST_FOUR_QUARTERS
+            == self.cpi_calculation_method.name
+        ):
+            cpi_value = (
+                ConsumerPriceIndex.objects.all()
+                .order_by("-time_period")[:4]
+                .aggregate(Avg("value"))["value__avg"]
+            )
+
+        return Decimal(amount * (1 + cpi_value / 100)).quantize(Decimal("0.01"))
 
 
 class FixedAnnualIncrementAmount(BaseModel):
