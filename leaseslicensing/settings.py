@@ -424,6 +424,28 @@ REPETITION_TYPES = (
 
 LATEST_REFERRAL_COUNT = 5
 
+# ---------- CPI Calculation Methods ----------
+
+CPI_CALCULATION_METHOD_LATEST_SEP_QUARTER = "latest_sep_qtr"
+CPI_CALCULATION_METHOD_LATEST_DEC_QUARTER = "latest_dec_qtr"
+CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER = "latest_mar_qtr"
+CPI_CALCULATION_METHOD_LATEST_JUN_QUARTER = "latest_jun_qtr"
+CPI_CALCULATION_METHOD_LATEST_QUARTER = "latest_qtr"
+CPI_CALCULATION_METHOD_AVERAGE_LATEST_FOUR_QUARTERS = "average_latest_four_qtrs"
+
+CPI_CALCULATION_METHODS = (
+    (CPI_CALCULATION_METHOD_LATEST_SEP_QUARTER, "Latest September Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_DEC_QUARTER, "Latest December Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER, "Latest March Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_JUN_QUARTER, "Latest June Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_QUARTER, "Latest Quarter"),
+    (
+        CPI_CALCULATION_METHOD_AVERAGE_LATEST_FOUR_QUARTERS,
+        "Average of Latest Four Quarters",
+    ),
+)
+
+
 # ---------- Identifier fields for logging ----------
 
 """ Fields that the logging functions will check for on the instance
