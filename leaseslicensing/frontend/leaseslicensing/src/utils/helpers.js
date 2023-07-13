@@ -1,4 +1,4 @@
-/*globals _ */
+/*globals _, moment */
 module.exports = {
     // Handle fetch get and post requests by stringifying JSON input and returning a JSON object
     fetchWrapper: async function (url, method, data) {
@@ -418,5 +418,55 @@ module.exports = {
     },
     formatDateForAPI: function (data, format = 'DD/MM/YYYY') {
         return data ? moment(data).format(format) : '' // eslint-disable-line no-undef
+    },
+    calendarYearsIncluded: function (start_date, end_date) {
+        const start = moment(start_date).year()
+        const end = moment(end_date).year()
+        return end - start + 1
+    },
+    yearsInDateRange: function (start_date, end_date) {
+        const start = moment(start_date)
+        const end = moment(end_date)
+        return end.diff(start, 'years')
+    },
+    datesOverlap: function (start_date1, end_date1, start_date2, end_date2) {
+        const start1 = moment(start_date1)
+        const end1 = moment(end_date1)
+        const start2 = moment(start_date2)
+        const end2 = moment(end_date2)
+        return (
+            (start1.isSameOrBefore(start2) && end1.isSameOrAfter(start2)) ||
+            (start1.isSameOrBefore(end2) && end1.isSameOrAfter(end2)) ||
+            (start1.isSameOrAfter(start2) && end1.isSameOrBefore(end2))
+        )
+    },
+    financialYearsIncluded: function (start_date, end_date) {
+        const financialYearsIncluded = []
+        const calendarYearsIncluded = this.calendarYearsIncluded(
+            start_date,
+            end_date
+        )
+        const startDate = moment(start_date)
+        const endDate = moment(end_date)
+        const startYear = moment(start_date).year() - 1
+        for (
+            let i = startYear;
+            i < startYear + calendarYearsIncluded + 1;
+            i++
+        ) {
+            const startOfFinancialYear = moment(`${i}-07-01`)
+            const endOfFinancialYear = moment(`${i + 1}-06-30`)
+            if (
+                this.datesOverlap(
+                    startDate,
+                    endDate,
+                    startOfFinancialYear,
+                    endOfFinancialYear
+                )
+            ) {
+                financialYearsIncluded.push(`${i}-${i + 1}`)
+            }
+        }
+        return financialYearsIncluded
     },
 }
