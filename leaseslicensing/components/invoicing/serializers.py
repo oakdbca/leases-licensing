@@ -1,8 +1,11 @@
+import logging
+
 from rest_framework import serializers
 
 from leaseslicensing import settings
 from leaseslicensing.components.invoicing.models import (
     ChargeMethod,
+    CPICalculationMethod,
     CrownLandRentReviewDate,
     FixedAnnualIncrementAmount,
     FixedAnnualIncrementPercentage,
@@ -13,6 +16,8 @@ from leaseslicensing.components.invoicing.models import (
     RepetitionType,
 )
 from leaseslicensing.helpers import is_finance_officer
+
+logger = logging.getLogger(__name__)
 
 
 class ChargeMethodSerializer(serializers.ModelSerializer):
@@ -31,6 +36,16 @@ class RepetitionTypeSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "key",
+            "display_name",
+        )
+
+
+class CPICalculationMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CPICalculationMethod
+        fields = (
+            "id",
+            "name",
             "display_name",
         )
 
@@ -159,6 +174,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "annual_increment_percentages",  # ReverseFK
             "gross_turnover_percentages",  # ReverseFK
             "crown_land_rent_review_dates",  # ReverseFK
+            "cpi_calculation_method",
         )
 
     def set_default_values(self, attrs, fields_excluded):
@@ -170,6 +186,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 "review_repetition_type",
                 "invoicing_once_every",
                 "invoicing_repetition_type",
+                # "cpi_calculation_method",
             ]:
                 if attr_name not in fields_excluded:
                     attrs[attr_name] = None  # Set default value
@@ -186,6 +203,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         ] = True  # Mark as "to_be_deleted" to the initial value so that item is deleted at the update()
 
     def validate(self, attrs):
+        logger.debug(f"\n\n --> attrs: {attrs}\n\n")
         field_errors = {}
         non_field_errors = []
 
@@ -256,7 +274,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                     "annual_increment_percentages"
                 )
                 self._validate_annual_increment(annual_increment_percentages_data)
-                self._validate_crown_land_rent_review_dates(attrs)
+                self._validate_crown_land_rent_review_dates(
+                    attrs, field_errors, non_field_errors
+                )
             elif charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
                 self.set_default_values(
                     attrs,
@@ -268,9 +288,12 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         "crown_land_rent_review_dates",
                         "invoicing_once_every",
                         "invoicing_repetition_type",
+                        "cpi_calculation_method",
                     ],
                 )
-                self._validate_crown_land_rent_review_dates(attrs)
+                self._validate_crown_land_rent_review_dates(
+                    attrs, field_errors, non_field_errors
+                )
             elif (
                 charge_method.key == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
             ):
@@ -296,6 +319,8 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         # Raise errors
         if non_field_errors:
             raise serializers.ValidationError(non_field_errors)
+
+        logger.debug(f"\n\n --> attrs: {attrs}\n\n")
 
         return attrs
 
@@ -352,6 +377,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         )
         instance.invoicing_repetition_type = validated_data.get(
             "invoicing_repetition_type", instance.invoicing_repetition_type
+        )
+        instance.cpi_calculation_method = validated_data.get(
+            "cpi_calculation_method", instance.cpi_calculation_method
         )
 
         # Update local and FK fields
