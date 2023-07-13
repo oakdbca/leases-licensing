@@ -2,17 +2,23 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 
-from rest_framework import viewsets
+from rest_framework import mixins, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework_datatables.filters import DatatablesFilterBackend
 
-from leaseslicensing.components.invoicing.models import Invoice, InvoiceTransaction
+from leaseslicensing.components.invoicing.models import (
+    CPICalculationMethod,
+    Invoice,
+    InvoiceTransaction,
+)
 from leaseslicensing.components.invoicing.serializers import (
+    CPICalculationMethodSerializer,
     InvoiceEditOracleInvoiceNumberSerializer,
     InvoiceSerializer,
     InvoiceTransactionSerializer,
 )
+from leaseslicensing.components.main.api import NoPaginationListMixin
 from leaseslicensing.helpers import is_finance_officer
 
 logger = logging.getLogger(__name__)
@@ -151,3 +157,10 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 class InvoiceTransactionViewSet(viewsets.ModelViewSet):
     queryset = InvoiceTransaction.objects.all()
     serializer_class = InvoiceTransactionSerializer
+
+
+class CPICalculationMethodViewSet(
+    mixins.ListModelMixin, viewsets.GenericViewSet, NoPaginationListMixin
+):
+    queryset = CPICalculationMethod.objects.all()
+    serializer_class = CPICalculationMethodSerializer

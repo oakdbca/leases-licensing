@@ -44,6 +44,11 @@ router.register(
     invoicing_api.InvoiceTransactionViewSet,
     basename="invoice_transactions",
 )
+router.register(
+    "cpi_calculation_methods",
+    invoicing_api.CPICalculationMethodViewSet,
+    basename="cpi_calculation_methods",
+)
 
 router.register(
     r"proposal_submit", proposal_api.ProposalSubmitViewSet, basename="proposal_submit"
