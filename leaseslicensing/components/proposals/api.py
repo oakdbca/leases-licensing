@@ -1768,7 +1768,8 @@ class ProposalViewSet(UserActionLoggingViewset):
     def finance_save(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.save_invoicing_details(request, self.action)
-        return Response({})
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
