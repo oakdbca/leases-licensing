@@ -5,7 +5,11 @@ from django.core.files import File
 from ledger_api_client.managed_models import SystemGroup
 
 from leaseslicensing import settings
-from leaseslicensing.components.invoicing.models import ChargeMethod, RepetitionType
+from leaseslicensing.components.invoicing.models import (
+    ChargeMethod,
+    CPICalculationMethod,
+    RepetitionType,
+)
 from leaseslicensing.components.main.models import ApplicationType, GlobalSettings
 from leaseslicensing.components.proposals.models import ProposalType
 
@@ -79,6 +83,18 @@ class DefaultDataManager:
                     logger.info(f"Created RepetitionType: {item[1]}")
             except Exception as e:
                 logger.error(f"{e}, RepetitionType: {item[1]}")
+
+        for item in settings.CPI_CALCULATION_METHODS:
+            try:
+                myType, created = CPICalculationMethod.objects.get_or_create(
+                    name=item[0]
+                )
+                if created:
+                    myType.display_name = item[1]
+                    myType.save()
+                    logger.info(f"Created CPICalculationMethod: {item[1]}")
+            except Exception as e:
+                logger.error(f"{e}, CPICalculationMethod: {item[1]}")
 
         for a_group in settings.GROUP_NAME_CHOICES:
             try:
