@@ -82,7 +82,7 @@
                             <AppprovalsTable
                                 v-if="user"
                                 level="organisation_view"
-                                :target_id="user.id"
+                                :target-email-user-id="user.id"
                             />
                         </FormSection>
 
