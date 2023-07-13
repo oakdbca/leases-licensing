@@ -375,6 +375,7 @@
                             class="mt-5"
                             :form-collapse="false"
                             label="Edit Invoicing Details"
+                            index="invoicing_details"
                         >
                             <InvoicingDetails
                                 :invoicing-details="
