@@ -119,6 +119,8 @@
         >
             <InvoicingDetails
                 :invoicing-details="proposal.invoicing_details"
+                :start-date="proposal.proposed_issuance_approval.start_date"
+                :expiry-date="proposal.proposed_issuance_approval.expiry_date"
                 @updateInvoicingDetails="
                     $emit('updateInvoicingDetails', $event)
                 "
