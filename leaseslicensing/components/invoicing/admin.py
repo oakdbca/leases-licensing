@@ -60,13 +60,47 @@ class ConsumerPriceIndexAdmin(admin.ModelAdmin):
     list_display = [
         "time_period",
         "value",
+        "datetime_created",
     ]
     list_display_links = [
         "time_period",
         "value",
+        "datetime_created",
     ]
+    readonly_fields = ("time_period", "value", "datetime_created")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(models.RepetitionType)
 class RepetitionTypeAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(models.CPICalculationMethod)
+class CPICalculationMethodAdmin(admin.ModelAdmin):
+    list_display = [
+        "name",
+        "display_name",
+    ]
+    list_display_links = [
+        "name",
+        "display_name",
+    ]
+    readonly_fields = ("name", "display_name")
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
