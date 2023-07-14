@@ -192,7 +192,10 @@ class UserSerializer(serializers.ModelSerializer):
         ).exists()
 
     def get_is_finance_officer(self, obj):
-        return is_finance_officer(self.context["request"])
+        request = self.context["request"] if self.context else None
+        if request:
+            return is_finance_officer(request)
+        return False
 
 
 class PersonalSerializer(serializers.ModelSerializer):
