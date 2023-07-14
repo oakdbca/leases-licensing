@@ -246,8 +246,9 @@
         </form>
     </FormSection>
 
-    <FormSection :form-collapse="true" label="Contacts" index="contacts">
+    <FormSection :form-collapse="false" label="Contacts" index="contacts">
         <TableOrganisationContacts
+            ref="organisation_contacts"
             :organisation-id="org.id ? org.id : null"
             :level="isInternal ? 'internal' : 'external'"
         />

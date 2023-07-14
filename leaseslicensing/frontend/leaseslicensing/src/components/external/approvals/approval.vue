@@ -16,6 +16,7 @@
                             role="tab"
                             aria-controls="applicant"
                             aria-selected="true"
+                            @click="applicantTabClicked"
                         >
                             Holder
                         </button>
@@ -39,6 +40,7 @@
                 <!-- Tab panes -->
                 <div class="tab-content">
                     <div
+                        v-if="approval.holder_obj"
                         id="applicant"
                         class="tab-pane show fade"
                         role="tabpanel"
@@ -47,6 +49,7 @@
                         <Applicant
                             v-if="'individual' == approval.applicant_type"
                             id="licenseHolder"
+                            ref="license_holder"
                             :email-user="approval.holder_obj"
                             :readonly="readonly"
                             :collapse-form-sections="false"
@@ -54,6 +57,7 @@
                         />
                         <OrganisationApplicant
                             v-else
+                            ref="license_holder"
                             :org="approval.holder_obj"
                         />
                     </div>
@@ -63,7 +67,10 @@
                         role="tabpanel"
                         aria-labelledby="details-tab"
                     >
-                        <ApprovalDetails :approval-details="approval" />
+                        <ApprovalDetails
+                            :key="approval_details_id"
+                            :approval-details="approval"
+                        />
 
                         <FormSection
                             :form-collapse="false"
@@ -85,6 +92,7 @@
 
 <script>
 import { api_endpoints, helpers, utils } from '@/utils/hooks';
+import { v4 as uuid } from 'uuid';
 
 import FormSection from '@/components/forms/section_toggle.vue';
 import Applicant from '@/components/common/applicant.vue';
@@ -113,12 +121,9 @@ export default {
     },
     data() {
         let vm = this;
-        vm._uid = vm._.uid; // Vue3
+        vm.approval_details_id = uuid();
         return {
-            approval: {
-                holder_obj: {},
-                approval_type_obj: {},
-            },
+            approval: {},
         };
     },
     created: async function () {
@@ -136,6 +141,7 @@ export default {
                 .fetchUrl(url)
                 .then((data) => {
                     vm.approval = Object.assign({}, data);
+                    vm.approval_details_id = uuid();
                     console.log('External approval data: ', vm.approval);
                 })
                 .catch((error) => {
@@ -143,6 +149,26 @@ export default {
                         `Error fetching external approval data ${error}`
                     );
                 });
+        },
+        /**
+         * Refresh the organisation contacts datatable when the applicant tab is clicked
+         * to make it fit into the tab.
+         */
+        applicantTabClicked: function () {
+            let vm = this;
+            let organisation_contacts =
+                vm.$refs.license_holder.$refs.organisation_contacts ?? null;
+            if (organisation_contacts) {
+                try {
+                    organisation_contacts.$refs.organisation_contacts_datatable.vmDataTable.draw(
+                        'page'
+                    );
+                } catch (error) {
+                    console.log(
+                        'Error refreshing organisation contacts datatable'
+                    );
+                }
+            }
         },
     },
 };

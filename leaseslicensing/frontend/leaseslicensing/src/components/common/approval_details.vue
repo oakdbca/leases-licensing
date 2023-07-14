@@ -36,7 +36,10 @@
                                 </form>
                             </div>
 
-                            <div class="col-6">
+                            <div
+                                v-if="Object.keys(approval_details).length > 0"
+                                class="col-6"
+                            >
                                 <form
                                     v-if="approval_details.licence_document"
                                     class="form-horizontal mb-2"
