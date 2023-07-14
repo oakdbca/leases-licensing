@@ -247,18 +247,23 @@
     </FormSection>
 
     <FormSection :form-collapse="false" label="Contacts" index="contacts">
-        <TableOrganisationContacts :organisation-id="org.id" level="internal" />
+        <TableOrganisationContacts
+            :organisation-id="org.id"
+            :level="isInternal ? 'internal' : 'external'"
+        />
     </FormSection>
 </template>
 
 <script>
 import { helpers, utils, api_endpoints } from '@/utils/hooks';
+import FormSection from '@/components/forms/section_toggle.vue';
 import TableOrganisationContacts from '@/components/common/table_organisation_contacts.vue';
 
 export default {
     name: 'OrganisationApplicant',
     components: {
         TableOrganisationContacts,
+        FormSection,
     },
     props: {
         org: {
@@ -268,6 +273,10 @@ export default {
         readonly: {
             type: Boolean,
             default: true,
+        },
+        isInternal: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {

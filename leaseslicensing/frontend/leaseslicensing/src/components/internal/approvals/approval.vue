@@ -195,6 +195,7 @@
                         <OrganisationApplicant
                             v-else
                             :org="approval.holder_obj"
+                            :is-internal="true"
                         />
                     </div>
 

@@ -88,6 +88,7 @@
                     <OrganisationApplicant
                         v-else
                         :org="proposal.applicant_obj"
+                        :is-internal="is_internal"
                     />
                 </div>
                 <div
