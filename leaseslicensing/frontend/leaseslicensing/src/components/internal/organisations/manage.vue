@@ -377,30 +377,11 @@
                             label="Contacts"
                             index="contacts"
                         >
-                            <div class="row">
-                                <div class="col">
-                                    <button
-                                        style="margin-bottom: 10px"
-                                        class="btn btn-primary float-end"
-                                        @click.prevent="addContact()"
-                                    >
-                                        Add Contact
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col">
-                                    <datatable
-                                        id="organisation_contacts_datatable"
-                                        ref="contacts_datatable"
-                                        :dt-options="contacts_options"
-                                        :dt-headers="contacts_headers"
-                                        @vue:mounted="
-                                            addOrgContactEventListeners
-                                        "
-                                    />
-                                </div>
-                            </div>
+                            <TableOrganisationContacts
+                                ref="organisation_contacts_datatable"
+                                :organisation-id="org.id"
+                                level="internal"
+                            />
                         </FormSection>
                         <FormSection
                             :form-collapse="true"
@@ -560,24 +541,26 @@
 
 <script>
 import { api_endpoints, constants, helpers } from '@/utils/hooks';
-import datatable from '@vue-utils/datatable.vue';
 import ApplicationsTable from '@/components/common/table_proposals';
 import ApprovalsTable from '@/components/common/table_approvals.vue';
 import CompliancesTable from '@/components/common/table_compliances.vue';
+import TableOrganisationContacts from '@/components/common/table_organisation_contacts.vue';
 import CommsLogs from '@common-utils/comms_logs.vue';
 import AddContact from '@common-utils/add_contact.vue';
 import utils from '../utils';
 import Swal from 'sweetalert2';
+import FormSection from '@/components/forms/section_toggle.vue';
 
 export default {
     name: 'Organisation',
     components: {
-        datatable,
         CommsLogs,
         ApplicationsTable,
         ApprovalsTable,
         CompliancesTable,
         AddContact,
+        TableOrganisationContacts,
+        FormSection,
     },
     data() {
         let vm = this;
@@ -775,56 +758,8 @@ export default {
             }
             return false;
         },
-        addContact: function () {
-            this.$refs.add_contact.isModalOpen = true;
-            this.$nextTick(() => {
-                this.$refs.add_contact.$refs.first_name.focus();
-            });
-        },
         personRedirect: function (id) {
             window.location.href = '/internal/person/details/' + id;
-        },
-        addOrgContactEventListeners: function () {
-            let vm = this;
-            vm.$refs.contacts_datatable.vmDataTable.on(
-                'click',
-                '.remove-contact',
-                (e) => {
-                    e.preventDefault();
-
-                    let name = $(e.target).data('name');
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    Swal.fire({
-                        title: 'Delete Contact',
-                        text: `Are you sure you want to remove ${name} (${email}) as a contact  ?`,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept',
-                    }).then(
-                        (result) => {
-                            if (result.isConfirmed) {
-                                vm.deleteContact(id);
-                            }
-                        },
-                        (error) => {
-                            console.log(error);
-                        }
-                    );
-                }
-            );
-            // Fix the table responsiveness when tab is shown
-            $('a[href="#' + vm.oTab + '"]').on('shown.bs.tab', function () {
-                vm.$refs.proposals_table.$refs.proposal_datatable.vmDataTable.columns
-                    .adjust()
-                    .responsive.recalc();
-                vm.$refs.approvals_table.$refs.proposal_datatable.vmDataTable.columns
-                    .adjust()
-                    .responsive.recalc();
-                vm.$refs.compliances_table.$refs.proposal_datatable.vmDataTable.columns
-                    .adjust()
-                    .responsive.recalc();
-            });
         },
         updateDetails: function () {
             let vm = this;
@@ -875,64 +810,6 @@ export default {
                         vm.updatingDetails = false;
                     }
                 );
-        },
-        addedContact: function () {
-            let vm = this;
-            Swal.fire(
-                'Added',
-                'The contact has been successfully added.',
-                'success'
-            );
-            vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-        },
-        deleteContact: function (id) {
-            let vm = this;
-            const requestOptions = {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-            };
-            fetch(
-                helpers.add_endpoint_json(
-                    api_endpoints.organisation_contacts,
-                    id
-                ),
-                requestOptions
-            )
-                .then(async (response) => {
-                    if (204 === response.status) {
-                        Swal.fire(
-                            'Contact Deleted',
-                            'The contact was successfully deleted',
-                            'success'
-                        );
-                        vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-                    }
-                    const data = await response.json();
-                    if (!response.ok) {
-                        const error =
-                            (data && data.message) || response.statusText;
-                        if (400 == response.status) {
-                            const errorString =
-                                helpers.getErrorStringFromResponseData(data);
-                            Swal.fire({
-                                title: 'Unable to Delete Contact',
-                                html: `${errorString}`,
-                                icon: 'error',
-                            });
-                        }
-                        console.log(data);
-                        return Promise.reject(error);
-                    }
-                    Swal.fire(
-                        'Contact Deleted',
-                        'The contact was successfully deleted',
-                        'success'
-                    );
-                    vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-                })
-                .catch((error) => {
-                    console.error('There was an error!', error);
-                });
         },
         updateAddress: function () {
             let vm = this;

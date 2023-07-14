@@ -819,6 +819,7 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
 
     def filter_queryset(self, request, queryset, view):
         total_count = queryset.count()
+        admin_count = queryset.filter(user_role="organisation_admin").count()
 
         filter_role = request.GET.get("filter_role", None)
 
@@ -845,10 +846,12 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
                 # Filter the queryset on the concatenated search terms by the search value
                 alias_qs = alias_qs.filter(
                     search_term__icontains=request.GET.get("search[value]", "")
-                )
+                ).annotate(admin_count=Value(admin_count, output_field=IntegerField()))
 
         # Apply regular request filters and union the result with the queryset
-        queryset = self.apply_request(request, queryset, view, ledger_lookup_fields=[])
+        queryset = self.apply_request(
+            request, queryset, view, ledger_lookup_fields=[]
+        ).annotate(admin_count=Value(admin_count, output_field=IntegerField()))
 
         if alias_qs.exists():
             queryset = queryset.union(alias_qs)
@@ -862,7 +865,7 @@ class OrganisationContactPaginatedViewSet(viewsets.ModelViewSet):
     renderer_classes = (ProposalRenderer,)
     page_size = 10
     queryset = OrganisationContact.objects.all()
-    serializer_class = OrganisationContactSerializer
+    serializer_class = OrganisationContactAdminCountSerializer
 
 
 class OrganisationContactViewSet(viewsets.ModelViewSet):

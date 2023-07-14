@@ -90,6 +90,11 @@ class OrganisationContactSerializer(serializers.ModelSerializer):
 class OrganisationContactAdminCountSerializer(OrganisationContactSerializer):
     admin_count = serializers.IntegerField(allow_null=True, read_only=True)
 
+    class Meta:
+        model = OrganisationContact
+        fields = "__all__"
+        datatables_always_serialize = ("admin_count",)
+
 
 class BasicUserDelegationSerializer(serializers.ModelSerializer):
     class Meta:

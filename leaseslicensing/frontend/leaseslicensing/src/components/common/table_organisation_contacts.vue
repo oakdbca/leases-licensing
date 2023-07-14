@@ -1,5 +1,16 @@
 <template>
     <div>
+        <div v-if="level === 'internal'" class="row">
+            <div class="col">
+                <button
+                    style="margin-bottom: 10px"
+                    class="btn btn-primary float-end"
+                    @click.prevent="addContact()"
+                >
+                    Add Contact
+                </button>
+            </div>
+        </div>
         <CollapsibleComponent
             ref="collapsible_filters"
             component-title="Filters"
@@ -28,8 +39,10 @@
                     ref="organisation_contacts_datatable"
                     :dt-options="dtOptions"
                     :dt-headers="dtHeaders"
+                    @vue:mounted="addOrgContactEventListeners"
                 />
             </div>
+            <AddContact ref="add_contact" :org_id="organisationId" />
         </div>
     </div>
 </template>
@@ -37,12 +50,14 @@
 <script>
 import { v4 as uuid } from 'uuid';
 import datatable from '@/utils/vue/datatable.vue';
-import { api_endpoints, constants } from '@/utils/hooks';
+import AddContact from '@common-utils/add_contact.vue';
+import { api_endpoints, helpers, constants } from '@/utils/hooks';
 
 export default {
     name: 'TableOrganisationContacts',
     components: {
         datatable,
+        AddContact,
     },
     props: {
         level: {
@@ -57,8 +72,13 @@ export default {
          * The organisation for which to display contacts
          */
         organisationId: {
-            type: Number,
+            type: [Number, null],
             required: true,
+            validator: (p) => {
+                // Seems hacky but lets me have a required prop that can be null
+                let valid = p === null || ['number'].indexOf(typeof p) !== -1;
+                return valid;
+            },
         },
     },
     data() {
@@ -95,6 +115,7 @@ export default {
                 'Mobile',
                 'Fax',
                 'Email',
+                'Action',
             ];
         },
         idColumn: function () {
@@ -175,6 +196,23 @@ export default {
                 },
             };
         },
+        actionsColumn: function () {
+            return {
+                data: 'id',
+                orderable: false,
+                searchable: false,
+                visible: true,
+                render: function (row, type, full) {
+                    if (
+                        'Organisation Admin' == full.user_role &&
+                        1 == full.admin_count
+                    ) {
+                        return '';
+                    }
+                    return `<button class="btn btn-sm btn-primary remove-contact" data-email='${full.email}' data-id='${full.id}' data-name='${full.full_name}'><i class="fa-solid fa-remove"></i> Remove</button>`;
+                },
+            };
+        },
         applicableColumns: function () {
             return [
                 this.idColumn,
@@ -184,6 +222,7 @@ export default {
                 this.mobileColumn,
                 this.faxColumn,
                 this.emailColumn,
+                this.actionsColumn,
             ];
         },
         dtOptions: function () {
@@ -267,6 +306,105 @@ export default {
         },
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded;
+        },
+        addContact: function () {
+            this.$refs.add_contact.isModalOpen = true;
+            this.$nextTick(() => {
+                this.$refs.add_contact.$refs.first_name.focus();
+            });
+        },
+        addedContact: function () {
+            let vm = this;
+            swal.fire({
+                title: 'Added',
+                text: 'The contact has been successfully added.',
+                icon: 'success',
+            });
+            vm.$refs.organisation_contacts_datatable.vmDataTable.ajax.reload();
+        },
+        deleteContact: function (id) {
+            let vm = this;
+            const requestOptions = {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+            };
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisation_contacts,
+                    id
+                ),
+                requestOptions
+            )
+                .then(async (response) => {
+                    if (204 === response.status) {
+                        swal.fire({
+                            title: 'Contact Deleted',
+                            text: 'The contact was successfully deleted',
+                            icon: 'success',
+                        });
+                        vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
+                    }
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
+                        if (400 == response.status) {
+                            const errorString =
+                                helpers.getErrorStringFromResponseData(data);
+                            swal.fire({
+                                title: 'Unable to Delete Contact',
+                                html: `${errorString}`,
+                                icon: 'error',
+                            });
+                        }
+                        console.log(data);
+                        return Promise.reject(error);
+                    }
+                    swal.fire({
+                        title: 'Contact Deleted',
+                        text: 'The contact was successfully deleted',
+                        icon: 'success',
+                    });
+                    vm.$refs.organisation_contacts_datatable.vmDataTable.ajax.reload();
+                })
+                .catch((error) => {
+                    console.error('There was an error!', error);
+                });
+        },
+        personRedirect: function (id) {
+            window.location.href = '/internal/person/details/' + id;
+        },
+        addOrgContactEventListeners: function () {
+            let vm = this;
+            console.log('in addOrgContactEventListeners');
+
+            vm.$refs.organisation_contacts_datatable.vmDataTable.on(
+                'click',
+                '.remove-contact',
+                (e) => {
+                    e.preventDefault();
+
+                    let name = $(e.target).data('name');
+                    let email = $(e.target).data('email');
+                    let id = $(e.target).data('id');
+                    swal.fire({
+                        title: 'Delete Contact',
+                        text: `Are you sure you want to remove ${name} (${email}) as a contact  ?`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Accept',
+                    }).then(
+                        (result) => {
+                            if (result.isConfirmed) {
+                                vm.deleteContact(id);
+                            }
+                        },
+                        (error) => {
+                            console.log(error);
+                        }
+                    );
+                }
+            );
         },
     },
 };
