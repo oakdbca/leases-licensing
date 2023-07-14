@@ -2268,7 +2268,8 @@ export default {
                         })
                         if (
                             constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING
-                                .ID == vm.proposal.processing_status_id
+                                .ID == vm.proposal.processing_status_id &&
+                            vm.profile.is_finance_officer
                         ) {
                             $(document).scrollTop(
                                 $('#invoicing-form').offset().top - 300
