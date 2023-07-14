@@ -24,6 +24,7 @@ from leaseslicensing.components.proposals.email import (
 )
 from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
+    ProposalApplicant,
     ProposalAssessmentAnswer,
     ProposalDeclinedDetails,
     ProposalUserAction,
@@ -725,3 +726,33 @@ def test_proposal_emails(request):
         compliance_email.send_submit_email_notification(
             request, compliance, is_test=True
         )
+
+def make_proposal_applicant_ready(proposal, request):
+    proposal_applicant, created = ProposalApplicant.objects.get_or_create(proposal=proposal)
+    if created:
+        proposal_applicant.first_name = request.user.first_name
+        proposal_applicant.last_name = request.user.last_name
+        proposal_applicant.dob = request.user.dob
+
+        proposal_applicant.residential_line1 = request.user.residential_address.line1
+        proposal_applicant.residential_line2 = request.user.residential_address.line2
+        proposal_applicant.residential_line3 = request.user.residential_address.line3
+        proposal_applicant.residential_locality = request.user.residential_address.locality
+        proposal_applicant.residential_state = request.user.residential_address.state
+        proposal_applicant.residential_country = request.user.residential_address.country
+        proposal_applicant.residential_postcode = request.user.residential_address.postcode
+
+        proposal_applicant.postal_same_as_residential = request.user.postal_same_as_residential
+        proposal_applicant.postal_line1 = request.user.postal_address.line1
+        proposal_applicant.postal_line2 = request.user.postal_address.line2
+        proposal_applicant.postal_line3 = request.user.postal_address.line3
+        proposal_applicant.postal_locality = request.user.postal_address.locality
+        proposal_applicant.postal_state = request.user.postal_address.state
+        proposal_applicant.postal_country = request.user.postal_address.country
+        proposal_applicant.postal_postcode = request.user.postal_address.postcode
+
+        proposal_applicant.email = request.user.email
+        proposal_applicant.phone_number = request.user.phone_number
+        proposal_applicant.mobile_number = request.user.mobile_number
+
+        proposal_applicant.save()
