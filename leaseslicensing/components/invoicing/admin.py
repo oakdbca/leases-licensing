@@ -104,3 +104,35 @@ class CPICalculationMethodAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(models.InvoicingAndReviewDates)
+class InvoicingAndReviewDatesAdmin(admin.ModelAdmin):
+    list_display = [
+        "year",
+        "invoicing_date_annually",
+        "invoicing_day_for_quarter",
+        "invoicing_day_for_month",
+        "review_date_annually",
+        "review_day_for_quarter",
+        "review_day_for_month",
+    ]
+    list_display_links = [
+        "year",
+    ]
+    readonly_fields = ("year",)
+    fields = (
+        "year",
+        "invoicing_date_annually",
+        "invoicing_day_for_quarter",
+        "invoicing_day_for_month",
+        "review_date_annually",
+        "review_day_for_quarter",
+        "review_day_for_month",
+    )
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
