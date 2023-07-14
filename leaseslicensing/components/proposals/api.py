@@ -100,6 +100,7 @@ from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
     is_customer,
+    is_finance_officer,
     is_internal,
     is_referee,
 )
@@ -341,6 +342,10 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             if is_assessor(self.request) or is_approver(self.request):
                 qs = Proposal.objects.all()
+            elif is_finance_officer(self.request):
+                qs = Proposal.objects.filter(
+                    processing_status=Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                )
             else:
                 # accessing user might be referral
                 qs = Proposal.objects.filter(
