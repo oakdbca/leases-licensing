@@ -4,9 +4,12 @@ from decimal import Decimal
 
 import pytz
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Avg, F, Sum, Window
 from django.db.models.functions import Coalesce
+from django.forms import ValidationError
+from django.utils import timezone
 from ledger_api_client import settings_base
 
 from leaseslicensing.components.main.models import (
@@ -130,6 +133,79 @@ class ReviewDateMonthly(BaseModel):
             .last()
         )
         return review_date_monthly
+
+
+class InvoicingAndReviewDatesManager(models.Manager):
+    def get_queryset(self):
+        # Only show the current and future year
+        return (
+            super()
+            .get_queryset()
+            .filter(year__gte=timezone.now().year, year__lte=timezone.now().year + 10)
+        )
+
+
+class InvoicingAndReviewDates(BaseModel):
+    objects = InvoicingAndReviewDatesManager()
+
+    year = models.PositiveSmallIntegerField(editable=False)
+
+    invoicing_date_annually = models.DateField(help_text="Invoice every year on")
+    invoicing_day_for_quarter = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(30),  # MAR, JUN, SEP, DEC all have at least 30 days
+        ],
+        help_text="Day of the month to generate and send invoices every quarter (MAR, JUN, SEP, DEC)",
+    )
+    invoicing_day_for_month = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(28),  # Every month of the years has at least 28 days
+        ],
+    )
+
+    review_date_annually = models.DateField(help_text="Review every year on")
+    review_day_for_quarter = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(30),  # MAR, JUN, SEP, DEC all have at least 30 days
+        ],
+        help_text="Day of the month to send review reminder every quarter (MAR, JUN, SEP, DEC)",
+    )
+    review_day_for_month = models.PositiveSmallIntegerField(
+        default=1,
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(28),  # Every month of the years has at least 28 days
+        ],
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        verbose_name_plural = "Invoicing and Review Dates"
+        ordering = ["year"]
+
+    def __str__(self):
+        return f"Invoicing and Review Dates for {self.year}"
+
+    def clean(self):
+        if self.invoicing_date_annually.year != self.year:
+            raise ValidationError(
+                {
+                    "invoicing_date_annually": f"The annual invoicing date must be in {self.year}"
+                }
+            )
+
+        if self.review_date_annually.year != self.year:
+            raise ValidationError(
+                {
+                    "review_date_annually": f"The annual review date must be in {self.year}"
+                }
+            )
 
 
 class InvoicingDateAnnually(BaseModel):
