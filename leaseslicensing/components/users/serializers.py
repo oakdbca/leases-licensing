@@ -16,6 +16,7 @@ from leaseslicensing.components.users.models import EmailUserAction, EmailUserLo
 from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
+    is_finance_officer,
     is_internal,
     is_leaseslicensing_admin,
 )
@@ -109,6 +110,7 @@ class UserSerializer(serializers.ModelSerializer):
     is_approver = serializers.SerializerMethodField()
     is_referee = serializers.SerializerMethodField()
     is_compliance_referee = serializers.SerializerMethodField()
+    is_finance_officer = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailUser
@@ -132,6 +134,7 @@ class UserSerializer(serializers.ModelSerializer):
             "is_approver",
             "is_referee",
             "is_compliance_referee",
+            "is_finance_officer",
         )
 
     def get_personal_details(self, obj):
@@ -187,6 +190,9 @@ class UserSerializer(serializers.ModelSerializer):
             referral=obj.id,
             processing_status=ComplianceReferral.PROCESSING_STATUS_WITH_REFERRAL,
         ).exists()
+
+    def get_is_finance_officer(self, obj):
+        return is_finance_officer(self.context["request"])
 
 
 class PersonalSerializer(serializers.ModelSerializer):
