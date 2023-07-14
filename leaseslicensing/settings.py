@@ -43,8 +43,8 @@ STATIC_URL = "/static/"
 INSTALLED_APPS += [
     "reversion",
     "reversion_compare",
-    # 'bootstrap3',
     "webtemplate_dbca",
+    "ledger_api_client",
     "leaseslicensing",
     "leaseslicensing.components.main",
     "leaseslicensing.components.organisations",
@@ -59,7 +59,6 @@ INSTALLED_APPS += [
     "rest_framework",
     "rest_framework_datatables",
     "rest_framework_gis",
-    "ledger_api_client",
     "ckeditor",
 ]
 
