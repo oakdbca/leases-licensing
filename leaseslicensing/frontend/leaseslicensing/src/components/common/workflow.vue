@@ -114,7 +114,7 @@
                 </div>
             </div>
 
-            <div v-if="isCurrentAssessor" class="card-body border-top">
+            <div v-if="showInviteReferee" class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Invite Referee</div>
                     <div class="mb-3">
@@ -833,7 +833,7 @@ export default {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
                                 [PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID]:
-                                    [ROLES.GROUP_NAME_ASSESSOR.ID],
+                                    [ROLES.FINANCE.ID],
                             },
                         }
                         let show =
@@ -930,6 +930,17 @@ export default {
             } else {
                 return false
             }
+        },
+        showInviteReferee: function () {
+            return (
+                this.isCurrentAssessor &&
+                [
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                    constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
+                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
+                ].includes(this.proposal.processing_status_id)
+            )
         },
         isAssessorOrApprover: function () {
             return (
