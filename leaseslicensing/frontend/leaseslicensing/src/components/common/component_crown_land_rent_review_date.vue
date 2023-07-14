@@ -1,8 +1,8 @@
 <template>
-    <div class="row mb-3 border-bottom">
+    <div class="row">
         <div class="col-sm-4">
             <button
-                class="btn btn-primary btn-sm mb-3"
+                class="btn btn-primary btn-sm"
                 @click.prevent="addAnotherDateClicked"
             >
                 <i class="fa fa-add"></i> Add Crown Land Rent Review Date
