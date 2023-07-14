@@ -104,23 +104,28 @@ export default {
             formSection_vnode.forEach((vnode) => {
                 // Store child elements within each node to a list
                 let refs = Array();
-                vnode.children.map((child) => {
-                    if (child.component) {
-                        refs.push(child.component.ctx.$refs);
-                    }
-                });
-                vnode.dynamicChildren.map((child) => {
-                    if (child.component) {
-                        refs.push([child.component.ctx]);
-                    }
-                });
+                if (vnode.children) {
+                    vnode.children.map((child) => {
+                        if (child.component) {
+                            refs.push(child.component.ctx.$refs);
+                        }
+                    });
+                }
+                if (vnode.dynamicChildren) {
+                    vnode.dynamicChildren.map((child) => {
+                        if (child.component) {
+                            refs.push([child.component.ctx]);
+                        }
+                    });
+                }
 
                 refs.forEach((ref) => {
-                    // Redraw the element if it is a datatable
+                    // Redraw (without updating ordering and search) the element if it is a datatable
+                    // See: https://datatables.net/reference/api/draw()
                     Object.keys(ref).forEach((key) => {
                         if (ref[key].vmDataTable) {
-                            console.log(`Calling drawn on ${ref[key].id}`);
-                            ref[key].vmDataTable.draw();
+                            console.log(`Calling draw on ${ref[key].id}`);
+                            ref[key].vmDataTable.draw('page');
                         }
                     });
                 });
