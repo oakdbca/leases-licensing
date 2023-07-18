@@ -188,6 +188,11 @@ api_patterns = [
         main_api.SecureDocumentsAPIView.as_view(),
         name="secure_documents",
     ),
+    url(
+        r"ledger-api-invoice-success-callback/(?P<uuid>.+)$",
+        invoicing_api.PayInvoiceSuccessCallbackView.as_view(),
+        name="ledger-api-invoice-success-callback",
+    ),
 ]
 
 # URL Patterns
