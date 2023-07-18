@@ -2,6 +2,7 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 
+from django.db.models import Q
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -21,7 +22,8 @@ from leaseslicensing.components.invoicing.serializers import (
     InvoiceTransactionSerializer,
 )
 from leaseslicensing.components.main.api import NoPaginationListMixin
-from leaseslicensing.helpers import is_finance_officer
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
+from leaseslicensing.helpers import is_customer, is_finance_officer
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +80,19 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     filter_backends = [InvoiceFilterBackend]
+
+    def get_queryset(self):
+        if is_customer(self.request):
+            org_ids = get_organisation_ids_for_user(self.request.user.id)
+            return (
+                super()
+                .get_queryset()
+                .filter(
+                    Q(approval__current_proposal__ind_applicant=self.request.user.id)
+                    | Q(approval__current_proposal__org_applicant__in=org_ids)
+                )
+            )
+        return super().get_queryset()
 
     @action(detail=False, methods=["get"])
     def statuses(self, request, *args, **kwargs):

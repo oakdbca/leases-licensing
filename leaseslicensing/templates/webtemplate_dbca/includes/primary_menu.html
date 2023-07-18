@@ -12,7 +12,7 @@
 {% is_payment_officer as is_payment_officer %}
 {% build_tag as build_tag %}
 
-<ul class="nav navbar-expand-lg navbar-light">
+<ul class="nav navbar-expand-lg navbar-light align-items-center">
 {% if is_internal_login %}
 <li class="nav-item"><a class="nav-link" href="/internal/approvals">Approvals</a></li>
 <li class="nav-item"><a class="nav-link" href="/internal/compliances">Compliances</a></li>
@@ -23,6 +23,7 @@
 {% if request.user.is_authenticated %}
 <li class="nav-item"><a class="nav-link" href="/external/proposal"><button type="button" class="btn btn-primary btn-sm" @click="new_application_button_clicked"><i
     class="fa-solid fa-circle-plus"></i> New Application</button></a></li>
-{% endif %}
+    <li class="nav-item"><a class="nav-link" href="/external/invoices">Invoices</a></li>
+    {% endif %}
 {% endif %}
 </ul>

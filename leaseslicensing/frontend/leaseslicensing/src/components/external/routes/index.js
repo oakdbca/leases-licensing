@@ -8,6 +8,8 @@ import Organisation from '@/components/external/organisations/manage.vue'
 import Compliance from '../compliances/access.vue'
 import ComplianceSubmit from '../compliances/submit.vue'
 import Approval from '../approvals/approval.vue'
+import InvoicesDash from '@/components/internal/invoices/dashboard.vue'
+
 export default {
     path: '/external',
     component: RouterView,
@@ -54,6 +56,11 @@ export default {
             path: 'proposal/:proposal_id',
             component: Proposal,
             name: 'draft_proposal',
+        },
+        {
+            path: 'invoices',
+            component: InvoicesDash,
+            name: 'external-invoices-dash',
         },
     ],
 }
