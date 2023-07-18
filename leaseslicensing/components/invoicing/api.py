@@ -2,9 +2,11 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 
-from rest_framework import mixins, viewsets
+from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+from rest_framework.views import APIView
 from rest_framework_datatables.filters import DatatablesFilterBackend
 
 from leaseslicensing.components.invoicing.models import (
@@ -164,3 +166,38 @@ class CPICalculationMethodViewSet(
 ):
     queryset = CPICalculationMethod.objects.all()
     serializer_class = CPICalculationMethodSerializer
+
+
+class PayInvoiceSuccessCallbackView(APIView):
+    throttle_classes = [AnonRateThrottle]
+
+    def get(self, request, uuid, format=None):
+        logger.info("Leases Licensing Pay Invoice Success View get method called.")
+
+        if (
+            uuid
+            and Invoice.objects.filter(
+                uuid=uuid, processing_status=Invoice.UNPAID
+            ).exists()
+        ):
+            logger.info(
+                f"Invoice uuid: {uuid}.",
+            )
+            invoice = Invoice.objects.get(uuid=uuid)
+            invoice.processing_status = Invoice.PAID
+            invoice.save()
+
+            logger.info(
+                "Returning status.HTTP_200_OK. Invoice marked as paid successfully.",
+            )
+            # this end-point is called by an unmonitored get request in ledger so there is no point having a
+            # a response body however we will return a status in case this is used on the ledger end in future
+            return Response(status=status.HTTP_200_OK)
+
+        # If there is no uuid to identify the cart then send a bad request status back in case ledger can
+        # do something with this in future
+        logger.info(
+            "Returning status.HTTP_400_BAD_REQUEST bad request as there "
+            f"was not an unpaid invoice with uuid: {uuid}."
+        )
+        return Response(status=status.HTTP_400_BAD_REQUEST)
