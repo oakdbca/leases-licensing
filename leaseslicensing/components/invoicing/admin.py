@@ -136,3 +136,8 @@ class InvoicingAndReviewDatesAdmin(admin.ModelAdmin):
 
     def has_delete_permission(self, request, obj=None):
         return False
+
+
+@admin.register(models.Invoice)
+class InvoiceAdmin(admin.ModelAdmin):
+    pass
