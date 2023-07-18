@@ -826,35 +826,10 @@ class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
         if filter_role:
             queryset = queryset.filter(user_role=filter_role)
 
-        # Check for list of terms to concatenate, e.g. first_name, last_name
-        search_terms = request.GET.get("search_terms", None)
-        alias_qs = OrganisationContact.objects.none()
-        if search_terms is not None:
-            terms = [f.strip() for f in search_terms.split(",")]
-            if len(terms) > 1:
-                # Create a list of spaces the same length as the terms
-                spaces = [Value(" ")] * len(terms)
-                # Don't need the last space character
-                search_terms = [
-                    inner for outer in zip(terms, spaces) for inner in outer
-                ][:-1]
-                # Get a queryset with an alias of the concatenated search terms
-                # See: https://docs.djangoproject.com/en/4.2/ref/models/querysets/#alias
-                alias_qs = queryset.alias(
-                    search_term=Concat(*search_terms, output_field=CharField())
-                )
-                # Filter the queryset on the concatenated search terms by the search value
-                alias_qs = alias_qs.filter(
-                    search_term__icontains=request.GET.get("search[value]", "")
-                ).annotate(admin_count=Value(admin_count, output_field=IntegerField()))
-
         # Apply regular request filters and union the result with the queryset
         queryset = self.apply_request(
             request, queryset, view, ledger_lookup_fields=[]
         ).annotate(admin_count=Value(admin_count, output_field=IntegerField()))
-
-        if alias_qs.exists():
-            queryset = queryset.union(alias_qs)
 
         setattr(view, "_datatables_total_count", total_count)
         return queryset
