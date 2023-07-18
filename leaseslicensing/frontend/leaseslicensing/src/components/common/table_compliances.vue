@@ -397,6 +397,7 @@ export default {
                 render: function (row, type, full) {
                     return full.assigned_to_name;
                 },
+                name: 'assigned_to',
             };
         },
         applicableColumns: function () {

@@ -150,6 +150,7 @@ export default {
                 render: function (row, type, full) {
                     return full.user_role;
                 },
+                name: 'user_role',
             };
         },
         phoneColumn: function () {
