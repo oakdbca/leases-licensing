@@ -188,11 +188,6 @@ api_patterns = [
         main_api.SecureDocumentsAPIView.as_view(),
         name="secure_documents",
     ),
-    url(
-        r"ledger-api-invoice-success-callback/(?P<uuid>.+)$",
-        invoicing_api.PayInvoiceSuccessCallbackView.as_view(),
-        name="ledger-api-invoice-success-callback",
-    ),
 ]
 
 # URL Patterns
@@ -308,6 +303,21 @@ urlpatterns = (
             r"^internal/competitive_process/(?P<pk>\d+)/$",
             views.InternalCompetitiveProcessView.as_view(),
             name="internal-competitiveprocess-detail",
+        ),
+        url(
+            r"ledger-api-invoice-success-callback/(?P<uuid>.+)$",
+            invoicing_api.PayInvoiceSuccessCallbackView.as_view(),
+            name="ledger-api-invoice-success-callback",
+        ),
+        url(
+            r"^external/invoice/(?P<id>.+)/payment-success$",
+            views.ExternalView.as_view(),
+            name="external-pay-invoice-success",
+        ),
+        url(
+            r"^external/invoice/(?P<id>.+)/payment-failure$",
+            views.ExternalView.as_view(),
+            name="external-pay-invoice-failure",
         ),
     ]
     + ledger_patterns
