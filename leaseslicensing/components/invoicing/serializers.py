@@ -15,7 +15,7 @@ from leaseslicensing.components.invoicing.models import (
     PercentageOfGrossTurnover,
     RepetitionType,
 )
-from leaseslicensing.helpers import is_finance_officer
+from leaseslicensing.helpers import is_customer, is_finance_officer
 
 logger = logging.getLogger(__name__)
 
@@ -620,6 +620,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     invoice_pdf_secure_url = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     is_finance_officer = serializers.SerializerMethodField()
+    is_customer = serializers.SerializerMethodField()
     transaction_count = serializers.IntegerField(
         source="transactions.count", read_only=True
     )
@@ -645,12 +646,14 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "date_issued",
             "date_due",
             "is_finance_officer",
+            "is_customer",
         ]
         datatables_always_serialize = [
             "status",
             "transaction_count",
             "balance",
             "is_finance_officer",
+            "is_customer",
         ]
 
     def get_approval_type(self, obj):
@@ -668,6 +671,10 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def get_is_finance_officer(self, obj):
         request = self.context.get("request")
         return is_finance_officer(request)
+
+    def get_is_customer(self, obj):
+        request = self.context.get("request")
+        return is_customer(request)
 
 
 class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
