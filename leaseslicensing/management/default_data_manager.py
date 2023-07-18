@@ -111,8 +111,13 @@ class DefaultDataManager:
 
         year = timezone.now().year
         for year in range(year, year + 100):
-            InvoicingAndReviewDates.objects.get_or_create(
-                year=year,
-                invoicing_date_annually=date(year, 1, 1),
-                review_date_annually=date(year, 1, 1),
-            )
+            try:
+                InvoicingAndReviewDates.objects.get(
+                    year=year,
+                )
+            except InvoicingAndReviewDates.DoesNotExist:
+                InvoicingAndReviewDates.objects.create(
+                    year=year,
+                    invoicing_date_annually=date(year, 1, 1),
+                    review_date_annually=date(year, 1, 1),
+                )
