@@ -736,6 +736,13 @@ class Invoice(LicensingModel):
     date_updated = models.DateTimeField(auto_now=True, null=False)
     date_due = models.DateField(null=True, blank=False)
 
+    # Fields that will match those in the ledger system
+    order_number = models.CharField(unique=True, max_length=128, blank=False, null=True)
+    basket_id = models.IntegerField(unique=True, blank=False, null=True)
+    invoice_reference = models.CharField(
+        unique=True, max_length=36, blank=False, null=True
+    )
+
     # Why uuid? We need a unique identifier that is not
     # easily guessable for the ledger checkout callback api
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
