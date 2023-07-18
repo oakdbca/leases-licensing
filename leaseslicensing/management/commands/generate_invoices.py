@@ -34,6 +34,7 @@ class Command(BaseCommand):
         year = timezone.now().year
         date = timezone.now().date()
         month = timezone.now().month
+        month_name = timezone.now().strftime("%B")
         day_of_month = timezone.now().day
 
         try:
@@ -55,10 +56,6 @@ class Command(BaseCommand):
             ]
         )
 
-        logger.info(
-            f"\n\nFound {approvals.count()} Approvals that may need an invoice generated.\n"
-        )
-
         if options["test"]:
             logger.info("Running in test mode - no invoices will be generated")
             self.generate_annual_invoices(approvals, test=True)
@@ -67,39 +64,53 @@ class Command(BaseCommand):
             return
 
         if date == invoicing_and_review_dates.invoicing_date_annually:
+            logger.info(f"Today is the annual invoicing date for {year}.")
             self.generate_annual_invoices(approvals)
 
         if (
             month in [3, 6, 9, 12]
             and day_of_month == invoicing_and_review_dates.invoicing_day_for_quarter
         ):
+            logger.info(
+                f"Today is the quarterly invoicing date for the {month_name} quarter of {year}."
+            )
             self.generate_quarterly_invoices(approvals)
 
         if day_of_month == invoicing_and_review_dates.invoicing_day_for_month:
+            logger.info(
+                f"Today is the monthly invoicing date for {month_name}, {year}."
+            )
             self.generate_monthly_invoices(approvals)
 
     def generate_annual_invoices(self, approvals, test=False):
-        logger.info("\n\nGenerating annual invoices\n")
         annual_invoicing_approvals = approvals.filter(
             current_proposal__invoicing_details__invoicing_repetition_type__key=settings.REPETITION_TYPE_ANNUALLY
+        )
+        logger.info(
+            f"\n\nFound {annual_invoicing_approvals.count()} approvals that need annual invoices generated.\n"
         )
         for approval in annual_invoicing_approvals:
             self.generate_invoice(approval, test=test)
 
     def generate_quarterly_invoices(self, approvals, test=False):
-        logger.info("\n\nGenerating quarterly invoices\n")
         quarterly_invoicing_approvals = approvals.filter(
             current_proposal__invoicing_details__invoicing_repetition_type__key=settings.REPETITION_TYPE_QUARTERLY
+        )
+        logger.info(
+            f"\n\nFound {quarterly_invoicing_approvals.count()} approvals that need quarterly invoices generated.\n"
         )
         for approval in quarterly_invoicing_approvals:
             self.generate_invoice(approval, test=test)
 
     def generate_monthly_invoices(self, approvals, test=False):
         logger.info("\n\nGenerating monthly invoices\n")
-        quarterly_invoicing_approvals = approvals.filter(
-            current_proposal__invoicing_details__invoicing_repetition_type__key=settings.REPETITION_TYPE_QUARTERLY
+        monthly_invoicing_approvals = approvals.filter(
+            current_proposal__invoicing_details__invoicing_repetition_type__key=settings.REPETITION_TYPE_MONTHLY
         )
-        for approval in quarterly_invoicing_approvals:
+        logger.info(
+            f"\n\nFound {monthly_invoicing_approvals.count()} approvals that need monthly invoices generated.\n"
+        )
+        for approval in monthly_invoicing_approvals:
             self.generate_invoice(approval, test=test)
 
     def generate_invoice(self, approval, test=False):
@@ -125,11 +136,10 @@ class Command(BaseCommand):
         invoice = Invoice(
             approval=approval, amount=invoice_amount, inc_gst=inc_gst, date_due=due_date
         )
-        if not test:
-            invoice.save()
-            logger.info(f"Generated Invoice: {invoice}")
-        else:
-            logger.info(f"Test mode - Invoice would have been generated: {invoice}")
+
+        if test:
+            logger.info(f"\n\nTest mode - Invoice would be generated: {invoice}")
+            return
 
         ledger_order_lines = []
         ledger_order_lines.append(
@@ -147,7 +157,10 @@ class Command(BaseCommand):
 
         request = ledger_api_client_utils.FakeRequestSessionObj()
 
-        booking_reference = f"{approval.approval_type} {approval.lodge_number} "
+        booking_reference = (
+            f"{approval.approval_type} {approval.lodgement_number} "
+            f"(Billing Cycle: {invoicing_details.invoicing_repetition_type.display_name})"
+        )
 
         basket_params = {
             "products": ledger_order_lines,
@@ -195,20 +208,21 @@ class Command(BaseCommand):
 
         logger.info(f"Future Invoice: {future_invoice}")
 
-    def base_fee_plus_annual_cpi(self, invoicing_details):
-        logger.debug(f"\nGenerating invoice using {invoicing_details}\n")
-        invoice_amount = invoicing_details.invoice_amount()
-        logger.debug(f"\nInvoice amount: {invoice_amount}\n")
-        return
+        if 200 != future_invoice["status"]:
+            logger.error(
+                f"Failed to create future Invoice {invoice.lodgement_number} with basket_hash "
+                f"{basket_hash}, invoice_text {invoice_text}, return_preload_url {return_preload_url}"
+            )
+            return
 
-    def base_fee_plus_fixed_annual_increment(self, invoicing_details):
-        logger.debug(f"\nGenerating invoice using {invoicing_details}\n")
-        return
+        data = future_invoice["data"]
 
-    def base_fee_plus_fixed_annual_percentage(self, invoicing_details):
-        logger.debug(f"\nGenerating invoice using {invoicing_details}\n")
-        return
+        invoice.order_number = data["order"]
+        invoice.basket_id = data["basket_id"]
+        invoice.invoice_reference = data["invoice"]
 
-    def percentage_of_gross_turnover(self, invoicing_details):
-        logger.debug(f"\nGenerating invoice using {invoicing_details}\n")
-        return
+        invoice.save()
+
+        self.stdout.write(
+            self.style.SUCCESS(f"\tGenerated Invoice: {invoice.lodgement_number}\n")
+        )
