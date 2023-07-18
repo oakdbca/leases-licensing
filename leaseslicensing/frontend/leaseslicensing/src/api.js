@@ -1,4 +1,3 @@
-
 module.exports = {
     account: '/api/users/request_user_account/',
     applicants_dict: '/api/applicants_dict',
@@ -9,6 +8,7 @@ module.exports = {
     approval_types_dict: '/api/approval_types_dict',
     approvals_paginated_list: '/api/approval_paginated',
     approvals: '/api/approvals/',
+    charge_methods: '/api/charge_methods/',
     company_names: '/api/company_names',
     competitive_process_statuses_dict: '/api/competitive_process_statuses_dict',
     competitive_process: '/api/competitive_process/',
@@ -18,6 +18,7 @@ module.exports = {
     compliances_paginated_external: '/api/compliance_paginated/list_external/',
     compliances: '/api/compliances/',
     countries: '/api/countries',
+    cpi_calculation_methods: '/api/cpi_calculation_methods/',
     external_referee_invites: '/api/external_referee_invites/',
     fee_configurations: '/api/fee_configurations',
     fee_seasons_dict: '/api/fee_seasons_dict',
@@ -36,11 +37,13 @@ module.exports = {
     profile: '/api/profile',
     proposal_by_uuid: '/api/proposal_by_uuid/',
     proposal_requirements: '/api/proposal_requirements.json',
-    proposal_standard_requirements: '/api/proposal_standard_requirements/application_type_standard_requirements/',
+    proposal_standard_requirements:
+        '/api/proposal_standard_requirements/application_type_standard_requirements/',
     proposal: '/api/proposal/',
     proposals_paginated_list: '/api/proposal_paginated/', // both for external and internal
     proposals: '/api/proposal.json',
     referrals: '/api/referrals.json',
+    repetition_types: '/api/repetition_types/',
     search_reference: '/api/search_reference/',
     submitter_profile: '/api/submitter_profile',
     temporary_document: '/api/temporary_document/',
@@ -59,15 +62,14 @@ module.exports = {
     tenures: '/api/tenures/',
     vestings: '/api/vestings/',
 
-
     lookupApprovalDetails: function (id) {
-        return `/api/approvals/${id}/lookup_approval.json`;
+        return `/api/approvals/${id}/lookup_approval.json`
     },
     lookupApprovalHistory: function (id) {
-        return `/api/approvals/${id}/approval_history?format=datatables`;
+        return `/api/approvals/${id}/approval_history?format=datatables`
     },
     discard_proposal: function (id) {
-        return `/api/proposal/${id}/discard/`;
+        return `/api/proposal/${id}/discard/`
     },
 
     // ------------------- ledger ui
@@ -75,8 +77,8 @@ module.exports = {
     request_user_id: '/api/request_user_id/',
     account_details: '/api/account/',
     updateAccountDetails: function (id) {
-        return `/ledger-ui/api/update-account-details/${id}/`;
+        return `/ledger-ui/api/update-account-details/${id}/`
     },
 
     details_text: '/api/detailstext/',
-};
+}
