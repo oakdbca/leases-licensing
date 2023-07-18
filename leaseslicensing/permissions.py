@@ -14,7 +14,7 @@ from leaseslicensing.helpers import (
 logger = logging.getLogger(__name__)
 
 
-class IsInternalAPIView(BasePermission):
+class IsInternal(BasePermission):
     def has_permission(self, request, view):
         if request.user.is_superuser:
             return True
