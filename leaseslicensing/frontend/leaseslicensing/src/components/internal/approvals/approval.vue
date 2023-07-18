@@ -367,7 +367,7 @@
                         <InvoicesTable
                             v-if="loadInvoices"
                             ref="invoice_table"
-                            :approval_id="approval.id"
+                            :approval-id="approval.id"
                             level="internal"
                         />
                         <FormSection
