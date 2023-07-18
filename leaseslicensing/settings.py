@@ -163,6 +163,9 @@ SYSTEM_NAME = env("SYSTEM_NAME", "Leases and Licensing")
 SYSTEM_NAME_SHORT = env("SYSTEM_NAME_SHORT", "LALS")
 SITE_PREFIX = env("SITE_PREFIX")
 SITE_DOMAIN = env("SITE_DOMAIN")
+
+LEASES_LICENSING_EXTERNAL_URL = env("LEASES_LICENSING_EXTERNAL_URL")
+
 DEP_URL = env("DEP_URL", "www." + SITE_DOMAIN)
 DEP_PHONE = env("DEP_PHONE", "(08) 9219 9978")
 DEP_PHONE_FILMING = env("DEP_PHONE_FILMING", "(08) 9219 8411")
@@ -200,6 +203,8 @@ PAYMENT_SYSTEM_PREFIX = env(
 os.environ[
     "LEDGER_PRODUCT_CUSTOM_FIELDS"
 ] = "('ledger_description','quantity','price_incl_tax','price_excl_tax','oracle_code')"
+
+LEDGER_DEFAULT_LINE_STATUS = 1
 
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
