@@ -3,6 +3,9 @@ from datetime import datetime
 from decimal import Decimal
 
 from django.db.models import Q
+from django.shortcuts import redirect
+from django.urls import reverse
+from ledger_api_client.utils import generate_payment_session
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -169,6 +172,34 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         serializer.save()
 
         return Response(serializer.data)
+
+    @action(methods=["GET"], detail=True)
+    def pay_invoice(self, request, *args, **kwargs):
+        logger.info("Pay Invoice")
+        invoice = self.get_object()
+        return_url = reverse(
+            "external-pay-invoice-success",
+            kwargs={"id": invoice.id},
+        )
+        fallback_url = reverse(
+            "external-pay-invoice-failure",
+            kwargs={"id": invoice.id},
+        )
+
+        logger.info(f"Return URL: {request.build_absolute_uri(return_url)}")
+        logger.info(f"Fallback URL: {fallback_url}")
+        payment_session = generate_payment_session(
+            request,
+            invoice.invoice_reference,
+            request.build_absolute_uri(return_url),
+            request.build_absolute_uri(fallback_url),
+        )
+        logger.info(f"Payment session: {payment_session}")
+
+        if 200 == payment_session["status"]:
+            return redirect(reverse("ledgergw-payment-details"))
+
+        return redirect(fallback_url)
 
 
 class InvoiceTransactionViewSet(viewsets.ModelViewSet):
