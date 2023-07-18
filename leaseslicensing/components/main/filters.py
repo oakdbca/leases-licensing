@@ -1,10 +1,12 @@
-from django.db.models import Case, When, Q
+from django.db.models import Case, When, Q, CharField, Value
+from django.db.models.functions import Concat
 from django.core.cache import cache
 from django.core.exceptions import FieldError
 from django.conf import settings
 
 from rest_framework_datatables.filters import DatatablesFilterBackend
 from rest_framework import serializers
+from rest_framework.exceptions import APIException
 
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
@@ -76,6 +78,9 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
 
         for item in list_to_split:
             if '.' not in item:
+                # If the key does not exist, insert the key
+                # See: https://www.w3schools.com/python/ref_dictionary_setdefault.asp
+                result_dict.setdefault(item, [])
                 continue
 
             ledger_key_idx = 1
@@ -231,6 +236,12 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
 
             # Filter for model database fields first
             model_filter_dict = {f"{attr}__icontains": search_value for attr in model_attrs}
+            # Add a search term filter (e.g. concatenated first name last name and email) if applicable
+            queryset, search_term_filter, alias_set = self.search_term_queryset(queryset, request)
+            if alias_set is True:
+                # Concatenate search term filter with model filter
+                model_filter_dict = {**model_filter_dict, **search_term_filter}
+
             try:
                 model_qs_filtered = queryset.filter(Q(**model_filter_dict, _connector=Q.OR))
             except FieldError:
@@ -257,8 +268,8 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                                     for k in _ledger_fields_undscr]))
 
                 # A dictionary of search fields and values
-                ledger_filter_dict = {f"{val}__icontains": search_value for key in ledger_attrs[attribute]
-                                        for val in ledger_attrs[attribute][key]}
+                ledger_filter_dict = {f"{field}__icontains": search_value for key in ledger_attrs[attribute]
+                                        for field in ledger_attrs[attribute][key] if self._check_model_field(attribute, field)}
 
                 # Filter the ledger cache
                 ledger_qs_filtered = ledger_cache.filter(
@@ -326,9 +337,13 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         else:
             # Convert back to Model Queryset
             pk_list = [l.pk for l in query_model_list]
-            queryset = model.objects.filter(pk__in=pk_list).distinct().order_by(*orderings)
+            queryset = model.objects.filter(pk__in=pk_list).distinct()
             if len(orderings):
-                queryset = queryset.order_by(*orderings)
+                try:
+                    queryset = queryset.order_by(*orderings[0].split(","))
+                except:
+                    logger.exception(f"Could not order queryset by {orderings}")
+                    raise APIException(code=500, detail=f"Could not order queryset by {orderings}")
 
         return queryset
 
@@ -442,3 +457,55 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         """
         return list(itertools.chain(*[list(ledger_attrs[k].keys())
                                     for k in ledger_attrs.keys()]))
+
+    def _check_model_field(self, attribute, field):
+        """
+        Checks if a field is not empty or None. Since we are querying the ledger database,
+        we need to make sure that we are not requesting empty fields, as this would result
+        in filters like `__icontains="..."`.
+        """
+
+        if field not in ["", None]:
+            return True
+        else:
+            raise serializers.ValidationError(
+                f"Requested empty field from ledger attribute `{attribute}` in `{self.__class__.__name__}`.\
+                This could stem from the frontend requesting just `{attribute}` as a search field instead of `{attribute}__a_field_name`."
+            )
+
+    def search_term_queryset(self, queryset, request):
+        """
+        Uses an alias to concatenate search terms to filter the queryset.
+        Search terms are provided as a comma-separated list of fields, e.g.
+        `first_name, last_name`, as part of the request.
+        If no search terms are provided, the queryset is returned without alias.
+        """
+
+        # Check for list of terms to concatenate, e.g. first_name, last_name
+        search_terms = request.GET.get("search_terms", None)
+        # Dictionary of search term and search value
+        model_filter_dict = {}
+        # Boolean to check if alias has been set. False if `search_terms` is None
+        alias_set = False
+
+        if search_terms is not None:
+            terms = [f.strip() for f in search_terms.split(",")]
+            if len(terms) > 1:
+                # Create a list of spaces the same length as the terms
+                spaces = [Value(" ")] * len(terms)
+                # Don't need the last space character
+                search_terms = [
+                    inner for outer in zip(terms, spaces) for inner in outer
+                ][:-1]
+                # Get a queryset with an alias of the concatenated search terms
+                # See: https://docs.djangoproject.com/en/4.2/ref/models/querysets/#alias
+                queryset = queryset.alias(
+                    search_term=Concat(*search_terms, output_field=CharField())
+                )
+                model_filter_dict["search_term__icontains"] = request.GET.get(
+                    "search[value]", ""
+                )
+
+                alias_set = True
+
+        return queryset, model_filter_dict, alias_set
