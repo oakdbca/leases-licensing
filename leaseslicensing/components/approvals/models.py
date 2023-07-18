@@ -21,8 +21,8 @@ from leaseslicensing.components.approvals.email import (
 )
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
-    LicensingModelVersioned,
     Document,
+    LicensingModelVersioned,
     RevisionedMixin,
     SecureFileField,
     UserAction,
@@ -167,6 +167,7 @@ class Approval(LicensingModelVersioned):
         (APPROVAL_STATUS_AWAITING_PAYMENT, "Awaiting Payment"),
         (APPROVAL_STATUS_CURRENT_EDITING_INVOICING, "Current (Editing Invoicing)"),
     )
+    approval_type = models.ForeignKey(ApprovalType, on_delete=models.PROTECT, null=True)
     status = models.CharField(
         max_length=40, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
