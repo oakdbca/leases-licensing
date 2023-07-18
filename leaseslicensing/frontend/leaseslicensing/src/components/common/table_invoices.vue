@@ -152,11 +152,6 @@ export default {
             required: false,
             default: null,
         },
-        targetEmailUserId: {
-            type: Number,
-            required: false,
-            default: null,
-        },
     },
     data() {
         return {
@@ -208,10 +203,10 @@ export default {
     },
     computed: {
         url: function () {
-            if (this.approval_id) {
+            if (this.approvalId) {
                 return (
                     api_endpoints.invoices +
-                    `?approval_id=${this.approval_id}&format=datatables`
+                    `?approval_id=${this.approvalId}&format=datatables`
                 )
             }
             return api_endpoints.invoices + '?format=datatables'
@@ -402,11 +397,19 @@ export default {
                     if (full.transaction_count > 0) {
                         links += `<a href="#${full.id}" data-view-transactions="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-invoice-amount="${full.amount}">View Transactions</a><br />`
                     }
-                    // In the case that an invoice is overpaid we will want to allow recording a transaction to correct the balance
-                    if ('unpaid' === full.status || full.balance != '0.00') {
-                        links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`
+                    if (full.is_customer) {
+                        let end_point =
+                            api_endpoints.invoices + full.id + '/pay_invoice/'
+                        links += `<a href="${end_point}">Pay Now</a><br />`
                     }
                     if (full.is_finance_officer) {
+                        // In the case that an invoice is overpaid we will want to allow recording a transaction to correct the balance
+                        if (
+                            'unpaid' === full.status ||
+                            full.balance != '0.00'
+                        ) {
+                            links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`
+                        }
                         links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Edit Oracle Invoice Number</a><br />`
                     }
                     return links
