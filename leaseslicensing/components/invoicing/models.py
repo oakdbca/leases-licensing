@@ -1,4 +1,5 @@
 import logging
+import uuid
 from datetime import datetime
 from decimal import Decimal
 
@@ -297,8 +298,10 @@ def get_year():
 
 class ConsumerPriceIndex(BaseModel):
     time_period = models.CharField(max_length=7, help_text="Year and Quarter")
-    value = models.FloatField(
-        help_text="Percentage Change from Corresponding Quarter of the Previous Year"
+    value = models.DecimalField(
+        max_digits=20,
+        decimal_places=1,
+        help_text="Percentage Change from Corresponding Quarter of the Previous Year",
     )
     datetime_created = models.DateTimeField(auto_now_add=True)
 
@@ -368,7 +371,7 @@ class InvoicingDetails(BaseModel):
     )
     invoicing_once_every = models.PositiveSmallIntegerField(
         null=True, blank=True, default=1
-    )  # Probably better to call this times per repetition?
+    )
     invoicing_repetition_type = models.ForeignKey(
         RepetitionType,
         null=True,
@@ -401,12 +404,18 @@ class InvoicingDetails(BaseModel):
     class Meta:
         app_label = "leaseslicensing"
 
-    def calculate_amount_plus_cpi(self, amount):
+    def __str__(self):
+        return f"Invoicing Details for Approval: {self.proposal.approval} (Current Proposal: {self.proposal})"
+
+    def base_fee_plus_cpi(self):
+        logger.debug(f"Base Fee: {self.base_fee_amount}")
         if not self.cpi_calculation_method:
             logger.warn(
                 f"No CPI calculation method set for Invoicing Details: {self.id}"
             )
-            return amount
+            return self.base_fee_amount
+
+        logger.debug(f"CPI Calculation Method: {self.cpi_calculation_method}")
 
         if (
             settings.CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER
@@ -464,7 +473,80 @@ class InvoicingDetails(BaseModel):
                 .aggregate(Avg("value"))["value__avg"]
             )
 
-        return Decimal(amount * (1 + cpi_value / 100)).quantize(Decimal("0.01"))
+        logger.debug(f"CPI Percentage: {cpi_value}")
+
+        return Decimal(self.base_fee_amount * (1 + cpi_value / 100)).quantize(
+            Decimal("0.01")
+        )
+
+    def invoice_amount(self):
+        annual_amount = Decimal("0.00")
+
+        if not self.charge_method:
+            logger.error(f"\n\nNo charge method found on {self}\n")
+            return annual_amount
+
+        logger.debug(f"\nCharge Method: {self.charge_method}")
+
+        if self.charge_method.key == settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE:
+            return annual_amount
+
+        if self.charge_method.key == settings.CHARGE_METHOD_ONCE_OFF_CHARGE:
+            return self.once_off_charge_amount
+
+        if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
+            annual_amount = self.base_fee_plus_cpi()
+
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT
+        ):
+            increment_amount_for_this_year = self.annual_increment_amounts.filter(
+                year=timezone.now().year
+            )
+            if not increment_amount_for_this_year:
+                logger.warn(
+                    f"No annual increment amount found for Invoicing Details: {self.id} for year: {timezone.now().year}"
+                )
+                return self.base_fee
+            annual_amount = self.base_fee + increment_amount_for_this_year
+
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE
+        ):
+            increment_percentage_for_this_year = (
+                self.annual_increment_percentages.filter(year=timezone.now().year)
+            )
+            if not increment_percentage_for_this_year:
+                logger.warn(
+                    f"No annual increment percentage found for Invoicing Details: {self.id} "
+                    f"for year: {timezone.now().year}"
+                )
+                return self.base_fee
+            annual_amount = self.base_fee * (
+                1 + increment_percentage_for_this_year / 100
+            )
+
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+        ):
+            gross_turnover_for_previous_financial_year = (
+                self.gross_turnover_percentages.filter(year=timezone.now().year - 1)
+            )
+            annual_amount = gross_turnover_for_previous_financial_year * (
+                1 + self.gross_turnover_percentages.percentage / 100
+            )
+
+        if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
+            return Decimal(annual_amount).quantize(Decimal("0.01"))
+
+        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
+            return Decimal(annual_amount / 4).quantize(Decimal("0.01"))
+
+        if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
+            return Decimal(annual_amount / 12).quantize(Decimal("0.01"))
 
 
 class FixedAnnualIncrementAmount(BaseModel):
@@ -642,13 +724,21 @@ class Invoice(LicensingModel):
         related_name="invoices",
     )
     status = models.CharField(
-        max_length=40, choices=INVOICE_STATUS_CHOICES, null=True, blank=True
+        max_length=40,
+        choices=INVOICE_STATUS_CHOICES,
+        default=INVOICE_STATUS_UNPAID,
+        null=True,
+        blank=True,
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     inc_gst = models.BooleanField(default=True)
     date_issued = models.DateTimeField(auto_now_add=True, null=False)
     date_updated = models.DateTimeField(auto_now=True, null=False)
     date_due = models.DateField(null=True, blank=False)
+
+    # Why uuid? We need a unique identifier that is not
+    # easily guessable for the ledger checkout callback api
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
     # Not sure if we will need this, the invoice file may exist within ledger
     invoice_pdf = SecureFileField(
