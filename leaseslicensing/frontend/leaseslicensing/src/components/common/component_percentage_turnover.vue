@@ -79,13 +79,6 @@ export default {
             financialYearsArray: this.getFinancialYearsArray(),
         }
     },
-    computed: {},
-    created() {
-        console.log(helpers.financialYearsIncluded('2019-03-03', '2022-07-07'))
-        console.log(helpers.financialYearsIncluded('2019-03-03', '2019-03-04'))
-        console.log(helpers.financialYearsIncluded('2019-03-03', '2020-01-01'))
-        console.log(helpers.financialYearsIncluded('2019-09-03', '2027-02-07'))
-    },
     methods: {
         getFinancialYearsArray: function () {
             const financialYearsIncluded = helpers.financialYearsIncluded(
@@ -106,8 +99,3 @@ export default {
     },
 }
 </script>
-<style scoped>
-.col-percentage {
-    width: 20%;
-}
-</style>
