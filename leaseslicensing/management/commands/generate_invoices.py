@@ -3,10 +3,14 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.db import transaction
 from django.utils import timezone
 from ledger_api_client import utils as ledger_api_client_utils
 
 from leaseslicensing.components.approvals.models import Approval
+from leaseslicensing.components.invoicing.email import (
+    send_new_invoice_raised_notification,
+)
 from leaseslicensing.components.invoicing.models import Invoice, InvoicingAndReviewDates
 from leaseslicensing.components.organisations.models import (
     Organisation,
@@ -113,6 +117,7 @@ class Command(BaseCommand):
         for approval in monthly_invoicing_approvals:
             self.generate_invoice(approval, test=test)
 
+    @transaction.atomic
     def generate_invoice(self, approval, test=False):
         if (
             not hasattr(approval.current_proposal, "invoicing_details")
@@ -141,6 +146,8 @@ class Command(BaseCommand):
             logger.info(f"\n\nTest mode - Invoice would be generated: {invoice}")
             return
 
+        invoice.save()
+
         ledger_order_lines = []
         ledger_order_lines.append(
             {
@@ -157,18 +164,13 @@ class Command(BaseCommand):
 
         request = ledger_api_client_utils.FakeRequestSessionObj()
 
-        booking_reference = (
-            f"{approval.approval_type} {approval.lodgement_number} "
-            f"(Billing Cycle: {invoicing_details.invoicing_repetition_type.key.title()})"
-        )
-
         basket_params = {
             "products": ledger_order_lines,
             "vouchers": [],
             "system": settings.PAYMENT_SYSTEM_ID,
             "tax_override": True,
             "custom_basket": True,
-            "booking_reference": str(booking_reference),
+            "booking_reference": str(invoice.lodgement_number),
             "no_payment": True,
         }
         if type(approval.applicant) == Organisation:
@@ -222,6 +224,9 @@ class Command(BaseCommand):
         invoice.invoice_reference = data["invoice"]
 
         invoice.save()
+
+        # send to the applicant and cc finance officer
+        send_new_invoice_raised_notification(approval, invoice)
 
         self.stdout.write(
             self.style.SUCCESS(f"\tGenerated Invoice: {invoice.lodgement_number}\n")
