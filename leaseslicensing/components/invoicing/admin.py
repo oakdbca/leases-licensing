@@ -89,18 +89,25 @@ class CPICalculationMethodAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "display_name",
+        "archived",
     ]
     list_display_links = [
         "name",
         "display_name",
+        "archived",
     ]
+    fields = (
+        "name",
+        "display_name",
+        "archived",
+    )
     readonly_fields = ("name", "display_name")
 
     def has_add_permission(self, request, obj=None):
         return False
 
     def has_change_permission(self, request, obj=None):
-        return False
+        return True
 
     def has_delete_permission(self, request, obj=None):
         return False
