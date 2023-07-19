@@ -401,6 +401,7 @@ CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE = (
     "base_fee_plus_fixed_annual_percentage"
 )
 CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI = "base_fee_plus_annual_cpi"
+CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM = "base_fee_plus_annual_cpi_custom"
 CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER = "percentage_of_gross_turnover"
 CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE = "no_rent_or_licence_charge"
 CHARGE_METHODS = (
@@ -414,7 +415,11 @@ CHARGE_METHODS = (
         CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE,
         "Base Fee Plus Fixed Annual Percentage",
     ),
-    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base Fee Plus Annual CPI"),
+    (
+        CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM,
+        "Base Fee Plus Annual CPI (Custom)",
+    ),
+    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base Fee Plus Annual CPI (ABS)"),
     (CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER, "Percentage of Gross Turnover"),
 )
 REPETITION_TYPE_ANNUALLY = "annually"
