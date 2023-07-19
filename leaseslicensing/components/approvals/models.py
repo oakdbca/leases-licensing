@@ -105,6 +105,7 @@ class Meta:
 class ApprovalType(RevisionedMixin):
     name = models.CharField(max_length=200, unique=True)
     details_placeholder = models.CharField(max_length=200, blank=True)
+    gst_free = models.BooleanField(default=False)
     approvaltypedocumenttypes = models.ManyToManyField(
         "ApprovalTypeDocumentType", through="ApprovalTypeDocumentTypeOnApprovalType"
     )
