@@ -210,7 +210,7 @@ class InvoiceTransactionViewSet(viewsets.ModelViewSet):
 class CPICalculationMethodViewSet(
     mixins.ListModelMixin, viewsets.GenericViewSet, NoPaginationListMixin
 ):
-    queryset = CPICalculationMethod.objects.all()
+    queryset = CPICalculationMethod.objects.filter(archived=False)
     serializer_class = CPICalculationMethodSerializer
 
 
@@ -223,14 +223,14 @@ class PayInvoiceSuccessCallbackView(APIView):
         if (
             uuid
             and Invoice.objects.filter(
-                uuid=uuid, processing_status=Invoice.UNPAID
+                uuid=uuid, status=Invoice.INVOICE_STATUS_UNPAID
             ).exists()
         ):
             logger.info(
                 f"Invoice uuid: {uuid}.",
             )
             invoice = Invoice.objects.get(uuid=uuid)
-            invoice.processing_status = Invoice.PAID
+            invoice.status = Invoice.INVOICE_STATUS_PAID
             invoice.save()
 
             logger.info(
