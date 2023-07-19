@@ -112,12 +112,12 @@ api_patterns = [
     url(r"^api/profile$", users_api.GetProfile.as_view(), name="get-profile"),
     url(r"^api/countries$", users_api.GetCountries.as_view(), name="get-countries"),
     url(
-        r"^api/charge_methods$",
+        r"^api/charge_methods/$",
         users_api.GetChargeMethods.as_view(),
         name="get-charge-methods",
     ),
     url(
-        r"^api/repetition_types$",
+        r"^api/repetition_types/$",
         users_api.GetRepetitionTypes.as_view(),
         name="get-repetition-types",
     ),
@@ -305,7 +305,7 @@ urlpatterns = (
             name="internal-competitiveprocess-detail",
         ),
         url(
-            r"ledger-api-invoice-success-callback/(?P<uuid>.+)$",
+            r"^api/invoicing/ledger-api-invoice-success-callback/(?P<uuid>.+)$",
             invoicing_api.PayInvoiceSuccessCallbackView.as_view(),
             name="ledger-api-invoice-success-callback",
         ),
