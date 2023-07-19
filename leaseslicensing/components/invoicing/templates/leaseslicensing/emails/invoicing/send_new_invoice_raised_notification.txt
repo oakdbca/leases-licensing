@@ -1,0 +1,7 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+
+
+
+{%  endblock %}
