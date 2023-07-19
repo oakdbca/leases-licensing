@@ -278,14 +278,14 @@ class Approval(LicensingModelVersioned):
 
     @property
     def applicant(self):
-        if self.org_applicant:
-            return self.org_applicant
+        if self.current_proposal.org_applicant:
+            return self.current_proposal.org_applicant
         # ind_applicant is missing from the approval model so using submitter instead
         # may need to add ind_applicant in future so it matches proposal?
-        elif self.submitter:
-            email_user = retrieve_email_user(self.submitter)
-        elif self.proxy_applicant:
-            email_user = retrieve_email_user(self.proxy_applicant)
+        elif self.current_proposal.ind_applicant:
+            email_user = retrieve_email_user(self.current_proposal.ind_applicant)
+        elif self.current_proposal.proxy_applicant:
+            email_user = retrieve_email_user(self.current_proposal.proxy_applicant)
         else:
             logger.error(
                 f"Applicant for the approval {self.lodgement_number} not found"
