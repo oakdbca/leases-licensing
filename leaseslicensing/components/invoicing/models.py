@@ -736,6 +736,7 @@ class Invoice(LicensingModel):
     date_issued = models.DateTimeField(auto_now_add=True, null=False)
     date_updated = models.DateTimeField(auto_now=True, null=False)
     date_due = models.DateField(null=True, blank=False)
+    proponent_reference_number = models.CharField(null=True, blank=True, max_length=50)
 
     # Fields that will match those in the ledger system
     order_number = models.CharField(unique=True, max_length=128, blank=False, null=True)
