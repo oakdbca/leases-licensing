@@ -642,7 +642,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "amount",
             "transaction_count",
             "balance",
-            "inc_gst",
+            "gst_free",
             "date_issued",
             "date_due",
             "is_finance_officer",

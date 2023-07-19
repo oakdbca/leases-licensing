@@ -125,16 +125,16 @@ class Command(BaseCommand):
         invoice_amount = invoicing_details.invoice_amount()
         # Todo add the invoicing frequency to the description
         description = f"{approval.approval_type} {approval.lodgement_number}"
-        inc_gst = True
-        if "licence" in approval.approval_type.name.lower():
-            inc_gst = False
-
+        gst_free = approval.approval_type.gst_free
         due_date = timezone.now().date() + timedelta(
             days=settings.DEFAULT_DAYS_BEFORE_PAYMENT_DUE
         )
 
         invoice = Invoice(
-            approval=approval, amount=invoice_amount, inc_gst=inc_gst, date_due=due_date
+            approval=approval,
+            amount=invoice_amount,
+            gst_free=gst_free,
+            date_due=due_date,
         )
 
         if test:

@@ -349,12 +349,12 @@ export default {
         },
         incGSTColumn: function () {
             return {
-                data: 'inc_gst',
+                data: 'gst_free',
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    if (full.inc_gst) {
+                    if (full.gst_free) {
                         return '<i class="fa fa-check" aria-hidden="true" style="color:green;"></i>'
                     } else {
                         return '<i class="fa fa-times" aria-hidden="true" style="color:red;"></i>'
