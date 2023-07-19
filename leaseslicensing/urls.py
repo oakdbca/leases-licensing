@@ -216,6 +216,11 @@ urlpatterns = (
             name="internal-approvals",
         ),
         url(
+            r"^external/invoices/$",
+            views.ExternalView.as_view(),
+            name="external-invoices",
+        ),
+        url(
             r"^external/approval/(?P<approval_pk>\d+)/$",
             views.ExternalView.as_view(),
             name="external-approval-detail",
@@ -303,6 +308,11 @@ urlpatterns = (
             r"^internal/competitive_process/(?P<pk>\d+)/$",
             views.InternalCompetitiveProcessView.as_view(),
             name="internal-competitiveprocess-detail",
+        ),
+        url(
+            r"^api/invoices/(?P<pk>\d+)/pay_invoice/$",
+            invoicing_api.InvoiceViewSet.as_view(actions={"get": "pay_invoice"}),
+            name="external-pay-invoice",
         ),
         url(
             r"^api/invoicing/ledger-api-invoice-success-callback/(?P<uuid>.+)$",
