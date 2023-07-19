@@ -159,7 +159,7 @@ class Command(BaseCommand):
 
         booking_reference = (
             f"{approval.approval_type} {approval.lodgement_number} "
-            f"(Billing Cycle: {invoicing_details.invoicing_repetition_type.display_name})"
+            f"(Billing Cycle: {invoicing_details.invoicing_repetition_type.key.title()})"
         )
 
         basket_params = {
