@@ -23,7 +23,7 @@ const router = createRouter({
             component: Account
         },
         {
-            path: '/account',
+            path: '/ledger-ui/accounts',
             name: 'account',
             component: Account
         },

@@ -203,3 +203,7 @@ class GlobalSettingsAdmin(admin.ModelAdmin):
 @admin.register(models.ExternalRefereeInvite)
 class ExternalRefereeInviteAdmin(admin.ModelAdmin):
     pass
+
+@admin.register(models.ProposalApplicant)
+class ProposalApplicantAdmin(admin.ModelAdmin):
+    pass

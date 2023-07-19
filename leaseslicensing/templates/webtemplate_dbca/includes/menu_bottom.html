@@ -13,7 +13,7 @@
 {% if request.user.is_superuser %}
     <li><a class="dropdown-item" href="{% url 'mgt-commands' %}">Management Commands</a></li>
 {% endif %}
-<li><a class="dropdown-item" href="/account">Manage Account</a></li>
+<li><a class="dropdown-item" href="/ledger-ui/accounts">Manage Account</a></li>
 {% for org in organisations_user_can_admin %}
     <li><a class="dropdown-item" href="/external/organisations/manage/{{org.id}}">Manage {{ org.ledger_organisation_name}} </a></li>
 {% endfor %}

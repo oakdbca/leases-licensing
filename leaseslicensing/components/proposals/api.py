@@ -1864,8 +1864,8 @@ class ProposalViewSet(UserActionLoggingViewset):
             proposal = self.get_object()
             proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
             data = {}
-            dob = request.data.get('dob', '')
-            dob = datetime.strptime(dob, '%d/%m/%Y').date() if dob else dob
+            #dob = request.data.get('dob', '')
+            #dob = datetime.strptime(dob, '%d/%m/%Y').date() if dob else dob
             data['first_name'] = request.data.get('first_name')
             data['last_name'] = request.data.get('last_name')
 
