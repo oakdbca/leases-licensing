@@ -1,7 +1,6 @@
 from django.contrib import admin
-from django import forms as django_forms
-from leaseslicensing.components.approvals import models
 
+from leaseslicensing.components.approvals import models
 
 
 @admin.register(models.ApprovalTypeDocumentType)
@@ -18,7 +17,11 @@ class ApprovalTypeDocumentTypeOnApprovalTypeInline(admin.TabularInline):
 
 @admin.register(models.ApprovalType)
 class ApprovalTypeAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "details_placeholder",
+        "gst_free",
+    )
     inlines = [
         ApprovalTypeDocumentTypeOnApprovalTypeInline,
-        ]
-
+    ]
