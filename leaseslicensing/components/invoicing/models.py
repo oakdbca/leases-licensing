@@ -317,6 +317,7 @@ class ConsumerPriceIndex(BaseModel):
 class CPICalculationMethod(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False, editable=False)
     display_name = models.CharField(max_length=255, null=False, blank=False)
+    archived = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
