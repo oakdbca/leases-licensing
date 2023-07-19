@@ -351,7 +351,7 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         # Order fields that are not part of this model
         if any(
             [
-                sublist.replace("-", "") in ledger_lookup_fields
+                sublist.replace("-", "") in ledger_attrs.keys()
                 for inner in orderings_dotnot
                 for sublist in inner.split(".")
             ]
@@ -360,10 +360,10 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
             # Ascending or descending
             reverse = ordering.startswith("-")
             # Handle ordering by ledger field
-            if any([lf in ordering for lf in ledger_lookup_fields]):
+            if any([lf in ordering for lf in ledger_attrs.keys()]):
                 # Transform a list of dot-notation strings (key.field) to a dictionary in the form of {key:[fields]}
                 ord_dict = self.split_list_to_dict(
-                    orderings_dotnot, ledger_keys=ledger_lookup_fields
+                    orderings_dotnot, ledger_keys=ledger_attrs.keys()
                 )
                 # Get ledger accounts from cache
                 _ledger_keys = [
@@ -510,13 +510,24 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         # A list of search values that directly can be searched for in the model
         model_attrs = []
 
+        # Split ledger fields by `__` into a list of lists to later handle the ledger
+        # key being the attribute of another attribute
+        fields_split = [field.split("__") for field in ledger_lookup_fields]
+        # Assume the ledger key is the last element of each list, thus create a dict
+        # of ledger keys and attribute chain lists
+        ledger_lookup_fields_chained = {value[-1]: value for value in fields_split}
+
         for attribute in datatables_search_attributes:
             _attr_parts = attribute.split("__")
             # Handle the top-level attribute being a "foreign key" to ledger
-            if any([attr in ledger_lookup_fields for attr in _attr_parts]):
+            if any(
+                [attr in ledger_lookup_fields_chained.keys() for attr in _attr_parts]
+            ):
                 # The model attributes that are integer "foreign keys" to ledger
                 _fk_attrs = [
-                    attr for attr in _attr_parts if attr in ledger_lookup_fields
+                    attr
+                    for attr in _attr_parts
+                    if attr in ledger_lookup_fields_chained.keys()
                 ]
                 # Add ledger attribute fields to a dict, as searching for them is more
                 # complicated (segregated database)

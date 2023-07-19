@@ -204,7 +204,10 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
         # fields = self.get_fields(getter)
         # ordering = self.get_ordering(getter, fields)
         queryset = self.apply_request(
-            request, queryset, view, ledger_lookup_fields=["submitter"]
+            request, queryset, view, ledger_lookup_fields=[
+                "current_proposal__ind_applicant",
+                "current_proposal__org_applicant",
+            ]
         )
         setattr(view, "_datatables_total_count", total_count)
         return queryset
