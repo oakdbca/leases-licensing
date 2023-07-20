@@ -116,7 +116,9 @@ export function addOptionalLayers(map_component) {
                                                 features[0]
                                             );
                                         }
-                                        map_component.errorMessage(null);
+                                        map_component.errorMessageProperty(
+                                            null
+                                        );
                                     });
                             }
                         }
