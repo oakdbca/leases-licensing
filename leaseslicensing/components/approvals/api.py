@@ -335,58 +335,6 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ApprovalPaymentFilterViewSet(generics.ListAPIView):
-    """https://cop-internal.dbca.wa.gov.au/api/filtered_organisations?search=Org1"""
-
-    queryset = Approval.objects.none()
-    serializer_class = ApprovalPaymentSerializer
-    filter_backends = (filters.SearchFilter,)
-    # search_fields = ('applicant', 'applicant_id',)
-    search_fields = ("id",)
-
-    def get_queryset(self):
-        """
-        Return All approvals associated with user (proxy_applicant and org_applicant)
-        """
-        # return Approval.objects.filter(proxy_applicant=self.request.user)
-        user = self.request.user
-
-        # get all orgs associated with user
-        user_org_ids = OrganisationContact.objects.filter(email=user.email).values_list(
-            "organisation_id", flat=True
-        )
-
-        now = datetime.now().date()
-        approval_qs = Approval.objects.filter(
-            Q(current_proposal__proxy_applicant=user.id)
-            | Q(current_proposal__org_applicant_id__in=user_org_ids)
-            | Q(current_proposal__submitter=user.id)
-        )
-        approval_qs = approval_qs.exclude(expiry_date__lt=now)
-        approval_qs = approval_qs.exclude(
-            replaced_by__isnull=False
-        )  # get lastest licence, ignore the amended
-        return approval_qs
-
-    @list_route(
-        methods=[
-            "GET",
-        ],
-        detail=False,
-    )
-    def _list(self, request, *args, **kwargs):
-        data = []
-        for approval in self.get_queryset():
-            data.append(
-                dict(
-                    lodgement_number=approval.lodgement_number,
-                    current_proposal=approval.current_proposal_id,
-                )
-            )
-        return Response(data)
-        # return Response(self.get_queryset().values_list('lodgement_number','current_proposal_id'))
-
-
 class ApprovalViewSet(viewsets.ModelViewSet):
     # queryset = Approval.objects.all()
     queryset = Approval.objects.none()

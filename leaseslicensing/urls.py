@@ -128,11 +128,6 @@ api_patterns = [
         name="filtered_users",
     ),
     url(
-        r"^api/filtered_payments$",
-        approval_api.ApprovalPaymentFilterViewSet.as_view(),
-        name="filtered_payments",
-    ),
-    url(
         r"^api/proposal_type$",
         proposal_api.GetProposalType.as_view(),
         name="get-proposal-type",
