@@ -59,7 +59,6 @@ class LeasesLicensingConfig(AppConfig):
                     "replaced_by",
                     "current_proposal",
                     "renewal_document",
-                    "org_applicant",
                 ],
             )
             reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])

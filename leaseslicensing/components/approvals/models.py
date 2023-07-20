@@ -206,15 +206,6 @@ class Approval(LicensingModelVersioned):
     expiry_date = models.DateField()
     surrender_details = JSONField(blank=True, null=True)
     suspension_details = JSONField(blank=True, null=True)
-    submitter = models.IntegerField()  # EmailUserRo
-    org_applicant = models.ForeignKey(
-        Organisation,
-        on_delete=models.PROTECT,
-        blank=True,
-        null=True,
-        related_name="org_approvals",
-    )
-    proxy_applicant = models.IntegerField(null=True)  # EmailUserRO
     extracted_fields = JSONField(blank=True, null=True)
     cancellation_details = models.TextField(blank=True)
     extend_details = models.TextField(blank=True)
@@ -254,37 +245,48 @@ class Approval(LicensingModelVersioned):
 
     @property
     def bpay_allowed(self):
-        if self.org_applicant:
-            return self.org_applicant.bpay_allowed
+        if self.is_org_applicant:
+            return self.applicant.bpay_allowed
         return False
 
     @property
     def monthly_invoicing_allowed(self):
-        if self.org_applicant:
-            return self.org_applicant.monthly_invoicing_allowed
+        if self.is_org_applicant:
+            return self.applicant.monthly_invoicing_allowed
         return False
 
     @property
     def monthly_invoicing_period(self):
-        if self.org_applicant:
-            return self.org_applicant.monthly_invoicing_period
+        if self.is_org_applicant:
+            return self.applicant.monthly_invoicing_period
         return None
 
     @property
     def monthly_payment_due_period(self):
-        if self.org_applicant:
-            return self.org_applicant.monthly_payment_due_period
+        if self.is_org_applicant:
+            return self.applicant.monthly_payment_due_period
         return None
 
     @property
     def applicant(self):
-        if self.current_proposal.org_applicant:
+        from dateutil.relativedelta import relativedelta
+        current_proposal = Proposal.objects.all().last()
+        lodgement_number = current_proposal.lodgement_number
+        approval_dict = {
+                                     "issue_date": timezone.now(),
+                                     "expiry_date": timezone.now().date()
+                                     + relativedelta(years=1),
+                                     "start_date": timezone.now().date(),
+                                     "lodgement_number": lodgement_number,
+                                     "record_management_number": 12345000,
+                                }
+        Approval.objects.update_or_create(current_proposal=current_proposal, defaults=approval_dict)
+
+        if self.is_org_applicant:
             return self.current_proposal.org_applicant
-        # ind_applicant is missing from the approval model so using submitter instead
-        # may need to add ind_applicant in future so it matches proposal?
-        elif self.current_proposal.ind_applicant:
+        elif self.is_ind_applicant:
             email_user = retrieve_email_user(self.current_proposal.ind_applicant)
-        elif self.current_proposal.proxy_applicant:
+        elif self.is_proxy_applicant:
             email_user = retrieve_email_user(self.current_proposal.proxy_applicant)
         else:
             logger.error(
@@ -296,12 +298,24 @@ class Approval(LicensingModelVersioned):
     @property
     def holder(self):
         # TODO Is it correct to return the applicant as the approval/license holder?
-        if isinstance(self.applicant, Organisation):
+        if self.is_org_applicant:
             return self.applicant.ledger_organisation_name
-        elif isinstance(self.applicant, EmailUser):
+        elif self.is_ind_applicant:
             return f"{self.applicant.first_name} {self.applicant.last_name}"
         else:
             return "Applicant not yet assigned"
+
+    @property
+    def submitter(self):
+        if self.current_proposal:
+            return self.current_proposal.submitter
+        return None
+
+    @property
+    def proxy_applicant(self):
+        if self.current_proposal:
+            return self.current_proposal.proxy_applicant
+        return None
 
     @property
     def linked_applications(self):
@@ -315,9 +329,9 @@ class Approval(LicensingModelVersioned):
 
     @property
     def applicant_type(self):
-        if self.org_applicant:
+        if self.is_org_applicant:
             return "org_applicant"
-        elif self.proxy_applicant:
+        elif self.is_proxy_applicant:
             return "proxy_applicant"
         else:
             # return None
@@ -325,14 +339,40 @@ class Approval(LicensingModelVersioned):
 
     @property
     def is_org_applicant(self):
-        return True if self.org_applicant else False
+        return (
+            True
+            if self.current_proposal
+            and self.current_proposal.org_applicant
+            and isinstance(self.current_proposal.org_applicant, Organisation)
+            else False
+        )
+
+    @property
+    def is_ind_applicant(self):
+        return (
+            True
+            if self.current_proposal
+            and self.current_proposal.ind_applicant
+            and isinstance(
+                retrieve_email_user(self.current_proposal.ind_applicant), EmailUser
+            )
+            else False
+        )
+
+    @property
+    def is_proxy_applicant(self):
+        return (
+            True
+            if self.current_proposal and self.current_proposal.proxy_applicant
+            else False
+        )
 
     @property
     def applicant_id(self):
-        if self.org_applicant:
+        if self.is_org_applicant:
             # return self.org_applicant.organisation.id
-            return self.org_applicant.id
-        elif self.proxy_applicant:
+            return self.applicant.id
+        elif self.is_proxy_applicant:
             return self.proxy_applicant  # .id
         else:
             # return None

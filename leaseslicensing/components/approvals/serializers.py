@@ -64,7 +64,11 @@ class ApprovalPaymentSerializer(serializers.ModelSerializer):
         )
 
     def get_org_applicant(self, obj):
-        return obj.org_applicant.name if obj.org_applicant else None
+        return (
+            obj.current_proposal.org_applicant.name
+            if obj.current_proposal and obj.current_proposal.org_applicant
+            else None
+        )
 
     def get_bpay_allowed(self, obj):
         return obj.bpay_allowed
@@ -321,7 +325,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return approval_type_obj.get("name", None)
 
     def get_approval_type_obj(self, obj):
-        approval_type_id = obj.current_proposal.proposed_issuance_approval.get("approval_type", None)
+        approval_type_id = obj.current_proposal.proposed_issuance_approval.get(
+            "approval_type", None
+        )
         if approval_type_id is None:
             logger.warn("ApprovalType not found")
             return None
@@ -411,6 +417,7 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
         # Todo: Change to secure file / document url
         url = obj._file.url
         return url
+
 
 class ApprovalTypeSerializer(serializers.ModelSerializer):
     class Meta:

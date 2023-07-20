@@ -2545,9 +2545,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
-                                "submitter": self.submitter,
-                                "org_applicant": self.org_applicant,
-                                "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
                                 "record_management_number": record_management_number,
                             },
@@ -2571,9 +2568,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
-                                "submitter": self.submitter,
-                                "org_applicant": self.org_applicant,
-                                "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
                                 "record_management_number": record_management_number,
                             },
@@ -2632,9 +2626,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
-                                "submitter": self.submitter,
-                                "org_applicant": self.org_applicant,
-                                "proxy_applicant": self.proxy_applicant,
+                                # "submitter": self.submitter,
+                                # "org_applicant": self.org_applicant,
+                                # "proxy_applicant": self.proxy_applicant,
                                 "record_management_number": record_management_number,
                             },
                         )
@@ -3096,9 +3090,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 "issue_date": timezone.now(),
                 "expiry_date": timezone.now().date() + relativedelta(years=1),
                 "start_date": timezone.now().date(),
-                "submitter": self.submitter,
-                "org_applicant": self.org_applicant,
-                "proxy_applicant": self.proxy_applicant,
             },
         )
 
