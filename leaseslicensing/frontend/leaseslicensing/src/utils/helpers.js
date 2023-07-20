@@ -469,4 +469,13 @@ module.exports = {
         }
         return financialYearsIncluded
     },
+    yearHasPassed: function (year) {
+        return new Date().year() > year
+    },
+    financialYearHasPassed: function (financialYear) {
+        const endOfFinancialYear = new Date(
+            `${financialYear.split('-')[1]}-06-30`
+        )
+        return new Date() > endOfFinancialYear
+    },
 }
