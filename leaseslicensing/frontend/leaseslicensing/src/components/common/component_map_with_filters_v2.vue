@@ -98,7 +98,10 @@
             </div>
         </div>
 
-        <VueAlert v-model:show="errorMessage" type="danger" style="color: red"
+        <VueAlert
+            v-model:show="hasErrorMessage"
+            type="danger"
+            style="color: red"
             ><strong> {{ errorMessage }} </strong>
         </VueAlert>
 
@@ -836,6 +839,10 @@ export default {
                 return 0;
             }
             return vm.modelQuerySource.getFeatures().length;
+        },
+        hasErrorMessage: function () {
+            let vm = this;
+            return vm.errorMessage !== null;
         },
     },
     watch: {
