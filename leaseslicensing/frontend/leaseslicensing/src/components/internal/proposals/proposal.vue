@@ -1756,7 +1756,7 @@ export default {
                     vm.$refs.application_form &&
                     vm.$refs.application_form.$refs.component_map
                 ) {
-                    payload['proposal_geometry'] =
+                    payload.proposalgeometry =
                         vm.$refs.application_form.$refs.component_map.getJSONFeatures();
                 }
 

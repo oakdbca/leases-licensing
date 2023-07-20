@@ -480,7 +480,7 @@ export default {
                     this.proposal.proponent_reference_number;
                 payload.proposal.groups = this.proposal.groups;
             }
-            payload.proposal_geometry =
+            payload.proposalgeometry =
                 this.$refs.application_form.$refs.component_map.getJSONFeatures();
             let deleted_features =
                 this.$refs.application_form.$refs.component_map.deletedFeaturesProperty();
