@@ -852,7 +852,7 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return OrganisationContact.objects.all()
         elif is_customer(self.request):
-            user_orgs = [org.id for org in user.leaseslicensing_organisations.all()]
+            user_orgs = [org.id for org in user.leaseslicensing_organisations.all()] # FIXME: EmailUserRO doesn't have this attribute, but not fixing it now
             return OrganisationContact.objects.filter(Q(organisation_id__in=user_orgs))
         return OrganisationContact.objects.none()
 
