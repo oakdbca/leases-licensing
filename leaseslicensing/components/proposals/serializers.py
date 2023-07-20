@@ -63,6 +63,7 @@ from leaseslicensing.components.tenure.models import (
 )
 from leaseslicensing.components.tenure.serializers import GroupSerializer
 from leaseslicensing.components.users.serializers import (
+    ProposalApplicantSerializer,
     UserAddressSerializer,
     UserSerializer,
 )
@@ -428,6 +429,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     regions = serializers.SerializerMethodField()
     districts = serializers.SerializerMethodField()
     lgas = serializers.SerializerMethodField()
+    proposal_applicant = ProposalApplicantSerializer()
 
     class Meta:
         model = Proposal
@@ -523,6 +525,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "proponent_reference_number",
             "details_url",
             "competitive_process",
+            "proposal_applicant"
         )
         read_only_fields = ("supporting_documents",)
 

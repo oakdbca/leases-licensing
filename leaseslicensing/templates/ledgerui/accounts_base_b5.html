@@ -1,10 +1,35 @@
 {% extends "ledgerui/accounts_base_b5.html" %}
-
+{% load static %}
 {% load users %}
 
 {% block myaccount_nav %}
+<button class="nav-link  managed-account-nav" id="nav-organisations-tab" data-bs-toggle="tab" data-bs-target="#nav-organisations" type="button" role="tab" aria-controls="nav-organisations" aria-selected="false">Organisations</button>
 {% endblock %}
 
+{% block additional_content %}
+
+<div id="nav-organisations-tab-page" style="display:none;">
+    <div id="app">
+    </div>
+</div>
+
+<link rel="stylesheet" href="{% static 'leaseslicensing_vue/css/app.css' %}?v={{build_tag}}">
+<link rel="stylesheet" href="{% static 'leaseslicensing_vue/css/chunk-vendors.css' %}?v={{build_tag}}">
+<script type="text/javascript" src="{% static 'leaseslicensing_vue/js/chunk-vendors.js' %}?v={{build_tag}}"></script>
+
+<script language="javascript">
+                    var env = {
+                        "kmi_server_url": "{{ KMI_SERVER_URL }}"
+                    }
+</script>
+
+{% if app_build_url %}
+    <script type="text/javascript" src="{{ app_build_url }}"></script>
+{% else %}
+    <script type="text/javascript" src="{% static 'leaseslicensing_vue/js/app.js' %}?v={{build_tag}}"></script>
+{% endif %} 
+        
+{% endblock %}    
 
 {% block menu_items_left_brand %}
     {% is_internal as is_internal_login %}

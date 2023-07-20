@@ -1,228 +1,16 @@
 <template>
-    <div v-if="email_user" class="container">
-        <div class="card">
-            <div class="card-header">
-                <ul class="nav nav-tabs card-header-tabs">
-                    <li class="nav-item">
-                        <a class="nav-link active" aria-current="true" data-bs-toggle="tab" data-bs-target="#account"
-                            href="#">Account</a>
-                    </li>
-                    <li v-if="!email_user.is_internal" class="nav-item">
-                        <a id="organisations-tab-link" class="nav-link" data-bs-toggle="tab" data-bs-target="#organisations"
-                            href="#">Organisations</a>
-                    </li>
-                </ul>
-            </div>
-            <div class="card-body tab-content">
-                <div class="tab-pane fade show active" id="account" role="tabpanel" aria-labelledby="home-tab">
-                    <FormSection index="personal-details" label="Personal Details">
-                        <form @submit.prevent="" id="personal-details" class="needs-validation" novalidate>
-                            <div class="row mb-1">
-                                <div class="col">
-                                    <BootstrapAlert> <a href="/sso/setting">Update your account name or MFA</a>
-                                        (Multi-Factor Authentication)
-                                        <div class="fst-italic mt-1">
-                                            <strong>Note: </strong> Changes will not update
-                                            until your next login.
-                                        </div>
-                                    </BootstrapAlert>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <label for="first-name" class="col-sm-2 col-form-label">First Name</label>
-                                <div class="col-sm-4">
-                                    <input type="text" class="form-control" id="first-name" :value="email_user.first_name"
-                                        readonly>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <label for="last-name" class="col-sm-2 col-form-label">Last Name</label>
-                                <div class="col-sm-4">
-                                    <input type="text" class="form-control" id="last-name" :value="email_user.last_name"
-                                        readonly>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <label for="dob" class="col-sm-2 col-form-label">Date of Birth</label>
-                                <div class="col-sm-4">
-                                    <input type="date" class="form-control" id="dob" v-model="email_user.dob" required>
-                                </div>
-                            </div>
-                            <BootstrapLoadingButton text="Update" :isLoading="updatingDetails"
-                                @click="validateForm('personal-details')" class="btn licensing-btn-primary float-end" />
-                        </form>
-                    </FormSection>
-
-                    <FormSection v-if="email_user.residential_address" index="address-details" label="Address Details">
-                        <form @submit.prevent="" id="address-details" class="mb-2 needs-validation" novalidate>
-                            <fieldset class="mb-3">
-                                <legend>Residential Address</legend>
-                                <div class="address-box">
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="residentialAddressLine1" class="form-label">Address</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control" id="residentialAddressLine1"
-                                                name="residentialAddressLine1" v-model="email_user.residential_address
-                                                    .line1
-                                                " required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="residentialLocality" class="form-label">Town/Suburb</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control" id="residentialLocality"
-                                                name="residentialLocality" v-model="email_user.residential_address
-                                                    .locality
-                                                " required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="residentialState" class="form-label">State</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control" id="residentialState"
-                                                name="residentialState" v-model="email_user.residential_address
-                                                    .state
-                                                " required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="residentialPostcode" class="form-label">Postcode</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control" id="residentialPostcode"
-                                                name="residentialPostcode" v-model="email_user.residential_address
-                                                    .postcode
-                                                " maxlength="10" required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-4">
-                                        <div class="col-md-2">
-                                            <label for="residentialPostcode" class="form-label">Country</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <select class="form-select" id="country" name="Country" v-model="email_user.residential_address
-                                                .country
-                                            " required>
-                                                <option v-for="c in countries" :value="c.code">
-                                                    {{ c.name }}
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            &nbsp;
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="form-check form-switch">
-                                                <label for="residentialPostcode" class="form-label">
-                                                    Postal Address Same as Residential Address</label>
-                                                <input @change="togglePostalAddressFieldsDisabled" class="form-check-input"
-                                                    type="checkbox" v-model="email_user.postal_same_as_residential"
-                                                    id="togglePostalAddressFieldsDisabled">
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </fieldset>
-                            <fieldset class="mb-3">
-                                <legend>Postal Address</legend>
-                                <div class="address-box">
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="postalAddressLine1" class="form-label">Address</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control postal-address" id="postalAddressLine1"
-                                                name="postalAddressLine1" v-model="email_user.postal_address
-                                                    .line1
-                                                " required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="postalLocality" class="form-label">Town/Suburb</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control postal-address" id="postalLocality"
-                                                name="postalLocality" v-model="email_user.postal_address
-                                                    .locality
-                                                " required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="postalState" class="form-label">State</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control postal-address" id="postalState"
-                                                name="postalState" v-model="email_user.postal_address
-                                                    .state
-                                                " required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="postalPostcode" class="form-label">Postcode</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control postal-address" id="postalPostcode"
-                                                name="postalPostcode" v-model="email_user.postal_address
-                                                    .postcode
-                                                " maxlength="10" required />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="postalPostcode" class="form-label">Country</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <select class="form-select postal-address" id="country" name="Country" v-model="email_user.postal_address
-                                                .country
-                                            " required>
-                                                <option v-for="c in countries" :value="c.code">
-                                                    {{ c.name }}
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </fieldset>
-                            <BootstrapLoadingButton text="Update" :isLoading="updatingDetails"
-                                @click="validateForm('address-details')" class="btn licensing-btn-primary float-end" />
-                        </form>
-                    </FormSection>
-                    <FormSection index="contact-details" label="Contact Details">
-                        <form @submit.prevent="" id="contact-details" class="needs-validation" novalidate>
-                            <div class="row mb-3">
-                                <label for="phone" class="col-sm-2 col-form-label">Phone (work)</label>
-                                <div class="col-sm-4">
-                                    <input type="text" class="form-control" id="phone" v-model="email_user.phone_number"
-                                        required>
-                                </div>
-                            </div>
-                            <div class="row mb-3">
-                                <label for="mobile" class="col-sm-2 col-form-label">Mobile</label>
-                                <div class="col-sm-4">
-                                    <input type="text" class="form-control" id="mobile" v-model="email_user.mobile_number"
-                                        required>
-                                </div>
-                            </div>
-                            <BootstrapLoadingButton text="Update" :isLoading="updatingDetails"
-                                @click="validateForm('contact-details')" class="btn licensing-btn-primary float-end" />
-                        </form>
-                    </FormSection>
-
+    <div v-if="email_user" class="card">
+        <div class="card-header fw-bold h4" style="padding:30px;">
+            <div class="row">
+                <div class="col-6">
+                    Organisations
                 </div>
-                <div v-if="!email_user.is_internal" class="tab-pane fade" id="organisations" role="tabpanel"
-                    aria-labelledby="organisations-tab">
+                <div class="col-6 text-end">
+                    <i class="bi fw-bold chevron-toggle down-chevron-open" data-bs-target="#organisations-tab-body" onclick=""></i>
+                </div>
+            </div>
+        </div>
+        <div v-if="!email_user.is_internal" class="card-body" id="organisations-tab-body">
                     <FormSection index="organisation-details" :label="linkOrganisationTitle">
                         <OrganisationSearch v-if="!selectedOrganisation && !newOrganisation"
                             @selected="organisationSelected" @new-organisation="prepareNewOrganisation"
@@ -405,8 +193,6 @@
                         </table>
                     </FormSection>
                 </div>
-            </div>
-        </div>
     </div>
     <BootstrapSpinner class="text-primary" v-else />
 </template>
@@ -415,7 +201,7 @@
 import OrganisationSearch from '@/components/internal/search/OrganisationSearch.vue'
 import Swal from 'sweetalert2';
 import BootstrapLoadingButton from '../../utils/vue/BootstrapLoadingButton.vue';
-import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 
 export default {
     name: "Account",
@@ -489,7 +275,7 @@ export default {
                 vm.email_user.is_internal = data[2].is_internal;
                 vm.organisation_requests = data[3];
                 // Convert date to format that the date picker can use
-                vm.email_user.dob = vm.email_user.dob.split("/").reverse().join("-");
+                //vm.email_user.dob = vm.email_user.dob.split("/").reverse().join("-");
                 this.$nextTick(() => {
                     if (vm.email_user.postal_same_as_residential) {
                         vm.togglePostalAddressFieldsDisabled();
@@ -504,7 +290,7 @@ export default {
                         })
                     }
                 });
-                console.log(vm.email_user.dob)
+                //console.log(vm.email_user.dob)
             });
         },
         fetchOrganisationRequests: function () {

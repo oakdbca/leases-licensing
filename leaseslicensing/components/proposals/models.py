@@ -6,6 +6,7 @@ import subprocess
 
 import geopandas as gpd
 import pandas as pd
+from django_countries.fields import CountryField
 from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
@@ -2791,6 +2792,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                     request,
                                 )
 
+    @property
+    def proposal_applicant(self):
+        proposal_applicant = ProposalApplicant.objects.get(proposal=self)
+        return proposal_applicant
+
     def renew_approval(self, request):
         with transaction.atomic():
             previous_proposal = self
@@ -3120,6 +3126,79 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def categories_list(self):
         return self.categories.values_list("category__name", flat=True)
+    
+class ProposalApplicant(RevisionedMixin):
+    proposal = models.ForeignKey(Proposal, null=True, blank=True, on_delete=models.SET_NULL)
+
+    # Name, etc
+    first_name = models.CharField(max_length=128, blank=True, verbose_name='Given name(s)')
+    last_name = models.CharField(max_length=128, blank=True)
+    dob = models.DateField(auto_now=False, auto_now_add=False, null=True, blank=True, verbose_name="date of birth", help_text='')
+
+    # Residential address
+    residential_line1 = models.CharField('Line 1', max_length=255, blank=True)
+    residential_line2 = models.CharField('Line 2', max_length=255, blank=True)
+    residential_line3 = models.CharField('Line 3', max_length=255, blank=True)
+    residential_locality = models.CharField('Suburb / Town', max_length=255, blank=True)
+    residential_state = models.CharField(max_length=255, default='WA', blank=True)
+    residential_country = CountryField(default='AU', blank=True)
+    residential_postcode = models.CharField(max_length=10, blank=True)
+
+    # Postal address
+    postal_same_as_residential = models.NullBooleanField(default=False)
+    postal_line1 = models.CharField('Line 1', max_length=255, blank=True)
+    postal_line2 = models.CharField('Line 2', max_length=255, blank=True)
+    postal_line3 = models.CharField('Line 3', max_length=255, blank=True)
+    postal_locality = models.CharField('Suburb / Town', max_length=255, blank=True)
+    postal_state = models.CharField(max_length=255, default='WA', blank=True)
+    postal_country = CountryField(default='AU', blank=True)
+    postal_postcode = models.CharField(max_length=10, blank=True)
+
+    # Contact
+    email = models.EmailField(null=True, blank=True,)
+    phone_number = models.CharField(max_length=50, null=True, blank=True, verbose_name="phone number", help_text='')
+    mobile_number = models.CharField(max_length=50, null=True, blank=True, verbose_name="mobile number", help_text='')
+
+    class Meta:
+        app_label = 'leaseslicensing'
+
+    def copy_self_to_proposal(self, target_proposal):
+        ProposalApplicant.objects.create(
+            proposal=target_proposal,
+
+            first_name = self.first_name,
+            last_name = self.last_name,
+            dob = self.dob,
+
+            residential_line1 = self.residential_line1,
+            residential_line2 = self.residential_line2,
+            residential_line3 = self.residential_line3,
+            residential_locality = self.residential_locality,
+            residential_state = self.residential_state,
+            residential_country = self.residential_country,
+            residential_postcode = self.residential_postcode,
+
+            postal_same_as_residential = self.postal_same_as_residential,
+            postal_line1 = self.postal_line1,
+            postal_line2 = self.postal_line2,
+            postal_line3 = self.postal_line3,
+            postal_locality = self.postal_locality,
+            postal_state = self.postal_state,
+            postal_country = self.postal_country,
+            postal_postcode = self.postal_postcode,
+
+            email = self.email,
+            phone_number = self.phone_number,
+            mobile_number = self.mobile_number,
+        )
+
+
+def update_sticker_doc_filename(instance, filename):
+    return '{}/stickers/batch/{}'.format(settings.MEDIA_APP_DIR, filename)
+
+
+def update_sticker_response_doc_filename(instance, filename):
+    return '{}/stickers/response/{}'.format(settings.MEDIA_APP_DIR, filename)
 
 
 class ProposalIdentifier(models.Model):

@@ -105,6 +105,7 @@ api_patterns = [
         name="get-request-user-id",
     ),
     url(r"^api/profile$", users_api.GetProfile.as_view(), name="get-profile"),
+    url(r'^api/profile/(?P<proposal_pk>\d+)$', users_api.GetProposalApplicant.as_view(), name='get-proposal-applicant'),
     url(r"^api/countries$", users_api.GetCountries.as_view(), name="get-countries"),
     url(
         r"^api/charge_methods$",

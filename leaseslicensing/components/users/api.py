@@ -29,7 +29,7 @@ from leaseslicensing.components.main.serializers import EmailUserSerializer
 from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestDTSerializer,
 )
-from leaseslicensing.components.proposals.models import Referral
+from leaseslicensing.components.proposals.models import Referral, Proposal, ProposalApplicant
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.components.users.serializers import (
     ContactSerializer,
@@ -40,6 +40,7 @@ from leaseslicensing.components.users.serializers import (
     UserFilterSerializer,
     UserSerializer,
     UserSystemSettingsSerializer,
+    ProposalApplicantSerializer
 )
 from leaseslicensing.helpers import is_internal
 
@@ -113,6 +114,15 @@ class GetLedgerAccount(views.APIView):
         response = get_account_details(request, str(request.user.id))
         return response
 
+class GetProposalApplicant(views.APIView):
+    renderer_classes = [JSONRenderer,]
+    
+    def get(self, request, proposal_pk, format=None):
+        proposal = Proposal.objects.get(id=proposal_pk)
+        proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
+
+        serializer = ProposalApplicantSerializer(proposal_applicant, context={'request' : request})
+        return Response(serializer.data)
 
 class GetProfile(views.APIView):
     renderer_classes = [
