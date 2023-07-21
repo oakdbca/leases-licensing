@@ -439,18 +439,19 @@ export default {
             return {
                 data: 'application_type',
                 orderable: true,
-                searchable: true,
+                searchable: false, // FIXME: make searchable
                 visible: true,
                 render: function (row, type, full) {
                     return full.application_type;
                 },
+                name: 'current_proposal__application_type__name_display', // FIXME: replace with application type model field
             };
         },
         columnSite: function () {
             return {
                 data: 'site_name',
                 orderable: true,
-                searchable: true,
+                searchable: false, // FIXME: make searchable
                 visible: true,
                 render: function (row, type, full) {
                     // TODO Site
@@ -462,7 +463,7 @@ export default {
             return {
                 data: 'groups_names_list',
                 orderable: true,
-                searchable: true,
+                searchable: false, // FIXME: make it searchable
                 visible: true,
                 render: function (row, type, full) {
                     let html = '';
@@ -483,7 +484,7 @@ export default {
             return {
                 data: 'categories_list',
                 orderable: true,
-                searchable: true,
+                searchable: false, // FIXME: make it searchable
                 visible: true,
                 render: function (row, type, full) {
                     let html = '';
@@ -505,6 +506,7 @@ export default {
                 render: function (row, type, full) {
                     return full.holder;
                 },
+                name: 'current_proposal__ind_applicant__first_name, current_proposal__ind_applicant__last_name',
             };
         },
         columnLinkedApplications: function () {
