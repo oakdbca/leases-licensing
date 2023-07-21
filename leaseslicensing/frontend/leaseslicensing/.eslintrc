@@ -25,6 +25,7 @@
         "moment": true,
         "swal": true,
         "bootstrap": true,
-        "env": true
+        "env": true,
+        "_": true // Lodash
     }
 }

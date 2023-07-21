@@ -1,51 +1,78 @@
 <template id="proposal_requirements">
     <div>
-        <FormSection :formCollapse="false" label="Conditions" index="conditions">
+        <FormSection
+            :form-collapse="false"
+            label="Conditions"
+            index="conditions"
+        >
             <form class="form-horizontal" action="index.html" method="post">
                 <div class="row">
                     <div class="col-sm-12">
-                        <button v-if="hasAssessorMode || isReferrerCanEdit" @click.prevent="addRequirement()"
-                            style="margin-bottom:10px;" class="btn btn-primary float-end">Add Condition</button>
+                        <button
+                            v-if="hasAssessorMode || isReferrerCanEdit"
+                            style="margin-bottom: 10px"
+                            class="btn btn-primary float-end"
+                            @click.prevent="addRequirement()"
+                        >
+                            Add Condition
+                        </button>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-sm-12">
-                        <datatable ref="requirements_datatable" :id="datatableId" :dtOptions="requirement_options"
-                            :dtHeaders="requirement_headers" />
+                        <datatable
+                            :id="datatableId"
+                            ref="requirements_datatable"
+                            :dt-options="requirement_options"
+                            :dt-headers="requirement_headers"
+                        />
                     </div>
                 </div>
             </form>
 
-            <RequirementDetail v-if="proposal && requirements" ref="requirement_detail" :proposal_id="proposal.id"
-                :requirements="requirements" :selectedRequirement="selectedRequirement"
-                @updateRequirements="updatedRequirements" :key="uuid" />
+            <RequirementDetail
+                v-if="proposal && requirements"
+                ref="requirement_detail"
+                :key="uuid"
+                :proposal_id="proposal.id"
+                :requirements="requirements"
+                :selected-requirement="selectedRequirement"
+                @updateRequirements="updatedRequirements"
+            />
         </FormSection>
     </div>
 </template>
 <script>
-import {
-    api_endpoints,
-    constants,
-    helpers
-}
-    from '@/utils/hooks'
-import datatable from '@vue-utils/datatable.vue'
-import RequirementDetail from '@/components/internal/proposals/proposal_add_requirement.vue'
-import FormSection from "@/components/forms/section_toggle.vue"
+import { api_endpoints, constants, helpers } from '@/utils/hooks';
+import datatable from '@vue-utils/datatable.vue';
+import RequirementDetail from '@/components/internal/proposals/proposal_add_requirement.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
 
 export default {
     name: 'InternalProposalRequirements',
+    components: {
+        datatable,
+        RequirementDetail,
+        FormSection,
+    },
     props: {
-        proposal: Object
+        proposal: { type: Object, default: null },
     },
     data: function () {
         let vm = this;
         return {
             uuid: 0,
-            panelBody: "proposal-requirements-" + vm._uid,
+            panelBody: 'proposal-requirements-' + vm._uid,
             selectedRequirement: {},
             requirements: null,
-            requirement_headers: ["Requirement", "Due Date", "Repeats", "Source", "Action", "Order"],
+            requirement_headers: [
+                'Requirement',
+                'Due Date',
+                'Repeats',
+                'Source',
+                'Action',
+                'Order',
+            ],
             requirement_options: {
                 autoWidth: false,
                 language: {
@@ -53,35 +80,42 @@ export default {
                 },
                 responsive: true,
                 ajax: {
-                    "url": helpers.add_endpoint_json(api_endpoints.proposal, vm.proposal.id + '/requirements'),
-                    "dataSrc": ''
+                    url: helpers.add_endpoint_json(
+                        api_endpoints.proposal,
+                        vm.proposal.id + '/requirements'
+                    ),
+                    dataSrc: '',
                 },
                 order: [],
-                dom: "<'d-flex align-items-center'<'me-auto'l>fB>" +
+                dom:
+                    "<'d-flex align-items-center'<'me-auto'l>fB>" +
                     "<'row'<'col-sm-12'tr>>" +
                     "<'d-flex align-items-center'<'me-auto'i>p>",
-                buttons: ['excel', 'csv',],
+                buttons: ['excel', 'csv'],
                 columns: [
                     {
-                        data: "requirement",
+                        data: 'requirement',
+                        // eslint-disable-next-line no-unused-vars
                         mRender: function (data, type, full) {
                             var ellipsis = '...',
                                 truncated = _.truncate(data, {
                                     length: 25,
                                     omission: ellipsis,
-                                    separator: ' '
+                                    separator: ' ',
                                 }),
                                 result = '<span>' + truncated + '</span>',
-                                popTemplate = _.template('<a tabindex="0" ' +
-                                    'role="button" ' +
-                                    'data-bs-toggle="popover" ' +
-                                    'data-bs-trigger="focus" ' +
-                                    'data-bs-placement="top"' +
-                                    'data-bs-content="<%= text %>" ' +
-                                    '>more</button>');
+                                popTemplate = _.template(
+                                    '<a tabindex="0" ' +
+                                        'role="button" ' +
+                                        'data-bs-toggle="popover" ' +
+                                        'data-bs-trigger="focus" ' +
+                                        'data-bs-placement="top"' +
+                                        'data-bs-content="<%= text %>" ' +
+                                        '>more</button>'
+                                );
                             if (_.endsWith(truncated, ellipsis)) {
                                 result += popTemplate({
-                                    text: data
+                                    text: data,
                                 });
                             }
 
@@ -89,16 +123,18 @@ export default {
                         },
                     },
                     {
-                        data: "due_date",
+                        data: 'due_date',
+                        // eslint-disable-next-line no-unused-vars
                         mRender: function (data, type, full) {
-                            return data != '' && data != null ? moment(data).format('DD/MM/YYYY') : '';
+                            return data != '' && data != null
+                                ? moment(data).format('DD/MM/YYYY')
+                                : '';
                         },
-                        orderable: false
+                        orderable: false,
                     },
                     {
-                        data: "recurrence",
+                        data: 'recurrence',
                         mRender: function (data, type, full) {
-
                             if (full.recurrence) {
                                 let recurrence_interval = '';
                                 switch (full.recurrence_pattern) {
@@ -120,28 +156,34 @@ export default {
                             }
                             return 'N/A';
                         },
-                        orderable: false
+                        orderable: false,
                     },
                     {
-                        data: "source",
+                        data: 'source',
                         mRender: function (data, type, full) {
                             if (full.source) {
                                 return full.source.fullname;
                             } else {
-                                return "";
+                                return '';
                             }
                         },
-                        orderable: false
+                        orderable: false,
                     },
                     {
-                        data: "id",
+                        data: 'id',
                         mRender: function (data, type, full) {
                             let links = '';
                             if (vm.hasAssessorMode || vm.isReferrer) {
                                 // Whether the current user can edit/delete a referral
-                                let show_action_btns = vm.hasAssessorMode || (vm.isReferrerCanEdit && full.can_referral_edit);
+                                let show_action_btns =
+                                    vm.hasAssessorMode ||
+                                    (vm.isReferrerCanEdit &&
+                                        full.can_referral_edit);
                                 // Whether a referral has been completed, but can still be viewed
-                                let referral_completed = vm.isReferrer && !vm.isReferrerCanEdit && full.can_referral_edit;
+                                let referral_completed =
+                                    vm.isReferrer &&
+                                    !vm.isReferrerCanEdit &&
+                                    full.can_referral_edit;
                                 // Assessors can edit and/or delete all proposed requirements
                                 // Referral parties can only edit or delete their own requirements
                                 if (show_action_btns) {
@@ -149,17 +191,16 @@ export default {
                                         links += `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
                                     }
                                     links += `<a href='#' class="deleteRequirement" data-id="${full.id}">Delete</a><br/>`;
-                                }
-                                else if (referral_completed) {
-                                    links += 'Referral completed<br/>'
+                                } else if (referral_completed) {
+                                    links += 'Referral completed<br/>';
                                 }
                             }
                             return links;
                         },
-                        orderable: false
+                        orderable: false,
                     },
                     {
-                        data: "id",
+                        data: 'id',
                         mRender: function (data, type, full) {
                             let links = '';
                             // TODO check permission to change the order
@@ -169,27 +210,16 @@ export default {
                             }
                             return links;
                         },
-                        orderable: false
-                    }
+                        orderable: false,
+                    },
                 ],
                 processing: true,
                 initComplete: function () {
-                    helpers.enablePopovers()
+                    helpers.enablePopovers();
                     vm.addTableListeners();
                 },
-            }
-        }
-    },
-    watch: {
-        hasAssessorMode() {
-            // reload the table
-            this.updatedRequirements();
-        }
-    },
-    components: {
-        datatable,
-        RequirementDetail,
-        FormSection,
+            },
+        };
     },
     computed: {
         datatableId: function () {
@@ -203,7 +233,19 @@ export default {
         },
         isReferrerCanEdit() {
             return this.proposal.assessor_mode.referee_can_edit;
-        }
+        },
+    },
+    watch: {
+        hasAssessorMode() {
+            // reload the table
+            this.updatedRequirements();
+        },
+    },
+    mounted: async function () {
+        await this.fetchRequirements();
+        this.$nextTick(() => {
+            this.eventListeners();
+        });
     },
     methods: {
         addRequirement() {
@@ -213,46 +255,58 @@ export default {
             });
         },
         removeRequirement: async function (_id) {
-            console.log(_id)
+            console.log(_id);
             swal.fire({
-                title: "Remove Requirement",
-                text: "Are you sure you want to remove this requirement?",
-                icon: "warning",
+                title: 'Remove Requirement',
+                text: 'Are you sure you want to remove this requirement?',
+                icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Yes',
                 reverseButtons: true,
                 buttonsStyling: false,
                 customClass: {
-                    confirmButton: "btn btn-primary",
-                    cancelButton: "btn btn-secondary me-2"
-                }
-            }).then(async result => {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary me-2',
+                },
+            }).then(async (result) => {
                 if (result.isConfirmed) {
-                    const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements, _id + '/discard'));
-                    console.log(response)
+                    const response = await fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.proposal_requirements,
+                            _id + '/discard'
+                        )
+                    );
+                    console.log(response);
                     if (response.ok) {
-                        this.selectedRequirement = {} // Unselect, so it can be re-added without error
+                        this.selectedRequirement = {}; // Unselect, so it can be re-added without error
                         this.$refs.requirements_datatable.vmDataTable.ajax.reload();
                     } else {
-                        console.log("error")
+                        console.log('error');
                     }
                 }
-            })
+            });
         },
         fetchRequirements: async function () {
             const url = api_endpoints.proposal_standard_requirements;
             const response = await fetch(url, {
-                body: JSON.stringify({ 'application_type_id': this.proposal.application_type.id }),
+                body: JSON.stringify({
+                    application_type_id: this.proposal.application_type.id,
+                }),
                 method: 'POST',
             });
             if (response.ok) {
                 this.requirements = await response.json();
             } else {
-                console.log("error");
+                console.log('error');
             }
         },
         editRequirement: async function (_id) {
-            const response = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements, _id));
+            const response = await fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.proposal_requirements,
+                    _id
+                )
+            );
             if (response.ok) {
                 const resData = await response.json();
                 this.selectedRequirement = Object.assign({}, resData);
@@ -260,7 +314,7 @@ export default {
                     this.addRequirement();
                 });
             } else {
-                console.log("error");
+                console.log('error');
             }
         },
         updatedRequirements() {
@@ -272,16 +326,24 @@ export default {
                 // Prevent uncaught error when clicking show/hide too fast (why would anyone even do this?)
                 return;
             }
-            vm.$refs.requirements_datatable.vmDataTable.on('click', '.deleteRequirement', function (e) {
-                e.preventDefault();
-                var id = $(this).attr('data-id');
-                vm.removeRequirement(id);
-            });
-            vm.$refs.requirements_datatable.vmDataTable.on('click', '.editRequirement', function (e) {
-                e.preventDefault();
-                var id = $(this).attr('data-id');
-                vm.editRequirement(id);
-            });
+            vm.$refs.requirements_datatable.vmDataTable.on(
+                'click',
+                '.deleteRequirement',
+                function (e) {
+                    var id = $(this).attr('data-id');
+                    e.preventDefault();
+                    vm.removeRequirement(id);
+                }
+            );
+            vm.$refs.requirements_datatable.vmDataTable.on(
+                'click',
+                '.editRequirement',
+                function (e) {
+                    var id = $(this).attr('data-id');
+                    e.preventDefault();
+                    vm.editRequirement(id);
+                }
+            );
         },
         addTableListeners: function () {
             let vm = this;
@@ -289,29 +351,46 @@ export default {
                 // Prevent uncaught error when clicking show/hide too fast (why would anyone even do this?)
                 return;
             }
-            $(vm.$refs.requirements_datatable.table).find('tr:last .dtMoveDown').remove();
-            $(vm.$refs.requirements_datatable.table).children('tbody').find('tr:first .dtMoveUp').remove();
+            $(vm.$refs.requirements_datatable.table)
+                .find('tr:last .dtMoveDown')
+                .remove();
+            $(vm.$refs.requirements_datatable.table)
+                .children('tbody')
+                .find('tr:first .dtMoveUp')
+                .remove();
             // Remove previous binding before adding it
             $('.dtMoveUp').off('click');
             $('.dtMoveDown').off('click');
 
             // Bind clicks to functions
-            vm.$refs.requirements_datatable.vmDataTable.on('click', '.dtMoveUp', function (e) {
-                e.preventDefault();
-                var id = $(this).attr('data-id');
-                vm.moveUp(id);
-            });
-            vm.$refs.requirements_datatable.vmDataTable.on('click', '.dtMoveDown', function (e) {
-                e.preventDefault();
-                var id = $(this).attr('data-id');
-                vm.moveDown(id);
-            });
+            vm.$refs.requirements_datatable.vmDataTable.on(
+                'click',
+                '.dtMoveUp',
+                function (e) {
+                    var id = $(this).attr('data-id');
+                    e.preventDefault();
+                    vm.moveUp(id);
+                }
+            );
+            vm.$refs.requirements_datatable.vmDataTable.on(
+                'click',
+                '.dtMoveDown',
+                function (e) {
+                    var id = $(this).attr('data-id');
+                    e.preventDefault();
+                    vm.moveDown(id);
+                }
+            );
         },
         async sendDirection(req, direction) {
-            let vm = this;
             let movement = direction == 'down' ? 'move_down' : 'move_up';
             try {
-                const res = await fetch(helpers.add_endpoint_json(api_endpoints.proposal_requirements, req + '/' + movement))
+                await fetch(
+                    helpers.add_endpoint_json(
+                        api_endpoints.proposal_requirements,
+                        req + '/' + movement
+                    )
+                );
                 this.$parent.uuid++;
             } catch (error) {
                 console.log(error);
@@ -324,11 +403,5 @@ export default {
             this.sendDirection(id, 'down');
         },
     },
-    mounted: async function () {
-        await this.fetchRequirements();
-        this.$nextTick(() => {
-            this.eventListeners();
-        });
-    },
-}
+};
 </script>
