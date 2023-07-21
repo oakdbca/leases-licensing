@@ -11,6 +11,9 @@ from django.utils.html import strip_tags
 
 from ledger_api_client.ledger_models import Document
 
+# email
+from wagov_utils.components.utils.email import TemplateEmailBase as WAGovUtilsTemplateEmailBase
+
 logger = logging.getLogger("log")
 
 
@@ -25,8 +28,21 @@ def _render(template, context):
 # def host_reverse(name, args=None, kwargs=None):
 #   return "{}{}".format(settings.DEFAULT_HOST, reverse(name, args=args, kwargs=kwargs))
 
+class TemplateEmailBase(WAGovUtilsTemplateEmailBase):
+    subject = ''
+    html_template="leaseslicensing/emails/base_email.html",
+    txt_template="leaseslicensing/emails/base_email.txt",
 
-class TemplateEmailBase(object):
+    def send_to_user(self, users, context=None):
+        filtered_emails = set(u.email for u in users if hasattr(u, "email"))
+        # Loop through users
+        for email in filtered_emails:
+            print (email)
+            # Send the email!
+            self.send(email, context=context)
+
+
+class OLDTemplateEmailBase(object):
     def __init__(
         self,
         subject="",
