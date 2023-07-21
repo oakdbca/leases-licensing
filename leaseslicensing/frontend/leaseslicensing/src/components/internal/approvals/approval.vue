@@ -265,7 +265,7 @@
                             index="related_items"
                         >
                             <TableRelatedItems
-                                :ajax_url="related_items_ajax_url"
+                                :ajax-url="related_items_ajax_url"
                             />
                         </FormSection>
                     </div>
