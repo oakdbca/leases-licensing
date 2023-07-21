@@ -84,7 +84,7 @@ export default {
                 ordering: true,
                 order: [[0, 'desc']],
                 ajax: {
-                    url: vm.ajax_url,
+                    url: vm.ajaxUrl,
                     dataSrc: 'data',
                     data: function () {},
                     error: function (response, textStatus, errorThrown) {
