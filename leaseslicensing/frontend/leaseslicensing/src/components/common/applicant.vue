@@ -467,28 +467,7 @@ export default {
         FormSection,
         alert,
     },
-    // eslint-disable-next-line no-unused-vars
-    beforeRouteEnter: function (to, from, next) {
-        let vm = this;
-        fetch(api_endpoints.profile + '/' + vm.proposalId)
-            .then(async (response) => {
-                const data = await response.json();
-                if (!response.ok) {
-                    const error = (data && data.message) || response.statusText;
-                    console.log(error);
-                    return Promise.reject(error);
-                }
-                vm.profile = data;
-            })
-            .catch((error) => {
-                console.error(error);
-            });
-    },
     props: {
-        // emailUser: {
-        //     type: Object,
-        //     required: true,
-        // },
         customerType: {
             type: String,
             required: false,
@@ -596,26 +575,6 @@ export default {
                     this.profile.residential_postcode;
             }
         },
-        // eslint-disable-next-line no-unused-vars
-        // fetchCountries: function (id) {
-        //     let vm = this;
-        //     fetch(api_endpoints.countries)
-        //         .then(async (response) => {
-        //             const data = await response.json();
-        //             if (!response.ok) {
-        //                 const error =
-        //                     (data && data.message) || response.statusText;
-        //                 console.log(error);
-        //                 return Promise.reject(error);
-        //             }
-        //             vm.countries = data;
-        //             console.log(vm.countries);
-        //         })
-        //         .catch((error) => {
-        //             this.errorMessage = constants.ERRORS.API_ERROR;
-        //             console.error('There was an error!', error);
-        //         });
-        // },
         fetchCountries: function () {
             let vm = this;
             let url = api_endpoints.countries;
@@ -644,23 +603,6 @@ export default {
                     console.log(`Error fetching profile data: ${error}`);
                 });
         },
-        // fetchProfile: function () {
-        //     let vm = this;
-        //     fetch(api_endpoints.profile + '/' + vm.proposalId)
-        //         .then(async (response) => {
-        //             const data = await response.json();
-        //             if (!response.ok) {
-        //                 const error =
-        //                     (data && data.message) || response.statusText;
-        //                 console.log(error);
-        //                 return Promise.reject(error);
-        //             }
-        //             vm.profile = data;
-        //         })
-        //         .catch((error) => {
-        //             console.error(error);
-        //         });
-        // },
         updatePersonal: function () {
             var required_fields = [];
             let vm = this;
