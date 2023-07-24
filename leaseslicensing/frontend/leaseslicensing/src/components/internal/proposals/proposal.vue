@@ -1586,6 +1586,7 @@ export default {
             return false
         },
         completeEditing: async function () {
+            let cancelled = false
             if (
                 'once_off_charge' ==
                 $('input[type=radio][name=charge_method]:checked').attr('id')
@@ -1593,7 +1594,8 @@ export default {
                 await swal
                     .fire({
                         title: 'Confirm Once Off Invoice',
-                        text: 'You have selected to invoice as a once off charge, this will create a new invoice and notify the proponent. Are you sure you want to proceed?',
+                        text: 'You have selected to invoice as a once off charge, \
+                        this will create a new invoice and notify the proponent. Are you sure you want to proceed?',
                         icon: 'warning',
                         showCancelButton: true,
                         buttonsStyling: false,
@@ -1604,48 +1606,51 @@ export default {
                         },
                         reverseButtons: true,
                     })
-                    .then(async (result) => {
-                        if (result.isConfirmed) {
-                            const payload = { proposal: this.proposal }
-                            const res = await fetch(
-                                '/api/proposal/' +
-                                    this.proposal.id +
-                                    '/finance_complete_editing.json',
-                                {
-                                    body: JSON.stringify(payload),
-                                    method: 'POST',
-                                }
-                            )
-
-                            if (res.ok) {
-                                swal.fire({
-                                    title: 'Saved',
-                                    text: 'Your proposal has been saved',
-                                    icon: 'success',
-                                })
-                                let data = await res.json()
-                                this.proposal = Object.assign({}, data)
-                            } else {
-                                let errors = []
-                                await res.json().then((json) => {
-                                    for (let key in json) {
-                                        errors.push(
-                                            `${key}: ${
-                                                typeof json[key] == 'string'
-                                                    ? json[key]
-                                                    : json[key].join(',')
-                                            }`
-                                        )
-                                    }
-                                    swal.fire({
-                                        title: 'Please fix following errors before saving',
-                                        text: errors.join(','),
-                                        icon: 'error',
-                                    })
-                                })
-                            }
+                    .then((result) => {
+                        if (result.isDismissed) {
+                            cancelled = true
                         }
                     })
+            }
+            if (!cancelled) {
+                const payload = { proposal: this.proposal }
+                const res = await fetch(
+                    '/api/proposal/' +
+                        this.proposal.id +
+                        '/finance_complete_editing.json',
+                    {
+                        body: JSON.stringify(payload),
+                        method: 'POST',
+                    }
+                )
+
+                if (res.ok) {
+                    swal.fire({
+                        title: 'Saved',
+                        text: 'Your proposal has been saved',
+                        icon: 'success',
+                    })
+                    let data = await res.json()
+                    this.proposal = Object.assign({}, data)
+                } else {
+                    let errors = []
+                    await res.json().then((json) => {
+                        for (let key in json) {
+                            errors.push(
+                                `${key}: ${
+                                    typeof json[key] == 'string'
+                                        ? json[key]
+                                        : json[key].join(',')
+                                }`
+                            )
+                        }
+                        swal.fire({
+                            title: 'Please fix following errors before saving',
+                            text: errors.join(','),
+                            icon: 'error',
+                        })
+                    })
+                }
             }
         },
         applicationFormMounted: function () {
