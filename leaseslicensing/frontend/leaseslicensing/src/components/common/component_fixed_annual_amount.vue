@@ -7,14 +7,18 @@
             >
                 <i class="fa fa-add"></i> Add Increment Year
             </button>
-            <template v-for="item in yearsArrayComputed" :key="item.key">
+            <template
+                v-for="(item, index) in yearsArrayComputed"
+                :key="item.key"
+            >
                 <div class="card mb-2">
                     <div class="card-body py-1">
                         <div class="div d-flex align-items-center">
                             <label class="col-sm-4 col-form-label"
                                 >Increment
-                                <span class="float-end pe-3">Year</span>
                             </label>
+                            <div class="pe-3">Year</div>
+
                             <div class="align-items-center pe-3">
                                 <input
                                     v-model="item.year"
@@ -38,7 +42,7 @@
                                     "
                                     v-model="item.increment_amount"
                                     type="number"
-                                    :min="1"
+                                    :min="100"
                                     :max="100000000"
                                     :step="100"
                                     class="form-control form-control-sm"
@@ -75,7 +79,7 @@
                                 />
                             </div>
                             <div class="">
-                                <template v-if="deletable(item)">
+                                <template v-if="deletable(item, index)">
                                     <span
                                         class="text-danger"
                                         role="button"
@@ -94,6 +98,7 @@
 
 <script>
 import { v4 as uuid } from 'uuid'
+import { helpers } from '@/utils/hooks'
 
 export default {
     name: 'AnnualAmount',
@@ -124,8 +129,17 @@ export default {
             type: Number,
             default: 1,
         },
+        approvalDurationYears: {
+            type: Number,
+            required: true,
+        },
     },
     emits: ['updateYearsArray'],
+    data: function () {
+        return {
+            financialYearHasPassed: helpers.financialYearHasPassed,
+        }
+    },
     computed: {
         debug: function () {
             if (this.$route.query.debug) {
@@ -139,7 +153,7 @@ export default {
             },
             set(value) {
                 console.log('emitting updateYearsArray')
-                this.$emit('updateYearsArray', value)
+                this.$emit('updateYearsArray', this.incrementType, value)
             },
         },
         valueTitle: function () {
@@ -166,22 +180,39 @@ export default {
             return 'Error: Unkown increment type'
         },
     },
+    mounted: function () {
+        console.log('AnnualAmount mounted')
+        let year = new Date().getFullYear() + 1
+        this.yearsArrayComputed = [
+            {
+                id: 0,
+                key: uuid(),
+                year: year,
+                [this.getKeyName()]: null,
+                readonly: false,
+            },
+        ]
+    },
     methods: {
-        deletable: function (item) {
+        deletable: function (item, index) {
+            if (0 == index) return false
             if (item.id === 0 || !item.readonly)
                 // If the date is a newly added one, or not readonly, it is deletable.
                 return true
             return false
         },
-        addAnotherYearClicked: function () {
-            let key_name = ''
+        getKeyName: function () {
             if (this.incrementType === 'annual_increment_amount')
-                key_name = 'increment_amount'
+                return 'increment_amount'
             else if (this.incrementType === 'annual_increment_percentage')
-                key_name = 'increment_percentage'
+                return 'increment_percentage'
             else if (this.incrementType === 'gross_turnover_percentage')
-                key_name = 'percentage'
-            let year = new Date().getFullYear()
+                return 'percentage'
+            return 'Error: Unkown increment type'
+        },
+        addAnotherYearClicked: function () {
+            let key_name = this.getKeyName()
+            let year = new Date().getFullYear() + 1
             if (this.yearsArrayComputed.length > 0) {
                 year =
                     this.yearsArrayComputed[this.yearsArrayComputed.length - 1]
