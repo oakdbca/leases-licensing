@@ -457,14 +457,15 @@
 </template>
 
 <script>
-import { api_endpoints, helpers, constants } from '@/utils/hooks';
+import { helpers, utils, api_endpoints, constants } from '@/utils/hooks';
 import FormSection from '@/components/forms/section_toggle.vue';
-// import alert from '@vue-utils/alert.vue';
+import alert from '@vue-utils/alert.vue';
 
 export default {
     name: 'Applicant',
     components: {
         FormSection,
+        alert,
     },
     // eslint-disable-next-line no-unused-vars
     beforeRouteEnter: function (to, from, next) {
@@ -484,10 +485,10 @@ export default {
             });
     },
     props: {
-        emailUser: {
-            type: Object,
-            required: true,
-        },
+        // emailUser: {
+        //     type: Object,
+        //     required: true,
+        // },
         customerType: {
             type: String,
             required: false,
@@ -502,8 +503,8 @@ export default {
             default: true,
         },
         proposalId: {
-            type: String,
-            required: true,
+            type: Number,
+            default: null,
         },
     },
     data: function () {
@@ -564,7 +565,8 @@ export default {
     },
     mounted: function () {
         let vm = this;
-        this.fetchCountries();
+        vm.fetchCountries();
+        vm.fetchProfile();
         if (!vm.panelClickersInitialised) {
             $('.panelClicker[data-toggle="collapse"]').on('click', function () {
                 var chev = $(this).children()[0];
@@ -595,25 +597,70 @@ export default {
             }
         },
         // eslint-disable-next-line no-unused-vars
-        fetchCountries: function (id) {
+        // fetchCountries: function (id) {
+        //     let vm = this;
+        //     fetch(api_endpoints.countries)
+        //         .then(async (response) => {
+        //             const data = await response.json();
+        //             if (!response.ok) {
+        //                 const error =
+        //                     (data && data.message) || response.statusText;
+        //                 console.log(error);
+        //                 return Promise.reject(error);
+        //             }
+        //             vm.countries = data;
+        //             console.log(vm.countries);
+        //         })
+        //         .catch((error) => {
+        //             this.errorMessage = constants.ERRORS.API_ERROR;
+        //             console.error('There was an error!', error);
+        //         });
+        // },
+        fetchCountries: function () {
             let vm = this;
-            fetch(api_endpoints.countries)
-                .then(async (response) => {
-                    const data = await response.json();
-                    if (!response.ok) {
-                        const error =
-                            (data && data.message) || response.statusText;
-                        console.log(error);
-                        return Promise.reject(error);
-                    }
-                    vm.countries = data;
-                    console.log(vm.countries);
+            let url = api_endpoints.countries;
+            utils
+                .fetchUrl(url)
+                .then((data) => {
+                    vm.countries = Object.assign({}, data);
+                    console.log('Fetched countries', vm.countries);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;
-                    console.error('There was an error!', error);
+                    console.log(`Error fetching countries data: ${error}`);
                 });
         },
+        fetchProfile: function () {
+            let vm = this;
+            let url = api_endpoints.profile + '/' + vm.proposalId;
+            utils
+                .fetchUrl(url)
+                .then((data) => {
+                    vm.profile = Object.assign({}, data);
+                    console.log('Fetched profiles', vm.profile);
+                })
+                .catch((error) => {
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.log(`Error fetching profile data: ${error}`);
+                });
+        },
+        // fetchProfile: function () {
+        //     let vm = this;
+        //     fetch(api_endpoints.profile + '/' + vm.proposalId)
+        //         .then(async (response) => {
+        //             const data = await response.json();
+        //             if (!response.ok) {
+        //                 const error =
+        //                     (data && data.message) || response.statusText;
+        //                 console.log(error);
+        //                 return Promise.reject(error);
+        //             }
+        //             vm.profile = data;
+        //         })
+        //         .catch((error) => {
+        //             console.error(error);
+        //         });
+        // },
         updatePersonal: function () {
             var required_fields = [];
             let vm = this;
@@ -790,23 +837,6 @@ export default {
                         vm.updatingAddress = false;
                     });
             }
-        },
-        fetchProfile: function () {
-            let vm = this;
-            fetch(api_endpoints.profile + '/' + vm.proposalId)
-                .then(async (response) => {
-                    const data = await response.json();
-                    if (!response.ok) {
-                        const error =
-                            (data && data.message) || response.statusText;
-                        console.log(error);
-                        return Promise.reject(error);
-                    }
-                    vm.profile = data;
-                })
-                .catch((error) => {
-                    console.error(error);
-                });
         },
     },
 };
