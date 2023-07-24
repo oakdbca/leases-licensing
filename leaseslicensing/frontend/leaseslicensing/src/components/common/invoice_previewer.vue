@@ -1,13 +1,17 @@
 <template>
     <div class="col m-3 p-3 border rounded">
-        <div class="mb-3">Invoice Previewer</div>
-        <!-- <div class="mb-3">
-            {{ invoiceCount }} invoices will be generated.
-            Days Difference:
+        <BootstrapAlert
+            ><span class="fw-bold">Invoice Preview</span>: Based on the
+            information you entered, the following invoices would be
+            generated</BootstrapAlert
+        >
+        <div class="mb-3">
+            {{ invoiceCount }} invoices will be generated. Days Difference:
             {{ daysDifference }}, Months Difference: {{ monthsDifference }},
             Quarters Difference: {{ quartersDifference }}, Years Difference:
-            {{ yearsDifference }}
-        </div> -->
+            {{ yearsDifference }}, Total Charge (Before Modifications):
+            {{ totalAmount }}
+        </div>
         <!-- {{ invoicablePeriods }} -->
         <table class="table table-sm table-striped">
             <thead>
@@ -101,6 +105,16 @@ export default {
             }
             return invoiceCount
         },
+        totalAmount: function () {
+            if (!this.invoicingDetails.base_fee_amount) {
+                return `Enter Base Fee`
+            }
+            let totalAmount = currency(
+                this.daysDifference *
+                    (this.invoicingDetails.base_fee_amount / 365)
+            )
+            return `$${totalAmount}`
+        },
         billingCycle: function () {
             if (this.invoicingDetails.invoicing_repetition_type == 1) {
                 return 'Annual'
@@ -112,6 +126,18 @@ export default {
                 return 'Month'
             }
             return 'Unknown'
+        },
+        invoicesPerYear: function () {
+            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+                return 1
+            }
+            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+                return 4
+            }
+            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+                return 12
+            }
+            return 0
         },
         invoicablePeriods: function () {
             const invoicablePeriods = []
@@ -156,14 +182,18 @@ export default {
             ) {
                 // Net 30 payment terms
                 let dueDate = issueDate.clone().add(30, 'days')
+                let invoicingPeriodIndex = Math.round(i / this.invoicesPerYear)
+                console.log(`\ninvoicesPerYear = ${this.invoicesPerYear}`)
+                console.log(`\n ${invoicingPeriodIndex}`)
                 invoices.push({
                     number: i + 1,
-                    timePeriod: this.invoicablePeriods[i].label,
                     issueDate: this.getIssueDate(issueDate),
                     dueDate: this.getDueDate(dueDate),
+                    timePeriod:
+                        this.invoicablePeriods[invoicingPeriodIndex].label,
                     amount: this.getAmountForInvoice(
                         issueDate,
-                        this.invoicablePeriods[i].days
+                        this.invoicablePeriods[invoicingPeriodIndex].days
                     ),
                 })
                 issueDate = this.addRepetitionInterval(issueDate)
@@ -182,22 +212,21 @@ export default {
                 days = 365
             }
             if (!this.invoicingDetails.base_fee_amount) {
-                return '???'
+                return 'Enter Base Fee'
             }
+            let baseFeeAmount = this.invoicingDetails.base_fee_amount
+            baseFeeAmount =
+                (this.daysDifference * (baseFeeAmount / 365)) /
+                this.invoiceCount
+
             if (this.chargeMethodKey == 'base_fee_plus_annual_cpi') {
-                return `$${currency(
-                    this.invoicingDetails.base_fee_amount * (days / 365)
-                )} + CPI (ABS)`
+                return `$${currency(baseFeeAmount)} + CPI (ABS)`
             }
             if (this.chargeMethodKey == 'base_fee_plus_annual_cpi_custom') {
-                return `$${currency(
-                    this.invoicingDetails.base_fee_amount * (days / 365)
-                )} + CPI (CUSTOM)`
+                return `$${currency(baseFeeAmount)} + CPI (CUSTOM)`
             }
 
-            return `$${currency(
-                this.invoicingDetails.base_fee_amount * (days / 365)
-            )}`
+            return `$${currency(baseFeeAmount)}`
         },
         getAmountForGrossTurnoverInvoice(issueDate) {
             console.log(issueDate.year())
@@ -255,6 +284,26 @@ export default {
                 return '30 Days after issue'
             }
             return dueDate.format('DD/MM/YYYY')
+        },
+        getTimePeriod(startDate, endDate, index) {
+            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+                console.log(`Index: ${index}`)
+                return this.invoicablePeriods[index]
+                    ? this.invoicablePeriods[index].label
+                    : ''
+            }
+        },
+        getInvoicingPeriod(startDate, endDate) {
+            for (let i = 0; i < this.invoicablePeriods.length; i++) {
+                const invoicablePeriod = this.invoicablePeriods[i]
+                if (
+                    startDate.isBetween(invoicablePeriod) &&
+                    endDate.isSame(invoicablePeriod.endDate)
+                ) {
+                    return invoicablePeriod
+                }
+            }
+            return
         },
         getEndOfNextFinancialYear(startDate) {
             const endOfFinancialYear = moment(startDate)
