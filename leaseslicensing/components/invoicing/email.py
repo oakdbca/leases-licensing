@@ -52,8 +52,10 @@ def send_new_invoice_raised_notification(approval, invoice):
     sender_user = EmailUser.objects.get(email=sender)
 
     if approval.org_applicant:
-        _log_org_email(msg, approval.org_applicant, proposal.submitter, sender=sender)
+        _log_org_email(
+            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+        )
     else:
-        _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender)
+        _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
     _log_approval_email(msg, approval, sender=sender_user)
