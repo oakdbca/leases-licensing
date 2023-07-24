@@ -107,6 +107,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "year",
+            "financial_year",
             "percentage",
             "readonly",
             "to_be_deleted",
@@ -273,7 +274,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 annual_increment_percentages_data = attrs.get(
                     "annual_increment_percentages"
                 )
-                self._validate_annual_increment(annual_increment_percentages_data)
+                self._validate_annual_increment(
+                    annual_increment_percentages_data, field_errors, non_field_errors
+                )
                 self._validate_crown_land_rent_review_dates(
                     attrs, field_errors, non_field_errors
                 )
@@ -309,7 +312,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 gross_turnover_percentages_data = attrs.get(
                     "gross_turnover_percentages"
                 )
-                self._validate_annual_increment(gross_turnover_percentages_data)
+                self._validate_annual_increment(
+                    gross_turnover_percentages_data, field_errors, non_field_errors
+                )
             elif charge_method.key == settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE:
                 self.set_default_values(attrs, [])
 
