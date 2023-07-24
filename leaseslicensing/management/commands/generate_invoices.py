@@ -55,8 +55,11 @@ class Command(BaseCommand):
                 # No invoices need to be generated
                 settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
                 # No invoices need to be generated - Once off charge invoices are generated when the finance officer
-                # completes editing invoicing for the application
+                # completes editing invoicing for the application when it is 'Approved - Editing Invoicing'
                 settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+                # No invoices need to be generated - Invoices are generated when the finance officer enters the
+                # actual turnover amount for the approval
+                settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER,
             ]
         )
 
@@ -127,7 +130,13 @@ class Command(BaseCommand):
             return
 
         invoicing_details = approval.current_proposal.invoicing_details
-        invoice_amount = invoicing_details.invoice_amount()
+
+        # Todo: For custom CPI based invoices make sure the cpi has been entered
+        # If not email finance officer?
+        if not invoicing_details.ready_for_invoicing:
+            return
+
+        invoice_amount = invoicing_details.invoice_amount
         # Todo add the invoicing frequency to the description
         description = f"{approval.approval_type} {approval.lodgement_number}"
         gst_free = approval.approval_type.gst_free
