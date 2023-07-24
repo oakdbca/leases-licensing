@@ -1,9 +1,11 @@
 import logging
+import math
 import uuid
 from datetime import datetime
 from decimal import Decimal
 
 import pytz
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -13,6 +15,7 @@ from django.forms import ValidationError
 from django.utils import timezone
 from ledger_api_client import settings_base
 
+from leaseslicensing.components.invoicing.exceptions import NoChargeMethod
 from leaseslicensing.components.main.models import (
     LicensingModel,
     RevisionedMixin,
@@ -380,13 +383,6 @@ class InvoicingDetails(BaseModel):
         on_delete=models.PROTECT,
         related_name="invoicing_details_set_for_invoicing",
     )
-    approval = models.ForeignKey(
-        "Approval",
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="invoicing_details",
-    )
     previous_invoicing_details = models.OneToOneField(
         "self",
         null=True,
@@ -407,6 +403,15 @@ class InvoicingDetails(BaseModel):
 
     def __str__(self):
         return f"Invoicing Details for Approval: {self.proposal.approval} (Current Proposal: {self.proposal})"
+
+    @property
+    def approval(self):
+        if not hasattr(self, "proposal") or not self.proposal:
+            return None
+        if not hasattr(self.proposal, "approval") or not self.proposal.approval:
+            return None
+
+        return self.proposal.approval
 
     def base_fee_plus_cpi(self):
         logger.debug(f"Base Fee: {self.base_fee_amount}")
@@ -480,12 +485,39 @@ class InvoicingDetails(BaseModel):
             Decimal("0.01")
         )
 
+    @property
+    def total_invoice_count(self):
+        start_date = self.approval.start_date
+        expiry_date = self.approval.expiry_date
+        days_difference = relativedelta(start_date, expiry_date).days
+        logger.debug(f"Days Difference: {days_difference}")
+        years_difference = days_difference / 365
+        whole_years_difference = math.ceil(years_difference)
+        logger.debug(f"Whole Years Difference: {whole_years_difference}")
+        # Return how many invoices in total will be generated based on this invoicing details
+        if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
+            return whole_years_difference
+
+        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
+            return whole_years_difference * 4
+
+        if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
+            return whole_years_difference * 12
+
+    @property
+    def invoices_created(self):
+        return Invoice.objects.filter(invoicing_details=self)
+
+    @property
+    def invoices_yet_to_be_generated(self):
+        return self.total_invoice_count - self.invoices_created
+
+    @property
     def invoice_amount(self):
         annual_amount = Decimal("0.00")
 
         if not self.charge_method:
-            logger.error(f"\n\nNo charge method found on {self}\n")
-            return annual_amount
+            raise NoChargeMethod(f"No charge method found on {self}")
 
         logger.debug(f"\nCharge Method: {self.charge_method}")
 
@@ -534,10 +566,11 @@ class InvoicingDetails(BaseModel):
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
         ):
             gross_turnover_for_previous_financial_year = (
-                self.gross_turnover_percentages.filter(year=timezone.now().year - 1)
+                self.gross_turnover_percentages.get(year=timezone.now().year)
             )
-            annual_amount = gross_turnover_for_previous_financial_year * (
-                1 + self.gross_turnover_percentages.percentage / 100
+            annual_amount = (
+                gross_turnover_for_previous_financial_year.gross_turnover
+                * (1 + gross_turnover_for_previous_financial_year.percentage / 100)
             )
 
         if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
@@ -601,6 +634,9 @@ class FixedAnnualIncrementPercentage(BaseModel):
 class PercentageOfGrossTurnover(BaseModel):
     year = models.PositiveSmallIntegerField(null=True, blank=True)
     percentage = models.FloatField(null=True, blank=True)
+    gross_turnover = models.DecimalField(
+        null=True, blank=True, max_digits=10, decimal_places=2
+    )
     invoicing_details = models.ForeignKey(
         InvoicingDetails,
         null=True,
@@ -615,10 +651,17 @@ class PercentageOfGrossTurnover(BaseModel):
             "year",
         ]
 
+    def __str__(self):
+        return f"{self.year}: {self.percentage}%"
+
     @property
     def readonly(self):
         # TODO: implement
         return False
+
+    @property
+    def financial_year(self):
+        return f"{self.year-1}-{self.year}"
 
 
 class CrownLandRentReviewDate(BaseModel):
@@ -777,6 +820,10 @@ class Invoice(LicensingModel):
         balance = self.amount + credit_debit_sums["credit"] - credit_debit_sums["debit"]
         logger.debug(f"Balance for Invoice: {self} is {balance}")
         return Decimal(balance).quantize(Decimal("0.01"))
+
+    @property
+    def invoicing_details(self):
+        return self.approval.current_proposal.invoicing_details
 
 
 class InvoiceTransactionManager(models.Manager):
