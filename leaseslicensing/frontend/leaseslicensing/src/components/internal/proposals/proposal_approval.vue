@@ -121,6 +121,7 @@
                 :invoicing-details="proposal.invoicing_details"
                 :start-date="proposal.proposed_issuance_approval.start_date"
                 :expiry-date="proposal.proposed_issuance_approval.expiry_date"
+                :proposal-processing-status-id="proposal.processing_status_id"
                 @updateInvoicingDetails="
                     $emit('updateInvoicingDetails', $event)
                 "
