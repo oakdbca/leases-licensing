@@ -1,4 +1,5 @@
 <template>
+    {{ invoicingDetailsComputed }}
     <form id="invoicing-form" novalidate class="needs-validation">
         <div class="row mb-4">
             <label class="col-form-label col-sm-4"
@@ -136,7 +137,11 @@
                         <div class="pe-3">Label</div>
                         <div class="col-sm-4 pe-3">
                             <div class="input-group">
-                                <input type="text" class="form-control" />
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    :readonly="!financialYearHasPassed(year)"
+                                />
                             </div>
                         </div>
                         <label class="col-sm-3">
@@ -148,6 +153,7 @@
                                     max="100"
                                     type="number"
                                     class="form-control"
+                                    :readonly="!financialYearHasPassed(year)"
                                 />
                                 <span class="input-group-text">%</span>
                             </div>
@@ -240,6 +246,87 @@
                 </div>
             </div>
         </div>
+        <div
+            v-if="show_invoicing_frequency"
+            class="row mb-3 pb-3 border-bottom"
+        >
+            <label for="invoicing_frequency" class="col-form-label col-sm-4"
+                >Day of the Month to Invoice</label
+            >
+            <div class="col-sm-8">
+                <div class="d-flex align-items-center">
+                    <div class="pe-3">
+                        <input
+                            v-model="
+                                invoicingDetailsComputed.invoicing_day_of_month
+                            "
+                            type="number"
+                            min="1"
+                            max="28"
+                            step="1"
+                            class="form-control"
+                            required
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div
+            v-if="show_month_of_year_to_invoice"
+            class="row mb-3 pb-3 border-bottom"
+        >
+            <label for="invoicing_frequency" class="col-form-label col-sm-4"
+                >Month of the Year to Invoice</label
+            >
+            <div class="col-sm-8">
+                <div class="d-flex align-items-center">
+                    <div class="pe-3">
+                        <div class="mb-3">
+                            <select
+                                v-model="
+                                    invoicingDetailsComputed.invoicing_month_of_year
+                                "
+                                class="form-select"
+                            >
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div
+            v-if="invoicingDetailsComputed.invoicing_repetition_type == 2"
+            class="row mb-3 pb-3 border-bottom"
+        >
+            <label for="invoicing_frequency" class="col-form-label col-sm-4"
+                >Invoicing Quarters</label
+            >
+            <div class="col-sm-8">
+                <div class="d-flex align-items-center">
+                    <div class="pe-3">
+                        <select class="form-select">
+                            <option value="">JAN, APR, JUL, OCT</option>
+                            <option value="">FEB, MAY, AUG, NOV</option>
+                            <option value="" selected>
+                                MAR, JUN, SEP, DEC
+                            </option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div v-if="show_fixed_annual_increment">
             <AnnualIncrement
                 v-if="invoicingDetailsComputed"
@@ -265,6 +352,27 @@
                 v-if="invoicingDetailsComputed"
                 :start-date="startDate"
                 :expiry-date="expiryDate"
+                :gross-turnover-percentages="
+                    invoicingDetailsComputed.gross_turnover_percentages
+                "
+                :proposal-processing-status-id="proposalProcessingStatusId"
+                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
+            />
+        </div>
+        <div v-if="show_invoicing_frequency" class="row mb-3 border-bottom">
+            <InvoicePreviewer
+                v-if="
+                    invoicingDetailsComputed &&
+                    invoicingDetailsComputed.invoicing_repetition_type
+                "
+                :invoicing-details="invoicingDetailsComputed"
+                :start-date="startDate"
+                :expiry-date="expiryDate"
+                :charge-method-key="
+                    getChargeMethodKeyById(
+                        invoicingDetailsComputed.charge_method
+                    )
+                "
             />
         </div>
         <div v-if="show_crown_land_rent_review_date">
@@ -283,6 +391,7 @@
 import AnnualIncrement from '@/components/common/component_fixed_annual_amount.vue'
 import PercentageTurnover from '@/components/common/component_percentage_turnover.vue'
 import CrownLandRentReviewDate from '@/components/common/component_crown_land_rent_review_date.vue'
+import InvoicePreviewer from '@/components/common//invoice_previewer.vue'
 
 import { api_endpoints, helpers } from '@/utils/hooks'
 
@@ -292,6 +401,7 @@ export default {
         AnnualIncrement,
         PercentageTurnover,
         CrownLandRentReviewDate,
+        InvoicePreviewer,
     },
     props: {
         invoicingDetails: {
@@ -306,10 +416,15 @@ export default {
             type: String,
             required: true,
         },
+        proposalProcessingStatusId: {
+            type: String,
+            required: true,
+        },
     },
     emits: ['updateInvoicingDetails'],
     data: function () {
         return {
+            financialYearHasPassed: helpers.financialYearHasPassed,
             approvalDurationYears: helpers.yearsInDateRange(
                 this.startDate,
                 this.expiryDate
@@ -338,6 +453,20 @@ export default {
                 console.log('emitting updateInvoicingDetails = ', value)
                 this.$emit('updateInvoicingDetails', value)
             },
+        },
+        financialYearRows: function () {
+            const rows = []
+            for (let i = 0; i < this.financialYearsIncluded.length; i++) {
+                let financialYear = this.financialYearsIncluded[i]
+                let year = financialYear.split('-')[1]
+                rows.push({
+                    year: year,
+                    financial_year: financialYear,
+                    label: '',
+                    cpi: '',
+                })
+            }
+            return rows
         },
         show_once_off_charge_amount: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -448,13 +577,28 @@ export default {
             }
             return false
         },
+        show_month_of_year_to_invoice: function () {
+            return (
+                1 == this.invoicingDetailsComputed.invoicing_repetition_type &&
+                this.show_invoicing_frequency
+            )
+        },
     },
     created: function () {
         this.fetchChargeMethods()
         this.fetchRepetitionTypes()
         this.fetchCPICalculationMethods()
     },
-    mounted: function () {},
+    mounted: function () {
+        this.$nextTick(function () {
+            if (!this.invoicingDetailsComputed.invoicing_day_of_month) {
+                this.invoicingDetailsComputed.invoicing_day_of_month = 1
+            }
+            if (!this.invoicingDetailsComputed.invoicing_month_of_year) {
+                this.invoicingDetailsComputed.invoicing_month_of_year = 1
+            }
+        })
+    },
     methods: {
         focusNextInput: function (event) {
             this.$nextTick(() => {
@@ -485,6 +629,12 @@ export default {
                 }
             }
         },
+        updateGrossTurnoverPercentages: function (gross_turnover_percentages) {
+            this.invoicingDetailsComputed = {
+                ...this.invoicingDetailsComputed,
+                gross_turnover_percentages: gross_turnover_percentages,
+            }
+        },
         chargeMethodDisabled: function (charge_method) {
             return (
                 [
@@ -494,6 +644,20 @@ export default {
             )
         },
         getChargeMethodIdByKey: function (key) {
+            let charge_method = this.charge_methods.find(
+                (charge_method) => charge_method.key === key
+            )
+            if (charge_method) return charge_method.id
+            else return 0
+        },
+        getChargeMethodKeyById: function (id) {
+            let charge_method = this.charge_methods.find(
+                (charge_method) => charge_method.id === id
+            )
+            if (charge_method) return charge_method.key
+            else return ''
+        },
+        getInvoicingRepetitionTypeByKey: function (key) {
             let charge_method = this.charge_methods.find(
                 (charge_method) => charge_method.key === key
             )
@@ -550,7 +714,6 @@ export default {
                 if (
                     vm.invoicingDetailsComputed.cpi_calculation_method == null
                 ) {
-                    alert('testing')
                     vm.invoicingDetailsComputed.cpi_calculation_method =
                         cpi_calculation_methods[0].id
                 }
