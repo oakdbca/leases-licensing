@@ -3095,7 +3095,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             raise serializers.ValidationError(_("Approval not found", code="invalid"))
         approval = self.approval
 
-        invoice_amount = instance.invoice_amount()
+        invoice_amount = instance.invoice_amount
         if not invoice_amount or invoice_amount <= Decimal("0.00"):
             raise serializers.ValidationError(
                 _(f"Invalid invoice amount: {invoice_amount}", code="invalid")
@@ -3113,6 +3113,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             date_due=due_date,
         )
         invoice.save()
+        logger.debug(f"Created invoice {invoice}")
         description = f"{approval.approval_type} {approval.lodgement_number}: {instance.charge_method}"
 
         ledger_order_lines = []
@@ -3153,7 +3154,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 )
                 return
 
-            request.user = admin_contact.user
+            request.user = retrieve_email_user(admin_contact.user)
         else:
             request.user = approval.applicant
 
@@ -3191,6 +3192,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         invoice.invoice_reference = data["invoice"]
 
         invoice.save()
+        logger.debug(f"Saved invoice {invoice}")
 
         # send to the applicant and cc finance officer
         send_new_invoice_raised_notification(approval, invoice)
@@ -3201,7 +3203,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def finance_complete_editing(self, request, action):
         from leaseslicensing.components.approvals.models import Approval
 
-        invoicing_details = self.save_invoicing_details(request, action)
         self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
 
         approval, created = Approval.objects.update_or_create(
@@ -3215,48 +3216,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 "proxy_applicant": self.proxy_applicant,
             },
         )
-        logger.debug(f"About to generate invoices for Proposal {self}")
-        self.generate_invoices(approval, invoicing_details)
+        # Todo replace this generate compliances call to a generate invoicing compliances call
+        # New method that generates the compliances when the charge method is based on gross revenue
         self.generate_compliances(approval, request)
         self.save()
-
-    def generate_invoices(self, approval, invoicing_details, save=True):
-        if not invoicing_details:
-            raise ValidationError(
-                "Required parameter invoicing_details not provided to generate_invoices"
-            )
-
-        if (
-            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
-            == invoicing_details.charge_method.key
-        ):
-            logger.info(
-                f"No invoices need generating as the Proposal {self} has no rent or licence charge"
-            )
-            return None
-
-        if (
-            settings.CHARGE_METHOD_ONCE_OFF_CHARGE
-            == invoicing_details.charge_method.key
-        ):
-            due_date = timezone.now().date() + relativedelta(
-                days=settings.DEFAULT_DAYS_BEFORE_PAYMENT_DUE
-            )
-            invoice = Invoice(
-                approval=approval,
-                status=Invoice.INVOICE_STATUS_UNPAID,
-                amount=invoicing_details.once_off_charge_amount,
-                date_due=due_date,
-            )
-            if save:
-                invoice.save()
-
-            logger.info(f"Created invoice {invoice} for Proposal {self}")
-            return invoice
-
-        logger.warn(
-            f"Unknown charge method {invoicing_details.charge_method} for Proposal {self}"
-        )
 
     def finance_cancel_editing(self, request, action):
         self.processing_status = Proposal.PROCESSING_STATUS_CURRENT
