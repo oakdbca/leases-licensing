@@ -80,10 +80,9 @@
                     <Applicant
                         v-if="'individual' == proposal.applicant_type"
                         id="proposalStartApplicant"
-                        :email-user="email_user_applicant"
+                        :proposal-id="proposal.id"
                         :readonly="readonly"
                         :collapse-form-sections="false"
-                        :proposal-id="proposal.id"
                     />
                     <OrganisationApplicant
                         v-else

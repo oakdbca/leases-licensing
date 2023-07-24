@@ -50,10 +50,9 @@
                             v-if="'individual' == approval.applicant_type"
                             id="licenseHolder"
                             ref="license_holder"
-                            :email-user="approval.holder_obj"
+                            :proposal-id="approval.id"
                             :readonly="readonly"
                             :collapse-form-sections="false"
-                            :proposal-id="approval.id"
                         />
                         <OrganisationApplicant
                             v-else
