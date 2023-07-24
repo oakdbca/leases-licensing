@@ -56,6 +56,7 @@ class RepetitionType(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ["id"]
 
     def __str__(self):
         return self.display_name
