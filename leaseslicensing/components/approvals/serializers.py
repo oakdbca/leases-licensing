@@ -325,6 +325,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return approval_type_obj.get("name", None)
 
     def get_approval_type_obj(self, obj):
+        if not obj.current_proposal.proposed_issuance_approval:
+            logger.debug("No approval issuance proposed yet")
+            return None
         approval_type_id = obj.current_proposal.proposed_issuance_approval.get(
             "approval_type", None
         )
