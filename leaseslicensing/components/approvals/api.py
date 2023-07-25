@@ -208,9 +208,8 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             queryset,
             view,
             ledger_lookup_fields=[
-                "current_proposal__ind_applicant",
                 "current_proposal__org_applicant",
-            ],
+            ], # "current_proposal__ind_applicant" replaced by ProposalApplicant member
         )
         setattr(view, "_datatables_total_count", total_count)
         return queryset

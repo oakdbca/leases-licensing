@@ -506,7 +506,7 @@ export default {
                 render: function (row, type, full) {
                     return full.holder;
                 },
-                name: 'current_proposal__ind_applicant__first_name, current_proposal__ind_applicant__last_name',
+                name: 'current_proposal__proposalapplicant__first_name, current_proposal__proposalapplicant__last_name',
             };
         },
         columnLinkedApplications: function () {
@@ -773,6 +773,10 @@ export default {
                         d.filter_approval_group = vm.filterApprovalGroup;
 
                         d.level = vm.level;
+
+                        // Add search terms to be concatenated on the queryset
+                        d.search_terms =
+                            'current_proposal__proposalapplicant__first_name, current_proposal__proposalapplicant__last_name';
                     },
                 },
                 //dom: 'frt', //'lBfrtip',

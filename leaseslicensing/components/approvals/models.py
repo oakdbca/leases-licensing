@@ -272,7 +272,7 @@ class Approval(LicensingModelVersioned):
         if self.is_org_applicant:
             return self.current_proposal.org_applicant
         elif self.is_ind_applicant:
-            email_user = retrieve_email_user(self.current_proposal.ind_applicant)
+            return self.current_proposal.proposal_applicant
         elif self.is_proxy_applicant:
             email_user = retrieve_email_user(self.current_proposal.proxy_applicant)
         else:
@@ -288,7 +288,7 @@ class Approval(LicensingModelVersioned):
         if self.is_org_applicant:
             return self.applicant.ledger_organisation_name
         elif self.is_ind_applicant:
-            return f"{self.applicant.first_name} {self.applicant.last_name}"
+            return self.current_proposal.proposal_applicant.full_name
         else:
             return "Applicant not yet assigned"
 

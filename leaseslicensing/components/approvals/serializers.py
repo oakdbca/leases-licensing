@@ -23,6 +23,7 @@ from leaseslicensing.components.main.utils import (
 from leaseslicensing.components.competitive_processes.utils import (
     get_competitive_process_geometries_for_map_component,
 )
+from leaseslicensing.components.proposals.models import ProposalApplicant
 from leaseslicensing.components.proposals.utils import (
     get_proposal_geometries_for_map_component,
 )
@@ -263,6 +264,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return get_secure_file_url(obj.licence_document, "_file")
 
     def get_submitter(self, obj):
+        if not obj.submitter:
+            return None
         user = EmailUser.objects.get(id=obj.submitter)
         return EmailUserSerializer(user).data
 
@@ -286,6 +289,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
     def get_applicant_type(self, obj):
         if isinstance(obj.applicant, Organisation):
             return "organisation"
+        elif isinstance(obj.applicant, ProposalApplicant):
+            return "individual"
         elif isinstance(obj.applicant, EmailUser):
             return "individual"
         else:

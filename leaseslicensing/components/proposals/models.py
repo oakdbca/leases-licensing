@@ -3202,6 +3202,42 @@ class ProposalApplicant(RevisionedMixin):
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
 
+    @property
+    def residential_address(self):
+        # Mapping from ProposalApplicant to residential_address property
+        address_mapping = {
+            "residential_line1": "line1",
+            "residential_line2": "line2",
+            "residential_line3": "line3",
+            "residential_postcode": "postcode",
+            "residential_locality": "locality",
+            "residential_state": "state",
+            "residential_country": "country",
+        }
+        return {
+            address_mapping[k]: v
+            for k, v in self.__dict__.items()
+            if k in address_mapping.keys()
+        }
+
+    @property
+    def postal_address(self):
+        # Mapping from ProposalApplicant to postal_address property
+        address_mapping = {
+            "postal_line1": "line1",
+            "postal_line2": "line2",
+            "postal_line3": "line3",
+            "postal_postcode": "postcode",
+            "postal_locality": "locality",
+            "postal_state": "state",
+            "postal_country": "country",
+        }
+        return {
+            address_mapping[k]: v
+            for k, v in self.__dict__.items()
+            if k in address_mapping.keys()
+        }
+
 
 def update_sticker_doc_filename(instance, filename):
     return "{}/stickers/batch/{}".format(settings.MEDIA_APP_DIR, filename)
