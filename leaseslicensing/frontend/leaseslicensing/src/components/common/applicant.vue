@@ -468,6 +468,14 @@ export default {
         alert,
     },
     props: {
+        emailUser: {
+            type: Object,
+            default: null,
+        },
+        proposalId: {
+            type: Number,
+            default: null,
+        },
         customerType: {
             type: String,
             required: false,
@@ -480,10 +488,6 @@ export default {
         readonly: {
             type: Boolean,
             default: true,
-        },
-        proposalId: {
-            type: Number,
-            default: null,
         },
     },
     data: function () {
@@ -545,7 +549,34 @@ export default {
     mounted: function () {
         let vm = this;
         vm.fetchCountries();
-        vm.fetchProfile();
+        if (vm.proposalId) {
+            vm.fetchProfile();
+        } else if (vm.emailUser) {
+            vm.profile = Object.assign({}, vm.emailUser);
+
+            // The address information we are interested in
+            let address_keys = [
+                'line1',
+                'postcode',
+                'locality',
+                'state',
+                'country',
+            ];
+            // Add residential and postal address information as direct properties to the profile
+            let res_addr = vm.emailUser.residential_address;
+            let post_addr = vm.emailUser.postal_address;
+            vm.profile = address_keys.reduce((profile, k) => {
+                if (res_addr && Object.keys(res_addr).includes(k)) {
+                    profile[`residential_${k}`] = res_addr[k];
+                }
+                if (post_addr && Object.keys(post_addr).includes(k)) {
+                    profile[`postal_${k}`] = post_addr[k];
+                }
+                return profile;
+            }, vm.profile);
+        } else {
+            console.error('No profile or proposal id provided');
+        }
         if (!vm.panelClickersInitialised) {
             $('.panelClicker[data-toggle="collapse"]').on('click', function () {
                 var chev = $(this).children()[0];
