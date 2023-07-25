@@ -269,19 +269,6 @@ class Approval(LicensingModelVersioned):
 
     @property
     def applicant(self):
-        from dateutil.relativedelta import relativedelta
-        current_proposal = Proposal.objects.all().last()
-        lodgement_number = current_proposal.lodgement_number
-        approval_dict = {
-                                     "issue_date": timezone.now(),
-                                     "expiry_date": timezone.now().date()
-                                     + relativedelta(years=1),
-                                     "start_date": timezone.now().date(),
-                                     "lodgement_number": lodgement_number,
-                                     "record_management_number": 12345000,
-                                }
-        Approval.objects.update_or_create(current_proposal=current_proposal, defaults=approval_dict)
-
         if self.is_org_applicant:
             return self.current_proposal.org_applicant
         elif self.is_ind_applicant:
