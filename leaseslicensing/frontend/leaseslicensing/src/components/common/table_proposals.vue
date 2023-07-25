@@ -533,6 +533,8 @@ export default {
                         api_endpoints.proposals_paginated_list +
                         '?format=datatables&email_user_id_assigned=' +
                         vm.email_user_id_assigned +
+                        '&target_email_user_id=' +
+                        vm.targetEmailUserId +
                         '&target_organisation_id=' +
                         vm.target_organisation_id,
                     dataSrc: 'data',
