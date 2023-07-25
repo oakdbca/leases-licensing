@@ -253,7 +253,7 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             # TODO: Do we need to exclude org applications here? Would lead to no results
             # when the query is parametrized for user id and org id
             # qs = qs.exclude(org_applicant__isnull=False)
-            qs = qs.filter(submitter=target_email_user_id)
+            qs = qs.filter(current_proposal__submitter=target_email_user_id)
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
