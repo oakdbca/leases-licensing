@@ -108,12 +108,12 @@
 </template>
 
 <script>
-import datatable from '@/utils/vue/datatable.vue'
-import { v4 as uuid } from 'uuid'
-import { api_endpoints, constants } from '@/utils/hooks'
-import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
-import { expandToggle } from '@/components/common/table_functions.js'
-import { discardProposal } from '@/components/common/workflow_functions.js'
+import datatable from '@/utils/vue/datatable.vue';
+import { v4 as uuid } from 'uuid';
+import { api_endpoints, constants } from '@/utils/hooks';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
+import { expandToggle } from '@/components/common/table_functions.js';
+import { discardProposal } from '@/components/common/workflow_functions.js';
 
 export default {
     name: 'TableApplications',
@@ -131,8 +131,8 @@ export default {
                     'referral',
                     'external',
                     'organisation_view',
-                ]
-                return options.indexOf(val) != -1 ? true : false
+                ];
+                return options.indexOf(val) != -1 ? true : false;
             },
         },
         email_user_id_assigned: {
@@ -141,6 +141,11 @@ export default {
             default: 0,
         },
         target_organisation_id: {
+            type: Number,
+            required: false,
+            default: 0,
+        },
+        targetEmailUserId: {
             type: Number,
             required: false,
             default: 0,
@@ -168,7 +173,7 @@ export default {
     },
     emits: ['filter-appied'],
     data() {
-        let vm = this
+        let vm = this;
         return {
             datatable_id: 'applications-datatable-' + uuid(),
 
@@ -211,45 +216,52 @@ export default {
             td_expand_class_name: 'expand-icon',
             td_collapse_class_name: 'collapse-icon',
             expandable_row_class_name: 'expandable_row_class_name',
-        }
+        };
     },
     computed: {
         number_of_columns: function () {
             let num = this.$refs.application_datatable.vmDataTable
                 .columns(':visible')
-                .nodes().length
-            return num
+                .nodes().length;
+            return num;
         },
         filterApplied: function () {
-            let filter_applied = true
+            let filter_applied = true;
             if (
                 this.filterApplicationStatus === 'all' &&
                 this.filterApplicationType === 'all' &&
                 this.filterProposalLodgedFrom === '' &&
                 this.filterProposalLodgedTo === ''
             ) {
-                filter_applied = false
+                filter_applied = false;
             }
-            return filter_applied
+            return filter_applied;
         },
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
         is_external: function () {
-            return this.level == 'external'
+            return this.level == 'external';
         },
         is_internal: function () {
-            return this.level == 'internal'
+            return this.level == 'internal';
         },
         is_organisation_view: function () {
-            return this.level == 'organisation_view'
+            return this.level == 'organisation_view';
         },
         dtHeaders: function () {
             if (this.is_organisation_view) {
-                return ['id', 'Number', 'Type', 'Status', 'Lodged On', 'Action']
+                return [
+                    'id',
+                    'Number',
+                    'Type',
+                    'Status',
+                    'Lodged On',
+                    'Action',
+                ];
             }
             if (this.is_external) {
                 return [
@@ -261,7 +273,7 @@ export default {
                     'Status',
                     'Lodged On',
                     'Action',
-                ]
+                ];
             }
             if (this.is_internal) {
                 return [
@@ -274,11 +286,13 @@ export default {
                     'Lodged On',
                     'Assigned Officer',
                     'Action',
-                ]
+                ];
             }
+            // Default
+            return [];
         },
         column_id: function () {
-            let vm = this
+            let vm = this;
             return {
                 // 1. ID
                 data: 'id',
@@ -287,11 +301,11 @@ export default {
                 visible: false,
                 render: function (row, type, full) {
                     if (vm.debug) {
-                        console.log(full)
+                        console.log(full);
                     }
-                    return full.id
+                    return full.id;
                 },
-            }
+            };
         },
         column_lodgement_number: function () {
             return {
@@ -302,13 +316,13 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.migrated) {
-                        return full.lodgement_number + ' (M)'
+                        return full.lodgement_number + ' (M)';
                     } else {
-                        return full.lodgement_number
+                        return full.lodgement_number;
                     }
                 },
                 name: 'lodgement_number',
-            }
+            };
         },
         column_type: function () {
             return {
@@ -318,10 +332,10 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.application_type.name_display
+                    return full.application_type.name_display;
                 },
                 name: 'application_type_id__name',
-            }
+            };
         },
         column_submitter: function () {
             return {
@@ -331,13 +345,13 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.submitter) {
-                        return full.submitter.fullname
+                        return full.submitter.fullname;
                     } else {
-                        return ''
+                        return '';
                     }
                 },
                 name: 'submitter__first_name, submitter__last_name',
-            }
+            };
         },
         column_applicant: function () {
             return {
@@ -347,15 +361,15 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.applicant_name) {
-                        return `${full.applicant_name}`
+                        return `${full.applicant_name}`;
                     }
-                    return ''
+                    return '';
                 },
                 name: 'ind_applicant__first_name, ind_applicant__last_name',
-            }
+            };
         },
         column_status: function () {
-            let vm = this
+            let vm = this;
             return {
                 // 5. Status
                 data: 'id',
@@ -364,12 +378,12 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (vm.is_internal) {
-                        return full.processing_status
+                        return full.processing_status;
                     }
-                    return full.customer_status
+                    return full.customer_status;
                 },
                 name: 'processing_status',
-            }
+            };
         },
         column_lodged_on: function () {
             return {
@@ -380,12 +394,12 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.lodgement_date) {
-                        return moment(full.lodgement_date).format('DD/MM/YYYY')
+                        return moment(full.lodgement_date).format('DD/MM/YYYY');
                     }
-                    return ''
+                    return '';
                 },
                 name: 'lodgement_date',
-            }
+            };
         },
         column_assigned_officer: function () {
             return {
@@ -395,16 +409,16 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.assigned_officer) {
-                        return full.assigned_officer.fullname
+                        return full.assigned_officer.fullname;
                     } else {
-                        return ''
+                        return '';
                     }
                 },
                 name: 'assigned_officer__first_name, assigned_officer__last_name, assigned_approver__first_name, assigned_approver__last_name',
-            }
+            };
         },
         column_action: function () {
-            let vm = this
+            let vm = this;
             return {
                 // 8. Action
                 data: 'id',
@@ -412,35 +426,35 @@ export default {
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    let links = ''
+                    let links = '';
                     if (vm.is_internal) {
                         if (full.accessing_user_can_process) {
-                            links += `<a href='/internal/proposal/${full.id}'>Process</a><br/>`
+                            links += `<a href='/internal/proposal/${full.id}'>Process</a><br/>`;
                         } else {
-                            links += `<a href='/internal/proposal/${full.id}'>View</a><br/>`
+                            links += `<a href='/internal/proposal/${full.id}'>View</a><br/>`;
                         }
                     }
                     if (vm.is_external) {
                         if (full.can_user_edit) {
-                            links += `<a href='/external/proposal/${full.id}'>Continue</a><br/>`
-                            links += `<a href='#${full.id}' data-discard-proposal='${full.id}'>Discard</a><br/>`
+                            links += `<a href='/external/proposal/${full.id}'>Continue</a><br/>`;
+                            links += `<a href='#${full.id}' data-discard-proposal='${full.id}'>Discard</a><br/>`;
                         } else if (full.can_user_view) {
                             if (vm.email_user_id_assigned) {
-                                links += `<a href="/external/proposal/${full.id}/referral/">Complete Referral</a><br/>`
+                                links += `<a href="/external/proposal/${full.id}/referral/">Complete Referral</a><br/>`;
                             } else {
-                                links += `<a href='/external/proposal/${full.id}'>View</a><br/>`
+                                links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
                             }
                         }
                     }
-                    return links
+                    return links;
                 },
-            }
+            };
         },
         dtOptions: function () {
-            let vm = this
+            let vm = this;
 
-            let columns = []
-            let search = null
+            let columns = [];
+            let search = null;
             let buttons = [
                 {
                     extend: 'excel',
@@ -458,7 +472,7 @@ export default {
                         columns: ':visible',
                     },
                 },
-            ]
+            ];
             if (this.is_organisation_view) {
                 columns = [
                     vm.column_id,
@@ -467,8 +481,8 @@ export default {
                     vm.column_status,
                     vm.column_lodged_on,
                     vm.column_action,
-                ]
-                search = true
+                ];
+                search = true;
             }
 
             if (vm.is_external) {
@@ -482,8 +496,8 @@ export default {
                     vm.column_lodged_on,
                     //vm.column_assigned_officer,
                     vm.column_action,
-                ]
-                search = false
+                ];
+                search = false;
             }
             if (vm.is_internal) {
                 columns = [
@@ -496,8 +510,9 @@ export default {
                     vm.column_lodged_on,
                     vm.column_assigned_officer,
                     vm.column_action,
-                ]
-                search = true
+                ];
+                // eslint-disable-next-line no-unused-vars
+                search = true;
             }
 
             return {
@@ -509,9 +524,9 @@ export default {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 rowCallback: function (row, proposal) {
-                    let row_jq = $(row)
-                    row_jq.attr('id', 'proposal_id_' + proposal.id)
-                    row_jq.children().first().addClass(vm.td_expand_class_name)
+                    let row_jq = $(row);
+                    row_jq.attr('id', 'proposal_id_' + proposal.id);
+                    row_jq.children().first().addClass(vm.td_expand_class_name);
                 },
                 ajax: {
                     url:
@@ -524,11 +539,12 @@ export default {
 
                     // adding extra GET params for Custom filtering
                     data: function (d) {
-                        d.filter_application_type = vm.filterApplicationType
-                        d.filter_application_status = vm.filterApplicationStatus
-                        d.filter_lodged_from = vm.filterProposalLodgedFrom
-                        d.filter_lodged_to = vm.filterProposalLodgedTo
-                        d.level = vm.level
+                        d.filter_application_type = vm.filterApplicationType;
+                        d.filter_application_status =
+                            vm.filterApplicationStatus;
+                        d.filter_lodged_from = vm.filterProposalLodgedFrom;
+                        d.filter_lodged_to = vm.filterProposalLodgedTo;
+                        d.level = vm.level;
                     },
                 },
                 dom:
@@ -540,59 +556,59 @@ export default {
                 columns: columns,
                 processing: true,
                 initComplete: function () {},
-            }
+            };
         },
     },
     watch: {
         filterApplicationType: function () {
-            this.$refs.application_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 this.filterApplicationType_cache_name,
                 this.filterApplicationType
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterApplicationStatus: function () {
-            this.$refs.application_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 this.filterApplicationStatus_cache_name,
                 this.filterApplicationStatus
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterProposalLodgedFrom: function () {
-            this.$refs.application_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 this.filterProposalLodgedFrom_cache_name,
                 this.filterProposalLodgedFrom
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterProposalLodgedTo: function () {
-            this.$refs.application_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 this.filterProposalLodgedTo_cache_name,
                 this.filterProposalLodgedTo
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(
                     this.filterApplied
-                )
+                );
             }
         },
     },
     created: function () {
-        this.fetchFilterLists()
+        this.fetchFilterLists();
     },
     mounted: function () {
-        let vm = this
+        let vm = this;
         this.$nextTick(() => {
-            vm.addEventListeners()
-        })
+            vm.addEventListeners();
+        });
     },
     methods: {
         updateFilters: function () {
@@ -603,37 +619,39 @@ export default {
                     ? sessionStorage.getItem(
                           this.filterApplicationType_cache_name
                       )
-                    : 'all'
+                    : 'all';
                 this.filterApplicationStatus = sessionStorage.getItem(
                     this.filterApplicationStatus_cache_name
                 )
                     ? sessionStorage.getItem(
                           this.filterApplicationStatus_cache_name
                       )
-                    : 'all'
+                    : 'all';
                 this.filterProposalLodgedFrom = sessionStorage.getItem(
                     this.filterProposalLodgedFrom_cache_name
                 )
                     ? sessionStorage.getItem(
                           this.filterProposalLodgedFrom_cache_name
                       )
-                    : ''
+                    : '';
                 this.filterProposalLodgedTo = sessionStorage.getItem(
                     this.filterProposalLodgedTo_cache_name
                 )
                     ? sessionStorage.getItem(
                           this.filterProposalLodgedTo_cache_name
                       )
-                    : ''
-                this.$refs.application_datatable.vmDataTable.draw()
-            })
+                    : '';
+                this.$refs.application_datatable.vmDataTable.draw();
+            });
         },
         adjust_table_width: function () {
-            this.$refs.application_datatable.vmDataTable.columns.adjust()
-            this.$refs.application_datatable.vmDataTable.responsive.recalc()
+            this.$refs.application_datatable.vmDataTable.columns.adjust();
+            this.$refs.application_datatable.vmDataTable.responsive.recalc();
         },
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         //getActionDetailTable: function(sticker){
         //    let thead = `<thead>
@@ -664,63 +682,63 @@ export default {
         //},
         new_application_button_clicked: async function () {
             //await this.$router.isReady()
-            console.log(this.$router)
+            console.log(this.$router);
             await this.$router.push({
                 name: 'apply_proposal',
-            })
-            console.log(' new application')
+            });
+            console.log(' new application');
         },
         discardProposal: function (proposal_id) {
             discardProposal(proposal_id)
                 .then(() => {
-                    this.$refs.application_datatable.vmDataTable.draw()
+                    this.$refs.application_datatable.vmDataTable.draw();
                 })
                 .catch((error) => {
-                    console.log(error)
-                })
+                    console.log(error);
+                });
         },
         fetchFilterLists: async function () {
-            let vm = this
+            let vm = this;
 
             // Application Types
             fetch(api_endpoints.application_types + 'key-value-list/').then(
                 async (response) => {
-                    const resData = await response.json()
-                    vm.application_types = resData
+                    const resData = await response.json();
+                    vm.application_types = resData;
                 },
-                (error) => {}
-            )
+                () => {}
+            );
 
             // Application Statuses
-            const res = await fetch(api_endpoints.application_statuses_dict)
-            const data = await res.json()
+            const res = await fetch(api_endpoints.application_statuses_dict);
+            const data = await res.json();
             if (vm.is_internal) {
-                vm.application_statuses = data.internal_statuses
+                vm.application_statuses = data.internal_statuses;
             } else {
-                vm.application_statuses = data.external_statuses
+                vm.application_statuses = data.external_statuses;
             }
         },
         addEventListeners: function () {
-            let vm = this
+            let vm = this;
             vm.$refs.application_datatable.vmDataTable.on(
                 'click',
                 'a[data-discard-proposal]',
                 function (e) {
-                    e.preventDefault()
-                    let id = $(this).attr('data-discard-proposal')
-                    vm.discardProposal(id)
+                    e.preventDefault();
+                    let id = $(this).attr('data-discard-proposal');
+                    vm.discardProposal(id);
                 }
-            )
+            );
 
             // Listener for thr row
             vm.$refs.application_datatable.vmDataTable.on(
                 'click',
                 'td',
                 function () {
-                    expandToggle(vm, this)
+                    expandToggle(vm, this);
                 }
-            )
+            );
         },
     },
-}
+};
 </script>
