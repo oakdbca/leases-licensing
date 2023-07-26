@@ -422,7 +422,7 @@ class Approval(LicensingModelVersioned):
 
     @property
     def allowed_assessor_ids(self):
-        return user_ids_in_group(settings.GROUP_LEASE_LICENCE_ASSESSOR)
+        return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
     @property
     def allowed_assessors(self):

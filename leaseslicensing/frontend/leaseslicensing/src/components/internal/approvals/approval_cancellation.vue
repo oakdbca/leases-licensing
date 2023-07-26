@@ -101,7 +101,7 @@
 import modal from '@vue-utils/bootstrap-modal.vue';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import alert from '@vue-utils/alert.vue';
-import { helpers, api_endpoints } from '@/utils/hooks.js';
+import { helpers, api_endpoints, utils } from '@/utils/hooks.js';
 import Swal from 'sweetalert2';
 
 export default {
@@ -186,25 +186,14 @@ export default {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(approval_cancellation),
             };
-            fetch(
-                helpers.add_endpoint_json(
-                    api_endpoints.approvals,
-                    vm.approval_id + '/approval_cancellation'
-                ),
-                requestOptions
-            ).then(
-                async (response) => {
-                    const data = await response.json();
-                    if (!response.ok) {
-                        const error =
-                            (data && data.message) || response.statusText;
-                        if (400 == response.status) {
-                            vm.errorString =
-                                helpers.getErrorStringFromResponseData(data);
-                        }
-                        console.log(error);
-                        return Promise.reject(error);
-                    }
+            let url = helpers.add_endpoint_json(
+                api_endpoints.approvals,
+                vm.approval_id + '/approval_cancellation'
+            );
+
+            utils
+                .fetchUrl(url, requestOptions)
+                .then((data) => {
                     vm.close();
                     Swal.fire({
                         title: 'Cancelled',
@@ -217,12 +206,11 @@ export default {
                             confirmButton: 'btn btn-primary',
                         },
                     });
-                    vm.$emit('refreshFromResponse', response);
-                },
-                (error) => {
-                    vm.errorString = helpers.apiVueResourceError(error);
-                }
-            );
+                    vm.$emit('refreshFromResponse', data);
+                })
+                .catch((error) => {
+                    vm.errorString = error;
+                });
         },
     },
 };
