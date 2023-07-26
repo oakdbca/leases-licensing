@@ -269,11 +269,11 @@ def send_approval_renewal_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     sender_user = EmailUser.objects.get(email=sender)
 
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         # For organisations also cc in all the active organisation contacts
         msg = email.send(
-            approval.org_applicant.email,
-            cc_list=approval.org_applicant.contact_emails,
+            approval.applicant.email,
+            cc=approval.applicant.contact_emails,
             context=context,
         )
     else:

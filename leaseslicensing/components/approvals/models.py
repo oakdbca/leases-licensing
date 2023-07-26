@@ -452,7 +452,7 @@ class Approval(LicensingModelVersioned):
 
     @property
     def can_renew(self):
-        if not self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL == self.status:
+        if not self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW == self.status:
             return False
 
         renewal_conditions = {

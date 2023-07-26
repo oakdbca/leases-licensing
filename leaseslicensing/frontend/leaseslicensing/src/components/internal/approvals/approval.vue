@@ -60,17 +60,17 @@
                                 <div class="mb-2">
                                     <button
                                         class="btn btn-primary btn-licensing"
-                                        @click="renewalRevew(true)"
+                                        @click="renewalReview(true)"
                                     >
-                                        Renewal
+                                        Allow Renewal
                                     </button>
                                 </div>
                                 <div>
                                     <button
                                         class="btn btn-danger btn-licensing"
-                                        @click="renewalRevew(false)"
+                                        @click="renewalReview(false)"
                                     >
-                                        Renewal
+                                        Prevent Renewal
                                     </button>
                                 </div>
                             </div>
@@ -413,7 +413,7 @@ export default {
         formatDate: function (data) {
             return data ? moment(data).format(this.DATE_TIME_FORMAT) : '';
         },
-        renewalRevew: function (canBeRenewed) {
+        renewalReview: function (canBeRenewed) {
             let vm = this;
             Swal.fire({
                 title: 'Are you sure?',
