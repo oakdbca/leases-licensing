@@ -356,7 +356,7 @@ KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
 
 ABS_API_URL = env("ABS_API_URL", "https://api.data.abs.gov.au")
 ABS_API_CPI_SUBDIRECTORY = env("ABD_API_CPI_PATH", "/data/CPI/")
-ABS_API_CPI_PATH = env("ABD_API_CPI_PATH", "3.10001.10.50.Q")
+ABS_API_CPI_PATH = env("ABD_API_CPI_PATH", "3.10001.10.5.Q")
 
 KMI_AUTH_USERNAME = env("KMI_AUTH_USERNAME")
 KMI_AUTH_PASSWORD = env("KMI_AUTH_PASSWORD")

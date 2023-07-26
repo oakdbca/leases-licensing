@@ -4,16 +4,16 @@ The ABS API is quite complicated to use
 
 The api path we are using from the settings file is something like this:
 
-https://api.data.abs.gov.au/data/CPI/3.10001.10.50.Q
+https://api.data.abs.gov.au/data/CPI/3.10001.10.5.Q
 
-In this case, the api end point takes 5 parameters, seperated by a dot. i.e. 3.10001.10.50.Q
+In this case, the api end point takes 5 parameters, seperated by a dot. i.e. 3.10001.10.5.Q
 
 Description of the parameters:
 
 CL_CPI_MEASURES   3       (Percentage change from last year)
 CL_CPI_INDEX_17   10001   (All Groups CPI - for all categories, nothing excluded)
 CL_TSEST          1       (Original - Not seasionally adjusted etc.)
-CL_CPI_REGION     10      (Whole of Australia)
+CL_CPI_REGION     5      (Perth)
 CL_FREQ           Q       (Quarterly)
 
 """
