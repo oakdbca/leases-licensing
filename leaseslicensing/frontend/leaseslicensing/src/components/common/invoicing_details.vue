@@ -22,7 +22,7 @@
                             :value="charge_method.id"
                             :disabled="chargeMethodDisabled(charge_method)"
                             required
-                            @change="focusNextInput"
+                            @change="chargeMethodChanged"
                         />
                         <label
                             :for="charge_method.key"
@@ -74,7 +74,9 @@
             </div>
         </div>
         <div v-if="show_review_of_base_fee" class="row mb-3 pb-3 border-bottom">
-            <label class="col-form-label col-sm-4">Review of Base Fee</label>
+            <label class="col-form-label col-sm-4"
+                >Crown Land Rent Review</label
+            >
             <div class="col-sm-8">
                 <div class="d-flex align-items-center">
                     <div class="pe-3">Once every</div>
@@ -85,7 +87,7 @@
                             v-model="invoicingDetailsComputed.review_once_every"
                             type="number"
                             min="1"
-                            max="5"
+                            max="20"
                             step="1"
                             class="form-control"
                             :readonly="
@@ -104,6 +106,7 @@
                             class="form-select"
                             aria-label="Repetition Type"
                             required
+                            disabled
                         >
                             <option
                                 v-for="repetition_type in repetition_types"
@@ -118,34 +121,28 @@
             </div>
         </div>
         <div v-if="show_custom_cpi_years" class="row mb-3 pb-3 border-bottom">
-            <template v-for="year in financialYearsIncluded" :key="year">
+            <template v-for="year in approvalDurationYears" :key="year">
                 <div class="row my-2">
                     <div class="div d-flex align-items-center">
-                        <div class="col-sm-4 pe-3">
+                        <div class="col-sm-2 pe-3">
                             <div class="input-group">
-                                <span class="input-group-text"
-                                    >Financial Year</span
-                                >
+                                <span class="input-group-text">Year</span>
                                 <input
                                     type="text"
                                     readonly
-                                    class="form-control form-control-year"
+                                    class="form-control form-control-year text-center"
                                     :value="year"
                                 />
                             </div>
                         </div>
                         <div class="pe-3">Label</div>
-                        <div class="col-sm-4 pe-3">
+                        <div class="col-sm-6 pe-3">
                             <div class="input-group">
-                                <input
-                                    type="text"
-                                    class="form-control"
-                                    :readonly="!financialYearHasPassed(year)"
-                                />
+                                <input type="text" class="form-control" />
                             </div>
                         </div>
                         <label class="col-sm-3">
-                            <div class="input-group">
+                            <div class="input-group w-75">
                                 <span class="input-group-text">CPI</span>
                                 <input
                                     step="0.1"
@@ -153,7 +150,6 @@
                                     max="100"
                                     type="number"
                                     class="form-control"
-                                    :readonly="!financialYearHasPassed(year)"
                                 />
                                 <span class="input-group-text">%</span>
                             </div>
@@ -189,11 +185,23 @@
             <div class="row mb-3 border-bottom">
                 <div class="col">
                     <BootstrapAlert class="py-2">
-                        The appropriate CPI percentage from the ABS API when the
-                        invoice is generated.
+                        The CPI percentage for the selected quarter will be
+                        fetched from the ABS when an invoice is generated
                     </BootstrapAlert>
                 </div>
             </div>
+        </div>
+        <div v-if="show_percentage_of_gross_turnover">
+            <PercentageTurnover
+                v-if="invoicingDetailsComputed"
+                :start-date="startDate"
+                :expiry-date="expiryDate"
+                :gross-turnover-percentages="
+                    invoicingDetailsComputed.gross_turnover_percentages
+                "
+                :proposal-processing-status-id="proposalProcessingStatusId"
+                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
+            />
         </div>
         <div
             v-if="show_invoicing_frequency"
@@ -273,7 +281,7 @@
         </div>
         <div
             v-if="show_month_of_year_to_invoice"
-            class="row mb-3 pb-3 border-bottom"
+            class="row mb-3 border-bottom"
         >
             <label for="invoicing_frequency" class="col-form-label col-sm-4"
                 >Month of the Year to Invoice</label
@@ -306,21 +314,27 @@
                 </div>
             </div>
         </div>
-        <div
-            v-if="invoicingDetailsComputed.invoicing_repetition_type == 2"
-            class="row mb-3 pb-3 border-bottom"
-        >
+        <div v-if="show_invoicing_quarters" class="row mb-3 pb-3 border-bottom">
             <label for="invoicing_frequency" class="col-form-label col-sm-4"
                 >Invoicing Quarters</label
             >
             <div class="col-sm-8">
                 <div class="d-flex align-items-center">
                     <div class="pe-3">
-                        <select class="form-select">
-                            <option value="">JAN, APR, JUL, OCT</option>
-                            <option value="">FEB, MAY, AUG, NOV</option>
-                            <option value="" selected>
-                                MAR, JUN, SEP, DEC
+                        <select
+                            v-model="
+                                invoicingDetailsComputed.invoicing_quarters_start_month
+                            "
+                            class="form-select"
+                        >
+                            <option :value="1">
+                                NOV-JAN, FEB-APR, MAY-JUL, AUG-OCT
+                            </option>
+                            <option :value="2">
+                                DEC-FEB, MAR-MAY, JUN-AUG, SEP-NOV
+                            </option>
+                            <option :value="3" selected>
+                                JAN-MAR, APR-JUN, JUL-SEP, OCT-DEC
                             </option>
                         </select>
                     </div>
@@ -347,19 +361,7 @@
                 @updateYearsArray="updateYearsArray"
             />
         </div>
-        <div v-if="show_percentage_of_gross_turnover">
-            <PercentageTurnover
-                v-if="invoicingDetailsComputed"
-                :start-date="startDate"
-                :expiry-date="expiryDate"
-                :gross-turnover-percentages="
-                    invoicingDetailsComputed.gross_turnover_percentages
-                "
-                :proposal-processing-status-id="proposalProcessingStatusId"
-                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
-            />
-        </div>
-        <div v-if="show_invoicing_frequency" class="row mb-3 border-bottom">
+        <div v-if="show_invoice_previewer" class="row mb-3 border-bottom">
             <InvoicePreviewer
                 v-if="
                     invoicingDetailsComputed &&
@@ -375,22 +377,12 @@
                 "
             />
         </div>
-        <div v-if="show_crown_land_rent_review_date">
-            <CrownLandRentReviewDate
-                v-if="invoicingDetailsComputed"
-                :review-dates="
-                    invoicingDetailsComputed.crown_land_rent_review_dates
-                "
-                @updateReviewDates="updateReviewDates"
-            />
-        </div>
     </form>
 </template>
 
 <script>
 import AnnualIncrement from '@/components/common/component_fixed_annual_amount.vue'
 import PercentageTurnover from '@/components/common/component_percentage_turnover.vue'
-import CrownLandRentReviewDate from '@/components/common/component_crown_land_rent_review_date.vue'
 import InvoicePreviewer from '@/components/common//invoice_previewer.vue'
 
 import { api_endpoints, helpers } from '@/utils/hooks'
@@ -400,7 +392,6 @@ export default {
     components: {
         AnnualIncrement,
         PercentageTurnover,
-        CrownLandRentReviewDate,
         InvoicePreviewer,
     },
     props: {
@@ -424,7 +415,7 @@ export default {
     emits: ['updateInvoicingDetails'],
     data: function () {
         return {
-            financialYearHasPassed: helpers.financialYearHasPassed,
+            sequentialYearHasPassed: helpers.sequentialYearHasPassed,
             approvalDurationYears: helpers.yearsInDateRange(
                 this.startDate,
                 this.expiryDate
@@ -567,6 +558,27 @@ export default {
                         this.getChargeMethodIdByKey(
                             'base_fee_plus_annual_cpi_custom'
                         ),
+                    ].includes(this.invoicingDetails.charge_method)
+                )
+                    return true
+                return false
+            }
+            return false
+        },
+        show_invoice_previewer: function () {
+            if (this.invoicingDetails) {
+                if (
+                    [
+                        this.getChargeMethodIdByKey(
+                            'base_fee_plus_fixed_annual_increment'
+                        ),
+                        this.getChargeMethodIdByKey(
+                            'base_fee_plus_fixed_annual_percentage'
+                        ),
+                        this.getChargeMethodIdByKey('base_fee_plus_annual_cpi'),
+                        this.getChargeMethodIdByKey(
+                            'base_fee_plus_annual_cpi_custom'
+                        ),
                         this.getChargeMethodIdByKey(
                             'percentage_of_gross_turnover'
                         ),
@@ -576,6 +588,16 @@ export default {
                 return false
             }
             return false
+        },
+        show_invoicing_quarters: function () {
+            return (
+                this.invoicingDetails.charge_method ==
+                    this.getChargeMethodIdByKey(
+                        'percentage_of_gross_turnover'
+                    ) &&
+                this.show_invoicing_frequency &&
+                this.invoicingDetailsComputed.invoicing_repetition_type == 2
+            )
         },
         show_month_of_year_to_invoice: function () {
             return (
@@ -597,10 +619,13 @@ export default {
             if (!this.invoicingDetailsComputed.invoicing_month_of_year) {
                 this.invoicingDetailsComputed.invoicing_month_of_year = 1
             }
+            if (!this.invoicingDetailsComputed.invoicing_quarters_start_month) {
+                this.invoicingDetailsComputed.invoicing_quarters_start_month = 3
+            }
         })
     },
     methods: {
-        focusNextInput: function (event) {
+        chargeMethodChanged: function (event) {
             this.$nextTick(() => {
                 $(event.target)
                     .closest('.row')
@@ -608,6 +633,12 @@ export default {
                     .find('input')
                     .focus()
             })
+            const chargeMethodKey = this.getChargeMethodKeyById(
+                this.invoicingDetailsComputed.charge_method
+            )
+            if ('percentage_of_gross_turnover' == chargeMethodKey) {
+                this.invoicingDetailsComputed.invoicing_repetition_type = 2
+            }
         },
         updateReviewDates: function (review_dates) {
             this.invoicingDetailsComputed = {
@@ -684,7 +715,7 @@ export default {
                 vm.repetition_types = repetition_types
                 vm.$nextTick(function () {
                     if (!vm.invoicingDetailsComputed.review_once_every) {
-                        vm.invoicingDetailsComputed.review_once_every = 1
+                        vm.invoicingDetailsComputed.review_once_every = 5
                     }
                     if (!vm.invoicingDetailsComputed.invoicing_once_every) {
                         vm.invoicingDetailsComputed.invoicing_once_every = 1
