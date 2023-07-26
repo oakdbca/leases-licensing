@@ -425,9 +425,10 @@ module.exports = {
         return end - start + 1
     },
     yearsInDateRange: function (start_date, end_date) {
+        // Returns the number of years between two dates, rounded up
         const start = moment(start_date)
         const end = moment(end_date)
-        return end.diff(start, 'years')
+        return Math.ceil(end.diff(start, 'years', true))
     },
     datesOverlap: function (start_date1, end_date1, start_date2, end_date2) {
         const start1 = moment(start_date1)
