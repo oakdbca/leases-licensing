@@ -1,92 +1,56 @@
 <template>
     <div class="row mb-3 border-bottom">
         <div class="col">
-            <button
-                class="btn btn-primary btn-sm mb-3"
-                @click.prevent="addAnotherYearClicked"
-            >
-                <i class="fa fa-add"></i> Add Increment Year
-            </button>
-            <template
-                v-for="(item, index) in yearsArrayComputed"
-                :key="item.key"
-            >
+            <template v-for="item in yearsArrayComputed" :key="item.key">
                 <div class="card mb-2">
                     <div class="card-body py-1">
                         <div class="div d-flex align-items-center">
                             <label class="col-sm-4 col-form-label"
                                 >Increment
                             </label>
-                            <div class="pe-3">Year</div>
-
-                            <div class="align-items-center pe-3">
-                                <input
-                                    v-model="item.year"
-                                    type="number"
-                                    :min="minYear"
-                                    :max="maxYear"
-                                    :step="stepYear"
-                                    class="form-control form-control-sm"
-                                    :disabled="item.readonly"
-                                    required
-                                />
-                            </div>
-                            <label class="col-form-label pe-3">{{
-                                valueTitle
-                            }}</label>
                             <div class="pe-3">
-                                <input
+                                After year {{ item.year }}, increase by
+                            </div>
+                            <div class="pe-3">
+                                <div
                                     v-if="
                                         incrementType ===
                                         'annual_increment_amount'
                                     "
-                                    v-model="item.increment_amount"
-                                    type="number"
-                                    :min="100"
-                                    :max="100000000"
-                                    :step="100"
-                                    class="form-control form-control-sm"
-                                    :disabled="item.readonly"
-                                    required
-                                />
-                                <input
+                                    class="input-group"
+                                >
+                                    <span class="input-group-text">$</span>
+                                    <input
+                                        v-model="item.increment_amount"
+                                        type="number"
+                                        :min="0"
+                                        :max="100000000"
+                                        :step="100"
+                                        class="form-control form-control-sm"
+                                        :disabled="item.readonly"
+                                        required
+                                    />
+                                    <span class="input-group-text">AUD</span>
+                                </div>
+                                <div
                                     v-else-if="
                                         incrementType ===
                                         'annual_increment_percentage'
                                     "
-                                    v-model="item.increment_percentage"
-                                    type="number"
-                                    :min="0.1"
-                                    :max="100"
-                                    :step="0.1"
-                                    class="form-control form-control-sm"
-                                    :disabled="item.readonly"
-                                    required
-                                />
-                                <input
-                                    v-else-if="
-                                        incrementType ===
-                                        'gross_turnover_percentage'
-                                    "
-                                    v-model="item.percentage"
-                                    type="number"
-                                    :min="0.1"
-                                    :max="100"
-                                    :step="0.1"
-                                    class="form-control form-control-sm"
-                                    :disabled="item.readonly"
-                                    required
-                                />
-                            </div>
-                            <div class="">
-                                <template v-if="deletable(item, index)">
-                                    <span
-                                        class="text-danger"
-                                        role="button"
-                                        @click="removeARow(item, $event)"
-                                        ><i class="bi bi-x-circle-fill"></i
-                                    ></span>
-                                </template>
+                                    class="input-group"
+                                >
+                                    <input
+                                        v-model="item.increment_percentage"
+                                        type="number"
+                                        :min="0"
+                                        :max="100"
+                                        :step="0.1"
+                                        class="form-control form-control-sm"
+                                        :disabled="item.readonly"
+                                        required
+                                    />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -110,16 +74,6 @@ export default {
         yearsArray: {
             type: Array,
             required: true,
-        },
-        minYear: {
-            type: Number,
-            default: () => {
-                return new Date().getFullYear()
-            },
-        },
-        maxYear: {
-            type: Number,
-            default: 2100,
         },
         stepYear: {
             type: Number,
@@ -158,15 +112,15 @@ export default {
         },
         valueTitle: function () {
             if (this.incrementType === 'annual_increment_amount')
-                return 'amount ($AUD)'
+                return 'Amount ($AUD)'
             else if (
                 [
                     'annual_increment_percentage',
                     'gross_turnover_percentage',
                 ].includes(this.incrementType)
             )
-                return 'percentage (%)'
-            return 'Error: Unkown increment type'
+                return 'Percentage (%)'
+            return 'Error: Unknown Increment Type'
         },
         stepIncrement: function () {
             if (this.incrementType === 'annual_increment_amount') return 100
@@ -181,17 +135,19 @@ export default {
         },
     },
     mounted: function () {
-        console.log('AnnualAmount mounted')
-        let year = new Date().getFullYear() + 1
-        this.yearsArrayComputed = [
-            {
+        for (
+            let i = this.yearsArrayComputed.length;
+            i < this.approvalDurationYears;
+            i++
+        ) {
+            this.yearsArrayComputed.push({
                 id: 0,
                 key: uuid(),
-                year: year,
+                year: i + 1,
                 [this.getKeyName()]: null,
                 readonly: false,
-            },
-        ]
+            })
+        }
     },
     methods: {
         deletable: function (item, index) {
