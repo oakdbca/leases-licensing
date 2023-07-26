@@ -50,7 +50,7 @@
                             v-if="'individual' == approval.applicant_type"
                             id="licenseHolder"
                             ref="license_holder"
-                            :proposal-id="approval.id"
+                            :proposal-id="approval.current_proposal"
                             :readonly="readonly"
                             :collapse-form-sections="false"
                         />

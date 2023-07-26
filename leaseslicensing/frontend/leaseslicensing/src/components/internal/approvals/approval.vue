@@ -187,7 +187,7 @@
                         <Applicant
                             v-if="'individual' == approval.applicant_type"
                             id="approvalHolder"
-                            :proposal-id="approval.id"
+                            :proposal-id="approval.current_proposal"
                             :readonly="true"
                             :collapse-form-sections="false"
                             customer-type="holder"
