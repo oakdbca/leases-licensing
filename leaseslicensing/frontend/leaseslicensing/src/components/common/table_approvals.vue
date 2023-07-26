@@ -202,7 +202,7 @@ import ApprovalCancellation from '../internal/approvals/approval_cancellation.vu
 import ApprovalSuspension from '../internal/approvals/approval_suspension.vue';
 import ApprovalSurrender from '../internal/approvals/approval_surrender.vue';
 import ApprovalHistory from '../internal/approvals/approval_history.vue';
-import { api_endpoints, constants, helpers } from '@/utils/hooks';
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 import { v4 as uuid } from 'uuid';
 import Swal from 'sweetalert2';
@@ -1242,41 +1242,26 @@ export default {
                         const requestOptions = {
                             method: 'POST',
                         };
-                        fetch(
-                            helpers.add_endpoint_json(
-                                api_endpoints.proposal,
-                                proposal_id + '/reissue_approval'
-                            ),
-                            requestOptions
-                        ).then(
-                            async (response) => {
-                                const data = await response.json();
-                                if (!response.ok) {
-                                    const error =
-                                        (data && data.message) ||
-                                        response.statusText;
-                                    console.log(error);
-                                    Swal.fire({
-                                        title: 'Reissue Approval',
-                                        text: data,
-                                        icon: 'error',
-                                    });
-                                    Promise.reject(error);
-                                }
+                        let url = helpers.add_endpoint_json(
+                            api_endpoints.proposal,
+                            proposal_id + '/reissue_approval'
+                        );
+                        utils
+                            .fetchUrl(url, requestOptions)
+                            .then((data) => {
+                                console.log('Reissue Approval');
                                 vm.$router.push({
                                     name: 'internal-proposal',
                                     params: { proposal_id: data.id },
                                 });
-                            },
-                            (error) => {
-                                console.log(error);
+                            })
+                            .catch((error) => {
                                 Swal.fire({
                                     title: 'Reissue Approval',
-                                    text: error.body,
+                                    text: error,
                                     icon: 'error',
                                 });
-                            }
-                        );
+                            });
                     }
                 });
         },
