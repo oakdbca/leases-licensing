@@ -6,7 +6,7 @@
                 :key="year.year"
             >
                 <div class="card mb-2">
-                    <div class="card-body py-1">
+                    <div class="card-body py-3 border-bottom">
                         <div class="div d-flex align-items-center">
                             <div class="col-sm-4 pe-3">
                                 <div class="input-group">
@@ -25,8 +25,8 @@
                                 <div class="input-group">
                                     <input
                                         v-model="year.percentage"
-                                        step="0.1"
-                                        min="0.1"
+                                        step="0.01"
+                                        min="0"
                                         max="100"
                                         type="number"
                                         class="form-control"
@@ -53,11 +53,49 @@
                             </div>
                         </div>
                     </div>
+                    <div class="card-body py-3">
+                        <div
+                            v-for="index in parseInt(4)"
+                            :key="index"
+                            class="div d-flex align-items-center pb-1"
+                        >
+                            <div class="col-sm-4 pe-3">&nbsp;</div>
+                            <div class="pe-3 quarter">
+                                <div class="input-group">
+                                    <input
+                                        type="text"
+                                        readonly
+                                        class="form-control form-control-quarter"
+                                        :value="`Q${index} ${getFinancialQuarterLabel(
+                                            index
+                                        )}`"
+                                    />
+                                </div>
+                            </div>
+                            <div class="pe-3">Gross Turnover</div>
+                            <div class="col-sm-3">
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input
+                                        v-model="year.gross_turnover"
+                                        type="number"
+                                        class="form-control"
+                                        :readonly="
+                                            grossTurnoverReadonly(
+                                                year.financial_year
+                                            )
+                                        "
+                                    />
+                                    <span class="input-group-text">AUD</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </template>
         </div>
     </div>
-    <div class="row">
+    <div class="row mb-3 pb-3 border-bottom">
         <div class="col">
             <BootstrapAlert class="py-2 mb-0">
                 Compliances will be automatically generated to ask for an
@@ -94,6 +132,7 @@ export default {
     data: function () {
         return {
             financialYearHasPassed: helpers.financialYearHasPassed,
+            getFinancialQuarterLabel: helpers.getFinancialQuarterLabel,
         }
     },
     computed: {
@@ -155,3 +194,12 @@ export default {
     },
 }
 </script>
+
+<style scoped>
+.quarter {
+    width: 142px;
+}
+.form-control-quarter {
+    width: 50px;
+}
+</style>
