@@ -479,4 +479,7 @@ module.exports = {
         )
         return new Date() > endOfFinancialYear
     },
+    getFinancialQuarterLabel: function (quarter) {
+        return ['JUL-SEP', 'OCT-DEC', 'JAN-MAR', 'APR-JUN'][quarter - 1]
+    },
 }
