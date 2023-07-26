@@ -220,8 +220,8 @@ def send_approval_surrender_email_notification(approval, request=None):
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
-    if approval.is_org_applicant and proposal.applicant.email:
-        cc_list = proposal.applicant.email
+    if approval.is_org_applicant and approval.applicant.email:
+        cc_list = approval.applicant.email
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
@@ -294,8 +294,8 @@ def send_approval_reinstate_email_notification(approval, request):
         "approval": approval,
     }
     all_ccs = []
-    if approval.is_org_applicant and proposal.applicant.email:
-        cc_list = proposal.org_applicant.email
+    if approval.is_org_applicant and approval.applicant.email:
+        cc_list = approval.applicant.email
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
