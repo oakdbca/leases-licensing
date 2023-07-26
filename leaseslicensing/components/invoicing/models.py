@@ -311,8 +311,8 @@ class ConsumerPriceIndex(BaseModel):
 
     class Meta:
         app_label = "leaseslicensing"
-        verbose_name = "CPI Data"
-        verbose_name_plural = "CPI Data"
+        verbose_name = "CPI Data (Perth - All Groups)"
+        verbose_name_plural = "CPI Data (Perth - All Groups)"
 
     def __str__(self):
         return f"{self.time_period}: {self.value}"
