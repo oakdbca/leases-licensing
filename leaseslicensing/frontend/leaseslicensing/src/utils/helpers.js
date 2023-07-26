@@ -470,7 +470,7 @@ module.exports = {
         }
         return financialYearsIncluded
     },
-    yearHasPassed: function (year) {
+    calendarYearHasPassed: function (year) {
         return new Date().year() > year
     },
     financialYearHasPassed: function (financialYear) {
@@ -478,6 +478,9 @@ module.exports = {
             `${financialYear.split('-')[1]}-06-30`
         )
         return new Date() > endOfFinancialYear
+    },
+    sequentialYearHasPassed: function (startDate, year) {
+        return moment(year).diff('years', moment(startDate).year()) > year
     },
     getFinancialQuarterLabel: function (quarter) {
         return ['JUL-SEP', 'OCT-DEC', 'JAN-MAR', 'APR-JUN'][quarter - 1]
