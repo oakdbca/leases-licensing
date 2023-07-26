@@ -1278,26 +1278,27 @@ export default {
                 confirmButtonText: 'Reinstate approval',
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    try {
-                        await fetch(
-                            helpers.add_endpoint_json(
-                                api_endpoints.approvals,
-                                approval_id + '/approval_reinstate'
-                            ),
-                            {
-                                method: 'POST',
-                            }
-                        );
-                        Swal.fire(
-                            'Reinstate',
-                            'Your approval has been reinstated',
-                            'success'
-                        );
-                        vm.$refs.approvals_datatable.vmDataTable.ajax.reload();
-                    } catch (error) {
-                        console.log(error);
-                        Swal.fire('Reinstate Approval', error.body, 'error');
-                    }
+                    let url = helpers.add_endpoint_json(
+                        api_endpoints.approvals,
+                        approval_id + '/approval_reinstate'
+                    );
+                    let requestOptions = {
+                        method: 'POST',
+                    };
+                    utils
+                        .fetchUrl(url, requestOptions)
+                        .then(() => {
+                            console.log('Reinstate Approval');
+                            Swal.fire(
+                                'Reinstate',
+                                'Your approval has been reinstated',
+                                'success'
+                            );
+                            vm.$refs.approvals_datatable.vmDataTable.ajax.reload();
+                        })
+                        .catch((error) => {
+                            Swal.fire('Reinstate Approval', error, 'error');
+                        });
                 }
             });
         },

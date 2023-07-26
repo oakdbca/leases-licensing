@@ -294,7 +294,7 @@ def send_approval_reinstate_email_notification(approval, request):
         "approval": approval,
     }
     all_ccs = []
-    if proposal.org_applicant and proposal.org_applicant.email:
+    if approval.is_org_applicant and proposal.applicant.email:
         cc_list = proposal.org_applicant.email
         if cc_list:
             all_ccs = [cc_list]
@@ -302,8 +302,8 @@ def send_approval_reinstate_email_notification(approval, request):
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender)
-    if approval.org_applicant:
-        _log_org_email(msg, approval.org_applicant, proposal.submitter, sender=sender)
+    if approval.is_org_applicant:
+        _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender)
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender)
 
