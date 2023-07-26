@@ -205,8 +205,8 @@ def send_approval_surrender_email_notification(approval, request=None):
         details = "This are my test details"
         surrender_date = "01/01/1970"
     else:
-        details = (approval.surrender_details["details"],)
-        surrender_date = (approval.surrender_details["surrender_date"],)
+        details = approval.surrender_details["details"]
+        surrender_date = approval.surrender_details["surrender_date"]
 
     context = {
         "approval": approval,
@@ -220,16 +220,16 @@ def send_approval_surrender_email_notification(approval, request=None):
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
-    if proposal.org_applicant and proposal.org_applicant.email:
-        cc_list = proposal.org_applicant.email
+    if approval.is_org_applicant and proposal.applicant.email:
+        cc_list = proposal.applicant.email
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+            msg, approval.applicant, proposal.submitter, sender=sender_user
         )
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
