@@ -1,5 +1,5 @@
 <template>
-    {{ invoicingDetailsComputed }}
+    <pre>{{ $filters.pretty(invoicingDetailsComputed) }}</pre>
     <form id="invoicing-form" novalidate class="needs-validation">
         <div class="row mb-4">
             <label class="col-form-label col-sm-4"
@@ -121,32 +121,40 @@
             </div>
         </div>
         <div v-if="show_custom_cpi_years" class="row mb-3 pb-3 border-bottom">
-            <template v-for="year in approvalDurationYears" :key="year">
+            <template
+                v-for="custom_cpi_year in invoicingDetailsComputed.custom_cpi_years"
+                :key="custom_cpi_year.year"
+            >
                 <div class="row my-2">
                     <div class="div d-flex align-items-center">
                         <div class="col-sm-2 pe-3">
                             <div class="input-group">
                                 <span class="input-group-text">Year</span>
                                 <input
+                                    v-model="custom_cpi_year.year"
                                     type="text"
                                     readonly
                                     class="form-control form-control-year text-center"
-                                    :value="year"
                                 />
                             </div>
                         </div>
                         <div class="pe-3">Label</div>
                         <div class="col-sm-6 pe-3">
                             <div class="input-group">
-                                <input type="text" class="form-control" />
+                                <input
+                                    v-model="custom_cpi_year.label"
+                                    type="text"
+                                    class="form-control"
+                                />
                             </div>
                         </div>
                         <label class="col-sm-3">
                             <div class="input-group w-75">
                                 <span class="input-group-text">CPI</span>
                                 <input
+                                    v-model="custom_cpi_year.cpi"
                                     step="0.1"
-                                    min="0.1"
+                                    min="-100"
                                     max="100"
                                     type="number"
                                     class="form-control"
@@ -622,9 +630,24 @@ export default {
             if (!this.invoicingDetailsComputed.invoicing_quarters_start_month) {
                 this.invoicingDetailsComputed.invoicing_quarters_start_month = 3
             }
+            this.invoicingDetailsComputed = {
+                ...this.invoicingDetailsComputed,
+                custom_cpi_years: this.getCustomCPIYears(),
+            }
         })
     },
     methods: {
+        getCustomCPIYears: function () {
+            const rows = []
+            for (let i = 0; i < this.approvalDurationYears; i++) {
+                rows.push({
+                    year: i + 1,
+                    label: '',
+                    cpi: 0.0,
+                })
+            }
+            return rows
+        },
         chargeMethodChanged: function (event) {
             this.$nextTick(() => {
                 $(event.target)
@@ -638,6 +661,8 @@ export default {
             )
             if ('percentage_of_gross_turnover' == chargeMethodKey) {
                 this.invoicingDetailsComputed.invoicing_repetition_type = 2
+            } else {
+                this.invoicingDetailsComputed.invoicing_repetition_type = 1
             }
         },
         updateReviewDates: function (review_dates) {
