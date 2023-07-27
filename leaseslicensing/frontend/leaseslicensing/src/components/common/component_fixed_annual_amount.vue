@@ -9,7 +9,13 @@
                                 >Increment
                             </label>
                             <div class="pe-3">
-                                After year {{ item.year }}, increase by
+                                After
+                                <div
+                                    class="badge bg-primary rounded-pill year-and-ordinal text-center mx-1"
+                                >
+                                    {{ ordinalSuffixOf(item.year) }} Year
+                                </div>
+                                increase by
                             </div>
                             <div class="pe-3">
                                 <div
@@ -92,6 +98,7 @@ export default {
     data: function () {
         return {
             financialYearHasPassed: helpers.financialYearHasPassed,
+            ordinalSuffixOf: helpers.ordinalSuffixOf,
         }
     },
     computed: {
@@ -114,10 +121,7 @@ export default {
             if (this.incrementType === 'annual_increment_amount')
                 return 'Amount ($AUD)'
             else if (
-                [
-                    'annual_increment_percentage',
-                    'gross_turnover_percentage',
-                ].includes(this.incrementType)
+                ['annual_increment_percentage'].includes(this.incrementType)
             )
                 return 'Percentage (%)'
             return 'Error: Unknown Increment Type'
@@ -125,10 +129,7 @@ export default {
         stepIncrement: function () {
             if (this.incrementType === 'annual_increment_amount') return 100
             else if (
-                [
-                    'annual_increment_percentage',
-                    'gross_turnover_percentage',
-                ].includes(this.incrementType)
+                ['annual_increment_percentage'].includes(this.incrementType)
             )
                 return 0.1
             return 'Error: Unkown increment type'
@@ -137,14 +138,14 @@ export default {
     mounted: function () {
         for (
             let i = this.yearsArrayComputed.length;
-            i < this.approvalDurationYears;
+            i < this.approvalDurationYears - 1;
             i++
         ) {
             this.yearsArrayComputed.push({
                 id: 0,
                 key: uuid(),
                 year: i + 1,
-                [this.getKeyName()]: null,
+                [this.getKeyName()]: 0.0,
                 readonly: false,
             })
         }
@@ -162,8 +163,6 @@ export default {
                 return 'increment_amount'
             else if (this.incrementType === 'annual_increment_percentage')
                 return 'increment_percentage'
-            else if (this.incrementType === 'gross_turnover_percentage')
-                return 'percentage'
             return 'Error: Unkown increment type'
         },
         addAnotherYearClicked: function () {
@@ -205,3 +204,10 @@ export default {
     },
 }
 </script>
+<style scoped>
+.year-and-ordinal {
+    display: inline-block;
+    width: 90px;
+    font-size: 0.9em;
+}
+</style>
