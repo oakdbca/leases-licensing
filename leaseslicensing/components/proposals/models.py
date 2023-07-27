@@ -18,7 +18,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.db.models import JSONField, Max, Min, Q
 from django.urls import reverse
 from django.utils import timezone
@@ -2883,7 +2883,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 from leaseslicensing.components.proposals.utils import populate_gis_data
 
                 # fetch gis data
-                populate_gis_data(proposal)
+                populate_gis_data(proposal, "proposalgeometry")
 
             return proposal
 
@@ -3144,7 +3144,9 @@ class ProposalApplicant(RevisionedMixin):
     residential_line3 = models.CharField("Line 3", max_length=255, blank=True)
     residential_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
     residential_state = models.CharField(max_length=255, default="WA", blank=True)
-    residential_country = CountryField(default="AU", blank=True)
+    residential_country = CountryField(
+        default="AU", blank=True, blank_label="(Select a country)"
+    )
     residential_postcode = models.CharField(max_length=10, blank=True)
 
     # Postal address
@@ -3154,7 +3156,9 @@ class ProposalApplicant(RevisionedMixin):
     postal_line3 = models.CharField("Line 3", max_length=255, blank=True)
     postal_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
     postal_state = models.CharField(max_length=255, default="WA", blank=True)
-    postal_country = CountryField(default="AU", blank=True)
+    postal_country = CountryField(
+        default="AU", blank=True, blank_label="(Select a country)"
+    )
     postal_postcode = models.CharField(max_length=10, blank=True)
 
     # Contact
@@ -3172,31 +3176,39 @@ class ProposalApplicant(RevisionedMixin):
     class Meta:
         app_label = "leaseslicensing"
 
+    @transaction.atomic
     def copy_self_to_proposal(self, target_proposal):
-        ProposalApplicant.objects.create(
-            proposal=target_proposal,
-            first_name=self.first_name,
-            last_name=self.last_name,
-            dob=self.dob,
-            residential_line1=self.residential_line1,
-            residential_line2=self.residential_line2,
-            residential_line3=self.residential_line3,
-            residential_locality=self.residential_locality,
-            residential_state=self.residential_state,
-            residential_country=self.residential_country,
-            residential_postcode=self.residential_postcode,
-            postal_same_as_residential=self.postal_same_as_residential,
-            postal_line1=self.postal_line1,
-            postal_line2=self.postal_line2,
-            postal_line3=self.postal_line3,
-            postal_locality=self.postal_locality,
-            postal_state=self.postal_state,
-            postal_country=self.postal_country,
-            postal_postcode=self.postal_postcode,
-            email=self.email,
-            phone_number=self.phone_number,
-            mobile_number=self.mobile_number,
-        )
+        try:
+            ProposalApplicant.objects.create(
+                proposal=target_proposal,
+                first_name=self.first_name,
+                last_name=self.last_name,
+                dob=self.dob,
+                residential_line1=self.residential_line1,
+                residential_line2=self.residential_line2,
+                residential_line3=self.residential_line3,
+                residential_locality=self.residential_locality,
+                residential_state=self.residential_state,
+                residential_country=self.residential_country,
+                residential_postcode=self.residential_postcode,
+                postal_same_as_residential=self.postal_same_as_residential,
+                postal_line1=self.postal_line1,
+                postal_line2=self.postal_line2,
+                postal_line3=self.postal_line3,
+                postal_locality=self.postal_locality,
+                postal_state=self.postal_state,
+                postal_country=self.postal_country,
+                postal_postcode=self.postal_postcode,
+                email=self.email,
+                phone_number=self.phone_number,
+                mobile_number=self.mobile_number,
+            )
+        except IntegrityError as e:
+            logger.exception(e)
+            raise e
+        except Exception as e:
+            logger.exception(e)
+            raise e
 
     @property
     def full_name(self):
@@ -4846,21 +4858,30 @@ class ProposalAssessmentAnswer(RevisionedMixin):
         verbose_name_plural = "Assessment answers"
 
 
+@transaction.atomic
 def clone_proposal_with_status_reset(original_proposal):
-    with transaction.atomic():
-        try:
-            proposal = Proposal.objects.create(
-                application_type=ApplicationType.objects.get(name="lease_licence"),
-                ind_applicant=original_proposal.ind_applicant,
-                org_applicant=original_proposal.org_applicant,
-                previous_application=original_proposal,
-                approval=original_proposal.approval,
-            )
-            # proposal.save(no_revision=True)
-            return proposal
-        except Exception as e:
-            logger.exception(e)
-            raise e
+    application_type = ApplicationType.objects.get(name="lease_licence")
+
+    try:
+        proposal = Proposal.objects.create(
+            application_type=application_type,
+            ind_applicant=original_proposal.ind_applicant,
+            org_applicant=original_proposal.org_applicant,
+            previous_application=original_proposal,
+            approval=original_proposal.approval,
+        )
+    except IntegrityError as e:
+        logger.exception(e)
+        raise e
+    except Exception as e:
+        logger.exception(e)
+        raise e
+    else:
+        if not original_proposal.org_applicant:
+            original_applicant = ProposalApplicant.objects.get(proposal=original_proposal)
+            # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
+            original_applicant.copy_self_to_proposal(proposal)
+        return proposal
 
 
 def clone_documents(proposal, original_proposal, media_prefix):

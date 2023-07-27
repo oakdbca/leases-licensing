@@ -305,7 +305,12 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return UserSerializer(obj.applicant).data
 
     def get_can_renew(self, obj):
-        return obj.can_renew
+        if not obj.can_renew:
+            return False
+        request = self.context["request"]
+        if is_assessor(request):
+            return obj.status == obj.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW
+        return obj.status == obj.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
 
     def get_is_assessor(self, obj):
         request = self.context["request"]
