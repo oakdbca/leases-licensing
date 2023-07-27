@@ -98,8 +98,8 @@
     <div class="row mb-3 pb-3 border-bottom">
         <div class="col">
             <BootstrapAlert class="py-2 mb-0">
-                Compliances will be automatically generated to ask for an
-                audited financial statement for each financial year
+                The system will generate compliances to ask for an audited
+                financial statement for each financial quarter and year
             </BootstrapAlert>
         </div>
     </div>
