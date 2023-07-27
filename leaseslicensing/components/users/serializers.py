@@ -1,4 +1,5 @@
 from django.conf import settings
+from django_countries.serializers import CountryFieldMixin
 from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
@@ -96,7 +97,7 @@ class UserSerializerSimple(serializers.ModelSerializer):
         return obj.get_full_name()
 
 
-class ProposalApplicantSerializer(serializers.ModelSerializer):
+class ProposalApplicantSerializer(CountryFieldMixin, serializers.ModelSerializer):
     class Meta:
         model = ProposalApplicant
         fields = (
