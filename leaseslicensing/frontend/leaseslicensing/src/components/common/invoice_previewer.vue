@@ -17,7 +17,6 @@
             {{ daysDifference }}, Months Difference: {{ monthsDifference }},
             Quarters Difference: {{ quartersDifference }}, Years Difference:
             {{ yearsDifference }}, Total Charge (Before Modifications):
-            {{ totalAmount }}
         </div> -->
         <!-- <div>test: {{ test }}</div>
         <div v-for="(period, index) in invoicingPeriods" :key="period.label">
@@ -26,7 +25,7 @@
         <!-- <div v-for="period in quarterlyInvoicingPeriods" :key="period">
             {{ period }}
         </div> -->
-        <div v-if="chargeMethodKey != 'percentage_of_gross_turnover'">
+        <!-- <div v-if="chargeMethodKey != 'percentage_of_gross_turnover'">
             <table class="table table-sm">
                 <thead>
                     <tr>
@@ -43,7 +42,7 @@
                     </tr>
                 </tbody>
             </table>
-        </div>
+        </div> -->
 
         <table class="table table-sm table-striped">
             <thead>
@@ -63,7 +62,17 @@
                     <td>{{ invoice.timePeriod }}</td>
                     <!-- <td>{{ invoice.daysRunningTotal }}</td>
                     <td>${{ invoice.amountRunningTotal }}</td> -->
-                    <td>{{ invoice.amount }}</td>
+                    <td>
+                        {{ invoice.amountObject.prefix }}
+                        {{ invoice.amountObject.amount }}
+                        {{ invoice.amountObject.suffix }}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold pt-2">Total</td>
+                    <td>
+                        {{ totalAmount }}
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -74,6 +83,7 @@
 /*globals moment*/
 
 import currency from 'currency.js'
+import { helpers } from '@/utils/hooks'
 
 export default {
     name: 'InvoicePreviewer',
@@ -94,6 +104,11 @@ export default {
             type: String,
             required: true,
         },
+    },
+    data: function () {
+        return {
+            ordinalSuffixOf: helpers.ordinalSuffixOf,
+        }
     },
     computed: {
         showSummary: function () {
@@ -150,10 +165,10 @@ export default {
             if (!this.invoicingDetails.base_fee_amount) {
                 return `Enter Base Fee`
             }
-            let totalAmount = currency(
-                this.daysDifference *
-                    (this.invoicingDetails.base_fee_amount / 365)
-            )
+            let totalAmount = this.invoices.reduce(function (a, b) {
+                return currency(b['amountObject'].amount).add(currency(a))
+            }, 0)
+
             return `$${totalAmount}`
         },
         billingCycle: function () {
@@ -180,7 +195,6 @@ export default {
             }
             return 0
         },
-        invoicingPeriods: function () {},
         invoicingPeriods: function () {
             const invoicingPeriods = []
             var startDate = moment(this.startDate)
@@ -193,8 +207,8 @@ export default {
                     label: `${startDate.format(
                         'DD/MM/YYYY'
                     )} to ${endDate.format('DD/MM/YYYY')} (${days} days)`,
-                    startDate: startDate.format('DD/MM/YYYY'),
-                    endDate: endDate.format('DD/MM/YYYY'),
+                    startDate: startDate.format('YYYY-MM-DD'),
+                    endDate: endDate.format('YYYY-MM-DD'),
                     days: days,
                 })
                 startDate = endDate.clone().add(1, 'days')
@@ -207,8 +221,8 @@ export default {
                     label: `${startDate.format(
                         'DD/MM/YYYY'
                     )} to ${expiryDate.format('DD/MM/YYYY')} (${days} days)`,
-                    startDate: startDate.format('DD/MM/YYYY'),
-                    endDate: expiryDate.format('DD/MM/YYYY'),
+                    startDate: startDate.format('YYYY-MM-DD'),
+                    endDate: endDate.format('YYYY-MM-DD'),
                     days: days,
                 })
             }
@@ -216,25 +230,29 @@ export default {
         },
         invoices: function () {
             const invoices = []
-            var issueDate = this.getFirstIssueDate(this.startDate)
+            var firstIssueDate = this.getFirstIssueDate(this.startDate)
             var daysRunningTotal = 0
             var amountRunningTotal = currency(0.0)
+            var issueDate = firstIssueDate.clone()
             for (let i = 0; i < this.invoicingPeriods.length; i++) {
                 // Net 30 payment terms
                 let dueDate = issueDate.clone().add(30, 'days')
                 daysRunningTotal += this.invoicingPeriods[i].days
-                amountRunningTotal = amountRunningTotal.add(
-                    this.getAmountForInvoice(this.invoicingPeriods[i].days)
+                let amountObject = this.getAmountForInvoice(
+                    issueDate,
+                    this.invoicingPeriods[i].days,
+                    i
                 )
+                amountRunningTotal = amountRunningTotal.add(amountObject.amount)
                 invoices.push({
                     number: i + 1,
-                    issueDate: this.getIssueDate(issueDate),
+                    issueDate: this.getIssueDate(
+                        issueDate,
+                        this.invoicingPeriods[i].endDate
+                    ),
                     dueDate: this.getDueDate(dueDate),
                     timePeriod: this.invoicingPeriods[i].label,
-                    amount: this.getAmountForInvoiceDisplay(
-                        issueDate,
-                        this.invoicingPeriods[i].days
-                    ),
+                    amountObject: amountObject,
                     daysRunningTotal: daysRunningTotal,
                     amountRunningTotal: amountRunningTotal,
                 })
@@ -245,66 +263,102 @@ export default {
     },
     mounted() {},
     methods: {
-        getAmountForInvoice(days) {
+        getAmountForInvoice(issueDate, days, index) {
+            const amountObject = {
+                prefix: '$',
+                amount: 0.0,
+                suffix: '',
+            }
+            if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
+                return this.getAmountForGrossTurnoverInvoiceDisplay(
+                    issueDate,
+                    amountObject
+                )
+            }
+
             if (!this.invoicingDetails.base_fee_amount) {
-                return 0.0
+                return amountObject
             }
             let baseFeeAmount = this.invoicingDetails.base_fee_amount
-            baseFeeAmount = days * (baseFeeAmount / 365)
-            return baseFeeAmount
-        },
-        getAmountForInvoiceDisplay(issueDate, days) {
-            if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
-                return this.getAmountForGrossTurnoverInvoice(issueDate)
-            }
             // If this is a full leap year change it to 365 days so it isn't charged more than the full base fee
             if (days == 366) {
                 days = 365
             }
-            if (!this.invoicingDetails.base_fee_amount) {
-                return 'Enter Base Fee'
-            }
-            let baseFeeAmount = this.invoicingDetails.base_fee_amount
             baseFeeAmount = days * (baseFeeAmount / 365)
 
             if (this.chargeMethodKey == 'base_fee_plus_annual_cpi') {
-                return `$${currency(baseFeeAmount)} + CPI (ABS)`
+                amountObject.amount = currency(baseFeeAmount)
+                amountObject.suffix = ' + CPI (ABS)'
             }
             if (this.chargeMethodKey == 'base_fee_plus_annual_cpi_custom') {
-                return `$${currency(baseFeeAmount)} + CPI (CUSTOM)`
-            }
-
-            if (
-                this.chargeMethodKey == 'base_fee_plus_fixed_annual_increment'
-            ) {
-                return `$${currency(baseFeeAmount)} + Annual Increment`
+                amountObject.amount = currency(baseFeeAmount)
+                let customCpiYear =
+                    this.invoicingDetails.custom_cpi_years[index]
+                if (customCpiYear) {
+                    amountObject.amount = currency(
+                        baseFeeAmount * (1 + customCpiYear.cpi / 100)
+                    )
+                } else {
+                    amountObject.suffix = ' + CPI (CUSTOM)'
+                }
             }
 
             if (
                 this.chargeMethodKey == 'base_fee_plus_fixed_annual_percentage'
             ) {
-                let percentage = this.invoicingDetails
-                    .annual_increment_percentages
-                return `$${currency(
-                    baseFeeAmount
-                )} + Annual Increment (Percentage)`
+                let percentage = 0.0
+                let suffix =
+                    index > 0 ? `Enter percentage for year ${index}` : ''
+                let annual_increment_percentage =
+                    this.invoicingDetails.annual_increment_percentages[
+                        index - 1
+                    ]
+                if (annual_increment_percentage) {
+                    percentage =
+                        annual_increment_percentage.increment_percentage || 0.0
+                    baseFeeAmount = baseFeeAmount * (1 + percentage / 100)
+                    suffix = ''
+                }
+                amountObject.amount = currency(baseFeeAmount)
+                amountObject.suffix = suffix
             }
 
-            return `$${currency(baseFeeAmount)}`
+            if (
+                this.chargeMethodKey == 'base_fee_plus_fixed_annual_increment'
+            ) {
+                let increment_amount = 0.0
+                let suffix =
+                    index > 0 ? `Enter increment amount for year ${index}` : ''
+                let annual_increment_amount =
+                    this.invoicingDetails.annual_increment_amounts[index - 1]
+                if (annual_increment_amount) {
+                    increment_amount =
+                        annual_increment_amount.increment_amount || 0.0
+                    baseFeeAmount = baseFeeAmount + increment_amount
+                    suffix = ''
+                }
+                amountObject.amount = currency(baseFeeAmount)
+                amountObject.suffix = suffix
+            }
+
+            return amountObject
         },
-        getAmountForGrossTurnoverInvoice(issueDate) {
-            console.log(issueDate.year())
+        getAmountForGrossTurnoverInvoiceDisplay(issueDate, amountObject) {
+            console.log(JSON.stringify(amountObject))
+            amountObject.prefix = ''
+            amountObject.amount = ''
             const grossTurnoverPercentages =
                 this.invoicingDetails.gross_turnover_percentages
             const grossTurnoverPercentage = grossTurnoverPercentages.find(
                 (grossTurnoverPercentage) =>
                     grossTurnoverPercentage.year == issueDate.year()
             )
-            console.log(grossTurnoverPercentage)
             if (!grossTurnoverPercentage) {
-                return '???'
+                amountObject.suffix = '???'
+                return amountObject
             }
-            return `${grossTurnoverPercentage.percentage}% of Gross Turnover`
+            amountObject.suffix = `${grossTurnoverPercentage.percentage}% of Gross Turnover`
+            return amountObject
         },
         addRepetitionInterval(issueDate) {
             if (this.invoicingDetails.invoicing_repetition_type == 1) {
@@ -355,11 +409,13 @@ export default {
             }
             return firstIssueDate
         },
-        getIssueDate(issueDate) {
+        getIssueDate(issueDate, endDate) {
             if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
-                return `On receipt of ${issueDate.year() - 2}-${
+                let q = helpers.getFinancialQuarterFromDate(endDate)
+                let financialYear = `${
                     issueDate.year() - 1
-                } financial statement`
+                }-${issueDate.year()}`
+                return `On receipt of Q${q} ${financialYear} financial statement`
             }
             return issueDate.format('DD/MM/YYYY')
         },
@@ -398,13 +454,13 @@ export default {
         },
         getEndOfNextIntervalAnnual(startDate) {
             if (this.invoicingDetails.invoicing_repetition_type == 1) {
-                return startDate.clone().add('years', 1).subtract('days', 1)
+                return startDate.clone().add(1, 'years').subtract(1, 'days')
             }
             if (this.invoicingDetails.invoicing_repetition_type == 2) {
-                return startDate.clone().add('quarters', 1).subtract('days', 1)
+                return startDate.clone().add(1, 'quarters').subtract(1, 'days')
             }
             if (this.invoicingDetails.invoicing_repetition_type == 3) {
-                return startDate.clone().add('months', 1).subtract('days', 1)
+                return startDate.clone().add(1, 'months').subtract(1, 'days')
             }
             return startDate
         },
