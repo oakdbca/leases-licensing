@@ -89,7 +89,12 @@ export default {
         chevron_toggle.init();
     },
     methods: {
-        toggle_show_hide: function () {
+        toggle_show_hide: function (evt) {
+            if (!evt.target.classList.contains('down-chevron-open')) {
+                // Only redraw the datatable if the section is being opened
+                return;
+            }
+
             // $(this.$refs.section_body)[0].__vnode.children[0].children[0].component.ctx.$refs.organisation_contacts_datatable.vmDataTable.draw()
 
             // Get a list of all the nodes in the slot section
