@@ -308,6 +308,36 @@ def send_approval_reinstate_email_notification(approval, request):
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender)
 
 
+def send_approval_crown_land_rent_review_email_notification(approval):
+    email = TemplateEmailBase(
+        subject=f"Crown Land Rent Review due for {approval.approval_type} {approval.lodgement_number}",
+        html_template="leaseslicensing/emails/approval_crown_land_rent_review_notification.html",
+        txt_template="leaseslicensing/emails/approval_crown_land_rent_review_notification.txt",
+    )
+    url = settings.SITE_URL
+    url += reverse("internal-approval-detail", kwargs={"pk": approval.pk})
+
+    context = {
+        "approval": approval,
+        "invoicing_details": approval.current_proposal.invoicing_details,
+        "url": url,
+    }
+    finance_group_member_emails = emails_list_for_group(settings.GROUP_FINANCE)
+    msg = email.send(
+        finance_group_member_emails,
+        cc=[settings.LEASING_FINANCE_NOTIFICATION_EMAIL],
+        context=context,
+    )
+    sender = settings.DEFAULT_FROM_EMAIL
+    try:
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+    except EmailUser.DoesNotExist:
+        EmailUser.objects.create(email=sender, password="")
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+
+    _log_approval_email(msg, approval, sender=sender_user)
+
+
 def _log_approval_email(email_message, approval, sender=None):
     from leaseslicensing.components.approvals.models import ApprovalLogEntry
 

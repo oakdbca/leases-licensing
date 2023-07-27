@@ -2,6 +2,7 @@ import datetime
 import logging
 import re
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -472,6 +473,37 @@ class Approval(LicensingModelVersioned):
             logger.warning(
                 f"Approval {self.lodgement_number} does not have current_proposal"
             )
+        return None
+
+    @property
+    def review_dates(self):
+        review_once_every = self.current_proposal.invoicing_details.review_once_every
+        if not review_once_every:
+            logger.warning(
+                f"Approval {self.lodgement_number} "
+                "does not have a crown land rent review interval set. Returning empty list."
+            )
+            return []
+
+        review_dates = []
+        review_date = self.start_date + relativedelta(years=review_once_every)
+        expiry_date = self.expiry_date
+        while review_date < expiry_date:
+            review_dates.append(review_date)
+            review_date = review_date + relativedelta(years=review_once_every)
+
+        return review_dates
+
+    @property
+    def due_for_review_today(self):
+        today = timezone.localtime(timezone.now()).date()
+        return today in self.review_dates
+
+    @property
+    def next_review_date(self):
+        for review_date in self.review_dates:
+            if review_date > timezone.now().date():
+                return review_date
         return None
 
     def user_has_object_permission(self, user_id):

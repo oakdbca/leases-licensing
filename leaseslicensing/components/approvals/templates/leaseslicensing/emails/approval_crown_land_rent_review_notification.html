@@ -1,0 +1,13 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+            <p>Approval {{ approval.lodgement_number }} is due for a crown land rent review.</p>
+
+            <p><strong>Crown Land Rent Review Frequency:</strong> Every {{ invoicing_details.review_once_every }} {{ invoicing_details.review_repetition_type }}</p>
+        {% if approval.next_review_date %}
+            <p><strong>Next Review Date:</strong> {{ approval.next_review_date}}</p>
+        {% else %}
+            <p>This is the final crown land rent review for this approval.</p>
+        {% endif %}
+            <p><a href="{{ url }}">View Approval {{ approval.lodgement_number }}</a></p>
+{%  endblock %}

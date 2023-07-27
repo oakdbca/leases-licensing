@@ -1,0 +1,15 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+            Approval {{ approval.lodgement_number }} is due for a crown land rent review.
+
+            Crown Land Rent Review Frequency: Every {{ invoicing_details.review_once_every }} {{ invoicing_details.review_repetition_type }}
+            {% if approval.next_review_date %}
+            Next Review Date: {{ approval.next_review_date}}
+            {% else %}
+            This is the final crown land rent review for this approval.
+            {% endif %}
+            You can access this Compliance using the following link:
+
+            {{ url }}
+{%  endblock %}
