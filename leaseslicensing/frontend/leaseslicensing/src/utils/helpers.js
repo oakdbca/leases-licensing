@@ -482,7 +482,35 @@ module.exports = {
     sequentialYearHasPassed: function (startDate, year) {
         return moment(year).diff('years', moment(startDate).year()) > year
     },
+    getFinancialQuarterFromDate(date) {
+        const month = moment(date).month()
+        console.log('date', date)
+        console.log('month', month)
+        if (month < 3) {
+            return 3
+        } else if (month < 6) {
+            return 4
+        } else if (month < 9) {
+            return 1
+        } else {
+            return 2
+        }
+    },
     getFinancialQuarterLabel: function (quarter) {
         return ['JUL-SEP', 'OCT-DEC', 'JAN-MAR', 'APR-JUN'][quarter - 1]
+    },
+    ordinalSuffixOf: function (i) {
+        var j = i % 10,
+            k = i % 100
+        if (j == 1 && k != 11) {
+            return i + 'st'
+        }
+        if (j == 2 && k != 12) {
+            return i + 'nd'
+        }
+        if (j == 3 && k != 13) {
+            return i + 'rd'
+        }
+        return i + 'th'
     },
 }
