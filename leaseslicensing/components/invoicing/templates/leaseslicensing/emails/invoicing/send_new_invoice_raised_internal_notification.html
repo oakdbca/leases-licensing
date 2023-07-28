@@ -1,0 +1,21 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+        <p>
+            A new invoice record {{ invoice.lodgement_number }} has been created for {{ approval.approval_type }} {{ approval.lodgement_number }}.
+        </p>
+
+        <p>
+            Before payment can be requested from the proponent, the following steps must be taken:
+        </p>
+
+        <table>
+            <tr><td>&bull;</td><td>Create an oracle invoice with details that match the invoice record</td></tr>
+            <tr><td>&bull;</td><td>Convert it to a digital format &#40;i.e. pdf&#41;</td></tr>
+            <tr><td>&bull;</td><td>Upload that invoice file to the invoice record</td></tr>
+            <tr><td>&bull;</td><td>Enter the oracle invoice number on the invoice record</td></tr>
+            <tr><td>&bull;</td><td>You will be prompted to confirm sending the request for payment to the proponent</td></tr>
+        </table>
+
+        <a href="{{url}}">View Invoice Records</a>
+{%  endblock %}

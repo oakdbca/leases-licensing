@@ -23,7 +23,6 @@ from django.db.models import JSONField, Max, Min, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from ledger_api_client import utils as ledger_api_client_utils
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.ledger_models import Invoice as LedgerInvoice
 from ledger_api_client.managed_models import SystemGroup
@@ -36,7 +35,7 @@ from leaseslicensing.components.competitive_processes.email import (
 )
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
 from leaseslicensing.components.invoicing.email import (
-    send_new_invoice_raised_notification,
+    send_new_invoice_raised_internal_notification,
 )
 from leaseslicensing.components.invoicing.models import Invoice, InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
@@ -53,10 +52,7 @@ from leaseslicensing.components.main.utils import (
     is_department_user,
     polygon_intersects_with_layer,
 )
-from leaseslicensing.components.organisations.models import (
-    Organisation,
-    OrganisationContact,
-)
+from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import (
     can_admin_org,
     get_admin_emails_for_organisation,
@@ -3113,89 +3109,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             date_due=due_date,
         )
         invoice.save()
-        logger.debug(f"Created invoice {invoice}")
-        description = f"{approval.approval_type} {approval.lodgement_number}: {instance.charge_method}"
 
-        ledger_order_lines = []
-        ledger_order_lines.append(
-            {
-                "ledger_description": description,
-                "quantity": 1,
-                "price_excl_tax": str(
-                    invoice_amount
-                ),  # Todo gst applies for leases but not for licences
-                "price_incl_tax": str(invoice_amount),
-                "oracle_code": "Todo: Get Oracle Code",
-                "line_status": settings.LEDGER_DEFAULT_LINE_STATUS,
-            },
-        )
-
-        request = ledger_api_client_utils.FakeRequestSessionObj()
-
-        basket_params = {
-            "products": ledger_order_lines,
-            "vouchers": [],
-            "system": settings.PAYMENT_SYSTEM_ID,
-            "tax_override": True,
-            "custom_basket": True,
-            "booking_reference": str(invoice.lodgement_number),
-            "no_payment": True,
-        }
-        if type(approval.applicant) == Organisation:
-            organisation = approval.applicant
-            basket_params["organisation"] = organisation.ledger_organisation_id
-            admin_contact = organisation.contacts.filter(
-                user_role=OrganisationContact.USER_ROLE_CHOICE_ADMIN,
-                user_status=OrganisationContact.USER_STATUS_CHOICE_ACTIVE,
-            ).first()
-            if not admin_contact:
-                logger.error(
-                    f"Unable to retrieve admin contact for organisation: {organisation}"
-                )
-                return
-
-            request.user = retrieve_email_user(admin_contact.user)
-        else:
-            request.user = approval.applicant
-
-        basket_hash = ledger_api_client_utils.create_basket_session(
-            request, request.user.id, basket_params
-        )
-        basket_hash = basket_hash.split("|")[0]
-
-        invoice_text = f"Leases Licensing Invoice {invoice.lodgement_number}"
-        if approval.current_proposal.proponent_reference_number:
-            invoice_text += f"(Proponent Ref: {approval.current_proposal.proponent_reference_number})"
-
-        return_preload_url = (
-            f"{settings.LEASES_LICENSING_EXTERNAL_URL}"
-            f"/api/invoicing/ledger-api-invoice-success-callback/{invoice.uuid}"
-        )
-
-        future_invoice = ledger_api_client_utils.process_create_future_invoice(
-            basket_hash, invoice_text, return_preload_url
-        )
-
-        logger.info(f"Future Invoice: {future_invoice}")
-
-        if 200 != future_invoice["status"]:
-            logger.error(
-                f"Failed to create future Invoice {invoice.lodgement_number} with basket_hash "
-                f"{basket_hash}, invoice_text {invoice_text}, return_preload_url {return_preload_url}"
-            )
-            return
-
-        data = future_invoice["data"]
-
-        invoice.order_number = data["order"]
-        invoice.basket_id = data["basket_id"]
-        invoice.invoice_reference = data["invoice"]
-
-        invoice.save()
-        logger.debug(f"Saved invoice {invoice}")
-
-        # send to the applicant and cc finance officer
-        send_new_invoice_raised_notification(approval, invoice)
+        # send to the finance group so they can take action
+        send_new_invoice_raised_internal_notification(approval, invoice)
 
         return instance
 

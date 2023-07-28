@@ -59,3 +59,35 @@ def send_new_invoice_raised_notification(approval, invoice):
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
     _log_approval_email(msg, approval, sender=sender_user)
+
+
+def send_new_invoice_raised_internal_notification(approval, invoice):
+    email = TemplateEmailBase(
+        subject=f"New Invoice Record Generated for {approval.approval_type} {approval.lodgement_number}",
+        html_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_internal_notification.html",
+        txt_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_internal_notification.txt",
+    )
+    internal_invoices = reverse(
+        "internal-invoices",
+    )
+    internal_invoices_url = (
+        f"{settings.LEASES_LICENSING_EXTERNAL_URL}{internal_invoices}"
+    )
+
+    context = {
+        "approval": approval,
+        "invoice": invoice,
+        "internal_invoices_url": internal_invoices_url,
+    }
+
+    finance_group_member_emails = emails_list_for_group(settings.GROUP_FINANCE)
+    msg = email.send(
+        finance_group_member_emails,
+        cc=[settings.LEASING_FINANCE_NOTIFICATION_EMAIL],
+        context=context,
+    )
+
+    sender = settings.DEFAULT_FROM_EMAIL
+    sender_user = EmailUser.objects.get(email=sender)
+
+    _log_approval_email(msg, approval, sender=sender_user)
