@@ -22,6 +22,8 @@ from leaseslicensing.components.main.models import (
     SecureFileField,
 )
 
+PERCENTAGE_VALIDATOR = [MinValueValidator(0.0), MaxValueValidator(100)]
+
 logger = logging.getLogger(__name__)
 
 
@@ -611,7 +613,14 @@ class FixedAnnualIncrementAmount(BaseModel):
 
 class FixedAnnualIncrementPercentage(BaseModel):
     year = models.PositiveSmallIntegerField(null=True, blank=True)
-    increment_percentage = models.FloatField(null=True, blank=True)
+    increment_percentage = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        default="0.0",
+        blank=True,
+        null=True,
+        validators=PERCENTAGE_VALIDATOR,
+    )
     invoicing_details = models.ForeignKey(
         InvoicingDetails,
         null=True,
@@ -634,7 +643,9 @@ class FixedAnnualIncrementPercentage(BaseModel):
 
 class PercentageOfGrossTurnover(BaseModel):
     year = models.PositiveSmallIntegerField(null=True, blank=True)
-    percentage = models.FloatField(null=True, blank=True)
+    percentage = models.DecimalField(
+        max_digits=4, decimal_places=1, default="0.0", null=True, blank=True
+    )
     gross_turnover = models.DecimalField(
         null=True, blank=True, max_digits=10, decimal_places=2
     )
