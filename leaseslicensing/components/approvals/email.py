@@ -249,7 +249,7 @@ def send_approval_renewal_review_email_notification(approval):
     sender_user = EmailUser.objects.get(email=sender)
 
     msg = email.send(
-        emails_list_for_group(settings.GROUP_LEASE_LICENCE_ASSESSOR),
+        emails_list_for_group(settings.GROUP_NAME_ASSESSOR),
         context=context,
     )
 
