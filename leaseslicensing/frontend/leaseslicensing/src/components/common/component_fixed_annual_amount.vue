@@ -33,7 +33,13 @@
                                         :max="100000000"
                                         :step="100"
                                         class="form-control form-control-sm"
-                                        :disabled="item.readonly"
+                                        :readonly="
+                                            item.year <
+                                            yearsElapsedSinceStartDate(
+                                                startDate
+                                            ) +
+                                                1
+                                        "
                                         required
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -52,7 +58,13 @@
                                         :max="100"
                                         :step="0.1"
                                         class="form-control form-control-sm"
-                                        :disabled="item.readonly"
+                                        :readonly="
+                                            item.year <
+                                            yearsElapsedSinceStartDate(
+                                                startDate
+                                            ) +
+                                                1
+                                        "
                                         required
                                     />
                                     <span class="input-group-text">%</span>
@@ -93,11 +105,16 @@ export default {
             type: Number,
             required: true,
         },
+        startDate: {
+            type: String,
+            required: true,
+        },
     },
     emits: ['updateYearsArray'],
     data: function () {
         return {
             financialYearHasPassed: helpers.financialYearHasPassed,
+            yearsElapsedSinceStartDate: helpers.yearsElapsedSinceStartDate,
             ordinalSuffixOf: helpers.ordinalSuffixOf,
         }
     },
