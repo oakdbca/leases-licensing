@@ -66,7 +66,8 @@
                     id="base_fee_amount"
                     v-model="invoicingDetailsComputed.base_fee_amount"
                     type="number"
-                    min="1"
+                    min="0"
+                    step="100"
                     class="form-control"
                     required
                 />
@@ -384,6 +385,7 @@
                         invoicingDetailsComputed.charge_method
                     )
                 "
+                :show-past-invoices="context == 'Proposal'"
                 @updateDefaultInvoicingDate="updateDefaultInvoicingDate"
             />
         </div>
