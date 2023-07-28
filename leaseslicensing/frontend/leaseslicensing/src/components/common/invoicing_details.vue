@@ -403,6 +403,10 @@ export default {
         InvoicePreviewer,
     },
     props: {
+        context: {
+            type: String,
+            required: true,
+        },
         invoicingDetails: {
             type: Object,
             required: true,
@@ -709,10 +713,17 @@ export default {
         },
         chargeMethodDisabled: function (charge_method) {
             return (
-                [
+                (this.context == 'Approval' &&
+                    !(
+                        charge_method.id ==
+                        this.invoicingDetailsComputed.charge_method
+                    )) ||
+                ([
                     'base_fee_plus_fixed_annual_increment',
                     'base_fee_plus_fixed_annual_percentage',
-                ].includes(charge_method.key) && this.approvalDurationYears == 0
+                ].includes(charge_method.key) &&
+                    // The approval runs for less than a full year
+                    this.approvalDurationYears - 1 == 0)
             )
         },
         getChargeMethodIdByKey: function (key) {
