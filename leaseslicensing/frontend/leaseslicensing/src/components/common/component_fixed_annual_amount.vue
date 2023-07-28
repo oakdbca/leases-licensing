@@ -120,19 +120,12 @@ export default {
         valueTitle: function () {
             if (this.incrementType === 'annual_increment_amount')
                 return 'Amount ($AUD)'
-            else if (
-                ['annual_increment_percentage'].includes(this.incrementType)
-            )
-                return 'Percentage (%)'
-            return 'Error: Unknown Increment Type'
+
+            return 'Percentage (%)'
         },
         stepIncrement: function () {
             if (this.incrementType === 'annual_increment_amount') return 100
-            else if (
-                ['annual_increment_percentage'].includes(this.incrementType)
-            )
-                return 0.1
-            return 'Error: Unkown increment type'
+            return 0.1
         },
     },
     mounted: function () {
@@ -161,9 +154,7 @@ export default {
         getKeyName: function () {
             if (this.incrementType === 'annual_increment_amount')
                 return 'increment_amount'
-            else if (this.incrementType === 'annual_increment_percentage')
-                return 'increment_percentage'
-            return 'Error: Unkown increment type'
+            return 'increment_percentage'
         },
         addAnotherYearClicked: function () {
             let key_name = this.getKeyName()
@@ -177,7 +168,7 @@ export default {
                 id: 0,
                 key: uuid(),
                 year: year,
-                [key_name]: null,
+                [key_name]: 0.0,
                 readonly: false,
             })
         },
