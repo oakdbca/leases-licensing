@@ -10,7 +10,7 @@
                 </div>
             </div>
         </div>
-        <div v-if="!email_user.is_internal" class="card-body" id="organisations-tab-body">
+        <div class="card-body" id="organisations-tab-body">
                     <FormSection index="organisation-details" :label="linkOrganisationTitle">
                         <OrganisationSearch v-if="!selectedOrganisation && !newOrganisation"
                             @selected="organisationSelected" @new-organisation="prepareNewOrganisation"
