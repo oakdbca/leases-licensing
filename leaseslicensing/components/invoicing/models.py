@@ -386,6 +386,26 @@ class InvoicingDetails(BaseModel):
         on_delete=models.PROTECT,
         related_name="invoicing_details_set_for_invoicing",
     )
+    invoicing_day_of_month = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(28),
+        ],
+        help_text="Day of the month to generate invoices.",
+        null=True,
+        blank=True,
+        default=1,
+    )
+    invoicing_month_of_year = models.PositiveSmallIntegerField(
+        validators=[
+            MinValueValidator(1),
+            MaxValueValidator(12),
+        ],
+        help_text="Month of the year to generate invoices.",
+        null=True,
+        blank=True,
+        default=1,
+    )
     previous_invoicing_details = models.OneToOneField(
         "self",
         null=True,
