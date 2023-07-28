@@ -118,6 +118,7 @@
             index="proposal_invoicing_details"
         >
             <InvoicingDetails
+                context="Proposal"
                 :invoicing-details="proposal.invoicing_details"
                 :start-date="proposal.proposed_issuance_approval.start_date"
                 :expiry-date="proposal.proposed_issuance_approval.expiry_date"
