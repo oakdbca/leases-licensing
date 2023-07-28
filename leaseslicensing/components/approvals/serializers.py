@@ -11,6 +11,7 @@ from leaseslicensing.components.approvals.models import (
     ApprovalLogEntry,
     ApprovalUserAction,
 )
+from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
 from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
@@ -153,6 +154,12 @@ class ApprovalSerializer(serializers.ModelSerializer):
     categories_list = serializers.ListField(
         source="current_proposal.categories_list", read_only=True
     )
+    invoicing_details = InvoicingDetailsSerializer(
+        source="current_proposal.invoicing_details", read_only=True
+    )
+    current_proposal_processing_status = serializers.CharField(
+        source="current_proposal.processing_status", read_only=True
+    )
 
     class Meta:
         model = Approval
@@ -162,7 +169,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "linked_applications",
             "licence_document",
             "replaced_by",
-            "current_proposal",
+            "current_proposal_processing_status",
             "tenure",
             "renewal_notification_sent_to_holder",
             "issue_date",
@@ -200,6 +207,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "categories_list",
             "site_name",
             "record_management_number",
+            "invoicing_details",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -223,7 +231,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
-            "current_proposal",
+            "current_proposal_processing_status",
             "renewal_notification_sent_to_holder",
             "application_type",
             "migrated",
@@ -232,6 +240,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "requirement_docs",
             "submitter",
             "groups_comma_list",
+            "invoicing_details",
         )
 
     def get_licence_document(self, obj):
