@@ -354,6 +354,7 @@
                 increment-type="annual_increment_amount"
                 :years-array="invoicingDetailsComputed.annual_increment_amounts"
                 :approval-duration-years="approvalDurationYears"
+                :start-date="startDate"
                 @updateYearsArray="updateYearsArray"
             />
         </div>
@@ -364,6 +365,7 @@
                 :years-array="
                     invoicingDetailsComputed.annual_increment_percentages
                 "
+                :start-date="startDate"
                 :approval-duration-years="approvalDurationYears"
                 @updateYearsArray="updateYearsArray"
             />
@@ -428,6 +430,7 @@ export default {
     data: function () {
         return {
             sequentialYearHasPassed: helpers.sequentialYearHasPassed,
+            yearsElapsedSinceStartDate: helpers.yearsElapsedSinceStartDate,
             approvalDurationYears: helpers.yearsInDateRange(
                 this.startDate,
                 this.expiryDate
@@ -453,7 +456,6 @@ export default {
                 return this.invoicingDetails
             },
             set(value) {
-                console.log('emitting updateInvoicingDetails = ', value)
                 this.$emit('updateInvoicingDetails', value)
             },
         },
@@ -676,7 +678,6 @@ export default {
             }
         },
         updateYearsArray: function (incrementType, years_array) {
-            console.log('updateYearsArray = ', years_array)
             if ('annual_increment_amount' == incrementType) {
                 this.invoicingDetailsComputed = {
                     ...this.invoicingDetailsComputed,
@@ -696,9 +697,7 @@ export default {
             }
         },
         updateDefaultInvoicingDate: function (firstIssueDate) {
-            console.log('firstIssueDate = ', firstIssueDate)
             let invoicing_day_of_month = firstIssueDate.date()
-            console.log('invoicing_day_of_month = ', invoicing_day_of_month)
             this.invoicingDetailsComputed = {
                 ...this.invoicingDetailsComputed,
                 invoicing_day_of_month: invoicing_day_of_month,
