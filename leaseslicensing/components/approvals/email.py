@@ -116,9 +116,9 @@ def send_approval_expire_email_notification(approval):
 
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+            msg, approval.applicant, proposal.submitter, sender=sender_user
         )
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
