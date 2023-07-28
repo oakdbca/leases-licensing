@@ -378,8 +378,12 @@
                             index="invoicing_details"
                         >
                             <InvoicingDetails
-                                :invoicing-details="
-                                    approval.current_proposal.invoicing_details
+                                context="Approval"
+                                :invoicing-details="approval.invoicing_details"
+                                :start-date="approval.start_date"
+                                :expiry-date="approval.expiry_date"
+                                :proposal-processing-status-id="
+                                    approval.current_proposal_processing_status
                                 "
                                 @updateInvoicingDetails="updateInvoicingDetails"
                             />
@@ -594,7 +598,7 @@ export default {
             })
         },
         updateInvoicingDetails: function (value) {
-            this.approval.current_proposal.invoicing_details = value
+            this.approval.invoicing_details = value
         },
         completeEditingInvoicing: function () {
             alert('Call api to modify invoices based on new invoicing details')
