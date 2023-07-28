@@ -457,6 +457,10 @@ class Approval(LicensingModelVersioned):
         return self.current_proposal.approved_by
 
     @property
+    def invoicing_details(self):
+        return self.current_proposal.invoicing_details
+
+    @property
     def requirement_docs(self):
         if self.current_proposal:
             requirement_ids = (
