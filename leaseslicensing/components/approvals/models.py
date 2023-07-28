@@ -269,18 +269,7 @@ class Approval(LicensingModelVersioned):
 
     @property
     def applicant(self):
-        if self.is_org_applicant:
-            return self.current_proposal.org_applicant
-        elif self.is_ind_applicant:
-            return self.current_proposal.proposal_applicant
-        elif self.is_proxy_applicant:
-            email_user = retrieve_email_user(self.current_proposal.proxy_applicant)
-        else:
-            logger.error(
-                f"Applicant for the approval {self.lodgement_number} not found"
-            )
-            email_user = "No Applicant"
-        return email_user
+        return self.current_proposal.applicant
 
     @property
     def holder(self):
