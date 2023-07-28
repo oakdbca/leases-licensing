@@ -1,8 +1,8 @@
 <template>
     <div class="col m-3 p-3 border rounded">
         <BootstrapAlert
-            ><span class="fw-bold">Invoice Preview</span>: Based on the
-            information you entered, the following invoices would be
+            ><span class="fw-bold">Future Invoice Preview</span>: Based on the
+            information entered, the following invoices will be
             generated</BootstrapAlert
         >
         <BootstrapAlert
@@ -22,18 +22,24 @@
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="invoice in invoices" :key="invoice.number">
-                    <td>{{ invoice.number }}</td>
-                    <td>{{ invoice.issueDate }}</td>
-                    <td>{{ invoice.timePeriod }}</td>
-                    <td>
-                        {{ invoice.amountObject.prefix }}
-                        {{ invoice.amountObject.amount }}
-                        {{ invoice.amountObject.suffix }}
-                    </td>
-                </tr>
+                <template v-for="invoice in invoices" :key="invoice.number">
+                    <tr v-if="!invoice.hide">
+                        <td>{{ invoice.number }}</td>
+                        <td>{{ invoice.issueDate }}</td>
+                        <td>{{ invoice.timePeriod }}</td>
+                        <td>
+                            {{ invoice.amountObject.prefix }}
+                            {{ invoice.amountObject.amount }}
+                            {{ invoice.amountObject.suffix }}
+                        </td>
+                    </tr>
+                </template>
                 <tr>
-                    <td colspan="3" class="text-end fw-bold pt-2">Total</td>
+                    <td colspan="3" class="text-end fw-bold pt-2">
+                        {{
+                            pastInvoiceCount > 0 ? 'Remaining Balance' : 'Total'
+                        }}
+                    </td>
                     <td>
                         {{ totalAmount }}
                     </td>
@@ -67,6 +73,10 @@ export default {
         chargeMethodKey: {
             type: String,
             required: true,
+        },
+        showPastInvoices: {
+            type: Boolean,
+            default: true,
         },
     },
     emits: ['updateDefaultInvoicingDate'],
@@ -127,13 +137,19 @@ export default {
             }
             return invoiceCount
         },
+        pastInvoiceCount: function () {
+            return this.invoices.filter((amountObject) => !amountObject.hide)
+                .length
+        },
         totalAmount: function () {
             if (!this.invoicingDetails.base_fee_amount) {
                 return `Enter Base Fee`
             }
-            let totalAmount = this.invoices.reduce(function (a, b) {
-                return currency(b['amountObject'].amount).add(currency(a))
-            }, 0)
+            let totalAmount = this.invoices
+                .filter((amountObject) => !amountObject.hide)
+                .reduce(function (a, b) {
+                    return currency(b['amountObject'].amount).add(currency(a))
+                }, 0)
 
             return `$${totalAmount}`
         },
@@ -221,6 +237,8 @@ export default {
                     amountObject: amountObject,
                     daysRunningTotal: daysRunningTotal,
                     amountRunningTotal: amountRunningTotal,
+                    hide:
+                        !this.showPastInvoices && issueDate.isBefore(moment()),
                 })
                 issueDate = this.addRepetitionInterval(issueDate)
             }
@@ -332,7 +350,6 @@ export default {
             }
         },
         getAmountForGrossTurnoverInvoiceDisplay(issueDate, amountObject) {
-            console.log(JSON.stringify(amountObject))
             amountObject.prefix = ''
             amountObject.amount = ''
             const grossTurnoverPercentages =
@@ -370,6 +387,7 @@ export default {
                 if (!this.defaultInvoiceDateSet) {
                     // Instruct the parent component to update the day of month to invoice,
                     // month of year to invoice (and month of year to invoice if necessary)
+                    console.log('emitting updateDefaultInvoicingDate')
                     this.$emit('updateDefaultInvoicingDate', firstIssueDate)
                     this.defaultInvoiceDateSet = true
                 }
@@ -428,7 +446,6 @@ export default {
         },
         getTimePeriod(startDate, endDate, index) {
             if (this.invoicingDetails.invoicing_repetition_type == 1) {
-                console.log(`Index: ${index}`)
                 return this.invoicingPeriods[index]
                     ? this.invoicingPeriods[index].label
                     : ''
@@ -490,7 +507,6 @@ export default {
         },
         getEndOfNextFinancialQuarter(startDate) {
             const quarters = this.getQuartersFromStartMonth()
-            console.log(`\n\nStart Date: ${startDate}`)
             for (let i = 0; i < quarters.length; i++) {
                 let endOfFinancialQuarter = moment(startDate)
                     .set('month', quarters[i] - 1)
