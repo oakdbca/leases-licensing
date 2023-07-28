@@ -296,21 +296,19 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
                     proposal__lodgement_date__lte=filter_lodged_to
                 )
 
-        # getter = request.query_params.get
-        # import ipdb; ipdb.set_trace()
-        # fields = self.get_fields(getter)
-        # ordering = self.get_ordering(getter, fields)
+        ledger_lookup_fields = [
+            "submitter",
+            # "ind_applicant", # Replaced by ProposalApplicant object
+        ]
+        # Prevent the external user from searching for officers
+        if is_internal(request):
+            ledger_lookup_fields += ["assigned_officer", "assigned_approver"]
 
         queryset = self.apply_request(
             request,
             queryset,
             view,
-            ledger_lookup_fields=[
-                "submitter",
-                "ind_applicant",
-                "assigned_officer",
-                "assigned_approver",
-            ],
+            ledger_lookup_fields=ledger_lookup_fields,
         )
 
         setattr(view, "_datatables_total_count", total_count)
