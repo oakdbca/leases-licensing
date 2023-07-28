@@ -365,7 +365,7 @@ export default {
                     }
                     return '';
                 },
-                name: 'ind_applicant__first_name, ind_applicant__last_name',
+                name: 'proposalapplicant__first_name, proposalapplicant__last_name',
             };
         },
         column_status: function () {
@@ -547,6 +547,10 @@ export default {
                         d.filter_lodged_from = vm.filterProposalLodgedFrom;
                         d.filter_lodged_to = vm.filterProposalLodgedTo;
                         d.level = vm.level;
+
+                        // Add search terms to be concatenated on the queryset
+                        d.search_terms =
+                            'proposalapplicant__first_name, proposalapplicant__last_name';
                     },
                 },
                 dom:

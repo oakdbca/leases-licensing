@@ -1262,17 +1262,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.org_applicant:
             return self.org_applicant
         elif self.ind_applicant:
-            email_user = retrieve_email_user(self.ind_applicant)
+            return self.proposal_applicant
         elif self.proxy_applicant:
-            email_user = retrieve_email_user(self.proxy_applicant)
-        elif self.submitter:
-            email_user = retrieve_email_user(self.submitter)
+            return retrieve_email_user(self.proxy_applicant)
         else:
             logger.error(
                 f"Applicant for the proposal {self.lodgement_number} not found"
             )
-            email_user = "No Applicant"
-        return email_user
+            return "No Applicant"
 
     @property
     def registration_of_interests(self):
@@ -1305,6 +1302,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def applicant_name(self):
         if isinstance(self.applicant, Organisation):
             return f"{self.applicant.ledger_organisation_name}"
+        elif isinstance(self.applicant, ProposalApplicant):
+            return self.applicant.full_name
         elif isinstance(self.applicant, EmailUser):
             return f"{self.applicant.first_name} {self.applicant.last_name}"
         logger.error(f"Applicant for the proposal {self.lodgement_number} not found")
@@ -4878,7 +4877,9 @@ def clone_proposal_with_status_reset(original_proposal):
         raise e
     else:
         if not original_proposal.org_applicant:
-            original_applicant = ProposalApplicant.objects.get(proposal=original_proposal)
+            original_applicant = ProposalApplicant.objects.get(
+                proposal=original_proposal
+            )
             # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
             original_applicant.copy_self_to_proposal(proposal)
         return proposal
