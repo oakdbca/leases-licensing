@@ -513,4 +513,7 @@ module.exports = {
         }
         return i + 'th'
     },
+    yearsElapsedSinceStartDate: function (date) {
+        return moment().diff(moment(date), 'years')
+    }
 }
