@@ -1,5 +1,4 @@
 <template>
-    <pre>{{ $filters.pretty(invoicingDetailsComputed) }}</pre>
     <form id="invoicing-form" novalidate class="needs-validation">
         <div class="row mb-4">
             <label class="col-form-label col-sm-4"
@@ -383,6 +382,7 @@
                         invoicingDetailsComputed.charge_method
                     )
                 "
+                @updateDefaultInvoicingDate="updateDefaultInvoicingDate"
             />
         </div>
     </form>
@@ -689,6 +689,22 @@ export default {
             this.invoicingDetailsComputed = {
                 ...this.invoicingDetailsComputed,
                 gross_turnover_percentages: gross_turnover_percentages,
+            }
+        },
+        updateDefaultInvoicingDate: function (firstIssueDate) {
+            console.log('firstIssueDate = ', firstIssueDate)
+            let invoicing_day_of_month = firstIssueDate.date()
+            console.log('invoicing_day_of_month = ', invoicing_day_of_month)
+            this.invoicingDetailsComputed = {
+                ...this.invoicingDetailsComputed,
+                invoicing_day_of_month: invoicing_day_of_month,
+            }
+            if (this.invoicingDetailsComputed.invoicing_repetition_type == 1) {
+                let invoicing_month_of_year = firstIssueDate.month() + 1
+                this.invoicingDetailsComputed = {
+                    ...this.invoicingDetailsComputed,
+                    invoicing_month_of_year: invoicing_month_of_year,
+                }
             }
         },
         chargeMethodDisabled: function (charge_method) {

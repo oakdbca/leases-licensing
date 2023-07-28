@@ -12,46 +12,12 @@
             >Additional invoices may be created if there is a discrepency
             between the quarterly and annual turnover</BootstrapAlert
         >
-        <!-- <div class="mb-3">
-            {{ invoiceCount }} invoices will be generated. Days Difference:
-            {{ daysDifference }}, Months Difference: {{ monthsDifference }},
-            Quarters Difference: {{ quartersDifference }}, Years Difference:
-            {{ yearsDifference }}, Total Charge (Before Modifications):
-        </div> -->
-        <!-- <div>test: {{ test }}</div>
-        <div v-for="(period, index) in invoicingPeriods" :key="period.label">
-            {{ index }} {{ period.label }}
-        </div> -->
-        <!-- <div v-for="period in quarterlyInvoicingPeriods" :key="period">
-            {{ period }}
-        </div> -->
-        <!-- <div v-if="chargeMethodKey != 'percentage_of_gross_turnover'">
-            <table class="table table-sm">
-                <thead>
-                    <tr>
-                        <th scope="col">Duration in Days</th>
-                        <th scope="col">Cost per Day</th>
-                        <th scope="col">Total of Payments</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="">
-                        <td scope="row">{{ daysDifference }}</td>
-                        <td>{{ costPerDay }} (rounded)</td>
-                        <td>{{ totalAmount }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div> -->
-
         <table class="table table-sm table-striped">
             <thead>
                 <tr>
                     <th>Number</th>
                     <th>Issue Date</th>
                     <th>Time Period</th>
-                    <!-- <th>Days Running Total</th>
-                    <th>Amount Running Total</th> -->
                     <th>Amount</th>
                 </tr>
             </thead>
@@ -60,8 +26,6 @@
                     <td>{{ invoice.number }}</td>
                     <td>{{ invoice.issueDate }}</td>
                     <td>{{ invoice.timePeriod }}</td>
-                    <!-- <td>{{ invoice.daysRunningTotal }}</td>
-                    <td>${{ invoice.amountRunningTotal }}</td> -->
                     <td>
                         {{ invoice.amountObject.prefix }}
                         {{ invoice.amountObject.amount }}
@@ -105,9 +69,11 @@ export default {
             required: true,
         },
     },
+    emits: ['updateDefaultInvoicingDate'],
     data: function () {
         return {
             ordinalSuffixOf: helpers.ordinalSuffixOf,
+            defaultInvoiceDateSet: false,
         }
     },
     computed: {
@@ -303,15 +269,18 @@ export default {
                 }
             }
 
+            let yearSequenceIndex = this.getYearSequenceIndex(index)
             if (
                 this.chargeMethodKey == 'base_fee_plus_fixed_annual_percentage'
             ) {
                 let percentage = 0.0
                 let suffix =
-                    index > 0 ? `Enter percentage for year ${index}` : ''
+                    yearSequenceIndex > 0
+                        ? `Enter percentage for year ${yearSequenceIndex + 1}`
+                        : ''
                 let annual_increment_percentage =
                     this.invoicingDetails.annual_increment_percentages[
-                        index - 1
+                        yearSequenceIndex - 1
                     ]
                 if (annual_increment_percentage) {
                     percentage =
@@ -328,9 +297,15 @@ export default {
             ) {
                 let increment_amount = 0.0
                 let suffix =
-                    index > 0 ? `Enter increment amount for year ${index}` : ''
+                    yearSequenceIndex > 0
+                        ? `Enter increment amount for year ${
+                              yearSequenceIndex + 1
+                          }`
+                        : ''
                 let annual_increment_amount =
-                    this.invoicingDetails.annual_increment_amounts[index - 1]
+                    this.invoicingDetails.annual_increment_amounts[
+                        yearSequenceIndex - 1
+                    ]
                 if (annual_increment_amount) {
                     increment_amount =
                         annual_increment_amount.increment_amount || 0.0
@@ -342,6 +317,19 @@ export default {
             }
 
             return amountObject
+        },
+        getYearSequenceIndex(index) {
+            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+                return index
+            }
+            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+                let quarterlyIndex = index / 4
+                return Math.floor(quarterlyIndex)
+            }
+            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+                let quarterlyIndex = index / 12
+                return Math.floor(quarterlyIndex)
+            }
         },
         getAmountForGrossTurnoverInvoiceDisplay(issueDate, amountObject) {
             console.log(JSON.stringify(amountObject))
@@ -376,10 +364,24 @@ export default {
             var today = moment()
             var firstIssueDate = moment(startDate)
             if (this.chargeMethodKey != 'percentage_of_gross_turnover') {
-                return this.getEndOfNextIntervalAnnual(firstIssueDate).add(
-                    1,
-                    'days'
+                firstIssueDate = this.getEndOfNextIntervalAnnual(
+                    firstIssueDate
+                ).add(1, 'days')
+                if (!this.defaultInvoiceDateSet) {
+                    // Instruct the parent component to update the day of month to invoice,
+                    // month of year to invoice (and month of year to invoice if necessary)
+                    this.$emit('updateDefaultInvoicingDate', firstIssueDate)
+                    this.defaultInvoiceDateSet = true
+                }
+                firstIssueDate.set(
+                    'date',
+                    this.invoicingDetails.invoicing_day_of_month
                 )
+                firstIssueDate.set(
+                    'month',
+                    this.invoicingDetails.invoicing_month_of_year - 1
+                )
+                return firstIssueDate
             }
             firstIssueDate.set(
                 'date',
@@ -392,7 +394,6 @@ export default {
             // This works for quarterly invoicing
             if (this.invoicingDetails.invoicing_repetition_type == 2) {
                 let firstIssueDate = moment(startDate)
-                // This works for annual and monthly invoicing
                 while (firstIssueDate.isBefore(today)) {
                     firstIssueDate = this.getEndOfNextFinancialQuarter(
                         firstIssueDate
