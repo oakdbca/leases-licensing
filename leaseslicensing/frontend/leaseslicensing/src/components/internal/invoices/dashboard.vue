@@ -1,6 +1,10 @@
 <template>
     <div id="invoicesDash" class="container">
-        <FormSection :form-collapse="false" label="Invoices" index="invoices">
+        <FormSection
+            :form-collapse="false"
+            label="Invoice Records"
+            index="invoices"
+        >
             <InvoicesTable level="internal" />
         </FormSection>
     </div>

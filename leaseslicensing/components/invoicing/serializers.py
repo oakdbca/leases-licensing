@@ -663,7 +663,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
 
     def get_approval_type(self, obj):
         # update this once we have a proper approval_type field on the approval object
-        return "update this"
+        return obj.approval.approval_type.name
 
     def get_invoice_pdf_secure_url(self, obj):
         if obj.invoice_pdf:
@@ -687,7 +687,12 @@ class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
         model = Invoice
         fields = [
             "id",
+            "invoice_pdf",
             "oracle_invoice_number",
+            "date_issued",
+            "date_due",
+            "oracle_invoice_number",
+            "status",
         ]
 
 

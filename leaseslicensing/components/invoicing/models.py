@@ -784,10 +784,15 @@ class Invoice(LicensingModel):
 
     MODEL_PREFIX = "I"
 
+    INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE = "pending_upload_oracle_invoice"
     INVOICE_STATUS_UNPAID = "unpaid"
     INVOICE_STATUS_PAID = "paid"
     INVOICE_STATUS_VOID = "void"
     INVOICE_STATUS_CHOICES = (
+        (
+            INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+            "Pending Upload of Oracle Invoice",
+        ),
         (INVOICE_STATUS_UNPAID, "Unpaid"),
         (INVOICE_STATUS_PAID, "Paid"),
         (INVOICE_STATUS_VOID, "Void"),
@@ -802,15 +807,16 @@ class Invoice(LicensingModel):
     status = models.CharField(
         max_length=40,
         choices=INVOICE_STATUS_CHOICES,
-        default=INVOICE_STATUS_UNPAID,
+        default=INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
         null=True,
         blank=True,
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     gst_free = models.BooleanField(default=False)
-    date_issued = models.DateTimeField(auto_now_add=True, null=False)
+    date_created = models.DateTimeField(auto_now_add=True, null=False)
     date_updated = models.DateTimeField(auto_now=True, null=False)
-    date_due = models.DateField(null=True, blank=False)
+    date_issued = models.DateTimeField(null=True, blank=False)
+    date_due = models.DateTimeField(null=True, blank=False)
     proponent_reference_number = models.CharField(null=True, blank=True, max_length=50)
 
     # Fields that will match those in the ledger system
@@ -850,7 +856,6 @@ class Invoice(LicensingModel):
             debit=Coalesce(models.Sum("debit"), Decimal("0.00")),
         )
         balance = self.amount + credit_debit_sums["credit"] - credit_debit_sums["debit"]
-        logger.debug(f"Balance for Invoice: {self} is {balance}")
         return Decimal(balance).quantize(Decimal("0.01"))
 
     @property

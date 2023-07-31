@@ -221,6 +221,11 @@ urlpatterns = (
             name="external-invoices",
         ),
         url(
+            r"^internal/invoices/$",
+            views.InternalView.as_view(),
+            name="internal-invoices",
+        ),
+        url(
             r"^external/approval/(?P<approval_pk>\d+)/$",
             views.ExternalView.as_view(),
             name="external-approval-detail",

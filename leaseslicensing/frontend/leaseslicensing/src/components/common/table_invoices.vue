@@ -102,14 +102,14 @@
             :invoice_amount="selectedInvoiceAmount"
         >
         </InvoiceViewTransactions>
-        <EditOracleInvoiceNumber
-            ref="invoice_edit_oracle_invoice_number"
-            :invoice_id="selectedInvoiceId"
-            :invoice_lodgement_number="selectedInvoiceLodgementNumber"
-            :oracle_invoice_number="selectedInvoiceOracleInvoiceNumber"
-            @oracleInvoiceNumberUpdated="oracleInvoiceNumberUpdated"
+        <UploadOracleInvoice
+            ref="invoice_upload_oracle_invoice"
+            :invoice-id="selectedInvoiceId"
+            :invoice-lodgement-number="selectedInvoiceLodgementNumber"
+            :oracle-invoice-number="selectedInvoiceOracleInvoiceNumber"
+            @oracleInvoiceNumberUploaded="oracleInvoiceNumberUploaded"
         >
-        </EditOracleInvoiceNumber>
+        </UploadOracleInvoice>
         <InvoiceRecordTransaction
             ref="invoice_record_transaction"
             :invoice_id="selectedInvoiceId"
@@ -125,7 +125,7 @@
 import datatable from '@/utils/vue/datatable.vue'
 import InvoiceViewTransactions from '../internal/invoices/invoice_view_transactions.vue'
 import InvoiceRecordTransaction from '../internal/invoices/invoice_record_transaction.vue'
-import EditOracleInvoiceNumber from '../internal/invoices/invoice_edit_oracle_invoice_number.vue'
+import UploadOracleInvoice from '../internal/invoices/invoice_upload_oracle_invoice.vue'
 
 import { v4 as uuid } from 'uuid'
 import { api_endpoints, constants } from '@/utils/hooks'
@@ -135,7 +135,7 @@ export default {
     components: {
         datatable,
         InvoiceViewTransactions,
-        EditOracleInvoiceNumber,
+        UploadOracleInvoice,
         InvoiceRecordTransaction,
     },
     props: {
@@ -310,8 +310,14 @@ export default {
                 visible: true,
                 name: 'status',
                 render: function (row, type, full) {
+                    if ('pending_upload_oracle_invoice' == full.status) {
+                        return `<span class="badge bg-secondary">${full.status_display}</span>`
+                    }
                     if ('unpaid' == full.status) {
-                        if (new Date(full.date_due) < new Date()) {
+                        if (
+                            full.date_due &&
+                            new Date(full.date_due) < new Date()
+                        ) {
                             return `<span class="badge bg-danger">${full.status_display} (Overdue)</span>`
                         }
                         return `<span class="badge bg-warning">${full.status_display}</span>`
@@ -332,6 +338,9 @@ export default {
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
+                    if (!full.invoice_pdf_secure_url) {
+                        return 'Not Yet Uploaded'
+                    }
                     return `<a href="${full.invoice_pdf_secure_url}" target="_blank">Invoice <i class="fa-solid fa-file-pdf fa-lg ps-1" style="color:red;"></i></a>`
                 },
             }
@@ -369,6 +378,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
+                    if (!full.date_due) {
+                        return 'TBC'
+                    }
                     return new Date(full.date_issued).toLocaleDateString(
                         'en-AU'
                     )
@@ -382,6 +394,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
+                    if (!full.date_due) {
+                        return 'TBC'
+                    }
                     return new Date(full.date_due).toLocaleDateString('en-AU')
                 },
             }
@@ -403,14 +418,18 @@ export default {
                         links += `<a href="${end_point}">Pay Now</a><br />`
                     }
                     if (full.is_finance_officer) {
-                        // In the case that an invoice is overpaid we will want to allow recording a transaction to correct the balance
-                        if (
-                            'unpaid' === full.status ||
-                            full.balance != '0.00'
-                        ) {
-                            links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`
+                        // Only allow record transaction action if an oracle invoice has been uploaded
+                        if ('pending_upload_oracle_invoice' != full.status) {
+                            // In the case that an invoice is overpaid we will want to allow recording a transaction to correct the balance
+                            if (
+                                'unpaid' === full.status ||
+                                full.balance != '0.00'
+                            ) {
+                                links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`
+                            }
                         }
-                        links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Edit Oracle Invoice Number</a><br />`
+
+                        links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Upload Oracle Invoice</a><br />`
                     }
                     return links
                 },
@@ -630,11 +649,11 @@ export default {
             vm.selectedInvoiceLodgementNumber = lodgement_number
             console.log(typeof oracle_invoice_number)
             vm.selectedInvoiceOracleInvoiceNumber = oracle_invoice_number
-            vm.$refs.invoice_edit_oracle_invoice_number.isModalOpen = true
+            vm.$refs.invoice_upload_oracle_invoice.isModalOpen = true
         },
-        oracleInvoiceNumberUpdated: function () {
+        oracleInvoiceNumberUploaded: function () {
             let vm = this
-            vm.$refs.invoice_edit_oracle_invoice_number.isModalOpen = false
+            vm.$refs.invoice_upload_oracle_invoice.isModalOpen = false
             vm.$refs.invoices_datatable.vmDataTable.draw()
         },
         recordTransaction: function (id, lodgement_number, balance_remaining) {

@@ -2,9 +2,12 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 
+from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils import timezone
 from ledger_api_client.utils import generate_payment_session
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -148,23 +151,34 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     @action(detail=True, methods=["PATCH"])
-    def edit_oracle_invoice_number(self, request, *args, **kwargs):
+    @transaction.atomic
+    def upload_oracle_invoice(self, request, *args, **kwargs):
         if not is_finance_officer(request):
             return Response(
-                {
-                    "message": "You do not have permission to edit an Oracle Invoice Number"
-                }
+                {"message": "You do not have permission to upload an Oracle Invoice"}
             )
 
         instance = self.get_object()
-        logger.debug(instance.__dict__)
-        oracle_invoice_number = request.data.get("oracle_invoice_number", None)
-        if not oracle_invoice_number:
-            return Response({"message": "Oracle Invoice Number is required"})
 
-        serializer = InvoiceEditOracleInvoiceNumberSerializer(
-            instance, data={"oracle_invoice_number": oracle_invoice_number}
+        date_issued = timezone.now()
+        date_due = date_issued + timezone.timedelta(
+            days=settings.DEFAULT_DAYS_BEFORE_PAYMENT_DUE
         )
+
+        logger.debug(type(request.data))
+
+        data = request.data.copy()
+        data.update(
+            {
+                "status": Invoice.INVOICE_STATUS_UNPAID,
+                "date_issued": date_issued,
+                "date_due": date_due,
+            }
+        )
+
+        logger.debug(data)
+
+        serializer = InvoiceEditOracleInvoiceNumberSerializer(instance, data=data)
 
         if not serializer.is_valid():
             return Response(serializer.errors, status=400)

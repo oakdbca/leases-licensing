@@ -3082,37 +3082,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         serializer.is_valid(raise_exception=True)
 
         instance = serializer.save()
-
-        if settings.CHARGE_METHOD_ONCE_OFF_CHARGE != instance.charge_method.key:
-            return instance
-
-        # Once off charge invoices are raised immediately
-        if not hasattr(self, "approval") or self.approval is None:
-            raise serializers.ValidationError(_("Approval not found", code="invalid"))
-        approval = self.approval
-
-        invoice_amount = instance.invoice_amount
-        if not invoice_amount or invoice_amount <= Decimal("0.00"):
-            raise serializers.ValidationError(
-                _(f"Invalid invoice amount: {invoice_amount}", code="invalid")
-            )
-
-        gst_free = approval.approval_type.gst_free
-        due_date = timezone.now().date() + datetime.timedelta(
-            days=settings.DEFAULT_DAYS_BEFORE_PAYMENT_DUE
-        )
-
-        invoice = Invoice(
-            approval=approval,
-            amount=invoice_amount,
-            gst_free=gst_free,
-            date_due=due_date,
-        )
-        invoice.save()
-
-        # send to the finance group so they can take action
-        send_new_invoice_raised_internal_notification(approval, invoice)
-
+        logger.debug(type(instance))
         return instance
 
     @transaction.atomic
@@ -3132,6 +3102,31 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 "proxy_applicant": self.proxy_applicant,
             },
         )
+
+        invoicing_details = self.save_invoicing_details(request, action)
+        if (
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE
+            == invoicing_details.charge_method.key
+        ):
+            invoice_amount = invoicing_details.invoice_amount
+            logger.debug(f"invoice_amount: {invoice_amount}")
+            if not invoice_amount or invoice_amount <= Decimal("0.00"):
+                raise serializers.ValidationError(
+                    _(f"Invalid invoice amount: {invoice_amount}", code="invalid")
+                )
+
+            gst_free = approval.approval_type.gst_free
+
+            invoice = Invoice(
+                approval=self.approval,
+                amount=invoice_amount,
+                gst_free=gst_free,
+            )
+            invoice.save()
+
+            # send to the finance group so they can take action
+            send_new_invoice_raised_internal_notification(self.approval, invoice)
+
         # Todo replace this generate compliances call to a generate invoicing compliances call
         # New method that generates the compliances when the charge method is based on gross revenue
         self.generate_compliances(approval, request)
