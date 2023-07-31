@@ -346,6 +346,7 @@ class CPICalculationMethodViewSet(
 class PayInvoiceSuccessCallbackView(APIView):
     throttle_classes = [AnonRateThrottle]
 
+    @transaction.atomic
     def get(self, request, uuid, format=None):
         logger.info("Leases Licensing Pay Invoice Success View get method called.")
 
@@ -359,6 +360,12 @@ class PayInvoiceSuccessCallbackView(APIView):
                 f"Invoice uuid: {uuid}.",
             )
             invoice = Invoice.objects.get(uuid=uuid)
+
+            InvoiceTransaction.objects.create(
+                invoice=invoice,
+                debit=invoice.amount,
+            )
+
             invoice.status = Invoice.INVOICE_STATUS_PAID
             invoice.save()
 
