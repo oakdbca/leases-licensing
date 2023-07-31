@@ -862,6 +862,18 @@ class Invoice(LicensingModel):
     def invoicing_details(self):
         return self.approval.current_proposal.invoicing_details
 
+    @property
+    def ledger_invoice_url(self):
+        if not self.invoice_reference:
+            return None
+        return (
+            settings.LEDGER_API_URL
+            + "/ledgergw/invoice-pdf/"
+            + settings.LEDGER_API_KEY
+            + "/"
+            + self.invoice_reference
+        )
+
 
 class InvoiceTransactionManager(models.Manager):
     def get_queryset(self):

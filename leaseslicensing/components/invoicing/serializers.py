@@ -643,6 +643,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "invoice_pdf_secure_url",
+            "ledger_invoice_url",
             "oracle_invoice_number",
             "amount",
             "transaction_count",

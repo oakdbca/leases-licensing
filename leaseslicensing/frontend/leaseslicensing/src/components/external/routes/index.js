@@ -9,6 +9,8 @@ import Compliance from '../compliances/access.vue'
 import ComplianceSubmit from '../compliances/submit.vue'
 import Approval from '../approvals/approval.vue'
 import InvoicesDash from '@/components/internal/invoices/dashboard.vue'
+import InvoicePaymentSuccess from '@/components/external/invoices/payment_success.vue'
+import InvoicePaymentFailure from '@/components/external/invoices/payment_failure.vue'
 
 export default {
     path: '/external',
@@ -61,6 +63,16 @@ export default {
             path: 'invoices',
             component: InvoicesDash,
             name: 'external-invoices-dash',
+        },
+        {
+            path: 'invoice/:invoice_id/payment-success',
+            component: InvoicePaymentSuccess,
+            name: 'external-invoice-payment-success',
+        },
+        {
+            path: 'invoice/:invoice_id/payment-failure',
+            component: InvoicePaymentFailure,
+            name: 'external-invoice-payment-failure',
         },
     ],
 }

@@ -145,6 +145,13 @@ class InvoicingAndReviewDatesAdmin(admin.ModelAdmin):
         return False
 
 
+class InvoiceTransactionInline(admin.TabularInline):
+    model = models.InvoiceTransaction
+    extra = 0
+
+
 @admin.register(models.Invoice)
 class InvoiceAdmin(admin.ModelAdmin):
-    pass
+    inlines = [
+        InvoiceTransactionInline,
+    ]

@@ -2,9 +2,11 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 
+import requests
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from django.http import FileResponse, Http404
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils import timezone
@@ -102,6 +104,9 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             return (
                 super()
                 .get_queryset()
+                .exclude(status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE)
+                .exclude(invoice_pdf="")
+                .exclude(oracle_invoice_number__isnull=True)
                 .filter(
                     Q(approval__current_proposal__ind_applicant=self.request.user.id)
                     | Q(approval__current_proposal__org_applicant__in=org_ids)
@@ -329,6 +334,19 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             return redirect(reverse("ledgergw-payment-details"))
 
         return redirect(fallback_url)
+
+    @action(
+        methods=["GET"],
+        detail=True,
+    )
+    def retrieve_invoice_receipt(self, request, *args, **kwargs):
+        instance = self.get_object()
+        invoice_url = instance.ledger_invoice_url
+        if invoice_url:
+            response = requests.get(invoice_url)
+            return FileResponse(response, content_type="application/pdf")
+
+        raise Http404
 
 
 class InvoiceTransactionViewSet(viewsets.ModelViewSet):

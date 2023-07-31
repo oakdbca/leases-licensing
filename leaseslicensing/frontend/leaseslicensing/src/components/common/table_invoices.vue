@@ -231,6 +231,24 @@ export default {
             return this.level == 'internal'
         },
         invoicesHeaders: function () {
+            if (this.is_internal) {
+                return [
+                    'ID',
+                    'Number',
+                    'Approval',
+                    'Type',
+                    'Holder',
+                    'Status',
+                    'Oracle Invoice',
+                    'Ledger Invoice',
+                    'Amount',
+                    'Inc GST',
+                    'Date Due',
+                    'Date Issued',
+                    'Action',
+                    'Oracle Invoice Number',
+                ]
+            }
             return [
                 'ID',
                 'Number',
@@ -239,6 +257,7 @@ export default {
                 'Holder',
                 'Status',
                 'Oracle Invoice',
+                'Receipt',
                 'Amount',
                 'Inc GST',
                 'Date Due',
@@ -332,7 +351,7 @@ export default {
                 },
             }
         },
-        invoicePDFColumn: function () {
+        oracleInvoicePDFColumn: function () {
             return {
                 data: 'invoice_pdf_secure_url',
                 orderable: true,
@@ -343,6 +362,28 @@ export default {
                         return 'Not Yet Uploaded'
                     }
                     return `<a href="${full.invoice_pdf_secure_url}" target="_blank">${full.oracle_invoice_number} <i class="fa-solid fa-file-pdf fa-lg ps-1" style="color:red;"></i></a>`
+                },
+            }
+        },
+        ledgerInvoicePDFColumn: function () {
+            return {
+                data: 'ledger_invoice_url',
+                orderable: true,
+                searchable: false,
+                visible: true,
+                render: function (row, type, full) {
+                    let text = 'Invoice'
+                    if ('paid' == full.status) {
+                        text = 'Receipt'
+                    }
+                    if (!full.ledger_invoice_url) {
+                        return 'Not Yet Generated'
+                    }
+                    return `<a href="${full.ledger_invoice_url}" target="_blank">${text}
+                                        <i
+                                            class="fa fa-external-link"
+                                            aria-hidden="true"
+                                        ></i></a>`
                 },
             }
         },
@@ -413,7 +454,15 @@ export default {
                     if (full.transaction_count > 0) {
                         links += `<a href="#${full.id}" data-view-transactions="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-invoice-amount="${full.amount}">View Transactions</a><br />`
                     }
-                    if (full.is_customer) {
+                    if (
+                        full.is_customer &&
+                        full.balance > 0 &&
+                        ![
+                            'paid',
+                            'void',
+                            'pending_upload_oracle_invoice',
+                        ].includes(full.status)
+                    ) {
                         let end_point =
                             api_endpoints.invoices + full.id + '/pay_invoice/'
                         links += `<a href="${end_point}">Pay Now</a><br />`
@@ -463,7 +512,8 @@ export default {
                 this.approvalTypeColumn,
                 this.holderColumn,
                 this.statusColumn,
-                this.invoicePDFColumn,
+                this.oracleInvoicePDFColumn,
+                this.ledgerInvoicePDFColumn,
                 this.amountColumn,
                 this.incGSTColumn,
                 this.dateDueColumn,
@@ -478,7 +528,8 @@ export default {
                     this.approvalTypeColumn,
                     this.holderColumn,
                     this.statusColumn,
-                    this.invoicePDFColumn,
+                    this.oracleInvoicePDFColumn,
+                    this.ledgerInvoicePDFColumn,
                     this.amountColumn,
                     this.incGSTColumn,
                     this.dateDueColumn,
