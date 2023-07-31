@@ -46,6 +46,12 @@
                                                 min="0.00"
                                                 step="0.01"
                                                 required
+                                                @change="
+                                                    !transaction.debit
+                                                        ? (transaction.debit =
+                                                              '0.00')
+                                                        : null
+                                                "
                                             />
                                             <div class="invalid-feedback">
                                                 Please enter a debit or credit
@@ -61,6 +67,12 @@
                                                 min="0.00"
                                                 step="0.01"
                                                 required
+                                                @change="
+                                                    !transaction.debit
+                                                        ? (transaction.debit =
+                                                              '0.00')
+                                                        : null
+                                                "
                                             />
                                             <div class="invalid-feedback">
                                                 Please enter a debit or credit
@@ -74,7 +86,7 @@
                         <div>
                             <ul class="list-group">
                                 <li class="list-group-item">
-                                    <span class="footer-heading"
+                                    <span class="footer-heading pe-1"
                                         >Balance Remaining:</span
                                     >
                                     <span
@@ -88,7 +100,7 @@
                                     >
                                 </li>
                                 <li class="list-group-item">
-                                    <span class="footer-heading"
+                                    <span class="footer-heading pe-1"
                                         >Projected Balance:</span
                                     >
                                     <span
@@ -169,8 +181,8 @@ export default {
         balanceRemainingAfterTransaction: function () {
             return (
                 this.balance_remaining -
-                (Number(this.transaction.debit) +
-                    Number(this.transaction.credit))
+                Number(this.transaction.debit) +
+                Number(this.transaction.credit)
             )
         },
         balanceRemainingAfterTransactionCurrency: function () {

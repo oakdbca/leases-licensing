@@ -480,6 +480,10 @@ class Approval(LicensingModelVersioned):
         return None
 
     @property
+    def proponent_reference_number(self):
+        return self.current_proposal.proponent_reference_number
+
+    @property
     def review_dates(self):
         review_once_every = self.current_proposal.invoicing_details.review_once_every
         if not review_once_every:

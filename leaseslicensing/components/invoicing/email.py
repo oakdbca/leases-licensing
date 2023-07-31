@@ -17,24 +17,18 @@ logger = logging.getLogger(__name__)
 SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
-def send_new_invoice_raised_notification(approval, invoice):
+def send_new_invoice_raised_notification(request, approval, invoice):
     email = TemplateEmailBase(
         subject=f"New Invoice Ready for {approval.approval_type} {approval.lodgement_number}",
         html_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_notification.html",
         txt_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_notification.txt",
     )
-    external_invoices = reverse(
-        "external-invoices",
-    )
-    external_invoices_url = (
-        f"{settings.LEASES_LICENSING_EXTERNAL_URL}{external_invoices}"
-    )
+    logger.debug(reverse("external-invoices"))
+    external_invoices_url = request.build_absolute_uri(reverse("external-invoices"))
 
-    pay_now = reverse(
-        "external-pay-invoice",
-        kwargs={"pk": invoice.id},
+    pay_now_url = request.build_absolute_uri(
+        reverse("external-pay-invoice", kwargs={"pk": invoice.id})
     )
-    pay_now_url = f"{settings.LEASES_LICENSING_EXTERNAL_URL}{pay_now}"
 
     context = {
         "approval": approval,

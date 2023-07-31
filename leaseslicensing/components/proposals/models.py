@@ -3122,6 +3122,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 amount=invoice_amount,
                 gst_free=gst_free,
             )
+            if approval.proponent_reference_number:
+                invoice.proponent_reference_number = approval.proponent_reference_number
+
             invoice.save()
 
             # send to the finance group so they can take action

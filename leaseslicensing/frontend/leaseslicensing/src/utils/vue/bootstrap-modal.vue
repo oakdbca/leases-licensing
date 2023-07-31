@@ -3,6 +3,8 @@
         <div
             :id="id"
             class="modal"
+            data-bs-backdrop="static"
+            data-bs-keyboard="false"
             tabindex="-1"
             role="dialog"
             aria-hidden="true"

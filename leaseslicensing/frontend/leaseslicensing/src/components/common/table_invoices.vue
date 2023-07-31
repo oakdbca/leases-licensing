@@ -115,6 +115,7 @@
             :invoice_id="selectedInvoiceId"
             :invoice_lodgement_number="selectedInvoiceLodgementNumber"
             :balance_remaining="selectedInvoiceBalanceRemaining"
+            :force="true"
             @transactionRecorded="transactionRecorded"
         >
         </InvoiceRecordTransaction>
@@ -237,7 +238,7 @@ export default {
                 'Type',
                 'Holder',
                 'Status',
-                'Invoice',
+                'Oracle Invoice',
                 'Amount',
                 'Inc GST',
                 'Date Due',
@@ -341,7 +342,7 @@ export default {
                     if (!full.invoice_pdf_secure_url) {
                         return 'Not Yet Uploaded'
                     }
-                    return `<a href="${full.invoice_pdf_secure_url}" target="_blank">Invoice <i class="fa-solid fa-file-pdf fa-lg ps-1" style="color:red;"></i></a>`
+                    return `<a href="${full.invoice_pdf_secure_url}" target="_blank">${full.oracle_invoice_number} <i class="fa-solid fa-file-pdf fa-lg ps-1" style="color:red;"></i></a>`
                 },
             }
         },
@@ -428,8 +429,12 @@ export default {
                                 links += `<a href="#${full.id}" data-record-transaction="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-balance-remaining="${full.balance}">Record Transaction</a><br />`
                             }
                         }
-
-                        links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Upload Oracle Invoice</a><br />`
+                        if (
+                            !full.invoice_pdf_secure_url ||
+                            !full.oracle_invoice_number
+                        ) {
+                            links += `<a href="#${full.id}" data-edit-oracle-invoice-number="${full.id}" data-invoice-lodgement-number="${full.lodgement_number}" data-oracle-invoice-number="${full.oracle_invoice_number}">Upload Oracle Invoice</a><br />`
+                        }
                     }
                     return links
                 },

@@ -127,6 +127,25 @@ export default {
             this.isModalOpen = false
             $('#oracle-invoice-number').val('')
         },
+        confirmUpload: function () {
+            Swal.fire({
+                title: 'Confirm Oracle Invoice Upload',
+                text: `You are about to upload the oracle invoice for invoice record: ${this.invoiceLodgementNumber}.\
+                The system will notify the proponent that a new invoice has been raised.`,
+                icon: 'warning',
+                showCancelButton: true,
+                reverseButtons: true,
+                buttonsStyling: false,
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-secondary',
+                },
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    return this.validateForm()
+                }
+            })
+        },
         validateForm: function () {
             let vm = this
             var form = document.getElementById('oracle-invoice-number-form')
