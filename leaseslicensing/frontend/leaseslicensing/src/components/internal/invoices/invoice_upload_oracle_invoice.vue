@@ -151,9 +151,8 @@ export default {
             var form = document.getElementById('oracle-invoice-number-form')
 
             let oracleInvoice = document.getElementById('oracle-invoice')
-            console.log(oracleInvoice.files[0].name.split('.').pop())
             if (
-                !oracleInvoice ||
+                !oracleInvoice.files[0] ||
                 oracleInvoice.files[0].name.split('.').pop() != 'pdf'
             ) {
                 oracleInvoice.setCustomValidity(
