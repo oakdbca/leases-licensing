@@ -847,7 +847,7 @@ class Invoice(LicensingModel):
         )
 
     def user_has_object_permission(self, user_id):
-        self.approval.user_has_object_permission(user_id)
+        return self.approval.user_has_object_permission(user_id)
 
     @property
     def balance(self):
