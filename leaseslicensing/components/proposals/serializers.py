@@ -599,6 +599,8 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     def get_applicant_type(self, obj):
         if isinstance(obj.applicant, Organisation):
             return "organisation"
+        elif isinstance(obj.applicant, ProposalApplicant):
+            return "individual"
         elif isinstance(obj.applicant, EmailUser):
             return "individual"
         else:

@@ -2625,9 +2625,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
-                                # "submitter": self.submitter,
-                                # "org_applicant": self.org_applicant,
-                                # "proxy_applicant": self.proxy_applicant,
                                 "record_management_number": record_management_number,
                             },
                         )
@@ -2671,26 +2668,45 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 logger.exception(e)
                 raise e
 
+    @transaction.atomic
     def create_lease_licence_from_registration_of_interest(self):
-        lease_licence = Proposal.objects.create(
-            application_type=ApplicationType.objects.get(
-                name=APPLICATION_TYPE_LEASE_LICENCE
-            ),
-            submitter=None,
-            ind_applicant=self.ind_applicant,
-            org_applicant=self.org_applicant,
-            proposal_type_id=self.proposal_type.id,
-        )
-        # add geometry
-        from copy import deepcopy
+        try:
+            lease_licence = Proposal.objects.create(
+                application_type=ApplicationType.objects.get(
+                    name=APPLICATION_TYPE_LEASE_LICENCE
+                ),
+                submitter=None,
+                ind_applicant=self.ind_applicant,
+                org_applicant=self.org_applicant,
+                proposal_type_id=self.proposal_type.id,
+            )
+        except IntegrityError as e:
+            logger.exception(e)
+            raise e
+        except Exception as e:
+            logger.exception(e)
+            raise e
+        else:
+            if not self.org_applicant:
+                original_applicant = ProposalApplicant.objects.get(
+                    proposal=self
+                )
+                # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
+                original_applicant.copy_self_to_proposal(lease_licence)
 
-        for geo in self.proposalgeometry.all():
-            new_geo = deepcopy(geo)
-            new_geo.proposal = lease_licence
-            new_geo.copied_from = geo
-            new_geo.id = None
-            new_geo.save()
-        return lease_licence
+
+            from copy import deepcopy
+            for geo in self.proposalgeometry.all():
+                # add geometry
+                new_geo = deepcopy(geo)
+                new_geo.proposal = lease_licence
+                new_geo.copied_from = geo
+                new_geo.id = None
+                new_geo.drawn_by = geo.drawn_by
+                new_geo.locked = geo.locked
+                new_geo.save()
+
+            return lease_licence
 
     def generate_compliances(self, approval, request):
         today = timezone.now().date()
@@ -2820,10 +2836,51 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         polygon=pg.polygon,
                         intersects=pg.intersects,
                         copied_from=pg,
+                        drawn_by=pg.drawn_by, # EmailUser
+                        locked=pg.locked, # Should evaluate to true
                     )
 
-                req = self.requirements.all().exclude(is_deleted=True)
+                # Copy over any tourism, general, prn str type proposal details and documents
+                details_fields = [
+                    "profit_and_loss",
+                    "cash_flow",
+                    "capital_investment",
+                    "financial_capacity",
+                    "available_activities",
+                    "market_analysis",
+                    "staffing",
+                    "key_personnel",
+                    "key_milestones",
+                    "risk_factors",
+                    "legislative_requirements",
+                ]
+
                 from copy import deepcopy
+                for field in details_fields:
+                    f_text = f"{field}_text"
+                    setattr(proposal, f_text, getattr(previous_proposal, f_text))
+                    f_doc = f"{field}_documents"
+                    for doc in getattr(previous_proposal, f_doc).all():
+                        new_doc = deepcopy(doc)
+                        new_doc.proposal = proposal
+                        new_doc.can_delete = True
+                        new_doc.hidden = False
+                        new_doc.id = None
+                        new_doc.save()
+
+                for field in ["proponent_reference_number",
+                    "site_name_id"]:
+                    setattr(proposal, field, getattr(previous_proposal, field))
+
+
+                # Copy over previous groups
+                for group in previous_proposal.groups.all():
+                    new_group = deepcopy(group)
+                    new_group.proposal = proposal
+                    new_group.id = None
+                    new_group.save()
+
+                req = self.requirements.all().exclude(is_deleted=True)
 
                 if req:
                     for r in req:
