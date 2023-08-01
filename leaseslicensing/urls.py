@@ -74,6 +74,11 @@ router.register(
     basename="organisation_requests_paginated",
 )
 router.register(r"organisation_requests", org_api.OrganisationRequestsViewSet)
+router.register(
+    r"organisation_contacts_paginated",
+    org_api.OrganisationContactPaginatedViewSet,
+    basename="organisation_contacts_paginated",
+)
 router.register(r"organisation_contacts", org_api.OrganisationContactViewSet)
 router.register(r"my_organisations", org_api.MyOrganisationsViewSet)
 router.register(r"users", users_api.UserViewSet)
@@ -121,11 +126,6 @@ api_patterns = [
         r"^api/filtered_users$",
         users_api.UserListFilterView.as_view(),
         name="filtered_users",
-    ),
-    url(
-        r"^api/filtered_payments$",
-        approval_api.ApprovalPaymentFilterViewSet.as_view(),
-        name="filtered_payments",
     ),
     url(
         r"^api/proposal_type$",

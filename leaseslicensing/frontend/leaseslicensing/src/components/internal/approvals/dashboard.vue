@@ -1,24 +1,68 @@
 <template>
-    <div class="container" id="approvalsDash">
-        <ul class="nav nav-pills" id="pills-tab" role="tablist">
+    <div id="approvalsDash" class="container">
+        <ul id="pills-tab" class="nav nav-pills" role="tablist">
             <li class="nav-item">
-                <a class="nav-link active" id="pills-approvals-tab" data-bs-toggle="pill" href="#pills-approvals" role="tab"
-                    aria-controls="pills-approvals" aria-selected="true" @click="tabClicked('approvals')">Approvals</a>
+                <a
+                    id="pills-approvals-tab"
+                    class="nav-link active"
+                    data-bs-toggle="pill"
+                    href="#pills-approvals"
+                    role="tab"
+                    aria-controls="pills-approvals"
+                    aria-selected="true"
+                    @click="tabClicked('approvals')"
+                    >Approvals</a
+                >
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="pills-map-tab" data-bs-toggle="pill" href="#pills-map" role="tab"
-                    aria-controls="pills-map" aria-selected="false" @click="mapTabClicked">Map</a>
+                <a
+                    id="pills-map-tab"
+                    class="nav-link"
+                    data-bs-toggle="pill"
+                    href="#pills-map"
+                    role="tab"
+                    aria-controls="pills-map"
+                    aria-selected="false"
+                    @click="mapTabClicked"
+                    >Map</a
+                >
             </li>
         </ul>
-        <div class="tab-content" id="pills-tabContent">
-            <div class="tab-pane active" id="pills-approvals" role="tabpanel" aria-labelledby="pills-approvals-tab">
-                <FormSection :formCollapse="false" label="Approvals" Index="approvals">
-                    <ApprovalsTable ref="approvals_table" level="internal" :approvalTypeFilter="approvalTypeFilter" />
+        <div id="pills-tabContent" class="tab-content">
+            <div
+                id="pills-approvals"
+                class="tab-pane active"
+                role="tabpanel"
+                aria-labelledby="pills-approvals-tab"
+            >
+                <FormSection
+                    :form-collapse="false"
+                    label="Approvals"
+                    index="approvals"
+                >
+                    <ApprovalsTable
+                        ref="approvals_table"
+                        level="internal"
+                        :approval-type-filter="approvalTypeFilter"
+                    />
                 </FormSection>
             </div>
-            <div class="tab-pane" id="pills-map" role="tabpanel" aria-labelledby="pills-map-tab">
-                <FormSection v-if="loadMap" :formCollapse="false" label="Map" Index="map">
-                    <MapComponent ref="component_map_with_filters" level="internal" />
+            <div
+                id="pills-map"
+                class="tab-pane"
+                role="tabpanel"
+                aria-labelledby="pills-map-tab"
+            >
+                <FormSection
+                    v-if="loadMap"
+                    :form-collapse="false"
+                    label="Map"
+                    index="map"
+                >
+                    <MapComponent
+                        ref="component_map_with_filters"
+                        level="internal"
+                    />
                 </FormSection>
             </div>
         </div>
@@ -26,28 +70,27 @@
 </template>
 
 <script>
-import FormSection from "@/components/forms/section_toggle.vue"
-import ApprovalsTable from "@/components/common/table_approvals.vue"
-import MapComponent from "@/components/common/component_map_with_filters"
+import FormSection from '@/components/forms/section_toggle.vue';
+import ApprovalsTable from '@/components/common/table_approvals.vue';
+import MapComponent from '@/components/common/component_map_with_filters_v2';
 
 export default {
     name: 'InternalApprovalsDashboard',
-    data() {
-        let vm = this;
-        return {
-            approvalTypeFilter: ['ml', 'aap', 'aup'],
-            loadMap: false,
-        }
-    },
     components: {
         FormSection,
         ApprovalsTable,
         MapComponent,
     },
+    data() {
+        return {
+            approvalTypeFilter: ['ml', 'aap', 'aup'],
+            loadMap: false,
+        };
+    },
     methods: {
         tabClicked: function (param) {
             if (param == 'approvals') {
-                this.$refs.approvals_table.adjust_table_width()
+                this.$refs.approvals_table.adjust_table_width();
             }
         },
         mapTabClicked: function () {
@@ -58,5 +101,5 @@ export default {
             // })
         },
     },
-}
+};
 </script>

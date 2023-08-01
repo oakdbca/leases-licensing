@@ -470,7 +470,7 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     def get_org_address(self, request, *args, **kwargs):
         instance = self.get_object()
         if not instance.ledger_organisation_id:
-            msg = "Organisation: {} has no ledger organisation id".format(org.id)
+            msg = "Organisation: {} has no ledger organisation id".format(instance.id)
             logger.error(msg)
             raise ValidationError(msg)
 
@@ -812,6 +812,37 @@ class OrganisationAccessGroupMembers(views.APIView):
         return Response(members)
 
 
+class OrganisationContactFilterBackend(LedgerDatatablesFilterBackend):
+    """
+    Filters organisation contacts, allowing for full name and email search
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        total_count = queryset.count()
+        admin_count = queryset.filter(user_role="organisation_admin").count()
+
+        filter_role = request.GET.get("filter_role", None)
+
+        if filter_role:
+            queryset = queryset.filter(user_role=filter_role)
+
+        # Apply regular request filters and union the result with the queryset
+        queryset = self.apply_request(
+            request, queryset, view, ledger_lookup_fields=[]
+        ).annotate(admin_count=Value(admin_count, output_field=IntegerField()))
+
+        setattr(view, "_datatables_total_count", total_count)
+        return queryset
+
+class OrganisationContactPaginatedViewSet(viewsets.ModelViewSet):
+    filter_backends = (OrganisationContactFilterBackend,)
+    pagination_class = DatatablesPageNumberPagination
+    renderer_classes = (ProposalRenderer,)
+    page_size = 10
+    queryset = OrganisationContact.objects.all()
+    serializer_class = OrganisationContactAdminCountSerializer
+
+
 class OrganisationContactViewSet(viewsets.ModelViewSet):
     serializer_class = OrganisationContactSerializer
     queryset = OrganisationContact.objects.all()
@@ -821,7 +852,7 @@ class OrganisationContactViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return OrganisationContact.objects.all()
         elif is_customer(self.request):
-            user_orgs = [org.id for org in user.leaseslicensing_organisations.all()]
+            user_orgs = [org.id for org in user.leaseslicensing_organisations.all()] # FIXME: EmailUserRO doesn't have this attribute, but not fixing it now
             return OrganisationContact.objects.filter(Q(organisation_id__in=user_orgs))
         return OrganisationContact.objects.none()
 

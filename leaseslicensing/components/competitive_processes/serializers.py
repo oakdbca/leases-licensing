@@ -659,3 +659,25 @@ class CompetitiveProcessUserActionSerializer(serializers.ModelSerializer):
         email_user = retrieve_email_user(proposal_user_action.who)
         fullname = email_user.get_full_name()
         return fullname
+
+class CompetitiveProcessMapFeatureInfoSerializer(CompetitiveProcessSerializer):
+    created_at_display = serializers.DateTimeField(
+        read_only=True, format="%d/%m/%Y", source="created_at"
+    )
+    status_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompetitiveProcess
+        fields = (
+            "id",
+            "label", # application_type_name_display
+            "details_url",
+            "lodgement_number",
+            "created_at_display", # lodgement_date_display @proposal
+            "status_display", # processing_status_display"
+        )
+
+    def get_status_display(self, obj):
+        return {i[0]: i[1] for i in CompetitiveProcess.STATUS_CHOICES}.get(
+            obj.status, None
+        )

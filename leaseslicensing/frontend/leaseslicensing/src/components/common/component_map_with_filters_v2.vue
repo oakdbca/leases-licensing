@@ -98,11 +98,18 @@
             </div>
         </div>
 
-        <VueAlert v-model:show="errorMessage" type="danger" style="color: red"
+        <VueAlert
+            v-model:show="hasErrorMessage"
+            type="danger"
+            style="color: red"
             ><strong> {{ errorMessage }} </strong>
         </VueAlert>
 
-        <div :id="map_container_id" style="position: relative">
+        <div
+            :id="map_container_id"
+            class="d-flex justify-content-center"
+            style="position: relative"
+        >
             <div :id="elem_id" class="map">
                 <div class="basemap-button" title="Toggle background map">
                     <img
@@ -439,13 +446,19 @@
                         </div>
                     </template>
                 </div>
+                <BootstrapSpinner
+                    v-if="
+                        redirectingToModelDetails ||
+                        queryingGeoserver ||
+                        fetchingProposals ||
+                        loadingMap
+                    "
+                    id="map-spinner"
+                    class="text-primary"
+                />
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
-            <BootstrapSpinner
-                v-if="redirectingToModelDetails || queryingGeoserver"
-                class="text-primary"
-            />
         </div>
         <div class="row">
             <div class="col-sm-6"></div>
@@ -460,34 +473,33 @@
 </template>
 
 <script>
-/*globals bootstrap, env, moment */
-import { v4 as uuid } from 'uuid'
-import { api_endpoints, utils } from '@/utils/hooks'
-import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
-import VueAlert from '@vue-utils/alert.vue'
+import { v4 as uuid } from 'uuid';
+import { api_endpoints, utils } from '@/utils/hooks';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
+import VueAlert from '@vue-utils/alert.vue';
 
-import { toRaw } from 'vue'
-import 'ol/ol.css'
-import Map from 'ol/Map'
-import View from 'ol/View'
-import TileLayer from 'ol/layer/Tile'
-import TileWMS from 'ol/source/TileWMS'
-import { Draw, Select } from 'ol/interaction'
-import Feature from 'ol/Feature'
-import VectorLayer from 'ol/layer/Vector'
-import VectorSource from 'ol/source/Vector'
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
-import { FullScreen as FullScreenControl } from 'ol/control'
-import { LineString, Point, Polygon } from 'ol/geom'
-import GeoJSON from 'ol/format/GeoJSON'
-import Overlay from 'ol/Overlay.js'
-import MeasureStyles, { formatLength } from '@/components/common/measure.js'
-import RangeSlider from '@/components/forms/range_slider.vue'
+import { toRaw } from 'vue';
+import 'ol/ol.css';
+import Map from 'ol/Map';
+import View from 'ol/View';
+import TileLayer from 'ol/layer/Tile';
+import TileWMS from 'ol/source/TileWMS';
+import { Draw, Select } from 'ol/interaction';
+import Feature from 'ol/Feature';
+import VectorLayer from 'ol/layer/Vector';
+import VectorSource from 'ol/source/Vector';
+import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+import { FullScreen as FullScreenControl } from 'ol/control';
+import { LineString, Point, Polygon } from 'ol/geom';
+import GeoJSON from 'ol/format/GeoJSON';
+import Overlay from 'ol/Overlay.js';
+import MeasureStyles, { formatLength } from '@/components/common/measure.js';
+import RangeSlider from '@/components/forms/range_slider.vue';
 import {
     addOptionalLayers,
     set_mode,
     baselayer_name,
-} from '@/components/common/map_functions.js'
+} from '@/components/common/map_functions.js';
 
 export default {
     name: 'MapComponentWithFiltersV2',
@@ -501,8 +513,8 @@ export default {
             type: String,
             required: true,
             validator: function (val) {
-                let options = ['internal', 'referral', 'external']
-                return options.indexOf(val) != -1 ? true : false
+                let options = ['internal', 'referral', 'external'];
+                return options.indexOf(val) != -1 ? true : false;
             },
         },
         filterApplicationsMapApplicationTypeCacheName: {
@@ -545,7 +557,7 @@ export default {
             type: Array,
             required: false,
             default() {
-                return []
+                return [];
             },
         },
         /**
@@ -555,10 +567,10 @@ export default {
             type: Object,
             required: false,
             default() {
-                return { features: [], type: 'FeatureCollection' }
+                return { features: [], type: 'FeatureCollection' };
             },
             validator: function (val) {
-                return val.type == 'FeatureCollection' ? true : false
+                return val.type == 'FeatureCollection' ? true : false;
             },
         },
         /**
@@ -572,8 +584,8 @@ export default {
             required: false,
             default: 'model',
             validator: function (val) {
-                let options = ['model', 'assessor']
-                return options.indexOf(val) != -1 ? true : false
+                let options = ['model', 'assessor'];
+                return options.indexOf(val) != -1 ? true : false;
             },
         },
         /**
@@ -589,24 +601,26 @@ export default {
                     draw: '#00FFFF', // cyan
                     applicant: '#00FF0077',
                     assessor: '#0000FF77',
-                }
+                };
             },
             validator: function (val) {
-                let options = ['unknown', 'draw', 'applicant', 'assessor']
+                let options = ['unknown', 'draw', 'applicant', 'assessor'];
                 Object.keys(val).forEach((key) => {
                     if (!options.includes(key.toLowerCase())) {
-                        console.error('Invalid feature color key: ' + key)
-                        return false
+                        console.error('Invalid feature color key: ' + key);
+                        return false;
                     }
                     // Invalid color values will evaluate to an empty string
-                    let test = new Option().style
-                    test.color = val[key]
+                    let test = new Option().style;
+                    test.color = val[key];
                     if (test.color === '') {
-                        console.error(`Invalid ${key} color value: ${val[key]}`)
-                        return false
+                        console.error(
+                            `Invalid ${key} color value: ${val[key]}`
+                        );
+                        return false;
                     }
-                })
-                return true
+                });
+                return true;
             },
         },
         /**
@@ -625,7 +639,7 @@ export default {
                         propertyName: 'wkb_geometry', // Default to query for feature geometries only
                         geometry: 'wkb_geometry', // Geometry name (not `the_geom`)
                     },
-                }
+                };
             },
         },
         /**
@@ -660,10 +674,20 @@ export default {
             required: false,
             default: '',
         },
+        /**
+         * Whether to refresh the map when the component is mounted
+         * Defaults to false, as it might be advisable to load and refresh the map only when it is needed
+         * E.g. when the map tab is selected
+         */
+        refreshMapOnMounted: {
+            type: Boolean,
+            required: false,
+            default: false,
+        },
     },
     emits: ['filter-appied', 'validate-feature'],
     data() {
-        let vm = this
+        let vm = this;
         return {
             // selected values for filtering
             filterApplicationsMapApplicationType: sessionStorage.getItem(
@@ -723,6 +747,8 @@ export default {
             selectedModel: null,
             redirectingToModelDetails: false,
             queryingGeoserver: false,
+            loadingMap: false,
+            fetchingProposals: false,
             proposals: [],
             filteredProposals: [],
             modelQuerySource: null,
@@ -747,36 +773,36 @@ export default {
             errorMessage: null,
             overlayFeatureInfo: {},
             deletedFeatures: [], // keep track of deleted features
-        }
+        };
     },
     computed: {
         filterApplied: function () {
-            let filter_applied = true
+            let filter_applied = true;
             if (
                 this.filterApplicationsMapProcessingStatus === 'all' &&
                 this.filterApplicationsMapApplicationType === 'all' &&
                 this.filterApplicationsMapLodgedFrom.toLowerCase() === '' &&
                 this.filterApplicationsMapLodgedTo.toLowerCase() === ''
             ) {
-                filter_applied = false
+                filter_applied = false;
             }
-            return filter_applied
+            return filter_applied;
         },
         filterApplicationsMapLodgedFromMoment: function () {
             return this.filterApplicationsMapLodgedFrom
                 ? moment(this.filterApplicationsMapLodgedFrom)
-                : null
+                : null;
         },
         filterApplicationsMapLodgedToMoment: function () {
             return this.filterApplicationsMapLodgedTo
                 ? moment(this.filterApplicationsMapLodgedTo)
-                : null
+                : null;
         },
         filterInformation: function () {
             if (this.proposals.length === this.filteredProposals.length) {
-                return ' (Showing all Applications)'
+                return ' (Showing all Applications)';
             } else {
-                return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`
+                return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`;
             }
         },
         showUndoButton: function () {
@@ -785,10 +811,10 @@ export default {
                 this.drawForModel &&
                 this.drawForModel.getActive() &&
                 this.sketchCoordinates.length > 1
-            )
+            );
         },
         showRedoButton: function () {
-            return false
+            return false;
             /* Todo: The redo button is partially implemented so it is disabled for now.
             return (
                 this.mode == 'draw' &&
@@ -800,19 +826,23 @@ export default {
         },
         optionalLayersActive: function () {
             if (this.optionalLayers.length == 0) {
-                return false
+                return false;
             }
             let visible_layers = this.optionalLayers.filter(
                 (layer) => layer.values_.visible === true
-            )
-            return visible_layers.length > 0
+            );
+            return visible_layers.length > 0;
         },
         polygonCount: function () {
-            let vm = this
+            let vm = this;
             if (!this.modelQuerySource) {
-                return 0
+                return 0;
             }
-            return vm.modelQuerySource.getFeatures().length
+            return vm.modelQuerySource.getFeatures().length;
+        },
+        hasErrorMessage: function () {
+            let vm = this;
+            return vm.errorMessage !== null;
         },
     },
     watch: {
@@ -820,74 +850,82 @@ export default {
             console.log(
                 'filterApplicationsMapApplicationType',
                 this.filterApplicationsMapApplicationType
-            )
-            this.applyFiltersFrontEnd()
+            );
+            this.applyFiltersFrontEnd();
             sessionStorage.setItem(
                 this.filterApplicationsMapApplicationTypeCacheName,
                 this.filterApplicationsMapApplicationType
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterApplicationsMapProcessingStatus: function () {
-            this.applyFiltersFrontEnd()
+            this.applyFiltersFrontEnd();
             sessionStorage.setItem(
                 this.filterApplicationsMapProcessingStatusCacheName,
                 this.filterApplicationsMapProcessingStatus
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterApplicationsMapLodgedFrom: function () {
-            this.applyFiltersFrontEnd()
+            this.applyFiltersFrontEnd();
             sessionStorage.setItem(
                 'filterApplicationsMapLodgedFromForMap',
                 this.filterApplicationsMapLodgedFrom
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterApplicationsMapLodgedTo: function () {
-            this.applyFiltersFrontEnd()
+            this.applyFiltersFrontEnd();
             sessionStorage.setItem(
                 'filterApplicationsMapLodgedToForMap',
                 this.filterApplicationsMapLodgedTo
-            )
-            this.$emit('filter-appied')
+            );
+            this.$emit('filter-appied');
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(
                     this.filterApplied
-                )
+                );
             }
         },
         selectedFeatureIds: function () {
             if (this.selectedFeatureIds.length == 0) {
-                this.errorMessageProperty(null)
+                this.errorMessageProperty(null);
             }
         },
     },
     created: function () {
-        console.log('created()')
-        this.fetchFilterLists()
-        this.fetchProposals()
+        console.log('created()');
+        this.fetchFilterLists();
+        this.fetchProposals();
     },
     mounted: function () {
-        console.log('mounted()')
-        let vm = this
+        console.log('mounted()');
+        let vm = this;
+        vm.loadingMap = true;
 
         this.$nextTick(() => {
-            vm.initialiseMap()
-            set_mode.bind(this)('layer')
-            vm.setBaseLayer('osm')
-            addOptionalLayers(this)
-            let toastEl = document.getElementById('featureToast')
-            vm.featureToast = new bootstrap.Toast(toastEl, { autohide: false })
-        })
+            var toastEl = document.getElementById('featureToast');
+            $('#map-spinner').children().css('position', 'static'); // Position spinner in center of map
+            vm.initialiseMap();
+            set_mode.bind(this)('layer');
+            vm.setBaseLayer('osm');
+            addOptionalLayers(this);
+            vm.featureToast = new bootstrap.Toast(toastEl, { autohide: false });
+            if (vm.refreshMapOnMounted) {
+                vm.forceToRefreshMap();
+            } else {
+                console.log('Done initializing map (no refresh)');
+                vm.loadingMap = false;
+            }
+        });
     },
     methods: {
         updateFilters: function () {
             this.$nextTick(function () {
-                console.log('updateFilters')
+                console.log('updateFilters');
                 this.filterApplicationsMapApplicationType =
                     sessionStorage.getItem(
                         this.filterApplicationsMapApplicationTypeCacheName
@@ -895,17 +933,17 @@ export default {
                         ? sessionStorage.getItem(
                               this.filterApplicationsMapApplicationTypeCacheName
                           )
-                        : 'all'
+                        : 'all';
                 console.log(
                     'this.filterApplicationsMapApplicationType',
                     this.filterApplicationsMapApplicationType
-                )
+                );
                 console.log(
                     'sessionStorage.getItem(this.filterApplicationsMapProcessingStatusCacheName)',
                     sessionStorage.getItem(
                         this.filterApplicationsMapProcessingStatusCacheName
                     )
-                )
+                );
                 this.filterApplicationsMapProcessingStatus =
                     sessionStorage.getItem(
                         this.filterApplicationsMapProcessingStatusCacheName
@@ -914,35 +952,35 @@ export default {
                               this
                                   .filterApplicationsMapProcessingStatusCacheName
                           )
-                        : 'all'
+                        : 'all';
                 this.filterApplicationsMapLodgedFrom = sessionStorage.getItem(
                     this.filterApplicationsMapLodgedFromCacheName
                 )
                     ? sessionStorage.getItem(
                           this.filterApplicationsMapLodgedFromCacheName
                       )
-                    : ''
+                    : '';
                 this.filterApplicationsMapLodgedTo = sessionStorage.getItem(
                     this.filterApplicationsMapLodgedToCacheName
                 )
                     ? sessionStorage.getItem(
                           this.filterApplicationsMapLodgedToCacheName
                       )
-                    : ''
-            })
+                    : '';
+            });
         },
         applyFiltersFrontEnd: function () {
-            this.filteredProposals = [...this.proposals]
-            console.log('applyFiltersFrontEnd', this.filteredProposals)
-            console.log('this.filteredProposals', this.filteredProposals)
+            this.filteredProposals = [...this.proposals];
+            console.log('applyFiltersFrontEnd', this.filteredProposals);
+            console.log('this.filteredProposals', this.filteredProposals);
             console.log(
                 'this.filterApplicationsMapApplicationType',
                 this.filterApplicationsMapApplicationType
-            )
+            );
             console.log(
                 'this.filterApplicationsMapApplicationType typeof',
                 typeof this.filterApplicationsMapApplicationType
-            )
+            );
             if ('all' != this.filterApplicationsMapApplicationType) {
                 this.filteredProposals = [
                     ...this.filteredProposals.filter(
@@ -950,8 +988,8 @@ export default {
                             proposal.application_type_id ==
                             this.filterApplicationsMapApplicationType
                     ),
-                ]
-                console.log('this.filteredProposals', this.filteredProposals)
+                ];
+                console.log('this.filteredProposals', this.filteredProposals);
             }
             if ('all' != this.filterApplicationsMapProcessingStatus) {
                 this.filteredProposals = [
@@ -960,7 +998,7 @@ export default {
                             proposal.processing_status ==
                             this.filterApplicationsMapProcessingStatus
                     ),
-                ]
+                ];
             }
             if ('' != this.filterApplicationsMapLodgedFrom) {
                 this.filteredProposals = [
@@ -969,7 +1007,7 @@ export default {
                             new Date(proposal.lodgement_date) >=
                             new Date(this.filterApplicationsMapLodgedFrom)
                     ),
-                ]
+                ];
             }
             if ('' != this.filterApplicationsMapLodgedTo) {
                 this.filteredProposals = [
@@ -978,78 +1016,81 @@ export default {
                             new Date(proposal.lodgement_date) >=
                             new Date(this.filterApplicationsMapLodgedTo)
                     ),
-                ]
+                ];
             }
-            this.loadFeatures(this.filteredProposals)
+            this.loadFeatures(this.filteredProposals);
         },
         valueChanged: function (value, tileLayer) {
-            tileLayer.setOpacity(value / 100)
+            tileLayer.setOpacity(value / 100);
         },
         download_content: function (content, fileName, contentType) {
-            var a = document.createElement('a')
-            var file = new Blob([content], { type: contentType })
-            a.href = URL.createObjectURL(file)
-            a.download = fileName
-            a.click()
+            var a = document.createElement('a');
+            var file = new Blob([content], { type: contentType });
+            a.href = URL.createObjectURL(file);
+            a.download = fileName;
+            a.click();
         },
         geoJsonButtonClicked: function () {
-            let vm = this
+            let vm = this;
             let json = new GeoJSON().writeFeatures(
                 vm.modelQuerySource.getFeatures(),
                 {}
-            )
+            );
             vm.download_content(
                 json,
                 'leases_and_licensing_layers.geojson',
                 'text/plain'
-            )
+            );
         },
         displayAllFeatures: function () {
-            console.log('in displayAllFeatures()')
-            let vm = this
+            console.log('in displayAllFeatures()');
+            let vm = this;
             if (vm.map) {
                 if (vm.modelQuerySource.getFeatures().length > 0) {
-                    let view = vm.map.getView()
-                    let ext = vm.modelQuerySource.getExtent()
+                    let view = vm.map.getView();
+                    let ext = vm.modelQuerySource.getExtent();
                     let centre = [
                         (ext[0] + ext[2]) / 2.0,
                         (ext[1] + ext[3]) / 2.0,
-                    ]
-                    let resolution = view.getResolutionForExtent(ext)
-                    let z = view.getZoomForResolution(resolution) - 1
-                    view.animate({ zoom: z, center: centre })
+                    ];
+                    let resolution = view.getResolutionForExtent(ext);
+                    let z = view.getZoomForResolution(resolution) - 1;
+                    view.animate({ zoom: z, center: centre });
                 }
             }
         },
         setBaseLayer: function (selected_layer_name) {
-            let vm = this
+            let vm = this;
             if (selected_layer_name == 'sat') {
-                vm.tileLayerMapbox.setVisible(false)
-                vm.tileLayerSat.setVisible(true)
-                $('#basemap_sat').hide()
-                $('#basemap_osm').show()
+                vm.tileLayerMapbox.setVisible(false);
+                vm.tileLayerSat.setVisible(true);
+                $('#basemap_sat').hide();
+                $('#basemap_osm').show();
             } else {
-                vm.tileLayerMapbox.setVisible(true)
-                vm.tileLayerSat.setVisible(false)
-                $('#basemap_osm').hide()
-                $('#basemap_sat').show()
+                vm.tileLayerMapbox.setVisible(true);
+                vm.tileLayerSat.setVisible(false);
+                $('#basemap_osm').hide();
+                $('#basemap_sat').show();
             }
         },
         changeLayerVisibility: function (targetLayer) {
-            targetLayer.setVisible(!targetLayer.getVisible())
+            targetLayer.setVisible(!targetLayer.getVisible());
         },
         clearMeasurementLayer: function () {
-            let vm = this
-            let features = vm.measurementLayer.getSource().getFeatures()
+            let vm = this;
+            let features = vm.measurementLayer.getSource().getFeatures();
             features.forEach((feature) => {
-                vm.measurementLayer.getSource().removeFeature(feature)
-            })
+                vm.measurementLayer.getSource().removeFeature(feature);
+            });
         },
-        forceToRefreshMap() {
-            let vm = this
+        forceToRefreshMap(timeout = 700) {
+            let vm = this;
             setTimeout(function () {
-                vm.map.updateSize()
-            }, 700)
+                console.log('Refreshing map');
+                vm.map.updateSize();
+                // Unset loading map spinner here
+                vm.loadingMap = false;
+            }, timeout);
         },
         addJoint: function (point, styles) {
             let s = new Style({
@@ -1059,11 +1100,11 @@ export default {
                         color: '#3399cc',
                     }),
                 }),
-            })
-            s.setGeometry(point)
-            styles.push(s)
+            });
+            s.setGeometry(point);
+            styles.push(s);
 
-            return styles
+            return styles;
         },
         /**
          * Returns a color for a feature based on the styleBy property
@@ -1072,24 +1113,24 @@ export default {
          * @param {Proxy} model A model object
          */
         styleByColor: function (featureData, model) {
-            let vm = this
+            let vm = this;
 
             if (vm.styleBy === 'assessor') {
                 // Assume the object is a feature containing a polygon_source property
                 return vm.featureColors[
                     featureData.properties.polygon_source.toLowerCase()
-                ]
+                ];
             } else if (vm.styleBy === 'model') {
                 // Assume the object is a model containing a color field
-                return model.color
+                return model.color;
             } else {
-                return vm.featureColors['unknown'] || vm.defaultColor
+                return vm.featureColors['unknown'] || vm.defaultColor;
             }
         },
         createStyle: function (color) {
-            let vm = this
+            let vm = this;
             if (!color) {
-                color = vm.defaultColor
+                color = vm.defaultColor;
             }
 
             let style = new Style({
@@ -1100,61 +1141,63 @@ export default {
                 fill: new Fill({
                     color: color,
                 }),
-            })
+            });
 
-            return style
+            return style;
         },
         styleFunctionForMeasurement: function (feature) {
-            let vm = this
-            let for_layer = feature.get('for_layer', false)
+            let vm = this;
+            let for_layer = feature.get('for_layer', false);
 
-            const styles = []
-            styles.push(vm.style) // This style is for the feature itself
-            styles.push(vm.segmentStyle)
+            const styles = [];
+            styles.push(vm.style); // This style is for the feature itself
+            styles.push(vm.segmentStyle);
 
             ///////
             // From here, adding labels and tiny circles at the end points of the linestring
             ///////
-            const geometry = feature.getGeometry()
+            const geometry = feature.getGeometry();
             if (geometry.getType() === 'LineString') {
-                let segment_count = 0
+                let segment_count = 0;
                 geometry.forEachSegment(function (a, b) {
-                    const segment = new LineString([a, b])
-                    const label = formatLength(segment)
-                    const segmentPoint = new Point(segment.getCoordinateAt(0.5))
+                    const segment = new LineString([a, b]);
+                    const label = formatLength(segment);
+                    const segmentPoint = new Point(
+                        segment.getCoordinateAt(0.5)
+                    );
 
                     // Add a style for this segment
-                    let segment_style = vm.segmentStyle.clone() // Because there could be multilpe segments, we should copy the style per segment
-                    segment_style.setGeometry(segmentPoint)
-                    segment_style.getText().setText(label)
-                    styles.push(segment_style)
+                    let segment_style = vm.segmentStyle.clone(); // Because there could be multilpe segments, we should copy the style per segment
+                    segment_style.setGeometry(segmentPoint);
+                    segment_style.getText().setText(label);
+                    styles.push(segment_style);
 
                     if (segment_count == 0) {
                         // Add a tiny circle to the very first coordinate of the linestring
-                        let p = new Point(a)
-                        vm.addJoint(p, styles)
+                        let p = new Point(a);
+                        vm.addJoint(p, styles);
                     }
                     // Add tiny circles to the end of the linestring
-                    let p = new Point(b)
-                    vm.addJoint(p, styles)
+                    let p = new Point(b);
+                    vm.addJoint(p, styles);
 
-                    segment_count++
-                })
+                    segment_count++;
+                });
             }
 
             if (!for_layer) {
                 // We don't need the last label when draw on the layer.
-                let label_on_mouse = formatLength(geometry) // Total length of the linestring
-                let point = new Point(geometry.getLastCoordinate())
-                vm.labelStyle.setGeometry(point)
-                vm.labelStyle.getText().setText(label_on_mouse)
-                styles.push(vm.labelStyle)
+                let label_on_mouse = formatLength(geometry); // Total length of the linestring
+                let point = new Point(geometry.getLastCoordinate());
+                vm.labelStyle.setGeometry(point);
+                vm.labelStyle.getText().setText(label_on_mouse);
+                styles.push(vm.labelStyle);
             }
 
-            return styles
+            return styles;
         },
         initialiseMap: function () {
-            let vm = this
+            let vm = this;
 
             let satelliteTileWms = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
@@ -1165,7 +1208,7 @@ export default {
                     STYLES: '',
                     LAYERS: 'public:mapbox-satellite',
                 },
-            })
+            });
 
             let streetsTileWMS = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
@@ -1176,29 +1219,29 @@ export default {
                     STYLES: '',
                     LAYERS: `public:${baselayer_name}`,
                 },
-            })
+            });
             vm.tileLayerMapbox = new TileLayer({
                 title: 'StreetsMap',
                 type: 'base',
                 visible: true,
                 source: streetsTileWMS,
-            })
+            });
 
             vm.tileLayerSat = new TileLayer({
                 title: 'Satellite',
                 type: 'base',
                 visible: true,
                 source: satelliteTileWms,
-            })
+            });
 
-            let container = document.getElementById('popup')
+            let container = document.getElementById('popup');
             let overlay = new Overlay({
                 element: container,
                 autoPan: true,
                 autoPanAnimation: {
                     duration: 150,
                 },
-            })
+            });
 
             vm.map = new Map({
                 layers: [vm.tileLayerMapbox, vm.tileLayerSat],
@@ -1209,85 +1252,85 @@ export default {
                     zoom: 7,
                     projection: 'EPSG:4326',
                 }),
-            })
+            });
 
             // Full screen toggle
-            let fullScreenControl = new FullScreenControl()
-            vm.map.addControl(fullScreenControl)
+            let fullScreenControl = new FullScreenControl();
+            vm.map.addControl(fullScreenControl);
 
-            vm.initialiseMeasurementLayer()
-            vm.initialiseQueryLayer()
-            vm.initialiseDrawLayer()
+            vm.initialiseMeasurementLayer();
+            vm.initialiseQueryLayer();
+            vm.initialiseDrawLayer();
 
             // update map extent when new features added
-            vm.map.on('rendercomplete', vm.fitToLayer)
+            vm.map.on('rendercomplete', vm.fitToLayer);
 
-            vm.initialisePointerMoveEvent()
-            vm.initialiseSelectFeatureEvent()
-            vm.initialiseSingleClickEvent()
-            vm.initialiseDoubleClickEvent()
+            vm.initialisePointerMoveEvent();
+            vm.initialiseSelectFeatureEvent();
+            vm.initialiseSingleClickEvent();
+            vm.initialiseDoubleClickEvent();
         },
         initialiseMeasurementLayer: function () {
-            let vm = this
+            let vm = this;
 
             // Measure tool
-            let draw_source = new VectorSource({ wrapX: false })
+            let draw_source = new VectorSource({ wrapX: false });
             vm.drawForMeasure = new Draw({
                 source: draw_source,
                 type: 'LineString',
                 style: vm.styleFunctionForMeasurement,
-            })
+            });
             // Set a custom listener to the Measure tool
-            vm.drawForMeasure.set('escKey', '')
-            vm.drawForMeasure.on('change:escKey', function () {})
+            vm.drawForMeasure.set('escKey', '');
+            vm.drawForMeasure.on('change:escKey', function () {});
             vm.drawForMeasure.on('drawstart', function () {
                 // Set measuring to true on mode change (fn `set_mode`), not drawstart
-            })
+            });
             vm.drawForMeasure.on('drawend', function () {
                 // Set measuring to false on mode change
-            })
+            });
 
             // Create a layer to retain the measurement
             vm.measurementLayer = new VectorLayer({
                 title: 'Measurement Layer',
                 source: draw_source,
                 style: function (feature, resolution) {
-                    feature.set('for_layer', true)
-                    return vm.styleFunctionForMeasurement(feature, resolution)
+                    feature.set('for_layer', true);
+                    return vm.styleFunctionForMeasurement(feature, resolution);
                 },
-            })
-            vm.map.addInteraction(vm.drawForMeasure)
-            vm.map.addLayer(vm.measurementLayer)
+            });
+            vm.map.addInteraction(vm.drawForMeasure);
+            vm.map.addLayer(vm.measurementLayer);
         },
         initialiseQueryLayer: function () {
-            let vm = this
+            let vm = this;
 
-            vm.modelQuerySource = new VectorSource({})
+            vm.modelQuerySource = new VectorSource({});
             const style = new Style({
                 fill: new Fill({
                     color: vm.defaultColor,
                 }),
-            })
+            });
 
             vm.modelQueryLayer = new VectorLayer({
                 title: 'Model Area of Interest',
                 name: 'query_layer',
                 source: vm.modelQuerySource,
                 style: function (feature) {
-                    const color = feature.get('color') || vm.defaultColor
-                    style.getFill().setColor(color)
-                    return style
+                    const color = feature.get('color') || vm.defaultColor;
+                    style.getFill().setColor(color);
+                    return style;
                 },
-            })
+            });
             // Add the layer
-            vm.map.addLayer(vm.modelQueryLayer)
+            vm.map.addLayer(vm.modelQueryLayer);
             // Set zIndex to some layers to be rendered over the other layers
-            vm.modelQueryLayer.setZIndex(10)
+            vm.modelQueryLayer.setZIndex(10);
         },
         initialiseDrawLayer: function () {
-            let vm = this
+            let vm = this;
             if (!vm.drawable) {
-                return
+                return;
             }
 
             vm.drawForModel = new Draw({
@@ -1300,71 +1343,71 @@ export default {
                             geometry.setCoordinates(
                                 [coordinates[0].concat([coordinates[0][0]])],
                                 this.geometryLayout_
-                            )
+                            );
                         } else {
-                            geometry.setCoordinates([], this.geometryLayout_)
+                            geometry.setCoordinates([], this.geometryLayout_);
                         }
                     } else {
                         geometry = new Polygon(
                             coordinates,
                             this.geometryLayout_
-                        )
+                        );
                     }
-                    vm.sketchCoordinates = coordinates[0].slice()
+                    vm.sketchCoordinates = coordinates[0].slice();
                     if (
                         coordinates[0].length >
                         vm.sketchCoordinatesHistory.length
                     ) {
                         // Only reassign the sketchCoordinatesHistory if the new coordinates are longer than the previous
                         // so we don't lose the history when the user undoes a point
-                        vm.sketchCoordinatesHistory = coordinates[0].slice()
+                        vm.sketchCoordinatesHistory = coordinates[0].slice();
                     }
 
-                    return geometry
+                    return geometry;
                 },
                 condition: function (evt) {
                     if (evt.originalEvent.buttons === 1) {
                         // Only allow drawing when the left mouse button is pressed
-                        return true
+                        return true;
                     } else if (evt.originalEvent.buttons === 2) {
                         // If the right mouse button is pressed, undo the last point
                         if (vm.showUndoButton) {
-                            vm.undoLeaseLicensePoint()
+                            vm.undoLeaseLicensePoint();
                         } else {
-                            vm.set_mode('layer')
+                            vm.set_mode('layer');
                         }
                     } else {
-                        return false
+                        return false;
                     }
                 },
                 finishCondition: function () {
                     if (vm.lastPoint) {
-                        vm.$emit('validate-feature')
+                        vm.$emit('validate-feature');
                     }
-                    return false
+                    return false;
                 },
-            })
-            vm.drawForModel.set('escKey', '')
+            });
+            vm.drawForModel.set('escKey', '');
             vm.drawForModel.on('change:escKey', function () {
-                console.log('ESC key pressed')
-            })
+                console.log('ESC key pressed');
+            });
             vm.drawForModel.on('drawstart', function () {
-                vm.errorMessage = null
-                vm.lastPoint = null
-            })
+                vm.errorMessage = null;
+                vm.lastPoint = null;
+            });
             vm.drawForModel.on('click'),
                 function (evt) {
-                    console.log(evt)
-                }
+                    console.log(evt);
+                };
             vm.drawForModel.on('drawend', function (evt) {
-                console.log(evt)
-                console.log(evt.feature.values_.geometry.flatCoordinates)
-                let model = vm.context || {}
+                console.log(evt);
+                console.log(evt.feature.values_.geometry.flatCoordinates);
+                let model = vm.context || {};
 
                 let color =
                     vm.featureColors['draw'] ||
                     vm.featureColors['unknown'] ||
-                    vm.defaultColor
+                    vm.defaultColor;
                 evt.feature.setProperties({
                     id: vm.newFeatureId,
                     model: model,
@@ -1380,47 +1423,47 @@ export default {
                         'Draw',
                     color: color,
                     locked: false,
-                })
-                vm.newFeatureId++
-                console.log('newFeatureId = ' + vm.newFeatureId)
-                vm.lastPoint = evt.feature
-                vm.sketchCoordinates = [[]]
-                vm.sketchCoordinatesHistory = [[]]
-            })
-            vm.map.addInteraction(vm.drawForModel)
+                });
+                vm.newFeatureId++;
+                console.log('newFeatureId = ' + vm.newFeatureId);
+                vm.lastPoint = evt.feature;
+                vm.sketchCoordinates = [[]];
+                vm.sketchCoordinatesHistory = [[]];
+            });
+            vm.map.addInteraction(vm.drawForModel);
         },
         initialisePointerMoveEvent: function () {
-            let vm = this
+            let vm = this;
 
             const hoverStyle = new Style({
                 fill: vm.hoverFill,
                 stroke: vm.hoverStroke,
-            })
+            });
             // Cache the hover fill so we don't have to create a new one every time
             // Also prevent overwriting property `hoverFill` color
-            let _hoverFill = null
+            let _hoverFill = null;
             function hoverSelect(feature) {
-                const color = feature.get('color') || vm.defaultColor
-                _hoverFill = new Fill({ color: color })
+                const color = feature.get('color') || vm.defaultColor;
+                _hoverFill = new Fill({ color: color });
 
                 // If the feature is already selected, use the select stroke when hovering
                 if (
                     vm.selectedFeatureIds.includes(feature.getProperties().id)
                 ) {
-                    hoverStyle.setFill(_hoverFill)
-                    hoverStyle.setStroke(vm.clickSelectStroke)
+                    hoverStyle.setFill(_hoverFill);
+                    hoverStyle.setStroke(vm.clickSelectStroke);
                 } else {
-                    hoverStyle.setFill(vm.hoverFill)
-                    hoverStyle.setStroke(vm.hoverStroke)
+                    hoverStyle.setFill(vm.hoverFill);
+                    hoverStyle.setStroke(vm.hoverStroke);
                 }
-                return hoverStyle
+                return hoverStyle;
             }
 
-            let selected = null
+            let selected = null;
             vm.map.on('pointermove', function (evt) {
                 if (vm.measuring || vm.drawing) {
                     // Don't highlight features when measuring or drawing
-                    return
+                    return;
                 }
                 if (selected !== null) {
                     if (
@@ -1429,159 +1472,160 @@ export default {
                         )
                     ) {
                         // Don't alter style of click-selected features
-                        console.log('ignoring hover on selected feature')
+                        console.log('ignoring hover on selected feature');
                     } else {
-                        selected.setStyle(undefined)
+                        selected.setStyle(undefined);
                         selected.setStyle(
                             vm.createStyle(selected.values_.color)
-                        )
+                        );
                     }
-                    selected = null
+                    selected = null;
                 }
                 vm.map.forEachFeatureAtPixel(
                     evt.pixel,
                     function (feature) {
-                        selected = feature
-                        let model = selected.getProperties().model
+                        selected = feature;
+                        let model = selected.getProperties().model;
                         if (!model) {
-                            console.error('No model found for feature')
+                            console.error('No model found for feature');
                         } else {
                             model.polygon_source =
-                                selected.getProperties().polygon_source
+                                selected.getProperties().polygon_source;
                             model.copied_from =
-                                selected.getProperties().copied_from
+                                selected.getProperties().copied_from;
                         }
-                        vm.selectedModel = model
-                        selected.setStyle(hoverSelect)
+                        vm.selectedModel = model;
+                        selected.setStyle(hoverSelect);
 
-                        return true
+                        return true;
                     },
                     {
                         layerFilter: function (layer) {
-                            return layer.get('name') === 'query_layer'
+                            return layer.get('name') === 'query_layer';
                         },
                     }
-                )
+                );
 
                 // Change to info cursor if hovering over an optional layer
                 let hit = vm.map.forEachLayerAtPixel(
                     evt.pixel,
                     function (layer) {
-                        layer.get('name') //dbca_legislated_lands_and_waters
+                        layer.get('name'); //dbca_legislated_lands_and_waters
                         let optional_layer_names = vm.optionalLayers.map(
                             (layer) => {
-                                return layer.get('name')
+                                return layer.get('name');
                             }
-                        )
+                        );
 
                         if (vm.informing) {
                             return optional_layer_names.includes(
                                 layer.get('name')
-                            )
+                            );
                         }
-                        return false
+                        return false;
                     }
-                )
+                );
                 vm.map.getTargetElement().style.cursor = hit
                     ? 'help'
-                    : 'default'
+                    : 'default';
 
                 if (selected) {
-                    vm.featureToast.show()
+                    vm.featureToast.show();
                 } else {
-                    vm.featureToast.hide()
+                    vm.featureToast.hide();
                 }
-            })
+            });
         },
         initialiseSingleClickEvent: function () {
-            let vm = this
+            let vm = this;
             vm.map.on('singleclick', function (evt) {
                 if (vm.drawing || vm.measuring) {
-                    console.log(evt)
+                    console.log(evt);
                     // TODO: must be a feature
-                    vm.lastPoint = new Point(evt.coordinate)
-                    return
+                    vm.lastPoint = new Point(evt.coordinate);
+                    return;
                 }
 
                 let feature = vm.map.forEachFeatureAtPixel(
                     evt.pixel,
                     function (feature) {
-                        return feature
+                        return feature;
                     }
-                )
+                );
                 if (feature) {
                     vm.map.getInteractions().forEach((interaction) => {
                         if (interaction instanceof Select) {
-                            let selected = []
-                            let deselected = []
-                            let feature_id = feature.get('id')
+                            let selected = [];
+                            let deselected = [];
+                            let feature_id = feature.get('id');
                             if (vm.selectedFeatureIds.includes(feature_id)) {
                                 // already selected, so deselect
-                                deselected.push(feature)
+                                deselected.push(feature);
                             } else {
                                 // not selected, so select
-                                selected.push(feature)
+                                selected.push(feature);
                             }
                             interaction.dispatchEvent({
                                 type: 'select',
                                 selected: selected,
                                 deselected: deselected,
-                            })
+                            });
                         }
-                    })
+                    });
                 }
-            })
+            });
         },
         initialiseDoubleClickEvent: function () {
-            let vm = this
+            let vm = this;
             vm.map.on('dblclick', function (evt) {
-                vm.redirectingToModelDetails = true
-                evt.stopPropagation()
+                vm.redirectingToModelDetails = true;
+                evt.stopPropagation();
 
                 let feature = vm.map.forEachFeatureAtPixel(
                     evt.pixel,
                     function (feature) {
-                        return feature
+                        return feature;
                     }
-                )
+                );
                 if (feature) {
-                    let model = feature.getProperties().model
+                    let model = feature.getProperties().model;
                     if (!model) {
-                        vm.redirectingToModelDetails = false
-                        return
+                        vm.redirectingToModelDetails = false;
+                        return;
                     }
 
                     // TODO: Return path from serializer
-                    let model_path = model.details_url
+                    let model_path = model.details_url;
                     // Remove trailing slash from urls
                     let pathnames = [
                         window.location.pathname,
                         model.details_url,
-                    ]
+                    ];
                     for (let i = 0; i < pathnames.length; i++) {
-                        let path_name = pathnames[i]
+                        let path_name = pathnames[i];
                         if (path_name[path_name.length - 1] === '/') {
-                            path_name = path_name.slice(0, -1)
+                            path_name = path_name.slice(0, -1);
                         }
-                        pathnames[i] = path_name
+                        pathnames[i] = path_name;
                     }
                     // array remove duplicates
-                    pathnames = [...new Set(pathnames)]
+                    pathnames = [...new Set(pathnames)];
                     if (pathnames.length === 1) {
-                        console.log('already on model details page')
-                        vm.redirectingToModelDetails = false
+                        console.log('already on model details page');
+                        vm.redirectingToModelDetails = false;
                     } else {
-                        window.location = model_path
+                        window.open(model_path, '_blank'); // Open in new tab
+                        vm.redirectingToModelDetails = false;
                     }
                 } else {
-                    vm.redirectingToModelDetails = false
+                    vm.redirectingToModelDetails = false;
                 }
-            })
+            });
         },
         initialiseSelectFeatureEvent: function () {
-            let vm = this
+            let vm = this;
             if (!vm.selectable) {
-                return
+                return;
             }
 
             const clickSelectStyle = new Style({
@@ -1589,70 +1633,70 @@ export default {
                     color: '#000000',
                 }),
                 stroke: vm.clickSelectStroke,
-            })
+            });
 
             function clickSelect(feature) {
                 // Keep feature fill color but change stroke color
-                const color = feature.get('color') || vm.defaultColor
-                clickSelectStyle.getFill().setColor(color)
-                return clickSelectStyle
+                const color = feature.get('color') || vm.defaultColor;
+                clickSelectStyle.getFill().setColor(color);
+                return clickSelectStyle;
             }
 
             // select interaction working on "singleclick"
             const selectSingleClick = new Select({
                 style: clickSelect,
                 layers: [vm.modelQueryLayer],
-            })
-            vm.map.addInteraction(selectSingleClick)
+            });
+            vm.map.addInteraction(selectSingleClick);
             selectSingleClick.on('select', (evt) => {
                 $.each(evt.selected, function (idx, feature) {
                     console.log(
                         `Selected feature ${feature.getProperties().id}`,
                         toRaw(feature)
-                    )
-                    feature.setStyle(clickSelect)
-                    vm.selectedFeatureIds.push(feature.getProperties().id)
-                })
+                    );
+                    feature.setStyle(clickSelect);
+                    vm.selectedFeatureIds.push(feature.getProperties().id);
+                });
 
                 $.each(evt.deselected, function (idx, feature) {
                     console.log(
                         `Unselected feature ${feature.getProperties().id}`
-                    )
-                    feature.setStyle(undefined)
+                    );
+                    feature.setStyle(undefined);
                     vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
                         (id) => id != feature.getProperties().id
-                    )
-                })
-            })
+                    );
+                });
+            });
         },
         undoLeaseLicensePoint: function () {
-            let vm = this
-            console.log(vm.drawForModel.sketchCoords_)
+            let vm = this;
+            console.log(vm.drawForModel.sketchCoords_);
             if (vm.lastPoint) {
-                vm.modelQuerySource.removeFeature(vm.lastPoint)
-                vm.lastPoint = null
-                vm.sketchCoordinates = [[]]
-                vm.sketchCoordinatesHistory = [[]]
-                this.selectedFeatureId = null
+                vm.modelQuerySource.removeFeature(vm.lastPoint);
+                vm.lastPoint = null;
+                vm.sketchCoordinates = [[]];
+                vm.sketchCoordinatesHistory = [[]];
+                this.selectedFeatureId = null;
             } else {
-                vm.drawForModel.removeLastPoint()
+                vm.drawForModel.removeLastPoint();
             }
         },
         redoLeaseLicensePoint: function () {
-            let vm = this
+            let vm = this;
             if (
                 vm.sketchCoordinatesHistory.length > vm.sketchCoordinates.length
             ) {
                 let nextCoordinate = vm.sketchCoordinatesHistory.slice(
                     vm.sketchCoordinates.length,
                     vm.sketchCoordinates.length + 1
-                )
-                vm.drawForLeaselicence.appendCoordinates([nextCoordinate[0]])
+                );
+                vm.drawForLeaselicence.appendCoordinates([nextCoordinate[0]]);
             }
         },
         removeModelFeatures: function () {
-            let vm = this
-            let cannot_delete_features = []
+            let vm = this;
+            let cannot_delete_features = [];
             const features = vm.modelQuerySource
                 .getFeatures()
                 .filter((feature) => {
@@ -1662,32 +1706,32 @@ export default {
                         )
                     ) {
                         if (feature.getProperties().locked === false) {
-                            return feature
+                            return feature;
                         } else {
                             console.warn(
                                 `Cannot delete feature. ${
                                     feature.getProperties().id
                                 } is locked`
-                            )
+                            );
                             cannot_delete_features.push(
                                 feature.getProperties().id
-                            )
+                            );
                         }
                     }
-                })
+                });
 
             if (cannot_delete_features.length > 0) {
-                vm.errorMessageProperty(null)
+                vm.errorMessageProperty(null);
                 vm.errorMessageProperty(
                     `Cannot delete feature(s) ${cannot_delete_features.join(
                         ', '
                     )} anymore.`
-                )
+                );
             }
 
             for (let feature of features) {
-                vm.deletedFeaturesProperty(feature)
-                vm.modelQuerySource.removeFeature(feature)
+                vm.deletedFeaturesProperty(feature);
+                vm.modelQuerySource.removeFeature(feature);
             }
             // Remove selected features (mapped by id) from `selectedFeatureIds`
             vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
@@ -1695,122 +1739,137 @@ export default {
                     !features
                         .map((feature) => feature.getProperties().id)
                         .includes(id)
-            )
+            );
         },
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         fetchProposals: async function () {
-            let vm = this
-            let url = api_endpoints.proposal + 'list_for_map/?'
-            // if (0 == vm.proposalIds.length) {
-            //     vm.proposals = []
-            //     return
-            // }
+            let vm = this;
+            vm.fetchingProposals = true;
+            let url = api_endpoints.proposal + 'list_for_map/';
+            // Characters to concatenate pseudo url elements
+            let chars = ['&', '&', '?'];
+
             if (vm.proposalIds.length > 0) {
-                url += '&proposal_ids=' + vm.proposalIds.toString()
+                url +=
+                    `${chars.pop()}proposal_ids=` + vm.proposalIds.toString();
             }
             if (vm.filterApplicationsMapApplicationType != 'all') {
                 url +=
-                    '&application_type=' +
-                    vm.filterApplicationsMapApplicationType
+                    `${chars.pop()}application_type=` +
+                    vm.filterApplicationsMapApplicationType;
             }
             if (vm.filterApplicationsMapProcessingStatus != 'all') {
                 url +=
-                    '&processing_status=' +
-                    vm.filterApplicationsMapProcessingStatus
+                    `${chars.pop()}processing_status=` +
+                    vm.filterApplicationsMapProcessingStatus;
             }
             fetch(url)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
                     }
-                    vm.proposals = data
-                    vm.filteredProposals = [...vm.proposals]
-                    vm.assignProposalFeatureColors(vm.proposals)
-                    vm.loadFeatures(vm.proposals)
-                    vm.applyFiltersFrontEnd()
+                    vm.proposals = data;
+                    vm.filteredProposals = [...vm.proposals];
+                    let initialisers = [
+                        vm.assignProposalFeatureColors(vm.proposals),
+                        vm.loadFeatures(vm.proposals),
+                        vm.applyFiltersFrontEnd(),
+                    ];
+                    Promise.all(initialisers).then(() => {
+                        console.log(
+                            'Done loading features and applying filters'
+                        );
+                        vm.fetchingProposals = false;
+                    });
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                })
+                    console.error('There was an error!', error);
+                    vm.fetchingProposals = false;
+                });
         },
         fetchFilterLists: function () {
-            let vm = this
+            let vm = this;
 
             // Application Types
             fetch(api_endpoints.application_types + 'key-value-list/').then(
                 async (response) => {
-                    const resData = await response.json()
-                    vm.application_types = resData
+                    const resData = await response.json();
+                    vm.application_types = resData;
                 },
                 () => {}
-            )
+            );
 
             // Application Statuses
             fetch(
                 api_endpoints.application_statuses_dict + '?for_filter=true'
             ).then(
                 async (response) => {
-                    const resData = await response.json()
-                    vm.processing_statuses = resData
+                    const resData = await response.json();
+                    vm.processing_statuses = resData;
                 },
                 () => {}
-            )
+            );
         },
         addFeatureCollectionToMap: function (featureCollection) {
-            let vm = this
+            let vm = this;
             if (featureCollection == null) {
-                featureCollection = vm.featureCollection
+                featureCollection = vm.featureCollection;
             }
-            console.log('Adding features to map:', featureCollection)
+            console.log('Adding features to map:', featureCollection);
 
             for (let featureData of featureCollection['features']) {
-                let feature = vm.featureFromDict(featureData, featureData.model)
+                let feature = vm.featureFromDict(
+                    featureData,
+                    featureData.model
+                );
 
-                vm.modelQuerySource.addFeature(feature)
-                vm.newFeatureId++
+                vm.modelQuerySource.addFeature(feature);
+                vm.newFeatureId++;
             }
         },
         assignProposalFeatureColors: function (proposals) {
-            let vm = this
+            let vm = this;
             proposals.forEach(function (proposal) {
-                proposal.color = vm.getRandomRGBAColor()
-                console.log(proposal.lodgement_date)
-                console.log(typeof proposal.lodgement_date)
-            })
+                proposal.color = vm.getRandomRGBAColor();
+                console.log(proposal.lodgement_date);
+                console.log(typeof proposal.lodgement_date);
+            });
         },
         loadFeatures: function (proposals) {
-            let vm = this
-            console.log(proposals)
+            let vm = this;
+            console.log(proposals);
             // Remove all features from the layer
-            vm.modelQuerySource.clear()
+            vm.modelQuerySource.clear();
             proposals.forEach(function (proposal) {
                 proposal.proposalgeometry.features.forEach(function (
                     featureData
                 ) {
-                    let feature = vm.featureFromDict(featureData, proposal)
+                    let feature = vm.featureFromDict(featureData, proposal);
 
                     if (vm.modelQuerySource.getFeatureById(feature.getId())) {
                         console.warn(
                             `Feature ${feature.getId()} already exists in the source. Skipping...`
-                        )
-                        return
+                        );
+                        return;
                     }
-                    vm.modelQuerySource.addFeature(feature)
-                    vm.newFeatureId++
-                })
+                    vm.modelQuerySource.addFeature(feature);
+                    vm.newFeatureId++;
+                });
                 if (proposal.competitive_process) {
                     proposal.competitive_process.competitive_process_geometries.features.forEach(
                         function (featureData) {
                             let feature = vm.featureFromDict(
                                 featureData,
                                 proposal.competitive_process
-                            )
+                            );
                             if (
                                 vm.modelQuerySource.getFeatureById(
                                     feature.getId()
@@ -1818,20 +1877,20 @@ export default {
                             ) {
                                 console.warn(
                                     `Feature ${feature.getId()} already exists in the source. Removing...`
-                                )
+                                );
                                 vm.modelQuerySource.removeFeature(
                                     vm.modelQuerySource.getFeatureById(
                                         feature.getId()
                                     )
-                                )
+                                );
                             }
-                            vm.modelQuerySource.addFeature(feature)
-                            vm.newFeatureId++
+                            vm.modelQuerySource.addFeature(feature);
+                            vm.newFeatureId++;
                         }
-                    )
+                    );
                 }
-            })
-            vm.addFeatureCollectionToMap()
+            });
+            vm.addFeatureCollectionToMap();
         },
         /**
          * Creates a styled feature object from a feature dictionary
@@ -1839,13 +1898,13 @@ export default {
          * @param {Proxy} model A model object
          */
         featureFromDict: function (featureData, model) {
-            let vm = this
+            let vm = this;
             if (model == null) {
-                model = {}
+                model = {};
             }
 
-            let color = vm.styleByColor(featureData, model)
-            let style = vm.createStyle(color)
+            let color = vm.styleByColor(featureData, model);
+            let style = vm.createStyle(color);
 
             let feature = new Feature({
                 id: vm.newFeatureId, // Incrementing-id of the polygon/feature on the map
@@ -1857,59 +1916,59 @@ export default {
                 polygon_source: featureData.properties.polygon_source,
                 locked: featureData.properties.locked,
                 copied_from: featureData.properties.proposal_copied_from,
-            })
+            });
             // Id of the model object (https://datatracker.ietf.org/doc/html/rfc7946#section-3.2)
-            feature.setId(featureData.id)
+            feature.setId(featureData.id);
 
             feature.setProperties({
                 model: model,
-            })
-            feature.setStyle(style)
+            });
+            feature.setStyle(style);
 
-            return feature
+            return feature;
         },
         getProposalById: function (id) {
-            return this.proposals.find((proposal) => proposal.id === id)
+            return this.proposals.find((proposal) => proposal.id === id);
         },
         getRandomColor: function () {
-            let letters = '0123456789ABCDEF'
-            let color = '#'
+            let letters = '0123456789ABCDEF';
+            let color = '#';
             for (let i = 0; i < 6; i++) {
-                color += letters[Math.floor(Math.random() * 16)]
+                color += letters[Math.floor(Math.random() * 16)];
             }
-            return color
+            return color;
         },
         getRandomRGBAColor: function () {
             var o = Math.round,
                 r = Math.random,
-                s = 255
-            return [o(r() * s), o(r() * s), o(r() * s), 0.5]
+                s = 255;
+            return [o(r() * s), o(r() * s), o(r() * s), 0.5];
         },
         getJSONFeatures: function () {
-            const format = new GeoJSON()
-            const features = this.modelQuerySource.getFeatures()
+            const format = new GeoJSON();
+            const features = this.modelQuerySource.getFeatures();
 
             features.forEach(function (feature) {
-                console.log(feature.getProperties())
+                console.log(feature.getProperties());
                 // feature.unset("model")
-            })
+            });
 
-            return format.writeFeatures(features)
+            return format.writeFeatures(features);
         },
         /**
          * Returns a dictionary of query parameters for a given layer
          * @param {String} layerStr The dictionary key containing the layer information
          */
         queryParamsDict: function (layerStr) {
-            let vm = this
+            let vm = this;
 
             if (!(layerStr in vm.owsQuery)) {
-                console.error(`Layer ${layerStr} not found in OWS query`)
-                return {}
+                console.error(`Layer ${layerStr} not found in OWS query`);
+                return {};
             }
             if (!vm.owsQuery[layerStr].typeName) {
-                console.error(`Layer ${layerStr} needs a typeName`)
-                return {}
+                console.error(`Layer ${layerStr} needs a typeName`);
+                return {};
             }
 
             return {
@@ -1923,30 +1982,30 @@ export default {
                     vm.owsQuery[layerStr].outputFormat || 'application/json',
                 propertyName:
                     vm.owsQuery[layerStr].propertyName || 'wkb_geometry',
-            }
+            };
         },
         /**
          * Returns a Well-known-text (WKT) representation of a feature
          * @param {Feature} feature A feature to validate
          */
         featureToWKT: function (feature) {
-            let vm = this
+            let vm = this;
 
             if (feature === undefined) {
                 // If no feature is provided, create a feature from the current sketch
-                let coordinates = vm.sketchCoordinates.slice()
-                coordinates.push(coordinates[0])
+                let coordinates = vm.sketchCoordinates.slice();
+                coordinates.push(coordinates[0]);
                 feature = new Feature({
                     id: -1,
                     geometry: new Polygon([coordinates]),
                     label: 'validation',
                     color: vm.defaultColor,
                     polygon_source: 'validation',
-                })
+                });
             }
 
             // Prepare a WFS feature intersection request
-            let flatCoordinates = feature.values_.geometry.flatCoordinates
+            let flatCoordinates = feature.values_.geometry.flatCoordinates;
 
             // Transform list of flat coordinates into a list of coordinate pairs,
             // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
@@ -1959,10 +2018,10 @@ export default {
                           ].join(' ')
                         : ''
                 )
-                .filter((item) => item != '')
+                .filter((item) => item != '');
 
             // Create a Well-Known-Text polygon string from the coordinate pairs
-            return `POLYGON ((${flatCoordinateStringPairs.join(', ')}))`
+            return `POLYGON ((${flatCoordinateStringPairs.join(', ')}))`;
         },
         /**
          * Validates an openlayers feature against a geoserver `url`.
@@ -1970,53 +2029,53 @@ export default {
          * @returns {Promise} A promise that resolves to a list of intersected features
          */
         validateFeatureQuery: async function (query) {
-            let vm = this
+            let vm = this;
 
-            let features = []
+            let features = [];
             // Query the WFS
-            vm.queryingGeoserver = true
+            vm.queryingGeoserver = true;
             // var urls = [`${url}${params}`];
-            let urls = [query]
+            let urls = [query];
 
             let requests = urls.map((url) =>
                 utils.fetchUrl(url).then((response) => response)
-            )
+            );
             await Promise.all(requests)
                 .then((data) => {
-                    features = new GeoJSON().readFeatures(data[0])
+                    features = new GeoJSON().readFeatures(data[0]);
                 })
                 .catch((error) => {
-                    console.log(error.message)
-                    vm.errorMessage = error.message
-                })
+                    console.log(error.message);
+                    vm.errorMessage = error.message;
+                });
 
-            return features
+            return features;
         },
         /**
          * Finish drawing of the current feature sketch.
          */
         finishDrawing: function () {
-            let vm = this
-            vm.queryingGeoserver = false
-            vm.errorMessage = null
-            vm.drawForModel.finishDrawing()
+            let vm = this;
+            vm.queryingGeoserver = false;
+            vm.errorMessage = null;
+            vm.drawForModel.finishDrawing();
         },
         /**
          * Returns the current error message or sets it to the provided message.
          * @param {String} message The new error message
          */
         errorMessageProperty: function (message) {
-            let vm = this
+            let vm = this;
             if (message === undefined) {
-                return vm.errorMessage
+                return vm.errorMessage;
             }
 
-            vm.queryingGeoserver = false
+            vm.queryingGeoserver = false;
 
             // Only overwrite the current message if the new message is null (removes the message)
             // Or the current message is null (no message is set)
             if (message === null || vm.errorMessage === null) {
-                vm.errorMessage = message
+                vm.errorMessage = message;
             }
         },
         /**
@@ -2025,27 +2084,27 @@ export default {
          * @param {Dict} feature clicked feature properties or undefined
          */
         overlay: function (coordinate, feature) {
-            let vm = this
-            let overlay = vm.map.overlays_.array_[0]
+            let vm = this;
+            let overlay = vm.map.overlays_.array_[0];
             if (feature === undefined) {
-                vm.overlayFeatureInfo = {}
+                vm.overlayFeatureInfo = {};
             } else {
-                vm.overlayFeatureInfo = feature.getProperties()
+                vm.overlayFeatureInfo = feature.getProperties();
             }
-            overlay.setPosition(coordinate)
+            overlay.setPosition(coordinate);
 
-            return overlay
+            return overlay;
         },
         deletedFeaturesProperty: function (feature) {
-            let vm = this
+            let vm = this;
             if (feature === undefined) {
-                return vm.deletedFeatures
+                return vm.deletedFeatures;
             } else {
-                vm.deletedFeatures.push(feature)
+                vm.deletedFeatures.push(feature);
             }
         },
     },
-}
+};
 </script>
 <style scoped>
 @import '../../../../../static/leaseslicensing/css/map.css';
@@ -2078,5 +2137,8 @@ export default {
     padding: 0 5px;
     vertical-align: top;
     margin-left: -10px;
+}
+.map-spinner {
+    position: absolute !important;
 }
 </style>

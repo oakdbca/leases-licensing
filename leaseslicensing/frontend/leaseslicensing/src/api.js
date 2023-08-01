@@ -1,4 +1,3 @@
-
 module.exports = {
     account: '/api/users/request_user_account/',
     applicants_dict: '/api/applicants_dict',
@@ -27,6 +26,7 @@ module.exports = {
     my_organisations: '/api/my_organisations/',
     organisation_access_group_members: '/api/organisation_access_group_members',
     organisation_contacts: '/api/organisation_contacts.json',
+    organisation_contacts_paginated: '/api/organisation_contacts_paginated/',
     organisation_lookup: '/api/organisations/organisation_lookup',
     organisation_requests_paginated: '/api/organisation_requests_paginated/',
     organisation_requests: '/api/organisation_requests/',
@@ -36,7 +36,8 @@ module.exports = {
     profile: '/api/profile',
     proposal_by_uuid: '/api/proposal_by_uuid/',
     proposal_requirements: '/api/proposal_requirements.json',
-    proposal_standard_requirements: '/api/proposal_standard_requirements/application_type_standard_requirements/',
+    proposal_standard_requirements:
+        '/api/proposal_standard_requirements/application_type_standard_requirements/',
     proposal: '/api/proposal/',
     proposals_paginated_list: '/api/proposal_paginated/', // both for external and internal
     proposals: '/api/proposal.json',
@@ -58,7 +59,6 @@ module.exports = {
     regions: '/api/regions/',
     tenures: '/api/tenures/',
     vestings: '/api/vestings/',
-
 
     lookupApprovalDetails: function (id) {
         return `/api/approvals/${id}/lookup_approval.json`;

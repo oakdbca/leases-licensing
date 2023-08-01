@@ -1,7 +1,7 @@
 <template lang="html">
     <div>
         <div v-if="debug">components/form_lease_licence.vue</div>
-        <FormSection :formCollapse="false" label="Tourism Proposal Details" Index="tourism_proposal_details"
+        <FormSection :formCollapse="false" label="Tourism Proposal Details" index="tourism_proposal_details"
             v-if="proposal">
             <slot name="slot_proposal_tourism_details_assessment_comments"></slot>
 
@@ -174,7 +174,7 @@
             </div>
         </FormSection>
 
-        <FormSection :formCollapse="false" label="General Proposal Details" Index="general_proposal_details"
+        <FormSection :formCollapse="false" label="General Proposal Details" index="general_proposal_details"
             v-if="proposal">
             <slot name="slot_proposal_general_details_assessment_comments"></slot>
 
@@ -274,7 +274,7 @@
 
         </FormSection>
 
-        <FormSection :formCollapse="false" label="Proponent Reference Number" Index="proponent_reference_number"
+        <FormSection :formCollapse="false" label="Proponent Reference Number" index="proponent_reference_number"
             v-if="proposal">
             <BootstrapAlert v-if="!is_internal">
                 <ul class="list-group">

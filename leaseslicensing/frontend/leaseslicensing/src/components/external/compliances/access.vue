@@ -8,7 +8,7 @@
                 <div v-if="!isFinalised">
                     <div v-if="hasAmendmentRequest">
                         <FormSection customColor="red" label="This Compliance Requires one or more Amendments"
-                            Index="amendment_compliance_with_requirements">
+                            index="amendment_compliance_with_requirements">
                             <div class="row">
                                 <div class="col">
                                     <ol class="list-group">
@@ -33,7 +33,7 @@
                     </div>
                 </div>
                 <div class="col-md-12">
-                    <FormSection :label="title" Index="compliance_with_requirements">
+                    <FormSection :label="title" index="compliance_with_requirements">
                         <form class="needs-validation" id="complianceForm" name="complianceForm" novalidate>
                             <alert :show.sync="showError" type="danger">
                                 <strong>{{ errorString }}</strong>

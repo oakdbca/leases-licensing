@@ -116,9 +116,9 @@ def send_approval_expire_email_notification(approval):
 
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+            msg, approval.applicant, proposal.submitter, sender=sender_user
         )
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
@@ -147,9 +147,9 @@ def send_approval_cancel_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+            msg, approval.applicant, proposal.submitter, sender=sender_user
         )
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
@@ -164,8 +164,8 @@ def send_approval_suspend_email_notification(approval, request=None):
         from_date = "01/01/1970"
         to_date = "01/01/2070"
     else:
-        details = (approval.suspension_details["details"],)
-        from_date = (approval.suspension_details["from_date"],)
+        details = approval.suspension_details["details"]
+        from_date = approval.suspension_details["from_date"]
         to_date = approval.suspension_details["to_date"]
 
     context = {
@@ -181,17 +181,17 @@ def send_approval_suspend_email_notification(approval, request=None):
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
-    if proposal.org_applicant and proposal.org_applicant.email:
-        cc_list = proposal.org_applicant.email
+    if approval.is_org_applicant and approval.applicant.email:
+        cc_list = approval.applicant.email
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+            msg, approval.applicant, proposal.submitter, sender=sender_user
         )
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
@@ -205,8 +205,8 @@ def send_approval_surrender_email_notification(approval, request=None):
         details = "This are my test details"
         surrender_date = "01/01/1970"
     else:
-        details = (approval.surrender_details["details"],)
-        surrender_date = (approval.surrender_details["surrender_date"],)
+        details = approval.surrender_details["details"]
+        surrender_date = approval.surrender_details["surrender_date"]
 
     context = {
         "approval": approval,
@@ -220,16 +220,16 @@ def send_approval_surrender_email_notification(approval, request=None):
         EmailUser.objects.create(email=sender, password="")
         sender_user = EmailUser.objects.get(email__icontains=sender)
     all_ccs = []
-    if proposal.org_applicant and proposal.org_applicant.email:
-        cc_list = proposal.org_applicant.email
+    if approval.is_org_applicant and approval.applicant.email:
+        cc_list = approval.applicant.email
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+            msg, approval.applicant, proposal.submitter, sender=sender_user
         )
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
@@ -249,7 +249,7 @@ def send_approval_renewal_review_email_notification(approval):
     sender_user = EmailUser.objects.get(email=sender)
 
     msg = email.send(
-        emails_list_for_group(settings.GROUP_LEASE_LICENCE_ASSESSOR),
+        emails_list_for_group(settings.GROUP_NAME_ASSESSOR),
         context=context,
     )
 
@@ -269,11 +269,11 @@ def send_approval_renewal_email_notification(approval):
     sender = settings.DEFAULT_FROM_EMAIL
     sender_user = EmailUser.objects.get(email=sender)
 
-    if approval.org_applicant:
+    if approval.is_org_applicant:
         # For organisations also cc in all the active organisation contacts
         msg = email.send(
-            approval.org_applicant.email,
-            cc_list=approval.org_applicant.contact_emails,
+            approval.applicant.email,
+            cc=approval.applicant.contact_emails,
             context=context,
         )
     else:
@@ -294,16 +294,16 @@ def send_approval_reinstate_email_notification(approval, request):
         "approval": approval,
     }
     all_ccs = []
-    if proposal.org_applicant and proposal.org_applicant.email:
-        cc_list = proposal.org_applicant.email
+    if approval.is_org_applicant and approval.applicant.email:
+        cc_list = approval.applicant.email
         if cc_list:
             all_ccs = [cc_list]
     msg = email.send(proposal.submitter_obj.email, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender)
-    if approval.org_applicant:
-        _log_org_email(msg, approval.org_applicant, proposal.submitter, sender=sender)
+    if approval.is_org_applicant:
+        _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender)
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender)
 

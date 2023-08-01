@@ -204,7 +204,12 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
         # fields = self.get_fields(getter)
         # ordering = self.get_ordering(getter, fields)
         queryset = self.apply_request(
-            request, queryset, view, ledger_lookup_fields=["ind_applicant"]
+            request,
+            queryset,
+            view,
+            ledger_lookup_fields=[
+                "current_proposal__org_applicant",
+            ], # "current_proposal__ind_applicant" replaced by ProposalApplicant member
         )
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -230,7 +235,24 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
             # queryset =  Approval.objects.filter(Q(org_applicant_id__in = user_orgs)
             # | Q(submitter = self.request.user))
-            qs = Approval.objects.filter(Q(submitter=self.request.user.id))
+            qs = Approval.objects.filter(
+                Q(current_proposal__submitter=self.request.user.id)
+            )
+
+        target_email_user_id = self.request.query_params.get(
+            "target_email_user_id", None
+        )
+        if (
+            target_email_user_id
+            and target_email_user_id.isnumeric()
+            and int(target_email_user_id) > 0
+        ):
+            logger.debug(f"target_email_user_id: {target_email_user_id}")
+            target_email_user_id = int(target_email_user_id)
+            # TODO: Do we need to exclude org applications here? Would lead to no results
+            # when the query is parametrized for user id and org id
+            # qs = qs.exclude(org_applicant__isnull=False)
+            qs = qs.filter(current_proposal__submitter=target_email_user_id)
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
@@ -312,58 +334,6 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ApprovalPaymentFilterViewSet(generics.ListAPIView):
-    """https://cop-internal.dbca.wa.gov.au/api/filtered_organisations?search=Org1"""
-
-    queryset = Approval.objects.none()
-    serializer_class = ApprovalPaymentSerializer
-    filter_backends = (filters.SearchFilter,)
-    # search_fields = ('applicant', 'applicant_id',)
-    search_fields = ("id",)
-
-    def get_queryset(self):
-        """
-        Return All approvals associated with user (proxy_applicant and org_applicant)
-        """
-        # return Approval.objects.filter(proxy_applicant=self.request.user)
-        user = self.request.user
-
-        # get all orgs associated with user
-        user_org_ids = OrganisationContact.objects.filter(email=user.email).values_list(
-            "organisation_id", flat=True
-        )
-
-        now = datetime.now().date()
-        approval_qs = Approval.objects.filter(
-            Q(proxy_applicant=user)
-            | Q(org_applicant_id__in=user_org_ids)
-            | Q(submitter_id=user)
-        )
-        approval_qs = approval_qs.exclude(expiry_date__lt=now)
-        approval_qs = approval_qs.exclude(
-            replaced_by__isnull=False
-        )  # get lastest licence, ignore the amended
-        return approval_qs
-
-    @list_route(
-        methods=[
-            "GET",
-        ],
-        detail=False,
-    )
-    def _list(self, request, *args, **kwargs):
-        data = []
-        for approval in self.get_queryset():
-            data.append(
-                dict(
-                    lodgement_number=approval.lodgement_number,
-                    current_proposal=approval.current_proposal_id,
-                )
-            )
-        return Response(data)
-        # return Response(self.get_queryset().values_list('lodgement_number','current_proposal_id'))
-
-
 class ApprovalViewSet(viewsets.ModelViewSet):
     # queryset = Approval.objects.all()
     queryset = Approval.objects.none()
@@ -383,7 +353,8 @@ class ApprovalViewSet(viewsets.ModelViewSet):
                 else []
             )
             queryset = Approval.objects.filter(
-                Q(org_applicant_id__in=user_orgs) | Q(submitter=self.request.user.id)
+                Q(current_proposal__org_applicant_id__in=user_orgs)
+                | Q(current_proposal__submitter=self.request.user.id)
             )
             return queryset
         return Approval.objects.none()
