@@ -16,24 +16,10 @@
                         >
                             Add Condition
                         </button>
-                        <button
-                            v-if="hasAssessorMode || isReferrerCanEdit"
-                            style="margin-bottom: 10px"
-                            class="btn btn-primary float-end"
-                            @click.prevent="addRequirement()"
-                        >
-                            Add Condition
-                        </button>
                     </div>
                 </div>
                 <div class="row">
                     <div class="col-sm-12">
-                        <datatable
-                            :id="datatableId"
-                            ref="requirements_datatable"
-                            :dt-options="requirement_options"
-                            :dt-headers="requirement_headers"
-                        />
                         <datatable
                             :id="datatableId"
                             ref="requirements_datatable"
@@ -356,15 +342,6 @@ export default {
                     var id = $(this).attr('data-id');
                     e.preventDefault();
                     vm.removeRequirement(id);
-                }
-            );
-            vm.$refs.requirements_datatable.vmDataTable.on(
-                'click',
-                '.editRequirement',
-                function (e) {
-                    var id = $(this).attr('data-id');
-                    e.preventDefault();
-                    vm.editRequirement(id);
                 }
             );
         },
