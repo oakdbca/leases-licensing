@@ -33,10 +33,8 @@ from leaseslicensing.components.proposals.models import (
 )
 from leaseslicensing.components.proposals.serializers import (
     ProposalAssessmentAnswerSerializer,
-    ProposalGeometrySaveSerializer,
     ProposalGeometrySerializer,
     ProposalMapFeatureInfoSerializer,
-    ProposalSerializer,
     SaveLeaseLicenceSerializer,
     SaveRegistrationOfInterestSerializer,
 )
@@ -610,7 +608,7 @@ def proposal_submit(proposal, request):
             ret2 = send_external_submit_email_notification(request, proposal)
 
             # proposal.save_form_tabs(request)
-            if ret1 and ret2:
+            if (settings.WORKING_FROM_HOME and settings.DEBUG) or ret1 and ret2:
                 proposal.processing_status = "with_assessor"
                 # TODO: do we need the following 2?
                 # proposal.documents.all().update(can_delete=False)
@@ -775,7 +773,6 @@ def make_proposal_applicant_ready(proposal, request):
 
 
 def get_proposal_geometries_for_map_component(proposal, context, feature_collection):
-
     if not feature_collection:
         feature_collection = {"type": "FeatureCollection", "features": []}
 

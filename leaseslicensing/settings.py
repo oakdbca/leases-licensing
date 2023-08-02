@@ -10,6 +10,8 @@ os.environ.setdefault("BASE_DIR", BASE_DIR)
 
 from ledger_api_client.settings_base import *  # noqa: F403
 
+WORKING_FROM_HOME = env("WORKING_FROM_HOME", False)
+
 if DEBUG:
     ADMINS = [
         ("Oak McIlwain", "oak.mcilwain@dbca.wa.gov.au"),
