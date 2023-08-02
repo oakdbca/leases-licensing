@@ -780,21 +780,27 @@ class InvoicingDetails(BaseModel):
             days = 365
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
-            amount_object.amount = base_fee_amount
-            amount_object.suffix = " + CPI (ABS)"
+            amount_object["amount"] = base_fee_amount
+            amount_object["suffix"] = " + CPI (ABS)"
 
         if (
             self.charge_method.key
             == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM
         ):
-            amount_object.amount = base_fee_amount
-            custom_cpi_year = self.invoicingDetails.custom_cpi_years[index]
+            amount_object["amount"] = base_fee_amount
+            try:
+                custom_cpi_year = self.custom_cpi_years.all()[index]
+            except IndexError:
+                logger.warning(
+                    f"Invoicing Details: {self.id} - No custom CPI year for index {index}. Using base fee amount."
+                )
+
             if custom_cpi_year:
-                amount_object.amount = Decimal(
-                    base_fee_amount * (1 + custom_cpi_year.cpi / 100)
+                amount_object["amount"] = Decimal(
+                    base_fee_amount * (1 + custom_cpi_year.percentage / 100)
                 ).quantize(Decimal("0.01"))
             else:
-                amount_object.suffix = " + CPI (CUSTOM)"
+                amount_object["suffix"] = " + CPI (CUSTOM)"
 
         year_sequence_index = self.get_year_sequence_index(index)
         if (
@@ -807,18 +813,16 @@ class InvoicingDetails(BaseModel):
                 if year_sequence_index > 0
                 else ""
             )
-            annual_increment_percentage = (
-                self.invoicingDetails.annual_increment_percentages[
-                    year_sequence_index - 1
-                ]
-            )
+            annual_increment_percentage = self.annual_increment_percentages[
+                year_sequence_index - 1
+            ]
             if annual_increment_percentage:
                 percentage = annual_increment_percentage.increment_percentage or 0.0
                 base_fee_amount = base_fee_amount * (1 + percentage / 100)
                 suffix = ""
 
-            amount_object.amount = Decimal(base_fee_amount).quantize(Decimal("0.01"))
-            amount_object.suffix = suffix
+            amount_object["amount"] = Decimal(base_fee_amount).quantize(Decimal("0.01"))
+            amount_object["suffix"] = suffix
 
         if (
             self.charge_method.key
@@ -839,8 +843,8 @@ class InvoicingDetails(BaseModel):
                 base_fee_amount = base_fee_amount + increment_amount
                 suffix = ""
 
-            amount_object.amount = Decimal(base_fee_amount).quantize(Decimal("0.01"))
-            amount_object.suffix = suffix
+            amount_object["amount"] = Decimal(base_fee_amount).quantize(Decimal("0.01"))
+            amount_object["suffix"] = suffix
 
         return amount_object
 
@@ -856,13 +860,13 @@ class InvoicingDetails(BaseModel):
 
     def get_end_of_next_interval_annual(self, start_date):
         if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
-            return start_date + relativedelta(years=1)
+            return start_date + relativedelta(years=1) - relativedelta(days=1)
 
         if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
-            return start_date + relativedelta(months=3)
+            return start_date + relativedelta(months=3) - relativedelta(days=1)
 
         if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
-            return start_date + relativedelta(months=1)
+            return start_date + relativedelta(months=1) - relativedelta(days=1)
 
     def get_end_of_next_interval_gross_turnover(self, start_date):
         if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
@@ -984,6 +988,28 @@ class PercentageOfGrossTurnover(BaseModel):
     @property
     def financial_year(self):
         return f"{self.year-1}-{self.year}"
+
+
+class CustomCPIYear(BaseModel):
+    year = models.PositiveSmallIntegerField()
+    label = models.CharField(max_length=100, null=True, blank=True)
+    percentage = models.DecimalField(
+        max_digits=4, decimal_places=1, default="0.0", null=True, blank=True
+    )
+    invoicing_details = models.ForeignKey(
+        InvoicingDetails,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE,
+        related_name="custom_cpi_years",
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ["invoicing_details", "year"]
+
+    def __str__(self):
+        return f"{self.year}: {self.percentage}%"
 
 
 class CrownLandRentReviewDate(BaseModel):
