@@ -13,7 +13,7 @@
                         v-if="proposal.processing_status_id == 'with_approver'"
                     >
                         <select
-                            ref=" assigned_officer"
+                            ref="assigned_officer"
                             v-model="assigned_approver"
                             :disabled="!canAction"
                             class="form-select"
@@ -865,6 +865,22 @@ export default {
         };
     },
     computed: {
+        assigned_approver: {
+            get() {
+                return this.proposal.assigned_approver;
+            },
+            set(value) {
+                this.$emit('updateAssignedApprover', value);
+            },
+        },
+        assigned_officer: {
+            get() {
+                return this.proposal.assigned_officer;
+            },
+            set(value) {
+                this.$emit('updateAssignedOfficer', value);
+            },
+        },
         actionsVisible: function () {
             if (
                 !(
