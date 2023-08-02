@@ -131,13 +131,12 @@
     </div>
 </template>
 <script>
-/*globals moment, swal */
-import { api_endpoints, helpers } from '@/utils/hooks'
-import { constants } from '@/utils/hooks'
-import ProposedIssuanceForm from '@/components/internal/proposals/proposed_issuance_form.vue'
-import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue'
-import FormSection from '@/components/forms/section_toggle.vue'
-import InvoicingDetails from '@/components/common/invoicing_details.vue'
+import { api_endpoints, helpers } from '@/utils/hooks';
+import { constants } from '@/utils/hooks';
+import ProposedIssuanceForm from '@/components/internal/proposals/proposed_issuance_form.vue';
+import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
+import InvoicingDetails from '@/components/common/invoicing_details.vue';
 
 export default {
     name: 'InternalProposalApproval',
@@ -167,30 +166,30 @@ export default {
     },
     emits: ['updateInvoicingDetails'],
     data: function () {
-        let vm = this
+        let vm = this;
         return {
             proposedDecision: 'proposal-decision-' + vm._.uid,
             proposedLevel: 'proposal-level-' + vm._.uid,
             uploadedFile: null,
             component_site_selection_key: '',
-        }
+        };
     },
     computed: {
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
         display_approval_screen: function () {
-            if (this.debug) return true
+            if (this.debug) return true;
             let ret_val =
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ||
-                this.isFinalised
-            return ret_val
+                this.isFinalised;
+            return ret_val;
         },
         display_requirements: function () {
             let ret_val =
@@ -199,18 +198,18 @@ export default {
                 ((this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                     this.isFinalised) &&
-                    this.showingRequirements)
-            return ret_val
+                    this.showingRequirements);
+            return ret_val;
         },
         showElectoralRoll: function () {
-            let show = false
+            let show = false;
             if (
                 this.proposal &&
                 ['wla', 'mla'].includes(this.proposal.application_type_code)
             ) {
-                show = true
+                show = true;
             }
-            return show
+            return show;
         },
         contactsURL: function () {
             return this.proposal != null
@@ -218,13 +217,13 @@ export default {
                       api_endpoints.organisations,
                       this.proposal.applicant.id + '/contacts'
                   )
-                : ''
+                : '';
         },
         isLoading: function () {
-            return this.loading.length > 0
+            return this.loading.length > 0;
         },
         csrf_token: function () {
-            return helpers.getCookie('csrftoken')
+            return helpers.getCookie('csrftoken');
         },
         isFinalised: function () {
             return (
@@ -232,19 +231,19 @@ export default {
                     constants.PROPOSAL_STATUS.DECLINED.ID ||
                 this.proposal.processing_status_id ===
                     constants.PROPOSAL_STATUS.APPROVED.ID
-            )
+            );
         },
         canAssess: function () {
-            return true // TODO: Implement correctly.  May not be needed though
+            return true; // TODO: Implement correctly.  May not be needed though
         },
         hasAssessorMode: function () {
             return this.proposal &&
                 this.proposal.assessor_mode.has_assessor_mode
                 ? true
-                : false
+                : false;
         },
         canAction: function () {
-            return true // TODO: implement this.  This is just temporary solution
+            return true; // TODO: implement this.  This is just temporary solution
         },
         canSeeSubmission: function () {
             return (
@@ -253,7 +252,7 @@ export default {
                     'With Assessor (Requirements)' &&
                 this.proposal.processing_status != 'With Approver' &&
                 !this.isFinalised
-            )
+            );
         },
         isApprovalLevelDocument: function () {
             return this.proposal &&
@@ -261,19 +260,19 @@ export default {
                 this.proposal.approval_level != null &&
                 this.proposal.approval_level_document == null
                 ? true
-                : false
+                : false;
         },
         approvalIssueDate: function () {
             if (this.proposal) {
-                return this.proposal.approval_issue_date
+                return this.proposal.approval_issue_date;
             }
-            return ''
+            return '';
         },
         proposalApprovedOn: function () {
-            return this.proposal.approved_on
+            return this.proposal.approved_on;
         },
         proposalApprovedBy: function () {
-            return this.proposal.approved_by
+            return this.proposal.approved_by;
         },
         approveDecisionText: function () {
             /** Returns approval decision text part to be used in the green bar */
@@ -282,20 +281,20 @@ export default {
                 this.proposal.proposed_issuance_approval.decision ===
                 'approve_lease_licence'
             ) {
-                return 'was approved to proceed to a full application'
+                return 'was approved to proceed to a full application';
             } else if (
                 this.proposal.proposed_issuance_approval.decision ===
                 'approve_competitive_process'
             ) {
-                return 'was approved to proceed to a Competitive Process'
+                return 'was approved to proceed to a Competitive Process';
             } else {
-                return 'was approved'
+                return 'was approved';
             }
         },
         show_invoicing_details: function () {
-            if (this.debug) return true
+            if (this.debug) return true;
 
-            let display = false
+            let display = false;
             if (
                 this.proposal &&
                 this.proposal.application_type &&
@@ -307,8 +306,8 @@ export default {
                     constants.ROLES.FINANCE.ID
                 )
             )
-                display = true
-            return display
+                display = true;
+            return display;
         },
         applicationTypeNameDisplay: function () {
             /** Returns approval application type text part to be used in the green bar */
@@ -318,28 +317,28 @@ export default {
                     this.proposal.proposed_issuance_approval.decision ===
                     'approve_lease_licence'
                 ) {
-                    return `The ${this.proposal.application_type.name_display}`
+                    return `The ${this.proposal.application_type.name_display}`;
                 } else if (
                     this.proposal.proposed_issuance_approval.decision ===
                     'approve_competitive_process'
                 ) {
-                    return `The ${this.proposal.application_type.name_display}`
+                    return `The ${this.proposal.application_type.name_display}`;
                 } else {
-                    return `This application for a ${this.proposal.application_type.name_display}`
+                    return `This application for a ${this.proposal.application_type.name_display}`;
                 }
             }
-            return ''
+            return '';
         },
         displayAwaitingPaymentMsg: function () {
-            let display = false
-            console.log(this.proposal.processing_status)
+            let display = false;
+            console.log(this.proposal.processing_status);
             if (
                 this.proposal.processing_status_id ===
                 constants.PROPOSAL_STATUS.AWAITING_PAYMENT.ID
             ) {
-                display = true
+                display = true;
             }
-            return display
+            return display;
         },
         displayApprovedMessage: function () {
             return [
@@ -347,72 +346,72 @@ export default {
                 constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID,
                 constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID,
                 constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID,
-            ].includes(this.proposal.processing_status_id)
+            ].includes(this.proposal.processing_status_id);
         },
         displayDeclinedMsg: function () {
-            let display = false
+            let display = false;
             if (
                 this.proposal.processing_status_id ===
                 constants.PROPOSAL_STATUS.DECLINED.ID
             ) {
-                display = true
+                display = true;
             }
-            return display
+            return display;
         },
         approvalExpiryDate: function () {
-            let returnDate = null
+            let returnDate = null;
             if (this.proposal && this.proposal.end_date) {
                 returnDate = moment(
                     this.proposal.end_date,
                     'YYYY-MM-DD'
-                ).format('DD/MM/YYYY')
+                ).format('DD/MM/YYYY');
             }
-            return returnDate
+            return returnDate;
         },
         isApprovalLevel: function () {
-            return this.proposal.approval_level != null ? true : false
+            return this.proposal.approval_level != null ? true : false;
         },
         decisionLabel: function () {
-            let decision_label = 'Decision'
+            let decision_label = 'Decision';
             if (
                 this.proposal.processing_status_id ==
                 constants.PROPOSAL_STATUS.WITH_APPROVER.ID
             ) {
-                decision_label = 'Proposed Decision'
+                decision_label = 'Proposed Decision';
             }
-            return decision_label
+            return decision_label;
         },
     },
     methods: {
         readFile: function () {
-            let vm = this
-            let _file = null
-            var input = $(vm.$refs.uploadedFile)[0]
+            let vm = this;
+            let _file = null;
+            var input = $(vm.$refs.uploadedFile)[0];
             if (input.files && input.files[0]) {
-                let reader = new FileReader()
-                reader.readAsDataURL(input.files[0])
+                let reader = new FileReader();
+                reader.readAsDataURL(input.files[0]);
                 reader.onload = function (e) {
-                    _file = e.target.result
-                }
-                _file = input.files[0]
+                    _file = e.target.result;
+                };
+                _file = input.files[0];
             }
-            vm.uploadedFile = _file
-            vm.save()
+            vm.uploadedFile = _file;
+            vm.save();
         },
         removeFile: function () {
-            let vm = this
-            vm.uploadedFile = null
-            vm.save()
+            let vm = this;
+            vm.uploadedFile = null;
+            vm.save();
         },
         save: function () {
-            let vm = this
-            let data = new FormData(vm.form)
-            data.append('approval_level_document', vm.uploadedFile)
+            let vm = this;
+            let data = new FormData(vm.form);
+            data.append('approval_level_document', vm.uploadedFile);
             if (vm.proposal.approval_level_document) {
                 data.append(
                     'approval_level_document_name',
                     vm.proposal.approval_level_document[0]
-                )
+                );
             }
             vm.$http
                 .post(
@@ -427,26 +426,26 @@ export default {
                 )
                 .then(
                     (res) => {
-                        vm.proposal = res.body
-                        vm.$emit('refreshFromResponse', res)
+                        vm.proposal = res.body;
+                        vm.$emit('refreshFromResponse', res);
                     },
                     (err) => {
                         swal(
                             'Submit Error',
                             helpers.apiVueResourceError(err),
                             'error'
-                        )
+                        );
                     }
-                )
+                );
         },
         uploadedFileName: function () {
-            return this.uploadedFile != null ? this.uploadedFile.name : ''
+            return this.uploadedFile != null ? this.uploadedFile.name : '';
         },
         addRequirement() {
-            this.$refs.requirement_detail.isModalOpen = true
+            this.$refs.requirement_detail.isModalOpen = true;
         },
         removeRequirement(_id) {
-            let vm = this
+            let vm = this;
             swal({
                 title: 'Remove Requirement',
                 text: 'Are you sure you want to remove this requirement?',
@@ -466,18 +465,18 @@ export default {
                         .then(
                             (response) => {
                                 if (response.ok) {
-                                    vm.$refs.requirements_datatable.vmDataTable.ajax.reload()
+                                    vm.$refs.requirements_datatable.vmDataTable.ajax.reload();
                                 }
                             },
                             (error) => {
-                                console.log(error)
+                                console.log(error);
                             }
-                        )
+                        );
                 },
                 () => {}
-            )
+            );
         },
     },
-}
+};
 </script>
 <style scoped></style>
