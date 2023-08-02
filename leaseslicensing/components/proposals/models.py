@@ -1141,6 +1141,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+        related_name="proposal",
     )
     # Registration of Interest additional form fields
     # proposal details
