@@ -523,6 +523,7 @@ export default {
                 .set('year', startDate.year() + 1)
         },
         getQuartersFromStartMonth() {
+            // Start month must be between 1 and 3
             const quarters = []
             for (let i = 0; i < 4; i++) {
                 quarters.push(
