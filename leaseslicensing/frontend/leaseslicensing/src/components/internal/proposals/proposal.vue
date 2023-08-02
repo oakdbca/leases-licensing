@@ -1,6 +1,5 @@
 <template lang="html">
     <div v-if="proposal" id="internalProposal" class="container">
-    <div v-if="proposal" id="internalProposal" class="container">
         <div v-if="debug">internal/proposals/proposal.vue</div>
         <div class="row">
             <h3>
@@ -138,7 +137,6 @@
 
                 <template v-if="display_requirements">
                     <Requirements :key="requirementsKey" :proposal="proposal" />
-                    <Requirements :key="requirementsKey" :proposal="proposal" />
                 </template>
 
                 <template
@@ -181,57 +179,7 @@
                             :lease-licence="isLeaseLicence"
                             @formMounted="applicationFormMounted"
                         >
-                <template
-                    v-if="
-                        (showingProposal &&
-                            [
-                                'with_approver',
-                                'approved_application',
-                                'approved',
-                                'declined',
-                            ].includes(proposal.processing_status_id)) ||
-                        (canSeeSubmission &&
-                            ![
-                                'with_approver',
-                                'approved_application',
-                                'approved',
-                                'declined',
-                            ].includes(proposal.processing_status_id)) ||
-                        (!canSeeSubmission && showingProposal)
-                    "
-                >
-                    <FormSection
-                        :form-collapse="false"
-                        label="Application"
-                        index="application"
-                    >
-                        <ApplicationForm
-                            v-if="proposal"
-                            ref="application_form"
-                            :key="computedProposalId"
-                            :proposal="proposal"
-                            :show_application_title="false"
-                            :is_external="false"
-                            :is_internal="true"
-                            :readonly="readonly"
-                            :submitter-id="submitter_id"
-                            :show_related_items_tab="true"
-                            :show_additional_documents_tab="true"
-                            :registration-of-interest="isRegistrationOfInterest"
-                            :lease-licence="isLeaseLicence"
-                            @formMounted="applicationFormMounted"
-                        >
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
-                            <template #slot_map_assessment_comments>
-                                <AssessmentComments
-                                    ref="collapsible_map_comments"
-                                    :collapsed="collapseAssessmentComments"
-                                    component_title="Map Assessment Comments"
-                                    class="mb-2"
-                                    @created="
-                                        collapsible_map_comments_component_mounted
-                                    "
-                                >
                             <template #slot_map_assessment_comments>
                                 <AssessmentComments
                                     ref="collapsible_map_comments"
@@ -319,19 +267,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template
-                                            v-for="referral in proposal.referrals"
-                                        >
-                                            <div
-                                                v-if="
-                                                    referral.processing_status !=
-                                                    constants.REFERRAL_STATUS
-                                                        .PROCESSING_STATUS_RECALLED
-                                                        .TEXT
-                                                "
-                                                :key="referral.id"
-                                                class="row mb-3 mt-3"
-                                            >
                                         <template
                                             v-for="referral in proposal.referrals"
                                         >
@@ -417,18 +352,7 @@
                                 #slot_proposal_tourism_details_assessment_comments
                             >
                                 <AssessmentComments
-                            <template
-                                #slot_proposal_tourism_details_assessment_comments
-                            >
-                                <AssessmentComments
                                     ref="collapsible_proposal_tourism_details_comments"
-                                    :collapsed="collapseAssessmentComments"
-                                    component_title="Tourism Proposal Details Assessment Comments"
-                                    class="mb-2"
-                                    @created="
-                                        collapsible_proposal_tourism_details_comments_component_mounted
-                                    "
-                                >
                                     :collapsed="collapseAssessmentComments"
                                     component_title="Tourism Proposal Details Assessment Comments"
                                     class="mb-2"
@@ -440,7 +364,6 @@
                                         <div class="row mb-3 mt-3">
                                             <div class="col">
                                                 <div class="form-floating">
-                                                    <textarea
                                                     <textarea
                                                         id="assessor_comment_tourism_proposal_details"
                                                         v-model="
@@ -456,14 +379,11 @@
                                                         >Assessor
                                                         Comments</label
                                                     >
-                                                        v-model="
-                                                            assessment.assessor_comment_tourism_proposal_details
-                                                        "
-                                                        class="form-control"
-                                                        :disabled="
-                                                            !canEditComments
-                                                        "
-                                                    />
+                                                    v-model="
+                                                    assessment.assessor_comment_tourism_proposal_details
+                                                    " class="form-control"
+                                                    :disabled=" !canEditComments
+                                                    " />
                                                     <label
                                                         for="assessor_comment_tourism_proposal_details"
                                                         >Assessor
@@ -475,7 +395,6 @@
                                         <div class="row mb-3 mt-3">
                                             <div class="col">
                                                 <div class="form-floating">
-                                                    <textarea
                                                     <textarea
                                                         id="deficiency_comment_tourism_proposal_details"
                                                         v-model="
@@ -491,14 +410,11 @@
                                                         >Deficiency
                                                         Comments</label
                                                     >
-                                                        v-model="
-                                                            assessment.deficiency_comment_tourism_proposal_details
-                                                        "
-                                                        class="form-control"
-                                                        :disabled="
-                                                            !canEditComments
-                                                        "
-                                                    />
+                                                    v-model="
+                                                    assessment.deficiency_comment_tourism_proposal_details
+                                                    " class="form-control"
+                                                    :disabled=" !canEditComments
+                                                    " />
                                                     <label
                                                         for="deficiency_comment_tourism_proposal_details"
                                                         >Deficiency
@@ -507,19 +423,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <template
-                                            v-for="referral in proposal.referrals"
-                                        >
-                                            <div
-                                                v-if="
-                                                    referral.processing_status !=
-                                                    constants.REFERRAL_STATUS
-                                                        .PROCESSING_STATUS_RECALLED
-                                                        .TEXT
-                                                "
-                                                :key="referral.id"
-                                                class="row mb-3 mt-3"
-                                            >
                                         <template
                                             v-for="referral in proposal.referrals"
                                         >
@@ -1420,8 +1323,6 @@ export default {
                 ajax: {
                     url: vm.contactsURL,
                     dataSrc: '',
-                    url: vm.contactsURL,
-                    dataSrc: '',
                 },
                 columns: [
                     {
@@ -1429,31 +1330,24 @@ export default {
                         mRender: function (data, type, full) {
                             return full.first_name + ' ' + full.last_name;
                         },
-                            return full.first_name + ' ' + full.last_name
-                        },
                     },
                     {
                         title: 'Phone',
-                        data: 'phone_number',
                         data: 'phone_number',
                     },
                     {
                         title: 'Mobile',
                         data: 'mobile_number',
-                        data: 'mobile_number',
                     },
                     {
                         title: 'Fax',
-                        data: 'fax_number',
                         data: 'fax_number',
                     },
                     {
                         title: 'Email',
                         data: 'email',
-                        data: 'email',
                     },
                 ],
-                processing: true,
                 processing: true,
             },
             contacts_table: null,
@@ -1461,18 +1355,6 @@ export default {
             //comms_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/comms_log'),
             //comms_add_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/add_comms_log'),
             //logs_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/action_log'),
-            comms_url: helpers.add_endpoint_json(
-                api_endpoints.proposal,
-                vm.$route.params.proposal_id + '/comms_log'
-            ),
-            comms_add_url: helpers.add_endpoint_json(
-                api_endpoints.proposal,
-                vm.$route.params.proposal_id + '/add_comms_log'
-            ),
-            logs_url: helpers.add_endpoint_json(
-                api_endpoints.proposal,
-                vm.$route.params.proposal_id + '/action_log'
-            ),
             comms_url: helpers.add_endpoint_json(
                 api_endpoints.proposal,
                 vm.$route.params.proposal_id + '/comms_log'
@@ -2046,10 +1928,6 @@ export default {
                     body: JSON.stringify(payload),
                     method: 'POST',
                 });
-                const res = await fetch(vm.proposal_form_url, {
-                    body: JSON.stringify(payload),
-                    method: 'POST',
-                })
 
                 if (res.ok) {
                     swal.fire({
@@ -2258,16 +2136,6 @@ export default {
             console.log('updateAssignedOfficer');
             let vm = this;
             vm.proposal.assigned_officer = value;
-        },
-        updateAssignedApprover: function (value) {
-            console.log('updateAssignedApprover')
-            let vm = this
-            vm.proposal.assigned_approver = value
-        },
-        updateAssignedOfficer: function (value) {
-            console.log('updateAssignedOfficer')
-            let vm = this
-            vm.proposal.assigned_officer = value
         },
         updateAssignedOfficerSelect: function () {
             console.log('updateAssignedOfficerSelect');

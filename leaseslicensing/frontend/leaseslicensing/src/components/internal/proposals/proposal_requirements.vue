@@ -5,11 +5,6 @@
             label="Conditions"
             index="conditions"
         >
-        <FormSection
-            :form-collapse="false"
-            label="Conditions"
-            index="conditions"
-        >
             <form class="form-horizontal" action="index.html" method="post">
                 <div class="row">
                     <div class="col-sm-12">
@@ -83,30 +78,16 @@ export default {
         RequirementDetail,
         FormSection,
     },
-    components: {
-        datatable,
-        RequirementDetail,
-        FormSection,
-    },
     props: {
         proposal: { type: Object, default: null },
     },
     data: function () {
-        let vm = this
+        let vm = this;
         return {
             uuid: 0,
             panelBody: 'proposal-requirements-' + vm._uid,
-            panelBody: 'proposal-requirements-' + vm._uid,
             selectedRequirement: {},
             requirements: null,
-            requirement_headers: [
-                'Requirement',
-                'Due Date',
-                'Repeats',
-                'Source',
-                'Action',
-                'Order',
-            ],
             requirement_headers: [
                 'Requirement',
                 'Due Date',
@@ -127,20 +108,12 @@ export default {
                         vm.proposal.id + '/requirements'
                     ),
                     dataSrc: '',
-                    url: helpers.add_endpoint_json(
-                        api_endpoints.proposal,
-                        vm.proposal.id + '/requirements'
-                    ),
-                    dataSrc: '',
                 },
                 order: [],
                 dom:
                     "<'d-flex align-items-center'<'me-auto'l>fB>" +
-                dom:
-                    "<'d-flex align-items-center'<'me-auto'l>fB>" +
                     "<'row'<'col-sm-12'tr>>" +
                     "<'d-flex align-items-center'<'me-auto'i>p>",
-                buttons: ['excel', 'csv'],
                 buttons: ['excel', 'csv'],
                 columns: [
                     {
@@ -169,7 +142,7 @@ export default {
                                 });
                             }
 
-                            return result
+                            return result;
                         },
                     },
                     {
@@ -186,35 +159,33 @@ export default {
                         data: 'recurrence',
                         mRender: function (data, type, full) {
                             if (full.recurrence) {
-                                let recurrence_interval = ''
+                                let recurrence_interval = '';
                                 switch (full.recurrence_pattern) {
                                     case 1:
-                                        recurrence_interval = 'week'
-                                        break
+                                        recurrence_interval = 'week';
+                                        break;
                                     case 2:
-                                        recurrence_interval = 'month'
-                                        break
+                                        recurrence_interval = 'month';
+                                        break;
                                     case 3:
-                                        recurrence_interval = 'year'
-                                        break
+                                        recurrence_interval = 'year';
+                                        break;
                                 }
-                                let plural = ''
+                                let plural = '';
                                 if (full.recurrence_schedule > 1) {
-                                    plural = 's'
+                                    plural = 's';
                                 }
-                                return `${full.recurrence_schedule} time${plural} each ${recurrence_interval}`
+                                return `${full.recurrence_schedule} time${plural} each ${recurrence_interval}`;
                             }
-                            return 'N/A'
+                            return 'N/A';
                         },
-                        orderable: false,
                         orderable: false,
                     },
                     {
                         data: 'source',
-                        data: 'source',
                         mRender: function (data, type, full) {
                             if (full.source) {
-                                return full.source.fullname
+                                return full.source.fullname;
                             } else {
                                 return '';
                             }
@@ -224,7 +195,7 @@ export default {
                     {
                         data: 'id',
                         mRender: function (data, type, full) {
-                            let links = ''
+                            let links = '';
                             if (vm.hasAssessorMode || vm.isReferrer) {
                                 // Whether the current user can edit/delete a referral
                                 let show_action_btns =
@@ -240,27 +211,27 @@ export default {
                                 // Referral parties can only edit or delete their own requirements
                                 if (show_action_btns) {
                                     if (full.copied_from == null) {
-                                        links += `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`
+                                        links += `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
                                     }
                                     links += `<a href='#' class="deleteRequirement" data-id="${full.id}">Delete</a><br/>`;
                                 } else if (referral_completed) {
                                     links += 'Referral completed<br/>';
                                 }
                             }
-                            return links
+                            return links;
                         },
                         orderable: false,
                     },
                     {
                         data: 'id',
                         mRender: function (data, type, full) {
-                            let links = ''
+                            let links = '';
                             // TODO check permission to change the order
                             if (vm.proposal.assessor_mode.has_assessor_mode) {
-                                links += `<a class="dtMoveUp" data-id="${full.id}" href='#'><i class="fa fa-angle-up fa-2x"></i></a><br/>`
-                                links += `<a class="dtMoveDown" data-id="${full.id}" href='#'><i class="fa fa-angle-down fa-2x"></i></a><br/>`
+                                links += `<a class="dtMoveUp" data-id="${full.id}" href='#'><i class="fa fa-angle-up fa-2x"></i></a><br/>`;
+                                links += `<a class="dtMoveDown" data-id="${full.id}" href='#'><i class="fa fa-angle-down fa-2x"></i></a><br/>`;
                             }
-                            return links
+                            return links;
                         },
                         orderable: false,
                     },
@@ -275,13 +246,13 @@ export default {
     },
     computed: {
         datatableId: function () {
-            return 'requirements-datatable'
+            return 'requirements-datatable';
         },
         hasAssessorMode() {
-            return this.proposal.assessor_mode.has_assessor_mode
+            return this.proposal.assessor_mode.has_assessor_mode;
         },
         isReferrer() {
-            return this.proposal.assessor_mode.is_referee
+            return this.proposal.assessor_mode.is_referee;
         },
         isReferrerCanEdit() {
             return this.proposal.assessor_mode.referee_can_edit;
@@ -301,10 +272,10 @@ export default {
     },
     methods: {
         addRequirement() {
-            this.uuid++
+            this.uuid++;
             this.$nextTick(() => {
-                this.$refs.requirement_detail.isModalOpen = true
-            })
+                this.$refs.requirement_detail.isModalOpen = true;
+            });
         },
         removeRequirement: async function (_id) {
             console.log(_id);
@@ -339,18 +310,15 @@ export default {
             });
         },
         fetchRequirements: async function () {
-            const url = api_endpoints.proposal_standard_requirements
+            const url = api_endpoints.proposal_standard_requirements;
             const response = await fetch(url, {
                 body: JSON.stringify({
                     application_type_id: this.proposal.application_type.id,
                 }),
-                body: JSON.stringify({
-                    application_type_id: this.proposal.application_type.id,
-                }),
                 method: 'POST',
-            })
+            });
             if (response.ok) {
-                this.requirements = await response.json()
+                this.requirements = await response.json();
             } else {
                 console.log('error');
             }
@@ -363,23 +331,23 @@ export default {
                 )
             );
             if (response.ok) {
-                const resData = await response.json()
-                this.selectedRequirement = Object.assign({}, resData)
+                const resData = await response.json();
+                this.selectedRequirement = Object.assign({}, resData);
                 this.$nextTick(() => {
-                    this.addRequirement()
-                })
+                    this.addRequirement();
+                });
             } else {
                 console.log('error');
             }
         },
         updatedRequirements() {
-            this.$refs.requirements_datatable.vmDataTable.ajax.reload()
+            this.$refs.requirements_datatable.vmDataTable.ajax.reload();
         },
         eventListeners() {
-            let vm = this
+            let vm = this;
             if (!vm.$refs.requirements_datatable) {
                 // Prevent uncaught error when clicking show/hide too fast (why would anyone even do this?)
-                return
+                return;
             }
             vm.$refs.requirements_datatable.vmDataTable.on(
                 'click',
@@ -401,10 +369,10 @@ export default {
             );
         },
         addTableListeners: function () {
-            let vm = this
+            let vm = this;
             if (!vm.$refs.requirements_datatable) {
                 // Prevent uncaught error when clicking show/hide too fast (why would anyone even do this?)
-                return
+                return;
             }
             $(vm.$refs.requirements_datatable.table)
                 .find('tr:last .dtMoveDown')
@@ -414,8 +382,8 @@ export default {
                 .find('tr:first .dtMoveUp')
                 .remove();
             // Remove previous binding before adding it
-            $('.dtMoveUp').off('click')
-            $('.dtMoveDown').off('click')
+            $('.dtMoveUp').off('click');
+            $('.dtMoveDown').off('click');
 
             // Bind clicks to functions
             vm.$refs.requirements_datatable.vmDataTable.on(
@@ -448,14 +416,14 @@ export default {
                 );
                 this.$parent.uuid++;
             } catch (error) {
-                console.log(error)
+                console.log(error);
             }
         },
         moveUp(id) {
-            this.sendDirection(id, 'up')
+            this.sendDirection(id, 'up');
         },
         moveDown(id) {
-            this.sendDirection(id, 'down')
+            this.sendDirection(id, 'down');
         },
     },
 };

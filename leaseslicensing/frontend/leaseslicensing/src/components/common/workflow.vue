@@ -407,20 +407,7 @@
                         >{{ formSectionsOpen ? 'Collapse' : 'Open' }} Form
                         Sections</a
                     >
-                <li
-                    class="list-group-item list-group-item-action"
-                    role="button"
-                    @click.prevent="toggleFormSections"
-                >
-                    <a href="#" class="text-primary text-decoration-none"
-                        >{{ formSectionsOpen ? 'Collapse' : 'Open' }} Form
-                        Sections</a
-                    >
                 </li>
-                <li
-                    v-if="formSectionsOpen && formSectionLabels.length > 0"
-                    class="list-group-item"
-                >
                 <li
                     v-if="formSectionsOpen && formSectionLabels.length > 0"
                     class="list-group-item"
@@ -447,23 +434,7 @@
                     <a class="text-primary text-decoration-none"
                         >Toggle Assessment Comments</a
                     >
-                <li
-                    class="list-group-item list-group-item-action"
-                    role="button"
-                    @click.prevent="toggleCollapse"
-                >
-                    <a class="text-primary text-decoration-none"
-                        >Toggle Assessment Comments</a
-                    >
                 </li>
-                <li
-                    class="list-group-item list-group-item-action"
-                    role="button"
-                    @click.prevent="scrollTop"
-                >
-                    <a href="#" class="text-primary text-decoration-none"
-                        >Scroll to top</a
-                    >
                 <li
                     class="list-group-item list-group-item-action"
                     role="button"
@@ -551,7 +522,7 @@ export default {
         'updateAssignedOfficer',
     ],
     data: function () {
-        let vm = this
+        let vm = this;
 
         let APPLICATION_TYPE = constants.APPLICATION_TYPES;
         let PROPOSAL_STATUS = constants.PROPOSAL_STATUS;
@@ -873,19 +844,15 @@ export default {
                     button_title: 'Complete Editing',
                     function_when_clicked: vm.completeEditing,
                     function_to_show_hide: () => {
-                    key: 'complete_editing',
-                    button_title: 'Complete Editing',
-                    function_when_clicked: vm.completeEditing,
-                    function_to_show_hide: () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
                                 [PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID]:
                                     [ROLES.FINANCE.ID],
                             },
-                        }
+                        };
                         let show =
-                            vm.check_role_conditions(condition_to_display) // Do we have to restrict this to a specific assigned user as above?
-                        return show
+                            vm.check_role_conditions(condition_to_display); // Do we have to restrict this to a specific assigned user as above?
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO
@@ -907,7 +874,7 @@ export default {
                     this.proposal.can_edit_invoicing_details
                 )
             ) {
-                return false
+                return false;
             }
             for (let i = 0; i < this.configurations_for_buttons.length; i++) {
                 if (
@@ -919,7 +886,7 @@ export default {
             return false;
         },
         latest_referrals: function () {
-            return this.proposal.latest_referrals
+            return this.proposal.latest_referrals;
         },
         referralListURL: function () {
             return this.proposal != null
@@ -932,7 +899,7 @@ export default {
                 : '';
         },
         isCurrentAssessor: function () {
-            return this.proposal.assigned_officer == this.profile.id
+            return this.proposal.assigned_officer == this.profile.id;
         },
         show_toggle_proposal: function () {
             if (
@@ -971,7 +938,7 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
                     constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
                 ].includes(this.proposal.processing_status_id)
-            )
+            );
         },
         isAssessorOrApprover: function () {
             return (
@@ -1042,7 +1009,7 @@ export default {
                     'block'
                 );
             }
-            this.formSectionsOpen = !this.formSectionsOpen
+            this.formSectionsOpen = !this.formSectionsOpen;
 
             if (
                 $('.section-toggle:not(:first) > .card-body').css('display') ==
@@ -1080,7 +1047,7 @@ export default {
             );
         },
         formatDate: function (data) {
-            return data ? moment(data).format('DD/MM/YYYY HH:mm:ss') : ''
+            return data ? moment(data).format('DD/MM/YYYY HH:mm:ss') : '';
         },
         check_role_conditions: function (condition_to_display) {
             if (this.debug) return true;
@@ -1131,7 +1098,6 @@ export default {
             this.$emit('completeEditing');
         },
         requireDas: function () {},
-        requireDas: function () {},
         checkAssessorData: function () {
             //check assessor boxes and clear value of hidden assessor boxes so it won't get printed on approval pdf.
 
@@ -1141,7 +1107,7 @@ export default {
             );
 
             all_fields.each(function () {
-                var ele = null
+                var ele = null;
                 //check the fields which has assessor boxes.
                 ele = $('[name=' + this.name + '-Assessor]');
                 if (ele.length > 0) {
@@ -1154,7 +1120,7 @@ export default {
                         }
                     }
                 }
-            })
+            });
         },
         initialiseSelects: function () {
             let vm = this;
@@ -1215,7 +1181,7 @@ export default {
                 });
         },
         initialiseAssignedOfficerSelect: function (reinit = false) {
-            let vm = this
+            let vm = this;
             if (reinit) {
                 $(vm.$refs.assigned_officer).data('select2')
                     ? $(vm.$refs.assigned_officer).select2('destroy')
@@ -1330,7 +1296,7 @@ export default {
                     vm.referral_text = '';
                     $(vm.$refs.department_users).val(null).trigger('change');
                 });
-            vm.sendingReferral = true
+            vm.sendingReferral = true;
             await fetch(
                 `/api/proposal/${this.proposal.id}/assessor_save.json`,
                 {
@@ -1342,10 +1308,10 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then(async () => {
@@ -1362,38 +1328,38 @@ export default {
                                 text: vm.referral_text,
                             }),
                         }
-                    )
+                    );
                 })
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
                             if (Array.isArray(json)) {
-                                throw new Error(json)
+                                throw new Error(json);
                             } else {
-                                throw new Error(json['non_field_errors'])
+                                throw new Error(json['non_field_errors']);
                             }
-                        })
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then(async (response) => {
-                    vm.switchStatus(response.processing_status_id) // 'with_referral'
+                    vm.switchStatus(response.processing_status_id); // 'with_referral'
                 })
                 .catch((error) => {
-                    console.log(`Error sending referral. ${error}`)
+                    console.log(`Error sending referral. ${error}`);
                     swal.fire({
                         title: `${error}`,
                         text: 'Failed to send referral. Please contact your administrator.',
                         icon: 'warning',
-                    })
+                    });
                 })
                 .finally(() => {
-                    vm.sendingReferral = false
-                    vm.selected_referral = ''
-                    vm.referral_text = ''
-                    $(vm.$refs.department_users).val(null).trigger('change')
-                })
+                    vm.sendingReferral = false;
+                    vm.selected_referral = '';
+                    vm.referral_text = '';
+                    $(vm.$refs.department_users).val(null).trigger('change');
+                });
         },
         sendReferral: async function () {
             let vm = this;

@@ -18,12 +18,6 @@
                     :comms_add_url="comms_add_url"
                     :disable_add_entry="false"
                 />
-                <CommsLogs
-                    :comms_url="comms_url"
-                    :logs_url="logs_url"
-                    :comms_add_url="comms_add_url"
-                    :disable_add_entry="false"
-                />
 
                 <div class="row mt-2 mb-2">
                     <div class="col">
@@ -53,13 +47,6 @@
 
                 <StatusPanel :status="approval.status" />
 
-                <div
-                    v-if="
-                        'Current (Pending Renewal Review)' == approval.status &&
-                        approval.can_renew
-                    "
-                    class="row mt-2 mb-2"
-                >
                 <div
                     v-if="
                         'Current (Pending Renewal Review)' == approval.status &&
@@ -115,21 +102,6 @@
                                     >
                                         Cancel Editing
                                     </button>
-                                <div class="mb-2">
-                                    <button
-                                        class="btn btn-primary btn-licensing"
-                                        @click="completeEditingInvoicing(true)"
-                                    >
-                                        Complete Editing
-                                    </button>
-                                </div>
-                                <div>
-                                    <button
-                                        class="btn btn-secondary btn-licensing"
-                                        @click="cancelEditingInvoicing(false)"
-                                    >
-                                        Cancel Editing
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -137,7 +109,6 @@
                 </div>
             </div>
             <div class="col-md-9">
-                <ul id="pills-tab" class="nav nav-pills" role="tablist">
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button
@@ -162,28 +133,10 @@
                             aria-controls="pills-details"
                             aria-selected="true"
                         >
-                        <button
-                            id="pills-details-tab"
-                            class="nav-link"
-                            data-bs-toggle="pill"
-                            data-bs-target="#pills-details"
-                            role="tab"
-                            aria-controls="pills-details"
-                            aria-selected="true"
-                        >
                             Details
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button
-                            id="pills-map-tab"
-                            class="nav-link"
-                            data-bs-toggle="pill"
-                            data-bs-target="#pills-map"
-                            role="tab"
-                            aria-controls="pills-map"
-                            aria-selected="true"
-                        >
                         <button
                             id="pills-map-tab"
                             class="nav-link"
@@ -208,29 +161,10 @@
                             aria-selected="true"
                             @click="tabClicked('invoicing')"
                         >
-                        <button
-                            id="pills-invoicing-tab"
-                            class="nav-link"
-                            data-bs-toggle="pill"
-                            data-bs-target="#pills-invoicing"
-                            role="tab"
-                            aria-controls="pills-invoicing"
-                            aria-selected="true"
-                            @click="tabClicked('invoicing')"
-                        >
                             Invoicing
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button
-                            id="pills-related-items-tab"
-                            class="nav-link"
-                            data-bs-toggle="pill"
-                            data-bs-target="#pills-related-items"
-                            role="tab"
-                            aria-controls="pills-related-items"
-                            aria-selected="true"
-                        >
                         <button
                             id="pills-related-items-tab"
                             class="nav-link"
@@ -376,14 +310,12 @@ export default {
         ApprovalDetails,
     },
     data() {
-        let vm = this
-        vm._uid = vm._.uid // Vue3
+        let vm = this;
+        vm._uid = vm._.uid; // Vue3
         return {
             showExpired: false,
             moorings_datatable_id: 'moorings-datatable-' + vm._uid,
             ml_vessels_datatable_id: 'ml-vessels-datatable-' + vm._uid,
-            ml_authorised_users_datatable_id:
-                'ml-authorised-users-datatable-' + vm._uid,
             ml_authorised_users_datatable_id:
                 'ml-authorised-users-datatable-' + vm._uid,
             loading: [],
@@ -395,23 +327,10 @@ export default {
             oBody: 'oBody' + vm._uid,
             org: {
                 address: {},
-                address: {},
             },
             loadInvoices: false,
             loadMap: false,
             // Filters
-            logs_url: helpers.add_endpoint_json(
-                api_endpoints.approvals,
-                vm.$route.params.approval_id + '/action_log'
-            ),
-            comms_url: helpers.add_endpoint_json(
-                api_endpoints.approvals,
-                vm.$route.params.approval_id + '/comms_log'
-            ),
-            comms_add_url: helpers.add_endpoint_json(
-                api_endpoints.approvals,
-                vm.$route.params.approval_id + '/add_comms_log'
-            ),
             logs_url: helpers.add_endpoint_json(
                 api_endpoints.approvals,
                 vm.$route.params.approval_id + '/action_log'
@@ -441,16 +360,16 @@ export default {
                 : false;
         },
         isLoading: function () {
-            return this.loading.length > 0
+            return this.loading.length > 0;
         },
         approvalLabel: function () {
-            let description = ''
+            let description = '';
             if (this.approval && this.approval.approval_type_dict) {
-                description = this.approval.approval_type_dict.description
+                description = this.approval.approval_type_dict.description;
             } else {
                 description = 'License';
             }
-            return description
+            return description;
         },
         showEditingInvoicingOptions: function () {
             return (
@@ -499,7 +418,7 @@ export default {
             }
         },
         formatDate: function (data) {
-            return data ? moment(data).format(this.DATE_TIME_FORMAT) : ''
+            return data ? moment(data).format(this.DATE_TIME_FORMAT) : '';
         },
         renewalReview: function (canBeRenewed) {
             let vm = this;
@@ -519,7 +438,7 @@ export default {
                     (canBeRenewed ? 'Allow' : 'Disallow') + ' Renewal',
             }).then((result) => {
                 if (result.isConfirmed) {
-                    let vm = this
+                    let vm = this;
                     const requestOptions = {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -562,17 +481,14 @@ export default {
             });
         },
         updateInvoicingDetails: function (value) {
-            this.approval.invoicing_details = value
+            this.approval.invoicing_details = value;
         },
         completeEditingInvoicing: function () {
             alert('Call api to modify invoices based on new invoicing details');
         },
         cancelEditingInvoicing: function () {
-            let vm = this
+            let vm = this;
             Swal.fire({
-                title: 'Cancel Editing Invoicing Details',
-                text: 'Are you sure you want to cancel editing invoicing details (any unsaved changes will be lost)?',
-                icon: 'warning',
                 title: 'Cancel Editing Invoicing Details',
                 text: 'Are you sure you want to cancel editing invoicing details (any unsaved changes will be lost)?',
                 icon: 'warning',
