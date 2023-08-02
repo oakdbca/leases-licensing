@@ -15,6 +15,7 @@ from django.forms import ValidationError
 from django.utils import timezone
 from ledger_api_client import settings_base
 
+from leaseslicensing.components.invoicing import utils
 from leaseslicensing.components.invoicing.exceptions import NoChargeMethod
 from leaseslicensing.components.main.models import (
     LicensingModel,
@@ -406,6 +407,13 @@ class InvoicingDetails(BaseModel):
         blank=True,
         default=1,
     )
+    # Used to support legacy leases/licenses that have an unusual quarterly invoicing cycle
+    # Can be 1, 2 or 3. 1 = [JAN, APR, JUL, OCT], 2 = [FEB, MAY, AUG, NOV], 3 = [MAR, JUN, SEP, DEC]
+    invoicing_quarters_start_month = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        default=3,
+    )
     previous_invoicing_details = models.OneToOneField(
         "self",
         null=True,
@@ -425,11 +433,12 @@ class InvoicingDetails(BaseModel):
         app_label = "leaseslicensing"
 
     def __str__(self):
-        return f"Invoicing Details for Approval: {self.proposal.approval} (Current Proposal: {self.proposal})"
+        return f"Invoicing Details for Approval: {self.approval} (Current Proposal: {self.approval.current_proposal})"
 
     @property
     def approval(self):
         if not hasattr(self, "proposal") or not self.proposal:
+            logger.debug(f"No Proposal found for Invoicing Details: {self.id}")
             return None
         if not hasattr(self.proposal, "approval") or not self.proposal.approval:
             return None
@@ -604,6 +613,287 @@ class InvoicingDetails(BaseModel):
 
         if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
             return Decimal(annual_amount / 12).quantize(Decimal("0.01"))
+
+    @property
+    def invoicing_periods(self):
+        """Returns an array of invoicing periods based on the invoicing details object"""
+        invoicing_periods = []
+        start_date = self.approval.start_date
+        expiry_date = self.approval.expiry_date
+        end_of_next_interval = self.get_end_of_next_interval(start_date)
+        while end_of_next_interval <= expiry_date:
+            delta = end_of_next_interval - start_date
+            days = delta.days
+            label = (
+                f"{start_date.strftime('%d/%m/%Y')} to "
+                f"{end_of_next_interval.strftime('%d/%m/%Y')} ({days} days)"
+            )
+            invoicing_periods.append(
+                {
+                    "label": label,
+                    "start_date": start_date.strftime("%Y-%m-%d"),
+                    "end_date": end_of_next_interval.strftime("%Y-%m-%d"),
+                    "days": days,
+                }
+            )
+            start_date = end_of_next_interval + relativedelta(days=1)
+            end_of_next_interval = self.get_end_of_next_interval(start_date)
+
+        # Check if a final period is required
+        if start_date < expiry_date:
+            delta = expiry_date - start_date
+            days = delta.days
+            invoicing_periods.append(
+                {
+                    "label": f"{start_date.strftime('%d/%m/%Y')} to {expiry_date.strftime('%d/%m/%Y')} ({days} days)",
+                    "start_date": start_date.strftime("%Y-%m-%d"),
+                    "end_date": expiry_date.strftime("%Y-%m-%d"),
+                    "days": days,
+                }
+            )
+
+        return invoicing_periods
+
+    def preview_invoices(self, show_past_invoices=False):
+        """Returns a preview array of invoices based on the invoicing periods for the invoicing details object"""
+        invoices = []
+        first_issue_date = self.get_first_issue_date()
+        days_running_total = 0
+        amount_running_total = Decimal("0.00")
+        issue_date = first_issue_date
+        logger.debug("Invoicing periods: ", self.invoicing_periods)
+        for i, invoicing_period in enumerate(self.invoicing_periods):
+            logger.debug(f"\nInvoicing Period: {invoicing_period}")
+            # Net 30 payment terms
+            due_date = issue_date + relativedelta(days=30)
+            days_running_total += invoicing_period["days"]
+            amount_object = self.get_amount_for_invoice(
+                issue_date, invoicing_period["days"], i
+            )
+            amount_running_total = amount_running_total + amount_object["amount"]
+            invoices.append(
+                {
+                    "number": i + 1,
+                    "issue_date": self.get_issue_date(
+                        issue_date, invoicing_period["end_date"]
+                    ),
+                    "due_date": self.get_due_date(due_date),
+                    "time_period": invoicing_period["label"],
+                    "amount_object": amount_object,
+                    "days_running_total": days_running_total,
+                    "amount_running_total": amount_running_total,
+                    "hide": not show_past_invoices
+                    and issue_date < timezone.now().date(),
+                }
+            )
+            issue_date = self.add_repetition_interval(issue_date)
+
+        return invoices
+
+    def get_first_issue_date(self):
+        start_date = self.approval.start_date
+
+        if (
+            self.charge_method.key
+            != settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+        ):
+            first_issue_date = self.get_end_of_next_interval_annual(start_date)
+            if self.invoicing_month_of_year:
+                first_issue_date.replace(month=self.invoicing_month_of_year)
+            if self.invoicing_day_of_month:
+                first_issue_date.replace(day=self.invoicing_day_of_month)
+            return first_issue_date
+
+        first_issue_date = start_date
+        if self.invoicing_month_of_year:
+            first_issue_date.replace(month=self.invoicing_month_of_year)
+        if self.invoicing_day_of_month:
+            first_issue_date.replace(day=self.invoicing_day_of_month)
+
+        # This works for quarterly invoicing
+        today = timezone.now().date()
+        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
+            first_issue_date = start_date
+            while first_issue_date < today:
+                first_issue_date = self.get_end_of_next_financial_quarter(
+                    first_issue_date
+                ) + relativedelta(days=1)
+            return first_issue_date.replace(day=self.invoicing_day_of_month)
+
+        # This works for annual and monthly invoicing
+        while first_issue_date < today:
+            first_issue_date = self.addRepetitionInterval(first_issue_date)
+
+        return first_issue_date
+
+    def get_issue_date(self, issue_date, end_date):
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+        ):
+            q = utils.financial_quarter_from_date(end_date)
+            financialYear = f"{issue_date.year() - 1}-${issue_date.year()}"
+
+            return f"On receipt of Q{q} {financialYear} financial statement"
+
+        return issue_date.strftime("%d/%m/%Y")
+
+    def get_due_date(self, due_date):
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+        ):
+            return "30 Days after issue"
+        return due_date.strftime("%d/%m/%Y")
+
+    def get_year_sequence_index(self, index):
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_ANNUAL:
+            return index
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+            return math.floor(index / 4)
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
+            return math.floor(index / 12)
+
+    def get_amount_for_invoice(self, issue_date, days, index):
+        amount_object = {
+            "prefix": "$",
+            "amount": Decimal("0.00"),
+            "suffix": "",
+        }
+        if self.charge_method.key == settings.CHARGE_METHOD_ONCE_OFF_CHARGE:
+            raise Exception(
+                "To get the amount for a once off charge, simply access the once_off_charge_amount field"
+            )
+
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+        ):
+            return self.get_amount_for_gross_turnover_invoice(issue_date, amount_object)
+        if not self.base_fee_amount or self.base_fee_amount == Decimal("0.00"):
+            return amount_object
+
+        base_fee_amount = self.base_fee_amount
+
+        # Ignore extra day in leap year so base fee is consistent
+        if days == 366:
+            days = 365
+
+        if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
+            amount_object.amount = base_fee_amount
+            amount_object.suffix = " + CPI (ABS)"
+
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM
+        ):
+            amount_object.amount = base_fee_amount
+            custom_cpi_year = self.invoicingDetails.custom_cpi_years[index]
+            if custom_cpi_year:
+                amount_object.amount = Decimal(
+                    base_fee_amount * (1 + custom_cpi_year.cpi / 100)
+                ).quantize(Decimal("0.01"))
+            else:
+                amount_object.suffix = " + CPI (CUSTOM)"
+
+        year_sequence_index = self.get_year_sequence_index(index)
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE
+        ):
+            percentage = Decimal("0.00")
+            suffix = (
+                f"Enter percentage for year {year_sequence_index + 1}"
+                if year_sequence_index > 0
+                else ""
+            )
+            annual_increment_percentage = (
+                self.invoicingDetails.annual_increment_percentages[
+                    year_sequence_index - 1
+                ]
+            )
+            if annual_increment_percentage:
+                percentage = annual_increment_percentage.increment_percentage or 0.0
+                base_fee_amount = base_fee_amount * (1 + percentage / 100)
+                suffix = ""
+
+            amount_object.amount = Decimal(base_fee_amount).quantize(Decimal("0.01"))
+            amount_object.suffix = suffix
+
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT
+        ):
+            increment_amount = Decimal("0.00")
+            suffix = (
+                f"Enter increment amount for year {year_sequence_index + 1}"
+                if year_sequence_index > 0
+                else ""
+            )
+            annual_increment_amount = self.invoicingDetails.annual_increment_amounts[
+                year_sequence_index - 1
+            ]
+            if annual_increment_amount:
+                if annual_increment_amount.increment_amount:
+                    increment_amount = annual_increment_amount.increment_amount
+                base_fee_amount = base_fee_amount + increment_amount
+                suffix = ""
+
+            amount_object.amount = Decimal(base_fee_amount).quantize(Decimal("0.01"))
+            amount_object.suffix = suffix
+
+        return amount_object
+
+    def get_end_of_next_interval(self, start_date):
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+        ):
+            return self.get_end_of_next_interval_gross_turnover(start_date)
+
+        # All other charge methods are based around each year of the duration of the lease/license
+        return self.get_end_of_next_interval_annual(start_date)
+
+    def get_end_of_next_interval_annual(self, start_date):
+        if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
+            return start_date + relativedelta(years=1)
+
+        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
+            return start_date + relativedelta(months=3)
+
+        if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
+            return start_date + relativedelta(months=1)
+
+    def get_end_of_next_interval_gross_turnover(self, start_date):
+        if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
+            return utils.get_end_of_next_financial_year(start_date)
+
+        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
+            return utils.end_of_next_financial_quarter(
+                start_date, self.invoicing_quarters_start_month
+            )
+
+        if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
+            return utils.end_of_month(start_date)
+
+    def get_end_of_next_financial_quarter(self, start_date):
+        quarters = utils.quarters_from_start_month(self.invoicing_quarters_start_month)
+        for quarter in quarters:
+            end_of_financial_quarter = utils.end_of_next_financial_quarter(quarter)
+
+            if start_date < end_of_financial_quarter:
+                return end_of_financial_quarter
+
+        # None of the four quarters were after the start date, so use the first quarter of the next year
+        return start_date.replace(month=quarters[0] + 1) + relativedelta(years=1)
+
+    def add_repetition_interval(self, issue_date):
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_ANNUALLY:
+            return issue_date + relativedelta(years=1)
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+            return issue_date + relativedelta(months=3)
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
+            return issue_date + relativedelta(months=1)
 
 
 class FixedAnnualIncrementAmount(BaseModel):
