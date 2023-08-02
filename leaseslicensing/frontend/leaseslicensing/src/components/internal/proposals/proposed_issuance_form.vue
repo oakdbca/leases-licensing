@@ -344,15 +344,15 @@
 </template>
 
 <script>
-import { constants } from '@/utils/hooks'
-import VueAlert from '@vue-utils/alert.vue'
-import RichText from '@/components/forms/richtext.vue'
-import { v4 as uuid } from 'uuid'
+import { constants } from '@/utils/hooks';
+import VueAlert from '@vue-utils/alert.vue';
+import RichText from '@/components/forms/richtext.vue';
+import { v4 as uuid } from 'uuid';
 
-import { api_endpoints, helpers, utils } from '@/utils/hooks'
-import FileField from '@/components/forms/filefield_immediate.vue'
-import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue'
-import Swal from 'sweetalert2'
+import { api_endpoints, helpers, utils } from '@/utils/hooks';
+import FileField from '@/components/forms/filefield_immediate.vue';
+import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue';
+import Swal from 'sweetalert2';
 
 export default {
     name: 'ProposedApprovalForm',
@@ -448,39 +448,39 @@ export default {
                 'Please attach Level of Approval document before issuing Approval',
             uuid: uuid(),
             detailsTexts: {},
-        }
+        };
     },
     computed: {
         selectedApprovalTypeExists: function () {
             if (this.selectedApprovalType && this.selectedApprovalType.id) {
-                return true
+                return true;
             }
         },
         leaseLicenceApprovalDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_lease_licence_approval_document/'
-            )
+            );
         },
         proposedApprovalDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_proposed_approval_document/'
-            )
+            );
         },
         selectedApprovalDocumentTypes: function () {
             if (this.selectedApprovalType) {
-                return this.selectedApprovalType.approval_type_document_types
+                return this.selectedApprovalType.approval_type_document_types;
             }
         },
         selectedApprovalTypeName: function () {
             if (this.selectedApprovalType) {
-                return this.selectedApprovalType.name
+                return this.selectedApprovalType.name;
             }
         },
         selectedApprovalTypeDetailsPlaceholder: function () {
             if (this.selectedApprovalType) {
-                return this.selectedApprovalType.details_placeholder
+                return this.selectedApprovalType.details_placeholder;
             }
         },
         proposedDecisionDetails: function () {
@@ -489,12 +489,12 @@ export default {
              */
 
             // This is here to re-evalute the computed property after fetching details texts
-            this.uuid
+            this.uuid;
 
             if (this.approval.decision) {
-                return this.approval.details
+                return this.approval.details;
             } else if (this.proposal.proposed_decline_status) {
-                return this.proposal.proposaldeclineddetails.reason
+                return this.proposal.proposaldeclineddetails.reason;
             } else {
                 // Use standard text from admin
                 let id = this.$refs.hasOwnProperty(
@@ -503,47 +503,47 @@ export default {
                     ? this.$refs.registration_of_interest_details.id
                     : this.$refs.hasOwnProperty('lease_licence_details')
                     ? this.$refs.lease_licence_details.id
-                    : ''
-                return this.detailsTexts[id] || ''
+                    : '';
+                return this.detailsTexts[id] || '';
             }
         },
         showError: function () {
-            var vm = this
-            return vm.errors
+            var vm = this;
+            return vm.errors;
         },
         showtoDateError: function () {
-            var vm = this
-            return vm.toDateError
+            var vm = this;
+            return vm.toDateError;
         },
         showstartDateError: function () {
-            var vm = this
-            return vm.startDateError
+            var vm = this;
+            return vm.startDateError;
         },
         title: function () {
             return this.processing_status == 'With Approver'
                 ? `Issue Approval for ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`
-                : `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`
+                : `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`;
         },
         is_amendment: function () {
-            return this.proposal_type == 'Amendment' ? true : false
+            return this.proposal_type == 'Amendment' ? true : false;
         },
         csrf_token: function () {
-            return helpers.getCookie('csrftoken')
+            return helpers.getCookie('csrftoken');
         },
         withApprover: function () {
             return this.proposal.processing_status_id ==
                 constants.PROPOSAL_STATUS.WITH_APPROVER.ID
                 ? true
-                : false
+                : false;
         },
         isApproved: function () {},
         can_preview: function () {
-            return this.processing_status == 'With Approver' ? true : false
+            return this.processing_status == 'With Approver' ? true : false;
         },
         preview_licence_url: function () {
             return this.proposal_id
                 ? `/preview/licence-pdf/${this.proposal_id}`
-                : ''
+                : '';
         },
         registrationOfInterest: function () {
             if (
@@ -551,7 +551,7 @@ export default {
                 this.proposal.application_type.name ===
                     'registration_of_interest'
             ) {
-                return true
+                return true;
             }
         },
         leaseLicence: function () {
@@ -559,94 +559,94 @@ export default {
                 this.proposal &&
                 this.proposal.application_type.name === 'lease_licence'
             ) {
-                return true
+                return true;
             }
         },
     },
     created: async function () {
-        let vm = this
-        vm.form = document.forms.proposedIssuanceForm
+        let vm = this;
+        vm.form = document.forms.proposedIssuanceForm;
         this.approval = Object.assign(
             {},
             this.proposal.proposed_issuance_approval
-        )
+        );
 
         let initialisers = [
             utils.fetchApprovalTypes(),
             utils.fetchUrl(`${api_endpoints.details_text}key-value-list/`),
-        ]
+        ];
         Promise.all(initialisers).then((data) => {
             for (let approvalType of data[0]) {
-                vm.approvalTypes.push(approvalType)
+                vm.approvalTypes.push(approvalType);
             }
 
             // Approval Type
             if (vm.approval.approval_type) {
-                vm.selectedApprovalTypeId = vm.approval.approval_type
+                vm.selectedApprovalTypeId = vm.approval.approval_type;
             }
 
-            this.selectedApprovalTypeId = this.approval.approval_type
+            this.selectedApprovalTypeId = this.approval.approval_type;
 
             for (let detailText of data[1]) {
-                vm.detailsTexts[detailText.target] = detailText.body
+                vm.detailsTexts[detailText.target] = detailText.body;
             }
-            vm.uuid = uuid()
-        })
+            vm.uuid = uuid();
+        });
 
         this.$nextTick(() => {
             if (this.approval.decision) {
-                this.selectedDecision = this.approval.decision
+                this.selectedDecision = this.approval.decision;
             } else if (this.proposal.proposed_decline_status) {
-                this.selectedDecision = 'decline_application'
+                this.selectedDecision = 'decline_application';
             }
 
-            this.initSelectApprovalType()
-        })
+            this.initSelectApprovalType();
+        });
     },
     methods: {
         focus() {
             this.$nextTick(() => {
                 if (this.$refs.registration_of_interest_details) {
-                    this.$refs.registration_of_interest_details.focus()
+                    this.$refs.registration_of_interest_details.focus();
                 } else {
-                    this.$refs.lease_licence_details.focus()
+                    this.$refs.lease_licence_details.focus();
                 }
-            })
+            });
         },
         updateProposedDecisionDetails(detailsText) {
-            console.log('detailsText', detailsText)
+            console.log('detailsText', detailsText);
             if (detailsText) {
-                $('.details-invalid-feedback').hide()
+                $('.details-invalid-feedback').hide();
             }
         },
         handleApprovalTypeChangeEvent(id) {
-            this.updateSelectedApprovalType(id)
-            this.initSelectDocument()
+            this.updateSelectedApprovalType(id);
+            this.initSelectDocument();
         },
         updateSelectedApprovalType(id) {
             // clear existing doc arrays
             if (this.approval) {
-                this.approval.selected_document_types = []
+                this.approval.selected_document_types = [];
             }
             if (this.proposal.proposed_issuance_approval) {
                 this.proposal.proposed_issuance_approval.selected_document_types =
-                    []
+                    [];
             }
 
-            this.selectedApprovalTypeId = id
+            this.selectedApprovalTypeId = id;
         },
         preview: function () {
-            let vm = this
-            let formData = new FormData(vm.form)
+            let vm = this;
+            let formData = new FormData(vm.form);
             // convert formData to json
-            let jsonObject = {}
+            let jsonObject = {};
             for (const [key, value] of formData.entries()) {
-                jsonObject[key] = value
+                jsonObject[key] = value;
             }
             vm.post_and_redirect(vm.preview_licence_url, {
                 csrfmiddlewaretoken: vm.csrf_token,
                 formData: JSON.stringify(jsonObject),
-            })
+            });
         },
         post_and_redirect: function (url, postData) {
             /* http.post and ajax do not allow redirect from Django View (post method),
@@ -656,7 +656,7 @@ export default {
             var postFormStr =
                 "<form method='POST' target='_blank' name='Preview Licence' action='" +
                 url +
-                "'>"
+                "'>";
             for (var key in postData) {
                 if (postData.hasOwnProperty(key)) {
                     postFormStr +=
@@ -664,67 +664,69 @@ export default {
                         key +
                         "' value='" +
                         postData[key] +
-                        "'>"
+                        "'>";
                 }
             }
-            postFormStr += '</form>'
-            var formElement = $(postFormStr)
-            $('body').append(formElement)
-            $(formElement).submit()
+            postFormStr += '</form>';
+            var formElement = $(postFormStr);
+            $('body').append(formElement);
+            $(formElement).submit();
         },
         validateForm: function () {
-            let vm = this
-            var form = document.getElementById('proposedIssuanceForm' + vm.uuid)
+            let vm = this;
+            var form = document.getElementById(
+                'proposedIssuanceForm' + vm.uuid
+            );
             if (vm.registrationOfInterest) {
                 if (
                     '' ==
                     this.$refs.registration_of_interest_details.detailsText
                 ) {
                     vm.$nextTick(() => {
-                        this.$refs.registration_of_interest_details.focus()
-                        $('.details-invalid-feedback').show()
-                    })
-                    return false
+                        this.$refs.registration_of_interest_details.focus();
+                        $('.details-invalid-feedback').show();
+                    });
+                    return false;
                 }
             }
             if (vm.leaseLicence) {
                 if ('' == this.$refs.lease_licence_details.detailsText) {
                     vm.$nextTick(() => {
-                        this.$refs.lease_licence_details.focus()
-                        $('.details-invalid-feedback').show()
-                    })
-                    return false
+                        this.$refs.lease_licence_details.focus();
+                        $('.details-invalid-feedback').show();
+                    });
+                    return false;
                 }
             }
             if (form.checkValidity()) {
-                console.log('Form valid')
-                vm.sendData()
+                console.log('Form valid');
+                vm.sendData();
             } else {
-                form.classList.add('was-validated')
+                form.classList.add('was-validated');
                 $('#proposedIssuanceForm' + vm.uuid)
                     .find(':invalid')
                     .first()
-                    .focus()
+                    .focus();
             }
 
-            return false
+            return false;
         },
         sendData: async function () {
-            this.errors = false
-            this.issuingApproval = true
-            this.approval.assessment = this.assessment
+            this.errors = false;
+            this.issuingApproval = true;
+            this.approval.assessment = this.assessment;
 
             this.$nextTick(async () => {
                 if (this.registrationOfInterest) {
                     this.approval.details =
-                        this.$refs.registration_of_interest_details.detailsText
-                    this.approval.decision = this.selectedDecision
+                        this.$refs.registration_of_interest_details.detailsText;
+                    this.approval.decision = this.selectedDecision;
                 } else if (this.leaseLicence) {
                     this.approval.details =
-                        this.$refs.lease_licence_details.detailsText
-                    this.approval.approval_type = this.selectedApprovalTypeId
+                        this.$refs.lease_licence_details.detailsText;
+                    this.approval.approval_type = this.selectedApprovalTypeId;
                     this.approval.selected_document_types =
-                        this.$refs.proposed_issuance_documents.selectedDocumentTypes
+                        this.$refs.proposed_issuance_documents.selectedDocumentTypes;
                 }
                 if (this.proposedApprovalState == 'proposed_approval') {
                     const response = await fetch(
@@ -736,22 +738,22 @@ export default {
                             body: JSON.stringify(this.approval),
                             method: 'POST',
                         }
-                    )
+                    );
                     if (response.ok) {
-                        this.issuingApproval = false
+                        this.issuingApproval = false;
                         Swal.fire({
                             title: `Proposal to Approve: ${this.proposal.lodgement_number}`,
                             text: 'Submitted successfully.',
                             icon: 'success',
                             confirmButtonText: 'OK',
-                        })
-                        this.$router.push({ path: '/internal' }) //Navigate to dashboard page after Propose issue.
+                        });
+                        this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
                     } else {
-                        this.errors = true
-                        this.issuingApproval = false
+                        this.errors = true;
+                        this.issuingApproval = false;
                         this.errorString = await helpers.parseFetchError(
                             response
-                        )
+                        );
                     }
                 } else if (this.proposedApprovalState == 'final_approval') {
                     const response = await fetch(
@@ -763,58 +765,59 @@ export default {
                             body: JSON.stringify(this.approval),
                             method: 'POST',
                         }
-                    )
+                    );
                     if (response.ok) {
-                        this.issuingApproval = false
+                        this.issuingApproval = false;
                         Swal.fire({
                             title: `Approval Issued: ${this.proposal.lodgement_number}`,
                             text: 'Issued successfully.',
                             icon: 'success',
                             confirmButtonText: 'OK',
-                        })
-                        this.$router.push({ path: '/internal' }) //Navigate to dashboard page after Propose issue.
+                        });
+                        this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
                     } else {
-                        this.errors = true
-                        this.issuingApproval = false
+                        this.errors = true;
+                        this.issuingApproval = false;
                         this.errorString = await helpers.parseFetchError(
                             response
-                        )
+                        );
                     }
                 }
-            })
+            });
         },
         initSelectDocument: function () {
-            let vm = this
-            vm.$refs.proposed_issuance_documents.initSelectDocument()
+            let vm = this;
+            vm.$refs.proposed_issuance_documents.initSelectDocument();
         },
         /**
          * Initialise the select2 control for selecting the approval type of the application
          */
         initSelectApprovalType: function () {
-            let vm = this
+            let vm = this;
 
             $(vm.$refs.select_approvaltype)
                 .select2({
+                    dropdownParent: $('#proposedIssuanceApproval .modal'),
                     theme: 'bootstrap-5',
                     allowClear: true,
                     placeholder: 'Select an Approval Type',
                 })
                 .on('select2:select', function (e) {
-                    var selected = $(e.currentTarget)
-                    vm.handleApprovalTypeChangeEvent(Number(selected.val()))
+                    var selected = $(e.currentTarget);
+                    vm.handleApprovalTypeChangeEvent(Number(selected.val()));
                 })
                 .on('select2:unselecting', function (e) {
-                    var self = $(this)
+                    var self = $(this);
                     setTimeout(() => {
-                        self.select2('close')
-                    }, 0)
+                        self.select2('close');
+                    }, 0);
                 })
                 .on('select2:unselect', function (e) {
-                    let unselected_id = e.params.data.id
-                })
+                    let unselected_id = e.params.data.id;
+                });
         },
     },
-}
+};
 </script>
 <style scoped>
 /* input#details {
