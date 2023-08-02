@@ -16,20 +16,6 @@
                         : null
                 }}
             </h3>
-            <h3>
-                {{ proposal.lodgement_number }} -
-                {{
-                    proposal.application_type
-                        ? proposal.application_type.name_display
-                        : null
-                }}
-                -
-                {{
-                    proposal.proposal_type
-                        ? proposal.proposal_type.description
-                        : null
-                }}
-            </h3>
 
             <div class="col-md-3">
                 <CommsLogs
@@ -38,12 +24,6 @@
                     :comms_add_url="comms_add_url"
                     :disable_add_entry="false"
                 />
-                <CommsLogs
-                    :comms_url="comms_url"
-                    :logs_url="logs_url"
-                    :comms_add_url="comms_add_url"
-                    :disable_add_entry="false"
-                />
 
                 <Submission
                     v-if="canSeeSubmission"
@@ -56,45 +36,7 @@
                     class="mt-2"
                     @revision-to-display="revisionToDisplay"
                 />
-                <Submission
-                    v-if="canSeeSubmission"
-                    :can-see-submission="canSeeSubmission"
-                    :showing-proposal="showingProposal"
-                    :proposal="proposal"
-                    :submitter_first_name="submitter_first_name"
-                    :submitter_last_name="submitter_last_name"
-                    :lodgement_date="proposal.lodgement_date"
-                    class="mt-2"
-                    @revision-to-display="revisionToDisplay"
-                />
 
-                <Workflow
-                    ref="workflow"
-                    :proposal="proposal"
-                    :on_current_revision="on_current_revision"
-                    :is-finalised="isFinalised"
-                    :can-action="canAction"
-                    :can-limited-action="canLimitedAction"
-                    :can-assess="canAssess"
-                    :is-referee="isReferee"
-                    :can_user_edit="proposal.can_user_edit"
-                    :profile="profile"
-                    class="mt-2"
-                    @toggleProposal="toggleProposal"
-                    @toggleRequirements="toggleRequirements"
-                    @switchStatus="switchStatus"
-                    @completeReferral="completeReferral"
-                    @amendmentRequest="amendmentRequest"
-                    @proposedDecline="proposedDecline"
-                    @proposedApproval="proposedApproval"
-                    @issueApproval="issueApproval"
-                    @discardProposal="discardProposal"
-                    @assignRequestUser="assignRequestUser"
-                    @assignTo="assignTo"
-                    @completeEditing="completeEditing"
-                    @cancelEditing="cancelEditing"
-                    @updateProposalData="updateProposalData"
-                />
                 <Workflow
                     ref="workflow"
                     :proposal="proposal"

@@ -395,7 +395,6 @@
     </div>
     <div v-if="isAssessorOrApprover" class="card sticky-top">
         <div class="card-header">Navigation Tools</div>
-        <div class="card-header">Navigation Tools</div>
         <div class="card-body">
             <div class="list-group">
                 <li
