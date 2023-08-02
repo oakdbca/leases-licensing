@@ -152,44 +152,12 @@
                                                         >Assessor
                                                         Comments</label
                                                     >
-                                                    <textarea
-                                                        id="assessor_comment_map"
-                                                        v-model="
-                                                            assessment.assessor_comment_map
-                                                        "
-                                                        class="form-control"
-                                                        placeholder=""
-                                                        :disabled="
-                                                            !canEditComments
-                                                        "
-                                                    />
-                                                    <label
-                                                        for="assessor_comment_map"
-                                                        >Assessor
-                                                        Comments</label
-                                                    >
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="row mb-3 mt-3">
                                             <div class="col">
                                                 <div class="form-floating">
-                                                    <textarea
-                                                        id="deficiency_comment_map"
-                                                        v-model="
-                                                            assessment.deficiency_comment_map
-                                                        "
-                                                        class="form-control"
-                                                        placeholder=""
-                                                        :disabled="
-                                                            !canEditComments
-                                                        "
-                                                    />
-                                                    <label
-                                                        for="deficiency_comment_map"
-                                                        >Deficiency
-                                                        Comments</label
-                                                    >
                                                     <textarea
                                                         id="deficiency_comment_map"
                                                         v-model="
@@ -321,16 +289,6 @@
                                                         >Assessor
                                                         Comments</label
                                                     >
-                                                    v-model="
-                                                    assessment.assessor_comment_tourism_proposal_details
-                                                    " class="form-control"
-                                                    :disabled=" !canEditComments
-                                                    " />
-                                                    <label
-                                                        for="assessor_comment_tourism_proposal_details"
-                                                        >Assessor
-                                                        Comments</label
-                                                    >
                                                 </div>
                                             </div>
                                         </div>
@@ -347,16 +305,6 @@
                                                             !canEditComments
                                                         "
                                                     />
-                                                    <label
-                                                        for="deficiency_comment_tourism_proposal_details"
-                                                        >Deficiency
-                                                        Comments</label
-                                                    >
-                                                    v-model="
-                                                    assessment.deficiency_comment_tourism_proposal_details
-                                                    " class="form-control"
-                                                    :disabled=" !canEditComments
-                                                    " />
                                                     <label
                                                         for="deficiency_comment_tourism_proposal_details"
                                                         >Deficiency
@@ -1104,7 +1052,7 @@
                                     index="related_items"
                                 >
                                     <TableRelatedItems
-                                        :ajax_url="related_items_ajax_url"
+                                        :ajax-url="related_items_ajax_url"
                                     />
                                 </FormSection>
                             </template>
@@ -1687,40 +1635,86 @@ export default {
         this.fetchProposal();
     },
     methods: {
-        completeEditing: async function () {
-            let payload = { proposal: this.proposal };
+        validateInvoicingForm: function () {
+            let vm = this;
+            var form = document.getElementById('invoicing-form');
 
-            const res = await fetch(
-                '/api/proposal/' +
-                    this.proposal.id +
-                    '/finance_complete_editing.json',
-                { body: JSON.stringify(payload), method: 'POST' }
-            );
-
-            if (res.ok) {
-                await swal.fire({
-                    title: 'Saved',
-                    text: 'Your proposal has been saved',
-                    icon: 'success',
-                });
+            if (form.checkValidity()) {
+                vm.completeEditing();
             } else {
-                let errors = [];
-                await res.json().then((json) => {
-                    for (let key in json) {
-                        errors.push(
-                            `${key}: ${
-                                typeof json[key] == 'string'
-                                    ? json[key]
-                                    : json[key].join(',')
-                            }`
-                        );
-                    }
-                    swal.fire({
-                        title: 'Please fix following errors before saving',
-                        text: errors.join(','),
-                        icon: 'error',
+                form.classList.add('was-validated');
+                $('#invoicing-form').find(':invalid').first().focus();
+            }
+
+            return false;
+        },
+        completeEditing: async function () {
+            let cancelled = false;
+            if (
+                'once_off_charge' ==
+                $('input[type=radio][name=charge_method]:checked').attr('id')
+            ) {
+                await swal
+                    .fire({
+                        title: 'Confirm Once Off Invoice',
+                        text: 'You have selected to invoice as a once off charge, \
+                        this will create a new invoice record. An oracle invoice must \
+                        be attached to the new invoice record before the system will send a payment request to the proponent.',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        buttonsStyling: false,
+                        confirmButtonText: 'Confirm',
+                        customClass: {
+                            confirmButton: 'btn btn-primary',
+                            cancelButton: 'btn btn-secondary me-2',
+                        },
+                        reverseButtons: true,
+                    })
+                    .then((result) => {
+                        if (result.isDismissed) {
+                            cancelled = true;
+                        }
                     });
-                });
+            }
+            if (!cancelled) {
+                const payload = { proposal: this.proposal };
+                const res = await fetch(
+                    '/api/proposal/' +
+                        this.proposal.id +
+                        '/finance_complete_editing.json',
+                    {
+                        body: JSON.stringify(payload),
+                        method: 'POST',
+                    }
+                );
+
+                if (res.ok) {
+                    swal.fire({
+                        title: 'Saved',
+                        text: 'Your proposal has been saved',
+                        icon: 'success',
+                    });
+                    let data = await res.json();
+                    this.proposal = Object.assign({}, data);
+                } else {
+                    let errors = [];
+                    await res.json().then((json) => {
+                        for (let key in json) {
+                            errors.push(
+                                `${key}: ${
+                                    typeof json[key] == 'string'
+                                        ? json[key]
+                                        : json[key].join(',')
+                                }`
+                            );
+                        }
+                        swal.fire({
+                            title: 'Please fix following errors before saving',
+                            text: errors.join(','),
+                            icon: 'error',
+                        });
+                    });
+                }
             }
         },
         cancelEditing: function () {
