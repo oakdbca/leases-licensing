@@ -2351,6 +2351,10 @@ export default {
                     console.log(error);
                 });
         },
+        updateInvoicingDetails: function (value) {
+            console.log('updateInvoicingDetails', value);
+            Object.assign(this.proposal.invoicing_details, value);
+        },
     },
 };
 </script>
