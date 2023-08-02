@@ -586,7 +586,7 @@
                                 >
                                     <ApprovalsTable
                                         ref="approvals_table"
-                                        :target_compliance_id="compliance.id"
+                                        :target-compliance-id="compliance.id"
                                         level="internal"
                                     />
                                 </FormSection>
@@ -654,22 +654,20 @@
     </div>
 </template>
 <script>
-/*global swal, moment, bootstrap */
-
-import CommsLogs from '@common-utils/comms_logs.vue'
-import ComplianceAmendmentRequest from './compliance_amendment_request.vue'
-import MoreReferrals from '@common-utils/more_referrals.vue'
-import FormSection from '@/components/forms/section_toggle.vue'
-import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
-import ApprovalsTable from '@/components/common/table_approvals.vue'
+import CommsLogs from '@common-utils/comms_logs.vue';
+import ComplianceAmendmentRequest from './compliance_amendment_request.vue';
+import MoreReferrals from '@common-utils/more_referrals.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
+import ApprovalsTable from '@/components/common/table_approvals.vue';
 import {
     remindReferral,
     recallReferral,
     resendReferral,
-} from '@/components/common/workflow_functions.js'
+} from '@/components/common/workflow_functions.js';
 
-import { api_endpoints, constants, helpers } from '@/utils/hooks'
-import Swal from 'sweetalert2'
+import { api_endpoints, constants, helpers } from '@/utils/hooks';
+import Swal from 'sweetalert2';
 export default {
     name: 'ComplianceAccess',
     components: {
@@ -682,11 +680,11 @@ export default {
     },
     beforeRouteEnter: function (to, from, next) {
         next((vm) => {
-            vm.fetchCompliance(to.params.compliance_id)
-        })
+            vm.fetchCompliance(to.params.compliance_id);
+        });
     },
     data() {
-        let vm = this
+        let vm = this;
         return {
             constants: constants,
             referrals_api_endpoint: api_endpoints.compliance_referrals,
@@ -717,37 +715,37 @@ export default {
             remindReferral: remindReferral,
             recallReferral: recallReferral,
             resendReferral: resendReferral,
-        }
+        };
     },
     computed: {
         isLoading: function () {
-            return this.loading.length > 0
+            return this.loading.length > 0;
         },
         referralListURL: function () {
             return this.compliance
                 ? api_endpoints.compliance_referrals +
                       'datatable_list/?compliance_id=' +
                       this.compliance.id
-                : ''
+                : '';
         },
         canViewonly: function () {
             return (
                 this.compliance.processing_status == 'Due' ||
                 this.compliance.processing_status == 'Future' ||
                 this.compliance.processing_status == 'Approved'
-            )
+            );
         },
         showAssignToMeButton: function () {
-            return this.compliance.assigned_to != this.profile.id
+            return this.compliance.assigned_to != this.profile.id;
         },
         dueDateFormatted: function () {
-            return moment(this.compliance.due_date).format(this.DATE_FORMAT)
+            return moment(this.compliance.due_date).format(this.DATE_FORMAT);
         },
         collapseAssessmentComments: function () {
             return ![
                 constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID,
                 constants.COMPLIANCE_PROCESSING_STATUS.WITH_REFERRAL.ID,
-            ].includes(this.compliance.processing_status)
+            ].includes(this.compliance.processing_status);
         },
         showRecentReferrals: function () {
             return (
@@ -756,7 +754,7 @@ export default {
                 this.compliance.latest_referrals &&
                 this.compliance.latest_referrals.length > 0 &&
                 this.compliance.assigned_to == this.profile.id
-            )
+            );
         },
         canEditAssessorComments: function () {
             return (
@@ -764,7 +762,7 @@ export default {
                     this.compliance.processing_status &&
                 this.profile.is_assessor &&
                 this.profile.id == this.compliance.assigned_to
-            )
+            );
         },
         isFinalised: function () {
             return (
@@ -773,10 +771,10 @@ export default {
                     constants.COMPLIANCE_PROCESSING_STATUS.APPROVED.ID,
                     constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED.ID,
                 ].includes(this.compliance.processing_status)
-            )
+            );
         },
         canViewActions: function () {
-            return this.compliance.is_referee || this.canViewAssessorActions
+            return this.compliance.is_referee || this.canViewAssessorActions;
         },
         canViewAssessorActions: function () {
             return (
@@ -784,40 +782,42 @@ export default {
                 constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID ==
                     this.compliance.processing_status &&
                 this.profile.id == this.compliance.assigned_to
-            )
+            );
         },
     },
     created: function () {
-        this.fetchProfile()
+        this.fetchProfile();
         if (!this.compliance) {
-            this.fetchCompliance(this.$route.params.compliance_id)
+            this.fetchCompliance(this.$route.params.compliance_id);
         }
     },
     methods: {
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         commaToNewline(s) {
-            return s.replace(/[,;]/g, '\n')
+            return s.replace(/[,;]/g, '\n');
         },
         save: async function () {
-            console.log('save')
-            console.log(this.profile.is_compliance_referee)
+            console.log('save');
+            console.log(this.profile.is_compliance_referee);
 
             if (
                 this.profile.is_assessor &&
                 this.compliance.assigned_to == this.profile.id
             ) {
-                this.assessorSave()
+                this.assessorSave();
             }
             if (this.profile.is_compliance_referee) {
-                console.log('referee save')
-                this.refereeSave()
+                console.log('referee save');
+                this.refereeSave();
             }
         },
         assessorSave: async function () {
-            let vm = this
-            vm.savingCompliance = true
+            let vm = this;
+            vm.savingCompliance = true;
             fetch(
                 `${api_endpoints.compliance_assessments}${vm.compliance.assessment.id}/`,
                 {
@@ -834,11 +834,11 @@ export default {
                 }
             )
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
                     }
                     swal.fire({
                         title: 'Success',
@@ -846,24 +846,24 @@ export default {
                         icon: 'success',
                         timer: 1500,
                         showConfirmButton: false,
-                    })
+                    });
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
+                    console.error('There was an error!', error);
                 })
                 .finally(() => {
-                    vm.savingCompliance = false
-                })
+                    vm.savingCompliance = false;
+                });
         },
         refereeSave: function () {
-            let vm = this
-            vm.savingCompliance = true
-            console.log(vm.profile.id)
+            let vm = this;
+            vm.savingCompliance = true;
+            console.log(vm.profile.id);
             const referral = vm.compliance.referrals.filter((obj) => {
-                return obj['referral'] == vm.profile.id
-            })[0]
+                return obj['referral'] == vm.profile.id;
+            })[0];
 
-            console.log(referral)
+            console.log(referral);
             fetch(`${api_endpoints.compliance_referrals}${referral.id}/`, {
                 method: 'PATCH',
                 headers: {
@@ -874,11 +874,11 @@ export default {
                 }),
             })
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
                     }
                     swal.fire({
                         title: 'Success',
@@ -886,26 +886,26 @@ export default {
                         icon: 'success',
                         timer: 1500,
                         showConfirmButton: false,
-                    })
+                    });
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
+                    console.error('There was an error!', error);
                 })
                 .finally(() => {
-                    vm.savingCompliance = false
-                })
+                    vm.savingCompliance = false;
+                });
         },
         saveAndExit: async function () {
-            let vm = this
-            vm.saveExitCompliance = true
-            await this.save()
-            vm.$router.push({ name: 'internal-compliances-dash' })
+            let vm = this;
+            vm.saveExitCompliance = true;
+            await this.save();
+            vm.$router.push({ name: 'internal-compliances-dash' });
         },
         completeReferral: async function () {
-            let vm = this
+            let vm = this;
             const referral = vm.compliance.referrals.filter((obj) => {
-                return obj['referral'] == vm.profile.id
-            })[0]
+                return obj['referral'] == vm.profile.id;
+            })[0];
             fetch(
                 `${api_endpoints.compliance_referrals}${referral.id}/complete/`,
                 {
@@ -919,16 +919,16 @@ export default {
                 }
             )
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
-                        const error = data || response.statusText
-                        console.log(error)
+                        const error = data || response.statusText;
+                        console.log(error);
                         swal.fire({
                             title: 'Error',
                             html: helpers.formatErrorV2(error),
                             icon: 'error',
-                        })
-                        return
+                        });
+                        return;
                     }
                     swal.fire({
                         title: 'Success',
@@ -936,23 +936,23 @@ export default {
                         icon: 'success',
                         timer: 1500,
                         showConfirmButton: false,
-                    })
-                    vm.$router.push({ name: 'internal-compliances-dash' })
+                    });
+                    vm.$router.push({ name: 'internal-compliances-dash' });
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                })
+                    console.error('There was an error!', error);
+                });
         },
         tabClicked: function (param) {
             if (param == 'related-items') {
-                this.loadRelatedItems = true
+                this.loadRelatedItems = true;
                 this.$nextTick(() => {
-                    this.$refs.approvals_table.adjust_table_width()
-                })
+                    this.$refs.approvals_table.adjust_table_width();
+                });
             }
         },
         assignMyself: async function () {
-            let vm = this
+            let vm = this;
             this.compliance = Object.assign(
                 {},
                 await helpers.fetchWrapper(
@@ -961,35 +961,35 @@ export default {
                         vm.compliance.id + '/assign_request_user'
                     )
                 )
-            )
+            );
             Swal.fire({
                 title: 'Success',
                 text: `Compliance ${this.compliance.reference} has been assigned to you`,
                 icon: 'success',
                 timer: 2000,
                 showConfirmButton: false,
-            })
+            });
         },
         assignTo: async function () {
-            let vm = this
-            console.log(vm.compliance.assigned_to)
+            let vm = this;
+            console.log(vm.compliance.assigned_to);
             if (vm.compliance.assigned_to != 'null') {
                 const url = helpers.add_endpoint_json(
                     api_endpoints.compliances,
                     vm.compliance.id + '/assign_to'
-                )
-                const data = { user_id: vm.compliance.assigned_to }
+                );
+                const data = { user_id: vm.compliance.assigned_to };
                 this.compliance = Object.assign(
                     {},
                     await helpers.fetchWrapper(url, 'POST', data)
-                )
+                );
                 let assessor_assigned = this.compliance.allowed_assessors.find(
                     function (assessor) {
-                        console.log(assessor.id, vm.compliance.assigned_to)
-                        return assessor.id === vm.compliance.assigned_to
+                        console.log(assessor.id, vm.compliance.assigned_to);
+                        return assessor.id === vm.compliance.assigned_to;
                     }
-                )
-                console.log(assessor_assigned)
+                );
+                console.log(assessor_assigned);
                 Swal.fire({
                     title: 'Success',
                     text: `Compliance ${this.compliance.reference} has been assigned to ${assessor_assigned.fullname}`,
@@ -997,21 +997,21 @@ export default {
                     customClass: 'swal-wide',
                     timer: 2000,
                     showConfirmButton: false,
-                })
+                });
             } else {
-                console.log('unassign')
+                console.log('unassign');
                 const url = await helpers.add_endpoint_json(
                     api_endpoints.compliances,
                     vm.compliance.id + '/unassign'
-                )
+                );
                 this.compliance = Object.assign(
                     {},
                     await helpers.fetchWrapper(url)
-                )
+                );
             }
         },
         sendReferral: async function () {
-            let vm = this
+            let vm = this;
             swal.fire({
                 title: 'Send Referral',
                 text: 'Are you sure you want to send to referral?',
@@ -1027,17 +1027,17 @@ export default {
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     // When Yes
-                    await vm.performSendReferral()
+                    await vm.performSendReferral();
                 }
-            })
+            });
         },
         performSendReferral: async function () {
-            let vm = this
+            let vm = this;
             let my_headers = {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-            }
-            vm.sendingReferral = true
+            };
+            vm.sendingReferral = true;
             await fetch(`/api/compliances/${this.compliance.id}/`, {
                 method: 'PUT',
                 headers: my_headers,
@@ -1046,10 +1046,10 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then(async () => {
@@ -1066,24 +1066,24 @@ export default {
                                 text: vm.referral_text,
                             }),
                         }
-                    )
+                    );
                 })
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            console.log('json', json)
-                            throw new Error(JSON.stringify(json))
-                        })
+                            console.log('json', json);
+                            throw new Error(JSON.stringify(json));
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then(async (response) => {
-                    console.log('settings updated compliance from response')
-                    vm.compliance = Object.assign({}, response) // 'with_referral'
+                    console.log('settings updated compliance from response');
+                    vm.compliance = Object.assign({}, response); // 'with_referral'
                 })
                 .catch((error) => {
-                    let errorText = ''
+                    let errorText = '';
                     try {
                         // console.log(`error type. ${typeof error}`);
                         // console.log(`Error sending referral. ${error}`);
@@ -1091,33 +1091,33 @@ export default {
                         // console.log(`${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
                         // console.log(`${JSON.parse(error.message).type}`);
 
-                        error = JSON.parse(error.message)
-                        console.log(`error type. ${typeof error}`)
-                        errorText = helpers.formatErrorV2(error)
-                        console.log(`errorText type. ${typeof errorText}`)
+                        error = JSON.parse(error.message);
+                        console.log(`error type. ${typeof error}`);
+                        errorText = helpers.formatErrorV2(error);
+                        console.log(`errorText type. ${typeof errorText}`);
                     } catch (e) {
-                        errorText = error.message
+                        errorText = error.message;
                     }
                     swal.fire({
                         title: 'Failed to send referral.',
                         html: `${errorText}`,
                         icon: 'warning',
                         customClass: 'swal-wide',
-                    })
+                    });
                 })
                 .finally(() => {
-                    vm.sendingReferral = false
-                    vm.selected_referral = ''
-                    vm.referral_text = ''
-                    $(vm.$refs.referees).val(null).trigger('change')
-                })
+                    vm.sendingReferral = false;
+                    vm.selected_referral = '';
+                    vm.referral_text = '';
+                    $(vm.$refs.referees).val(null).trigger('change');
+                });
         },
         initialiseSelects: function (reinit = false) {
-            let vm = this
+            let vm = this;
             if (reinit) {
                 $(vm.$refs.referees).data('select2')
                     ? $(vm.$refs.referees).select2('destroy')
-                    : ''
+                    : '';
             }
             $(vm.$refs.referees)
                 .select2({
@@ -1132,21 +1132,21 @@ export default {
                             var query = {
                                 term: params.term,
                                 type: 'public',
-                            }
-                            return query
+                            };
+                            return query;
                         },
                     },
                 })
                 .on('select2:select', function (e) {
-                    let data = e.params.data.id
-                    vm.selected_referral = data
+                    let data = e.params.data.id;
+                    vm.selected_referral = data;
                 })
                 .on('select2:unselect', function () {
-                    vm.selected_referral = null
-                })
+                    vm.selected_referral = null;
+                });
         },
         acceptCompliance: async function () {
-            let vm = this
+            let vm = this;
             await swal.fire({
                 title: `Approve Compliance ${vm.compliance.lodgement_number}`,
                 text: 'Are you sure you want to approve this compliance?',
@@ -1160,7 +1160,7 @@ export default {
                     confirmButton: 'btn btn-primary',
                     cancelButton: 'btn btn-secondary me-2',
                 },
-            })
+            });
             await helpers
                 .fetchWrapper(
                     helpers.add_endpoint_json(
@@ -1169,41 +1169,41 @@ export default {
                     )
                 )
                 .then(function (response) {
-                    vm.compliance = Object.assign({}, response)
+                    vm.compliance = Object.assign({}, response);
                     Swal.fire({
                         title: 'Success',
                         text: `Compliance ${vm.compliance.reference} has been approved.`,
                         icon: 'success',
                         timer: 2000,
                         showConfirmButton: false,
-                    })
-                    vm.$router.push({ name: 'internal-compliances-dash' })
-                })
+                    });
+                    vm.$router.push({ name: 'internal-compliances-dash' });
+                });
         },
         amendmentRequest: function () {
             this.$refs.amendment_request.amendment.compliance =
-                this.compliance.id
-            this.$refs.amendment_request.isModalOpen = true
+                this.compliance.id;
+            this.$refs.amendment_request.isModalOpen = true;
         },
         fetchProfile: async function () {
             this.profile = Object.assign(
                 {},
                 await helpers.fetchWrapper(api_endpoints.profile)
-            )
+            );
         },
         check_assessor: function () {
-            let vm = this
+            let vm = this;
             var assessor = vm.members.filter(function (elem) {
-                return elem.id == vm.profile.id
-            })
-            if (assessor.length > 0) return true
-            else return false
+                return elem.id == vm.profile.id;
+            });
+            if (assessor.length > 0) return true;
+            else return false;
         },
         switchStatus: function (new_processing_status) {
             const requestOptions = {
                 method: 'POST',
                 body: JSON.stringify({ status: new_processing_status }),
-            }
+            };
             fetch(
                 helpers.add_endpoint_json(
                     api_endpoints.compliances,
@@ -1214,29 +1214,29 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    this.compliance = Object.assign({}, data)
+                    this.compliance = Object.assign({}, data);
                     this.$nextTick(() => {
-                        this.initialiseSelects()
+                        this.initialiseSelects();
                         // this.updateAssignedOfficerSelect();
-                    })
+                    });
                 })
                 .catch((error) => {
                     swal.fire({
                         title: 'Compliance Error',
                         text: error,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
         },
         fetchCompliance: function (compliance_id) {
-            let vm = this
+            let vm = this;
             fetch(
                 helpers.add_endpoint_json(
                     api_endpoints.compliances,
@@ -1250,40 +1250,40 @@ export default {
                                 title: 'Compliance Error',
                                 text: text,
                                 icon: 'error',
-                            })
-                        })
+                            });
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then(async (data) => {
-                    vm.compliance = Object.assign({}, data)
-                    vm.members = vm.compliance.allowed_assessors
+                    vm.compliance = Object.assign({}, data);
+                    vm.members = vm.compliance.allowed_assessors;
                     this.$nextTick(() => {
                         $('textarea').each(function () {
                             if ($(this)[0].scrollHeight > 70) {
-                                $(this).height($(this)[0].scrollHeight - 30)
+                                $(this).height($(this)[0].scrollHeight - 30);
                             }
-                        })
-                        this.initialiseSelects()
-                        this.initialisePopovers()
-                    })
+                        });
+                        this.initialiseSelects();
+                        this.initialisePopovers();
+                    });
                 })
                 .catch(() => {
                     swal.fire({
                         title: 'Compliance Error',
                         text: constants.ERRORS.NETWORK_ERROR,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
         },
         initialisePopovers: function () {
             var popoverTriggerList = [].slice.call(
                 document.querySelectorAll('[data-bs-toggle="popover"]')
-            )
+            );
             popoverTriggerList.map(function (popoverTriggerEl) {
-                return new bootstrap.Popover(popoverTriggerEl)
-            })
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
         },
     },
     // mounted: function () {
@@ -1291,7 +1291,7 @@ export default {
 
     //     }
     // },
-}
+};
 </script>
 <style scoped>
 .action-buttons {

@@ -519,10 +519,10 @@
 </template>
 
 <script>
-import FormSection from '@/components/forms/section_toggle.vue'
-import RichText from '@/components/forms/richtext.vue'
-import FileField from '@/components/forms/filefield_immediate.vue'
-import { api_endpoints, helpers } from '@/utils/hooks'
+import FormSection from '@/components/forms/section_toggle.vue';
+import RichText from '@/components/forms/richtext.vue';
+import FileField from '@/components/forms/filefield_immediate.vue';
+import { api_endpoints, helpers } from '@/utils/hooks';
 
 export default {
     name: 'LeaseLicenceForm',
@@ -546,186 +546,186 @@ export default {
         },
     },
     data: function () {
-        return {}
+        return {};
     },
     computed: {
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
         proposalId: function () {
-            return this.proposal ? this.proposal.id : null
+            return this.proposal ? this.proposal.id : null;
         },
         profitAndLossDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_profit_and_loss_document/'
-            )
+            );
         },
         cashFlowDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_cash_flow_document/'
-            )
+            );
         },
         capitalInvestmentDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_capital_investment_document/'
-            )
+            );
         },
         financialCapacityDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_financial_capacity_document/'
-            )
+            );
         },
         availableActivitiesDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_available_activities_document/'
-            )
+            );
         },
         marketAnalysisDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_market_analysis_document/'
-            )
+            );
         },
         staffingDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_staffing_document/'
-            )
+            );
         },
         keyPersonnelDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_key_personnel_document/'
-            )
+            );
         },
         keyMilestonesDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_key_milestones_document/'
-            )
+            );
         },
         riskFactorsDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_risk_factors_document/'
-            )
+            );
         },
         legislativeRequirementsDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_legislative_requirements_document/'
-            )
+            );
         },
         deedPollDocumentUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_deed_poll_document/'
-            )
+            );
         },
         supportingDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_supporting_document/'
-            )
+            );
         },
         exclusiveUseDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_exclusive_use_document/'
-            )
+            );
         },
         longTermUseDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_long_term_use_document/'
-            )
+            );
         },
         consistentPurposeDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_consistent_purpose_document/'
-            )
+            );
         },
         consistentPlanDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_consistent_plan_document/'
-            )
+            );
         },
         clearingVegetationDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_clearing_vegetation_document/'
-            )
+            );
         },
         groundDisturbingWorksDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_ground_disturbing_works_document/'
-            )
+            );
         },
         heritageSiteDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_heritage_site_document/'
-            )
+            );
         },
         environmentallySensitiveDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id +
                     '/process_environmentally_sensitive_document/'
-            )
+            );
         },
         wetlandsImpactDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_wetlands_impact_document/'
-            )
+            );
         },
         buildingRequiredDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_building_required_document/'
-            )
+            );
         },
         significantChangeDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_significant_change_document/'
-            )
+            );
         },
         aboriginalSiteDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_aboriginal_site_document/'
-            )
+            );
         },
         nativeTitleConsultationDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id +
                     '/process_native_title_consultation_document/'
-            )
+            );
         },
         miningTenementDocumentsUrl: function () {
             return helpers.add_endpoint_join(
                 api_endpoints.proposal,
                 this.proposal.id + '/process_mining_tenement_document/'
-            )
+            );
         },
     },
     mounted: function () {},
     methods: {},
-}
+};
 </script>
 
 <style lang="css" scoped>

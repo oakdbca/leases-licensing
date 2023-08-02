@@ -9,7 +9,11 @@ from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
     ApprovalLogEntry,
+    ApprovalType,
     ApprovalUserAction,
+)
+from leaseslicensing.components.competitive_processes.utils import (
+    get_competitive_process_geometries_for_map_component,
 )
 from leaseslicensing.components.invoicing.serializers import InvoicingDetailsSerializer
 from leaseslicensing.components.main.serializers import (
@@ -19,6 +23,11 @@ from leaseslicensing.components.main.serializers import (
 from leaseslicensing.components.main.utils import get_secure_file_url
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
+from leaseslicensing.components.proposals.models import ProposalApplicant
+from leaseslicensing.components.proposals.serializers import ProposalGisDataSerializer
+from leaseslicensing.components.proposals.utils import (
+    get_proposal_geometries_for_map_component,
+)
 from leaseslicensing.components.users.serializers import UserSerializer
 from leaseslicensing.helpers import is_approver, is_assessor
 
@@ -54,7 +63,11 @@ class ApprovalPaymentSerializer(serializers.ModelSerializer):
         )
 
     def get_org_applicant(self, obj):
-        return obj.org_applicant.name if obj.org_applicant else None
+        return (
+            obj.current_proposal.org_applicant.name
+            if obj.current_proposal and obj.current_proposal.org_applicant
+            else None
+        )
 
     def get_bpay_allowed(self, obj):
         return obj.bpay_allowed
@@ -160,6 +173,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
     current_proposal_processing_status = serializers.CharField(
         source="current_proposal.processing_status", read_only=True
     )
+    approval_type = serializers.SerializerMethodField(read_only=True)
+    approval_type_obj = serializers.SerializerMethodField(read_only=True)
+    gis_data = serializers.SerializerMethodField(read_only=True)
+    geometry_objs = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Approval
@@ -208,6 +225,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "site_name",
             "record_management_number",
             "invoicing_details",
+            "approval_type",
+            "approval_type_obj",
+            "gis_data",
+            "geometry_objs",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -249,6 +270,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return get_secure_file_url(obj.licence_document, "_file")
 
     def get_submitter(self, obj):
+        if not obj.submitter:
+            return None
         user = EmailUser.objects.get(id=obj.submitter)
         return EmailUserSerializer(user).data
 
@@ -267,16 +290,13 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return None
 
     def get_holder(self, obj):
-        if isinstance(obj.applicant, Organisation):
-            return obj.applicant.ledger_organisation_name
-        elif isinstance(obj.applicant, EmailUser):
-            return f"{obj.applicant.first_name} {obj.applicant.last_name}"
-        else:
-            return "Applicant not yet assigned"
+        return obj.holder
 
     def get_applicant_type(self, obj):
         if isinstance(obj.applicant, Organisation):
             return "organisation"
+        elif isinstance(obj.applicant, ProposalApplicant):
+            return "individual"
         elif isinstance(obj.applicant, EmailUser):
             return "individual"
         else:
@@ -291,7 +311,12 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return UserSerializer(obj.applicant).data
 
     def get_can_renew(self, obj):
-        return obj.can_renew
+        if not obj.can_renew:
+            return False
+        request = self.context["request"]
+        if is_assessor(request):
+            return obj.status == obj.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW
+        return obj.status == obj.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
 
     def get_is_assessor(self, obj):
         request = self.context["request"]
@@ -308,6 +333,49 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     def get_groups_comma_list(self, obj):
         return obj.current_proposal.groups_comma_list
+
+    def get_approval_type(self, obj):
+        approval_type_obj = self.get_approval_type_obj(obj)
+        if approval_type_obj is None:
+            return None
+        return approval_type_obj.get("name", None)
+
+    def get_approval_type_obj(self, obj):
+        if not obj.current_proposal.proposed_issuance_approval:
+            logger.debug("No approval issuance proposed yet")
+            return None
+        approval_type_id = obj.current_proposal.proposed_issuance_approval.get(
+            "approval_type", None
+        )
+        if approval_type_id is None:
+            logger.warn("ApprovalType not found")
+            return None
+        try:
+            approval_type = ApprovalType.objects.get(id=approval_type_id)
+        except ApprovalType.DoesNotExist:
+            return None
+        else:
+            return ApprovalTypeSerializer(approval_type).data
+
+    def get_gis_data(self, obj):
+        return ProposalGisDataSerializer(obj.current_proposal).data
+
+    def get_geometry_objs(self, obj):
+        """
+        Returns proposal and competitive process geometry objects for this license
+        """
+
+        geometry_data = {"type": "FeatureCollection", "features": []}
+        geometry_data = get_proposal_geometries_for_map_component(
+            obj.current_proposal, self.context, geometry_data
+        )
+        geometry_data = get_competitive_process_geometries_for_map_component(
+            obj.current_proposal.originating_competitive_process,
+            self.context,
+            geometry_data,
+        )
+
+        return geometry_data
 
 
 class ApprovalExtendSerializer(serializers.Serializer):
@@ -368,3 +436,9 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
         # Todo: Change to secure file / document url
         url = obj._file.url
         return url
+
+
+class ApprovalTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovalType
+        fields = "__all__"

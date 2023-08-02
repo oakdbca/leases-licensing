@@ -11,13 +11,13 @@
 </template>
 
 <script>
-import FormSection from '@/components/forms/section_toggle.vue'
-import InvoicesTable from '@/components/common/table_invoices.vue'
+import FormSection from '@/components/forms/section_toggle.vue';
+import InvoicesTable from '@/components/common/table_invoices.vue';
 export default {
     name: 'InternalInvoicesDashboard',
     components: {
         FormSection,
         InvoicesTable,
     },
-}
+};
 </script>

@@ -18,10 +18,17 @@
                     :comms_add_url="comms_add_url"
                     :disable_add_entry="false"
                 />
+                <CommsLogs
+                    :comms_url="comms_url"
+                    :logs_url="logs_url"
+                    :comms_add_url="comms_add_url"
+                    :disable_add_entry="false"
+                />
 
                 <div class="row mt-2 mb-2">
                     <div class="col">
                         <div class="card card-default">
+                            <div class="card-header">Submission</div>
                             <div class="card-header">Submission</div>
                             <div class="card-body card-collapse">
                                 <div class="row">
@@ -53,8 +60,16 @@
                     "
                     class="row mt-2 mb-2"
                 >
+                <div
+                    v-if="
+                        'Current (Pending Renewal Review)' == approval.status &&
+                        approval.can_renew
+                    "
+                    class="row mt-2 mb-2"
+                >
                     <div class="col">
                         <div class="card card-default">
+                            <div class="card-header">Review Renewal</div>
                             <div class="card-header">Review Renewal</div>
                             <div class="card-body card-collapse">
                                 <div class="mb-2">
@@ -100,6 +115,21 @@
                                     >
                                         Cancel Editing
                                     </button>
+                                <div class="mb-2">
+                                    <button
+                                        class="btn btn-primary btn-licensing"
+                                        @click="completeEditingInvoicing(true)"
+                                    >
+                                        Complete Editing
+                                    </button>
+                                </div>
+                                <div>
+                                    <button
+                                        class="btn btn-secondary btn-licensing"
+                                        @click="cancelEditingInvoicing(false)"
+                                    >
+                                        Cancel Editing
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -107,6 +137,7 @@
                 </div>
             </div>
             <div class="col-md-9">
+                <ul id="pills-tab" class="nav nav-pills" role="tablist">
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button
@@ -131,6 +162,15 @@
                             aria-controls="pills-details"
                             aria-selected="true"
                         >
+                        <button
+                            id="pills-details-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-details"
+                            role="tab"
+                            aria-controls="pills-details"
+                            aria-selected="true"
+                        >
                             Details
                         </button>
                     </li>
@@ -143,6 +183,16 @@
                             role="tab"
                             aria-controls="pills-map"
                             aria-selected="true"
+                        >
+                        <button
+                            id="pills-map-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-map"
+                            role="tab"
+                            aria-controls="pills-map"
+                            aria-selected="true"
+                            @click="tabClicked('map')"
                         >
                             Map
                         </button>
@@ -158,10 +208,29 @@
                             aria-selected="true"
                             @click="tabClicked('invoicing')"
                         >
+                        <button
+                            id="pills-invoicing-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-invoicing"
+                            role="tab"
+                            aria-controls="pills-invoicing"
+                            aria-selected="true"
+                            @click="tabClicked('invoicing')"
+                        >
                             Invoicing
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
+                        <button
+                            id="pills-related-items-tab"
+                            class="nav-link"
+                            data-bs-toggle="pill"
+                            data-bs-target="#pills-related-items"
+                            role="tab"
+                            aria-controls="pills-related-items"
+                            aria-selected="true"
+                        >
                         <button
                             id="pills-related-items-tab"
                             class="nav-link"
@@ -186,13 +255,15 @@
                         <Applicant
                             v-if="'individual' == approval.applicant_type"
                             id="approvalHolder"
-                            :email_user="approval.holder_obj"
+                            :proposal-id="approval.current_proposal"
                             :readonly="true"
                             :collapse-form-sections="false"
+                            customer-type="holder"
                         />
                         <OrganisationApplicant
                             v-else
                             :org="approval.holder_obj"
+                            :is-internal="true"
                         />
                     </div>
 
@@ -201,161 +272,26 @@
                         class="tab-pane fade"
                         role="tabpanel"
                     >
-                        <FormSection
-                            :form-collapse="false"
+                        <ApprovalDetails
+                            :approval-details="approval"
                             label="License"
-                            index="oBody"
-                        >
-                            <div
-                                v-if="loading.length == 0"
-                                :id="oBody"
-                                class="card-body"
-                            >
-                                <form
-                                    class="form-horizontal"
-                                    action="index.html"
-                                    method="post"
-                                >
-                                    <div class="row mb-3">
-                                        <label
-                                            for="lodgement_number"
-                                            class="col-sm-4 col-form-label"
-                                            >Lodgement Number</label
-                                        >
-                                        <div class="col-sm-8">
-                                            <input
-                                                class="form-control"
-                                                type="text"
-                                                :value="
-                                                    approval.lodgement_number
-                                                "
-                                                readonly
-                                            />
-                                        </div>
-                                    </div>
-                                    <div
-                                        v-if="
-                                            approval.original_leaselicense_number
-                                        "
-                                        class="row mb-3"
-                                    >
-                                        <label
-                                            for="lodgement_number"
-                                            class="col-sm-4 col-form-label"
-                                            >Migrated from</label
-                                        >
-                                        <div class="col-sm-8">
-                                            <input
-                                                class="form-control"
-                                                type="text"
-                                                :value="
-                                                    approval.original_leaselicense_number
-                                                "
-                                                readonly
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label
-                                            for="lodgement_number"
-                                            class="col-sm-4 col-form-label"
-                                            >Approval Type</label
-                                        >
-                                        <div class="col-sm-8">
-                                            <input
-                                                class="form-control"
-                                                type="text"
-                                                :value="
-                                                    approval.application_type
-                                                "
-                                                readonly
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label
-                                            for="start_date"
-                                            class="col-sm-4 col-form-label"
-                                            >Commencement</label
-                                        >
-                                        <div class="col-sm-8">
-                                            <input
-                                                id="issue_date"
-                                                class="form-control"
-                                                type="text"
-                                                :value="
-                                                    formatDate(
-                                                        approval.start_date
-                                                    )
-                                                "
-                                                readonly
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label
-                                            for="expiry_date"
-                                            class="col-sm-4 col-form-label"
-                                            >Expiry</label
-                                        >
-                                        <div class="col-sm-8">
-                                            <input
-                                                id="issue_date"
-                                                class="form-control"
-                                                type="text"
-                                                :value="
-                                                    formatDate(
-                                                        approval.expiry_date
-                                                    )
-                                                "
-                                                readonly
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label
-                                            for="record_management_number"
-                                            class="col-sm-4 col-form-label"
-                                            >Record Management Number</label
-                                        >
-                                        <div class="col-sm-8">
-                                            <input
-                                                id="record_management_number"
-                                                class="form-control"
-                                                type="text"
-                                                :value="
-                                                    approval.record_management_number
-                                                "
-                                                readonly
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="row mb-3">
-                                        <label
-                                            for=""
-                                            class="col-sm-4 col-form-label"
-                                            >{{ approvalLabel }}</label
-                                        >
-                                        <div class="col-sm-4">
-                                            <p>
-                                                <a
-                                                    target="_blank"
-                                                    :href="
-                                                        approval.licence_document
-                                                    "
-                                                    class="form-label pull-left"
-                                                    >Licence.pdf</a
-                                                >
-                                            </p>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </FormSection>
+                        />
                     </div>
 
                     <div id="pills-map" class="tab-pane fade" role="tabpanel">
-                        Map
+                        <MapComponent
+                            v-if="loadMap"
+                            ref="component_map"
+                            :key="componentMapKey"
+                            :context="approval"
+                            :proposal-ids="[-1]"
+                            :feature-collection="approval.geometry_objs"
+                            style-by="assessor"
+                            :filterable="false"
+                            :drawable="false"
+                            :selectable="true"
+                            level="internal"
+                        />
                     </div>
 
                     <div
@@ -402,7 +338,7 @@
                             index="related_items"
                         >
                             <TableRelatedItems
-                                :ajax_url="related_items_ajax_url"
+                                :ajax-url="related_items_ajax_url"
                             />
                         </FormSection>
                     </div>
@@ -412,20 +348,23 @@
     </div>
 </template>
 <script>
-/*globals bootstrap, moment */
-import CommsLogs from '@common-utils/comms_logs.vue'
-import Applicant from '@/components/common/applicant.vue'
-import OrganisationApplicant from '@/components/common/organisation_applicant.vue'
-import InvoicesTable from '@/components/common/table_invoices.vue'
-import FormSection from '@/components/forms/section_toggle.vue'
-import { api_endpoints, constants, helpers } from '@/utils/hooks'
-import Swal from 'sweetalert2'
-import TableRelatedItems from '@/components/common/table_related_items.vue'
-import InvoicingDetails from '@/components/common/invoicing_details.vue'
+// import datatable from '@vue-utils/datatable.vue';
+import CommsLogs from '@common-utils/comms_logs.vue';
+import Applicant from '@/components/common/applicant.vue';
+import OrganisationApplicant from '@/components/common/organisation_applicant.vue';
+import InvoicesTable from '@/components/common/table_invoices.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
+import { api_endpoints, constants, helpers } from '@/utils/hooks';
+import Swal from 'sweetalert2';
+import TableRelatedItems from '@/components/common/table_related_items.vue';
+import InvoicingDetails from '@/components/common/invoicing_details.vue';
+import MapComponent from '@/components/common/component_map_with_filters_v2';
+import ApprovalDetails from '@/components/common/approval_details.vue';
 
 export default {
     name: 'ApprovalDetail',
     components: {
+        // datatable,
         CommsLogs,
         FormSection,
         Applicant,
@@ -433,6 +372,8 @@ export default {
         InvoicesTable,
         TableRelatedItems,
         InvoicingDetails,
+        MapComponent,
+        ApprovalDetails,
     },
     data() {
         let vm = this
@@ -441,6 +382,8 @@ export default {
             showExpired: false,
             moorings_datatable_id: 'moorings-datatable-' + vm._uid,
             ml_vessels_datatable_id: 'ml-vessels-datatable-' + vm._uid,
+            ml_authorised_users_datatable_id:
+                'ml-authorised-users-datatable-' + vm._uid,
             ml_authorised_users_datatable_id:
                 'ml-authorised-users-datatable-' + vm._uid,
             loading: [],
@@ -452,9 +395,23 @@ export default {
             oBody: 'oBody' + vm._uid,
             org: {
                 address: {},
+                address: {},
             },
             loadInvoices: false,
+            loadMap: false,
             // Filters
+            logs_url: helpers.add_endpoint_json(
+                api_endpoints.approvals,
+                vm.$route.params.approval_id + '/action_log'
+            ),
+            comms_url: helpers.add_endpoint_json(
+                api_endpoints.approvals,
+                vm.$route.params.approval_id + '/comms_log'
+            ),
+            comms_add_url: helpers.add_endpoint_json(
+                api_endpoints.approvals,
+                vm.$route.params.approval_id + '/add_comms_log'
+            ),
             logs_url: helpers.add_endpoint_json(
                 api_endpoints.approvals,
                 vm.$route.params.approval_id + '/action_log'
@@ -472,14 +429,16 @@ export default {
                 api_endpoints.approvals,
                 vm.$route.params.approval_id + '/related_items'
             ),
-        }
+            componentMapKey: 0,
+        };
     },
     computed: {
         debug: function () {
-            return Object.hasOwnProperty.call(this.$route.query, 'debug') &&
+            // eslint-disable-next-line no-prototype-builtins
+            return this.$route.query.hasOwnProperty('debug') &&
                 this.$route.query.debug === 'true'
                 ? true
-                : false
+                : false;
         },
         isLoading: function () {
             return this.loading.length > 0
@@ -489,7 +448,7 @@ export default {
             if (this.approval && this.approval.approval_type_dict) {
                 description = this.approval.approval_type_dict.description
             } else {
-                description = 'License'
+                description = 'License';
             }
             return description
         },
@@ -498,7 +457,7 @@ export default {
                 this.approval &&
                 constants.APPROVAL_STATUS.CURRENT_EDITING_INVOICING.TEXT ==
                     this.approval.status
-            )
+            );
         },
     },
     created: async function () {
@@ -507,38 +466,43 @@ export default {
                 api_endpoints.approvals,
                 this.$route.params.approval_id
             )
-        )
-        const resData = await response.json()
-        this.approval = Object.assign({}, resData)
-        this.approval.applicant_id = resData.applicant_id
+        );
+        const resData = await response.json();
+        this.approval = Object.assign({}, resData);
+        this.approval.applicant_id = resData.applicant_id;
         if (this.approval.submitter.postal_address == null) {
-            this.approval.submitter.postal_address = {}
+            this.approval.submitter.postal_address = {};
         }
         this.$nextTick(function () {
+            var tab_element = document.querySelector('#pills-invoicing-tab');
+            var tab = new bootstrap.Tab(tab_element);
             if (window.location.hash == '#edit-invoicing') {
-                console.log(this.approval)
-                console.log('opening invoicing tab')
-                this.loadInvoices = true
-                let tab_element = document.querySelector('#pills-invoicing-tab')
-                let tab = new bootstrap.Tab(tab_element)
-                tab.show()
-                window.scrollTo(0, document.body.scrollHeight)
+                console.log(this.approval);
+                console.log('opening invoicing tab');
+                this.loadInvoices = true;
+                tab.show();
+                window.scrollTo(0, document.body.scrollHeight);
             }
-        })
+        });
     },
     mounted: function () {},
     methods: {
         tabClicked: function (param) {
+            console.log(`${param} tab clicked`);
             if (param == 'invoicing') {
-                console.log('invoicing tab clicked')
-                this.loadInvoices = true
+                this.loadInvoices = true;
+            } else if (param === 'map') {
+                this.loadMap = true;
+                this.$nextTick(() => {
+                    this.$refs.component_map.forceToRefreshMap();
+                });
             }
         },
         formatDate: function (data) {
             return data ? moment(data).format(this.DATE_TIME_FORMAT) : ''
         },
-        renewalRevew: function (canBeRenewed) {
-            let vm = this
+        renewalReview: function (canBeRenewed) {
+            let vm = this;
             Swal.fire({
                 title: 'Are you sure?',
                 text:
@@ -560,7 +524,7 @@ export default {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ can_be_renewed: canBeRenewed }),
-                    }
+                    };
                     fetch(
                         helpers.add_endpoint_json(
                             api_endpoints.approvals,
@@ -569,43 +533,46 @@ export default {
                         requestOptions
                     ).then(
                         async (response) => {
-                            const data = await response.json()
+                            const data = await response.json();
                             if (!response.ok) {
                                 const error =
                                     (data && data.message) ||
-                                    response.statusText
-                                console.log(error)
-                                return Promise.reject(error)
+                                    response.statusText;
+                                console.log(error);
+                                return Promise.reject(error);
                             }
                             let successMessage =
-                                'The approval status has been reset to Current and will expire without being renewed.'
+                                'The approval status has been reset to Current and will expire without being renewed.';
                             if (canBeRenewed) {
                                 successMessage =
-                                    'The approval holder has been notified that they may renew the approval.'
+                                    'The approval holder has been notified that they may renew the approval.';
                             }
                             Swal.fire(
                                 'Renewal Review Complete',
                                 successMessage,
                                 'success'
-                            )
-                            vm.approval = Object.assign({}, data)
+                            );
+                            vm.approval = Object.assign({}, data);
                         },
                         (error) => {
-                            console.log(error)
+                            console.log(error);
                         }
-                    )
+                    );
                 }
-            })
+            });
         },
         updateInvoicingDetails: function (value) {
             this.approval.invoicing_details = value
         },
         completeEditingInvoicing: function () {
-            alert('Call api to modify invoices based on new invoicing details')
+            alert('Call api to modify invoices based on new invoicing details');
         },
         cancelEditingInvoicing: function () {
             let vm = this
             Swal.fire({
+                title: 'Cancel Editing Invoicing Details',
+                text: 'Are you sure you want to cancel editing invoicing details (any unsaved changes will be lost)?',
+                icon: 'warning',
                 title: 'Cancel Editing Invoicing Details',
                 text: 'Are you sure you want to cancel editing invoicing details (any unsaved changes will be lost)?',
                 icon: 'warning',
@@ -623,7 +590,7 @@ export default {
                 if (result.isConfirmed) {
                     let requestOptions = {
                         method: 'PATCH',
-                    }
+                    };
                     fetch(
                         helpers.add_endpoint_join(
                             api_endpoints.approvals,
@@ -632,25 +599,25 @@ export default {
                         requestOptions
                     ).then(
                         async (response) => {
-                            const data = await response.json()
+                            const data = await response.json();
                             if (!response.ok) {
                                 const error =
                                     (data && data.message) ||
-                                    response.statusText
-                                console.log(error)
-                                Promise.reject(error)
+                                    response.statusText;
+                                console.log(error);
+                                Promise.reject(error);
                             }
                             vm.$router.push({
                                 name: 'internal-approvals-dash',
-                            })
+                            });
                         },
                         (error) => {
-                            console.log(error)
+                            console.log(error);
                         }
-                    )
+                    );
                 }
-            })
+            });
         },
     },
-}
+};
 </script>

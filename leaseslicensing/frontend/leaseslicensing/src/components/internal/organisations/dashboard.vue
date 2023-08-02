@@ -11,13 +11,13 @@
 </template>
 
 <script>
-import FormSection from '@/components/forms/section_toggle.vue'
-import OrganisationRequestsTable from '@/components/common/table_organisation_requests.vue'
+import FormSection from '@/components/forms/section_toggle.vue';
+import OrganisationRequestsTable from '@/components/common/table_organisation_requests.vue';
 export default {
     name: 'InternalOrganisationRequestsDashboard',
     components: {
         FormSection,
         OrganisationRequestsTable,
     },
-}
+};
 </script>

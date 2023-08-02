@@ -1,4 +1,5 @@
 from django.conf import settings
+from django_countries.serializers import CountryFieldMixin
 from ledger_api_client.ledger_models import Address
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
@@ -11,7 +12,7 @@ from leaseslicensing.components.main.models import (
 )
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import can_admin_org, is_consultant
-from leaseslicensing.components.proposals.models import Referral
+from leaseslicensing.components.proposals.models import ProposalApplicant, Referral
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.helpers import (
     is_approver,
@@ -97,6 +98,35 @@ class UserSerializerSimple(serializers.ModelSerializer):
         return obj.get_full_name()
 
 
+class ProposalApplicantSerializer(CountryFieldMixin, serializers.ModelSerializer):
+    class Meta:
+        model = ProposalApplicant
+        fields = (
+            "id",
+            "last_name",
+            "first_name",
+            "dob",
+            "residential_line1",
+            "residential_line2",
+            "residential_line3",
+            "residential_locality",
+            "residential_state",
+            "residential_country",
+            "residential_postcode",
+            "postal_same_as_residential",
+            "postal_line1",
+            "postal_line2",
+            "postal_line3",
+            "postal_locality",
+            "postal_state",
+            "postal_country",
+            "postal_postcode",
+            "email",
+            "phone_number",
+            "mobile_number",
+        )
+
+
 class UserSerializer(serializers.ModelSerializer):
     residential_address = UserAddressSerializer()
     postal_address = UserAddressSerializer()
@@ -154,7 +184,7 @@ class UserSerializer(serializers.ModelSerializer):
             return False
 
     def get_full_name(self, obj):
-        return obj.get_full_name()
+        return obj.full_name if hasattr(obj, "full_name") else obj.get_full_name()
 
     def get_is_internal(self, obj):
         request = self.context["request"] if self.context else None

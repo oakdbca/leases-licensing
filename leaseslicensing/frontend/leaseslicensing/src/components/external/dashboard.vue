@@ -47,11 +47,11 @@
 </template>
 
 <script>
-import FormSection from '@/components/forms/section_toggle.vue'
-import ApplicationsTable from '@/components/common/table_proposals'
-import ApplicationsReferredToMeTable from '@/components/common/table_proposals'
-import ApprovalsTable from '@/components/common/table_approvals'
-import CompliancesTable from '@/components/common/table_compliances'
+import FormSection from '@/components/forms/section_toggle.vue';
+import ApplicationsTable from '@/components/common/table_proposals';
+import ApplicationsReferredToMeTable from '@/components/common/table_proposals';
+import ApprovalsTable from '@/components/common/table_approvals';
+import CompliancesTable from '@/components/common/table_compliances';
 
 export default {
     name: 'ExternalDashboard',
@@ -65,22 +65,23 @@ export default {
     data: function () {
         return {
             accessing_user: null,
-        }
+        };
     },
     computed: {
         is_external: function () {
-            return this.level == 'external'
+            return this.level == 'external';
         },
         is_internal: function () {
-            return this.level == 'internal'
+            return this.level == 'internal';
         },
     },
     mounted: async function () {
-        const res = await fetch('/api/profile')
-        const resData = await res.json()
-        this.accessing_user = resData
+        const res = await fetch('/api/profile');
+        const resData = await res.json();
+        this.accessing_user = resData;
         // must be at top level of every page with <FormSection> component
-        chevron_toggle.init()
+        // eslint-disable-next-line no-undef
+        chevron_toggle.init();
     },
-}
+};
 </script>

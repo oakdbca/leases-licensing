@@ -26,6 +26,7 @@ from leaseslicensing.components.proposals.models import (
     ExternalRefereeInvite,
     Proposal,
     ProposalAct,
+    ProposalApplicant,
     ProposalApplicantDetails,
     ProposalAssessment,
     ProposalAssessmentAnswer,
@@ -63,6 +64,7 @@ from leaseslicensing.components.tenure.models import (
 )
 from leaseslicensing.components.tenure.serializers import GroupSerializer
 from leaseslicensing.components.users.serializers import (
+    ProposalApplicantSerializer,
     UserAddressSerializer,
     UserSerializer,
 )
@@ -429,6 +431,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     regions = serializers.SerializerMethodField()
     districts = serializers.SerializerMethodField()
     lgas = serializers.SerializerMethodField()
+    proposal_applicant = ProposalApplicantSerializer()
 
     class Meta:
         model = Proposal
@@ -524,6 +527,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "proponent_reference_number",
             "details_url",
             "competitive_process",
+            "proposal_applicant",
         )
         read_only_fields = ("supporting_documents",)
 
@@ -596,6 +600,8 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     def get_applicant_type(self, obj):
         if isinstance(obj.applicant, Organisation):
             return "organisation"
+        elif isinstance(obj.applicant, ProposalApplicant):
+            return "individual"
         elif isinstance(obj.applicant, EmailUser):
             return "individual"
         else:
@@ -604,6 +610,8 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     def get_applicant(self, obj):
         if isinstance(obj.applicant, Organisation):
             return obj.applicant.ledger_organisation_name
+        elif isinstance(obj.applicant, ProposalApplicant):
+            return obj.applicant.full_name
         elif isinstance(obj.applicant, EmailUser):
             return f"{obj.applicant.first_name} {obj.applicant.last_name}"
         else:
@@ -1760,3 +1768,32 @@ class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = AdditionalDocumentType
         fields = "__all__"
+
+
+class ProposalGisDataSerializer(BaseProposalSerializer):
+    class Meta:
+        model = Proposal
+        fields = (
+            "identifiers",
+            "vestings",
+            "names",
+            "acts",
+            "tenures",
+            "categories",
+            "regions",
+            "districts",
+            "lgas",
+        )
+
+
+class ProposalMapFeatureInfoSerializer(ListProposalMinimalSerializer):
+    class Meta:
+        model = Proposal
+        fields = (
+            "id",
+            "application_type_name_display",
+            "details_url",
+            "lodgement_number",
+            "lodgement_date_display",
+            "processing_status_display",
+        )

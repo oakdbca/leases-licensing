@@ -18,11 +18,12 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator
-from django.db import models, transaction
+from django.db import IntegrityError, models, transaction
 from django.db.models import JSONField, Max, Min, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
+from django_countries.fields import CountryField
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.ledger_models import Invoice as LedgerInvoice
 from ledger_api_client.managed_models import SystemGroup
@@ -1269,17 +1270,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.org_applicant:
             return self.org_applicant
         elif self.ind_applicant:
-            email_user = retrieve_email_user(self.ind_applicant)
+            return self.proposal_applicant
         elif self.proxy_applicant:
-            email_user = retrieve_email_user(self.proxy_applicant)
-        elif self.submitter:
-            email_user = retrieve_email_user(self.submitter)
+            return retrieve_email_user(self.proxy_applicant)
         else:
             logger.error(
                 f"Applicant for the proposal {self.lodgement_number} not found"
             )
-            email_user = "No Applicant"
-        return email_user
+            return "No Applicant"
 
     @property
     def registration_of_interests(self):
@@ -1308,6 +1306,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def applicant_name(self):
         if isinstance(self.applicant, Organisation):
             return f"{self.applicant.ledger_organisation_name}"
+        elif isinstance(self.applicant, ProposalApplicant):
+            return self.applicant.full_name
         elif isinstance(self.applicant, EmailUser):
             return f"{self.applicant.first_name} {self.applicant.last_name}"
         logger.error(f"Applicant for the proposal {self.lodgement_number} not found")
@@ -2548,9 +2548,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
-                                "submitter": self.submitter,
-                                "org_applicant": self.org_applicant,
-                                "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
                                 "record_management_number": record_management_number,
                             },
@@ -2574,9 +2571,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
-                                "submitter": self.submitter,
-                                "org_applicant": self.org_applicant,
-                                "proxy_applicant": self.proxy_applicant,
                                 "lodgement_number": previous_approval.lodgement_number,
                                 "record_management_number": record_management_number,
                             },
@@ -2635,9 +2629,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 "expiry_date": timezone.now().date()
                                 + relativedelta(years=1),
                                 "start_date": timezone.now().date(),
-                                "submitter": self.submitter,
-                                "org_applicant": self.org_applicant,
-                                "proxy_applicant": self.proxy_applicant,
                                 "record_management_number": record_management_number,
                             },
                         )
@@ -2681,26 +2672,43 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 logger.exception(e)
                 raise e
 
+    @transaction.atomic
     def create_lease_licence_from_registration_of_interest(self):
-        lease_licence = Proposal.objects.create(
-            application_type=ApplicationType.objects.get(
-                name=APPLICATION_TYPE_LEASE_LICENCE
-            ),
-            submitter=None,
-            ind_applicant=self.ind_applicant,
-            org_applicant=self.org_applicant,
-            proposal_type_id=self.proposal_type.id,
-        )
-        # add geometry
-        from copy import deepcopy
+        try:
+            lease_licence = Proposal.objects.create(
+                application_type=ApplicationType.objects.get(
+                    name=APPLICATION_TYPE_LEASE_LICENCE
+                ),
+                submitter=None,
+                ind_applicant=self.ind_applicant,
+                org_applicant=self.org_applicant,
+                proposal_type_id=self.proposal_type.id,
+            )
+        except IntegrityError as e:
+            logger.exception(e)
+            raise e
+        except Exception as e:
+            logger.exception(e)
+            raise e
+        else:
+            if not self.org_applicant:
+                original_applicant = ProposalApplicant.objects.get(proposal=self)
+                # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
+                original_applicant.copy_self_to_proposal(lease_licence)
 
-        for geo in self.proposalgeometry.all():
-            new_geo = deepcopy(geo)
-            new_geo.proposal = lease_licence
-            new_geo.copied_from = geo
-            new_geo.id = None
-            new_geo.save()
-        return lease_licence
+            from copy import deepcopy
+
+            for geo in self.proposalgeometry.all():
+                # add geometry
+                new_geo = deepcopy(geo)
+                new_geo.proposal = lease_licence
+                new_geo.copied_from = geo
+                new_geo.id = None
+                new_geo.drawn_by = geo.drawn_by
+                new_geo.locked = geo.locked
+                new_geo.save()
+
+            return lease_licence
 
     def generate_compliances(self, approval, request):
         today = timezone.now().date()
@@ -2795,6 +2803,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                     request,
                                 )
 
+    @property
+    def proposal_applicant(self):
+        proposal_applicant = ProposalApplicant.objects.get(proposal=self)
+        return proposal_applicant
+
     def renew_approval(self, request):
         with transaction.atomic():
             previous_proposal = self
@@ -2825,10 +2838,50 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         polygon=pg.polygon,
                         intersects=pg.intersects,
                         copied_from=pg,
+                        drawn_by=pg.drawn_by,  # EmailUser
+                        locked=pg.locked,  # Should evaluate to true
                     )
 
-                req = self.requirements.all().exclude(is_deleted=True)
+                # Copy over any tourism, general, prn str type proposal details and documents
+                details_fields = [
+                    "profit_and_loss",
+                    "cash_flow",
+                    "capital_investment",
+                    "financial_capacity",
+                    "available_activities",
+                    "market_analysis",
+                    "staffing",
+                    "key_personnel",
+                    "key_milestones",
+                    "risk_factors",
+                    "legislative_requirements",
+                ]
+
                 from copy import deepcopy
+
+                for field in details_fields:
+                    f_text = f"{field}_text"
+                    setattr(proposal, f_text, getattr(previous_proposal, f_text))
+                    f_doc = f"{field}_documents"
+                    for doc in getattr(previous_proposal, f_doc).all():
+                        new_doc = deepcopy(doc)
+                        new_doc.proposal = proposal
+                        new_doc.can_delete = True
+                        new_doc.hidden = False
+                        new_doc.id = None
+                        new_doc.save()
+
+                for field in ["proponent_reference_number", "site_name_id"]:
+                    setattr(proposal, field, getattr(previous_proposal, field))
+
+                # Copy over previous groups
+                for group in previous_proposal.groups.all():
+                    new_group = deepcopy(group)
+                    new_group.proposal = proposal
+                    new_group.id = None
+                    new_group.save()
+
+                req = self.requirements.all().exclude(is_deleted=True)
 
                 if req:
                     for r in req:
@@ -2887,7 +2940,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 from leaseslicensing.components.proposals.utils import populate_gis_data
 
                 # fetch gis data
-                populate_gis_data(proposal)
+                populate_gis_data(proposal, "proposalgeometry")
 
             return proposal
 
@@ -3098,9 +3151,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 "issue_date": timezone.now(),
                 "expiry_date": timezone.now().date() + relativedelta(years=1),
                 "start_date": timezone.now().date(),
-                "submitter": self.submitter,
-                "org_applicant": self.org_applicant,
-                "proxy_applicant": self.proxy_applicant,
             },
         )
 
@@ -3161,6 +3211,146 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def categories_list(self):
         return self.categories.values_list("category__name", flat=True)
+
+
+class ProposalApplicant(RevisionedMixin):
+    proposal = models.ForeignKey(
+        Proposal, null=True, blank=True, on_delete=models.SET_NULL
+    )
+
+    # Name, etc
+    first_name = models.CharField(
+        max_length=128, blank=True, verbose_name="Given name(s)"
+    )
+    last_name = models.CharField(max_length=128, blank=True)
+    dob = models.DateField(
+        auto_now=False,
+        auto_now_add=False,
+        null=True,
+        blank=True,
+        verbose_name="date of birth",
+        help_text="",
+    )
+
+    # Residential address
+    residential_line1 = models.CharField("Line 1", max_length=255, blank=True)
+    residential_line2 = models.CharField("Line 2", max_length=255, blank=True)
+    residential_line3 = models.CharField("Line 3", max_length=255, blank=True)
+    residential_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
+    residential_state = models.CharField(max_length=255, default="WA", blank=True)
+    residential_country = CountryField(
+        default="AU", blank=True, blank_label="(Select a country)"
+    )
+    residential_postcode = models.CharField(max_length=10, blank=True)
+
+    # Postal address
+    postal_same_as_residential = models.NullBooleanField(default=False)
+    postal_line1 = models.CharField("Line 1", max_length=255, blank=True)
+    postal_line2 = models.CharField("Line 2", max_length=255, blank=True)
+    postal_line3 = models.CharField("Line 3", max_length=255, blank=True)
+    postal_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
+    postal_state = models.CharField(max_length=255, default="WA", blank=True)
+    postal_country = CountryField(
+        default="AU", blank=True, blank_label="(Select a country)"
+    )
+    postal_postcode = models.CharField(max_length=10, blank=True)
+
+    # Contact
+    email = models.EmailField(
+        null=True,
+        blank=True,
+    )
+    phone_number = models.CharField(
+        max_length=50, null=True, blank=True, verbose_name="phone number", help_text=""
+    )
+    mobile_number = models.CharField(
+        max_length=50, null=True, blank=True, verbose_name="mobile number", help_text=""
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+    @transaction.atomic
+    def copy_self_to_proposal(self, target_proposal):
+        try:
+            ProposalApplicant.objects.create(
+                proposal=target_proposal,
+                first_name=self.first_name,
+                last_name=self.last_name,
+                dob=self.dob,
+                residential_line1=self.residential_line1,
+                residential_line2=self.residential_line2,
+                residential_line3=self.residential_line3,
+                residential_locality=self.residential_locality,
+                residential_state=self.residential_state,
+                residential_country=self.residential_country,
+                residential_postcode=self.residential_postcode,
+                postal_same_as_residential=self.postal_same_as_residential,
+                postal_line1=self.postal_line1,
+                postal_line2=self.postal_line2,
+                postal_line3=self.postal_line3,
+                postal_locality=self.postal_locality,
+                postal_state=self.postal_state,
+                postal_country=self.postal_country,
+                postal_postcode=self.postal_postcode,
+                email=self.email,
+                phone_number=self.phone_number,
+                mobile_number=self.mobile_number,
+            )
+        except IntegrityError as e:
+            logger.exception(e)
+            raise e
+        except Exception as e:
+            logger.exception(e)
+            raise e
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def residential_address(self):
+        # Mapping from ProposalApplicant to residential_address property
+        address_mapping = {
+            "residential_line1": "line1",
+            "residential_line2": "line2",
+            "residential_line3": "line3",
+            "residential_postcode": "postcode",
+            "residential_locality": "locality",
+            "residential_state": "state",
+            "residential_country": "country",
+        }
+        return {
+            address_mapping[k]: v
+            for k, v in self.__dict__.items()
+            if k in address_mapping.keys()
+        }
+
+    @property
+    def postal_address(self):
+        # Mapping from ProposalApplicant to postal_address property
+        address_mapping = {
+            "postal_line1": "line1",
+            "postal_line2": "line2",
+            "postal_line3": "line3",
+            "postal_postcode": "postcode",
+            "postal_locality": "locality",
+            "postal_state": "state",
+            "postal_country": "country",
+        }
+        return {
+            address_mapping[k]: v
+            for k, v in self.__dict__.items()
+            if k in address_mapping.keys()
+        }
+
+
+def update_sticker_doc_filename(instance, filename):
+    return f"{settings.MEDIA_APP_DIR}/stickers/batch/{filename}"
+
+
+def update_sticker_response_doc_filename(instance, filename):
+    return f"{settings.MEDIA_APP_DIR}/stickers/response/{filename}"
 
 
 class ProposalIdentifier(models.Model):
@@ -4764,21 +4954,32 @@ class ProposalAssessmentAnswer(RevisionedMixin):
         verbose_name_plural = "Assessment answers"
 
 
+@transaction.atomic
 def clone_proposal_with_status_reset(original_proposal):
-    with transaction.atomic():
-        try:
-            proposal = Proposal.objects.create(
-                application_type=ApplicationType.objects.get(name="lease_licence"),
-                ind_applicant=original_proposal.ind_applicant,
-                org_applicant=original_proposal.org_applicant,
-                previous_application=original_proposal,
-                approval=original_proposal.approval,
+    application_type = ApplicationType.objects.get(name="lease_licence")
+
+    try:
+        proposal = Proposal.objects.create(
+            application_type=application_type,
+            ind_applicant=original_proposal.ind_applicant,
+            org_applicant=original_proposal.org_applicant,
+            previous_application=original_proposal,
+            approval=original_proposal.approval,
+        )
+    except IntegrityError as e:
+        logger.exception(e)
+        raise e
+    except Exception as e:
+        logger.exception(e)
+        raise e
+    else:
+        if not original_proposal.org_applicant:
+            original_applicant = ProposalApplicant.objects.get(
+                proposal=original_proposal
             )
-            # proposal.save(no_revision=True)
-            return proposal
-        except Exception as e:
-            logger.exception(e)
-            raise e
+            # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
+            original_applicant.copy_self_to_proposal(proposal)
+        return proposal
 
 
 def clone_documents(proposal, original_proposal, media_prefix):

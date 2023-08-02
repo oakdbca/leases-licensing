@@ -11,6 +11,7 @@ from django.db.models.deletion import ProtectedError
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.approvals.email import (
     send_approval_cancel_email_notification,
@@ -208,15 +209,6 @@ class Approval(LicensingModelVersioned):
     expiry_date = models.DateField()
     surrender_details = JSONField(blank=True, null=True)
     suspension_details = JSONField(blank=True, null=True)
-    submitter = models.IntegerField()  # EmailUserRo
-    org_applicant = models.ForeignKey(
-        Organisation,
-        on_delete=models.PROTECT,
-        blank=True,
-        null=True,
-        related_name="org_approvals",
-    )
-    proxy_applicant = models.IntegerField(null=True)  # EmailUserRO
     extracted_fields = JSONField(blank=True, null=True)
     cancellation_details = models.TextField(blank=True)
     extend_details = models.TextField(blank=True)
@@ -256,49 +248,53 @@ class Approval(LicensingModelVersioned):
 
     @property
     def bpay_allowed(self):
-        if self.org_applicant:
-            return self.org_applicant.bpay_allowed
+        if self.is_org_applicant:
+            return self.applicant.bpay_allowed
         return False
 
     @property
     def monthly_invoicing_allowed(self):
-        if self.org_applicant:
-            return self.org_applicant.monthly_invoicing_allowed
+        if self.is_org_applicant:
+            return self.applicant.monthly_invoicing_allowed
         return False
 
     @property
     def monthly_invoicing_period(self):
-        if self.org_applicant:
-            return self.org_applicant.monthly_invoicing_period
+        if self.is_org_applicant:
+            return self.applicant.monthly_invoicing_period
         return None
 
     @property
     def monthly_payment_due_period(self):
-        if self.org_applicant:
-            return self.org_applicant.monthly_payment_due_period
+        if self.is_org_applicant:
+            return self.applicant.monthly_payment_due_period
         return None
 
     @property
     def applicant(self):
-        if self.org_applicant:
-            return self.org_applicant
-        # ind_applicant is missing from the approval model so using submitter instead
-        # may need to add ind_applicant in future so it matches proposal?
-        elif self.submitter:
-            email_user = retrieve_email_user(self.submitter)
-        elif self.proxy_applicant:
-            email_user = retrieve_email_user(self.proxy_applicant)
-        else:
-            logger.error(
-                f"Applicant for the approval {self.lodgement_number} not found"
-            )
-            email_user = "No Applicant"
-        return email_user
+        return self.current_proposal.applicant
 
     @property
     def holder(self):
         # TODO Is it correct to return the applicant as the approval/license holder?
-        return self.current_proposal.applicant_name
+        if self.is_org_applicant:
+            return self.applicant.ledger_organisation_name
+        elif self.is_ind_applicant:
+            return self.current_proposal.proposal_applicant.full_name
+        else:
+            return "Applicant not yet assigned"
+
+    @property
+    def submitter(self):
+        if self.current_proposal:
+            return self.current_proposal.submitter
+        return None
+
+    @property
+    def proxy_applicant(self):
+        if self.current_proposal:
+            return self.current_proposal.proxy_applicant
+        return None
 
     @property
     def linked_applications(self):
@@ -312,9 +308,9 @@ class Approval(LicensingModelVersioned):
 
     @property
     def applicant_type(self):
-        if self.org_applicant:
+        if self.is_org_applicant:
             return "org_applicant"
-        elif self.proxy_applicant:
+        elif self.is_proxy_applicant:
             return "proxy_applicant"
         else:
             # return None
@@ -322,14 +318,40 @@ class Approval(LicensingModelVersioned):
 
     @property
     def is_org_applicant(self):
-        return True if self.org_applicant else False
+        return (
+            True
+            if self.current_proposal
+            and self.current_proposal.org_applicant
+            and isinstance(self.current_proposal.org_applicant, Organisation)
+            else False
+        )
+
+    @property
+    def is_ind_applicant(self):
+        return (
+            True
+            if self.current_proposal
+            and self.current_proposal.ind_applicant
+            and isinstance(
+                retrieve_email_user(self.current_proposal.ind_applicant), EmailUser
+            )
+            else False
+        )
+
+    @property
+    def is_proxy_applicant(self):
+        return (
+            True
+            if self.current_proposal and self.current_proposal.proxy_applicant
+            else False
+        )
 
     @property
     def applicant_id(self):
-        if self.org_applicant:
+        if self.is_org_applicant:
             # return self.org_applicant.organisation.id
-            return self.org_applicant.id
-        elif self.proxy_applicant:
+            return self.applicant.id
+        elif self.is_proxy_applicant:
             return self.proxy_applicant  # .id
         else:
             # return None
@@ -392,7 +414,7 @@ class Approval(LicensingModelVersioned):
 
     @property
     def allowed_assessor_ids(self):
-        return user_ids_in_group(settings.GROUP_LEASE_LICENCE_ASSESSOR)
+        return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
     @property
     def allowed_assessors(self):
@@ -422,7 +444,10 @@ class Approval(LicensingModelVersioned):
 
     @property
     def can_renew(self):
-        if not self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL == self.status:
+        if self.status not in [
+            self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
+            self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
+        ]:
             return False
 
         renewal_conditions = {

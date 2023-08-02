@@ -16,6 +16,7 @@ from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from rest_framework.serializers import ValidationError
 
 from leaseslicensing.components.invoicing.models import ChargeMethod, RepetitionType
 from leaseslicensing.components.invoicing.serializers import (
@@ -29,13 +30,18 @@ from leaseslicensing.components.main.serializers import EmailUserSerializer
 from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestDTSerializer,
 )
-from leaseslicensing.components.proposals.models import Referral
+from leaseslicensing.components.proposals.models import (
+    Proposal,
+    ProposalApplicant,
+    Referral,
+)
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.components.users.serializers import (
     ContactSerializer,
     EmailUserActionSerializer,
     EmailUserLogEntrySerializer,
     PersonalSerializer,
+    ProposalApplicantSerializer,
     UserAddressSerializer,
     UserFilterSerializer,
     UserSerializer,
@@ -112,6 +118,24 @@ class GetLedgerAccount(views.APIView):
             return Response({"error": "User is not logged in."})
         response = get_account_details(request, str(request.user.id))
         return response
+
+
+class GetProposalApplicant(views.APIView):
+    renderer_classes = [
+        JSONRenderer,
+    ]
+
+    def get(self, request, proposal_pk, format=None):
+        proposal = Proposal.objects.get(id=proposal_pk)
+        try:
+            proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
+        except ProposalApplicant.DoesNotExist:
+            raise ValidationError("No applicant found for this proposal.")
+
+        serializer = ProposalApplicantSerializer(
+            proposal_applicant, context={"request": request}
+        )
+        return Response(serializer.data)
 
 
 class GetProfile(views.APIView):

@@ -50,7 +50,7 @@
                         <Applicant
                             v-if="user"
                             id="proposalStartApplicant"
-                            :email_user="user"
+                            :email-user="user"
                             :readonly="readonly"
                         />
                     </div>
@@ -69,7 +69,7 @@
                             <ApplicationsTable
                                 v-if="user"
                                 level="organisation_view"
-                                :target_id="user.id"
+                                :target-email-user-id="user.id"
                             />
                         </FormSection>
 
@@ -82,7 +82,7 @@
                             <AppprovalsTable
                                 v-if="user"
                                 level="organisation_view"
-                                :target_id="user.id"
+                                :target-email-user-id="user.id"
                             />
                         </FormSection>
 
@@ -95,7 +95,7 @@
                             <CompliancesTable
                                 v-if="user"
                                 level="internal"
-                                :target_id="user.id"
+                                :target-email-user-id="user.id"
                             />
                         </FormSection>
                     </div>
@@ -106,13 +106,13 @@
 </template>
 
 <script>
-import FormSection from '@/components/forms/section_toggle.vue'
-import Applicant from '@/components/common/applicant.vue'
-import ApplicationsTable from '@/components/common/table_proposals'
-import AppprovalsTable from '@/components/common/table_approvals'
-import CompliancesTable from '@/components/common/table_compliances'
-import { api_endpoints, helpers, constants } from '@/utils/hooks'
-import CommsLogs from '@common-utils/comms_logs.vue'
+import FormSection from '@/components/forms/section_toggle.vue';
+import Applicant from '@/components/common/applicant.vue';
+import ApplicationsTable from '@/components/common/table_proposals';
+import AppprovalsTable from '@/components/common/table_approvals';
+import CompliancesTable from '@/components/common/table_compliances';
+import { api_endpoints, helpers, constants } from '@/utils/hooks';
+import CommsLogs from '@common-utils/comms_logs.vue';
 
 export default {
     name: 'PersonDetail',
@@ -125,7 +125,7 @@ export default {
         CommsLogs,
     },
     data() {
-        let vm = this
+        let vm = this;
         return {
             user: null,
             errorMessage: null,
@@ -144,11 +144,11 @@ export default {
                 api_endpoints.users,
                 vm.$route.params.id + '/action_log'
             ),
-        }
+        };
     },
     computed: {
         readonly: function () {
-            return true
+            return true;
         },
         userHeader: function () {
             if (this.user) {
@@ -160,52 +160,52 @@ export default {
                         '(DOB: ' +
                         this.user.dob +
                         ')'
-                    )
+                    );
                 } else {
-                    return this.user.first_name + ' ' + this.user.last_name
+                    return this.user.first_name + ' ' + this.user.last_name;
                 }
             }
-            return ''
+            return '';
         },
     },
     created: async function () {
-        console.log(this.$route.params.id)
-        this.fetchUser(this.$route.params.id)
+        console.log(this.$route.params.id);
+        this.fetchUser(this.$route.params.id);
     },
     mounted: function () {
         var triggerTabList = [].slice.call(
             document.querySelectorAll('#pills-tab a')
-        )
+        );
         triggerTabList.forEach(function (triggerEl) {
-            var tabTrigger = new bootstrap.Tab(triggerEl)
+            var tabTrigger = new bootstrap.Tab(triggerEl);
             triggerEl.addEventListener('click', function (event) {
-                event.preventDefault()
-                tabTrigger.show()
-            })
-        })
+                event.preventDefault();
+                tabTrigger.show();
+            });
+        });
     },
     methods: {
         fetchUser: function (id) {
-            let vm = this
+            let vm = this;
             fetch(api_endpoints.users + id + '/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
                     }
-                    vm.user = data
-                    console.log(vm.user)
+                    vm.user = data;
+                    console.log(vm.user);
                 })
                 .catch((error) => {
-                    this.errorMessage = constants.ERRORS.API_ERROR
-                    console.error('There was an error!', error)
-                })
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.error('There was an error!', error);
+                });
         },
     },
-}
+};
 </script>
 
 <style scoped>

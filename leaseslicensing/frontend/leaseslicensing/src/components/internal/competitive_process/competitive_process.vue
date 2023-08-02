@@ -379,7 +379,7 @@
                         >
                             <TableRelatedItems
                                 :key="cp_id"
-                                :ajax_url="related_items_ajax_url"
+                                :ajax-url="related_items_ajax_url"
                             />
                         </FormSection>
                     </div>
@@ -434,21 +434,23 @@
 </template>
 
 <script>
-/*globals swal */
-import { api_endpoints, helpers, constants, utils } from '@/utils/hooks'
-import { v4 as uuid } from 'uuid'
-import CommsLogs from '@common-utils/comms_logs.vue'
-import Workflow from '@common-utils/workflow_competitive_process.vue'
-import FormSection from '@/components/forms/section_toggle.vue'
-import TableParties from '@common-utils/table_parties'
-import MapComponent from '@/components/common/component_map_with_filters_v2'
-import RichText from '@/components/forms/richtext.vue'
-import FileField from '@/components/forms/filefield_immediate.vue'
-import TableRelatedItems from '@/components/common/table_related_items.vue'
-import GISDataDetails from '@/components/common/gis_data_details.vue'
-import Multiselect from 'vue-multiselect'
+import { api_endpoints, helpers, constants, utils } from '@/utils/hooks';
+import { v4 as uuid } from 'uuid';
+import CommsLogs from '@common-utils/comms_logs.vue';
+import Workflow from '@common-utils/workflow_competitive_process.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
+import TableParties from '@common-utils/table_parties';
+import MapComponent from '@/components/common/component_map_with_filters_v2';
+import RichText from '@/components/forms/richtext.vue';
+import FileField from '@/components/forms/filefield_immediate.vue';
+import TableRelatedItems from '@/components/common/table_related_items.vue';
+import GISDataDetails from '@/components/common/gis_data_details.vue';
+import Multiselect from 'vue-multiselect';
 
-import { owsQuery, validateFeature } from '@/components/common/map_functions.js'
+import {
+    owsQuery,
+    validateFeature,
+} from '@/components/common/map_functions.js';
 
 export default {
     name: 'CompetitiveProcess',
@@ -465,7 +467,7 @@ export default {
         TableRelatedItems,
     },
     data: function () {
-        let vm = this
+        let vm = this;
         return {
             cp_id: uuid(), // competitive process id
             competitive_process: null,
@@ -491,16 +493,16 @@ export default {
             owsQuery: owsQuery,
             validateFeature: validateFeature,
             detailsTexts: {},
-        }
+        };
     },
     computed: {
         disableSaveAndContinueBtn: function () {
-            if (this.processing) return true
-            return false
+            if (this.processing) return true;
+            return false;
         },
         disableSaveAndExitBtn: function () {
-            if (this.processing) return true
-            return false
+            if (this.processing) return true;
+            return false;
         },
         hasWinner: function () {
             /** Returns whether this CP has a winner */
@@ -508,7 +510,7 @@ export default {
             return (
                 ![null, ''].includes(this.competitive_process.winner_id) &&
                 !isNaN(this.competitive_process.winner_id)
-            )
+            );
         },
         winnerApplicationApproved: function () {
             /** Returns whether the winner's lease/license Application has been approved
@@ -516,41 +518,41 @@ export default {
              *  applicant.
              */
 
-            let winner_party_id = this.competitive_process.winner_id
-            let winner_party = this.partyById(winner_party_id)
+            let winner_party_id = this.competitive_process.winner_id;
+            let winner_party = this.partyById(winner_party_id);
             // The ID of the winning party's applicant
-            let winner_applicant_id
+            let winner_applicant_id;
             if (winner_party) {
                 winner_applicant_id = winner_party.is_person
                     ? winner_party.person_id
                     : winner_party.is_organisation
                     ? winner_party.organisation_id
-                    : -1
+                    : -1;
             } else {
                 console.warn(
                     `No related party found for winner ID ${winner_party_id}.`
-                )
-                return false
+                );
+                return false;
             }
 
             let generated_proposals =
-                this.competitive_process.generated_proposal
+                this.competitive_process.generated_proposal;
             if (!generated_proposals) {
                 console.log(
                     `No Applications have been generated for this competitive process.`
-                )
-                return false
+                );
+                return false;
             }
 
             // The winner's lease/license Applications
             let winner_applications = generated_proposals.filter(
                 (proposal) => proposal.applicant_obj.id == winner_applicant_id
-            )
+            );
             if (!winner_applications || winner_applications.length == 0) {
                 console.log(
                     `No related Application found for winner ID ${winner_party_id}.`
-                )
-                return false
+                );
+                return false;
             }
 
             // Statuses that indicate an Application has been approved
@@ -559,34 +561,34 @@ export default {
                 constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.TEXT,
                 constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.TEXT,
                 constants.PROPOSAL_STATUS.DISCARDED.TEXT,
-            ]
+            ];
 
             // The winner's lease/license Applications that have not been approved
             let open_applications = winner_applications.filter(
                 (proposal) =>
                     !status_approved.includes(proposal.processing_status)
-            )
+            );
 
             if (open_applications.length == 0) {
                 console.log(
                     `No open Applications found for winner ID ${winner_party_id}.`
-                )
-                return true
+                );
+                return true;
             } else if (open_applications.length == 1) {
                 console.log(
                     `An open Application found for winner ID ${winner_party_id}.`
-                )
-                return false
+                );
+                return false;
             } else {
                 let winner_name = winner_party.is_person
                     ? winner_party.person.fullname
                     : winner_party.is_organisation
                     ? winner_party.organisation.trading_name
-                    : 'Unknown'
+                    : 'Unknown';
                 console.warn(
                     `Multiple open Applications found for winner ID ${winner_party_id}. (${winner_name})`
-                )
-                return false
+                );
+                return false;
             }
         },
         finalised: function () {
@@ -601,23 +603,23 @@ export default {
                 (this.completed || this.discarded) &&
                 this.hasWinner &&
                 this.winnerApplicationApproved
-            )
+            );
         },
         canAction: function () {
-            return this.competitive_process.can_accessing_user_process
+            return this.competitive_process.can_accessing_user_process;
         },
         canLimitedAction: function () {
-            return this.competitive_process.can_accessing_user_process
+            return this.competitive_process.can_accessing_user_process;
         },
         canAssess: function () {
-            return this.competitive_process.can_accessing_user_view
+            return this.competitive_process.can_accessing_user_view;
         },
         related_items_ajax_url: function () {
             return (
                 '/api/competitive_process/' +
                 this.competitive_process.id +
                 '/related_items/'
-            )
+            );
         },
         competitiveProcessDocumentUrl: function () {
             return helpers.add_endpoint_join(
@@ -625,54 +627,54 @@ export default {
                 '/' +
                     this.competitive_process.id +
                     '/process_competitive_process_document/'
-            )
+            );
         },
         readonly: function () {
-            return false
+            return false;
         },
         displaySaveBtns: function () {
-            return true
+            return true;
         },
         competitive_process_form_url: function () {
             return helpers.add_endpoint_json(
                 api_endpoints.competitive_process,
                 this.competitive_process.id
-            )
+            );
         },
         competitive_process_discard_url: function () {
             return (
                 '/api/competitive_process/' +
                 this.competitive_process.id +
                 '/discard/'
-            )
+            );
         },
         competitive_process_complete_url: function () {
             return (
                 '/api/competitive_process/' +
                 this.competitive_process.id +
                 '/complete/'
-            )
+            );
         },
         competitive_process_unlock_url: function () {
             return (
                 '/api/competitive_process/' +
                 this.competitive_process.id +
                 '/unlock/'
-            )
+            );
         },
         discarded: function () {
             return (
                 this.competitive_process &&
                 this.competitive_process.status_id ===
                     constants.COMPETITIVE_PROCESS_STATUS.DISCARDED.ID
-            )
+            );
         },
         declined: function () {
             return (
                 this.competitive_process &&
                 this.competitive_process.status_id ===
                     constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID
-            )
+            );
         },
         completed: function () {
             /** Returns whether this CP is completed */
@@ -684,7 +686,7 @@ export default {
                         .ID,
                     constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED.ID,
                 ].includes(this.competitive_process.status_id)
-            )
+            );
         },
         elementDisabled: function () {
             // Returns whether an element is disabled
@@ -695,27 +697,27 @@ export default {
                 this.finalised ||
                 this.declined ||
                 this.completed
-            )
+            );
         },
         possibleWinner: function () {
             // Returns list of possible winners without newly added parties
             return this.competitive_process.competitive_process_parties.filter(
                 (party) => party.id > 0
-            )
+            );
         },
         /**
          * Returns competitive process geometries as a FeatureCollection adding whether
          * the geometry is from the competitive process or from a proposal.
          */
         geometriesToFeatureCollection: function () {
-            let vm = this
+            let vm = this;
 
             let featureCollection = {
                 ...vm.competitive_process.competitive_process_geometries,
-            }
+            };
             Object.keys(featureCollection['features']).forEach(function (key) {
                 featureCollection['features'][key]['properties']['source'] =
-                    'competitive_process'
+                    'competitive_process';
                 // Create competitive process model object using the same field names as for proposal
                 let model = {
                     id: vm.competitive_process.id,
@@ -724,19 +726,20 @@ export default {
                     lodgement_number: vm.competitive_process.lodgement_number,
                     lodgement_date_display: vm.competitive_process.created_at,
                     processing_status_display: vm.competitive_process.status,
-                }
-                featureCollection['features'][key]['model'] = model
-            })
+                };
+                featureCollection['features'][key]['model'] = model;
+            });
 
             // Append proposal geometries to competitive process geometries
             if (vm.competitive_process.registration_of_interest) {
                 let proposalgeometries = {
                     ...vm.competitive_process.registration_of_interest
                         .proposalgeometry,
-                }
+                };
 
                 for (let feature of proposalgeometries['features']) {
-                    feature['properties']['source'] = 'registration_of_interest'
+                    feature['properties']['source'] =
+                        'registration_of_interest';
                     // Build proposal model object for geometry feature (i.e. the proposal that this geometry belongs to)
                     // Have to omit proposalgeometry from model object to avoid circular reference in the form `a.features[i].b = a`
                     let model = {
@@ -756,24 +759,24 @@ export default {
                         processing_status_display:
                             vm.competitive_process.registration_of_interest
                                 .processing_status_display,
-                    }
+                    };
 
-                    feature['model'] = model
-                    featureCollection['features'].push(feature)
+                    feature['model'] = model;
+                    featureCollection['features'].push(feature);
                 }
             }
 
-            return featureCollection
+            return featureCollection;
         },
         outcomeDetails: function () {
             /** Returns the outcome details text
              */
 
             // This is here to re-evalute the computed property after fetching details texts
-            this.cp_id
+            this.cp_id;
 
             if (this.competitive_process.details) {
-                return this.competitive_process.details
+                return this.competitive_process.details;
             } else {
                 // Use standard text from admin
                 let id = Object.prototype.hasOwnProperty.call(
@@ -781,38 +784,38 @@ export default {
                     'details'
                 )
                     ? this.$refs.details.id
-                    : ''
-                return this.detailsTexts[id] || ''
+                    : '';
+                return this.detailsTexts[id] || '';
             }
         },
     },
     created: function () {
-        this.fetchCompetitiveProcess()
+        this.fetchCompetitiveProcess();
         utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
-            this.groups = data
-        })
+            this.groups = data;
+        });
     },
     mounted: function () {},
     methods: {
         mapTabClicked: function () {
-            this.$refs.component_map.forceToRefreshMap()
+            this.$refs.component_map.forceToRefreshMap();
         },
         outcomeTabClicked: function () {
-            let vm = this
+            let vm = this;
             let initialisers = [
                 utils.fetchUrl(`${api_endpoints.details_text}key-value-list/`),
-            ]
+            ];
             Promise.all(initialisers).then((data) => {
                 for (let detailText of data[0]) {
-                    vm.detailsTexts[detailText.target] = detailText.body
+                    vm.detailsTexts[detailText.target] = detailText.body;
                 }
-                vm.cp_id = uuid()
-            })
+                vm.cp_id = uuid();
+            });
 
-            vm.initSelectWinner()
+            vm.initSelectWinner();
         },
         initSelectWinner: function () {
-            let vm = this
+            let vm = this;
 
             $(vm.$refs.select_winner)
                 .select2({
@@ -821,79 +824,79 @@ export default {
                     placeholder: 'No winner',
                 })
                 .on('select2:select', function (e) {
-                    var selected_winner = $(e.currentTarget)
+                    var selected_winner = $(e.currentTarget);
                     vm.competitive_process.winner_id = Number(
                         selected_winner.val()
-                    )
+                    );
                     vm.$nextTick(async () => {
-                        vm.cp_id = uuid()
-                    })
+                        vm.cp_id = uuid();
+                    });
                 })
                 .on('select2:unselecting', function () {
-                    var self = $(this)
+                    var self = $(this);
                     setTimeout(() => {
-                        self.select2('close')
-                    }, 0)
+                        self.select2('close');
+                    }, 0);
                 })
                 .on('select2:unselect', function () {
-                    vm.competitive_process.winner_id = null
+                    vm.competitive_process.winner_id = null;
                     vm.$nextTick(async () => {
-                        vm.cp_id = uuid()
-                    })
-                })
+                        vm.cp_id = uuid();
+                    });
+                });
         },
         detailsTextChanged: function (new_text) {
-            this.competitive_process.details = new_text
+            this.competitive_process.details = new_text;
         },
         save_and_continue: function () {
-            this.save()
+            this.save();
         },
         save_and_exit: async function () {
-            await this.save()
-            this.$router.push({ name: 'internal-dashboard' })
+            await this.save();
+            this.$router.push({ name: 'internal-dashboard' });
         },
         constructPayload: function () {
-            let vm = this
+            let vm = this;
 
             // Shallow (?) copy competitive_process object into payload
-            let payload = { ...vm.competitive_process }
+            let payload = { ...vm.competitive_process };
             if (vm.$refs.component_map) {
                 // Update geometry data of the competitive process
-                let geojson_str = vm.$refs.component_map.getJSONFeatures()
-                payload['competitive_process_geometries'] = geojson_str
+                let geojson_str = vm.$refs.component_map.getJSONFeatures();
+                payload['competitive_process_geometries'] = geojson_str;
             }
 
-            let custom_row_apps = {}
+            let custom_row_apps = {};
             for (let a_party of vm.competitive_process
                 .competitive_process_parties) {
                 if (Object.hasOwn(a_party, 'custom_row_app')) {
                     custom_row_apps[a_party.id] = JSON.parse(
                         JSON.stringify(a_party.custom_row_app)
-                    )
-                    a_party.custom_row_app = undefined // Remove custom_row_app in order to JSON.stringify()
+                    );
+                    a_party.custom_row_app = undefined; // Remove custom_row_app in order to JSON.stringify()
                 }
             }
 
-            return payload
+            return payload;
         },
         set_custom_rows_property(property, value) {
-            let vm = this
+            let vm = this;
             Object.keys(
                 vm.$refs.competitive_process_parties.custom_row_apps
             ).forEach(function (key) {
                 vm.$refs.competitive_process_parties.custom_row_apps[key][
                     'instance'
-                ][property] = value
-            })
+                ][property] = value;
+            });
         },
         save: async function () {
-            let vm = this
+            let vm = this;
 
-            vm.processing = true
+            vm.processing = true;
             // Saving, so set custom row to processing
-            vm.set_custom_rows_property('processing', true)
+            vm.set_custom_rows_property('processing', true);
 
-            let payload = vm.constructPayload()
+            let payload = vm.constructPayload();
             fetch(vm.competitive_process_form_url, {
                 body: JSON.stringify(payload),
                 method: 'PUT',
@@ -901,27 +904,27 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return response.text().then((text) => {
-                            throw new Error(text)
-                        })
+                            throw new Error(text);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    vm.competitive_process = Object.assign(data, {})
+                    vm.competitive_process = Object.assign(data, {});
                     swal.fire({
                         title: 'Saved',
                         text: 'Competitive process has been saved',
                         icon: 'success',
                         confirmButtonColor: '#0d6efd',
-                    })
-                    vm.processing = false
+                    });
+                    vm.processing = false;
                     // Done save, set custom row back to not processing
-                    vm.set_custom_rows_property('processing', false)
+                    vm.set_custom_rows_property('processing', false);
                     vm.$nextTick(async () => {
-                        vm.cp_id = uuid()
-                        vm.incrementComponentMapKey()
-                    })
+                        vm.cp_id = uuid();
+                        vm.incrementComponentMapKey();
+                    });
                 })
                 .catch((error) => {
                     swal.fire({
@@ -929,16 +932,16 @@ export default {
                         text: JSON.parse(error.message),
                         icon: 'error',
                         confirmButtonColor: '#0d6efd',
-                    })
-                    vm.processing = false
-                    vm.set_custom_rows_property('processing', false)
-                })
+                    });
+                    vm.processing = false;
+                    vm.set_custom_rows_property('processing', false);
+                });
         },
         issueComplete: async function () {
-            let vm = this
+            let vm = this;
             try {
-                vm.processing = true
-                let description = ''
+                vm.processing = true;
+                let description = '';
                 if (vm.competitive_process.winner_id) {
                     for (let party of vm.competitive_process
                         .competitive_process_parties) {
@@ -947,21 +950,21 @@ export default {
                                 description =
                                     '<strong>' +
                                     party.person.fullname +
-                                    '</strong> is selected as a winner.'
-                                break
+                                    '</strong> is selected as a winner.';
+                                break;
                             } else if (party.is_organisation) {
                                 description =
                                     '<strong>' +
                                     party.organisation
                                         .ledger_organisation_name +
-                                    '</strong> is selected as a winner.'
-                                break
+                                    '</strong> is selected as a winner.';
+                                break;
                             }
-                            return
+                            return;
                         }
                     }
                 } else {
-                    description = '<strong>No winner</strong> selected'
+                    description = '<strong>No winner</strong> selected';
                 }
                 swal.fire({
                     title: 'Complete this competitive process',
@@ -976,37 +979,37 @@ export default {
                 }).then(async (result) => {
                     if (result.isConfirmed) {
                         // When Yes
-                        let payload = vm.constructPayload()
+                        let payload = vm.constructPayload();
                         const res = await fetch(
                             vm.competitive_process_complete_url,
                             { body: JSON.stringify(payload), method: 'POST' }
-                        )
+                        );
 
                         if (res.ok) {
                             await new swal({
                                 title: 'Completed',
                                 text: 'Competitive process has been completed',
                                 icon: 'success',
-                            })
-                            this.$router.push({ name: 'internal-dashboard' })
+                            });
+                            this.$router.push({ name: 'internal-dashboard' });
                         } else {
                             await new swal({
                                 title: 'Please fix following errors before completing',
                                 text: res.text,
                                 icon: 'error',
-                            })
+                            });
                         }
                     }
-                    vm.processing = false
-                })
+                    vm.processing = false;
+                });
             } catch (err) {
-                console.error(err)
+                console.error(err);
             }
         },
         issueDiscard: async function () {
-            let vm = this
+            let vm = this;
             try {
-                vm.processing = true
+                vm.processing = true;
                 swal.fire({
                     title: 'Discard this competitive process',
                     text: 'Are you sure you want to discard this competitive process?',
@@ -1017,7 +1020,7 @@ export default {
                 }).then(async (result) => {
                     if (result.isConfirmed) {
                         // When Yes
-                        let payload = vm.constructPayload()
+                        let payload = vm.constructPayload();
                         await fetch(vm.competitive_process_discard_url, {
                             body: JSON.stringify(payload),
                             method: 'POST',
@@ -1025,22 +1028,22 @@ export default {
                             .then(async (response) => {
                                 if (!response.ok) {
                                     return response.text().then((text) => {
-                                        throw new Error(text)
-                                    })
+                                        throw new Error(text);
+                                    });
                                 } else {
-                                    return await response.json()
+                                    return await response.json();
                                 }
                             })
                             .then(async (data) => {
-                                console.log(data)
+                                console.log(data);
                                 await swal.fire({
                                     title: 'Discarded',
                                     text: 'Competitive process has been discarded',
                                     icon: 'success',
-                                })
+                                });
                                 this.$router.push({
                                     name: 'internal-dashboard',
-                                })
+                                });
                             })
                             .catch((error) => {
                                 swal.fire({
@@ -1048,19 +1051,19 @@ export default {
                                     text: JSON.parse(error.message),
                                     icon: 'error',
                                     confirmButtonColor: '#0d6efd',
-                                })
-                                vm.processing = false
-                            })
+                                });
+                                vm.processing = false;
+                            });
                     }
-                    vm.processing = false
-                })
+                    vm.processing = false;
+                });
             } catch (err) {
-                console.error(err)
+                console.error(err);
             }
         },
         issueUnlock: async function () {
-            let vm = this
-            console.log('issue unlock')
+            let vm = this;
+            console.log('issue unlock');
             swal.fire({
                 title: 'Unlock this competitive process',
                 text: "Unlocking this competitive process will change the status to 'In Progress'\
@@ -1072,9 +1075,9 @@ export default {
                 confirmButtonColor: '#0d6efd',
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    vm.processing = true
+                    vm.processing = true;
                     // When Yes
-                    let payload = vm.constructPayload()
+                    let payload = vm.constructPayload();
                     await fetch(vm.competitive_process_unlock_url, {
                         body: JSON.stringify(payload),
                         method: 'POST',
@@ -1082,39 +1085,39 @@ export default {
                         .then(async (response) => {
                             if (!response.ok) {
                                 return response.text().then((text) => {
-                                    throw new Error(text)
-                                })
+                                    throw new Error(text);
+                                });
                             } else {
-                                return await response.json()
+                                return await response.json();
                             }
                         })
                         .then(async (data) => {
-                            console.log('success', data)
-                            vm.competitive_process = Object.assign({}, data)
+                            console.log('success', data);
+                            vm.competitive_process = Object.assign({}, data);
                             await swal.fire({
                                 title: 'Unlocked',
                                 text: 'Competitive process has been unlocked',
                                 icon: 'success',
-                            })
-                            vm.processing = false
+                            });
+                            vm.processing = false;
                             vm.$nextTick(async () => {
-                                vm.cp_id = uuid()
-                            })
+                                vm.cp_id = uuid();
+                            });
                         })
                         .catch(async (error) => {
                             await swal.fire({
                                 title: 'Error unlocking competitive process',
                                 text: JSON.parse(error.message),
                                 icon: 'error',
-                            })
-                            vm.processing = false
-                        })
+                            });
+                            vm.processing = false;
+                        });
                 } else if (result.isDenied) {
                     // When No
                 } else {
                     // When cancel
                 }
-            })
+            });
         },
         updateTableByFeatures: function () {},
         featureGeometryUpdated: function () {},
@@ -1127,57 +1130,57 @@ export default {
              *  Else if the user is null, it is assumed to be unassigning the officer.
              */
 
-            let assigned_officer = user
+            let assigned_officer = user;
             if (user != null && !isNaN(Number(user))) {
                 // Get the assigned officer dictionary from the user ID if user isa number
                 // or string representation of a number
                 assigned_officer = this.partyById(
                     Number(user),
                     this.competitive_process.allowed_editors
-                )
+                );
             }
             // Return the payload
             return {
                 body: JSON.stringify({ assigned_officer: assigned_officer }),
                 method: 'POST',
-            }
+            };
         },
         assignTo: async function () {
-            let vm = this
-            console.log('in assignTo')
-            let unassign = true
+            let vm = this;
+            console.log('in assignTo');
+            let unassign = true;
 
             unassign =
                 this.competitive_process.assigned_officer != null &&
                 this.competitive_process.assigned_officer != 'undefined'
                     ? false
-                    : true
+                    : true;
 
             let payload = this.assignedOfficerPayload(
                 this.competitive_process.assigned_officer
-            )
+            );
 
             if (unassign) {
-                vm.assign_api_call('unassign')
+                vm.assign_api_call('unassign');
             } else {
-                vm.assign_api_call('assign_user', payload)
+                vm.assign_api_call('assign_user', payload);
             }
         },
         assignRequestUser: async function () {
             let payload = this.assignedOfficerPayload(
                 this.competitive_process.accessing_user
-            )
-            this.assign_api_call('assign_user', payload)
+            );
+            this.assign_api_call('assign_user', payload);
         },
         assign_api_call: async function (api_function, payload) {
-            let vm = this
+            let vm = this;
             if (typeof api_function === 'undefined') {
-                api_function = 'assign_user'
+                api_function = 'assign_user';
             }
             if (typeof payload === 'undefined') {
-                payload = {}
+                payload = {};
             }
-            console.log('in assignRequestUser')
+            console.log('in assignRequestUser');
 
             fetch(
                 helpers.add_endpoint_json(
@@ -1189,52 +1192,52 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return response.text().then((text) => {
-                            throw new Error(text)
-                        })
+                            throw new Error(text);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    vm.competitive_process = Object.assign({}, data)
-                    vm.updateAssignedOfficerSelect()
+                    vm.competitive_process = Object.assign({}, data);
+                    vm.updateAssignedOfficerSelect();
                 })
                 .catch((error) => {
-                    this.updateAssignedOfficerSelect()
-                    console.log(error)
+                    this.updateAssignedOfficerSelect();
+                    console.log(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
         },
         fetchCompetitiveProcess: async function () {
-            let vm = this
+            let vm = this;
             try {
                 const res = await fetch(
                     `${api_endpoints.competitive_process}${vm.$route.params.competitive_process_id}/`
-                )
-                if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
-                let competitive_process = await res.json()
-                vm.competitive_process = competitive_process
+                );
+                if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
+                let competitive_process = await res.json();
+                vm.competitive_process = competitive_process;
                 console.log(
                     'Fetched competitive process',
                     vm.competitive_process
-                )
+                );
             } catch (err) {
-                console.log({ err })
+                console.log({ err });
             }
         },
         updateAssignedOfficerSelect: function () {
-            let vm = this
+            let vm = this;
             if (vm.competitive_process.status === 'In Progress') {
-                console.log('updateAssignedOfficerSelect')
-                let assigned_officer = vm.competitive_process.assigned_officer
-                let _id = assigned_officer ? assigned_officer.id : null
-                vm.$refs.workflow.updateAssignedOfficerSelect(_id)
+                console.log('updateAssignedOfficerSelect');
+                let assigned_officer = vm.competitive_process.assigned_officer;
+                let _id = assigned_officer ? assigned_officer.id : null;
+                vm.$refs.workflow.updateAssignedOfficerSelect(_id);
             } else {
-                console.log('Skipping assignment of selected officer')
+                console.log('Skipping assignment of selected officer');
             }
         },
         partyById: function (party_id, party_dict) {
@@ -1245,56 +1248,56 @@ export default {
              */
 
             if (party_id == null) {
-                console.log('No party ID. Returning null.')
-                return null // e.g. no winner outcome
+                console.log('No party ID. Returning null.');
+                return null; // e.g. no winner outcome
             }
 
             if (party_dict == null) {
                 party_dict =
-                    this.competitive_process.competitive_process_parties
+                    this.competitive_process.competitive_process_parties;
             }
 
-            let idx = party_dict.findIndex((p) => p.id == party_id)
+            let idx = party_dict.findIndex((p) => p.id == party_id);
             if (idx == -1) {
-                console.warn(`There is no party with ID ${party_id}.`)
-                return null
+                console.warn(`There is no party with ID ${party_id}.`);
+                return null;
             }
             // Return the party
-            return party_dict[idx]
+            return party_dict[idx];
         },
         addDetail: function (new_party_data) {
             /** Callback for `add-detail` event emitted by custom-row */
 
-            console.log('add detail: new_party_data', new_party_data)
+            console.log('add detail: new_party_data', new_party_data);
             // This party's ID
-            let id = Object.keys(new_party_data)[0]
+            let id = Object.keys(new_party_data)[0];
             // Get the related competitive process party
-            let party = this.partyById(id)
+            let party = this.partyById(id);
             if (party) {
                 // Add new party detail
-                party.party_details.push(new_party_data[id])
+                party.party_details.push(new_party_data[id]);
             } else {
-                console.error(`Can not add data to party with ID ${id}.`)
+                console.error(`Can not add data to party with ID ${id}.`);
             }
         },
         addParty: function (new_party_data) {
             /** Callback for `add-party` event emitted by custom-row */
 
-            console.log('add party: new_party_data', new_party_data)
+            console.log('add party: new_party_data', new_party_data);
             // Add new party
             this.competitive_process.competitive_process_parties.push(
                 new_party_data
-            )
+            );
         },
         updatePartyDate: function (e) {
             let party =
                 this.competitive_process.competitive_process_parties.find(
                     (party) => party.id == e.party_id
-                )
-            party[e.date_field] = e.date
+                );
+            party[e.date_field] = e.date;
         },
         incrementComponentMapKey: function () {
-            this.componentMapKey++
+            this.componentMapKey++;
         },
         updateGISData: function (property, val) {
             if (
@@ -1305,14 +1308,14 @@ export default {
                 this.competitive_process.gis_data[property] =
                     this.competitive_process.gis_data[property].filter(
                         (item) => item.id != val.id
-                    )
+                    );
             } else {
                 this.competitive_process.gis_data[property].push({
                     id: val.id,
                     name: val.name,
-                })
+                });
             }
         },
     },
-}
+};
 </script>

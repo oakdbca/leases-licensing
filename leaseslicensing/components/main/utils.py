@@ -86,8 +86,17 @@ def get_polygon_source(geometry_obj):
     elif isinstance(geometry_obj, ProposalGeometry) and geometry_obj.drawn_by in [
         geometry_obj.proposal.ind_applicant,
     ]:
-        # TODO: What about an applicant on behalf of an organisation (org_applicant)?
-
+        # Polygon drawn by individual applicant
+        source = "Applicant"
+    elif (
+        isinstance(geometry_obj, ProposalGeometry)
+        and geometry_obj.proposal.org_applicant
+        and geometry_obj.drawn_by
+        in geometry_obj.proposal.org_applicant.contacts.all().values_list(
+            "user", flat=True
+        )
+    ):
+        # Polygon drawn by organisation applicant
         source = "Applicant"
     elif isinstance(
         geometry_obj, CompetitiveProcessGeometry
@@ -99,7 +108,6 @@ def get_polygon_source(geometry_obj):
         .values_list("person_id", flat=True)
     ):
         # TODO: Check if this is correct. Can an applicant draw a CP geometry?
-
         source = "Applicant"
     else:
         # System group names, e.g. lease_license_assessor
@@ -115,6 +123,7 @@ def get_polygon_source(geometry_obj):
             }
         )
         if geometry_obj.drawn_by in system_group_member:
+            # Polygon drawn by assessor
             source = "Assessor"
 
     return source

@@ -6,7 +6,7 @@
                 class="row"
                 aria-expanded="true"
                 :aria-controls="section_body_id"
-                @click="toggle_show_hide"
+                @click="toggle_show_hide($event)"
             >
                 <div class="col-11 label" :style="'color:' + customColor">
                     {{ label }}
@@ -27,6 +27,7 @@
         </div>
         <div
             :id="section_body_id"
+            ref="section_body"
             :class="detailsClass"
             :style="'color:' + customColor"
         >
@@ -36,7 +37,7 @@
 </template>
 
 <script>
-import { v4 as uuid } from 'uuid'
+import { v4 as uuid } from 'uuid';
 
 export default {
     name: 'FormSection',
@@ -70,22 +71,71 @@ export default {
         return {
             custom_id: uuid(),
             chevron_elem_id: 'chevron_elem_' + uuid(),
-        }
+        };
     },
     computed: {
         detailsClass: function () {
-            return this.formCollapse ? 'card-body collapse' : 'card-body'
+            return this.formCollapse ? 'card-body collapse' : 'card-body';
         },
         section_header_id: function () {
-            return 'section_header_' + this.index
+            return 'section_header_' + this.index;
         },
         section_body_id: function () {
-            return 'section_body_' + this.index
+            return 'section_body_' + this.index;
         },
     },
     mounted: function () {
         // eslint-disable-next-line no-undef
-        chevron_toggle.init()
+        chevron_toggle.init();
     },
-}
+    methods: {
+        toggle_show_hide: function (evt) {
+            if (!evt.target.classList.contains('down-chevron-open')) {
+                // Only redraw the datatable if the section is being opened
+                return;
+            }
+
+            // $(this.$refs.section_body)[0].__vnode.children[0].children[0].component.ctx.$refs.organisation_contacts_datatable.vmDataTable.draw()
+
+            // Get a list of all the nodes in the slot section
+            let formSection_vnode = $(
+                this.$refs.section_body
+            )[0].__vnode.children.reduce((objs, obj) => {
+                if (obj.__v_isVNode) {
+                    objs.push(obj);
+                }
+                return objs;
+            }, []);
+            formSection_vnode.forEach((vnode) => {
+                // Store child elements within each node to a list
+                let refs = Array();
+                if (vnode.children) {
+                    vnode.children.map((child) => {
+                        if (child.component) {
+                            refs.push(child.component.ctx.$refs);
+                        }
+                    });
+                }
+                if (vnode.dynamicChildren) {
+                    vnode.dynamicChildren.map((child) => {
+                        if (child.component) {
+                            refs.push([child.component.ctx]);
+                        }
+                    });
+                }
+
+                refs.forEach((ref) => {
+                    // Redraw (without updating ordering and search) the element if it is a datatable
+                    // See: https://datatables.net/reference/api/draw()
+                    Object.keys(ref).forEach((key) => {
+                        if (ref[key].vmDataTable) {
+                            console.log(`Calling draw on ${ref[key].id}`);
+                            ref[key].vmDataTable.draw('page');
+                        }
+                    });
+                });
+            });
+        },
+    },
+};
 </script>

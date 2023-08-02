@@ -28,6 +28,7 @@ module.exports = {
     my_organisations: '/api/my_organisations/',
     organisation_access_group_members: '/api/organisation_access_group_members',
     organisation_contacts: '/api/organisation_contacts.json',
+    organisation_contacts_paginated: '/api/organisation_contacts_paginated/',
     organisation_lookup: '/api/organisations/organisation_lookup',
     organisation_requests_paginated: '/api/organisation_requests_paginated/',
     organisation_requests: '/api/organisation_requests/',

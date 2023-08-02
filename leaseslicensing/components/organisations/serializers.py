@@ -74,6 +74,7 @@ class DelegateSerializer(serializers.ModelSerializer):
 class OrganisationContactSerializer(serializers.ModelSerializer):
     user_status = serializers.SerializerMethodField()
     user_role = serializers.SerializerMethodField()
+    full_name = serializers.ReadOnlyField()
 
     class Meta:
         model = OrganisationContact
@@ -88,6 +89,11 @@ class OrganisationContactSerializer(serializers.ModelSerializer):
 
 class OrganisationContactAdminCountSerializer(OrganisationContactSerializer):
     admin_count = serializers.IntegerField(allow_null=True, read_only=True)
+
+    class Meta:
+        model = OrganisationContact
+        fields = "__all__"
+        datatables_always_serialize = ("admin_count",)
 
 
 class BasicUserDelegationSerializer(serializers.ModelSerializer):
@@ -149,6 +155,7 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "delegates",
             "delegate_organisation_contacts",
             "contacts",
+            "address",
         )
 
     def get_apply_application_discount(self, obj):

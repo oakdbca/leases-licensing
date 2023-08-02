@@ -49,6 +49,7 @@ from leaseslicensing.components.proposals.models import (
     ChecklistQuestion,
     ExternalRefereeInvite,
     Proposal,
+    ProposalApplicant,
     ProposalAssessment,
     ProposalAssessmentAnswer,
     ProposalGeometry,
@@ -90,12 +91,14 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     SendReferralSerializer,
 )
 from leaseslicensing.components.proposals.utils import (
+    make_proposal_applicant_ready,
     populate_gis_data,
     proposal_submit,
     save_assessor_data,
     save_proponent_data,
     save_referral_data,
 )
+from leaseslicensing.components.users.serializers import ProposalApplicantSerializer
 from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
@@ -294,21 +297,19 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
                     proposal__lodgement_date__lte=filter_lodged_to
                 )
 
-        # getter = request.query_params.get
-        # import ipdb; ipdb.set_trace()
-        # fields = self.get_fields(getter)
-        # ordering = self.get_ordering(getter, fields)
+        ledger_lookup_fields = [
+            "submitter",
+            # "ind_applicant", # Replaced by ProposalApplicant object
+        ]
+        # Prevent the external user from searching for officers
+        if is_internal(request):
+            ledger_lookup_fields += ["assigned_officer", "assigned_approver"]
 
         queryset = self.apply_request(
             request,
             queryset,
             view,
-            ledger_lookup_fields=[
-                "submitter",
-                "ind_applicant",
-                "assigned_officer",
-                "assigned_approver",
-            ],
+            ledger_lookup_fields=ledger_lookup_fields,
         )
 
         setattr(view, "_datatables_total_count", total_count)
@@ -341,6 +342,17 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
 
         if is_internal(self.request):
             if is_assessor(self.request) or is_approver(self.request):
+                target_email_user_id = self.request.query_params.get(
+                    "target_email_user_id", None
+                )
+                if (
+                    target_email_user_id
+                    and target_email_user_id.isnumeric()
+                    and int(target_email_user_id) > 0
+                ):
+                    qs = Proposal.objects.filter(submitter=target_email_user_id)
+                else:
+                    qs = Proposal.objects.all()
                 qs = Proposal.objects.all()
             elif is_finance_officer(self.request):
                 qs = Proposal.objects.filter(
@@ -1822,6 +1834,8 @@ class ProposalViewSet(UserActionLoggingViewset):
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
 
+            make_proposal_applicant_ready(instance, request)
+
             serializer = SaveProposalSerializer(instance)
             return Response(serializer.data)
 
@@ -1858,6 +1872,109 @@ class ProposalViewSet(UserActionLoggingViewset):
             ).data,
             status=http_status,
         )
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def update_personal(self, request, *args, **kwargs):
+        with transaction.atomic():
+            proposal = self.get_object()
+            proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
+            data = {}
+            # dob = request.data.get('dob', '')
+            # dob = datetime.strptime(dob, '%d/%m/%Y').date() if dob else dob
+            data["first_name"] = request.data.get("first_name")
+            data["last_name"] = request.data.get("last_name")
+
+            serializer = ProposalApplicantSerializer(proposal_applicant, data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            logger.info(
+                f"Personal details of the proposal: {proposal} have been updated with the data: {data}"
+            )
+            return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def update_contact(self, request, *args, **kwargs):
+        with transaction.atomic():
+            proposal = self.get_object()
+            proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
+            data = {}
+            if request.data.get("mobile_number", ""):
+                data["mobile_number"] = request.data.get("mobile_number")
+            if request.data.get("phone_number", ""):
+                data["phone_number"] = request.data.get("phone_number")
+
+            serializer = ProposalApplicantSerializer(proposal_applicant, data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            logger.info(
+                f"Contact details of the proposal: {proposal} have been updated with the data: {data}"
+            )
+            return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def update_address(self, request, *args, **kwargs):
+        with transaction.atomic():
+            proposal = self.get_object()
+            proposal_applicant = ProposalApplicant.objects.get(proposal=proposal)
+            data = {}
+            if "residential_line1" in request.data:
+                data["residential_line1"] = request.data.get("residential_line1")
+            if "residential_locality" in request.data:
+                data["residential_locality"] = request.data.get("residential_locality")
+            if "residential_state" in request.data:
+                data["residential_state"] = request.data.get("residential_state")
+            if "residential_postcode" in request.data:
+                data["residential_postcode"] = request.data.get("residential_postcode")
+            if "residential_country" in request.data:
+                data["residential_country"] = request.data.get("residential_country")
+            if request.data.get("postal_same_as_residential"):
+                data["postal_same_as_residential"] = True
+                data["postal_line1"] = ""
+                data["postal_locality"] = ""
+                data["postal_state"] = ""
+                data["postal_postcode"] = ""
+                data["postal_country"] = data["residential_country"]
+            else:
+                data["postal_same_as_residential"] = False
+                if "postal_line1" in request.data:
+                    data["postal_line1"] = request.data.get("postal_line1")
+                if "postal_locality" in request.data:
+                    data["postal_locality"] = request.data.get("postal_locality")
+                if "postal_state" in request.data:
+                    data["postal_state"] = request.data.get("postal_state")
+                if "postal_postcode" in request.data:
+                    data["postal_postcode"] = request.data.get("postal_postcode")
+                if "postal_country" in request.data:
+                    data["postal_country"] = request.data.get("postal_country")
+
+            serializer = ProposalApplicantSerializer(proposal_applicant, data=data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            logger.info(
+                f"Address details of the proposal: {proposal} have been updated with the data: {data}"
+            )
+            return Response(serializer.data)
 
     @detail_route(methods=["get"], detail=True)
     @basic_exception_handler

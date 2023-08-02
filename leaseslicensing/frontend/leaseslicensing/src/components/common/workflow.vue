@@ -395,6 +395,7 @@
     </div>
     <div v-if="isAssessorOrApprover" class="card sticky-top">
         <div class="card-header">Navigation Tools</div>
+        <div class="card-header">Navigation Tools</div>
         <div class="card-body">
             <div class="list-group">
                 <li
@@ -406,7 +407,20 @@
                         >{{ formSectionsOpen ? 'Collapse' : 'Open' }} Form
                         Sections</a
                     >
+                <li
+                    class="list-group-item list-group-item-action"
+                    role="button"
+                    @click.prevent="toggleFormSections"
+                >
+                    <a href="#" class="text-primary text-decoration-none"
+                        >{{ formSectionsOpen ? 'Collapse' : 'Open' }} Form
+                        Sections</a
+                    >
                 </li>
+                <li
+                    v-if="formSectionsOpen && formSectionLabels.length > 0"
+                    class="list-group-item"
+                >
                 <li
                     v-if="formSectionsOpen && formSectionLabels.length > 0"
                     class="list-group-item"
@@ -433,7 +447,23 @@
                     <a class="text-primary text-decoration-none"
                         >Toggle Assessment Comments</a
                     >
+                <li
+                    class="list-group-item list-group-item-action"
+                    role="button"
+                    @click.prevent="toggleCollapse"
+                >
+                    <a class="text-primary text-decoration-none"
+                        >Toggle Assessment Comments</a
+                    >
                 </li>
+                <li
+                    class="list-group-item list-group-item-action"
+                    role="button"
+                    @click.prevent="scrollTop"
+                >
+                    <a href="#" class="text-primary text-decoration-none"
+                        >Scroll to top</a
+                    >
                 <li
                     class="list-group-item list-group-item-action"
                     role="button"
@@ -449,16 +479,15 @@
 </template>
 
 <script>
-/*globals bootstrap, moment, swal */
-import { api_endpoints, helpers, constants } from '@/utils/hooks'
-import MoreReferrals from '@common-utils/more_referrals.vue'
-import AddExternalReferral from '@/components/internal/proposals/proposal_add_external_referral.vue'
+import { api_endpoints, helpers, constants } from '@/utils/hooks';
+import MoreReferrals from '@common-utils/more_referrals.vue';
+import AddExternalReferral from '@/components/internal/proposals/proposal_add_external_referral.vue';
 import {
     remindReferral,
     recallReferral,
     resendReferral,
-} from '@/components/common/workflow_functions.js'
-import Swal from 'sweetalert2'
+} from '@/components/common/workflow_functions.js';
+import Swal from 'sweetalert2';
 
 export default {
     name: 'Workflow',
@@ -524,9 +553,9 @@ export default {
     data: function () {
         let vm = this
 
-        let APPLICATION_TYPE = constants.APPLICATION_TYPES
-        let PROPOSAL_STATUS = constants.PROPOSAL_STATUS
-        let ROLES = constants.ROLES
+        let APPLICATION_TYPE = constants.APPLICATION_TYPES;
+        let PROPOSAL_STATUS = constants.PROPOSAL_STATUS;
+        let ROLES = constants.ROLES;
 
         return {
             constants: constants,
@@ -550,7 +579,7 @@ export default {
                     function_when_clicked: () => {
                         vm.switchStatus(
                             `${vm.proposal.processing_status_id}_conditions`
-                        )
+                        );
                     },
                     function_to_show_hide: () => {
                         let condition_to_display = {
@@ -567,15 +596,15 @@ export default {
                                     ROLES.REFERRAL.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
-                            vm.check_role_conditions(condition_to_display)
+                            vm.check_role_conditions(condition_to_display);
 
-                        return show
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -583,11 +612,11 @@ export default {
                     button_title: 'Complete Referral',
                     function_when_clicked: vm.completeReferral,
                     function_to_show_hide: () => {
-                        return this.isReferee
+                        return this.isReferee;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -606,15 +635,15 @@ export default {
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.isCurrentAssessor
-                        return show
+                            vm.isCurrentAssessor;
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -628,7 +657,7 @@ export default {
                         ) {
                             vm.switchStatus(
                                 constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID
-                            )
+                            );
                         } else if (
                             vm.proposal.processing_status_id ===
                             constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS
@@ -636,11 +665,11 @@ export default {
                         ) {
                             vm.switchStatus(
                                 constants.PROPOSAL_STATUS.WITH_REFERRAL.ID
-                            )
+                            );
                         } else {
                             console.log.error(
                                 `Can not switch back from status ${vm.proposal.processing_status}`
-                            )
+                            );
                         }
                     },
                     function_to_show_hide: () => {
@@ -657,14 +686,14 @@ export default {
                                     ROLES.REFERRAL.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
-                            vm.check_role_conditions(condition_to_display)
-                        return show
+                            vm.check_role_conditions(condition_to_display);
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -686,16 +715,16 @@ export default {
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.isCurrentAssessor
-                        return show
+                            vm.isCurrentAssessor;
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO: Propose Approve only available when DAS proposal has been approved or
                         // when no DAS approval is required (047-1)
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -720,22 +749,22 @@ export default {
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.isCurrentAssessor
-                        return show
+                            vm.isCurrentAssessor;
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
                     key: 'back_to_assessor',
                     button_title: 'Back to Assessor',
                     function_when_clicked: function () {
-                        vm.switchStatus('with_assessor')
+                        vm.switchStatus('with_assessor');
                     },
                     function_to_show_hide: () => {
                         let condition_to_display = {
@@ -749,14 +778,14 @@ export default {
                                     ROLES.GROUP_NAME_APPROVER.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
-                            vm.check_role_conditions(condition_to_display)
-                        return show
+                            vm.check_role_conditions(condition_to_display);
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -775,15 +804,15 @@ export default {
                                     ROLES.GROUP_NAME_APPROVER.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.proposal.assigned_approver == vm.profile.id
-                        return show
+                            vm.proposal.assigned_approver == vm.profile.id;
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -802,15 +831,15 @@ export default {
                                     ROLES.GROUP_NAME_APPROVER.ID,
                                 ],
                             },
-                        }
+                        };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.proposal.assigned_approver == vm.profile.id
-                        return show
+                            vm.proposal.assigned_approver == vm.profile.id;
+                        return show;
                     },
                     function_to_disable: () => {
                         // TODO disable button under certain conditions
-                        return false
+                        return false;
                     },
                 },
                 {
@@ -819,13 +848,31 @@ export default {
                     function_when_clicked: vm.requireDas,
                     function_to_show_hide: () => {
                         // Pushing back DAS integration until a "Phase 2"
-                        return false
+                        return false;
+
+                        // eslint-disable-next-line no-unreachable
+                        let condition_to_display = {
+                            [APPLICATION_TYPE.LEASE_LICENCE]: {
+                                [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [
+                                    ROLES.GROUP_NAME_ASSESSOR.ID,
+                                ],
+                            },
+                        };
+                        let show =
+                            vm.check_role_conditions(condition_to_display) &&
+                            vm.isCurrentAssessor;
+                        return show;
                     },
                     function_to_disable: () => {
-                        return false
+                        // TODO disable button under certain conditions
+                        return false;
                     },
                 },
                 {
+                    key: 'complete_editing',
+                    button_title: 'Complete Editing',
+                    function_when_clicked: vm.completeEditing,
+                    function_to_show_hide: () => {
                     key: 'complete_editing',
                     button_title: 'Complete Editing',
                     function_when_clicked: vm.completeEditing,
@@ -842,32 +889,16 @@ export default {
                     },
                     function_to_disable: () => {
                         // TODO
-                        return false
+                        return false;
                     },
                 },
             ],
             remindReferral: remindReferral,
             recallReferral: recallReferral,
             resendReferral: resendReferral,
-        }
+        };
     },
     computed: {
-        assigned_approver: {
-            get() {
-                return this.proposal.assigned_approver
-            },
-            set(value) {
-                this.$emit('updateAssignedApprover', value)
-            },
-        },
-        assigned_officer: {
-            get() {
-                return this.proposal.assigned_officer
-            },
-            set(value) {
-                this.$emit('updateAssignedOfficer', value)
-            },
-        },
         actionsVisible: function () {
             if (
                 !(
@@ -882,10 +913,10 @@ export default {
                 if (
                     this.configurations_for_buttons[i].function_to_show_hide()
                 ) {
-                    return true
+                    return true;
                 }
             }
-            return false
+            return false;
         },
         latest_referrals: function () {
             return this.proposal.latest_referrals
@@ -898,7 +929,7 @@ export default {
                   ) +
                       '?proposal=' +
                       this.proposal.id
-                : ''
+                : '';
         },
         isCurrentAssessor: function () {
             return this.proposal.assigned_officer == this.profile.id
@@ -915,9 +946,9 @@ export default {
                     constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
                 this.isFinalised
             ) {
-                return true
+                return true;
             } else {
-                return false
+                return false;
             }
         },
         show_toggle_requirements: function () {
@@ -926,9 +957,9 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                 this.isFinalised
             ) {
-                return true
+                return true;
             } else {
-                return false
+                return false;
             }
         },
         showInviteReferee: function () {
@@ -951,65 +982,65 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
                 ].includes(this.proposal.processing_status_id)
-            )
+            );
         },
         debug: function () {
             return this.$route.query.debug && this.$route.query.debug == 'true'
                 ? true
-                : false
+                : false;
         },
         display_referrals: function () {
-            return true
+            return true;
         },
         display_actions: function () {
-            if (this.debug) return true
+            if (this.debug) return true;
 
-            return !this.isFinalised && this.canAction
+            return !this.isFinalised && this.canAction;
         },
     },
     watch: {
         latest_referrals: function () {
             this.$nextTick(() => {
-                this.initialisePopovers()
-            })
+                this.initialisePopovers();
+            });
         },
     },
     mounted: function () {
-        let vm = this
+        let vm = this;
         this.$nextTick(() => {
-            vm.initialiseSelects()
-            vm.initialiseAssignedOfficerSelect()
-            vm.initialisePopovers()
-            this.formSectionLabels = this.getFormSectionLabels()
-        })
+            vm.initialiseSelects();
+            vm.initialiseAssignedOfficerSelect();
+            vm.initialisePopovers();
+            this.formSectionLabels = this.getFormSectionLabels();
+        });
     },
     methods: {
         toggleCollapse: function () {
-            $('.toggle_filters_wrapper > .body').toggleClass('show')
+            $('.toggle_filters_wrapper > .body').toggleClass('show');
         },
         toggleFormSections: function () {
             if (this.formSectionsOpen) {
                 $('.section-toggle:not(:first) .chevron-toggle').removeClass(
                     'down-chevron-open'
-                )
+                );
                 $('.section-toggle:not(:first) .chevron-toggle').addClass(
                     'down-chevron-close'
-                )
+                );
                 $('.section-toggle:not(:first) > .card-body').css(
                     'display',
                     'none'
-                )
+                );
             } else {
                 $('.section-toggle:not(:first) .chevron-toggle').removeClass(
                     'down-chevron-close'
-                )
+                );
                 $('.section-toggle:not(:first) .chevron-toggle').addClass(
                     'down-chevron-open'
-                )
+                );
                 $('.section-toggle:not(:first) > .card-body').css(
                     'display',
                     'block'
-                )
+                );
             }
             this.formSectionsOpen = !this.formSectionsOpen
 
@@ -1017,7 +1048,7 @@ export default {
                 $('.section-toggle:not(:first) > .card-body').css('display') ==
                 'none'
             ) {
-                this.scrollTop()
+                this.scrollTop();
             }
         },
         getFormSectionLabels: function () {
@@ -1026,10 +1057,11 @@ export default {
                     let obj = {
                         id: $(this).attr('id'),
                         label: $(this).find('.label').text(),
-                    }
-                    return obj
+                    };
+                    console.log(obj);
+                    return obj;
                 })
-                .toArray()
+                .toArray();
         },
         scrollTop: function () {
             $('html, body').animate(
@@ -1037,7 +1069,7 @@ export default {
                     scrollTop: $('.section-toggle:first').offset().top,
                 },
                 0
-            )
+            );
         },
         scrollTo: function (id) {
             $('html, body').animate(
@@ -1045,15 +1077,15 @@ export default {
                     scrollTop: $('#' + id).offset().top,
                 },
                 0
-            )
+            );
         },
         formatDate: function (data) {
             return data ? moment(data).format('DD/MM/YYYY HH:mm:ss') : ''
         },
         check_role_conditions: function (condition_to_display) {
-            if (this.debug) return true
+            if (this.debug) return true;
 
-            let condition = false
+            let condition = false;
             if (this.proposal.application_type.name in condition_to_display) {
                 if (
                     this.proposal.processing_status_id in
@@ -1062,50 +1094,43 @@ export default {
                     let roles =
                         condition_to_display[
                             this.proposal.application_type.name
-                        ][this.proposal.processing_status_id]
+                        ][this.proposal.processing_status_id];
                     const intersection = roles.filter((role) =>
                         this.proposal.accessing_user_roles.includes(role)
-                    )
-                    if (intersection.length > 0) condition = true
+                    );
+                    if (intersection.length > 0) condition = true;
                 }
             }
-            return condition
+            return condition;
         },
         get_allowed_ids: function (ids) {
             let displayable_status_ids = ids.map((a_status) => {
-                if (Object.prototype.hasOwnProperty.call(a_status, 'ID'))
-                    return a_status.ID
-                else if (Object.prototype.hasOwnProperty.call(a_status, 'id'))
-                    return a_status.id
-                else if (Object.prototype.hasOwnProperty.call(a_status, 'Id'))
-                    return a_status.Id
-                else return a_status
-            })
+                // if (Object.hasOwn(a_status, 'ID'))
+                if (Object.hasOwn(a_status, 'ID')) return a_status.ID;
+                else if (Object.hasOwn(a_status, 'id')) return a_status.id;
+                else if (Object.hasOwn(a_status, 'Id')) return a_status.Id;
+                else return a_status;
+            });
 
-            return displayable_status_ids
+            return displayable_status_ids;
         },
         absorb_type_difference: function (processing_status_id) {
-            let ret_value = ''
+            let ret_value = '';
 
-            if (
-                Object.prototype.hasOwnProperty.call(processing_status_id, 'ID')
-            )
-                ret_value = processing_status_id.ID
-            else if (
-                Object.prototype.hasOwnProperty.call(processing_status_id, 'id')
-            )
-                ret_value = processing_status_id.id
-            else if (
-                Object.prototype.hasOwnProperty.call(processing_status_id, 'Id')
-            )
-                ret_value = processing_status_id.Id
-            else ret_value = processing_status_id.toLowerCase()
+            if (Object.hasOwn(processing_status_id, 'ID'))
+                ret_value = processing_status_id.ID;
+            else if (Object.hasOwn(processing_status_id, 'id'))
+                ret_value = processing_status_id.id;
+            else if (Object.hasOwn(processing_status_id, 'Id'))
+                ret_value = processing_status_id.Id;
+            else ret_value = processing_status_id.toLowerCase();
 
-            return ret_value
+            return ret_value;
         },
         completeEditing: async function () {
-            this.$emit('completeEditing')
+            this.$emit('completeEditing');
         },
+        requireDas: function () {},
         requireDas: function () {},
         checkAssessorData: function () {
             //check assessor boxes and clear value of hidden assessor boxes so it won't get printed on approval pdf.
@@ -1113,26 +1138,26 @@ export default {
             //select all fields including hidden fields
             var all_fields = $(
                 'input[type=text]:required, textarea:required, input[type=checkbox]:required, input[type=radio]:required, input[type=file]:required, select:required'
-            )
+            );
 
             all_fields.each(function () {
                 var ele = null
                 //check the fields which has assessor boxes.
-                ele = $('[name=' + this.name + '-Assessor]')
+                ele = $('[name=' + this.name + '-Assessor]');
                 if (ele.length > 0) {
                     let visiblity = $('[name=' + this.name + '-Assessor]').is(
                         ':visible'
-                    )
+                    );
                     if (!visiblity) {
                         if (ele[0].value != '') {
-                            ele[0].value = ''
+                            ele[0].value = '';
                         }
                     }
                 }
             })
         },
         initialiseSelects: function () {
-            let vm = this
+            let vm = this;
             $(vm.$refs.department_users)
                 .select2({
                     minimumInputLength: 2,
@@ -1146,8 +1171,8 @@ export default {
                             var query = {
                                 term: params.term,
                                 type: 'public',
-                            }
-                            return query
+                            };
+                            return query;
                         },
                         processResults: function (data, params) {
                             if (Object.keys(data.results).length == 0) {
@@ -1166,32 +1191,35 @@ export default {
                                     },
                                 }).then(async (result) => {
                                     if (result.isConfirmed) {
-                                        vm.external_referral_email = params.term
-                                        vm.$refs.AddExternalReferral.isModalOpen = true
+                                        vm.external_referral_email =
+                                            params.term;
+                                        vm.$refs.AddExternalReferral.isModalOpen = true;
                                         $(vm.$refs.department_users).select2(
                                             'close'
-                                        )
+                                        );
                                     }
-                                })
+                                });
                             }
-                            return data
+                            return data;
                         },
                     },
                 })
                 .on('select2:select', function (e) {
-                    let data = e.params.data.id
-                    vm.selected_referral = data
+                    let data = e.params.data.id;
+                    vm.selected_referral = data;
                 })
-                .on('select2:unselect', function () {
-                    vm.selected_referral = null
-                })
+                .on('select2:unselect', function (e) {
+                    // eslint-disable-next-line no-unused-vars
+                    var selected = $(e.currentTarget);
+                    vm.selected_referral = null;
+                });
         },
         initialiseAssignedOfficerSelect: function (reinit = false) {
             let vm = this
             if (reinit) {
                 $(vm.$refs.assigned_officer).data('select2')
                     ? $(vm.$refs.assigned_officer).select2('destroy')
-                    : ''
+                    : '';
             }
             // Assigned officer select
             $(vm.$refs.assigned_officer)
@@ -1201,41 +1229,107 @@ export default {
                     placeholder: 'Select Officer',
                 })
                 .on('select2:select', function (e) {
-                    var selected = $(e.currentTarget)
+                    var selected = $(e.currentTarget);
                     if (vm.proposal.processing_status == 'With Approver') {
-                        vm.proposal.assigned_approver = selected.val()
+                        vm.proposal.assigned_approver = selected.val();
                     } else {
-                        vm.proposal.assigned_officer = selected.val()
+                        vm.proposal.assigned_officer = selected.val();
                     }
-                    vm.assignTo()
+                    vm.assignTo();
                 })
                 .on('select2:unselecting', function () {
-                    var self = $(this)
+                    var self = $(this);
                     setTimeout(() => {
-                        self.select2('close')
-                    }, 0)
+                        self.select2('close');
+                    }, 0);
                 })
-                .on('select2:unselect', function () {
+                .on('select2:unselect', function (e) {
+                    // eslint-disable-next-line no-unused-vars
+                    var selected = $(e.currentTarget);
                     if (vm.proposal.processing_status == 'With Approver') {
-                        vm.proposal.assigned_approver = null
+                        vm.proposal.assigned_approver = null;
                     } else {
-                        vm.proposal.assigned_officer = null
+                        vm.proposal.assigned_officer = null;
                     }
-                    vm.assignTo()
-                })
+                    vm.assignTo();
+                });
         },
         updateAssignedOfficerSelect: function (selected_user) {
-            let vm = this
-            $(vm.$refs.assigned_officer).val(selected_user)
-            $(vm.$refs.assigned_officer).trigger('change')
+            let vm = this;
+            $(vm.$refs.assigned_officer).val(selected_user);
+            $(vm.$refs.assigned_officer).trigger('change');
         },
         performSendReferral: async function () {
-            let vm = this
+            let vm = this;
             let my_headers = {
                 Accept: 'application/json',
                 'Content-Type': 'application/json',
-            }
+            };
 
+            vm.sendingReferral = true;
+            await fetch(
+                `/api/proposal/${this.proposal.id}/assessor_save.json`,
+                {
+                    method: 'POST',
+                    headers: my_headers,
+                    body: JSON.stringify({ proposal: vm.proposal }),
+                }
+            )
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            throw new Error(json);
+                        });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then(async () => {
+                    return fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.proposals,
+                            vm.proposal.id + '/assessor_send_referral'
+                        ),
+                        {
+                            method: 'POST',
+                            headers: my_headers,
+                            body: JSON.stringify({
+                                email: vm.selected_referral,
+                                text: vm.referral_text,
+                            }),
+                        }
+                    );
+                })
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            if (Array.isArray(json)) {
+                                throw new Error(json);
+                            } else {
+                                throw new Error(json['non_field_errors']);
+                            }
+                        });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then(async (response) => {
+                    vm.switchStatus(response.processing_status_id); // 'with_referral'
+                })
+                .catch((error) => {
+                    console.log(`Error sending referral. ${error}`);
+                    swal.fire({
+                        title: `${error}`,
+                        text: 'Failed to send referral. Please contact your administrator.',
+                        icon: 'warning',
+                    });
+                })
+                .finally(() => {
+                    vm.sendingReferral = false;
+                    vm.selected_referral = '';
+                    vm.referral_text = '';
+                    $(vm.$refs.department_users).val(null).trigger('change');
+                });
             vm.sendingReferral = true
             await fetch(
                 `/api/proposal/${this.proposal.id}/assessor_save.json`,
@@ -1302,8 +1396,8 @@ export default {
                 })
         },
         sendReferral: async function () {
-            let vm = this
-            this.checkAssessorData()
+            let vm = this;
+            this.checkAssessorData();
             swal.fire({
                 title: 'Send Referral',
                 text: 'Are you sure you want to send to referral?',
@@ -1319,26 +1413,26 @@ export default {
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     // When Yes
-                    await vm.performSendReferral()
+                    await vm.performSendReferral();
                 }
-            })
+            });
         },
         assignRequestUser: function () {
-            this.$emit('assignRequestUser')
+            this.$emit('assignRequestUser');
             this.$nextTick(() => {
-                this.initialiseSelects()
-            })
+                this.initialiseSelects();
+            });
         },
         assignTo: function () {
-            this.$emit('assignTo')
+            this.$emit('assignTo');
         },
         toggleProposal: function () {
-            this.showingProposal = !this.showingProposal
-            this.$emit('toggleProposal', this.showingProposal)
+            this.showingProposal = !this.showingProposal;
+            this.$emit('toggleProposal', this.showingProposal);
         },
         toggleRequirements: function () {
-            this.showingRequirements = !this.showingRequirements
-            this.$emit('toggleRequirements', this.showingRequirements)
+            this.showingRequirements = !this.showingRequirements;
+            this.$emit('toggleRequirements', this.showingRequirements);
         },
         remindExternalReferee: function (external_referee_invite) {
             fetch(
@@ -1355,27 +1449,27 @@ export default {
                 }
             )
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        Promise.reject(error);
                     }
                     swal.fire({
                         title: 'Reminder Email Sent',
                         text: `A reminder email was successfully sent to ${external_referee_invite.full_name} (${external_referee_invite.email}).`,
                         icon: 'success',
-                    })
+                    });
                 })
                 .catch((error) => {
-                    console.log(`Error sending reminder. ${error}`)
+                    console.log(`Error sending reminder. ${error}`);
                     swal.fire({
                         title: 'Reminder Email Failed',
                         text: `${constants.API_ERROR}`,
                         icon: 'warning',
-                    })
-                })
+                    });
+                });
         },
         retractExternalRefereeInvite: function (external_referee_invite) {
             swal.fire({
@@ -1406,68 +1500,71 @@ export default {
                         }
                     )
                         .then(async (response) => {
-                            const data = await response.json()
+                            const data = await response.json();
                             if (!response.ok) {
                                 const error =
                                     (data && data.message) ||
-                                    response.statusText
-                                console.log(error)
-                                Promise.reject(error)
+                                    response.statusText;
+                                console.log(error);
+                                Promise.reject(error);
                             }
-                            this.$emit('updateProposalData', data)
+                            this.$emit('updateProposalData', data);
                             swal.fire({
                                 title: 'External Referral Invite Retracted',
                                 text: `The external referee invite that was sent to ${external_referee_invite.full_name} (${external_referee_invite.email}) has been successfully retracted.`,
                                 icon: 'success',
-                            })
+                            });
                         })
                         .catch((error) => {
                             console.log(
                                 `Error retracting external referee invite. ${error}`
-                            )
+                            );
                             swal.fire({
                                 title: 'Retract External Referee Invite Failed',
                                 text: `${constants.API_ERROR}`,
                                 icon: 'error',
-                            })
-                        })
+                            });
+                        });
                 }
-            })
+            });
         },
         switchStatus: function (value) {
-            this.$emit('switchStatus', value)
+            this.$emit('switchStatus', value);
         },
         amendmentRequest: function () {
-            this.$emit('amendmentRequest')
+            this.$emit('amendmentRequest');
         },
         completeReferral: function () {
-            this.$emit('completeReferral')
+            this.$emit('completeReferral');
         },
         proposedDecline: function () {
-            this.$emit('proposedDecline')
+            this.$emit('proposedDecline');
         },
         proposedApproval: function () {
-            this.$emit('proposedApproval')
+            this.$emit('proposedApproval');
         },
         issueApproval: function () {
-            this.$emit('issueApproval')
+            this.$emit('issueApproval');
         },
         discardProposal: function () {
-            this.$emit('discardProposal')
+            this.$emit('discardProposal');
         },
         externalRefereeInviteSent: function (proposal) {
-            this.$emit('updateProposalData', proposal)
+            this.$emit('updateProposalData', proposal);
         },
         initialisePopovers: function () {
             var popoverTriggerList = [].slice.call(
                 document.querySelectorAll('[data-bs-toggle="popover"]')
-            )
-            popoverTriggerList.map(function (popoverTriggerEl) {
-                return new bootstrap.Popover(popoverTriggerEl)
-            })
+            );
+            // eslint-disable-next-line no-unused-vars
+            var popoverList = popoverTriggerList.map(function (
+                popoverTriggerEl
+            ) {
+                return new bootstrap.Popover(popoverTriggerEl);
+            });
         },
     },
-}
+};
 </script>
 
 <style scoped>

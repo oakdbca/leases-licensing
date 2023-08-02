@@ -195,6 +195,9 @@ LEASING_FINANCE_NOTIFICATION_EMAIL = env(
 
 OTHER_PAYMENT_ALLOWED = env("OTHER_PAYMENT_ALLOWED", False)  # Cash/Cheque
 
+EMAIL_DELIVERY = env("EMAIL_DELIVERY", "off")
+EMAIL_INSTANCE = env("EMAIL_INSTANCE", "DEV")
+
 OSCAR_BASKET_COOKIE_OPEN = "cols_basket"
 PAYMENT_SYSTEM_ID = env("PAYMENT_SYSTEM_ID", "S675")
 PAYMENT_SYSTEM_PREFIX = env(
@@ -264,7 +267,8 @@ CKEDITOR_CONFIGS = {
 
 CONSOLE_EMAIL_BACKEND = env("CONSOLE_EMAIL_BACKEND", False)
 if CONSOLE_EMAIL_BACKEND:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_BACKEND = "wagov_utils.components.utils.email_backend.EmailBackend"
 
 
 # Add a debug level logger for development
@@ -369,13 +373,14 @@ template_title = "Leases and Licensing"
 template_group = "parkswildlife"
 
 LEDGER_TEMPLATE = "bootstrap5"
-# LEDGER_UI_ACCOUNTS_MANAGEMENT = [
-#    {'first_name': {'options': {'view': True, 'edit': True}}},
-#    {'last_name': {'options': {'view': True, 'edit': True}}},
-#    {'residential_address': {'options': {'view': True, 'edit': True}}},
-#    {'phone_number': {'options': {'view': True, 'edit': True}}},
-#    {'mobile_number': {'options': {'view': True, 'edit': True}}},
-# ]
+LEDGER_UI_ACCOUNTS_MANAGEMENT = [
+    {"first_name": {"options": {"view": True, "edit": True}}},
+    {"last_name": {"options": {"view": True, "edit": True}}},
+    {"residential_address": {"options": {"view": True, "edit": True}}},
+    {"phone_number": {"options": {"view": True, "edit": True}}},
+    {"mobile_number": {"options": {"view": True, "edit": True}}},
+]
+LEDGER_UI_CARDS_MANAGEMENT = True
 
 ADMIN_GROUP = env("ADMIN_GROUP", "LALS Admin")
 

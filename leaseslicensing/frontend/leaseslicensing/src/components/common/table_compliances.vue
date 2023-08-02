@@ -99,9 +99,9 @@
 </template>
 
 <script>
-import datatable from '@/utils/vue/datatable.vue'
-import { api_endpoints, constants } from '@/utils/hooks'
-import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
+import datatable from '@/utils/vue/datatable.vue';
+import { api_endpoints, constants } from '@/utils/hooks';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 
 export default {
     name: 'TableCompliances',
@@ -119,8 +119,8 @@ export default {
                     'referral',
                     'external',
                     'organisation_view',
-                ]
-                return options.indexOf(val) != -1 ? true : false
+                ];
+                return options.indexOf(val) != -1 ? true : false;
             },
         },
         targetEmailUserId: {
@@ -139,7 +139,7 @@ export default {
         },
     },
     data() {
-        let vm = this
+        let vm = this;
         return {
             datatable_id: 'compliances-datatable-' + vm._.uid,
 
@@ -178,25 +178,25 @@ export default {
                 keepInvalid: true,
                 allowInputToggle: true,
             },
-        }
+        };
     },
     computed: {
         ajaxUrl: function () {
             let url =
                 api_endpoints.compliances_paginated_external +
-                '?format=datatables'
+                '?format=datatables';
             if (this.targetEmailUserId) {
-                url += '&target_email_user_id=' + this.targetEmailUserId
+                url += '&target_email_user_id=' + this.targetEmailUserId;
             }
             if (this.targetOrganisationId) {
-                url += '&target_organisation_id=' + this.targetOrganisationId
+                url += '&target_organisation_id=' + this.targetOrganisationId;
             }
             if (this.compliancesReferredToMe) {
                 url +=
                     '&compliances_referred_to_me=' +
-                    this.compliancesReferredToMe
+                    this.compliancesReferredToMe;
             }
-            return url
+            return url;
         },
         filterApplied: function () {
             if (
@@ -205,19 +205,19 @@ export default {
                 this.filterComplianceDueDateFrom.toLowerCase() === '' &&
                 this.filterComplianceDueDateTo.toLowerCase() === ''
             ) {
-                return false
+                return false;
             } else {
-                return true
+                return true;
             }
         },
         is_external: function () {
-            return this.level == 'external'
+            return this.level == 'external';
         },
         is_internal: function () {
-            return this.level == 'internal'
+            return this.level == 'internal';
         },
         is_organisation_view: function () {
-            return this.level == 'organisation_view'
+            return this.level == 'organisation_view';
         },
         compliancesHeaders: function () {
             let headers = [
@@ -229,7 +229,7 @@ export default {
                 'Status',
                 'Due Date',
                 'Action',
-            ]
+            ];
             if (this.is_organisation_view) {
                 headers = [
                     'Id',
@@ -239,7 +239,7 @@ export default {
                     'Status',
                     'Due Date',
                     'Action',
-                ]
+                ];
             } else if (this.level === 'internal') {
                 headers = [
                     'Id',
@@ -251,9 +251,9 @@ export default {
                     'Due Date',
                     'Assigned To',
                     'Action',
-                ]
+                ];
             }
-            return headers
+            return headers;
         },
         columnId: function () {
             return {
@@ -261,7 +261,7 @@ export default {
                 orderable: false,
                 searchable: false,
                 visible: false,
-            }
+            };
         },
         holderColumn: function () {
             return {
@@ -271,10 +271,10 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     //return full.approval_submitter;
-                    return full.holder
+                    return full.holder;
                 },
                 name: 'proposal__ind_applicant__first_name, proposal__ind_applicant__last_name',
-            }
+            };
         },
         applicationTypeColumn: function () {
             return {
@@ -283,12 +283,12 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.application_type
+                    return full.application_type;
                     //return full.id;
                 },
                 // Searches for `registration_of_interest` or `lease_licence`, but should suffice
                 name: 'proposal__application_type__name',
-            }
+            };
         },
         lodgementNumberColumn: function () {
             return {
@@ -298,9 +298,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.lodgement_number
+                    return full.lodgement_number;
                 },
-            }
+            };
         },
         licenceNumberColumn: function () {
             return {
@@ -310,11 +310,11 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.approval_lodgement_number
+                    return full.approval_lodgement_number;
                     //return full.id;
                 },
                 name: 'approval__lodgement_number',
-            }
+            };
         },
         dueDateColumn: function () {
             return {
@@ -323,10 +323,10 @@ export default {
                 orderable: true,
                 searchable: false,
                 visible: true,
-            }
+            };
         },
         processingStatusColumn: function () {
-            let vm = this
+            let vm = this;
             return {
                 data: 'processing_status',
                 orderable: true,
@@ -336,12 +336,12 @@ export default {
                     return vm.getStatusHtml(
                         full.processing_status_display,
                         full.due_date
-                    )
+                    );
                 },
-            }
+            };
         },
         customerStatusColumn: function () {
-            let vm = this
+            let vm = this;
             return {
                 data: 'customer_status',
                 orderable: true,
@@ -351,12 +351,12 @@ export default {
                     return vm.getStatusHtml(
                         full.customer_status_display,
                         full.due_date
-                    )
+                    );
                 },
-            }
+            };
         },
         actionColumn: function () {
-            let vm = this
+            let vm = this;
             return {
                 // 7. Action
                 data: 'id',
@@ -364,28 +364,28 @@ export default {
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    let links = ''
+                    let links = '';
                     if (!vm.is_external) {
                         if (full.can_process) {
-                            links += `<a href='/internal/compliance/${full.id}'>Process</a><br/>`
+                            links += `<a href='/internal/compliance/${full.id}'>Process</a><br/>`;
                         } else {
                             if (vm.compliancesReferredToMe) {
-                                links += `<a href='/internal/compliance/${full.id}'>Process</a><br/>`
+                                links += `<a href='/internal/compliance/${full.id}'>Process</a><br/>`;
                             } else {
-                                links += `<a href='/internal/compliance/${full.id}'>View</a><br/>`
+                                links += `<a href='/internal/compliance/${full.id}'>View</a><br/>`;
                             }
                         }
                     } else {
                         // FIXME If checked for `can_user_view` first an already submitted Compliance can potentially be submitted again and again
                         if (full.can_user_view) {
-                            links += `<a href='/external/compliance/${full.id}'>View</a><br/>`
+                            links += `<a href='/external/compliance/${full.id}'>View</a><br/>`;
                         } else {
-                            links += `<a href='/external/compliance/${full.id}'>Submit</a><br/>`
+                            links += `<a href='/external/compliance/${full.id}'>Submit</a><br/>`;
                         }
                     }
-                    return links
+                    return links;
                 },
-            }
+            };
         },
         assignedToNameColumn: function () {
             return {
@@ -395,9 +395,10 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.assigned_to_name
+                    return full.assigned_to_name;
                 },
-            }
+                name: 'assigned_to',
+            };
         },
         applicableColumns: function () {
             let columns = [
@@ -409,7 +410,7 @@ export default {
                 this.customerStatusColumn, // Status
                 this.dueDateColumn, // Due Date
                 this.actionColumn, //Action
-            ]
+            ];
             if (this.is_organisation_view) {
                 columns = [
                     this.columnId,
@@ -419,7 +420,7 @@ export default {
                     this.processingStatusColumn,
                     this.dueDateColumn,
                     this.actionColumn,
-                ]
+                ];
             } else if (this.level === 'internal') {
                 columns = [
                     this.columnId,
@@ -431,13 +432,13 @@ export default {
                     this.dueDateColumn,
                     this.assignedToNameColumn,
                     this.actionColumn,
-                ]
+                ];
             }
-            return columns
+            return columns;
         },
         compliancesOptions: function () {
-            let vm = this
-            let buttons = []
+            let vm = this;
+            let buttons = [];
             if (this.level === 'internal') {
                 buttons = [
                     {
@@ -456,7 +457,7 @@ export default {
                             columns: ':visible',
                         },
                     },
-                ]
+                ];
             }
 
             return {
@@ -475,10 +476,10 @@ export default {
                     // adding extra GET params for Custom filtering
                     data: function (d) {
                         // Add filters selected
-                        d.filter_application_type = vm.filterComplianceType
-                        d.filter_compliance_status = vm.filterComplianceStatus
-                        d.filter_due_date_from = vm.filterComplianceDueDateFrom
-                        d.filter_due_date_to = vm.filterComplianceDueDateTo
+                        d.filter_application_type = vm.filterComplianceType;
+                        d.filter_compliance_status = vm.filterComplianceStatus;
+                        d.filter_due_date_from = vm.filterComplianceDueDateFrom;
+                        d.filter_due_date_to = vm.filterComplianceDueDateTo;
                     },
                 },
                 dom:
@@ -489,52 +490,52 @@ export default {
                 columns: vm.applicableColumns,
                 processing: true,
                 initComplete: function () {
-                    console.log('in initComplete')
+                    console.log('in initComplete');
                 },
                 order: [[0, 'desc']],
-            }
+            };
         },
     },
     watch: {
         filterComplianceType: function () {
-            this.$refs.compliances_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterComplianceType',
                 this.filterComplianceType
-            )
+            );
         },
         filterComplianceStatus: function () {
-            this.$refs.compliances_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterComplianceStatus',
                 this.filterComplianceStatus
-            )
+            );
         },
         filterComplianceDueDateFrom: function () {
-            this.$refs.compliances_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterComplianceDueDateFrom',
                 this.filterComplianceDueDateFrom
-            )
+            );
         },
         filterComplianceDueDateTo: function () {
-            this.$refs.compliances_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterComplianceDueDateTo',
                 this.filterComplianceDueDateTo
-            )
+            );
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(
                     this.filterApplied
-                )
+                );
             }
         },
     },
     created: function () {
-        this.fetchFilterLists()
+        this.fetchFilterLists();
         $.fn.pulse = function (options_param) {
             var options = $.extend(
                 {
@@ -542,106 +543,108 @@ export default {
                     duration: 1000,
                 },
                 options_param
-            )
+            );
 
             var period = function (callback) {
                 $(this).animate({ opacity: 0 }, options.duration, function () {
-                    $(this).animate({ opacity: 1 }, options.duration, callback)
-                })
-            }
+                    $(this).animate({ opacity: 1 }, options.duration, callback);
+                });
+            };
             return this.each(function () {
                 var i = +options.times,
                     self = this,
                     repeat = function () {
-                        --i && period.call(self, repeat)
-                    }
-                period.call(this, repeat)
-            })
-        }
+                        --i && period.call(self, repeat);
+                    };
+                period.call(this, repeat);
+            });
+        };
         $('.pulsate').each(function (element) {
-            $(element).pulse({ times: 6, duration: 1000 })
-        })
+            $(element).pulse({ times: 6, duration: 1000 });
+        });
     },
     methods: {
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         expandCollapseFilters: function () {
-            this.filters_expanded = !this.filters_expanded
+            this.filters_expanded = !this.filters_expanded;
         },
         getStatusHtml: function (status) {
-            let class_name = ''
-            let icon = ''
+            let class_name = '';
+            let icon = '';
 
             if ('Future' == status) {
-                class_name = 'info'
-                icon = 'calendar-plus'
+                class_name = 'info';
+                icon = 'calendar-plus';
             }
             if ('Due' == status) {
-                class_name = 'warning'
-                icon = 'clock'
+                class_name = 'warning';
+                icon = 'clock';
             }
             if ('Overdue' == status) {
-                class_name = 'danger'
-                icon = 'exclamation-circle'
+                class_name = 'danger';
+                icon = 'exclamation-circle';
             }
             if ('With Assessor' == status) {
-                class_name = 'primary'
-                icon = 'clipboard'
+                class_name = 'primary';
+                icon = 'clipboard';
             }
             if ('With Referral' == status) {
-                class_name = 'secondary'
-                icon = 'users'
+                class_name = 'secondary';
+                icon = 'users';
             }
             if ('Under Review' == status) {
-                class_name = 'secondary'
-                icon = 'clipboard'
+                class_name = 'secondary';
+                icon = 'clipboard';
             }
             if ('Approved' == status) {
-                class_name = 'success'
-                icon = 'check'
+                class_name = 'success';
+                icon = 'check';
             }
-            return `<span class="badge bg-${class_name} py-2"><i class="fa fa-${icon}" aria-hidden="true"></i> ${status}</span>`
+            return `<span class="badge bg-${class_name} py-2"><i class="fa fa-${icon}" aria-hidden="true"></i> ${status}</span>`;
         },
         fetchFilterLists: function () {
-            let vm = this
+            let vm = this;
 
             // Types
             fetch(api_endpoints.application_types + 'key-value-list/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
                     }
-                    vm.compliance_types = data
-                    console.log('Compliance Types: ')
-                    console.log(vm.compliance_types)
+                    vm.compliance_types = data;
+                    console.log('Compliance Types: ');
+                    console.log(vm.compliance_types);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                })
+                    console.error('There was an error!', error);
+                });
 
             // Statuses
             fetch(api_endpoints.compliance_statuses_dict)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
                     }
-                    vm.compliance_statuses = data
-                    console.log('Compliance Statuses: ')
-                    console.log(vm.compliance_statuses)
+                    vm.compliance_statuses = data;
+                    console.log('Compliance Statuses: ');
+                    console.log(vm.compliance_statuses);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                })
+                    console.error('There was an error!', error);
+                });
         },
     },
-}
+};
 </script>

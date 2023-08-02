@@ -1,7 +1,22 @@
 <template lang="html">
     <div v-if="proposal" id="internalProposal" class="container">
+    <div v-if="proposal" id="internalProposal" class="container">
         <div v-if="debug">internal/proposals/proposal.vue</div>
         <div class="row">
+            <h3>
+                {{ proposal.lodgement_number }} -
+                {{
+                    proposal.application_type
+                        ? proposal.application_type.name_display
+                        : null
+                }}
+                -
+                {{
+                    proposal.proposal_type
+                        ? proposal.proposal_type.description
+                        : null
+                }}
+            </h3>
             <h3>
                 {{ proposal.lodgement_number }} -
                 {{
@@ -24,6 +39,12 @@
                     :comms_add_url="comms_add_url"
                     :disable_add_entry="false"
                 />
+                <CommsLogs
+                    :comms_url="comms_url"
+                    :logs_url="logs_url"
+                    :comms_add_url="comms_add_url"
+                    :disable_add_entry="false"
+                />
 
                 <Submission
                     v-if="canSeeSubmission"
@@ -36,7 +57,45 @@
                     class="mt-2"
                     @revision-to-display="revisionToDisplay"
                 />
+                <Submission
+                    v-if="canSeeSubmission"
+                    :can-see-submission="canSeeSubmission"
+                    :showing-proposal="showingProposal"
+                    :proposal="proposal"
+                    :submitter_first_name="submitter_first_name"
+                    :submitter_last_name="submitter_last_name"
+                    :lodgement_date="proposal.lodgement_date"
+                    class="mt-2"
+                    @revision-to-display="revisionToDisplay"
+                />
 
+                <Workflow
+                    ref="workflow"
+                    :proposal="proposal"
+                    :on_current_revision="on_current_revision"
+                    :is-finalised="isFinalised"
+                    :can-action="canAction"
+                    :can-limited-action="canLimitedAction"
+                    :can-assess="canAssess"
+                    :is-referee="isReferee"
+                    :can_user_edit="proposal.can_user_edit"
+                    :profile="profile"
+                    class="mt-2"
+                    @toggleProposal="toggleProposal"
+                    @toggleRequirements="toggleRequirements"
+                    @switchStatus="switchStatus"
+                    @completeReferral="completeReferral"
+                    @amendmentRequest="amendmentRequest"
+                    @proposedDecline="proposedDecline"
+                    @proposedApproval="proposedApproval"
+                    @issueApproval="issueApproval"
+                    @discardProposal="discardProposal"
+                    @assignRequestUser="assignRequestUser"
+                    @assignTo="assignTo"
+                    @completeEditing="completeEditing"
+                    @cancelEditing="cancelEditing"
+                    @updateProposalData="updateProposalData"
+                />
                 <Workflow
                     ref="workflow"
                     :proposal="proposal"
@@ -79,8 +138,49 @@
 
                 <template v-if="display_requirements">
                     <Requirements :key="requirementsKey" :proposal="proposal" />
+                    <Requirements :key="requirementsKey" :proposal="proposal" />
                 </template>
 
+                <template
+                    v-if="
+                        (showingProposal &&
+                            [
+                                'with_approver',
+                                'approved_application',
+                                'approved',
+                                'declined',
+                            ].includes(proposal.processing_status_id)) ||
+                        (canSeeSubmission &&
+                            ![
+                                'with_approver',
+                                'approved_application',
+                                'approved',
+                                'declined',
+                            ].includes(proposal.processing_status_id)) ||
+                        (!canSeeSubmission && showingProposal)
+                    "
+                >
+                    <FormSection
+                        :form-collapse="false"
+                        label="Application"
+                        index="application"
+                    >
+                        <ApplicationForm
+                            v-if="proposal"
+                            ref="application_form"
+                            :key="computedProposalId"
+                            :proposal="proposal"
+                            :show_application_title="false"
+                            :is_external="false"
+                            :is_internal="true"
+                            :readonly="readonly"
+                            :submitter-id="submitter_id"
+                            :show_related_items_tab="true"
+                            :show_additional_documents_tab="true"
+                            :registration-of-interest="isRegistrationOfInterest"
+                            :lease-licence="isLeaseLicence"
+                            @formMounted="applicationFormMounted"
+                        >
                 <template
                     v-if="
                         (showingProposal &&
@@ -132,10 +232,36 @@
                                         collapsible_map_comments_component_mounted
                                     "
                                 >
+                            <template #slot_map_assessment_comments>
+                                <AssessmentComments
+                                    ref="collapsible_map_comments"
+                                    :collapsed="collapseAssessmentComments"
+                                    component_title="Map Assessment Comments"
+                                    class="mb-2"
+                                    @created="
+                                        collapsible_map_comments_component_mounted
+                                    "
+                                >
                                     <div class="container px-3">
                                         <div class="row mb-3 mt-3">
                                             <div class="col">
                                                 <div class="form-floating">
+                                                    <textarea
+                                                        id="assessor_comment_map"
+                                                        v-model="
+                                                            assessment.assessor_comment_map
+                                                        "
+                                                        class="form-control"
+                                                        placeholder=""
+                                                        :disabled="
+                                                            !canEditComments
+                                                        "
+                                                    />
+                                                    <label
+                                                        for="assessor_comment_map"
+                                                        >Assessor
+                                                        Comments</label
+                                                    >
                                                     <textarea
                                                         id="assessor_comment_map"
                                                         v-model="
@@ -174,9 +300,38 @@
                                                         >Deficiency
                                                         Comments</label
                                                     >
+                                                    <textarea
+                                                        id="deficiency_comment_map"
+                                                        v-model="
+                                                            assessment.deficiency_comment_map
+                                                        "
+                                                        class="form-control"
+                                                        placeholder=""
+                                                        :disabled="
+                                                            !canEditComments
+                                                        "
+                                                    />
+                                                    <label
+                                                        for="deficiency_comment_map"
+                                                        >Deficiency
+                                                        Comments</label
+                                                    >
                                                 </div>
                                             </div>
                                         </div>
+                                        <template
+                                            v-for="referral in proposal.referrals"
+                                        >
+                                            <div
+                                                v-if="
+                                                    referral.processing_status !=
+                                                    constants.REFERRAL_STATUS
+                                                        .PROCESSING_STATUS_RECALLED
+                                                        .TEXT
+                                                "
+                                                :key="referral.id"
+                                                class="row mb-3 mt-3"
+                                            >
                                         <template
                                             v-for="referral in proposal.referrals"
                                         >
@@ -221,6 +376,35 @@
                                                                 }}</span
                                                             ></label
                                                         >
+                                                        <textarea
+                                                            :id="
+                                                                'comment_map_' +
+                                                                referral.id
+                                                            "
+                                                            v-model="
+                                                                referral.comment_map
+                                                            "
+                                                            class="form-control referral-comment"
+                                                            :disabled="
+                                                                referral.referral !==
+                                                                profile.id
+                                                            "
+                                                        />
+                                                        <label
+                                                            :for="
+                                                                'comment_map_' +
+                                                                referral.id
+                                                            "
+                                                            >Referral Comment by
+                                                            <span
+                                                                class="fw-bold"
+                                                                >{{
+                                                                    referral
+                                                                        .referral_obj
+                                                                        .fullname
+                                                                }}</span
+                                                            ></label
+                                                        >
                                                     </div>
                                                 </div>
                                             </div>
@@ -233,7 +417,18 @@
                                 #slot_proposal_tourism_details_assessment_comments
                             >
                                 <AssessmentComments
+                            <template
+                                #slot_proposal_tourism_details_assessment_comments
+                            >
+                                <AssessmentComments
                                     ref="collapsible_proposal_tourism_details_comments"
+                                    :collapsed="collapseAssessmentComments"
+                                    component_title="Tourism Proposal Details Assessment Comments"
+                                    class="mb-2"
+                                    @created="
+                                        collapsible_proposal_tourism_details_comments_component_mounted
+                                    "
+                                >
                                     :collapsed="collapseAssessmentComments"
                                     component_title="Tourism Proposal Details Assessment Comments"
                                     class="mb-2"
@@ -246,7 +441,21 @@
                                             <div class="col">
                                                 <div class="form-floating">
                                                     <textarea
+                                                    <textarea
                                                         id="assessor_comment_tourism_proposal_details"
+                                                        v-model="
+                                                            assessment.assessor_comment_tourism_proposal_details
+                                                        "
+                                                        class="form-control"
+                                                        :disabled="
+                                                            !canEditComments
+                                                        "
+                                                    />
+                                                    <label
+                                                        for="assessor_comment_tourism_proposal_details"
+                                                        >Assessor
+                                                        Comments</label
+                                                    >
                                                         v-model="
                                                             assessment.assessor_comment_tourism_proposal_details
                                                         "
@@ -267,7 +476,21 @@
                                             <div class="col">
                                                 <div class="form-floating">
                                                     <textarea
+                                                    <textarea
                                                         id="deficiency_comment_tourism_proposal_details"
+                                                        v-model="
+                                                            assessment.deficiency_comment_tourism_proposal_details
+                                                        "
+                                                        class="form-control"
+                                                        :disabled="
+                                                            !canEditComments
+                                                        "
+                                                    />
+                                                    <label
+                                                        for="deficiency_comment_tourism_proposal_details"
+                                                        >Deficiency
+                                                        Comments</label
+                                                    >
                                                         v-model="
                                                             assessment.deficiency_comment_tourism_proposal_details
                                                         "
@@ -297,8 +520,50 @@
                                                 :key="referral.id"
                                                 class="row mb-3 mt-3"
                                             >
+                                        <template
+                                            v-for="referral in proposal.referrals"
+                                        >
+                                            <div
+                                                v-if="
+                                                    referral.processing_status !=
+                                                    constants.REFERRAL_STATUS
+                                                        .PROCESSING_STATUS_RECALLED
+                                                        .TEXT
+                                                "
+                                                :key="referral.id"
+                                                class="row mb-3 mt-3"
+                                            >
                                                 <div class="col">
                                                     <div class="form-floating">
+                                                        <textarea
+                                                            :id="
+                                                                'comment_proposal_details_' +
+                                                                referral.id
+                                                            "
+                                                            v-model="
+                                                                referral.comment_proposal_details
+                                                            "
+                                                            class="form-control referral-comment"
+                                                            :disabled="
+                                                                referral.referral !==
+                                                                profile.id
+                                                            "
+                                                        />
+                                                        <label
+                                                            :for="
+                                                                'comment_proposal_details_' +
+                                                                referral.id
+                                                            "
+                                                            >Referral Comment by
+                                                            <span
+                                                                class="fw-bold"
+                                                                >{{
+                                                                    referral
+                                                                        .referral_obj
+                                                                        .fullname
+                                                                }}</span
+                                                            ></label
+                                                        >
                                                         <textarea
                                                             :id="
                                                                 'comment_proposal_details_' +
@@ -1081,25 +1346,24 @@
 </template>
 
 <script>
-/*globals swal */
-import ProposedDecline from '@/components/internal/proposals/proposal_proposed_decline.vue'
-import AmendmentRequest from '@/components/internal/proposals/amendment_request.vue'
-import Requirements from '@/components/internal/proposals/proposal_requirements.vue'
-import ProposedApproval from '@/components/internal/proposals/proposed_issuance.vue'
-import ApprovalScreen from '@/components/internal/proposals/proposal_approval.vue'
-import CommsLogs from '@common-utils/comms_logs.vue'
-import Submission from '@common-utils/submission.vue'
-import Workflow from '@common-utils/workflow.vue'
-import { api_endpoints, helpers, constants } from '@/utils/hooks'
-import ApplicationForm from '@/components/form.vue'
-import FormSection from '@/components/forms/section_toggle.vue'
-import AssessmentComments from '@/components/forms/collapsible_component.vue'
-import TableRelatedItems from '@/components/common/table_related_items.vue'
-import { discardProposal } from '@/components/common/workflow_functions.js'
-require('select2/dist/css/select2.min.css')
+import ProposedDecline from '@/components/internal/proposals/proposal_proposed_decline.vue';
+import AmendmentRequest from '@/components/internal/proposals/amendment_request.vue';
+import Requirements from '@/components/internal/proposals/proposal_requirements.vue';
+import ProposedApproval from '@/components/internal/proposals/proposed_issuance.vue';
+import ApprovalScreen from '@/components/internal/proposals/proposal_approval.vue';
+import CommsLogs from '@common-utils/comms_logs.vue';
+import Submission from '@common-utils/submission.vue';
+import Workflow from '@common-utils/workflow.vue';
+import { api_endpoints, helpers, constants } from '@/utils/hooks';
+import ApplicationForm from '@/components/form.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
+import AssessmentComments from '@/components/forms/collapsible_component.vue';
+import TableRelatedItems from '@/components/common/table_related_items.vue';
+import { discardProposal } from '@/components/common/workflow_functions.js';
+require('select2/dist/css/select2.min.css');
 // CSS definitions to make sure workflow swal2 popovers are placed above any open bootstrap popover
 // See: `swal.fire` `customClass` property
-require('../../../../../../static/leaseslicensing/css/workflow.css')
+require('../../../../../../static/leaseslicensing/css/workflow.css');
 
 export default {
     name: 'InternalProposal',
@@ -1118,7 +1382,7 @@ export default {
         TableRelatedItems,
     },
     data: function () {
-        let vm = this
+        let vm = this;
         return {
             constants: constants,
             profile: null,
@@ -1156,35 +1420,59 @@ export default {
                 ajax: {
                     url: vm.contactsURL,
                     dataSrc: '',
+                    url: vm.contactsURL,
+                    dataSrc: '',
                 },
                 columns: [
                     {
                         title: 'Name',
                         mRender: function (data, type, full) {
+                            return full.first_name + ' ' + full.last_name;
+                        },
                             return full.first_name + ' ' + full.last_name
                         },
                     },
                     {
                         title: 'Phone',
                         data: 'phone_number',
+                        data: 'phone_number',
                     },
                     {
                         title: 'Mobile',
+                        data: 'mobile_number',
                         data: 'mobile_number',
                     },
                     {
                         title: 'Fax',
                         data: 'fax_number',
+                        data: 'fax_number',
                     },
                     {
                         title: 'Email',
                         data: 'email',
+                        data: 'email',
                     },
                 ],
+                processing: true,
                 processing: true,
             },
             contacts_table: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
+            //comms_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/comms_log'),
+            //comms_add_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/add_comms_log'),
+            //logs_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/action_log'),
+            comms_url: helpers.add_endpoint_json(
+                api_endpoints.proposal,
+                vm.$route.params.proposal_id + '/comms_log'
+            ),
+            comms_add_url: helpers.add_endpoint_json(
+                api_endpoints.proposal,
+                vm.$route.params.proposal_id + '/add_comms_log'
+            ),
+            logs_url: helpers.add_endpoint_json(
+                api_endpoints.proposal,
+                vm.$route.params.proposal_id + '/action_log'
+            ),
             comms_url: helpers.add_endpoint_json(
                 api_endpoints.proposal,
                 vm.$route.params.proposal_id + '/comms_log'
@@ -1204,7 +1492,7 @@ export default {
             additionalDocumentTypesSelected: [],
             select2AppliedToAdditionalDocumentTypes: false,
             proposedApprovalState: '',
-        }
+        };
     },
     computed: {
         withReferral: function () {
@@ -1214,22 +1502,22 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
                     constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
                 ].includes(this.proposal.processing_status_id)
-            )
+            );
         },
         collapseAssessmentComments: function () {
-            return false
+            return false;
             // Todo: Decide under which conditions to collapse the assessment comments
             // return !(this.withReferral && this.profile.is_referee);
         },
         related_items_ajax_url: function () {
-            return '/api/proposal/' + this.proposal.id + '/related_items/'
+            return '/api/proposal/' + this.proposal.id + '/related_items/';
         },
         requirementsKey: function () {
-            const req = 'proposal_requirements_' + this.uuid
-            return req
+            const req = 'proposal_requirements_' + this.uuid;
+            return req;
         },
         canEditComments: function () {
-            let canEdit = false
+            let canEdit = false;
             if (
                 [
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
@@ -1245,7 +1533,7 @@ export default {
                             constants.ROLES.GROUP_NAME_ASSESSOR.ID
                         )
                     ) {
-                        canEdit = true
+                        canEdit = true;
                     }
                 } else if (
                     this.proposal.application_type.name ===
@@ -1256,14 +1544,14 @@ export default {
                             constants.ROLES.GROUP_NAME_ASSESSOR.ID
                         )
                     ) {
-                        canEdit = true
+                        canEdit = true;
                     }
                 }
             }
-            return canEdit
+            return canEdit;
         },
         displaySaveBtns: function () {
-            let display = false
+            let display = false;
 
             if (
                 [
@@ -1280,7 +1568,7 @@ export default {
                             constants.ROLES.GROUP_NAME_ASSESSOR.ID
                         )
                     ) {
-                        display = true
+                        display = true;
                     }
                 } else if (
                     this.proposal.application_type.name ===
@@ -1291,11 +1579,11 @@ export default {
                             constants.ROLES.GROUP_NAME_ASSESSOR.ID
                         )
                     ) {
-                        display = true
+                        display = true;
                     }
                 }
             } else if (this.withReferral && this.profile.is_referee) {
-                display = true
+                display = true;
             } else if (
                 [
                     constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID,
@@ -1306,46 +1594,46 @@ export default {
                         constants.ROLES.FINANCE.ID
                     )
                 ) {
-                    display = true
+                    display = true;
                 }
             }
 
-            return display
+            return display;
         },
         disableSaveAndContinueBtn: function () {
             // Is this needed?
-            return !this.displaySaveBtns
+            return !this.displaySaveBtns;
         },
         disableSaveAndExitBtn: function () {
             // Is this needed?
-            return !this.displaySaveBtns
+            return !this.displaySaveBtns;
         },
         submitter_first_name: function () {
             if (this.proposal.submitter) {
-                return this.proposal.submitter.first_name
+                return this.proposal.submitter.first_name;
             } else {
-                return ''
+                return '';
             }
         },
         submitter_last_name: function () {
             if (this.proposal.submitter) {
-                return this.proposal.submitter.last_name
+                return this.proposal.submitter.last_name;
             } else {
-                return ''
+                return '';
             }
         },
         submitter_id: function () {
             if (this.proposal.submitter) {
-                return this.proposal.submitter.id
+                return this.proposal.submitter.id;
             } else {
-                return this.proposal.applicant_obj.id
+                return this.proposal.applicant_obj.id;
             }
         },
         submitter_email: function () {
             if (this.proposal.submitter) {
-                return this.proposal.submitter.email
+                return this.proposal.submitter.email;
             } else {
-                return this.proposal.applicant_obj.email
+                return this.proposal.applicant_obj.email;
             }
         },
         proposal_form_url: function () {
@@ -1355,58 +1643,58 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
                 ].includes(this.proposal.processing_status_id)
             ) {
-                return `/api/proposal/${this.proposal.id}/assessor_save.json`
+                return `/api/proposal/${this.proposal.id}/assessor_save.json`;
             } else if (
                 [
                     constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
                     constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
                 ].includes(this.proposal.processing_status_id)
             ) {
-                return `/api/proposal/${this.proposal.id}/referral_save.json`
+                return `/api/proposal/${this.proposal.id}/referral_save.json`;
             } else if (
                 [
                     constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID,
                 ].includes(this.proposal.processing_status_id)
             ) {
-                return `/api/proposal/${this.proposal.id}/finance_save.json`
+                return `/api/proposal/${this.proposal.id}/finance_save.json`;
             } else {
                 // Should not reach here
-                return ''
+                return '';
             }
         },
         complete_referral_url: function () {
-            return `/api/proposal/${this.proposal.id}/complete_referral.json`
+            return `/api/proposal/${this.proposal.id}/complete_referral.json`;
         },
         isRegistrationOfInterest: function () {
             return this.proposal.application_type.name ===
                 constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST
                 ? true
-                : false
+                : false;
         },
         isLeaseLicence: function () {
             return this.proposal.application_type.name ===
                 constants.APPLICATION_TYPES.LEASE_LICENCE
                 ? true
-                : false
+                : false;
         },
         proposedApprovalKey: function () {
-            return 'proposed_approval_' + this.uuid
+            return 'proposed_approval_' + this.uuid;
         },
         computedProposalId: function () {
             if (this.proposal) {
                 // Create a new key to make vue reload the component
-                return `${this.proposal.id}-${this.uuid}`
+                return `${this.proposal.id}-${this.uuid}`;
             }
-            return null
+            return '';
         },
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
         display_approval_screen: function () {
-            if (this.debug) return true
+            if (this.debug) return true;
             let ret_val =
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
@@ -1414,8 +1702,8 @@ export default {
                     constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ||
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.ID ||
-                this.isFinalised
-            return ret_val
+                this.isFinalised;
+            return ret_val;
         },
         display_requirements: function () {
             let ret_val =
@@ -1426,21 +1714,21 @@ export default {
                 ((this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                     this.isFinalised) &&
-                    this.showingRequirements)
-            return ret_val
+                    this.showingRequirements);
+            return ret_val;
         },
         showElectoralRoll: function () {
-            let show = false
+            let show = false;
             if (
                 this.proposal &&
                 ['wla', 'mla'].includes(this.proposal.application_type_code)
             ) {
-                show = true
+                show = true;
             }
-            return show
+            return show;
         },
         readonly: function () {
-            return true
+            return true;
         },
         contactsURL: function () {
             return this.proposal != null
@@ -1448,13 +1736,13 @@ export default {
                       api_endpoints.organisations,
                       this.proposal.applicant.id + '/contacts'
                   )
-                : ''
+                : '';
         },
         isLoading: function () {
-            return this.loading.length > 0
+            return this.loading.length > 0;
         },
         csrf_token: function () {
-            return helpers.getCookie('csrftoken')
+            return helpers.getCookie('csrftoken');
         },
         isFinalised: function () {
             return (
@@ -1462,28 +1750,28 @@ export default {
                 this.proposal.processing_status == 'Approved' ||
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID //approved_application
-            )
+            );
         },
         canAssess: function () {
             return (
                 this.proposal && this.proposal.assessor_mode.assessor_can_assess
-            )
+            );
         },
         isReferee: function () {
-            return this.proposal && this.proposal.assessor_mode.is_referee
+            return this.proposal && this.proposal.assessor_mode.is_referee;
         },
         hasAssessorMode: function () {
             return this.proposal &&
                 this.proposal.assessor_mode.has_assessor_mode
                 ? true
-                : false
+                : false;
         },
         canAction: function () {
-            return this.proposal.assessor_mode.assessor_can_assess
+            return this.proposal.assessor_mode.assessor_can_assess;
         },
         canLimitedAction: function () {
             // For now returning true when viewing the current version of the Proposal
-            return this.on_current_revision // TODO: implement this.  This is just temporary solution
+            return this.on_current_revision; // TODO: implement this.  This is just temporary solution
 
             //    if (this.proposal.processing_status == 'With Approver'){
             //        return
@@ -1522,11 +1810,13 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.TEXT,
                     constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.TEXT,
                 ].includes(this.proposal.processing_status)
-            )
+            );
         },
         on_current_revision: function () {
             // Returns whether the currently displayed version is the latest one
-            return this.latest_revision.revision_id === this.current_revision_id
+            return (
+                this.latest_revision.revision_id === this.current_revision_id
+            );
         },
         isApprovalLevelDocument: function () {
             return this.proposal &&
@@ -1534,198 +1824,165 @@ export default {
                 this.proposal.approval_level != null &&
                 this.proposal.approval_level_document == null
                 ? true
-                : false
+                : false;
         },
         applicant_email: function () {
             return this.proposal && this.proposal.applicant.email
                 ? this.proposal.applicant.email
-                : ''
+                : '';
         },
     },
+    watch: {},
     updated: function () {
-        let vm = this
+        let vm = this;
         if (!vm.panelClickersInitialised) {
             $('.panelClicker[data-toggle="collapse"]').on('click', function () {
-                var chev = $(this).children()[0]
+                var chev = $(this).children()[0];
                 window.setTimeout(function () {
                     $(chev).toggleClass(
                         'glyphicon-chevron-down glyphicon-chevron-up'
-                    )
-                }, 100)
-            })
-            vm.panelClickersInitialised = true
+                    );
+                }, 100);
+            });
+            vm.panelClickersInitialised = true;
         }
         this.$nextTick(() => {
-            vm.initialiseOrgContactTable()
-            vm.initialiseSelects()
-            vm.form = document.forms.new_proposal
+            vm.initialiseOrgContactTable();
+            vm.initialiseSelects();
+            vm.form = document.forms.new_proposal;
             if (vm.hasAmendmentRequest) {
-                vm.deficientFields()
+                vm.deficientFields();
             }
-        })
+        });
     },
     created: async function () {
         this.profile = Object.assign(
             {},
             await helpers.fetchWrapper(api_endpoints.profile)
-        )
-        this.fetchProposal()
+        );
+        this.fetchProposal();
     },
     methods: {
-        validateInvoicingForm: function () {
-            let vm = this
-            var form = document.getElementById('invoicing-form')
-
-            if (form.checkValidity()) {
-                vm.completeEditing()
-            } else {
-                form.classList.add('was-validated')
-                $('#invoicing-form').find(':invalid').first().focus()
-            }
-
-            return false
-        },
         completeEditing: async function () {
-            let cancelled = false
-            if (
-                'once_off_charge' ==
-                $('input[type=radio][name=charge_method]:checked').attr('id')
-            ) {
-                await swal
-                    .fire({
-                        title: 'Confirm Once Off Invoice',
-                        text: 'You have selected to invoice as a once off charge, \
-                        this will create a new invoice record. An oracle invoice must \
-                        be attached to the new invoice record before the system will send a payment request to the proponent.',
-                        icon: 'warning',
-                        showCancelButton: true,
-                        buttonsStyling: false,
-                        confirmButtonText: 'Confirm',
-                        customClass: {
-                            confirmButton: 'btn btn-primary',
-                            cancelButton: 'btn btn-secondary me-2',
-                        },
-                        reverseButtons: true,
-                    })
-                    .then((result) => {
-                        if (result.isDismissed) {
-                            cancelled = true
-                        }
-                    })
-            }
-            if (!cancelled) {
-                const payload = { proposal: this.proposal }
-                const res = await fetch(
-                    '/api/proposal/' +
-                        this.proposal.id +
-                        '/finance_complete_editing.json',
-                    {
-                        body: JSON.stringify(payload),
-                        method: 'POST',
-                    }
-                )
+            let payload = { proposal: this.proposal };
 
-                if (res.ok) {
+            const res = await fetch(
+                '/api/proposal/' +
+                    this.proposal.id +
+                    '/finance_complete_editing.json',
+                { body: JSON.stringify(payload), method: 'POST' }
+            );
+
+            if (res.ok) {
+                await swal.fire({
+                    title: 'Saved',
+                    text: 'Your proposal has been saved',
+                    icon: 'success',
+                });
+            } else {
+                let errors = [];
+                await res.json().then((json) => {
+                    for (let key in json) {
+                        errors.push(
+                            `${key}: ${
+                                typeof json[key] == 'string'
+                                    ? json[key]
+                                    : json[key].join(',')
+                            }`
+                        );
+                    }
                     swal.fire({
-                        title: 'Saved',
-                        text: 'Your proposal has been saved',
-                        icon: 'success',
-                    })
-                    let data = await res.json()
-                    this.proposal = Object.assign({}, data)
-                } else {
-                    let errors = []
-                    await res.json().then((json) => {
-                        for (let key in json) {
-                            errors.push(
-                                `${key}: ${
-                                    typeof json[key] == 'string'
-                                        ? json[key]
-                                        : json[key].join(',')
-                                }`
-                            )
-                        }
-                        swal.fire({
-                            title: 'Please fix following errors before saving',
-                            text: errors.join(','),
-                            icon: 'error',
-                        })
-                    })
-                }
+                        title: 'Please fix following errors before saving',
+                        text: errors.join(','),
+                        icon: 'error',
+                    });
+                });
             }
+        },
+        cancelEditing: function () {
+            alert('cancelEditing');
         },
         applicationFormMounted: function () {
-            this.fetchAdditionalDocumentTypesDict() // <select> element for the additional document type exists in the ApplicationForm component, which is a child component of this component.
+            this.fetchAdditionalDocumentTypesDict(); // <select> element for the additional document type exists in the ApplicationForm component, which is a child component of this component.
             // Therefore to apply select2 to the element inside child component, we have to make sure the childcomponent has been mounted.  Then select2 can be applied.
         },
         applySelect2ToAdditionalDocumentTypes: function (option_data) {
-            let vm = this
+            let vm = this;
 
             if (!vm.select2AppliedToAdditionalDocumentTypes) {
-                $(vm.$refs.select_additional_document_types).select2({
-                    theme: 'bootstrap-5',
-                    allowClear: false,
-                    placeholder: 'Select Type',
-                    multiple: true,
-                    data: option_data,
-                })
-                vm.select2AppliedToAdditionalDocumentTypes = true
+                $(vm.$refs.select_additional_document_types)
+                    .select2({
+                        theme: 'bootstrap-5',
+                        allowClear: false,
+                        placeholder: 'Select Type',
+                        multiple: true,
+                        data: option_data,
+                    })
+                    .on('select2:select', function () {
+                        //vm.updateApplicationTypeFilterCache()
+                        //vm.main_manager.show_me()
+                    })
+                    .on('select2:unselect', function () {
+                        //vm.updateApplicationTypeFilterCache()
+                        //vm.main_manager.show_me()
+                    });
+                vm.select2AppliedToAdditionalDocumentTypes = true;
             }
         },
         collapsible_map_comments_component_mounted: function () {
-            this.$refs.collapsible_map_comments.show_warning_icon(false)
+            this.$refs.collapsible_map_comments.show_warning_icon(false);
         },
         collapsible_proposal_tourism_details_comments_component_mounted:
             function () {
                 this.$refs.collapsible_proposal_tourism_details_comments.show_warning_icon(
                     false
-                )
+                );
             },
         collapsible_proposal_general_details_comments_component_mounted:
             function () {
                 this.$refs.collapsible_proposal_general_details_comments.show_warning_icon(
                     false
-                )
+                );
             },
         collapsible_proposal_details_comments_component_mounted: function () {
             this.$refs.collapsible_proposal_details_comments.show_warning_icon(
                 false
-            )
+            );
         },
         collapsible_proposal_impact_comments_component_mounted: function () {
             this.$refs.collapsible_proposal_impact_comments.show_warning_icon(
                 false
-            )
+            );
         },
         collapsible_other_comments_component_mounted: function () {
-            this.$refs.collapsible_other_comments.show_warning_icon(false)
+            this.$refs.collapsible_other_comments.show_warning_icon(false);
         },
         collapsible_deed_poll_comments_component_mounted: function () {
-            this.$refs.collapsible_deed_poll_comments.show_warning_icon(false)
+            this.$refs.collapsible_deed_poll_comments.show_warning_icon(false);
         },
         collapsible_additional_documents_comments_component_mounted:
             function () {
                 this.$refs.collapsible_additional_documents_comments.show_warning_icon(
                     false
-                )
+                );
             },
         locationUpdated: function () {
-            console.log('in locationUpdated()')
+            console.log('in locationUpdated()');
         },
         save_and_continue: async function () {
-            this.savingProposal = true
+            this.savingProposal = true;
             await this.save().then(() => {
-                this.savingProposal = false
-            })
+                this.savingProposal = false;
+            });
         },
         save_and_exit: async function () {
             await this.save_and_continue().then(() => {
-                this.$router.push({ name: 'internal-dashboard' })
-            })
+                this.$router.push({ name: 'internal-dashboard' });
+            });
         },
         completeReferral: async function () {
-            let vm = this
-            vm.checkAssessorData()
+            let vm = this;
+            vm.checkAssessorData();
             swal.fire({
                 title: 'Complete Referral',
                 text: 'Are you sure you want to complete this referral?',
@@ -1752,11 +2009,11 @@ export default {
                                 Accept: 'application/json',
                                 'Content-Type': 'application/json',
                             },
-                        })
+                        });
                         if (vm.profile.is_staff) {
-                            this.$router.push({ name: 'internal-dashboard' })
+                            this.$router.push({ name: 'internal-dashboard' });
                         } else {
-                            this.$router.push({ name: 'external-dashboard' })
+                            this.$router.push({ name: 'external-dashboard' });
                         }
                     }
                 })
@@ -1768,23 +2025,27 @@ export default {
                         customClass: {
                             container: 'swal2-popover',
                         },
-                    })
-                })
+                    });
+                });
         },
         save: async function () {
-            let vm = this
-            vm.checkAssessorData()
+            let vm = this;
+            vm.checkAssessorData();
             try {
-                let payload = { proposal: this.proposal }
+                let payload = { proposal: this.proposal };
                 // When in Entering Conditions status ApplicationForm might not be there
                 if (
                     vm.$refs.application_form &&
                     vm.$refs.application_form.$refs.component_map
                 ) {
-                    payload['proposal_geometry'] =
-                        vm.$refs.application_form.$refs.component_map.getJSONFeatures()
+                    payload.proposalgeometry =
+                        vm.$refs.application_form.$refs.component_map.getJSONFeatures();
                 }
 
+                const res = await fetch(vm.proposal_form_url, {
+                    body: JSON.stringify(payload),
+                    method: 'POST',
+                });
                 const res = await fetch(vm.proposal_form_url, {
                     body: JSON.stringify(payload),
                     method: 'POST',
@@ -1796,24 +2057,24 @@ export default {
                         text: 'Your proposal has been saved',
                         icon: 'success',
                     }).then(async () => {
-                        let resData = await res.json()
-                        vm.proposal = Object.assign({}, resData)
+                        let resData = await res.json();
+                        vm.proposal = Object.assign({}, resData);
                         vm.$nextTick(async () => {
                             if (vm.$refs.application_form != undefined) {
-                                vm.$refs.application_form.incrementComponentMapKey()
+                                vm.$refs.application_form.incrementComponentMapKey();
                             }
-                        })
-                    })
+                        });
+                    });
                 } else {
-                    let err = await res.json()
+                    let err = await res.json();
                     await swal.fire({
                         title: 'Please fix following errors before saving',
                         text: JSON.stringify(err),
                         icon: 'error',
-                    })
+                    });
                 }
             } catch (err) {
-                console.error(err)
+                console.error(err);
             }
         },
         checkAssessorData: function () {
@@ -1821,52 +2082,52 @@ export default {
             //select all fields including hidden fields
             var all_fields = $(
                 'input[type=text]:required, textarea:required, input[type=checkbox]:required, input[type=radio]:required, input[type=file]:required, select:required'
-            )
+            );
             all_fields.each(function () {
-                var ele = null
+                var ele = null;
                 //check the fields which has assessor boxes.
-                ele = $('[name=' + this.name + '-Assessor]')
+                ele = $('[name=' + this.name + '-Assessor]');
                 if (ele.length > 0) {
                     let visiblity = $('[name=' + this.name + '-Assessor]').is(
                         ':visible'
-                    )
+                    );
                     if (!visiblity) {
                         if (ele[0].value != '') {
-                            ele[0].value = ''
+                            ele[0].value = '';
                         }
                     }
                 }
-            })
+            });
         },
         initialiseOrgContactTable: function () {
-            let vm = this
+            let vm = this;
             if (vm.proposal && !vm.contacts_table_initialised) {
                 vm.contacts_options.ajax.url = helpers.add_endpoint_json(
                     api_endpoints.organisations,
                     vm.proposal.applicant.id + '/contacts'
-                )
+                );
                 vm.contacts_table = $('#' + vm.contacts_table_id).DataTable(
                     vm.contacts_options
-                )
-                vm.contacts_table_initialised = true
+                );
+                vm.contacts_table_initialised = true;
             }
         },
         commaToNewline(s) {
-            return s.replace(/[,;]/g, '\n')
+            return s.replace(/[,;]/g, '\n');
         },
         proposedDecline: function () {
-            this.proposedApprovalState = 'proposed_decline'
+            this.proposedApprovalState = 'proposed_decline';
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
-                this.$refs.proposed_decline.isModalOpen = true
-            })
+                this.$refs.proposed_decline.isModalOpen = true;
+            });
         },
         proposedApproval: function () {
-            this.proposedApprovalState = 'proposed_approval'
+            this.proposedApprovalState = 'proposed_approval';
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
-                this.$refs.proposed_approval.isModalOpen = true
-            })
+                this.$refs.proposed_approval.isModalOpen = true;
+            });
         },
         issueApproval: function () {
             //save approval level comment before opening 'issue approval' modal
@@ -1877,12 +2138,12 @@ export default {
                 this.proposal.approval_level_document == null
             ) {
                 if (this.proposal.approval_level_comment != '') {
-                    let vm = this
-                    let data = new FormData()
+                    let vm = this;
+                    let data = new FormData();
                     data.append(
                         'approval_level_comment',
                         vm.proposal.approval_level_comment
-                    )
+                    );
                     fetch(
                         helpers.add_endpoint_json(
                             api_endpoints.proposal,
@@ -1891,13 +2152,13 @@ export default {
                         { body: JSON.stringify(data), method: 'POST' }
                     ).then(
                         (res) => {
-                            vm.proposal = res.body
+                            vm.proposal = res.body;
                             //vm.refreshFromResponse(res);
                         },
                         (err) => {
-                            console.log(err)
+                            console.log(err);
                         }
-                    )
+                    );
                 }
             }
             if (
@@ -1908,29 +2169,30 @@ export default {
                     'Error',
                     'Please add Approval document or comments before final approval',
                     'error'
-                )
+                );
             } else {
-                this.proposedApprovalState = 'final_approval'
+                this.proposedApprovalState = 'final_approval';
                 // this.uuid++; Why do we need to reload the whole form when we open a modal!?
                 this.$nextTick(() => {
-                    this.$refs.proposed_approval.isModalOpen = true
-                })
+                    this.$refs.proposed_approval.isModalOpen = true;
+                });
             }
         },
         discardProposal: async function () {
-            let vm = this
-            console.log('discardProposal')
+            let vm = this;
+            console.log('discardProposal');
             await discardProposal(this.proposal)
                 .then((data) => {
                     if (data != null) {
                         // Only update the proposal if the discard was successful
-                        vm.proposal = Object.assign({}, data)
-                        vm.uuid++
+                        console.log(data);
+                        vm.proposal = Object.assign({}, data);
+                        vm.uuid++;
                         swal.fire({
                             title: 'Discarded',
                             text: 'The application has been discarded',
                             icon: 'success',
-                        })
+                        });
                     }
                 })
                 .catch((error) => {
@@ -1938,54 +2200,64 @@ export default {
                         title: 'The proposal could not be discarded',
                         text: error,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
         },
         declineProposal: function () {
             this.$refs.proposed_decline.decline =
                 this.proposal.proposaldeclineddetails != null
                     ? helpers.copyObject(this.proposal.proposaldeclineddetails)
-                    : {}
-            this.$refs.proposed_decline.isModalOpen = true
+                    : {};
+            this.$refs.proposed_decline.isModalOpen = true;
         },
         updateProposalData: function (proposal) {
-            this.proposal = proposal
+            this.proposal = proposal;
         },
         amendmentRequest: function () {
-            let values = ''
+            let values = '';
             $('.deficiency').each((i, d) => {
                 values +=
                     $(d).val() != ''
                         ? `Question - ${$(d).data(
                               'question'
                           )}\nDeficiency - ${$(d).val()}\n\n`
-                        : ''
-            })
-            this.$refs.amendment_request.amendment.text = values
-            this.$refs.amendment_request.isModalOpen = true
+                        : '';
+            });
+            this.$refs.amendment_request.amendment.text = values;
+            this.$refs.amendment_request.isModalOpen = true;
         },
         highlight_deficient_fields: function (deficient_fields) {
             for (let deficient_field of deficient_fields) {
-                $('#' + 'id_' + deficient_field).css('color', 'red')
+                $('#' + 'id_' + deficient_field).css('color', 'red');
             }
         },
         deficientFields() {
-            let vm = this
-            let deficient_fields = []
+            let vm = this;
+            let deficient_fields = [];
             $('.deficiency').each((i, d) => {
                 if ($(d).val() != '') {
-                    let name = $(d)[0].name
-                    let tmp = name.replace('-comment-field', '')
-                    deficient_fields.push(tmp)
+                    let name = $(d)[0].name;
+                    let tmp = name.replace('-comment-field', '');
+                    deficient_fields.push(tmp);
                 }
-            })
-            vm.highlight_deficient_fields(deficient_fields)
+            });
+            vm.highlight_deficient_fields(deficient_fields);
         },
         toggleProposal: function (value) {
-            this.showingProposal = value
+            this.showingProposal = value;
         },
         toggleRequirements: function (value) {
-            this.showingRequirements = value
+            this.showingRequirements = value;
+        },
+        updateAssignedApprover: function (value) {
+            console.log('updateAssignedApprover');
+            let vm = this;
+            vm.proposal.assigned_approver = value;
+        },
+        updateAssignedOfficer: function (value) {
+            console.log('updateAssignedOfficer');
+            let vm = this;
+            vm.proposal.assigned_officer = value;
         },
         updateAssignedApprover: function (value) {
             console.log('updateAssignedApprover')
@@ -1998,21 +2270,21 @@ export default {
             vm.proposal.assigned_officer = value
         },
         updateAssignedOfficerSelect: function () {
-            console.log('updateAssignedOfficerSelect')
-            let vm = this
+            console.log('updateAssignedOfficerSelect');
+            let vm = this;
             if (vm.proposal.processing_status == 'With Approver') {
                 vm.$refs.workflow.updateAssignedOfficerSelect(
                     vm.proposal.assigned_approver
-                )
+                );
             } else {
                 vm.$refs.workflow.updateAssignedOfficerSelect(
                     vm.proposal.assigned_officer
-                )
+                );
             }
         },
         assignRequestUser: async function () {
-            let vm = this
-            console.log('in assignRequestUser')
+            let vm = this;
+            console.log('in assignRequestUser');
 
             fetch(
                 helpers.add_endpoint_json(
@@ -2023,25 +2295,25 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    vm.proposal = Object.assign({}, data)
-                    vm.updateAssignedOfficerSelect()
+                    vm.proposal = Object.assign({}, data);
+                    vm.updateAssignedOfficerSelect();
                 })
                 .catch((error) => {
-                    this.updateAssignedOfficerSelect()
-                    console.log(error)
+                    this.updateAssignedOfficerSelect();
+                    console.log(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
         },
         /*
         refreshFromResponse:function(response){
@@ -2053,34 +2325,34 @@ export default {
         },
         */
         assignTo: async function () {
-            let vm = this
-            console.log('in assignTo')
-            let unassign = true
-            let data = {}
+            let vm = this;
+            console.log('in assignTo');
+            let unassign = true;
+            let data = {};
             if (this.processing_status == 'With Approver') {
                 unassign =
                     this.proposal.assigned_approver != null &&
                     this.proposal.assigned_approver != 'undefined'
                         ? false
-                        : true
-                data = { assessor_id: this.proposal.assigned_approver }
+                        : true;
+                data = { assessor_id: this.proposal.assigned_approver };
             } else {
                 unassign =
                     this.proposal.assigned_officer != null &&
                     this.proposal.assigned_officer != 'undefined'
                         ? false
-                        : true
-                data = { assessor_id: this.proposal.assigned_officer }
+                        : true;
+                data = { assessor_id: this.proposal.assigned_officer };
             }
 
-            let endpoint = 'unassign'
-            let payload = {}
+            let endpoint = 'unassign';
+            let payload = {};
             if (!unassign) {
-                endpoint = 'assign_to'
+                endpoint = 'assign_to';
                 payload = {
                     body: JSON.stringify(data),
                     method: 'POST',
-                }
+                };
             }
 
             fetch(
@@ -2093,31 +2365,31 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    vm.proposal = Object.assign({}, data)
-                    vm.updateAssignedOfficerSelect()
+                    vm.proposal = Object.assign({}, data);
+                    vm.updateAssignedOfficerSelect();
                 })
                 .catch((error) => {
-                    this.updateAssignedOfficerSelect()
-                    console.log(error)
+                    this.updateAssignedOfficerSelect();
+                    console.log(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
         },
         switchStatus: async function (new_status) {
             let data = {
                 status: new_status,
                 approver_comment: this.approver_comment,
-            }
+            };
 
             fetch(
                 helpers.add_endpoint_json(
@@ -2132,19 +2404,19 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    this.proposal = Object.assign({}, data)
-                    this.approver_comment = ''
+                    this.proposal = Object.assign({}, data);
+                    this.approver_comment = '';
                     this.$nextTick(() => {
-                        this.initialiseAssignedOfficerSelect(true)
-                        this.updateAssignedOfficerSelect()
-                    })
+                        this.initialiseAssignedOfficerSelect(true);
+                        this.updateAssignedOfficerSelect();
+                    });
                     //if approver is pushing back proposal to Assessor then navigate the approver back to dashboard page
                     if (
                         this.proposal.processing_status_id ==
@@ -2153,7 +2425,7 @@ export default {
                             new_status ==
                                 constants.PROPOSAL_STATUS.WITH_ASSESSOR)
                     ) {
-                        this.$router.push({ path: '/internal' })
+                        this.$router.push({ path: '/internal' });
                     }
                 })
                 .catch((error) => {
@@ -2161,16 +2433,16 @@ export default {
                         title: 'Proposal Error',
                         text: error,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
         },
         initialiseAssignedOfficerSelect: function (reinit = false) {
-            console.log('initialiseAssignedOfficerSelect')
-            let vm = this
+            console.log('initialiseAssignedOfficerSelect');
+            let vm = this;
             if (reinit) {
                 $(vm.$refs.assigned_officer).data('select2')
                     ? $(vm.$refs.assigned_officer).select2('destroy')
-                    : ''
+                    : '';
             }
             // Assigned officer select
             $(vm.$refs.assigned_officer)
@@ -2180,48 +2452,48 @@ export default {
                     placeholder: 'Select Officer',
                 })
                 .on('select2:select', function (e) {
-                    var selected = $(e.currentTarget)
+                    var selected = $(e.currentTarget);
                     if (vm.proposal.processing_status == 'With Approver') {
-                        vm.proposal.assigned_approver = selected.val()
+                        vm.proposal.assigned_approver = selected.val();
                     } else {
-                        vm.proposal.assigned_officer = selected.val()
+                        vm.proposal.assigned_officer = selected.val();
                     }
-                    vm.assignTo()
+                    vm.assignTo();
                 })
                 .on('select2:unselecting', function () {
-                    var self = $(this)
+                    var self = $(this);
                     setTimeout(() => {
-                        self.select2('close')
-                    }, 0)
+                        self.select2('close');
+                    }, 0);
                 })
                 .on('select2:unselect', function () {
                     if (vm.proposal.processing_status == 'With Approver') {
-                        vm.proposal.assigned_approver = null
+                        vm.proposal.assigned_approver = null;
                     } else {
-                        vm.proposal.assigned_officer = null
+                        vm.proposal.assigned_officer = null;
                     }
-                    vm.assignTo()
-                })
+                    vm.assignTo();
+                });
         },
         initialiseSelects: function () {
-            let vm = this
+            let vm = this;
             if (!vm.initialisedSelects) {
-                vm.initialiseAssignedOfficerSelect()
-                vm.initialisedSelects = true
+                vm.initialiseAssignedOfficerSelect();
+                vm.initialisedSelects = true;
             }
         },
         fetchAdditionalDocumentTypesDict: async function () {
-            const response = await fetch('/api/additional_document_types_dict')
-            const resData = await response.json()
-            this.applySelect2ToAdditionalDocumentTypes(resData)
+            const response = await fetch('/api/additional_document_types_dict');
+            const resData = await response.json();
+            this.applySelect2ToAdditionalDocumentTypes(resData);
         },
         revisionToDisplay: async function (revision) {
-            console.log('Displaying', revision)
-            let vm = this
+            console.log('Displaying', revision);
+            let vm = this;
             let payload = {
                 revision_id: revision.revision_id,
                 debug: this.debug,
-            }
+            };
 
             await fetch(
                 helpers.add_endpoint_json(
@@ -2233,26 +2505,27 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return response.json()
+                        return response.json();
                     }
                 })
                 .then((response) => {
-                    this.proposal = Object.assign({}, response)
-                    this.current_revision_id = revision.revision_id
-                    this.uuid++
+                    console.log(response.reference);
+                    this.proposal = Object.assign({}, response);
+                    this.current_revision_id = revision.revision_id;
+                    this.uuid++;
                 })
                 .catch((error) => {
-                    console.error(error)
-                })
+                    console.error(error);
+                });
         },
         fetchProposal: async function () {
-            let vm = this
+            let vm = this;
             let payload = {
                 debug: this.debug,
-            }
+            };
             fetch(
                 `/api/proposal/${
                     this.$route.params.proposal_id
@@ -2260,24 +2533,24 @@ export default {
             )
                 .then(async (response) => {
                     if (!response.ok) {
-                        const text = await response.json()
-                        throw new Error(text)
+                        const text = await response.json();
+                        throw new Error(text);
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    vm.proposal = Object.assign({}, data)
+                    vm.proposal = Object.assign({}, data);
                     // Dict of the latest revision's parameters
                     vm.latest_revision = Object.assign(
                         {},
                         data.lodgement_versions[0]
-                    )
+                    );
                     // Set current reivsion id to the latest one on creation
-                    vm.current_revision_id = vm.latest_revision.revision_id
-                    vm.hasAmendmentRequest = this.proposal.hasAmendmentRequest
+                    vm.current_revision_id = vm.latest_revision.revision_id;
+                    vm.hasAmendmentRequest = this.proposal.hasAmendmentRequest;
                     if (vm.debug == true) {
-                        this.showingProposal = true
+                        this.showingProposal = true;
                     }
                     if (
                         [
@@ -2288,34 +2561,21 @@ export default {
                     ) {
                         $(
                             'textarea.referral-comment:enabled:visible:not([readonly="readonly"]):first'
-                        ).focus()
+                        ).focus();
                     }
                     this.$nextTick(() => {
-                        /* Modify the scroll height of the assessment comments to fit the content */
                         $('textarea').each(function () {
+                            console.log($(this)[0].scrollHeight);
                             if ($(this)[0].scrollHeight > 70) {
-                                $(this).height($(this)[0].scrollHeight - 30)
+                                $(this).height($(this)[0].scrollHeight - 30);
                             }
-                        })
-                        if (
-                            constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING
-                                .ID == vm.proposal.processing_status_id &&
-                            vm.profile.is_finance_officer
-                        ) {
-                            $(document).scrollTop(
-                                $('#invoicing-form').offset().top - 300
-                            )
-                        }
-                    })
+                        });
+                    });
                 })
                 .catch((error) => {
-                    console.log(error)
-                })
-        },
-        updateInvoicingDetails: function (value) {
-            console.log('updateInvoicingDetails', value)
-            Object.assign(this.proposal.invoicing_details, value)
+                    console.log(error);
+                });
         },
     },
-}
+};
 </script>

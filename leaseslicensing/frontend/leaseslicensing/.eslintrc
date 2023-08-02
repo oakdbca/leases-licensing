@@ -20,5 +20,12 @@
         "es6": true,
         "node": true,
         "jquery": true
+    },
+    "globals": {
+        "moment": true,
+        "swal": true,
+        "bootstrap": true,
+        "env": true,
+        "_": true // Lodash
     }
 }

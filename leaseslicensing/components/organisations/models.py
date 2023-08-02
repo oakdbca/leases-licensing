@@ -696,7 +696,11 @@ class Organisation(models.Model):
 
     @property
     def address(self):
-        return self.ledger_organisation.postal_address
+        address = {
+            "postal_address": self.ledger_organisation.get("postal_address", {}),
+            "billing_address": self.ledger_organisation.get("billing_address", {}),
+        }
+        return address
 
     @property
     def phone_number(self):
@@ -810,6 +814,7 @@ class OrganisationContact(models.Model):
     class Meta:
         app_label = "leaseslicensing"
         unique_together = (("organisation", "email"),)
+        ordering = ("organisation", "last_name", "first_name")
 
     def __str__(self):
         return f"{self.last_name} {self.first_name}"

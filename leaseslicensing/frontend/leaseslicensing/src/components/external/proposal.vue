@@ -1,22 +1,33 @@
 <template lang="html">
     <div class="container">
         <div v-if="!proposal_readonly">
-            <div v-if="hasAmendmentRequest" class="row" style="color:red;">
+            <div v-if="hasAmendmentRequest" class="row" style="color: red">
                 <div class="col-lg-12 pull-right">
                     <div class="card card-default">
                         <div class="card-header">
-                            <h3 class="card-title" style="color:red;">An amendment has been requested for this Application
-                                <a class="panelClicker" :href="'#' + pBody" data-toggle="collapse" data-parent="#userInfo"
-                                    expanded="true" :aria-controls="pBody">
-                                    <span class="glyphicon glyphicon-chevron-down pull-right "></span>
+                            <h3 class="card-title" style="color: red">
+                                An amendment has been requested for this
+                                Application
+                                <a
+                                    class="panelClicker"
+                                    :href="'#' + pBody"
+                                    data-toggle="collapse"
+                                    data-parent="#userInfo"
+                                    expanded="true"
+                                    :aria-controls="pBody"
+                                >
+                                    <span
+                                        class="glyphicon glyphicon-chevron-down pull-right"
+                                    ></span>
                                 </a>
                             </h3>
                         </div>
-                        <div class="card-body collapse in" :id="pBody">
-                            <div v-for="a in amendment_request">
+                        <div :id="pBody" class="card-body collapse in">
+                            <div v-for="a in amendment_request" :key="a.id">
                                 <p>Reason: {{ a.reason }}</p>
-                                <p>Details:
-                                <p v-for="t in splitText(a.text)">{{ t }}</p>
+                                <p>Details:</p>
+                                <p v-for="t in splitText(a.text)" :key="t">
+                                    {{ t }}
                                 </p>
                             </div>
                         </div>
@@ -25,56 +36,124 @@
             </div>
         </div>
 
-        <div id="error" v-if="missing_fields.length > 0"
-            style="margin: 10px; padding: 5px; color: red; border:1px solid red;">
+        <div
+            v-if="missing_fields.length > 0"
+            id="error"
+            style="
+                margin: 10px;
+                padding: 5px;
+                color: red;
+                border: 1px solid red;
+            "
+        >
             <b>Please answer the following mandatory question(s):</b>
             <ul>
-                <li v-for="error in missing_fields">
+                <li v-for="error in missing_fields" :key="error.label">
                     {{ error.label }}
                 </li>
             </ul>
         </div>
-        <ApplicationForm v-if="proposal" :proposal="proposal" :is_external="true" ref="application_form"
-            :readonly="readonly" :submitterId="submitterId" @updateSubmitText="updateSubmitText"
-            :registrationOfInterest="registrationOfInterest" :leaseLicence="leaseLicence"
-            @refreshFromResponse="refreshFromResponse" />
+        <ApplicationForm
+            v-if="proposal"
+            ref="application_form"
+            :proposal="proposal"
+            :is_external="true"
+            :readonly="readonly"
+            :submitter-id="submitterId"
+            :registration-of-interest="registrationOfInterest"
+            :lease-licence="leaseLicence"
+            @updateSubmitText="updateSubmitText"
+            @refreshFromResponse="refreshFromResponse"
+        />
         <div v-else>
-            <BootstrapSpinner :isLoading="true" class="text-primary opacity-50" />
+            <BootstrapSpinner
+                :is-loading="true"
+                class="text-primary opacity-50"
+            />
         </div>
 
         <div>
-            <input type="hidden" name="csrfmiddlewaretoken" :value="csrf_token" />
-            <input type='hidden' name="schema" :value="JSON.stringify(proposal)" />
-            <input type='hidden' name="proposal_id" :value="1" />
+            <input
+                type="hidden"
+                name="csrfmiddlewaretoken"
+                :value="csrf_token"
+            />
+            <input
+                type="hidden"
+                name="schema"
+                :value="JSON.stringify(proposal)"
+            />
+            <input type="hidden" name="proposal_id" :value="1" />
 
             <div class="navbar fixed-bottom bg-navbar me-1">
                 <div v-if="proposal && !proposal.readonly" class="container">
                     <div class="col-md-12 text-end">
-                        <BootstrapButtonSpinner v-if="saveExitProposal" class="btn btn-primary me-1" :isLoading="true"
-                            :small="true" :centerOfScreen="false" />
-                        <button v-else @click.prevent="save_exit" class="btn btn-primary me-1"
-                            :disabled="navbarButtonsDisabled">Save and Exit</button>
+                        <BootstrapButtonSpinner
+                            v-if="saveExitProposal"
+                            class="btn btn-primary me-1"
+                            :is-loading="true"
+                            :small="true"
+                            :center-of-screen="false"
+                        />
+                        <button
+                            v-else
+                            class="btn btn-primary me-1"
+                            :disabled="navbarButtonsDisabled"
+                            @click.prevent="save_exit"
+                        >
+                            Save and Exit
+                        </button>
 
-                        <BootstrapButtonSpinner v-if="savingProposal" class="btn btn-primary me-1" :isLoading="true"
-                            :small="true" :centerOfScreen="false" />
-                        <button v-else @click.prevent="save" class="btn btn-primary me-1"
-                            :disabled="navbarButtonsDisabled">Save
-                            and Continue</button>
+                        <BootstrapButtonSpinner
+                            v-if="savingProposal"
+                            class="btn btn-primary me-1"
+                            :is-loading="true"
+                            :small="true"
+                            :center-of-screen="false"
+                        />
+                        <button
+                            v-else
+                            class="btn btn-primary me-1"
+                            :disabled="navbarButtonsDisabled"
+                            @click.prevent="save"
+                        >
+                            Save and Continue
+                        </button>
 
-                        <BootstrapButtonSpinner v-if="submitting || paySubmitting" class="btn btn-primary me-1"
-                            :isLoading="true" :small="true" :centerOfScreen="false" />
+                        <BootstrapButtonSpinner
+                            v-if="submitting || paySubmitting"
+                            class="btn btn-primary me-1"
+                            :is-loading="true"
+                            :small="true"
+                            :center-of-screen="false"
+                        />
 
-                        <button v-else @click.prevent="submit" class="btn btn-primary me-1"
-                            :disabled="navbarButtonsDisabled" id="submitButton" :title="disabledSubmitText">{{ submitText
-                            }}</button>
+                        <button
+                            v-else
+                            id="submitButton"
+                            class="btn btn-primary me-1"
+                            :disabled="navbarButtonsDisabled"
+                            :title="disabledSubmitText"
+                            @click.prevent="submit"
+                        >
+                            {{ submitText }}
+                        </button>
 
-                        <input id="save_and_continue_btn" type="hidden" @click.prevent="save_wo_confirm"
-                            class="btn btn-primary" value="Save Without Confirmation" />
+                        <input
+                            id="save_and_continue_btn"
+                            type="hidden"
+                            class="btn btn-primary"
+                            value="Save Without Confirmation"
+                            @click.prevent="save_wo_confirm"
+                        />
                     </div>
                 </div>
                 <div v-else class="container">
                     <div class="col-md-12 text-end">
-                        <router-link class="btn btn-primary float-end" :to="{ name: 'external-dashboard' }">
+                        <router-link
+                            class="btn btn-primary float-end"
+                            :to="{ name: 'external-dashboard' }"
+                        >
                             Back to Dashboard
                         </router-link>
                     </div>
@@ -86,10 +165,20 @@
 
 <script>
 import ApplicationForm from '../form.vue';
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, helpers } from '@/utils/hooks';
 
 export default {
     name: 'ExternalProposal',
+    components: {
+        ApplicationForm,
+    },
+    beforeRouteEnter(to, from, next) {
+        next((vm) => {
+            if (to.params.proposal_id) {
+                vm.fetchProposal(to.params.proposal_id);
+            }
+        });
+    },
     data: function () {
         return {
             proposal: null,
@@ -102,7 +191,7 @@ export default {
             saveExitProposal: false,
             savingProposal: false,
             paySubmitting: false,
-            newText: "",
+            newText: '',
             pBody: 'pBody',
             missing_fields: [],
             proposal_parks: null,
@@ -112,11 +201,8 @@ export default {
             mooringOptionsChanged: false,
             // WLA
             mooringPreferenceChanged: false,
-            submitText: "Submit",
-        }
-    },
-    components: {
-        ApplicationForm,
+            submitText: 'Submit',
+        };
     },
     computed: {
         navbarButtonsDisabled: function () {
@@ -124,14 +210,21 @@ export default {
         },
         registrationOfInterest: function () {
             let retVal = false;
-            if (this.proposal && this.proposal.application_type.name === 'registration_of_interest') {
+            if (
+                this.proposal &&
+                this.proposal.application_type.name ===
+                    'registration_of_interest'
+            ) {
                 retVal = true;
             }
             return retVal;
         },
         leaseLicence: function () {
             let retVal = false;
-            if (this.proposal && this.proposal.application_type.name === 'lease_licence') {
+            if (
+                this.proposal &&
+                this.proposal.application_type.name === 'lease_licence'
+            ) {
                 retVal = true;
             }
             return retVal;
@@ -139,35 +232,60 @@ export default {
 
         disableSubmit: function () {
             let disable = false;
-            if (this.proposal.proposal_type && this.proposal.proposal_type.code === 'amendment') {
-                if (['aaa', 'mla'].includes(this.proposal.application_type_code) && !this.vesselChanged) {
+            if (
+                this.proposal.proposal_type &&
+                this.proposal.proposal_type.code === 'amendment'
+            ) {
+                if (
+                    ['aaa', 'mla'].includes(
+                        this.proposal.application_type_code
+                    ) &&
+                    !this.vesselChanged
+                ) {
                     disable = true;
-                } else if (this.proposal.application_type_code === 'wla' && !this.vesselChanged && !this.mooringPreferenceChanged) {
+                } else if (
+                    this.proposal.application_type_code === 'wla' &&
+                    !this.vesselChanged &&
+                    !this.mooringPreferenceChanged
+                ) {
                     disable = true;
-                } else if (this.proposal.application_type_code === 'aua' && !this.vesselChanged && !this.mooringOptionsChanged) {
+                } else if (
+                    this.proposal.application_type_code === 'aua' &&
+                    !this.vesselChanged &&
+                    !this.mooringOptionsChanged
+                ) {
                     disable = true;
                 }
             }
             return disable;
         },
         disabledSubmitText: function () {
-            let text = "";
+            let text = '';
             if (this.disableSubmit) {
-                text = "No relevant details have been detected in this amendment application";
+                text =
+                    'No relevant details have been detected in this amendment application';
             }
             return text;
         },
         autoRenew: function () {
             let renew = false;
-            if (!this.vesselChanged && !this.mooringOptionsChanged && this.proposal.proposal_type.code === 'renewal'
-                && ['mla', 'aua'].includes(this.proposal.application_type_code)) {
+            if (
+                !this.vesselChanged &&
+                !this.mooringOptionsChanged &&
+                this.proposal.proposal_type.code === 'renewal' &&
+                ['mla', 'aua'].includes(this.proposal.application_type_code)
+            ) {
                 renew = true;
             }
             return renew;
         },
         submitterId: function () {
             let submitter = null;
-            if (this.proposal && this.proposal.submitter && this.proposal.submitter.id) {
+            if (
+                this.proposal &&
+                this.proposal.submitter &&
+                this.proposal.submitter.id
+            ) {
                 submitter = this.proposal.submitter.id;
             }
             return submitter;
@@ -180,23 +298,27 @@ export default {
             return returnVal;
         },
         isLoading: function () {
-            return this.loading.length > 0
+            return this.loading.length > 0;
         },
         csrf_token: function () {
-            return helpers.getCookie('csrftoken')
+            return helpers.getCookie('csrftoken');
         },
         proposal_form_url: function () {
-            return (this.proposal) ? `/api/proposal/${this.proposal.id}/draft.json` : '';
+            return this.proposal
+                ? `/api/proposal/${this.proposal.id}/draft.json`
+                : '';
         },
         application_fee_url: function () {
-            return (this.proposal) ? `/application_fee/${this.proposal.id}/` : '';
+            return this.proposal ? `/application_fee/${this.proposal.id}/` : '';
         },
         confirmation_url: function () {
             // For authorised user application and mooring licence application
-            return (this.proposal) ? `/confirmation/${this.proposal.id}/` : '';
+            return this.proposal ? `/confirmation/${this.proposal.id}/` : '';
         },
         proposal_submit_url: function () {
-            return (this.proposal) ? `/api/proposal/${this.proposal.id}/submit.json` : '';
+            return this.proposal
+                ? `/api/proposal/${this.proposal.id}/submit.json`
+                : '';
         },
         canEditActivities: function () {
             return this.proposal ? this.proposal.can_user_edit : 'false';
@@ -212,7 +334,10 @@ export default {
         },
         showElectoralRoll: function () {
             let show = false;
-            if (this.proposal && ['wla', 'mla'].includes(this.proposal.application_type_code)) {
+            if (
+                this.proposal &&
+                ['wla', 'mla'].includes(this.proposal.application_type_code)
+            ) {
                 show = true;
             }
             return show;
@@ -221,10 +346,15 @@ export default {
             if (this.proposal) {
                 return this.proposal.application_type_code;
             }
+            return null;
         },
         amendmentOrRenewal: function () {
             let amendRenew = false;
-            if (this.proposal && this.proposal.proposal_type && this.proposal.proposal_type.code !== 'new') {
+            if (
+                this.proposal &&
+                this.proposal.proposal_type &&
+                this.proposal.proposal_type.code !== 'new'
+            ) {
                 amendRenew = true;
             }
             return amendRenew;
@@ -262,80 +392,119 @@ export default {
             }
         },
 
-        save: async function (withConfirm = true, url = this.proposal_form_url) {
+        save: async function (
+            withConfirm = true,
+            url = this.proposal_form_url
+        ) {
             let vm = this;
             vm.savingProposal = true;
             let payload = {
-                proposal: {}
-            }
+                proposal: {},
+            };
 
             if (this.registrationOfInterest) {
                 payload.proposal = {
-                    'exclusive_use': this.proposal.exclusive_use,
-                    'long_term_use': this.proposal.long_term_use,
-                    'consistent_purpose': this.proposal.consistent_purpose,
-                    'consistent_plan': this.proposal.consistent_plan,
-                    'clearing_vegetation': this.proposal.clearing_vegetation,
-                    'ground_disturbing_works': this.proposal.ground_disturbing_works,
-                    'heritage_site': this.proposal.heritage_site,
-                    'environmentally_sensitive': this.proposal.environmentally_sensitive,
-                    'wetlands_impact': this.proposal.wetlands_impact,
-                    'building_required': this.proposal.building_required,
-                    'significant_change': this.proposal.significant_change,
-                    'aboriginal_site': this.proposal.aboriginal_site,
-                    'native_title_consultation': this.proposal.native_title_consultation,
-                    'mining_tenement': this.proposal.mining_tenement,
-                    'groups': this.proposal.groups,
-                }
-                payload.proposal.details_text = this.$refs.application_form.$refs.registration_of_interest.$refs.details_text.detailsText;
-                payload.proposal.exclusive_use_text = this.$refs.application_form.$refs.registration_of_interest.$refs.exclusive_use_text.detailsText;
-                payload.proposal.long_term_use_text = this.$refs.application_form.$refs.registration_of_interest.$refs.long_term_use_text.detailsText;
-                payload.proposal.consistent_purpose_text = this.$refs.application_form.$refs.registration_of_interest.$refs.consistent_purpose_text.detailsText;
-                payload.proposal.consistent_plan_text = this.$refs.application_form.$refs.registration_of_interest.$refs.consistent_plan_text.detailsText;
-                payload.proposal.clearing_vegetation_text = this.$refs.application_form.$refs.registration_of_interest.$refs.clearing_vegetation_text.detailsText;
-                payload.proposal.ground_disturbing_works_text = this.$refs.application_form.$refs.registration_of_interest.$refs.ground_disturbing_works_text.detailsText;
-                payload.proposal.heritage_site_text = this.$refs.application_form.$refs.registration_of_interest.$refs.heritage_site_text.detailsText;
-                payload.proposal.environmentally_sensitive_text = this.$refs.application_form.$refs.registration_of_interest.$refs.environmentally_sensitive_text.detailsText;
-                payload.proposal.wetlands_impact_text = this.$refs.application_form.$refs.registration_of_interest.$refs.wetlands_impact_text.detailsText;
-                payload.proposal.building_required_text = this.$refs.application_form.$refs.registration_of_interest.$refs.building_required_text.detailsText;
-                payload.proposal.significant_change_text = this.$refs.application_form.$refs.registration_of_interest.$refs.significant_change_text.detailsText;
-                payload.proposal.aboriginal_site_text = this.$refs.application_form.$refs.registration_of_interest.$refs.aboriginal_site_text.detailsText;
-                payload.proposal.native_title_consultation_text = this.$refs.application_form.$refs.registration_of_interest.$refs.native_title_consultation_text.detailsText;
-                payload.proposal.mining_tenement_text = this.$refs.application_form.$refs.registration_of_interest.$refs.mining_tenement_text.detailsText;
+                    exclusive_use: this.proposal.exclusive_use,
+                    long_term_use: this.proposal.long_term_use,
+                    consistent_purpose: this.proposal.consistent_purpose,
+                    consistent_plan: this.proposal.consistent_plan,
+                    clearing_vegetation: this.proposal.clearing_vegetation,
+                    ground_disturbing_works:
+                        this.proposal.ground_disturbing_works,
+                    heritage_site: this.proposal.heritage_site,
+                    environmentally_sensitive:
+                        this.proposal.environmentally_sensitive,
+                    wetlands_impact: this.proposal.wetlands_impact,
+                    building_required: this.proposal.building_required,
+                    significant_change: this.proposal.significant_change,
+                    aboriginal_site: this.proposal.aboriginal_site,
+                    native_title_consultation:
+                        this.proposal.native_title_consultation,
+                    mining_tenement: this.proposal.mining_tenement,
+                    groups: this.proposal.groups,
+                };
+                payload.proposal.details_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.details_text.detailsText;
+                payload.proposal.exclusive_use_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.exclusive_use_text.detailsText;
+                payload.proposal.long_term_use_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.long_term_use_text.detailsText;
+                payload.proposal.consistent_purpose_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.consistent_purpose_text.detailsText;
+                payload.proposal.consistent_plan_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.consistent_plan_text.detailsText;
+                payload.proposal.clearing_vegetation_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.clearing_vegetation_text.detailsText;
+                payload.proposal.ground_disturbing_works_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.ground_disturbing_works_text.detailsText;
+                payload.proposal.heritage_site_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.heritage_site_text.detailsText;
+                payload.proposal.environmentally_sensitive_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.environmentally_sensitive_text.detailsText;
+                payload.proposal.wetlands_impact_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.wetlands_impact_text.detailsText;
+                payload.proposal.building_required_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.building_required_text.detailsText;
+                payload.proposal.significant_change_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.significant_change_text.detailsText;
+                payload.proposal.aboriginal_site_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.aboriginal_site_text.detailsText;
+                payload.proposal.native_title_consultation_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.native_title_consultation_text.detailsText;
+                payload.proposal.mining_tenement_text =
+                    this.$refs.application_form.$refs.registration_of_interest.$refs.mining_tenement_text.detailsText;
             } else if (this.leaseLicence) {
-                payload.proposal.profit_and_loss_text = this.$refs.application_form.$refs.lease_licence.$refs.profit_and_loss_text.detailsText;
-                payload.proposal.cash_flow_text = this.$refs.application_form.$refs.lease_licence.$refs.cash_flow_text.detailsText;
-                payload.proposal.capital_investment_text = this.$refs.application_form.$refs.lease_licence.$refs.capital_investment_text.detailsText;
-                payload.proposal.financial_capacity_text = this.$refs.application_form.$refs.lease_licence.$refs.financial_capacity_text.detailsText;
-                payload.proposal.available_activities_text = this.$refs.application_form.$refs.lease_licence.$refs.available_activities_text.detailsText;
-                payload.proposal.market_analysis_text = this.$refs.application_form.$refs.lease_licence.$refs.market_analysis_text.detailsText;
-                payload.proposal.staffing_text = this.$refs.application_form.$refs.lease_licence.$refs.staffing_text.detailsText;
-                payload.proposal.key_personnel_text = this.$refs.application_form.$refs.lease_licence.$refs.key_personnel_text.detailsText;
-                payload.proposal.key_milestones_text = this.$refs.application_form.$refs.lease_licence.$refs.key_milestones_text.detailsText;
-                payload.proposal.risk_factors_text = this.$refs.application_form.$refs.lease_licence.$refs.risk_factors_text.detailsText;
-                payload.proposal.legislative_requirements_text = this.$refs.application_form.$refs.lease_licence.$refs.legislative_requirements_text.detailsText;
-                payload.proposal.proponent_reference_number = this.proposal.proponent_reference_number;
+                payload.proposal.profit_and_loss_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.profit_and_loss_text.detailsText;
+                payload.proposal.cash_flow_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.cash_flow_text.detailsText;
+                payload.proposal.capital_investment_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.capital_investment_text.detailsText;
+                payload.proposal.financial_capacity_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.financial_capacity_text.detailsText;
+                payload.proposal.available_activities_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.available_activities_text.detailsText;
+                payload.proposal.market_analysis_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.market_analysis_text.detailsText;
+                payload.proposal.staffing_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.staffing_text.detailsText;
+                payload.proposal.key_personnel_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.key_personnel_text.detailsText;
+                payload.proposal.key_milestones_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.key_milestones_text.detailsText;
+                payload.proposal.risk_factors_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.risk_factors_text.detailsText;
+                payload.proposal.legislative_requirements_text =
+                    this.$refs.application_form.$refs.lease_licence.$refs.legislative_requirements_text.detailsText;
+                payload.proposal.proponent_reference_number =
+                    this.proposal.proponent_reference_number;
                 payload.proposal.groups = this.proposal.groups;
             }
-            payload.proposal_geometry = this.$refs.application_form.$refs.component_map.getJSONFeatures();
-            let deleted_features = this.$refs.application_form.$refs.component_map.deletedFeatures();
+            payload.proposalgeometry =
+                this.$refs.application_form.$refs.component_map.getJSONFeatures();
+            let deleted_features =
+                this.$refs.application_form.$refs.component_map.deletedFeaturesProperty();
             // Save right away if there are no deleted features, otherwise ask for confirmation
             let commence_saving = deleted_features.length == 0 ? true : false;
 
-            let warning_text = `${deleted_features.length} ${deleted_features.length == 1 ? "feature" : "features"} will be deleted. Are you sure?`;
+            let warning_text = `${deleted_features.length} ${
+                deleted_features.length == 1 ? 'feature' : 'features'
+            } will be deleted. Are you sure?`;
             if (deleted_features.length > 0) {
-                await swal.fire({
-                    title: "Save Proposal",
-                    text: warning_text,
-                    icon: "warning",
-                    showCancelButton: true,
-                    confirmButtonText: 'Continue',
-                }).then(async result => {
-                    if (result.isConfirmed) {
-                        // When Yes
-                        commence_saving = true;
-                    }
-                })
+                await swal
+                    .fire({
+                        title: 'Save Proposal',
+                        text: warning_text,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Continue',
+                    })
+                    .then(async (result) => {
+                        if (result.isConfirmed) {
+                            // When Yes
+                            commence_saving = true;
+                        }
+                    });
             }
 
             if (!commence_saving) {
@@ -345,31 +514,34 @@ export default {
 
             if (vm.submitting) {
                 // Provide an action to have the backend lock the geometry
-                payload.action = "submit";
+                payload.action = 'submit';
             }
 
-            const res = await fetch(url, { body: JSON.stringify(payload), method: 'POST' });
+            const res = await fetch(url, {
+                body: JSON.stringify(payload),
+                method: 'POST',
+            });
             if (res.ok) {
                 if (withConfirm) {
                     await swal.fire({
                         title: 'Saved',
                         text: 'Your application has been saved',
-                        icon: 'success'
+                        icon: 'success',
                     });
-                };
+                }
                 vm.savingProposal = false;
-                const resData = await res.json()
+                const resData = await res.json();
                 this.proposal = Object.assign({}, resData);
                 this.$nextTick(async () => {
                     this.$refs.application_form.incrementComponentMapKey();
                 });
                 return resData;
             } else {
-                const err = await res.json()
+                const err = await res.json();
                 await swal.fire({
-                    title: "Please fix following errors before saving",
+                    title: 'Please fix following errors before saving',
                     text: JSON.stringify(err),
-                    icon: 'error'
+                    icon: 'error',
                 });
                 vm.savingProposal = false;
                 throw new Error(err);
@@ -382,9 +554,9 @@ export default {
                 this.saveExitProposal = false;
                 this.savingProposal = false;
                 vm.$router.push({
-                    name: 'external-dashboard'
+                    name: 'external-dashboard',
                 });
-            })
+            });
         },
 
         save_wo_confirm: function () {
@@ -397,16 +569,13 @@ export default {
         setAmendmentData: function (amendment_request) {
             this.amendment_request = amendment_request;
 
-            if (amendment_request.length > 0)
-                this.hasAmendmentRequest = true;
-
+            if (amendment_request.length > 0) this.hasAmendmentRequest = true;
         },
 
         splitText: function (aText) {
             let newText = '';
-            newText = aText.split("\n");
+            newText = aText.split('\n');
             return newText;
-
         },
 
         leaving: function (e) {
@@ -415,20 +584,19 @@ export default {
             if (!vm.proposal_readonly && !vm.submitting) {
                 e.returnValue = dialogText;
                 return dialogText;
-            }
-            else {
+            } else {
                 return null;
             }
         },
 
         highlight_missing_fields: function () {
             let vm = this;
-            for (var missing_field of vm.missing_fields) {
-                $("#" + missing_field.id).css("color", 'red');
+            for (let missing_field of vm.missing_fields) {
+                $('#' + missing_field.id).css('color', 'red');
             }
         },
         submit: async function () {
-            console.log('in submit()')
+            console.log('in submit()');
             let vm = this;
 
             // remove the confirm prompt when navigating away from window (on button 'Submit' click)
@@ -436,75 +604,74 @@ export default {
             vm.paySubmitting = true;
 
             swal.fire({
-                title: vm.submitText + " Application",
-                text: "Are you sure you want to " + vm.submitText.toLowerCase() + " this application?",
-                icon: "question",
+                title: vm.submitText + ' Application',
+                text:
+                    'Are you sure you want to ' +
+                    vm.submitText.toLowerCase() +
+                    ' this application?',
+                icon: 'question',
                 reverseButtons: true,
                 showCancelButton: true,
                 confirmButtonText: vm.submitText,
                 buttonsStyling: false,
                 customClass: {
                     confirmButton: 'btn btn-primary',
-                    cancelButton: 'btn btn-secondary me-2'
+                    cancelButton: 'btn btn-secondary me-2',
                 },
-            }).then(async result => {
-                if (!result.isConfirmed) {
-                    // Cancel
-                    vm.submitting = false;
-                    vm.paySubmitting = false;
-                    return;
-                } else {
-                    // Accept
-                    try {
-                        await vm.save(false, vm.proposal_submit_url);
-                        vm.$nextTick(() => {
-                            const lodgementDate = new Date(vm.proposal.lodgement_date)
-                            vm.$router.push({
-                                name: 'submit-proposal',
-                                params: { proposal_id: vm.proposal.id }
-                            });
-                        })
-                    } catch (err) {
-                        console.log(err)
+            }).then(
+                async (result) => {
+                    if (!result.isConfirmed) {
+                        // Cancel
                         vm.submitting = false;
-                        vm.savingProposal = false;
                         vm.paySubmitting = false;
+                        return;
+                    } else {
+                        // Accept
+                        try {
+                            await vm.save(false, vm.proposal_submit_url);
+                            vm.$nextTick(() => {
+                                // const lodgementDate = new Date(vm.proposal.lodgement_date)
+                                vm.$router.push({
+                                    name: 'submit-proposal',
+                                    params: { proposal_id: vm.proposal.id },
+                                });
+                            });
+                        } catch (err) {
+                            console.log(err);
+                            vm.submitting = false;
+                            vm.savingProposal = false;
+                            vm.paySubmitting = false;
+                        }
                     }
+                },
+                (error) => {
+                    console.log(error);
                 }
-            }, (error) => {
-                console.log(error);
-            });
+            );
         },
         fetchProposal: function (id) {
-            let vm = this
+            let vm = this;
             vm.loadingProposal = true;
             fetch(api_endpoints.proposal + id + '.json')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
                     }
-                    vm.proposal = data
-                    console.log('Proposal: ', vm.proposal)
+                    vm.proposal = data;
+                    console.log('Proposal: ', vm.proposal);
                     vm.loadingProposal = false;
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                })
+                    console.error('There was an error!', error);
+                });
         },
         refreshFromResponse: function (data) {
             this.proposal = Object.assign({}, data);
-        }
+        },
     },
-    beforeRouteEnter(to, from, next) {
-        next(vm => {
-            if (to.params.proposal_id) {
-                vm.fetchProposal(to.params.proposal_id);
-            }
-        })
-    },
-}
+};
 </script>

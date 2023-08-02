@@ -70,9 +70,9 @@
 </template>
 
 <script>
-import FormSection from '@/components/forms/section_toggle.vue'
-import ApprovalsTable from '@/components/common/table_approvals.vue'
-import MapComponent from '@/components/common/component_map_with_filters'
+import FormSection from '@/components/forms/section_toggle.vue';
+import ApprovalsTable from '@/components/common/table_approvals.vue';
+import MapComponent from '@/components/common/component_map_with_filters_v2';
 
 export default {
     name: 'InternalApprovalsDashboard',
@@ -82,16 +82,15 @@ export default {
         MapComponent,
     },
     data() {
-        let vm = this
         return {
             approvalTypeFilter: ['ml', 'aap', 'aup'],
             loadMap: false,
-        }
+        };
     },
     methods: {
         tabClicked: function (param) {
             if (param == 'approvals') {
-                this.$refs.approvals_table.adjust_table_width()
+                this.$refs.approvals_table.adjust_table_width();
             }
         },
         mapTabClicked: function () {
@@ -102,5 +101,5 @@ export default {
             // })
         },
     },
-}
+};
 </script>

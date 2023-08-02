@@ -5,7 +5,8 @@ import reversion
 reversion.register(Referral, follow=['referral_documents',])
 reversion.register(ReferralDocument, follow=['referral_document'])
 
-reversion.register(Proposal, follow=['documents', 'onhold_documents','required_documents','qaofficer_documents','comms_log','other_details', 'parks', 'trails', 'vehicles', 'vessels', 'proposalrequest_set','proposaldeclineddetails_set', 'proposedonhold_set', 'requirements', 'referrals', 'qaofficer_referrals', 'compliances', 'referrals', 'approvals'])
+reversion.register(Proposal, follow=['documents', 'onhold_documents','required_documents','qaofficer_documents','comms_log','other_details', 'parks', 'trails', 'vehicles', 'vessels', 'proposalrequest_set','proposaldeclineddetails_set', 'proposedonhold_set', 'requirements', 'referrals', 'qaofficer_referrals', 'compliances', 'referrals', 'approvals', 'proposalapplicant_set])
+reversion.register(ProposalApplicant)
 reversion.register(ProposalDocument, follow=['onhold_documents'])
 reversion.register(OnHoldDocument)
 reversion.register(ProposalRequiredDocument)

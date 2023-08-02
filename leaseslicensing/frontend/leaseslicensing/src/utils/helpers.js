@@ -517,3 +517,24 @@ module.exports = {
         return moment().diff(moment(date), 'years')
     },
 }
+    /**
+     * Function-parsable tagged template
+     * @param {Array} strings Array of backtick (``) template literals / strings with a length equal to the number of substitutions (${}) plus one.
+     * @param  {...any} keys Substitution (${}) keys in the template.
+     * @returns A string with the substitutions applied.
+     * @example const myTemplate = template`Hello ${'name'}, how are you?`;
+     * myTemplate({ name: 'John' }); // Hello John, how are you?
+     * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#tagged_templates
+     */
+    template: function (strings, ...keys) {
+        return (...values) => {
+            const dict = values[values.length - 1] || {};
+            const result = [strings[0]];
+            keys.forEach((key, i) => {
+                const value = Number.isInteger(key) ? values[key] : dict[key];
+                result.push(value, strings[i + 1]);
+            });
+            return result.join('');
+        };
+    },
+};
