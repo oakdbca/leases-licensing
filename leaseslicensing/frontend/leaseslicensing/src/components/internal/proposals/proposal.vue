@@ -221,35 +221,6 @@
                                                                 }}</span
                                                             ></label
                                                         >
-                                                        <textarea
-                                                            :id="
-                                                                'comment_map_' +
-                                                                referral.id
-                                                            "
-                                                            v-model="
-                                                                referral.comment_map
-                                                            "
-                                                            class="form-control referral-comment"
-                                                            :disabled="
-                                                                referral.referral !==
-                                                                profile.id
-                                                            "
-                                                        />
-                                                        <label
-                                                            :for="
-                                                                'comment_map_' +
-                                                                referral.id
-                                                            "
-                                                            >Referral Comment by
-                                                            <span
-                                                                class="fw-bold"
-                                                                >{{
-                                                                    referral
-                                                                        .referral_obj
-                                                                        .fullname
-                                                                }}</span
-                                                            ></label
-                                                        >
                                                     </div>
                                                 </div>
                                             </div>
