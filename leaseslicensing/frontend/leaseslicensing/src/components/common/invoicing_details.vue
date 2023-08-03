@@ -629,12 +629,6 @@ export default {
     },
     mounted: function () {
         this.$nextTick(function () {
-            if (!this.invoicingDetailsComputed.invoicing_day_of_month) {
-                this.invoicingDetailsComputed.invoicing_day_of_month = 1;
-            }
-            if (!this.invoicingDetailsComputed.invoicing_month_of_year) {
-                this.invoicingDetailsComputed.invoicing_month_of_year = 1;
-            }
             if (!this.invoicingDetailsComputed.invoicing_quarters_start_month) {
                 // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
                 this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
@@ -700,12 +694,19 @@ export default {
             };
         },
         updateDefaultInvoicingDate: function (firstIssueDate) {
-            let invoicing_day_of_month = firstIssueDate.date();
-            this.invoicingDetailsComputed = {
-                ...this.invoicingDetailsComputed,
-                invoicing_day_of_month: invoicing_day_of_month,
-            };
-            if (this.invoicingDetailsComputed.invoicing_repetition_type == 1) {
+            if (!this.invoicingDetailsComputed.invoicing_day_of_month) {
+                let invoicing_day_of_month = firstIssueDate.date();
+                console.log('setting invoicing_day_of_month');
+                this.invoicingDetailsComputed = {
+                    ...this.invoicingDetailsComputed,
+                    invoicing_day_of_month: invoicing_day_of_month,
+                };
+            }
+            if (
+                this.invoicingDetailsComputed.invoicing_repetition_type == 1 &&
+                !this.invoicingDetailsComputed.invoicing_month_of_year
+            ) {
+                console.log('setting invoicing_month_of_year');
                 let invoicing_month_of_year = firstIssueDate.month() + 1;
                 this.invoicingDetailsComputed = {
                     ...this.invoicingDetailsComputed,
