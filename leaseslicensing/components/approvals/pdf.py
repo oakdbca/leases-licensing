@@ -1,14 +1,18 @@
 from io import BytesIO
 import os
 import re
+import logging
 from django.core.files import File
 from django.conf import settings
+from django.db import IntegrityError, transaction
 
 from docx import Document
 
 from leaseslicensing.components.approvals.models import (
     ApprovalDocument,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def docx_replace_regex(
@@ -119,20 +123,63 @@ def approval_buffer(approval):
 
     return approval_buffer
 
-def create_approval_doc(approval, **kwargs):
-    version_comment = kwargs.get("version_comment", "")
+
+@transaction.atomic
+def create_approval_document(approval, **kwargs):
+    """
+    Creates an ApprovalDocument for the given approval
+    Args:
+        approval:
+            Approval object
+        reason:
+            Reason for creating or updating the document. Must be one of the choices in ApprovalDocument.REASON_CHOICES
+        attach:
+            If True, attach the document to the approval
+    Returns:
+        ApprovalDocument object
+    """
+
+    reason = kwargs.get("reason", "new").lower()
+    attach = kwargs.get("attach", True)
+
+    # Validate reason
+    reasons = {r[0]: r[1] for r in ApprovalDocument.REASON_CHOICES}
+    if reason not in reasons.keys():
+        raise AttributeError(
+            f"Invalid reason `{reason}` for approval document not in {reasons.keys()}."
+        )
+    # Create a document buffer object
     buffer = approval_buffer(approval)
 
+    # Get or create the document
     filename = "{}.pdf".format(approval.lodgement_number)
-    document = ApprovalDocument.objects.create(approval=approval, name=filename)
-    document._file.save(filename, File(buffer), save=True)
+    try:
+        document, created = ApprovalDocument.objects.get_or_create(
+            approval=approval, name=filename
+        )
+    except IntegrityError as e:
+        logger.exception(e)
+        raise e
+    except Exception as e:
+        logger.exception(e)
+        raise e
+    else:
+        version_comment = f"{reasons[reason]} Approval document: {document.name}"
+        logger.info(version_comment)
 
-    buffer.close()
+        if not created:
+            # If the document already exists, update the reason unless it is 'new'
+            if reason == "new":
+                raise AttributeError(
+                    f"Reason cannot be 'new'. ApprovalDocument {document.name} already exists."
+                )
+            document.reason = reason
 
-    # Update approval doc filename
-    approval.licence_document = document
-    approval.save(
-        version_comment="Created Approval PDF: {}".format(approval.licence_document.name)
-    )
-
-    return document
+        document._file.save(filename, File(buffer), save=True)
+        document.save(version_comment=version_comment)
+        if attach:
+            # Attach the document to the approval
+            approval.licence_document = document
+            approval.save()
+    finally:
+        buffer.close()
