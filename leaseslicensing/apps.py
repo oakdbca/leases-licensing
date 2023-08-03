@@ -63,7 +63,7 @@ class LeasesLicensingConfig(AppConfig):
             reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])
             reversion.register(ApprovalTypeDocumentType)
             reversion.register(ApprovalTypeDocumentTypeOnApprovalType)
-            reversion.register(ApprovalDocument)
+            reversion.register(ApprovalDocument, follow=["approval"])
 
             # proposal
             reversion.register(ProposalType)
