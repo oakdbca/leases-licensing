@@ -302,8 +302,10 @@ export default {
                     ];
                 if (annual_increment_percentage) {
                     percentage =
-                        annual_increment_percentage.increment_percentage || 0.0;
-                    baseFeeAmount = baseFeeAmount * (1 + percentage / 100);
+                        annual_increment_percentage.increment_percentage ||
+                        currency(0.0);
+                    baseFeeAmount =
+                        baseFeeAmount * (1 + currency(percentage) / 100);
                     suffix = '';
                 }
                 amountObject.amount = currency(baseFeeAmount);
@@ -326,8 +328,10 @@ export default {
                     ];
                 if (annual_increment_amount) {
                     increment_amount =
-                        annual_increment_amount.increment_amount || 0.0;
-                    baseFeeAmount = baseFeeAmount + increment_amount;
+                        annual_increment_amount.increment_amount ||
+                        currency(0.0);
+                    baseFeeAmount =
+                        currency(baseFeeAmount).add(increment_amount);
                     suffix = '';
                 }
                 amountObject.amount = currency(baseFeeAmount);
