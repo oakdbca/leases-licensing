@@ -78,7 +78,15 @@ def update_approval_suspension_doc_filename(instance, filename):
     )
 
 
-class ApprovalDocument(Document):
+class ApprovalDocument(Document, RevisionedMixin):
+    REASON_CHOICES = (
+        ("new", "New"),
+        ("amended", "Amended"),
+        ("renewed", "Renewed"),
+        ("reissued", "Reissued"),
+        ("invoicing_updated", "Invoicing updated"),
+    )
+
     approval = models.ForeignKey(
         "Approval", related_name="documents", on_delete=models.CASCADE
     )
@@ -86,6 +94,7 @@ class ApprovalDocument(Document):
     can_delete = models.BooleanField(
         default=True
     )  # after initial submit prevent document from being deleted
+    reason = models.CharField(max_length=25, choices=REASON_CHOICES, default="new")
 
     def delete(self):
         if self.can_delete:
