@@ -623,7 +623,7 @@ class InvoicingDetails(BaseModel):
         end_of_next_interval = self.get_end_of_next_interval(start_date)
         while end_of_next_interval <= expiry_date:
             delta = end_of_next_interval - start_date
-            days = delta.days
+            days = delta.days + 1  # The plus one to include the expiry day
             label = (
                 f"{start_date.strftime('%d/%m/%Y')} to "
                 f"{end_of_next_interval.strftime('%d/%m/%Y')} ({days} days)"
@@ -642,7 +642,7 @@ class InvoicingDetails(BaseModel):
         # Check if a final period is required
         if start_date < expiry_date:
             delta = expiry_date - start_date
-            days = delta.days
+            days = delta.days + 1  # The plus one to include the expiry day
             invoicing_periods.append(
                 {
                     "label": f"{start_date.strftime('%d/%m/%Y')} to {expiry_date.strftime('%d/%m/%Y')} ({days} days)",
@@ -655,7 +655,11 @@ class InvoicingDetails(BaseModel):
         return invoicing_periods
 
     def preview_invoices(self, show_past_invoices=False):
-        """Returns a preview array of invoices based on the invoicing periods for the invoicing details object"""
+        """
+        Returns a preview array of invoices based on the invoicing periods for the invoicing details object
+        By default it will only return invoices for future periods because we can fetch a list of past invoices
+        from the database.
+        """
         invoices = []
         first_issue_date = self.get_first_issue_date()
         days_running_total = 0
@@ -680,13 +684,17 @@ class InvoicingDetails(BaseModel):
                     "due_date": self.get_due_date(due_date),
                     "time_period": invoicing_period["label"],
                     "amount_object": amount_object,
+                    "days": invoicing_period["days"],
                     "days_running_total": days_running_total,
                     "amount_running_total": amount_running_total,
                     "hide": not show_past_invoices
                     and issue_date < timezone.now().date(),
                 }
             )
-            issue_date = self.add_repetition_interval(issue_date)
+            if i < len(self.invoicing_periods) - 1:
+                issue_date = self.add_repetition_interval(issue_date)
+            else:
+                issue_date = self.approval.expiry_date + relativedelta(days=1)
 
         return invoices
 
@@ -697,11 +705,25 @@ class InvoicingDetails(BaseModel):
             self.charge_method.key
             != settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
         ):
-            first_issue_date = self.get_end_of_next_interval_annual(start_date)
+            first_issue_date = self.get_end_of_next_interval_sequential_year(
+                start_date
+            ) + relativedelta(days=1)
             if self.invoicing_month_of_year:
-                first_issue_date.replace(month=self.invoicing_month_of_year)
+                first_issue_date = first_issue_date.replace(
+                    month=self.invoicing_month_of_year
+                )
             if self.invoicing_day_of_month:
-                first_issue_date.replace(day=self.invoicing_day_of_month)
+                first_issue_date = first_issue_date.replace(
+                    day=self.invoicing_day_of_month
+                )
+            end_of_first_interval = self.invoicing_periods[0]["end_date"]
+            if (
+                first_issue_date
+                <= datetime.strptime(end_of_first_interval, "%Y-%m-%d").date()
+            ):
+                first_issue_date = self.get_end_of_next_interval_sequential_year(
+                    first_issue_date
+                ) + relativedelta(days=1)
             return first_issue_date
 
         first_issue_date = start_date
@@ -709,6 +731,8 @@ class InvoicingDetails(BaseModel):
             first_issue_date.replace(month=self.invoicing_month_of_year)
         if self.invoicing_day_of_month:
             first_issue_date.replace(day=self.invoicing_day_of_month)
+
+        logger.debug(f"First issue date: {first_issue_date}")
 
         # This works for quarterly invoicing
         today = timezone.now().date()
@@ -747,7 +771,7 @@ class InvoicingDetails(BaseModel):
         return due_date.strftime("%d/%m/%Y")
 
     def get_year_sequence_index(self, index):
-        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_ANNUAL:
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_ANNUALLY:
             return index
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
             return math.floor(index / 4)
@@ -779,6 +803,9 @@ class InvoicingDetails(BaseModel):
         if days == 366:
             days = 365
 
+        # Caculate the base fee for this period i.e. days of period * cost per day
+        base_fee_amount = days * (base_fee_amount / 365)
+
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
             amount_object["amount"] = base_fee_amount
             amount_object["suffix"] = " + CPI (ABS)"
@@ -790,15 +817,13 @@ class InvoicingDetails(BaseModel):
             amount_object["amount"] = base_fee_amount
             try:
                 custom_cpi_year = self.custom_cpi_years.all()[index]
+                amount_object["amount"] = Decimal(
+                    base_fee_amount * (1 + custom_cpi_year.percentage / 100)
+                ).quantize(Decimal("0.01"))
             except IndexError:
                 logger.warning(
                     f"Invoicing Details: {self.id} - No custom CPI year for index {index}. Using base fee amount."
                 )
-
-            if custom_cpi_year:
-                amount_object["amount"] = Decimal(
-                    base_fee_amount * (1 + custom_cpi_year.percentage / 100)
-                ).quantize(Decimal("0.01"))
             else:
                 amount_object["suffix"] = " + CPI (CUSTOM)"
 
@@ -813,13 +838,19 @@ class InvoicingDetails(BaseModel):
                 if year_sequence_index > 0
                 else ""
             )
-            annual_increment_percentage = self.annual_increment_percentages[
-                year_sequence_index - 1
-            ]
-            if annual_increment_percentage:
-                percentage = annual_increment_percentage.increment_percentage or 0.0
-                base_fee_amount = base_fee_amount * (1 + percentage / 100)
-                suffix = ""
+            if year_sequence_index > 0:
+                try:
+                    annual_increment_percentage = (
+                        self.annual_increment_percentages.all()[year_sequence_index - 1]
+                    )
+                    percentage = annual_increment_percentage.increment_percentage
+                    base_fee_amount = base_fee_amount * (1 + percentage / 100)
+                    suffix = ""
+                except IndexError:
+                    logger.warning(
+                        f"Invoicing Details: {self.id} - No annual increment percentage for index "
+                        f"{index}. Using base fee amount."
+                    )
 
             amount_object["amount"] = Decimal(base_fee_amount).quantize(Decimal("0.01"))
             amount_object["suffix"] = suffix
@@ -856,9 +887,10 @@ class InvoicingDetails(BaseModel):
             return self.get_end_of_next_interval_gross_turnover(start_date)
 
         # All other charge methods are based around each year of the duration of the lease/license
-        return self.get_end_of_next_interval_annual(start_date)
+        # Which is being referred to as 'sequential year'
+        return self.get_end_of_next_interval_sequential_year(start_date)
 
-    def get_end_of_next_interval_annual(self, start_date):
+    def get_end_of_next_interval_sequential_year(self, start_date):
         if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
             return start_date + relativedelta(years=1) - relativedelta(days=1)
 
