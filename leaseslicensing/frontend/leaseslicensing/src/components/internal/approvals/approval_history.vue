@@ -35,7 +35,7 @@
 <script>
 import modal from '@vue-utils/bootstrap-modal.vue';
 import alert from '@vue-utils/alert.vue';
-import { helpers, api_endpoints, constants } from '@/utils/hooks.js';
+import { helpers, api_endpoints, constants, utils } from '@/utils/hooks.js';
 import datatable from '@/utils/vue/datatable.vue';
 
 export default {
@@ -84,8 +84,9 @@ export default {
                 'Application',
                 'Reason',
                 'Expiry Date',
+                'Letter',
                 'Document',
-                'Action',
+                // 'Action',
             ];
         },
         column_id: function () {
@@ -156,14 +157,14 @@ export default {
                 },
             };
         },
-        column_start_date: function () {
+        column_expiry_date: function () {
             return {
                 data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.start_date_str;
+                    return full.expiry_date_str;
                 },
             };
         },
@@ -185,7 +186,24 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
+                    let filename = full.approval_letter
+                        ? full.filename
+                        : 'Approval.PDF';
                     return `<div><a href='${full.approval_letter}' target='_blank'><i style='color:red;' class='fa fa-file-pdf-o'></i></a></div>`;
+                },
+            };
+        },
+        column_approval_document: function () {
+            return {
+                data: 'id',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    let filename = full.filename
+                        ? full.filename
+                        : 'Approval.PDF';
+                    return `<div><a href='${full.history_document_url}' target='_blank'><i style='color:red;' class='fa fa-file-pdf'></i>${filename}</a></div>`;
                 },
             };
         },
@@ -195,12 +213,13 @@ export default {
                 vm.column_id,
                 vm.column_lodgement_number,
                 vm.column_type,
-                vm.column_sticker_numbers,
+                // vm.column_sticker_numbers,
                 vm.column_holder,
                 vm.column_approval_status,
-                vm.column_start_date,
                 vm.column_reason,
+                vm.column_expiry_date,
                 vm.column_approval_letter,
+                vm.column_approval_document,
             ];
 
             return {
@@ -240,12 +259,18 @@ export default {
             $('.has-error').removeClass('has-error');
         },
         fetchApprovalDetails: async function () {
-            const res = await fetch(
-                api_endpoints.lookupApprovalDetails(this.approvalId)
-            );
-            if (res.ok) {
-                this.approvalDetails = Object.assign({}, res.body);
-            }
+            let vm = this;
+            let url = api_endpoints.lookupApprovalHistory(this.approvalId);
+            utils
+                .fetchUrl(url)
+                .then((data) => {
+                    vm.approvalDetails = Object.assign({}, data);
+                    console.log('Fetched approval details', vm.approvalDetails);
+                })
+                .catch((error) => {
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.log(`Error fetching approval details: ${error}`);
+                });
         },
     },
 };

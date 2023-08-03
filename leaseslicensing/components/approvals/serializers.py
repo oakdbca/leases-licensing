@@ -2,6 +2,7 @@ import logging
 
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Q
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
@@ -329,12 +330,33 @@ class ApprovalLogEntrySerializer(CommunicationLogEntrySerializer):
 class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
     history_date = serializers.SerializerMethodField()
     history_document_url = serializers.SerializerMethodField()
+    # Adding stuff here to have something in the frontend to display
+    approval_lodgement_number = serializers.SerializerMethodField()
+    approval_type_description = serializers.SerializerMethodField()
+    sticker_numbers = serializers.SerializerMethodField()
+    holder = serializers.SerializerMethodField()
+    approval_status = serializers.SerializerMethodField()
+    start_date_str = serializers.SerializerMethodField()
+    expiry_date_str = serializers.SerializerMethodField()
+    reason = serializers.CharField(source="get_reason_display", read_only=True)
+    approval_letter = serializers.SerializerMethodField()
 
     class Meta:
         model = ApprovalDocument
         fields = (
+            "id",
             "history_date",
             "history_document_url",
+            "filename",
+            "approval_lodgement_number",
+            "approval_type_description",
+            "sticker_numbers",
+            "holder",
+            "approval_status",
+            "start_date_str",
+            "expiry_date_str",
+            "reason",
+            "approval_letter",
         )
 
     def get_history_date(self, obj):
@@ -344,9 +366,33 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
         return history_date
 
     def get_history_document_url(self, obj):
-        # Todo: Change to secure file / document url
-        url = obj._file.url
-        return url
+        if not obj or not obj._file:
+            return None
+        return get_secure_file_url(obj, "_file")
+
+    def get_approval_lodgement_number(self, obj):
+        return obj.approval.lodgement_number
+
+    def get_approval_type_description(self, obj):
+        return "(todo) type"
+
+    def get_sticker_numbers(self, obj):
+        return "(todo) sticker_numbers"
+
+    def get_holder(self, obj):
+        return obj.approval.holder
+
+    def get_approval_status(self, obj):
+        return obj.approval.current_proposal.lodgement_number
+
+    def get_start_date_str(self, obj):
+        return obj.approval.start_date.strftime("%d/%m/%Y")
+
+    def get_expiry_date_str(self, obj):
+        return obj.approval.expiry_date.strftime("%d/%m/%Y")
+
+    def get_approval_letter(self, obj):
+        return "(todo) approval_letter"
 
 
 class ApprovalTypeSerializer(serializers.ModelSerializer):
