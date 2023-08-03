@@ -13,6 +13,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 from rest_framework_datatables.renderers import DatatablesRenderer
+from reversion.models import Version
 
 from leaseslicensing.components.approvals.models import (
     Approval,
@@ -549,10 +550,27 @@ class ApprovalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def approval_history(self, request, *args, **kwargs):
         instance = self.get_object()
-        approval_documents = ApprovalDocument.objects.filter(
-            approval__lodgement_number=instance.lodgement_number,
-            name__icontains="approval",
-        ).order_by("-uploaded_date")
+        if not instance.licence_document:
+            logger.warning("No license document found for approval {}".format(instance))
+            return Response({})
+
+        versions = Version.objects.get_for_object(instance.licence_document).order_by(
+            "-revision__date_created"
+        )
+
+        first = versions.first()
+        if not first:
+            return Response({})
+
+        versions = versions.filter(
+            ~Q(revision__comment="")
+            # | Q(revision_id=first.revision_id)
+        )
+
+        approval_documents = []
+        for version in versions:
+            approval_documents.append(ApprovalDocument(**version.field_dict))
+
         serializer = ApprovalDocumentHistorySerializer(approval_documents, many=True)
         return Response(serializer.data)
 
