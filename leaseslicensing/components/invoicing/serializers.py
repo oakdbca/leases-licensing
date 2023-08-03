@@ -171,6 +171,8 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "review_repetition_type",  # FK
             "invoicing_once_every",
             "invoicing_repetition_type",  # FK
+            "invoicing_month_of_year",
+            "invoicing_day_of_month",
             "annual_increment_amounts",  # ReverseFK
             "annual_increment_percentages",  # ReverseFK
             "gross_turnover_percentages",  # ReverseFK
