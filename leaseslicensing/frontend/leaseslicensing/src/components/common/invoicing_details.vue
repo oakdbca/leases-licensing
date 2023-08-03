@@ -393,11 +393,11 @@
 </template>
 
 <script>
-import AnnualIncrement from '@/components/common/component_fixed_annual_amount.vue'
-import PercentageTurnover from '@/components/common/component_percentage_turnover.vue'
-import InvoicePreviewer from '@/components/common//invoice_previewer.vue'
+import AnnualIncrement from '@/components/common/component_fixed_annual_amount.vue';
+import PercentageTurnover from '@/components/common/component_percentage_turnover.vue';
+import InvoicePreviewer from '@/components/common//invoice_previewer.vue';
 
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, helpers } from '@/utils/hooks';
 
 export default {
     name: 'InvoicingDetails',
@@ -444,36 +444,36 @@ export default {
             charge_methods: [],
             repetition_types: [],
             cpi_calculation_methods: [],
-        }
+        };
     },
     computed: {
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
         invoicingDetailsComputed: {
             get() {
-                return this.invoicingDetails
+                return this.invoicingDetails;
             },
             set(value) {
-                this.$emit('updateInvoicingDetails', value)
+                this.$emit('updateInvoicingDetails', value);
             },
         },
         financialYearRows: function () {
-            const rows = []
+            const rows = [];
             for (let i = 0; i < this.financialYearsIncluded.length; i++) {
-                let financialYear = this.financialYearsIncluded[i]
-                let year = financialYear.split('-')[1]
+                let financialYear = this.financialYearsIncluded[i];
+                let year = financialYear.split('-')[1];
                 rows.push({
                     year: year,
                     financial_year: financialYear,
                     label: '',
                     cpi: '',
-                })
+                });
             }
-            return rows
+            return rows;
         },
         show_once_off_charge_amount: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -481,8 +481,8 @@ export default {
                     this.invoicingDetails.charge_method ===
                     this.getChargeMethodIdByKey('once_off_charge')
                 )
-                    return true
-            return false
+                    return true;
+            return false;
         },
         show_fixed_annual_increment: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -492,8 +492,8 @@ export default {
                         'base_fee_plus_fixed_annual_increment'
                     )
                 )
-                    return true
-            return false
+                    return true;
+            return false;
         },
         show_fixed_annual_percentage: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -503,8 +503,8 @@ export default {
                         'base_fee_plus_fixed_annual_percentage'
                     )
                 )
-                    return true
-            return false
+                    return true;
+            return false;
         },
         show_base_fee: function () {
             if (
@@ -522,11 +522,11 @@ export default {
                             'base_fee_plus_annual_cpi_custom'
                         ))
             )
-                return true
-            return false
+                return true;
+            return false;
         },
         show_review_of_base_fee: function () {
-            return this.show_base_fee
+            return this.show_base_fee;
         },
         show_cpi_method: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -534,8 +534,8 @@ export default {
                     this.invoicingDetails.charge_method ===
                     this.getChargeMethodIdByKey('base_fee_plus_annual_cpi')
                 )
-                    return true
-            return false
+                    return true;
+            return false;
         },
         show_custom_cpi_years: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -545,8 +545,8 @@ export default {
                         'base_fee_plus_annual_cpi_custom'
                     )
                 )
-                    return true
-            return false
+                    return true;
+            return false;
         },
         show_percentage_of_gross_turnover: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
@@ -554,11 +554,11 @@ export default {
                     this.invoicingDetails.charge_method ===
                     this.getChargeMethodIdByKey('percentage_of_gross_turnover')
                 )
-                    return true
-            return false
+                    return true;
+            return false;
         },
         show_crown_land_rent_review_date: function () {
-            return this.show_base_fee
+            return this.show_base_fee;
         },
         show_invoicing_frequency: function () {
             if (this.invoicingDetails) {
@@ -576,10 +576,10 @@ export default {
                         ),
                     ].includes(this.invoicingDetails.charge_method)
                 )
-                    return true
-                return false
+                    return true;
+                return false;
             }
-            return false
+            return false;
         },
         show_invoice_previewer: function () {
             if (this.invoicingDetails) {
@@ -600,10 +600,10 @@ export default {
                         ),
                     ].includes(this.invoicingDetails.charge_method)
                 )
-                    return true
-                return false
+                    return true;
+                return false;
             }
-            return false
+            return false;
         },
         show_invoicing_quarters: function () {
             return (
@@ -613,48 +613,49 @@ export default {
                     ) &&
                 this.show_invoicing_frequency &&
                 this.invoicingDetailsComputed.invoicing_repetition_type == 2
-            )
+            );
         },
         show_month_of_year_to_invoice: function () {
             return (
                 1 == this.invoicingDetailsComputed.invoicing_repetition_type &&
                 this.show_invoicing_frequency
-            )
+            );
         },
     },
     created: function () {
-        this.fetchChargeMethods()
-        this.fetchRepetitionTypes()
-        this.fetchCPICalculationMethods()
+        this.fetchChargeMethods();
+        this.fetchRepetitionTypes();
+        this.fetchCPICalculationMethods();
     },
     mounted: function () {
         this.$nextTick(function () {
             if (!this.invoicingDetailsComputed.invoicing_day_of_month) {
-                this.invoicingDetailsComputed.invoicing_day_of_month = 1
+                this.invoicingDetailsComputed.invoicing_day_of_month = 1;
             }
             if (!this.invoicingDetailsComputed.invoicing_month_of_year) {
-                this.invoicingDetailsComputed.invoicing_month_of_year = 1
+                this.invoicingDetailsComputed.invoicing_month_of_year = 1;
             }
             if (!this.invoicingDetailsComputed.invoicing_quarters_start_month) {
-                this.invoicingDetailsComputed.invoicing_quarters_start_month = 3
+                // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
+                this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
             }
             this.invoicingDetailsComputed = {
                 ...this.invoicingDetailsComputed,
                 custom_cpi_years: this.getCustomCPIYears(),
-            }
-        })
+            };
+        });
     },
     methods: {
         getCustomCPIYears: function () {
-            const rows = []
+            const rows = [];
             for (let i = 0; i < this.approvalDurationYears; i++) {
                 rows.push({
                     year: i + 1,
                     label: '',
                     cpi: 0.0,
-                })
+                });
             }
-            return rows
+            return rows;
         },
         chargeMethodChanged: function (event) {
             this.$nextTick(() => {
@@ -662,54 +663,54 @@ export default {
                     .closest('.row')
                     .next('.row')
                     .find('input')
-                    .focus()
-            })
+                    .focus();
+            });
             const chargeMethodKey = this.getChargeMethodKeyById(
                 this.invoicingDetailsComputed.charge_method
-            )
+            );
             if ('percentage_of_gross_turnover' == chargeMethodKey) {
-                this.invoicingDetailsComputed.invoicing_repetition_type = 2
+                this.invoicingDetailsComputed.invoicing_repetition_type = 2;
             } else {
-                this.invoicingDetailsComputed.invoicing_repetition_type = 1
+                this.invoicingDetailsComputed.invoicing_repetition_type = 1;
             }
         },
         updateReviewDates: function (review_dates) {
             this.invoicingDetailsComputed = {
                 ...this.invoicingDetailsComputed,
                 crown_land_rent_review_dates: review_dates,
-            }
+            };
         },
         updateYearsArray: function (incrementType, years_array) {
             if ('annual_increment_amount' == incrementType) {
                 this.invoicingDetailsComputed = {
                     ...this.invoicingDetailsComputed,
                     annual_increment_amounts: years_array,
-                }
+                };
             } else {
                 this.invoicingDetailsComputed = {
                     ...this.invoicingDetailsComputed,
                     annual_increment_percentages: years_array,
-                }
+                };
             }
         },
         updateGrossTurnoverPercentages: function (gross_turnover_percentages) {
             this.invoicingDetailsComputed = {
                 ...this.invoicingDetailsComputed,
                 gross_turnover_percentages: gross_turnover_percentages,
-            }
+            };
         },
         updateDefaultInvoicingDate: function (firstIssueDate) {
-            let invoicing_day_of_month = firstIssueDate.date()
+            let invoicing_day_of_month = firstIssueDate.date();
             this.invoicingDetailsComputed = {
                 ...this.invoicingDetailsComputed,
                 invoicing_day_of_month: invoicing_day_of_month,
-            }
+            };
             if (this.invoicingDetailsComputed.invoicing_repetition_type == 1) {
-                let invoicing_month_of_year = firstIssueDate.month() + 1
+                let invoicing_month_of_year = firstIssueDate.month() + 1;
                 this.invoicingDetailsComputed = {
                     ...this.invoicingDetailsComputed,
                     invoicing_month_of_year: invoicing_month_of_year,
-                }
+                };
             }
         },
         chargeMethodDisabled: function (charge_method) {
@@ -725,88 +726,88 @@ export default {
                 ].includes(charge_method.key) &&
                     // The approval runs for less than a full year
                     this.approvalDurationYears - 1 == 0)
-            )
+            );
         },
         getChargeMethodIdByKey: function (key) {
             let charge_method = this.charge_methods.find(
                 (charge_method) => charge_method.key === key
-            )
-            if (charge_method) return charge_method.id
-            else return 0
+            );
+            if (charge_method) return charge_method.id;
+            else return 0;
         },
         getChargeMethodKeyById: function (id) {
             let charge_method = this.charge_methods.find(
                 (charge_method) => charge_method.id === id
-            )
-            if (charge_method) return charge_method.key
-            else return ''
+            );
+            if (charge_method) return charge_method.key;
+            else return '';
         },
         getInvoicingRepetitionTypeByKey: function (key) {
             let charge_method = this.charge_methods.find(
                 (charge_method) => charge_method.key === key
-            )
-            if (charge_method) return charge_method.id
-            else return 0
+            );
+            if (charge_method) return charge_method.id;
+            else return 0;
         },
         fetchChargeMethods: async function () {
-            let vm = this
+            let vm = this;
             try {
-                const res = await fetch(api_endpoints.charge_methods)
-                if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
-                let charge_methods = await res.json()
-                vm.charge_methods = charge_methods
+                const res = await fetch(api_endpoints.charge_methods);
+                if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
+                let charge_methods = await res.json();
+                vm.charge_methods = charge_methods;
             } catch (err) {
-                console.log({ err })
+                console.log({ err });
             }
         },
         fetchRepetitionTypes: async function () {
-            let vm = this
+            let vm = this;
             try {
-                const res = await fetch(api_endpoints.repetition_types)
-                if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
-                let repetition_types = await res.json()
-                vm.repetition_types = repetition_types
+                const res = await fetch(api_endpoints.repetition_types);
+                if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
+                let repetition_types = await res.json();
+                vm.repetition_types = repetition_types;
                 vm.$nextTick(function () {
                     if (!vm.invoicingDetailsComputed.review_once_every) {
-                        vm.invoicingDetailsComputed.review_once_every = 5
+                        vm.invoicingDetailsComputed.review_once_every = 5;
                     }
                     if (!vm.invoicingDetailsComputed.invoicing_once_every) {
-                        vm.invoicingDetailsComputed.invoicing_once_every = 1
+                        vm.invoicingDetailsComputed.invoicing_once_every = 1;
                     }
                     if (!vm.invoicingDetailsComputed.review_repetition_type) {
-                        vm.invoicingDetailsComputed.review_repetition_type = 1
+                        vm.invoicingDetailsComputed.review_repetition_type = 1;
                     }
                     if (
                         !vm.invoicingDetailsComputed.invoicing_repetition_type
                     ) {
-                        vm.invoicingDetailsComputed.invoicing_repetition_type = 1
+                        vm.invoicingDetailsComputed.invoicing_repetition_type = 1;
                     }
-                })
+                });
             } catch (err) {
-                console.log({ err })
+                console.log({ err });
             }
         },
         fetchCPICalculationMethods: async function () {
-            let vm = this
+            let vm = this;
             try {
                 const res = await fetch(
                     api_endpoints.cpi_calculation_methods + 'no-pagination/'
-                )
-                if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
-                let cpi_calculation_methods = await res.json()
-                vm.cpi_calculation_methods = cpi_calculation_methods
+                );
+                if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
+                let cpi_calculation_methods = await res.json();
+                vm.cpi_calculation_methods = cpi_calculation_methods;
                 if (
                     vm.invoicingDetailsComputed.cpi_calculation_method == null
                 ) {
                     vm.invoicingDetailsComputed.cpi_calculation_method =
-                        cpi_calculation_methods[0].id
+                        cpi_calculation_methods[0].id;
                 }
             } catch (err) {
-                console.log({ err })
+                console.log({ err });
             }
         },
     },
-}
+};
 </script>
 <style scoped>
 .invalid-charge-method {
