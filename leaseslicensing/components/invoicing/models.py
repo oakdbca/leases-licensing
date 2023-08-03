@@ -708,7 +708,10 @@ class InvoicingDetails(BaseModel):
             first_issue_date = self.get_end_of_next_interval_sequential_year(
                 start_date
             ) + relativedelta(days=1)
-            if self.invoicing_month_of_year:
+            if (
+                self.invoicing_repetition_type.key == settings.REPETITION_TYPE_ANNUALLY
+                and self.invoicing_month_of_year
+            ):
                 first_issue_date = first_issue_date.replace(
                     month=self.invoicing_month_of_year
                 )
