@@ -391,14 +391,21 @@ export default {
                     this.$emit('updateDefaultInvoicingDate', firstIssueDate);
                     this.defaultInvoiceDateSet = true;
                 }
-                firstIssueDate.set(
-                    'date',
-                    this.invoicingDetails.invoicing_day_of_month
-                );
-                firstIssueDate.set(
-                    'month',
-                    this.invoicingDetails.invoicing_month_of_year - 1
-                );
+                if (
+                    this.invoicingDetails.invoicing_repetition_type == 1 &&
+                    this.invoicingDetails.invoicing_month_of_year
+                )
+                    firstIssueDate.set(
+                        'month',
+                        this.invoicingDetails.invoicing_month_of_year - 1
+                    );
+                if (this.invoicingDetails.invoicing_day_of_month) {
+                    firstIssueDate.set(
+                        'date',
+                        this.invoicingDetails.invoicing_day_of_month
+                    );
+                }
+
                 let end_of_first_interval = this.invoicingPeriods[0].endDate;
                 if (firstIssueDate.isSameOrBefore(end_of_first_interval)) {
                     firstIssueDate = this.getEndOfNextIntervalAnnual(
