@@ -2340,7 +2340,6 @@ export default {
                     }
                     this.$nextTick(() => {
                         $('textarea').each(function () {
-                            console.log($(this)[0].scrollHeight);
                             if ($(this)[0].scrollHeight > 70) {
                                 $(this).height($(this)[0].scrollHeight - 30);
                             }
