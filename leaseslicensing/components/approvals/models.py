@@ -105,6 +105,13 @@ class Meta:
 
 
 class ApprovalType(RevisionedMixin):
+    APPROVAL_TYPE_LEASE = "lease"
+    APPROVAL_TYPE_LICENCE = "licence"
+    APPROVAL_TYPE_CHOICES = (
+        (APPROVAL_TYPE_LEASE, "Lease"),
+        (APPROVAL_TYPE_LICENCE, "Licence"),
+    )
+    type = models.CharField(max_length=10, choices=APPROVAL_TYPE_CHOICES, null=True)
     name = models.CharField(max_length=200, unique=True)
     details_placeholder = models.CharField(max_length=200, blank=True)
     gst_free = models.BooleanField(default=False)
