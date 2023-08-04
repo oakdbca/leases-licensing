@@ -152,7 +152,7 @@
                             <div class="input-group w-75">
                                 <span class="input-group-text">CPI</span>
                                 <input
-                                    v-model="custom_cpi_year.cpi"
+                                    v-model="custom_cpi_year.percentage"
                                     step="0.1"
                                     min="-100"
                                     max="100"
@@ -696,7 +696,6 @@ export default {
         updateDefaultInvoicingDate: function (firstIssueDate) {
             if (!this.invoicingDetailsComputed.invoicing_day_of_month) {
                 let invoicing_day_of_month = firstIssueDate.date();
-                console.log('setting invoicing_day_of_month');
                 this.invoicingDetailsComputed = {
                     ...this.invoicingDetailsComputed,
                     invoicing_day_of_month: invoicing_day_of_month,
@@ -706,7 +705,6 @@ export default {
                 this.invoicingDetailsComputed.invoicing_repetition_type == 1 &&
                 !this.invoicingDetailsComputed.invoicing_month_of_year
             ) {
-                console.log('setting invoicing_month_of_year');
                 let invoicing_month_of_year = firstIssueDate.month() + 1;
                 this.invoicingDetailsComputed = {
                     ...this.invoicingDetailsComputed,
@@ -769,6 +767,10 @@ export default {
                 let repetition_types = await res.json();
                 vm.repetition_types = repetition_types;
                 vm.$nextTick(function () {
+                    const chargeMethodKey = this.getChargeMethodKeyById(
+                        this.invoicingDetailsComputed.charge_method
+                    );
+
                     if (!vm.invoicingDetailsComputed.review_once_every) {
                         vm.invoicingDetailsComputed.review_once_every = 5;
                     }
@@ -779,6 +781,7 @@ export default {
                         vm.invoicingDetailsComputed.review_repetition_type = 1;
                     }
                     if (
+                        'percentage_of_gross_turnover' != chargeMethodKey &&
                         !vm.invoicingDetailsComputed.invoicing_repetition_type
                     ) {
                         vm.invoicingDetailsComputed.invoicing_repetition_type = 1;
