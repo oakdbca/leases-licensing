@@ -329,8 +329,11 @@ class ApprovalLogEntrySerializer(CommunicationLogEntrySerializer):
 
 class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
     history_date = serializers.SerializerMethodField()
-    history_document_url = serializers.SerializerMethodField()
+    license_document_url = serializers.SerializerMethodField()
+    license_document_filename = serializers.CharField(source="filename")
     # Adding stuff here to have something in the frontend to display
+    cover_letter_url = serializers.SerializerMethodField()
+    cover_letter_filename = serializers.SerializerMethodField()
     approval_lodgement_number = serializers.SerializerMethodField()
     approval_type_description = serializers.SerializerMethodField()
     sticker_numbers = serializers.SerializerMethodField()
@@ -339,15 +342,16 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
     start_date_str = serializers.SerializerMethodField()
     expiry_date_str = serializers.SerializerMethodField()
     reason = serializers.CharField(source="get_reason_display", read_only=True)
-    approval_letter = serializers.SerializerMethodField()
 
     class Meta:
         model = ApprovalDocument
         fields = (
             "id",
             "history_date",
-            "history_document_url",
-            "filename",
+            "license_document_url",
+            "cover_letter_url",
+            "license_document_filename",
+            "cover_letter_filename",
             "approval_lodgement_number",
             "approval_type_description",
             "sticker_numbers",
@@ -356,7 +360,6 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
             "start_date_str",
             "expiry_date_str",
             "reason",
-            "approval_letter",
         )
 
     def get_history_date(self, obj):
@@ -365,10 +368,28 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
 
         return history_date
 
-    def get_history_document_url(self, obj):
+    def get_license_document_url(self, obj):
         if not obj or not obj._file:
             return None
         return get_secure_file_url(obj, "_file")
+
+    def get_cover_letter_url(self, obj):
+        if (
+            not obj.approval
+            or not obj.approval.cover_letter_document
+            or not obj.approval.cover_letter_document._file
+        ):
+            return None
+        return get_secure_file_url(obj.approval.cover_letter_document, "_file")
+
+    def get_cover_letter_filename(self, obj):
+        if (
+            not obj.approval
+            or not obj.approval.cover_letter_document
+            or not obj.approval.cover_letter_document._file
+        ):
+            return None
+        return obj.approval.cover_letter_document.filename
 
     def get_approval_lodgement_number(self, obj):
         return obj.approval.lodgement_number
@@ -390,9 +411,6 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
 
     def get_expiry_date_str(self, obj):
         return obj.approval.expiry_date.strftime("%d/%m/%Y")
-
-    def get_approval_letter(self, obj):
-        return "(todo) approval_letter"
 
 
 class ApprovalTypeSerializer(serializers.ModelSerializer):
