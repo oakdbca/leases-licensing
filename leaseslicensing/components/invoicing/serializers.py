@@ -7,6 +7,7 @@ from leaseslicensing.components.invoicing.models import (
     ChargeMethod,
     CPICalculationMethod,
     CrownLandRentReviewDate,
+    CustomCPIYear,
     FixedAnnualIncrementAmount,
     FixedAnnualIncrementPercentage,
     Invoice,
@@ -146,6 +147,17 @@ class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
         return False
 
 
+class CustomCPIYearSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomCPIYear
+        fields = (
+            "id",
+            "year",
+            "label",
+            "percentage",
+        )
+
+
 class InvoicingDetailsSerializer(serializers.ModelSerializer):
     annual_increment_amounts = FixedAnnualIncrementAmountSerializer(
         many=True, required=False
@@ -156,9 +168,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     gross_turnover_percentages = PercentageOfGrossTurnoverSerializer(
         many=True, required=False
     )
-    crown_land_rent_review_dates = CrownLandRentReviewDateSerializer(
-        many=True, required=False
-    )
+    custom_cpi_years = CustomCPIYearSerializer(many=True, required=False)
 
     class Meta:
         model = InvoicingDetails
@@ -176,7 +186,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "annual_increment_amounts",  # ReverseFK
             "annual_increment_percentages",  # ReverseFK
             "gross_turnover_percentages",  # ReverseFK
-            "crown_land_rent_review_dates",  # ReverseFK
+            "custom_cpi_years",  # ReverseFK
             "cpi_calculation_method",
         )
 
@@ -197,7 +207,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 "annual_increment_amounts",
                 "annual_increment_percentages",
                 "gross_turnover_percentages",
-                "crown_land_rent_review_dates",
             ]:
                 if attr_name not in fields_excluded:
                     for item in self.initial_data.get(attr_name):
@@ -206,16 +215,12 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         ] = True  # Mark as "to_be_deleted" to the initial value so that item is deleted at the update()
 
     def validate(self, attrs):
-        logger.debug(f"\n\n --> attrs: {attrs}\n\n")
         field_errors = {}
         non_field_errors = []
 
         action = self.context.get("action")
 
-        if action == "finance_save":
-            # When "Save and Continue"/"Save and Exit" button clicked
-            pass
-        elif action == "finance_complete_editing":
+        if action in ["finance_save", "finance_complete_editing"]:
             # When "Complete Editing" clicked
             charge_method = attrs.get("charge_method")
 
@@ -242,7 +247,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         "annual_increment_amounts",
                         "review_once_every",
                         "review_repetition_type",
-                        "crown_land_rent_review_dates",
                         "invoicing_once_every",
                         "invoicing_repetition_type",
                     ],
@@ -251,9 +255,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 annual_increment_amounts_data = attrs.get("annual_increment_amounts")
                 self._validate_annual_increment(
                     annual_increment_amounts_data, field_errors, non_field_errors
-                )
-                self._validate_crown_land_rent_review_dates(
-                    attrs, field_errors, non_field_errors
                 )
 
             elif (
@@ -268,7 +269,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         "annual_increment_percentages",
                         "review_once_every",
                         "review_repetition_type",
-                        "crown_land_rent_review_dates",
                         "invoicing_once_every",
                         "invoicing_repetition_type",
                     ],
@@ -279,9 +279,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 self._validate_annual_increment(
                     annual_increment_percentages_data, field_errors, non_field_errors
                 )
-                self._validate_crown_land_rent_review_dates(
-                    attrs, field_errors, non_field_errors
-                )
             elif charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
                 self.set_default_values(
                     attrs,
@@ -290,14 +287,10 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         "base_fee_amount",
                         "review_once_every",
                         "review_repetition_type",
-                        "crown_land_rent_review_dates",
                         "invoicing_once_every",
                         "invoicing_repetition_type",
                         "cpi_calculation_method",
                     ],
-                )
-                self._validate_crown_land_rent_review_dates(
-                    attrs, field_errors, non_field_errors
                 )
             elif (
                 charge_method.key == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
@@ -345,22 +338,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             else:
                 years.append(a_year)
 
-    def _validate_crown_land_rent_review_dates(
-        self, attrs, field_errors, non_field_errors
-    ):
-        # Make sure there are no duplication of 'date'
-        crown_land_rent_review_dates_data = attrs.get("crown_land_rent_review_dates")
-        dates = []
-        for crown_land_rent_review_date_data in crown_land_rent_review_dates_data:
-            date = crown_land_rent_review_date_data.get("review_date")
-            if date in dates:
-                non_field_errors.append(
-                    f"Review date: {str(date)} is duplicated. It must be unique."
-                )
-            else:
-                dates.append(date)
-
     def update(self, instance, validated_data):
+        # Not really sure the following code is needed up to instance.save()
+        # As could just call super().update(instance, validated_data) to achieve the same result?
         # Local fields
         instance.base_fee_amount = validated_data.get(
             "base_fee_amount", instance.base_fee_amount
@@ -373,6 +353,12 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         )
         instance.invoicing_once_every = validated_data.get(
             "invoicing_once_every", instance.invoicing_once_every
+        )
+        instance.invoicing_day_of_month = validated_data.get(
+            "invoicing_day_of_month", instance.invoicing_day_of_month
+        )
+        instance.invoicing_month_of_year = validated_data.get(
+            "invoicing_month_of_year", instance.invoicing_month_of_year
         )
 
         # FK fields
@@ -400,9 +386,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         gross_turnover_percentages_data = validated_data.pop(
             "gross_turnover_percentages"
         )
-        crown_land_rent_review_dates_data = validated_data.pop(
-            "crown_land_rent_review_dates"
-        )
+        custom_cpi_years_data = validated_data.pop("custom_cpi_years")
         self.update_annual_increment_amounts(annual_increment_amounts_data, instance)
         self.update_annual_increment_percentages(
             annual_increment_percentages_data, instance
@@ -410,10 +394,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         self.update_gross_turnover_percentages(
             gross_turnover_percentages_data, instance
         )
-        self.update_crown_land_rent_review_dates(
-            crown_land_rent_review_dates_data, instance
-        )
-
+        self.update_custom_cpi_years(custom_cpi_years_data, instance)
         return instance
 
     @staticmethod
@@ -570,51 +551,17 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 new_record.invoicing_details = instance
                 new_record.save()
 
-    def update_crown_land_rent_review_dates(
-        self, validated_crown_land_rent_review_dates_data, instance
-    ):
-        initial_data = self.initial_data.get("crown_land_rent_review_dates")
-
-        for (
-            crown_land_rent_review_date_data
-        ) in validated_crown_land_rent_review_dates_data:
-            if crown_land_rent_review_date_data.get("id", 0):
-                # This data exists in the database
-
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    crown_land_rent_review_date_data, initial_data
-                )
-
-                crown_land_rent_review_date = CrownLandRentReviewDate.objects.get(
-                    id=int(crown_land_rent_review_date_data.get("id"))
-                )
-                if to_be_deleted:
-                    if not crown_land_rent_review_date.readonly:
-                        crown_land_rent_review_date.delete()
-                else:
-                    serializer = CrownLandRentReviewDateSerializer(
-                        crown_land_rent_review_date,
-                        crown_land_rent_review_date_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in crown_land_rent_review_date_data:
-                    crown_land_rent_review_date_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = CrownLandRentReviewDateSerializer(
-                    data=crown_land_rent_review_date_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
+    def update_custom_cpi_years(self, validated_custom_cpi_years, instance):
+        for custom_cpi_year_data in validated_custom_cpi_years:
+            logger.debug(type(custom_cpi_year_data))
+            logger.debug(custom_cpi_year_data)
+            custom_cpi_year, created = CustomCPIYear.objects.get_or_create(
+                invoicing_details=instance, year=custom_cpi_year_data.get("year")
+            )
+            custom_cpi_year.label = custom_cpi_year_data["label"]
+            if "percentage" in custom_cpi_year_data:
+                custom_cpi_year.percentage = custom_cpi_year_data["percentage"]
+            custom_cpi_year.save()
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -661,6 +608,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "transaction_count",
             "balance",
             "is_finance_officer",
+            "oracle_invoice_number",
             "is_customer",
         ]
 
