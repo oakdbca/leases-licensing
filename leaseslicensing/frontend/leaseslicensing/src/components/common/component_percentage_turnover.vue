@@ -106,7 +106,7 @@
 </template>
 
 <script>
-import { constants, helpers } from '@/utils/hooks'
+import { constants, helpers } from '@/utils/hooks';
 
 export default {
     name: 'PercentageTurnover',
@@ -133,15 +133,15 @@ export default {
         return {
             financialYearHasPassed: helpers.financialYearHasPassed,
             getFinancialQuarterLabel: helpers.getFinancialQuarterLabel,
-        }
+        };
     },
     computed: {
         grossTurnoverPercentagesComputed: {
             get: function () {
-                return this.grossTurnoverPercentages
+                return this.grossTurnoverPercentages;
             },
             set: function (value) {
-                this.$emit('updateGrossTurnoverPercentages', value)
+                this.$emit('updateGrossTurnoverPercentages', value);
             },
         },
     },
@@ -149,30 +149,29 @@ export default {
         const financialYearsIncluded = helpers.financialYearsIncluded(
             this.startDate,
             this.expiryDate
-        )
+        );
         if (
             this.grossTurnoverPercentages.length !=
             financialYearsIncluded.length
         ) {
-            this.populateFinancialYearsArray(financialYearsIncluded)
+            this.populateFinancialYearsArray(financialYearsIncluded);
         }
     },
     methods: {
         grossTurnoverReadonly: function (financialYear) {
-            console.log(financialYear)
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
             return (
                 !this.financialYearHasPassed(financialYear) ||
                 constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
                     this.proposalProcessingStatusId
-            )
+            );
         },
         populateFinancialYearsArray: function (financialYearsIncluded) {
-            var financialYears = []
+            var financialYears = [];
 
             for (let i = 0; i < financialYearsIncluded.length; i++) {
-                let year = financialYearsIncluded[i].split('-')[1]
+                let year = financialYearsIncluded[i].split('-')[1];
                 if (
                     this.grossTurnoverPercentagesComputed.filter(
                         (x) => x.year == year
@@ -184,15 +183,14 @@ export default {
                         financial_year: financialYearsIncluded[i],
                         percentage: 0.0,
                         gross_turnover: null,
-                    })
+                    });
                 }
             }
             this.grossTurnoverPercentagesComputed =
-                this.grossTurnoverPercentagesComputed.concat(...financialYears)
-            console.log(this.grossTurnoverPercentagesComputed)
+                this.grossTurnoverPercentagesComputed.concat(...financialYears);
         },
     },
-}
+};
 </script>
 
 <style scoped>
