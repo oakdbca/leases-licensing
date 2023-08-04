@@ -635,7 +635,7 @@ export default {
                                 constants.APPROVAL_STATUS.CURRENT.TEXT ==
                                 full.status
                             ) {
-                                links += `<a href='#${full.id}' data-review-invoice-detail-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoice Details</a><br/>`;
+                                links += `<a href='#${full.id}' data-review-invoice-detail-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Review Invoicing Details</a><br/>`;
                             }
                             if (
                                 full.status ==
