@@ -65,6 +65,10 @@ class ApprovalDocumentGenerator:
 
     @transaction.atomic
     def _approval_document_for_filename(self, approval, filename):
+        """
+        Gets or creates an ApprovalDocument for the given approval
+        """
+
         try:
             document, created = ApprovalDocument.objects.get_or_create(
                 approval=approval, name=filename
@@ -77,51 +81,6 @@ class ApprovalDocumentGenerator:
             raise e
         else:
             return document, created
-
-    @basic_exception_handler
-    def _create_approval_document(self, approval, buffer, filename, **kwargs):
-        """
-        Creates an ApprovalDocument for the given approval
-        Args:
-            approval:
-                Approval object
-            buffer:
-                File buffer object
-            reason:
-                Reason for creating the document. Must be one of the choices in ApprovalDocument.REASON_CHOICES
-        Returns:
-            ApprovalDocument object
-        """
-
-        file = File(buffer)
-
-        reason = kwargs.get("reason", "new").lower()
-
-        # Validate reason
-        reasons = {r[0]: r[1] for r in ApprovalDocument.REASON_CHOICES}
-        if reason not in reasons.keys():
-            raise AttributeError(
-                f"Invalid reason `{reason}` for approval document not in {reasons.keys()}."
-            )
-
-        # Get or create the document
-        document, created = self._approval_document_for_filename(approval, filename)
-
-        version_comment = f"{reasons[reason]} Approval document: {document.name}"
-        logger.info(version_comment)
-
-        if not created:
-            # If the document already exists, update the reason unless it is 'new'
-            if reason == "new":
-                raise AttributeError(
-                    f"Reason cannot be 'new'. ApprovalDocument {document.name} already exists."
-                )
-            document.reason = reason
-
-        document._file.save(filename, file, save=True)
-        document.save(version_comment=version_comment)
-
-        return document
 
     @property
     def license_template(self):
@@ -187,8 +146,12 @@ class ApprovalDocumentGenerator:
             os.stat(temp_directory)
         except:
             os.mkdir(temp_directory)
-        new_doc_file = f"{temp_directory}/licence_{str(approval.lodgement_number)}.docx"
-        new_pdf_file = f"{temp_directory}/licence_{str(approval.lodgement_number)}.pdf"
+        new_doc_file = (
+            f"{temp_directory}/licence_{str(approval.lodgement_number)}.docx"
+        )
+        new_pdf_file = (
+            f"{temp_directory}/licence_{str(approval.lodgement_number)}.pdf"
+        )
         doc.save(new_doc_file)
         os.system(
             "libreoffice --headless --convert-to pdf "
@@ -207,26 +170,64 @@ class ApprovalDocumentGenerator:
 
         return approval_buffer
 
-    def create_license_document(self, approval, **kwargs):
-        buffer = self.approval_buffer(approval)
-        filename = "Approval-{}.pdf".format(approval.lodgement_number)
-        document = self._create_approval_document(approval, buffer, filename, **kwargs)
-        buffer.close()
+    @basic_exception_handler
+    def update_approval_document_file(self, approval, buffer, filename, **kwargs):
+        """
+        Updates the ApprovalDocument file identified by filename with buffer
+        Args:
+            approval:
+                Approval object
+            buffer:
+                File buffer object
+            filename:
+                Name of the ApprovalDocument file
+            reason:
+                Reason for creating the document. Must be one of the choices in ApprovalDocument.REASON_CHOICES
+        Returns:
+            ApprovalDocument object
+        """
 
-        # return document
+        file = File(buffer)
 
-        # Attach the document to the approval
-        approval.licence_document = document
-        approval.save()
+        reason = kwargs.get("reason", "new").lower()
 
-    def create_cover_letter(self, approval, **kwargs):
-        buffer = self.cover_letter_buffer(approval)
-        filename = "CoverLetter-{}.pdf".format(approval.lodgement_number)
-        document = self._create_approval_document(approval, buffer, filename, **kwargs)
-        buffer.close()
+        # Validate reason
+        reasons = {r[0]: r[1] for r in ApprovalDocument.REASON_CHOICES}
+        if reason not in reasons.keys():
+            raise AttributeError(
+                f"Invalid reason `{reason}` for approval document not in {reasons.keys()}."
+            )
+
+        # Get the current or create a new approval document
+        document, created = self._approval_document_for_filename(approval, filename)
+
+        version_comment = f"{reasons[reason]} Approval document: {document.name}"
+        logger.info(version_comment)
+
+        if not created:
+            # If the document already exists, update the reason unless it is 'new'
+            if reason == "new":
+                raise AttributeError(
+                    f"Reason cannot be 'new'. ApprovalDocument {document.name} already exists."
+                )
+            document.reason = reason
+
+        document._file.save(filename, file, save=True)
+        document.save(version_comment=version_comment)
 
         return document
 
+    def create_license_document(self, approval, **kwargs):
+        buffer = self.approval_buffer(approval)
+        filename = "Approval-{}.pdf".format(approval.lodgement_number)
+        document = self.update_approval_document_file(approval, buffer, filename, **kwargs)
+        buffer.close()
         # Attach the document to the approval
-        # approval.cover_letter_document = document
-        # approval.save()
+        approval.licence_document = document
+
+        return document
+
+    def create_cover_letter(self, **kwargs):
+        raise NotImplementedError(
+            "Creating cover letters from templates is not implemented yet."
+        )
