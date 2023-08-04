@@ -395,7 +395,6 @@ class InvoicingDetails(BaseModel):
         help_text="Day of the month to generate invoices.",
         null=True,
         blank=True,
-        default=1,
     )
     invoicing_month_of_year = models.PositiveSmallIntegerField(
         validators=[
@@ -405,7 +404,6 @@ class InvoicingDetails(BaseModel):
         help_text="Month of the year to generate invoices.",
         null=True,
         blank=True,
-        default=1,
     )
     # Used to support legacy leases/licenses that have an unusual quarterly invoicing cycle
     # Can be 1, 2 or 3. 1 = [JAN, APR, JUL, OCT], 2 = [FEB, MAY, AUG, NOV], 3 = [MAR, JUN, SEP, DEC]
@@ -694,6 +692,7 @@ class InvoicingDetails(BaseModel):
             if i < len(self.invoicing_periods) - 1:
                 issue_date = self.add_repetition_interval(issue_date)
             else:
+                # The last issue date is the day after the expiry date for the approval
                 issue_date = self.approval.expiry_date + relativedelta(days=1)
 
         return invoices
@@ -954,6 +953,9 @@ class FixedAnnualIncrementAmount(BaseModel):
             "year",
         ]
 
+    def __str__(self):
+        return f"Year: {self.year}, Increment Amount: {self.increment_amount}"
+
     @property
     def readonly(self):
         # TODO: implement
@@ -983,6 +985,9 @@ class FixedAnnualIncrementPercentage(BaseModel):
         ordering = [
             "year",
         ]
+
+    def __str__(self):
+        return f"Year: {self.year}, Increment Percentage: {self.increment_percentage}"
 
     @property
     def readonly(self):
