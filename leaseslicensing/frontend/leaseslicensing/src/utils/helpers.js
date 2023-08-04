@@ -93,8 +93,6 @@ module.exports = {
                 ) {
                     error_str = text.non_field_errors[0].replace(/[[\]"]/g, '');
                 } else {
-                    console.log('text');
-                    console.log(text);
                     for (let key in text) {
                         error_str += key + ': ' + text[key] + '<br/>';
                     }
@@ -106,7 +104,6 @@ module.exports = {
         } else if (resp.status === 404) {
             error_str = 'The resource you are looking for does not exist.';
         }
-        console.log('apiVueResourceError: ', error_str);
         return error_str;
     },
     escapeHtml: function (htmlStr) {
@@ -483,8 +480,6 @@ module.exports = {
     },
     getFinancialQuarterFromDate(date) {
         const month = moment(date).month();
-        console.log('date', date);
-        console.log('month', month);
         if (month < 3) {
             return 3;
         } else if (month < 6) {
@@ -493,6 +488,15 @@ module.exports = {
             return 1;
         } else {
             return 2;
+        }
+    },
+    getFinancialYearFromDate(date) {
+        const month = moment(date).month();
+        const year = moment(date).year();
+        if (month < 7) {
+            return `${year - 1}-${year}`;
+        } else {
+            return `${year}-${year + 1}`;
         }
     },
     getFinancialQuarterLabel: function (quarter) {
