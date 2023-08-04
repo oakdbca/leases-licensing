@@ -41,7 +41,7 @@
         "fields": {
             "approval_type": 3,
             "approval_type_document_type": 5,
-            "mandatory": false
+            "mandatory": true
         }
     },
     {
@@ -50,7 +50,7 @@
         "fields": {
             "approval_type": 4,
             "approval_type_document_type": 5,
-            "mandatory": false
+            "mandatory": true
         }
     },
     {
@@ -59,7 +59,7 @@
         "fields": {
             "approval_type": 5,
             "approval_type_document_type": 5,
-            "mandatory": false
+            "mandatory": true
         }
     },
     {
@@ -68,7 +68,43 @@
         "fields": {
             "approval_type": 6,
             "approval_type_document_type": 5,
-            "mandatory": false
+            "mandatory": true
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttypeonapprovaltype",
+        "pk": 13,
+        "fields": {
+            "approval_type": 6,
+            "approval_type_document_type": 6,
+            "mandatory": true
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttypeonapprovaltype",
+        "pk": 14,
+        "fields": {
+            "approval_type": 5,
+            "approval_type_document_type": 6,
+            "mandatory": true
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttypeonapprovaltype",
+        "pk": 15,
+        "fields": {
+            "approval_type": 4,
+            "approval_type_document_type": 6,
+            "mandatory": true
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttypeonapprovaltype",
+        "pk": 16,
+        "fields": {
+            "approval_type": 3,
+            "approval_type_document_type": 6,
+            "mandatory": true
         }
     }
 ]

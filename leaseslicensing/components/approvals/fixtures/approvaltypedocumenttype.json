@@ -33,5 +33,12 @@
         "fields": {
             "name": "Sign-off sheet"
         }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 6,
+        "fields": {
+            "name": "Cover letter"
+        }
     }
 ]
