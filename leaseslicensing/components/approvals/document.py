@@ -146,12 +146,8 @@ class ApprovalDocumentGenerator:
             os.stat(temp_directory)
         except:
             os.mkdir(temp_directory)
-        new_doc_file = (
-            f"{temp_directory}/licence_{str(approval.lodgement_number)}.docx"
-        )
-        new_pdf_file = (
-            f"{temp_directory}/licence_{str(approval.lodgement_number)}.pdf"
-        )
+        new_doc_file = f"{temp_directory}/licence_{str(approval.lodgement_number)}.docx"
+        new_pdf_file = f"{temp_directory}/licence_{str(approval.lodgement_number)}.pdf"
         doc.save(new_doc_file)
         os.system(
             "libreoffice --headless --convert-to pdf "
@@ -220,7 +216,9 @@ class ApprovalDocumentGenerator:
     def create_license_document(self, approval, **kwargs):
         buffer = self.approval_buffer(approval)
         filename = "Approval-{}.pdf".format(approval.lodgement_number)
-        document = self.update_approval_document_file(approval, buffer, filename, **kwargs)
+        document = self.update_approval_document_file(
+            approval, buffer, filename, **kwargs
+        )
         buffer.close()
         # Attach the document to the approval
         approval.licence_document = document
