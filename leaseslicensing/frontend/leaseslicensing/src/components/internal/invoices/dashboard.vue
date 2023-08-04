@@ -5,7 +5,7 @@
             label="Invoice Records"
             index="invoices"
         >
-            <InvoicesTable level="internal" />
+            <InvoicesTable :level="level" />
         </FormSection>
     </div>
 </template>
@@ -18,6 +18,13 @@ export default {
     components: {
         FormSection,
         InvoicesTable,
+    },
+    data() {
+        return {
+            level: this.$route.name.includes('external')
+                ? 'external'
+                : 'internal',
+        };
     },
 };
 </script>
