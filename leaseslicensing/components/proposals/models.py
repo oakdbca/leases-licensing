@@ -1,5 +1,4 @@
 import copy
-import datetime
 import json
 import logging
 import subprocess
@@ -35,6 +34,7 @@ from leaseslicensing.components.competitive_processes.email import (
     send_competitive_process_create_notification,
 )
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
+from leaseslicensing.components.invoicing import utils as invoicing_utils
 from leaseslicensing.components.invoicing.email import (
     send_new_invoice_raised_internal_notification,
 )
@@ -2714,7 +2714,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def generate_compliances(self, approval, request):
         today = timezone.now().date()
-        timedelta = datetime.timedelta
         from leaseslicensing.components.compliances.models import (
             Compliance,
             ComplianceUserAction,
@@ -2776,14 +2775,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         for x in range(req.recurrence_schedule):
                             # Weekly
                             if req.recurrence_pattern == 1:
-                                current_date += timedelta(weeks=1)
+                                current_date += relativedelta(weeks=1)
                             # Monthly
                             elif req.recurrence_pattern == 2:
-                                current_date += timedelta(weeks=4)
+                                current_date += relativedelta(month=1)
                                 pass
                             # Yearly
                             elif req.recurrence_pattern == 3:
-                                current_date += timedelta(days=365)
+                                current_date += relativedelta(years=1)
                         # Create the compliance
                         if current_date <= approval.expiry_date:
                             try:
@@ -2804,6 +2803,75 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                     ),
                                     request,
                                 )
+
+    def generate_gross_turnover_requirements(self, approval, request):
+        end_of_first_financial_quarter = invoicing_utils.end_of_first_financial_quarter(
+            approval.start_date
+        )
+        end_of_first_financial_year = invoicing_utils.end_of_first_financial_year(
+            approval.start_date
+        )
+
+        first_quarterly_due_date = end_of_first_financial_quarter + relativedelta(
+            days=30
+        )
+        first_annual_due_date = end_of_first_financial_year.replace(month=10).replace(
+            day=31
+        )
+
+        try:
+            annual_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUAL
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                f"ProposalStandardRequirement not found: code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUAL}"
+            )
+            raise
+        (
+            annual_financial_statement_requirement,
+            created,
+        ) = ProposalRequirement.objects.get_or_create(
+            proposal=self,
+            standard_requirement=annual_standard_requirement,
+            due_date=first_annual_due_date,
+            reminder_date=end_of_first_financial_year + relativedelta(days=1),
+            recurrence=True,
+            recurrence_pattern=2,  # Monthly
+            recurrence_schedule=3,  # Every 3 months (quarterly)
+        )
+        if created:
+            logger.info(
+                "New Annual Financial Statement Proposal Requirement: "
+                f"{annual_financial_statement_requirement} created for {self}"
+            )
+
+        try:
+            quarterly_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTER
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                f"ProposalStandardRequirement not found: code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTER}"
+            )
+            raise
+        (
+            quarterly_financial_statement_requirement,
+            created,
+        ) = ProposalRequirement.objects.get_or_create(
+            proposal=self,
+            standard_requirement=quarterly_standard_requirement,
+            due_date=first_quarterly_due_date,
+            reminder_date=end_of_first_financial_year + relativedelta(days=1),
+            recurrence=True,
+            recurrence_pattern=3,  # Annually
+            recurrence_schedule=1,  # Every 1 year
+        )
+        if created:
+            logger.info(
+                "New Quarterly Financial Statement Proposal Requirement: "
+                f"{annual_financial_statement_requirement} created for {self}"
+            )
 
     @property
     def proposal_applicant(self):
@@ -3183,9 +3251,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             # send to the finance group so they can take action
             send_new_invoice_raised_internal_notification(self.approval, invoice)
 
-        # Todo replace this generate compliances call to a generate invoicing compliances call
-        # New method that generates the compliances when the charge method is based on gross revenue
-        self.generate_compliances(approval, request)
+        if (
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+            == invoicing_details.charge_method.key
+        ):
+            # Generate requirements for the proponent to submit quarterly and annual financial statements
+            self.generate_gross_turnover_requirements(approval, request)
+
+            # Generate compliances from the requirements
+            self.generate_compliances(approval, request)
+
         self.save()
 
     def finance_cancel_editing(self, request, action):
@@ -3835,7 +3910,7 @@ class ProposalOnHold(models.Model):
 
 class ProposalStandardRequirement(RevisionedMixin):
     text = models.TextField()
-    code = models.CharField(max_length=10, unique=True)
+    code = models.CharField(max_length=50, unique=True)
     obsolete = models.BooleanField(default=False)
     application_type = models.ForeignKey(
         ApplicationType, null=True, blank=True, on_delete=models.SET_NULL
