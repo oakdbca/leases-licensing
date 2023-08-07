@@ -389,6 +389,71 @@
                 @updateDefaultInvoicingDate="updateDefaultInvoicingDate"
             />
         </div>
+        <template v-if="show_ad_hoc_invoicing">
+            <div class="row mb-3">
+                <div class="col-3">
+                    <button class="btn btn-primary mb-1">
+                        + Add Ad Hoc Invoice
+                    </button>
+                </div>
+                <div class="col-9">
+                    <BootstrapAlert class="py-2">
+                        Use this option if there are funds in arrears that need
+                        invoicing immediately
+                    </BootstrapAlert>
+                </div>
+            </div>
+            <div class="row mb-3">
+                <div class="col">
+                    <ul class="list-group">
+                        <li class="list-group-item">
+                            <div class="d-flex">
+                                <div class="pe-3 w-100">
+                                    <label>Description</label>
+                                    <input type="text" class="form-control" />
+                                </div>
+                            </div>
+                        </li>
+                        <li class="list-group-item">
+                            <div class="d-flex">
+                                <div class="pe-3">
+                                    <label>Amount</label>
+                                    <input
+                                        type="number"
+                                        class="form-control"
+                                        step="0.1"
+                                    />
+                                </div>
+                                <div class="pe-3">
+                                    <label>Issue Date</label>
+                                    <input
+                                        type="date"
+                                        class="form-control"
+                                        :value="
+                                            new Date()
+                                                .toISOString()
+                                                .slice(0, 10)
+                                        "
+                                    />
+                                </div>
+                                <div class="pe-3">
+                                    <label>Due Date</label>
+                                    <input
+                                        type="date"
+                                        class="form-control"
+                                        :value="
+                                            new Date()
+                                                .toISOString()
+                                                .slice(0, 10)
+                                        "
+                                    />
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </template>
     </form>
 </template>
 
@@ -397,7 +462,7 @@ import AnnualIncrement from '@/components/common/component_fixed_annual_amount.v
 import PercentageTurnover from '@/components/common/component_percentage_turnover.vue';
 import InvoicePreviewer from '@/components/common//invoice_previewer.vue';
 
-import { api_endpoints, helpers } from '@/utils/hooks';
+import { api_endpoints, constants, helpers } from '@/utils/hooks';
 
 export default {
     name: 'InvoicingDetails',
@@ -424,6 +489,10 @@ export default {
             required: true,
         },
         proposalProcessingStatusId: {
+            type: String,
+            required: true,
+        },
+        approvalType: {
             type: String,
             required: true,
         },
@@ -621,18 +690,22 @@ export default {
                 this.show_invoicing_frequency
             );
         },
+        show_ad_hoc_invoicing: function () {
+            // Todo: add logic
+            return constants.APPROVAL_TYPE.LICENCE == this.approvalType;
+        },
     },
     created: function () {
         this.fetchChargeMethods();
         this.fetchRepetitionTypes();
         this.fetchCPICalculationMethods();
+        if (!this.invoicingDetailsComputed.invoicing_quarters_start_month) {
+            // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
+            this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
+        }
     },
     mounted: function () {
         this.$nextTick(function () {
-            if (!this.invoicingDetailsComputed.invoicing_quarters_start_month) {
-                // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
-                this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
-            }
             this.invoicingDetailsComputed = {
                 ...this.invoicingDetailsComputed,
                 custom_cpi_years: this.getCustomCPIYears(),
@@ -643,11 +716,17 @@ export default {
         getCustomCPIYears: function () {
             const rows = [];
             for (let i = 0; i < this.approvalDurationYears; i++) {
-                rows.push({
-                    year: i + 1,
-                    label: '',
-                    cpi: 0.0,
-                });
+                if (!this.invoicingDetailsComputed.custom_cpi_years[i]) {
+                    rows.push({
+                        year: i + 1,
+                        label: '',
+                        percentage: 0.0,
+                    });
+                } else {
+                    rows.push(
+                        this.invoicingDetailsComputed.custom_cpi_years[i]
+                    );
+                }
             }
             return rows;
         },
