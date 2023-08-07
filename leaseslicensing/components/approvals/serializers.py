@@ -442,3 +442,21 @@ class ApprovalTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApprovalType
         fields = "__all__"
+
+
+class ApprovalBasicSerializer(serializers.ModelSerializer):
+    approval_type = serializers.CharField(source="approval_type.type", read_only=True)
+    approval_type_name = serializers.CharField(
+        source="approval_type.name", read_only=True
+    )
+
+    class Meta:
+        model = Approval
+        fields = (
+            "id",
+            "lodgement_number",
+            "start_date",
+            "expiry_date",
+            "approval_type",
+            "approval_type_name",
+        )
