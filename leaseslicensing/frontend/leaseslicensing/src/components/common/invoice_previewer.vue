@@ -220,6 +220,8 @@ export default {
             var daysRunningTotal = 0;
             var amountRunningTotal = currency(0.0);
             var issueDate = firstIssueDate.clone();
+            console.log('\n\n\nfirstIssueDate', firstIssueDate);
+
             for (let i = 0; i < this.invoicingPeriods.length; i++) {
                 // Net 30 payment terms
                 let dueDate = issueDate.clone().add(30, 'days');
@@ -282,11 +284,12 @@ export default {
                 amountObject.amount = currency(baseFeeAmount);
                 amountObject.suffix = ' + CPI (ABS)';
             }
+            let yearSequenceIndex = this.getYearSequenceIndex(index);
             if (this.chargeMethodKey == 'base_fee_plus_annual_cpi_custom') {
                 amountObject.amount = currency(baseFeeAmount);
                 let customCpiYear =
-                    this.invoicingDetails.custom_cpi_years[index];
-                if (customCpiYear) {
+                    this.invoicingDetails.custom_cpi_years[yearSequenceIndex];
+                if (customCpiYear && customCpiYear.percentage > 0) {
                     amountObject.amount = currency(
                         baseFeeAmount * (1 + customCpiYear.percentage / 100)
                     );
@@ -295,7 +298,6 @@ export default {
                 }
             }
 
-            let yearSequenceIndex = this.getYearSequenceIndex(index);
             if (
                 this.chargeMethodKey == 'base_fee_plus_fixed_annual_percentage'
             ) {
