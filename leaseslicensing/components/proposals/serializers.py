@@ -1225,6 +1225,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     requirements = serializers.SerializerMethodField()
     can_edit_invoicing_details = serializers.SerializerMethodField()
+    approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
 
     class Meta:
         model = Proposal
@@ -1339,12 +1340,25 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "details_url",
             "external_referral_invites",
             "competitive_process",
+            "approval",
         )
 
         datatables_always_serialize = {
             "current_assessor",
         }
         read_only_fields = ("requirements",)
+
+    def get_approval(self, obj):
+        from leaseslicensing.components.approvals.serializers import (
+            ApprovalBasicSerializer,
+        )
+
+        if obj.approval:
+            request = self.context["request"]
+            return ApprovalBasicSerializer(
+                obj.approval, context={"request": request}
+            ).data
+        return None
 
     def get_applicant_obj(self, obj):
         if isinstance(obj.applicant, Organisation):
