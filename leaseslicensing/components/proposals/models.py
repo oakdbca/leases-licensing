@@ -940,7 +940,9 @@ class ProposalManager(models.Manager):
         return (
             super()
             .get_queryset()
-            .select_related("proposal_type", "org_applicant", "application_type")
+            .select_related(
+                "proposal_type", "org_applicant", "application_type", "approval"
+            )
         )
 
 
