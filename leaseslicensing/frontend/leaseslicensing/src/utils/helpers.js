@@ -478,7 +478,7 @@ module.exports = {
     sequentialYearHasPassed: function (startDate, year) {
         return moment(year).diff('years', moment(startDate).year()) > year;
     },
-    getFinancialQuarterFromDate(date) {
+    getFinancialQuarterFromDate: function (date) {
         const month = moment(date).month();
         if (month < 3) {
             return 3;
@@ -490,7 +490,13 @@ module.exports = {
             return 2;
         }
     },
-    getFinancialYearFromDate(date) {
+    getEndMonthForFinancialQuarter: function (financialQuarter) {
+        return [8, 11, 2, 5][financialQuarter - 1];
+    },
+    getStartMonthForFinancialQuarter: function (financialQuarter) {
+        return [6, 9, 0, 3][financialQuarter - 1];
+    },
+    getFinancialYearFromDate: function (date) {
         const month = moment(date).month();
         const year = moment(date).year();
         if (month < 7) {
@@ -501,6 +507,53 @@ module.exports = {
     },
     getFinancialQuarterLabel: function (quarter) {
         return ['JUL-SEP', 'OCT-DEC', 'JAN-MAR', 'APR-JUN'][quarter - 1];
+    },
+    financialQuarterIncluded: function (
+        startDate,
+        endDate,
+        financialYear,
+        financialQuarter
+    ) {
+        let calendarYearApplicable = financialYear.split('-')[0];
+        if (financialQuarter > 2) {
+            calendarYearApplicable = financialYear.split('-')[1];
+        }
+        const financialQuarterStartMonth =
+            this.getStartMonthForFinancialQuarter(financialQuarter);
+        const financialQuarterEndMonth =
+            this.getEndMonthForFinancialQuarter(financialQuarter);
+        const startOfFinancialQuarter = moment().set({
+            year: calendarYearApplicable,
+            month: financialQuarterStartMonth,
+            date: 1,
+        });
+        const endOfFinancialQuarter = moment()
+            .set({
+                year: calendarYearApplicable,
+                month: financialQuarterEndMonth,
+                date: 1,
+            })
+            .endOf('month')
+            .set({
+                hour: 0,
+                minute: 0,
+                second: 0,
+                millisecond: 0,
+            });
+
+        console.log(
+            financialQuarterStartMonth,
+            financialQuarterEndMonth,
+            startOfFinancialQuarter,
+            endOfFinancialQuarter
+        );
+
+        return this.datesOverlap(
+            startDate,
+            endDate,
+            startOfFinancialQuarter,
+            endOfFinancialQuarter
+        );
     },
     ordinalSuffixOf: function (i) {
         var j = i % 10,
