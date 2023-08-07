@@ -59,36 +59,49 @@
                             :key="index"
                             class="div d-flex align-items-center pb-1"
                         >
-                            <div class="col-sm-4 pe-3">&nbsp;</div>
-                            <div class="pe-3 quarter">
-                                <div class="input-group">
-                                    <input
-                                        type="text"
-                                        readonly
-                                        class="form-control form-control-quarter"
-                                        :value="`Q${index} ${getFinancialQuarterLabel(
-                                            index
-                                        )}`"
-                                    />
+                            <template
+                                v-if="
+                                    helpers.financialQuarterIncluded(
+                                        startDate,
+                                        expiryDate,
+                                        year.financial_year,
+                                        index
+                                    )
+                                "
+                            >
+                                <div class="col-sm-4 pe-3">&nbsp;</div>
+                                <div class="pe-3 quarter">
+                                    <div class="input-group">
+                                        <input
+                                            type="text"
+                                            readonly
+                                            class="form-control form-control-quarter"
+                                            :value="`Q${index} ${getFinancialQuarterLabel(
+                                                index
+                                            )}`"
+                                        />
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="pe-3">Gross Turnover</div>
-                            <div class="col-sm-3">
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input
-                                        v-model="year.gross_turnover"
-                                        type="number"
-                                        class="form-control"
-                                        :readonly="
-                                            grossTurnoverReadonly(
-                                                year.financial_year
-                                            )
-                                        "
-                                    />
-                                    <span class="input-group-text">AUD</span>
+                                <div class="pe-3">Gross Turnover</div>
+                                <div class="col-sm-3">
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input
+                                            v-model="year.gross_turnover"
+                                            type="number"
+                                            class="form-control"
+                                            :readonly="
+                                                grossTurnoverReadonly(
+                                                    year.financial_year
+                                                )
+                                            "
+                                        />
+                                        <span class="input-group-text"
+                                            >AUD</span
+                                        >
+                                    </div>
                                 </div>
-                            </div>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -133,6 +146,7 @@ export default {
         return {
             financialYearHasPassed: helpers.financialYearHasPassed,
             getFinancialQuarterLabel: helpers.getFinancialQuarterLabel,
+            helpers: helpers,
         };
     },
     computed: {
