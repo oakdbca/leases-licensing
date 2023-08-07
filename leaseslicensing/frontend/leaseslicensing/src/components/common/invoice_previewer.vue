@@ -34,7 +34,7 @@
                         </td>
                     </tr>
                 </template>
-                <tr>
+                <tr v-if="showTotal">
                     <td colspan="3" class="text-end fw-bold pt-2">
                         {{
                             pastInvoiceCount > 0 ? 'Remaining Balance' : 'Total'
@@ -85,7 +85,7 @@ export default {
         };
     },
     computed: {
-        showSummary: function () {
+        showTotal: function () {
             return this.chargeMethodKey != 'percentage_of_gross_turnover';
         },
         daysDifference: function () {
@@ -136,10 +136,13 @@ export default {
             return invoiceCount;
         },
         pastInvoiceCount: function () {
-            return this.invoices.filter((amountObject) => !amountObject.hide)
+            return this.invoices.filter((amountObject) => amountObject.hide)
                 .length;
         },
         totalAmount: function () {
+            if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
+                return `Unknowable`;
+            }
             if (!this.invoicingDetails.base_fee_amount) {
                 return `Enter Base Fee`;
             }
@@ -176,10 +179,13 @@ export default {
             return 0;
         },
         invoicingPeriods: function () {
+            if (!this.invoicingDetails) {
+                return [];
+            }
             const invoicingPeriods = [];
-            var startDate = moment(this.startDate);
-            var endDate = this.getEndOfNextInterval(startDate);
-            var expiryDate = moment(this.expiryDate);
+            let startDate = moment(this.startDate);
+            let endDate = this.getEndOfNextInterval(startDate);
+            let expiryDate = moment(this.expiryDate);
 
             while (endDate.isBefore(this.expiryDate)) {
                 let days = endDate.diff(startDate, 'days') + 1;
@@ -220,6 +226,7 @@ export default {
                 daysRunningTotal += this.invoicingPeriods[i].days;
                 let amountObject = this.getAmountForInvoice(
                     issueDate,
+                    this.invoicingPeriods[i].endDate,
                     this.invoicingPeriods[i].days,
                     i
                 );
@@ -247,7 +254,7 @@ export default {
     },
     mounted() {},
     methods: {
-        getAmountForInvoice(issueDate, days, index) {
+        getAmountForInvoice(issueDate, endDate, days, index) {
             const amountObject = {
                 prefix: '$',
                 amount: 0.0,
@@ -256,6 +263,7 @@ export default {
             if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
                 return this.getAmountForGrossTurnoverInvoiceDisplay(
                     issueDate,
+                    endDate,
                     amountObject
                 );
             }
@@ -280,7 +288,7 @@ export default {
                     this.invoicingDetails.custom_cpi_years[index];
                 if (customCpiYear) {
                     amountObject.amount = currency(
-                        baseFeeAmount * (1 + customCpiYear.cpi / 100)
+                        baseFeeAmount * (1 + customCpiYear.percentage / 100)
                     );
                 } else {
                     amountObject.suffix = ' + CPI (CUSTOM)';
@@ -353,14 +361,19 @@ export default {
                 return Math.floor(quarterlyIndex);
             }
         },
-        getAmountForGrossTurnoverInvoiceDisplay(issueDate, amountObject) {
+        getAmountForGrossTurnoverInvoiceDisplay(
+            issueDate,
+            endDate,
+            amountObject
+        ) {
             amountObject.prefix = '';
             amountObject.amount = '';
+            const financialYear = helpers.getFinancialYearFromDate(endDate);
             const grossTurnoverPercentages =
                 this.invoicingDetails.gross_turnover_percentages;
             const grossTurnoverPercentage = grossTurnoverPercentages.find(
                 (grossTurnoverPercentage) =>
-                    grossTurnoverPercentage.year == issueDate.year()
+                    grossTurnoverPercentage.year == financialYear.split('-')[1]
             );
             if (!grossTurnoverPercentage) {
                 amountObject.suffix = '???';
@@ -391,7 +404,6 @@ export default {
                 if (!this.defaultInvoiceDateSet) {
                     // Instruct the parent component to update the day of month to invoice,
                     // month of year to invoice (and month of year to invoice if necessary)
-                    console.log('emitting updateDefaultInvoicingDate');
                     this.$emit('updateDefaultInvoicingDate', firstIssueDate);
                     this.defaultInvoiceDateSet = true;
                 }
@@ -448,9 +460,7 @@ export default {
         getIssueDate(issueDate, endDate) {
             if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
                 let q = helpers.getFinancialQuarterFromDate(endDate);
-                let financialYear = `${
-                    issueDate.year() - 1
-                }-${issueDate.year()}`;
+                let financialYear = helpers.getFinancialYearFromDate(endDate);
                 return `On receipt of Q${q} ${financialYear} financial statement`;
             }
             return issueDate.format('DD/MM/YYYY');
@@ -460,25 +470,6 @@ export default {
                 return '30 Days after issue';
             }
             return dueDate.format('DD/MM/YYYY');
-        },
-        getTimePeriod(startDate, endDate, index) {
-            if (this.invoicingDetails.invoicing_repetition_type == 1) {
-                return this.invoicingPeriods[index]
-                    ? this.invoicingPeriods[index].label
-                    : '';
-            }
-        },
-        getInvoicingPeriod(startDate, endDate) {
-            for (let i = 0; i < this.invoicingPeriods.length; i++) {
-                const invoicablePeriod = this.invoicingPeriods[i];
-                if (
-                    startDate.isBetween(invoicablePeriod) &&
-                    endDate.isSame(invoicablePeriod.endDate)
-                ) {
-                    return invoicablePeriod;
-                }
-            }
-            return;
         },
         getEndOfNextInterval(startDate) {
             if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
@@ -540,12 +531,15 @@ export default {
                 .set('year', startDate.year() + 1);
         },
         getQuartersFromStartMonth() {
+            let startMonth = 3;
             // Start month must be between 1 and 3
+            if (this.invoicingDetails.invoicing_quarters_start_month) {
+                startMonth =
+                    this.invoicingDetails.invoicing_quarters_start_month;
+            }
             const quarters = [];
             for (let i = 0; i < 4; i++) {
-                quarters.push(
-                    this.invoicingDetails.invoicing_quarters_start_month + i * 3
-                );
+                quarters.push(startMonth + i * 3);
             }
             return quarters;
         },
