@@ -108,6 +108,10 @@ module.exports = {
         },
         EXPIRED_LICENCE: { ID: 'expired_licence', TEXT: 'Expired (licence)' },
     },
+    APPROVAL_TYPE: {
+        LICENCE: { ID: 'licence', TEXT: 'Licence' },
+        LEASE: { ID: 'lease', TEXT: 'Lease' },
+    },
     REFERRAL_STATUS: {
         PROCESSING_STATUS_WITH_REFERRAL: {
             ID: 'with_referral',
@@ -131,4 +135,4 @@ module.exports = {
             'API ERROR: An error has occured accessing the Leases and Licenses System API. Please try again \
             in an hour and if the problem persists contact the IT Service Desk.',
     },
-}
+};
