@@ -64,13 +64,13 @@ module.exports = {
     vestings: '/api/vestings/',
 
     lookupApprovalDetails: function (id) {
-        return `/api/approvals/${id}/lookup_approval.json`
+        return `/api/approvals/${id}/lookup_approval.json`;
     },
     lookupApprovalHistory: function (id) {
-        return `/api/approvals/${id}/approval_history?format=datatables`
+        return `/api/approvals/${id}/approval_history?format=datatables`;
     },
     discard_proposal: function (id) {
-        return `/api/proposal/${id}/discard/`
+        return `/api/proposal/${id}/discard/`;
     },
 
     // ------------------- ledger ui
@@ -78,8 +78,8 @@ module.exports = {
     request_user_id: '/api/request_user_id/',
     account_details: '/api/account/',
     updateAccountDetails: function (id) {
-        return `/ledger-ui/api/update-account-details/${id}/`
+        return `/ledger-ui/api/update-account-details/${id}/`;
     },
 
     details_text: '/api/detailstext/',
-}
+};
