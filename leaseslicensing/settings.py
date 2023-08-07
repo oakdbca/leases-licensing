@@ -448,6 +448,15 @@ REPETITION_TYPES = (
 
 LATEST_REFERRAL_COUNT = 5
 
+# ---------- Standard Requirements ----------
+
+INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUAL = (
+    "invoicing_percentage_gross_turnover_annual"
+)
+INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTER = (
+    "invoicing_percentage_gross_turnover_quarter"
+)
+
 # ---------- CPI Calculation Methods ----------
 
 CPI_CALCULATION_METHOD_LATEST_SEP_QUARTER = "latest_sep_qtr"
