@@ -76,6 +76,14 @@ def financial_years_included_in_range(start_date, end_date):
 
 def end_of_next_financial_year(date):
     """Return the last day of the financial year after the date provided"""
+    if type(date) is not datetime.datetime:
+        try:
+            date = datetime.datetime.combine(
+                date, datetime.datetime.min.time(), tzinfo=timezone.utc
+            )
+        except TypeError:
+            raise TypeError("date must be a datetime or date object")
+
     end_of_next_financial_year = timezone.datetime.strptime(
         f"{date.year}", "%Y"
     ).replace(month=6, day=30, tzinfo=timezone.utc)
@@ -86,6 +94,14 @@ def end_of_next_financial_year(date):
 
 def end_of_next_financial_quarter(date, start_month=3):
     """Return the last day of the financial quarter after the date provided"""
+    if type(date) is not datetime.datetime:
+        try:
+            date = datetime.datetime.combine(
+                date, datetime.datetime.min.time(), tzinfo=timezone.utc
+            )
+        except TypeError:
+            raise TypeError("date must be a datetime or date object")
+
     quarter = financial_quarter_from_date(date)
     if quarter == 4:
         return end_of_next_financial_year(date)
