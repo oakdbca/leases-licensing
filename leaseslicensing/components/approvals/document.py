@@ -82,6 +82,17 @@ class ApprovalDocumentGenerator:
         else:
             return document, created
 
+    @basic_exception_handler
+    def _filepath_to_buffer(self, filepath):
+        try:
+            with open(filepath, "rb") as f:
+                buffer = f.read()
+        except IOError as e:
+            logger.exception(f"Can not open file {filepath}")
+            raise e
+        else:
+            return BytesIO(buffer)
+
     @property
     def license_template(self):
         return self._license_template
@@ -156,13 +167,10 @@ class ApprovalDocumentGenerator:
             + temp_directory
         )
 
-        approval_buffer = None
-        with open(new_pdf_file, "rb") as f:
-            approval_buffer = f.read()
+        approval_buffer = self._filepath_to_buffer(new_pdf_file)
+
         os.remove(new_doc_file)
         os.remove(new_pdf_file)
-
-        approval_buffer = BytesIO(approval_buffer)
 
         return approval_buffer
 
@@ -213,9 +221,15 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def create_license_document(self, approval, **kwargs):
-        buffer = self.approval_buffer(approval)
-        filename = "Approval-{}.pdf".format(approval.lodgement_number)
+    def create_license_document(self, approval, filepath=None, filename=None, **kwargs):
+        if filepath is None:
+            buffer = self.approval_buffer(approval)
+        else:
+            buffer = self._filepath_to_buffer(filepath)
+
+        if filename is None:
+            filename = "Approval-{}.pdf".format(approval.lodgement_number)
+
         document = self.update_approval_document_file(
             approval, buffer, filename, **kwargs
         )
@@ -225,7 +239,22 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def create_cover_letter(self, **kwargs):
-        raise NotImplementedError(
-            "Creating cover letters from templates is not implemented yet."
+    def create_cover_letter(self, approval, filepath=None, filename=None, **kwargs):
+        if filepath is None:
+            raise NotImplementedError(
+                "Please specify a filepath. Creating cover letters from templates is not implemented yet."
+            )
+        else:
+            buffer = self._filepath_to_buffer(filepath)
+
+        if filename is None:
+            filename = "CoverLetter-{}.pdf".format(approval.lodgement_number)
+
+        document = self.update_approval_document_file(
+            approval, buffer, filename, **kwargs
         )
+        buffer.close()
+        # Attach the document to the approval
+        approval.cover_letter_document = document
+
+        return document
