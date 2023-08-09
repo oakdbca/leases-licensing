@@ -436,7 +436,6 @@ class InvoicingDetails(BaseModel):
     @property
     def approval(self):
         if not hasattr(self, "proposal") or not self.proposal:
-            logger.debug(f"No Proposal found for Invoicing Details: {self.id}")
             return None
         if not hasattr(self.proposal, "approval") or not self.proposal.approval:
             return None
@@ -444,14 +443,11 @@ class InvoicingDetails(BaseModel):
         return self.proposal.approval
 
     def base_fee_plus_cpi(self):
-        logger.debug(f"Base Fee: {self.base_fee_amount}")
         if not self.cpi_calculation_method:
             logger.warn(
                 f"No CPI calculation method set for Invoicing Details: {self.id}"
             )
             return self.base_fee_amount
-
-        logger.debug(f"CPI Calculation Method: {self.cpi_calculation_method}")
 
         if (
             settings.CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER
@@ -509,8 +505,6 @@ class InvoicingDetails(BaseModel):
                 .aggregate(Avg("value"))["value__avg"]
             )
 
-        logger.debug(f"CPI Percentage: {cpi_value}")
-
         return Decimal(self.base_fee_amount * (1 + cpi_value / 100)).quantize(
             Decimal("0.01")
         )
@@ -520,10 +514,8 @@ class InvoicingDetails(BaseModel):
         start_date = self.approval.start_date
         expiry_date = self.approval.expiry_date
         days_difference = relativedelta(start_date, expiry_date).days
-        logger.debug(f"Days Difference: {days_difference}")
         years_difference = days_difference / 365
         whole_years_difference = math.ceil(years_difference)
-        logger.debug(f"Whole Years Difference: {whole_years_difference}")
         # Return how many invoices in total will be generated based on this invoicing details
         if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
             return whole_years_difference
@@ -548,8 +540,6 @@ class InvoicingDetails(BaseModel):
 
         if not self.charge_method:
             raise NoChargeMethod(f"No charge method found on {self}")
-
-        logger.debug(f"\nCharge Method: {self.charge_method}")
 
         if self.charge_method.key == settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE:
             return annual_amount
@@ -663,14 +653,12 @@ class InvoicingDetails(BaseModel):
         days_running_total = 0
         amount_running_total = Decimal("0.00")
         issue_date = first_issue_date
-        logger.debug("Invoicing periods: ", self.invoicing_periods)
         for i, invoicing_period in enumerate(self.invoicing_periods):
-            logger.debug(f"\nInvoicing Period: {invoicing_period}")
             # Net 30 payment terms
             due_date = issue_date + relativedelta(days=30)
             days_running_total += invoicing_period["days"]
             amount_object = self.get_amount_for_invoice(
-                issue_date, invoicing_period["days"], i
+                issue_date, invoicing_period["end_date"], invoicing_period["days"], i
             )
             amount_running_total = amount_running_total + amount_object["amount"]
             invoices.append(
@@ -734,8 +722,6 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_day_of_month:
             first_issue_date.replace(day=self.invoicing_day_of_month)
 
-        logger.debug(f"First issue date: {first_issue_date}")
-
         # This works for quarterly invoicing
         today = timezone.now().date()
         if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
@@ -757,10 +743,10 @@ class InvoicingDetails(BaseModel):
             self.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
         ):
+            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             q = utils.financial_quarter_from_date(end_date)
-            financialYear = f"{issue_date.year() - 1}-${issue_date.year()}"
-
-            return f"On receipt of Q{q} {financialYear} financial statement"
+            financial_year = f"{issue_date.year - 1}-{issue_date.year}"
+            return f"On receipt of Q{q} {financial_year} financial statement"
 
         return issue_date.strftime("%d/%m/%Y")
 
@@ -780,7 +766,7 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
             return math.floor(index / 12)
 
-    def get_amount_for_invoice(self, issue_date, days, index):
+    def get_amount_for_invoice(self, issue_date, end_date, days, index):
         amount_object = {
             "prefix": "$",
             "amount": Decimal("0.00"),
@@ -795,7 +781,7 @@ class InvoicingDetails(BaseModel):
             self.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
         ):
-            return self.get_amount_for_gross_turnover_invoice(issue_date, amount_object)
+            return self.get_amount_for_gross_turnover_invoice(end_date, amount_object)
         if not self.base_fee_amount or self.base_fee_amount == Decimal("0.00"):
             return amount_object
 
@@ -883,6 +869,24 @@ class InvoicingDetails(BaseModel):
 
         return amount_object
 
+    def get_amount_for_gross_turnover_invoice(self, end_date, amount_object):
+        amount_object["prefix"] = ""
+        amount_object["amount"] = Decimal("0.00")
+        end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+        financial_year = utils.financial_year_from_date(end_date)
+        year = int(financial_year.split("-")[1])
+        gross_turnover_percentage = next(
+            (x for x in self.gross_turnover_percentages.all() if x.year == year), None
+        )
+        if not gross_turnover_percentage:
+            amount_object["suffix"] = "???"
+            return amount_object
+
+        amount_object[
+            "suffix"
+        ] = f"{gross_turnover_percentage.percentage}% of Gross Turnover"
+        return amount_object
+
     def get_end_of_next_interval(self, start_date):
         if (
             self.charge_method.key
@@ -906,7 +910,7 @@ class InvoicingDetails(BaseModel):
 
     def get_end_of_next_interval_gross_turnover(self, start_date):
         if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
-            return utils.get_end_of_next_financial_year(start_date)
+            return utils.end_of_next_financial_year(start_date)
 
         if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
             return utils.end_of_next_financial_quarter(
@@ -919,7 +923,7 @@ class InvoicingDetails(BaseModel):
     def get_end_of_next_financial_quarter(self, start_date):
         quarters = utils.quarters_from_start_month(self.invoicing_quarters_start_month)
         for quarter in quarters:
-            end_of_financial_quarter = utils.end_of_next_financial_quarter(quarter)
+            end_of_financial_quarter = utils.end_of_next_financial_quarter(start_date)
 
             if start_date < end_of_financial_quarter:
                 return end_of_financial_quarter
