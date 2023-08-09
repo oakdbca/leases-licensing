@@ -7,6 +7,7 @@ from leaseslicensing.helpers import (
     is_assessor,
     is_compliance_referee,
     is_customer,
+    is_finance_officer,
     is_internal,
     is_referee,
 )
@@ -22,6 +23,15 @@ class IsInternal(BasePermission):
             if "DELETE" == request.method:
                 return False
 
+            return True
+        return False
+
+
+class IsFinanceOfficer(BasePermission):
+    def has_permission(self, request, view):
+        if request.user.is_superuser:
+            return True
+        if is_finance_officer(request):
             return True
         return False
 
