@@ -812,24 +812,26 @@ class InvoicingDetails(BaseModel):
             amount_object["amount"] = base_fee_amount
             amount_object["suffix"] = " + CPI (ABS)"
 
+        year_sequence_index = self.get_year_sequence_index(index)
         if (
             self.charge_method.key
             == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM
         ):
             amount_object["amount"] = base_fee_amount
             try:
-                custom_cpi_year = self.custom_cpi_years.all()[index]
+                custom_cpi_year = self.custom_cpi_years.all()[year_sequence_index]
+            except IndexError:
+                logger.warning(
+                    f"Invoicing Details: {self.id} - No custom CPI year for index "
+                    f"{year_sequence_index}. Using base fee amount."
+                )
+            if custom_cpi_year and custom_cpi_year.percentage > Decimal("0.00"):
                 amount_object["amount"] = Decimal(
                     base_fee_amount * (1 + custom_cpi_year.percentage / 100)
                 ).quantize(Decimal("0.01"))
-            except IndexError:
-                logger.warning(
-                    f"Invoicing Details: {self.id} - No custom CPI year for index {index}. Using base fee amount."
-                )
             else:
                 amount_object["suffix"] = " + CPI (CUSTOM)"
 
-        year_sequence_index = self.get_year_sequence_index(index)
         if (
             self.charge_method.key
             == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE
@@ -1028,6 +1030,30 @@ class PercentageOfGrossTurnover(BaseModel):
     @property
     def financial_year(self):
         return f"{self.year-1}-{self.year}"
+
+
+class FinancialQuarter(BaseModel):
+    year = models.ForeignKey(
+        PercentageOfGrossTurnover,
+        on_delete=models.CASCADE,
+        related_name="quarters",
+    )
+    quarter = models.PositiveSmallIntegerField(
+        null=True, blank=True, validators=[MinValueValidator(1), MaxValueValidator(4)]
+    )
+    gross_turnover = models.DecimalField(
+        null=True, blank=True, max_digits=10, decimal_places=2
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = [
+            "year",
+            "quarter",
+        ]
+
+    def __str__(self):
+        return f"Q{self.quarter} {self.year}: Gross Turnover: {self.gross_turnover or 'Not yet entered'}"
 
 
 class CustomCPIYear(BaseModel):
