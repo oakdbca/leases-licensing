@@ -25,6 +25,7 @@ module.exports = {
     filtered_organisations: '/api/filtered_organisations',
     filtered_users: '/api/filtered_users',
     invoices: '/api/invoices/',
+    invoicing_details: '/api/invoicing_details/',
     my_organisations: '/api/my_organisations/',
     organisation_access_group_members: '/api/organisation_access_group_members',
     organisation_contacts: '/api/organisation_contacts.json',

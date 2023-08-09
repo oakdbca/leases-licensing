@@ -26,14 +26,16 @@ from leaseslicensing.components.invoicing.models import (
     CPICalculationMethod,
     Invoice,
     InvoiceTransaction,
+    InvoicingDetails,
 )
 from leaseslicensing.components.invoicing.serializers import (
     CPICalculationMethodSerializer,
     InvoiceEditOracleInvoiceNumberSerializer,
     InvoiceSerializer,
     InvoiceTransactionSerializer,
+    InvoicingDetailsSerializer,
 )
-from leaseslicensing.components.main.api import NoPaginationListMixin
+from leaseslicensing.components.main.api import LicensingViewset, NoPaginationListMixin
 from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationContact,
@@ -41,6 +43,7 @@ from leaseslicensing.components.organisations.models import (
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.helpers import is_customer, is_finance_officer
 from leaseslicensing.ledger_api_utils import retrieve_email_user
+from leaseslicensing.permissions import IsFinanceOfficer
 
 logger = logging.getLogger(__name__)
 
@@ -401,3 +404,9 @@ class PayInvoiceSuccessCallbackView(APIView):
             f"was not an unpaid invoice with uuid: {uuid}."
         )
         return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+class InvoicingDetailsViewSet(LicensingViewset):
+    queryset = InvoicingDetails.objects.all()
+    serializer_class = InvoicingDetailsSerializer
+    permission_classes = [IsFinanceOfficer]

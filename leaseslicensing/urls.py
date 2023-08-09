@@ -40,6 +40,11 @@ router.register("groups", tenure_api.GroupViewSet, basename="groups")
 
 router.register("invoices", invoicing_api.InvoiceViewSet, basename="invoices")
 router.register(
+    "invoicing_details",
+    invoicing_api.InvoicingDetailsViewSet,
+    basename="invoicing_details",
+)
+router.register(
     "invoice_transactions",
     invoicing_api.InvoiceTransactionViewSet,
     basename="invoice_transactions",
