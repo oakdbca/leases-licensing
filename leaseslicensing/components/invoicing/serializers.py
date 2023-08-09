@@ -8,6 +8,7 @@ from leaseslicensing.components.invoicing.models import (
     CPICalculationMethod,
     CrownLandRentReviewDate,
     CustomCPIYear,
+    FinancialQuarter,
     FixedAnnualIncrementAmount,
     FixedAnnualIncrementPercentage,
     Invoice,
@@ -99,9 +100,19 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
         return False
 
 
+class FinancialQuarterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FinancialQuarter
+        fields = [
+            "quarter",
+            "gross_turnover",
+        ]
+
+
 class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
     readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
+    quarters = FinancialQuarterSerializer(many=True, required=False)
 
     class Meta:
         model = PercentageOfGrossTurnover
@@ -110,8 +121,10 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "year",
             "financial_year",
             "percentage",
+            "gross_turnover",
             "readonly",
             "to_be_deleted",
+            "quarters",
         )
         extra_kwargs = {
             "id": {
@@ -122,6 +135,23 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
 
     def get_to_be_deleted(self, instance):
         return False
+
+    def update(self, instance, validated_data):
+        # Create or update the financial quarters
+        quarters = validated_data.pop("quarters", [])
+        logger.debug(f"\n\n\n{quarters}\n\n\n")
+        if quarters:
+            for quarter_data in quarters:
+                quarter, created = FinancialQuarter.objects.get_or_create(
+                    year=instance,
+                    quarter=quarter_data.get("quarter"),
+                )
+                gross_turnover = quarter_data.get("gross_turnover")
+                if gross_turnover:
+                    quarter.gross_turnover = gross_turnover
+                    quarter.save()
+
+        return super().update(instance, validated_data)
 
 
 class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
@@ -534,7 +564,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         context={"invoicing_details": instance},
                     )
                     serializer.is_valid(raise_exception=True)
-                    serializer.save()
+                    instance = serializer.save()
             else:
                 # This is new data, not stored in the database yet.
                 if "id" in gross_turnover_percentage_data:
@@ -547,9 +577,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                     context={"invoicing_details": instance},
                 )
                 serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
+                instance = serializer.save()
+                instance.invoicing_details = instance
+                instance.save()
 
     def update_custom_cpi_years(self, validated_custom_cpi_years, instance):
         for custom_cpi_year_data in validated_custom_cpi_years:
