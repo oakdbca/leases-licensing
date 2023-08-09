@@ -1,137 +1,137 @@
-import { constants, api_endpoints, helpers } from '@/utils/hooks'
+import { constants, api_endpoints, helpers } from '@/utils/hooks';
 
 export default {
     fetchCountries: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.countries)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchRequestUserID: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.request_user_id)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('account: ', data)
+                    resolve(data);
+                    console.log('account: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchAccount: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.users_api + 'request_user_account/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('account: ', data)
+                    resolve(data);
+                    console.log('account: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchLedgerAccount: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.account_details)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('account: ', data)
+                    resolve(data);
+                    console.log('account: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchOrganisations: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    console.log('organisations: ', data)
-                    resolve(data)
+                    console.log('organisations: ', data);
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchOrganisation: function (id) {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations + id + '/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    console.log('organisation: ', data)
-                    resolve(data)
+                    console.log('organisation: ', data);
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchOrganisationAddress: function (id) {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisations + id + '/get_org_address/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    let formatted_data = {}
+                    let formatted_data = {};
                     formatted_data = {
                         postal_address: {
                             postal_line1: data.postal_address.line1,
@@ -147,214 +147,214 @@ export default {
                             billing_postcode: data.billing_address.postcode,
                             billing_country: data.billing_address.country,
                         },
-                    }
-                    resolve(formatted_data)
+                    };
+                    resolve(formatted_data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchOrganisationRequests: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.organisation_requests + 'no-pagination/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('organisation requests: ', data)
+                    resolve(data);
+                    console.log('organisation requests: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchOrganisationPermissions: function (id) {
         return new Promise((resolve, reject) => {
             fetch(helpers.add_endpoint_join(api_endpoints.my_organisations, id))
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('organisation permissions: ', data)
+                    resolve(data);
+                    console.log('organisation permissions: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchLGAsKeyValueList: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.lgas + 'key-value-list/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('LGA key value list: ', data)
+                    resolve(data);
+                    console.log('LGA key value list: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchDistricts: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.districts + 'no-pagination/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('Districts list: ', data)
+                    resolve(data);
+                    console.log('Districts list: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchGroupsKeyValueList: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.groups + 'key-value-list/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('Groups key value list: ', data)
+                    resolve(data);
+                    console.log('Groups key value list: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchApprovalTypes: async function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.approval_types_dict)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('Approval type: ', data)
+                    resolve(data);
+                    console.log('Approval type: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchKeyValueLookup: function (endpoint, query) {
         return new Promise((resolve, reject) => {
             fetch(endpoint + 'key-value-list/?term=' + query)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('Select2 list: ', data)
+                    resolve(data);
+                    console.log('Select2 list: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchActsKeyValueList: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.acts + 'key-value-list/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('Acts key value list: ', data)
+                    resolve(data);
+                    console.log('Acts key value list: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchVestingsKeyValueList: function () {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.vestings + 'key-value-list/')
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    resolve(data)
-                    console.log('Vestings key value list: ', data)
+                    resolve(data);
+                    console.log('Vestings key value list: ', data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     fetchInvoiceTransactions: function (invoice_id) {
         return new Promise((resolve, reject) => {
             fetch(api_endpoints.invoices + `${invoice_id}/transactions/`)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        reject(error)
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        reject(error);
                     }
-                    console.log('transactions: ', data)
-                    resolve(data)
+                    console.log('transactions: ', data);
+                    resolve(data);
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    reject(error)
-                })
-        })
+                    console.error('There was an error!', error);
+                    reject(error);
+                });
+        });
     },
     /**
      * Generic function to fetch data from an endpoint
@@ -367,23 +367,23 @@ export default {
      */
     fetchUrl: async function (url, options) {
         return new Promise((resolve, reject) => {
-            let f = options === undefined ? fetch(url) : fetch(url, options)
+            let f = options === undefined ? fetch(url) : fetch(url, options);
             f.then(async (response) => {
-                const data = await response.json()
+                const data = await response.json();
                 if (!response.ok) {
                     let error =
                         (data.constructor.name === 'Array' && data) ||
                         (data && data.message) ||
-                        response.statusText
-                    console.error(error)
-                    reject(error)
+                        response.statusText;
+                    console.error(error);
+                    reject(error);
                 }
-                resolve(data)
+                resolve(data);
             }).catch((error) => {
-                console.error(`There was an error fetching from ${url}`, error)
-                error = new Error(constants.ERRORS.NETWORK_ERROR)
-                reject(error)
-            })
-        })
+                console.error(`There was an error fetching from ${url}`, error);
+                error = new Error(constants.ERRORS.NETWORK_ERROR);
+                reject(error);
+            });
+        });
     },
-}
+};
