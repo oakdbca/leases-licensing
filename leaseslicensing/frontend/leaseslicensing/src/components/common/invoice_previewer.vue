@@ -264,7 +264,6 @@ export default {
             };
             if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
                 return this.getAmountForGrossTurnoverInvoiceDisplay(
-                    issueDate,
                     endDate,
                     amountObject
                 );
@@ -363,11 +362,7 @@ export default {
                 return Math.floor(quarterlyIndex);
             }
         },
-        getAmountForGrossTurnoverInvoiceDisplay(
-            issueDate,
-            endDate,
-            amountObject
-        ) {
+        getAmountForGrossTurnoverInvoiceDisplay(endDate, amountObject) {
             amountObject.prefix = '';
             amountObject.amount = '';
             const financialYear = helpers.getFinancialYearFromDate(endDate);
