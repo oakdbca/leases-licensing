@@ -208,6 +208,7 @@
                     invoicingDetailsComputed.gross_turnover_percentages
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
+                :context="context"
                 @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
             />
         </div>
@@ -651,6 +652,9 @@ export default {
             return false;
         },
         show_invoice_previewer: function () {
+            if (this.context != 'Proposal') {
+                return false;
+            }
             if (this.invoicingDetails) {
                 if (
                     [
