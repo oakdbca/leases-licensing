@@ -224,6 +224,26 @@ div#app .container h3 {
     width:650px !important;
 }
 
+.swal-extra-wide{
+    width:850px !important;
+}
+
+.swal-extra-wide .swal2-title{
+    text-align: left;
+    margin-top: 0 !important;
+}
+.swal-extra-wide .swal2-text {
+    display: block;
+    text-align: left;
+}
+.swal-extra-wide .swal2-container {
+    text-align: left;
+}
+.swal-extra-wide .swal2-html-container{
+    text-align: left !important;
+    margin-left: 40px !important;
+    justify-content: left;
+}
 /* Vue3 Multiselect styles */
 
 .multiselect__spinner::after {
