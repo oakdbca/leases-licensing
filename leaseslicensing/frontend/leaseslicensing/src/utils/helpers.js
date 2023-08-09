@@ -493,6 +493,15 @@ module.exports = {
     getEndMonthForFinancialQuarter: function (financialQuarter) {
         return [8, 11, 2, 5][financialQuarter - 1];
     },
+    financialQuarterHasPassed: function (financialYear, financialQuarter) {
+        const month = this.getEndMonthForFinancialQuarter(financialQuarter);
+        const year =
+            financialQuarter > 2
+                ? financialYear.split('-')[1]
+                : financialYear.split('-')[0];
+        const endOfFinancialQuarter = new Date(year, month + 1, 0);
+        return new Date() > endOfFinancialQuarter;
+    },
     getStartMonthForFinancialQuarter: function (financialQuarter) {
         return [6, 9, 0, 3][financialQuarter - 1];
     },
@@ -540,13 +549,6 @@ module.exports = {
                 second: 0,
                 millisecond: 0,
             });
-
-        console.log(
-            financialQuarterStartMonth,
-            financialQuarterEndMonth,
-            startOfFinancialQuarter,
-            endOfFinancialQuarter
-        );
 
         return this.datesOverlap(
             startDate,
