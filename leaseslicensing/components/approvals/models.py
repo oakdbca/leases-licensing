@@ -137,9 +137,20 @@ class ApprovalType(RevisionedMixin):
 
 class ApprovalTypeDocumentType(RevisionedMixin):
     name = models.CharField(max_length=200, unique=True)
+    # Whether this document type is the license document
+    is_license_document = models.BooleanField(default=False)
+    # Whether this document type is the cover letter
+    is_cover_letter = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
+        # A document must be either-or or none
+        constraints = [
+            models.CheckConstraint(
+                check=~Q(is_license_document=True, is_cover_letter=True),
+                name="either_is_license_document_or_is_cover_letter_or_none",
+            )
+        ]
 
     def __str__(self):
         return self.name
