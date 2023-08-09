@@ -2805,10 +2805,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 )
 
     def generate_gross_turnover_requirements(self, approval, request):
-        end_of_first_financial_quarter = invoicing_utils.end_of_first_financial_quarter(
+        end_of_first_financial_quarter = invoicing_utils.end_of_next_financial_quarter(
             approval.start_date
         )
-        end_of_first_financial_year = invoicing_utils.end_of_first_financial_year(
+        end_of_first_financial_year = invoicing_utils.end_of_next_financial_year(
             approval.start_date
         )
 
