@@ -39,6 +39,15 @@ def financial_quarter_from_date(date):
         return 2
 
 
+def financial_year_from_date(date):
+    month = date.month
+    year = date.year
+    if month < 7:
+        return f"{year - 1}-{year}"
+    else:
+        return f"{year}-{year + 1}"
+
+
 def ordinal_suffix_of(i):
     j = i % 10
     k = i % 100
@@ -76,17 +85,11 @@ def financial_years_included_in_range(start_date, end_date):
 
 def end_of_next_financial_year(date):
     """Return the last day of the financial year after the date provided"""
-    if type(date) is not datetime.datetime:
-        try:
-            date = datetime.datetime.combine(
-                date, datetime.datetime.min.time(), tzinfo=timezone.utc
-            )
-        except TypeError:
-            raise TypeError("date must be a datetime or date object")
-
-    end_of_next_financial_year = timezone.datetime.strptime(
-        f"{date.year}", "%Y"
-    ).replace(month=6, day=30, tzinfo=timezone.utc)
+    end_of_next_financial_year = (
+        timezone.datetime.strptime(f"{date.year}", "%Y")
+        .replace(month=6, day=30, tzinfo=timezone.utc)
+        .date()
+    )
     if not end_of_next_financial_year > date:
         return end_of_next_financial_year + relativedelta(years=1)
     return end_of_next_financial_year
@@ -94,32 +97,24 @@ def end_of_next_financial_year(date):
 
 def end_of_next_financial_quarter(date, start_month=3):
     """Return the last day of the financial quarter after the date provided"""
-    if type(date) is not datetime.datetime:
-        try:
-            date = datetime.datetime.combine(
-                date, datetime.datetime.min.time(), tzinfo=timezone.utc
-            )
-        except TypeError:
-            raise TypeError("date must be a datetime or date object")
-
     quarter = financial_quarter_from_date(date)
     if quarter == 4:
         return end_of_next_financial_year(date)
     quarters = quarters_from_start_month(start_month)
     for quarter in quarters:
-        logger.debug(f"quarter: {quarter}")
-        logger.debug(f"month range: {calendar.monthrange(date.year, quarter)[1]}")
         end_of_quarter = datetime.datetime(
             date.year,
             quarter,
             calendar.monthrange(date.year, quarter)[1],
             tzinfo=timezone.utc,
-        )
+        ).date()
         if end_of_quarter > date:
             return end_of_quarter
     year = date.year + 1
     quarter = quarters[0]
-    return datetime.datetime(year, quarter, calendar.monthrange(year, quarter)[1])
+    return datetime.datetime(
+        year, quarter, calendar.monthrange(year, quarter)[1]
+    ).date()
 
 
 def end_of_month(date):
