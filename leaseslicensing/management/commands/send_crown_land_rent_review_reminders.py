@@ -36,18 +36,33 @@ class Command(BaseCommand):
         }
         approvals = Approval.objects.filter(**filters)
         for approval in approvals:
-            if not approval.due_for_review_today:
-                continue
+            logger.debug(f"Checking approval: {approval}")
+            months_due_in = None
+            if approval.crown_land_rent_review_reminder_due_in(months=12):
+                months_due_in = 12
 
-            if options["test"]:
-                logger.debug(
-                    f"Test: Would have sent crown land rent reivew reminder for approval: {approval}"
+            if approval.crown_land_rent_review_reminder_due_in(months=6):
+                months_due_in = 6
+
+            if approval.crown_land_rent_review_due_today:
+                months_due_in = 0
+
+            if months_due_in is not None:
+                if options["test"]:
+                    logger.debug(
+                        f"Test: Would have sent crown land rent reivew reminder for approval: {approval}"
+                    )
+                    continue
+
+                logger.info(
+                    f"Sending crown land rent review reminder for approval: {approval}"
                 )
-                continue
-
-            logger.info(
-                f"Sending crown land rent review reminder for approval: {approval}"
-            )
-            send_approval_crown_land_rent_review_email_notification(approval)
-            # Todo: Make this more robust. If the mail server was down or the application was not responding
-            # at the time then we have no way of knowing if the email was sent or not.
+                try:
+                    send_approval_crown_land_rent_review_email_notification(
+                        approval, months_due_in
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error sending crown land rent review reminder for approval: {approval}: {e}"
+                    )
+                    continue

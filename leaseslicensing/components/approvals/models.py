@@ -516,7 +516,7 @@ class Approval(LicensingModelVersioned):
         return self.current_proposal.proponent_reference_number
 
     @property
-    def review_dates(self):
+    def crown_land_rent_review_dates(self):
         review_once_every = self.current_proposal.invoicing_details.review_once_every
         if not review_once_every:
             logger.warning(
@@ -535,13 +535,17 @@ class Approval(LicensingModelVersioned):
         return review_dates
 
     @property
-    def due_for_review_today(self):
+    def crown_land_rent_review_due_today(self):
         today = timezone.localtime(timezone.now()).date()
-        return today in self.review_dates
+        return today in self.crown_land_rent_review_dates
+
+    def crown_land_rent_review_reminder_due_in(self, months=12):
+        today = timezone.localtime(timezone.now()).date()
+        return today + relativedelta(months=months) in self.crown_land_rent_review_dates
 
     @property
-    def next_review_date(self):
-        for review_date in self.review_dates:
+    def next_crown_land_rent_review_date(self):
+        for review_date in self.crown_land_rent_review_dates:
             if review_date > timezone.now().date():
                 return review_date
         return None

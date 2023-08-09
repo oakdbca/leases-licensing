@@ -1,7 +1,7 @@
 {%  extends 'leaseslicensing/emails/base_email.txt' %}
 
 {%  block content %}
-            Approval {{ approval.lodgement_number }} is due for a crown land rent review.
+            Approval {{ approval.lodgement_number }} is due for a crown land rent review {{ due_text }}.
 
             Crown Land Rent Review Frequency: Every {{ invoicing_details.review_once_every }} {{ invoicing_details.review_repetition_type }}
             {% if approval.next_review_date %}
