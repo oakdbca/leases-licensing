@@ -311,67 +311,63 @@ class Compliance(LicensingModelVersioned):
             )
             send_compliance_accept_email_notification(self, request)
 
+    @transaction.atomic
     def send_reminder(self, user):
-        with transaction.atomic():
-            today = timezone.localtime(timezone.now()).date()
-            try:
-                if self.processing_status == "due":
-                    if (
-                        self.due_date < today
-                        and self.lodgement_date is None
-                        and self.post_reminder_sent is False
-                    ):
-                        send_reminder_email_notification(self)
-                        send_internal_reminder_email_notification(self)
-                        self.post_reminder_sent = True
-                        self.reminder_sent = True
-                        self.save()
-                        ComplianceUserAction.log_action(
-                            self,
-                            ComplianceUserAction.ACTION_REMINDER_SENT.format(self.id),
-                            user,
-                        )
-                        logger.info(
-                            "Post due date reminder sent for Compliance {} ".format(
-                                self.lodgement_number
-                            )
-                        )
-                    elif (
-                        self.due_date >= today
-                        and today >= self.due_date - datetime.timedelta(days=14)
-                        and self.reminder_sent is False
-                    ):
-                        # second part: if today is with 14 days of due_date, and email reminder is not sent
-                        # (deals with Compliances created with the reminder period)
-                        if self.requirement.notification_only:
-                            send_notification_only_email(self)
-                            send_internal_notification_only_email(self)
-                            self.reminder_sent = True
-                            self.processing_status = "approved"
-                            self.customer_status = "approved"
-                            self.save()
-                        else:
-                            send_due_email_notification(self)
-                            send_internal_due_email_notification(self)
-                            self.reminder_sent = True
-                            self.save()
-                        ComplianceUserAction.log_action(
-                            self,
-                            ComplianceUserAction.ACTION_REMINDER_SENT.format(self.id),
-                            user,
-                        )
-                        logger.info(
-                            "Pre due date reminder sent for Compliance {} ".format(
-                                self.lodgement_number
-                            )
-                        )
+        today = timezone.localtime(timezone.now()).date()
+        # Why bother with this? Shouldn't we just construct a query that only returns the compliances
+        # that are due?
+        if self.processing_status is not Compliance.PROCESSING_STATUS_DUE:
+            return
 
-            except Exception as e:
-                logger.info(
-                    "Error sending Reminder Compliance {}\n{}".format(
-                        self.lodgement_number, e
-                    )
+        if (
+            self.due_date < today
+            and self.lodgement_date is None
+            and self.post_reminder_sent is False
+        ):
+            send_reminder_email_notification(self)
+            send_internal_reminder_email_notification(self)
+            self.post_reminder_sent = True
+            self.reminder_sent = True
+            self.save()
+            ComplianceUserAction.log_action(
+                self,
+                ComplianceUserAction.ACTION_REMINDER_SENT.format(self.id),
+                user,
+            )
+            logger.info(
+                "Post due date reminder sent for Compliance {} ".format(
+                    self.lodgement_number
                 )
+            )
+        # if today is with 14 days of due_date, and email reminder is not sent
+        # (deals with Compliances created with the reminder period)
+        elif (
+            self.due_date >= today
+            and today >= self.due_date - datetime.timedelta(days=14)
+            and self.reminder_sent is False
+        ):
+            if self.requirement.notification_only:
+                send_notification_only_email(self)
+                send_internal_notification_only_email(self)
+                self.reminder_sent = True
+                self.processing_status = "approved"
+                self.customer_status = "approved"
+                self.save()
+            else:
+                send_due_email_notification(self)
+                send_internal_due_email_notification(self)
+                self.reminder_sent = True
+                self.save()
+            ComplianceUserAction.log_action(
+                self,
+                ComplianceUserAction.ACTION_REMINDER_SENT.format(self.id),
+                user,
+            )
+            logger.info(
+                "Pre due date reminder sent for Compliance {} ".format(
+                    self.lodgement_number
+                )
+            )
 
     @transaction.atomic
     def send_referral(self, request, referral_email, referral_text):
