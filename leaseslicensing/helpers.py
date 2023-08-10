@@ -4,11 +4,16 @@ import re
 from django.apps import apps
 from django.conf import settings
 from django.core.cache import cache
+from django.utils import timezone
 from ledger_api_client.managed_models import SystemGroup, SystemGroupPermission
 from ledger_api_client.utils import get_all_organisation
 from rest_framework.serializers import ValidationError
 
 logger = logging.getLogger(__name__)
+
+
+def today():
+    return timezone.localtime(timezone.now()).date()
 
 
 def user_ids_in_group(group_name):
