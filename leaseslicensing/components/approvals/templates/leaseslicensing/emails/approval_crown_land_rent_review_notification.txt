@@ -9,7 +9,7 @@
             {% else %}
             This is the final crown land rent review for this approval.
             {% endif %}
-            You can access this Compliance using the following link:
+            You can access this approval using the following link:
 
             {{ url }}
 {%  endblock %}
