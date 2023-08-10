@@ -385,6 +385,8 @@ export default {
             return decision_label;
         },
     },
+    watch: {},
+    mounted: function () {},
     methods: {
         readFile: function () {
             let vm = this;
