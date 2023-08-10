@@ -16,7 +16,6 @@ from django.utils import timezone
 from ledger_api_client import settings_base
 
 from leaseslicensing.components.invoicing import utils
-from leaseslicensing.components.invoicing.exceptions import NoChargeMethod
 from leaseslicensing.components.main.models import (
     LicensingModel,
     RevisionedMixin,
@@ -511,96 +510,19 @@ class InvoicingDetails(BaseModel):
 
     @property
     def total_invoice_count(self):
-        start_date = self.approval.start_date
-        expiry_date = self.approval.expiry_date
-        days_difference = relativedelta(start_date, expiry_date).days
-        years_difference = days_difference / 365
-        whole_years_difference = math.ceil(years_difference)
-        # Return how many invoices in total will be generated based on this invoicing details
-        if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
-            return whole_years_difference
-
-        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
-            return whole_years_difference * 4
-
-        if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
-            return whole_years_difference * 12
+        return len(self.invoicing_periods)
 
     @property
     def invoices_created(self):
-        return Invoice.objects.filter(invoicing_details=self)
+        return (
+            Invoice.objects.filter(invoicing_details=self)
+            .exclude(status=Invoice.INVOICE_STATUS_VOID)
+            .count()
+        )
 
     @property
     def invoices_yet_to_be_generated(self):
         return self.total_invoice_count - self.invoices_created
-
-    @property
-    def invoice_amount(self):
-        annual_amount = Decimal("0.00")
-
-        if not self.charge_method:
-            raise NoChargeMethod(f"No charge method found on {self}")
-
-        if self.charge_method.key == settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE:
-            return annual_amount
-
-        if self.charge_method.key == settings.CHARGE_METHOD_ONCE_OFF_CHARGE:
-            return self.once_off_charge_amount
-
-        if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
-            annual_amount = self.base_fee_plus_cpi()
-
-        if (
-            self.charge_method.key
-            == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT
-        ):
-            increment_amount_for_this_year = self.annual_increment_amounts.filter(
-                year=timezone.now().year
-            )
-            if not increment_amount_for_this_year:
-                logger.warn(
-                    f"No annual increment amount found for Invoicing Details: {self.id} for year: {timezone.now().year}"
-                )
-                return self.base_fee
-            annual_amount = self.base_fee + increment_amount_for_this_year
-
-        if (
-            self.charge_method.key
-            == settings.CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE
-        ):
-            increment_percentage_for_this_year = (
-                self.annual_increment_percentages.filter(year=timezone.now().year)
-            )
-            if not increment_percentage_for_this_year:
-                logger.warn(
-                    f"No annual increment percentage found for Invoicing Details: {self.id} "
-                    f"for year: {timezone.now().year}"
-                )
-                return self.base_fee
-            annual_amount = self.base_fee * (
-                1 + increment_percentage_for_this_year / 100
-            )
-
-        if (
-            self.charge_method.key
-            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
-        ):
-            gross_turnover_for_previous_financial_year = (
-                self.gross_turnover_percentages.get(year=timezone.now().year)
-            )
-            annual_amount = (
-                gross_turnover_for_previous_financial_year.gross_turnover
-                * (1 + gross_turnover_for_previous_financial_year.percentage / 100)
-            )
-
-        if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
-            return Decimal(annual_amount).quantize(Decimal("0.01"))
-
-        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
-            return Decimal(annual_amount / 4).quantize(Decimal("0.01"))
-
-        if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
-            return Decimal(annual_amount / 12).quantize(Decimal("0.01"))
 
     @property
     def invoicing_periods(self):
@@ -641,6 +563,13 @@ class InvoicingDetails(BaseModel):
             )
 
         return invoicing_periods
+
+    @property
+    def invoicing_periods_start_dates(self):
+        return [
+            datetime.strptime(period["start_date"], "%Y-%m-%d").date()
+            for period in self.invoicing_periods
+        ]
 
     def preview_invoices(self, show_past_invoices=False):
         """
@@ -764,7 +693,7 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
             return math.floor(index / 4)
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
-            return math.floor(index / 12)
+            return math.floor(index / self.invoicing_once_every)
 
     def get_amount_for_invoice(self, issue_date, end_date, days, index):
         amount_object = {
@@ -906,7 +835,11 @@ class InvoicingDetails(BaseModel):
             return start_date + relativedelta(months=3) - relativedelta(days=1)
 
         if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
-            return start_date + relativedelta(months=1) - relativedelta(days=1)
+            return (
+                start_date
+                + relativedelta(months=self.invoicing_once_every)
+                - relativedelta(days=1)
+            )
 
     def get_end_of_next_interval_gross_turnover(self, start_date):
         if settings.REPETITION_TYPE_ANNUALLY == self.invoicing_repetition_type.key:
@@ -938,6 +871,18 @@ class InvoicingDetails(BaseModel):
             return issue_date + relativedelta(months=3)
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
             return issue_date + relativedelta(months=1)
+
+    @property
+    def custom_cpi_entered_for_next_period(self):
+        if (
+            self.charge_method.key
+            != settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM
+        ):
+            logger.warning(
+                f"custom_cpi_entered_for_next_period called for Invoicing Details: {self.id} "
+                "which is not using custom CPI charge method."
+            )
+            return True  # So that no reminders would attempt to be sent
 
 
 class FixedAnnualIncrementAmount(BaseModel):
