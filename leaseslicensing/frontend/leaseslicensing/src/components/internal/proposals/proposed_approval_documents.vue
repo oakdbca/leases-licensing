@@ -92,7 +92,9 @@
             </div>
         </div>
 
-        <slot name="footer"></slot>
+        <!-- eslint-disable-next-line vue/no-deprecated-slot-attribute -->
+        <div slot="footer"></div>
+        <!--eslint-enable-->
     </div>
 </template>
 
