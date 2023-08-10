@@ -1,10 +1,9 @@
 """
-When making invoicing calculations in the leases and licensing system there are 3 different time perdiods
+When making invoicing calculations in the leases and licensing system there are 2 main time perdiods
 that may be useful depending on the type of charge method being used.
 
 1. Financial year - 1st July to 30th June (financial quarters are also important)
-2. Calendar year - 1st January to 31st December
-3. Sequential year - 12 months from the start date of the approval
+2. Sequential year - 12 months from the start date of the approval
 (i.e. If an approval starts on the 5th of April 2030 the last day of that sequential year is the 4th of April 2031)
 
 """
