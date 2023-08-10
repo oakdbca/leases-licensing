@@ -1,16 +1,20 @@
 <template>
     <div v-if="approval" id="internalApproval" class="container">
         <div class="row">
-            <h3>
-                {{ approvalLabel }}: {{ approval.lodgement_number }}
-                <small
-                    v-if="approval.original_leaselicense_number"
-                    class="text-muted"
-                >
-                    (Migrated from:
-                    {{ approval.original_leaselicense_number }})</small
-                >
-            </h3>
+            <div class="col">
+                <h3>
+                    {{ approvalLabel }}: {{ approval.lodgement_number }}
+                    <small
+                        v-if="approval.original_leaselicense_number"
+                        class="text-muted"
+                    >
+                        (Migrated from:
+                        {{ approval.original_leaselicense_number }})</small
+                    >
+                </h3>
+            </div>
+        </div>
+        <div class="row">
             <div class="col-md-3">
                 <CommsLogs
                     :comms_url="comms_url"
@@ -22,7 +26,6 @@
                 <div class="row mt-2 mb-2">
                     <div class="col">
                         <div class="card card-default">
-                            <div class="card-header">Submission</div>
                             <div class="card-header">Submission</div>
                             <div class="card-body card-collapse">
                                 <div class="row">
@@ -57,7 +60,6 @@
                     <div class="col">
                         <div class="card card-default">
                             <div class="card-header">Review Renewal</div>
-                            <div class="card-header">Review Renewal</div>
                             <div class="card-body card-collapse">
                                 <div class="mb-2">
                                     <button
@@ -80,33 +82,34 @@
                     </div>
                 </div>
 
-                <div v-if="showEditingInvoicingOptions" class="row mt-2 mb-2">
-                    <div class="col">
-                        <div class="card card-default">
-                            <div class="card-header">
-                                Edit Invoicing Details
-                            </div>
-                            <div class="card-body card-collapse">
-                                <div class="mb-2">
-                                    <button
-                                        class="btn btn-primary btn-licensing"
-                                        @click="completeEditingInvoicing(true)"
-                                    >
-                                        Complete Editing
-                                    </button>
-                                </div>
-                                <div>
-                                    <button
-                                        class="btn btn-secondary btn-licensing"
-                                        @click="cancelEditingInvoicing(false)"
-                                    >
-                                        Cancel Editing
-                                    </button>
-                                </div>
-                            </div>
+                <!-- <divclass="row mt-2 mb-2">
+                    <div class="col"> -->
+                <div
+                    v-if="showEditingInvoicingOptions"
+                    class="card card-default sticky-top mt-2 mb-2"
+                >
+                    <div class="card-header">Edit Invoicing Details</div>
+                    <div class="card-body card-collapse">
+                        <div class="mb-2">
+                            <button
+                                class="btn btn-primary btn-licensing"
+                                @click.prevent="completeEditingInvoicing(true)"
+                            >
+                                Complete Editing
+                            </button>
+                        </div>
+                        <div>
+                            <button
+                                class="btn btn-secondary btn-licensing"
+                                @click.prevent="cancelEditingInvoicing(false)"
+                            >
+                                Cancel Editing
+                            </button>
                         </div>
                     </div>
                 </div>
+                <!-- </div>
+                </div> -->
             </div>
             <div class="col-md-9">
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
@@ -255,6 +258,7 @@
                                 :proposal-processing-status-id="
                                     approval.current_proposal_processing_status
                                 "
+                                :approval-type="approval.approval_type"
                                 @updateInvoicingDetails="updateInvoicingDetails"
                             />
                         </FormSection>
@@ -288,13 +292,13 @@ import Applicant from '@/components/common/applicant.vue';
 import OrganisationApplicant from '@/components/common/organisation_applicant.vue';
 import InvoicesTable from '@/components/common/table_invoices.vue';
 import FormSection from '@/components/forms/section_toggle.vue';
-import { api_endpoints, constants, helpers } from '@/utils/hooks';
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import Swal from 'sweetalert2';
 import TableRelatedItems from '@/components/common/table_related_items.vue';
 import InvoicingDetails from '@/components/common/invoicing_details.vue';
 import MapComponent from '@/components/common/component_map_with_filters_v2';
 import ApprovalDetails from '@/components/common/approval_details.vue';
-
+import currency from 'currency.js';
 export default {
     name: 'ApprovalDetail',
     components: {
@@ -320,6 +324,7 @@ export default {
                 'ml-authorised-users-datatable-' + vm._uid,
             loading: [],
             approval: null,
+            original_invoicing_details: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
             adBody: 'adBody' + vm._uid,
             pBody: 'pBody' + vm._uid,
@@ -343,7 +348,6 @@ export default {
                 api_endpoints.approvals,
                 vm.$route.params.approval_id + '/add_comms_log'
             ),
-
             related_items_ajax_url: helpers.add_endpoint_join(
                 api_endpoints.approvals,
                 vm.$route.params.approval_id + '/related_items'
@@ -389,6 +393,10 @@ export default {
         const resData = await response.json();
         this.approval = Object.assign({}, resData);
         this.approval.applicant_id = resData.applicant_id;
+        this.original_invoicing_details = _.cloneDeep(
+            this.approval.invoicing_details
+        );
+        console.log(this.original_invoicing_details);
         if (this.approval.submitter.postal_address == null) {
             this.approval.submitter.postal_address = {};
         }
@@ -483,8 +491,208 @@ export default {
         updateInvoicingDetails: function (value) {
             this.approval.invoicing_details = value;
         },
+        getGrossTurnoverChanges: function () {
+            if (
+                this.original_invoicing_details ==
+                this.approval.invoicing_details
+            ) {
+                return [];
+            }
+            let annualTurnoverChanges = [];
+            let quarterlyTurnoverChanges = [];
+            for (
+                let i = 0;
+                i <
+                this.original_invoicing_details.gross_turnover_percentages
+                    .length;
+                i++
+            ) {
+                if (
+                    this.approval.invoicing_details.gross_turnover_percentages[
+                        i
+                    ].gross_turnover !=
+                    this.original_invoicing_details.gross_turnover_percentages[
+                        i
+                    ].gross_turnover
+                ) {
+                    annualTurnoverChanges.push({
+                        year: this.approval.invoicing_details
+                            .gross_turnover_percentages[i].year,
+                        percentage:
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i].percentage,
+                        gross_turnover:
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i].gross_turnover,
+                    });
+                }
+                let quarters =
+                    this.original_invoicing_details.gross_turnover_percentages[
+                        i
+                    ].quarters;
+                for (let j = 0; j < quarters.length; j++) {
+                    let new_quarter =
+                        this.approval.invoicing_details
+                            .gross_turnover_percentages[i].quarters[j];
+                    console.log(quarters[j].gross_turnover);
+                    console.log(
+                        this.approval.invoicing_details
+                            .gross_turnover_percentages[i].quarters[j]
+                            .gross_turnover
+                    );
+                    if (
+                        quarters[j].gross_turnover != new_quarter.gross_turnover
+                    ) {
+                        quarterlyTurnoverChanges.push({
+                            year: this.approval.invoicing_details
+                                .gross_turnover_percentages[i].year,
+                            quarter:
+                                this.approval.invoicing_details
+                                    .gross_turnover_percentages[i].quarters[j]
+                                    .quarter,
+                            percentage:
+                                this.approval.invoicing_details
+                                    .gross_turnover_percentages[i].percentage,
+                            gross_turnover:
+                                this.approval.invoicing_details
+                                    .gross_turnover_percentages[i].quarters[j]
+                                    .gross_turnover,
+                        });
+                    }
+                }
+            }
+            return {
+                annualTurnoverChanges: annualTurnoverChanges,
+                quarterlyTurnoverChanges: quarterlyTurnoverChanges,
+                count:
+                    annualTurnoverChanges.length +
+                    quarterlyTurnoverChanges.length,
+            };
+        },
         completeEditingInvoicing: function () {
-            alert('Call api to modify invoices based on new invoicing details');
+            let changes = this.getGrossTurnoverChanges();
+            if (changes.count > 0) {
+                let quarterlyChangesHtml = '';
+                if (changes.quarterlyTurnoverChanges.length > 0) {
+                    quarterlyChangesHtml =
+                        '<div class="mb-3 float-left">Quarterly Turnover Amounts</div>';
+                    quarterlyChangesHtml +=
+                        '<table class="table table-sm table-striped">';
+                    quarterlyChangesHtml +=
+                        '<thead><tr><th>Financial Year</th><th>Quarter</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
+                    for (
+                        let i = 0;
+                        i < changes.quarterlyTurnoverChanges.length;
+                        i++
+                    ) {
+                        let invoice_amount = currency(
+                            changes.quarterlyTurnoverChanges[i].gross_turnover
+                        ).multiply(
+                            changes.quarterlyTurnoverChanges[i].percentage / 100
+                        );
+                        quarterlyChangesHtml += `<tr><td>${
+                            changes.quarterlyTurnoverChanges[i].year - 1
+                        }-${
+                            changes.quarterlyTurnoverChanges[i].year
+                        }</td><td>Q${
+                            changes.quarterlyTurnoverChanges[i].quarter
+                        }</td><td>${
+                            changes.quarterlyTurnoverChanges[i].percentage
+                        }%</td><td>$${currency(
+                            changes.quarterlyTurnoverChanges[i].gross_turnover
+                        )}</td><td>$${invoice_amount}</td></tr>`;
+                    }
+                    quarterlyChangesHtml += '</tbody></table>';
+                }
+
+                swal.fire({
+                    title: 'Confirm Gross Turnover Amounts',
+                    html:
+                        '<p class="mb-3">You have entered the following gross turnover amounts for <strong>Approval: ' +
+                        this.approval.lodgement_number +
+                        '</strong>:</p>' +
+                        quarterlyChangesHtml +
+                        'When you click the confirm button, invoice records will be generated with the amounts listed.<br/>',
+                    icon: 'info',
+                    imageWidth: 100,
+                    customClass: 'swal-extra-wide',
+                    reverseButtons: true,
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'Confirm Gross Turnover Amounts',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.saveInvoicingDetails();
+                    }
+                });
+            } else {
+                this.saveInvoicingDetails();
+            }
+        },
+        getTurnoverChangesHtml: function (turnoverChanges, interval) {
+            if (turnoverChanges.length == 0) {
+                return '';
+            }
+            let changesHtml = '';
+            changesHtml = `<div class="mb-3 float-left">${interval} Turnover Amounts</div>`;
+            changesHtml += '<table class="table table-sm table-striped">';
+            changesHtml +=
+                '<thead><tr><th>Financial Year</th><th>Quarter</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
+            for (let i = 0; i < turnoverChanges.length; i++) {
+                let invoice_amount = currency(
+                    turnoverChanges[i].gross_turnover
+                ).multiply(turnoverChanges[i].percentage / 100);
+                changesHtml += `<tr><td>${turnoverChanges[i].year - 1}-${
+                    turnoverChanges[i].year
+                }</td><td>Q${turnoverChanges[i].quarter}</td><td>${
+                    turnoverChanges[i].percentage
+                }%</td><td>$${currency(
+                    turnoverChanges[i].gross_turnover
+                )}</td><td>$${invoice_amount}</td></tr>`;
+            }
+            changesHtml += '</tbody></table>';
+            return changesHtml;
+        },
+        getTotalOfFinancialQuarters(year) {
+            var gross_turnover_percentage =
+                this.approval.invoicing_details.gross_turnover_percentages.find(
+                    (item) => item.year == year
+                );
+            if (!gross_turnover_percentage) {
+                return 0;
+            }
+            return gross_turnover_percentage.quarters.reduce(function (a, b) {
+                return a + b['gross_turnover'];
+            }, 0);
+        },
+        saveInvoicingDetails: function () {
+            const requestOptions = {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.approval.invoicing_details),
+            };
+            utils
+                .fetchUrl(
+                    api_endpoints.invoicing_details +
+                        `${this.approval.invoicing_details.id}/`,
+                    requestOptions
+                )
+                .then(() => {
+                    swal.fire({
+                        title: 'Invoicing Details Saved',
+                        text: 'The invoicing details have been saved.',
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: '#3085d6',
+                    });
+                })
+                .catch((error) => {
+                    Swal.fire({
+                        title: 'Error Saving Invoicing Details',
+                        text: error,
+                        icon: 'error',
+                    });
+                });
         },
         cancelEditingInvoicing: function () {
             let vm = this;
@@ -537,3 +745,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.sticky-top {
+    top: 0.5em;
+}
+</style>
