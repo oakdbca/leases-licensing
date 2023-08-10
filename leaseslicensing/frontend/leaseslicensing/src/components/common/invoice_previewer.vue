@@ -358,8 +358,9 @@ export default {
                 return Math.floor(quarterlyIndex);
             }
             if (this.invoicingDetails.invoicing_repetition_type == 3) {
-                let quarterlyIndex = index / 12;
-                return Math.floor(quarterlyIndex);
+                let monthlyIndex =
+                    index / (12 / this.invoicingDetails.invoicing_once_every);
+                return Math.floor(monthlyIndex);
             }
         },
         getAmountForGrossTurnoverInvoiceDisplay(endDate, amountObject) {
@@ -387,7 +388,10 @@ export default {
                 return issueDate.add(3, 'months');
             }
             if (this.invoicingDetails.invoicing_repetition_type == 3) {
-                return issueDate.add(1, 'months');
+                return issueDate.add(
+                    this.invoicingDetails.invoicing_once_every,
+                    'months'
+                );
             }
             return issueDate;
         },
@@ -483,7 +487,10 @@ export default {
                 return startDate.clone().add(1, 'quarters').subtract(1, 'days');
             }
             if (this.invoicingDetails.invoicing_repetition_type == 3) {
-                return startDate.clone().add(1, 'months').subtract(1, 'days');
+                return startDate
+                    .clone()
+                    .add(this.invoicingDetails.invoicing_once_every, 'months')
+                    .subtract(1, 'days');
             }
             return startDate;
         },
