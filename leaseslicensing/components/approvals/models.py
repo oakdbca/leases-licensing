@@ -79,12 +79,17 @@ def update_approval_suspension_doc_filename(instance, filename):
 
 
 class ApprovalDocument(Document, RevisionedMixin):
+    REASON_NEW = "new"
+    REASON_AMENDED = "amended"
+    REASON_RENEWED = "renewed"
+    REASON_REISSUED = "reissued"
+    REASON_INVOICING_UPDATED = "invoicing_updated"
     REASON_CHOICES = (
-        ("new", "New"),
-        ("amended", "Amended"),
-        ("renewed", "Renewed"),
-        ("reissued", "Reissued"),
-        ("invoicing_updated", "Invoicing updated"),
+        (REASON_NEW, "New"),
+        (REASON_AMENDED, "Amended"),
+        (REASON_RENEWED, "Renewed"),
+        (REASON_RENEWED, "Reissued"),
+        (REASON_INVOICING_UPDATED, "Invoicing updated"),
     )
 
     approval = models.ForeignKey(
