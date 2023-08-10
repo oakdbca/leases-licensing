@@ -77,7 +77,7 @@
                         ? proposal.submitter.email
                         : ''
                 "
-                :applicant_email="proposal.applicant"
+                :applicant_email="proposal.applicant_obj.email"
                 :proposed-approval-key="proposedApprovalKey"
                 :proposed-approval-state="proposedApprovalState"
                 :proposal-is-approved="displayApprovedMessage"
