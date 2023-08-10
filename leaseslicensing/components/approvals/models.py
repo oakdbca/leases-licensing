@@ -550,6 +550,13 @@ class Approval(LicensingModelVersioned):
                 return review_date
         return None
 
+    def custom_cpi_entry_reminder_due_in(self, days=30):
+        today = timezone.localtime(timezone.now()).date()
+        return (
+            today + relativedelta(days=days)
+            in self.invoicing_details.invoicing_periods_start_dates
+        )
+
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.current_proposal.user_has_object_permission(user_id)

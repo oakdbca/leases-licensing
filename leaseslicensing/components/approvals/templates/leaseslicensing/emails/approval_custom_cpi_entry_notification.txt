@@ -1,0 +1,10 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+            Approval {{ approval.lodgement_number }} is due for a crown land rent review {{ due_text }}.
+
+            {% endif %}
+            You can access this approval using the following link:
+
+            {{ url }}
+{%  endblock %}
