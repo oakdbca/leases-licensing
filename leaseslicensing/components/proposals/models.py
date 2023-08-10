@@ -3229,7 +3229,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             settings.CHARGE_METHOD_ONCE_OFF_CHARGE
             == invoicing_details.charge_method.key
         ):
-            invoice_amount = invoicing_details.invoice_amount
+            invoice_amount = invoicing_details.once_off_charge_amount
             logger.debug(f"invoice_amount: {invoice_amount}")
             if not invoice_amount or invoice_amount <= Decimal("0.00"):
                 raise serializers.ValidationError(
