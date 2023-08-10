@@ -15,6 +15,7 @@ from django.forms import ValidationError
 from django.utils import timezone
 from ledger_api_client import settings_base
 
+from leaseslicensing import helpers
 from leaseslicensing.components.invoicing import utils
 from leaseslicensing.components.main.models import (
     LicensingModel,
@@ -571,6 +572,71 @@ class InvoicingDetails(BaseModel):
             for period in self.invoicing_periods
         ]
 
+    @property
+    def invoicing_periods_next_start_date(self):
+        today = helpers.today()
+        for start_date in self.invoicing_periods_start_dates:
+            if start_date > today:
+                return start_date
+        return None
+
+    @property
+    def has_future_invoicing_periods(self):
+        return self.invoicing_periods_next_start_date is not None
+
+    @property
+    def invoicing_periods_next_reminder_date(self):
+        if not self.invoicing_periods_next_start_date:
+            return None
+        return self.invoicing_periods_next_start_date - relativedelta(
+            days=settings.DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD
+        )
+
+    @property
+    def get_custom_cpi_year_for_next_invoicing_period(self):
+        today = helpers.today()
+        index = None
+        for i in range(0, len(self.invoicing_periods)):
+            start_date = datetime.strptime(
+                self.invoicing_periods[i]["start_date"], "%Y-%m-%d"
+            ).date()
+            if start_date >= today:
+                index = i
+                break
+
+        return self.get_year_sequence_index(index)
+
+    @property
+    def custom_cpi_entered_for_next_invoicing_period(self):
+        if (
+            self.charge_method.key
+            != settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM
+        ):
+            logger.warning(
+                f"custom_cpi_entered_for_next_period called for Invoicing Details: {self.id} "
+                "which is not using custom CPI charge method."
+            )
+            return (
+                True  # Not strictly true but will prevent any reminders from being sent
+            )
+
+        custom_cpi_year = self.get_custom_cpi_year_for_next_invoicing_period
+        logger.debug(f"custom_cpi_year: {custom_cpi_year}")
+        custom_cpi_percentage = None
+        try:
+            custom_cpi_percentage = self.custom_cpi_years.all()[
+                custom_cpi_year
+            ].percentage
+        # Either self has not custom_cpi_years attribute or the index is out of range
+        except (AttributeError, IndexError):
+            return False
+
+        # The custom cpi percentage is None or 0.00
+        if custom_cpi_percentage is None or custom_cpi_percentage == Decimal("0.00"):
+            return False
+
+        return True
+
     def preview_invoices(self, show_past_invoices=False):
         """
         Returns a preview array of invoices based on the invoicing periods for the invoicing details object
@@ -652,7 +718,7 @@ class InvoicingDetails(BaseModel):
             first_issue_date.replace(day=self.invoicing_day_of_month)
 
         # This works for quarterly invoicing
-        today = timezone.now().date()
+        today = helpers.today()
         if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
             first_issue_date = start_date
             while first_issue_date < today:
@@ -871,18 +937,6 @@ class InvoicingDetails(BaseModel):
             return issue_date + relativedelta(months=3)
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
             return issue_date + relativedelta(months=1)
-
-    @property
-    def custom_cpi_entered_for_next_period(self):
-        if (
-            self.charge_method.key
-            != settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM
-        ):
-            logger.warning(
-                f"custom_cpi_entered_for_next_period called for Invoicing Details: {self.id} "
-                "which is not using custom CPI charge method."
-            )
-            return True  # So that no reminders would attempt to be sent
 
 
 class FixedAnnualIncrementAmount(BaseModel):
