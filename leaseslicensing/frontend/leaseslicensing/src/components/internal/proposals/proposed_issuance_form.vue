@@ -9,8 +9,10 @@
             >
                 <div class="row pt-2">
                     <VueAlert v-model:show="showError" type="danger"
-                        ><strong v-html="errorString"></strong
-                    ></VueAlert>
+                        ><!-- eslint-disable-next-line vue/no-v-html -->
+                        <strong v-html="errorString"></strong>
+                        <!--eslint-enable-->
+                    </VueAlert>
                     <div v-if="registrationOfInterest" class="col-sm-12">
                         <div class="row mb-3">
                             <label class="col-sm-3 col-form-label">{{
@@ -222,7 +224,6 @@
                                         :key="uuid"
                                         v-model="approval.details"
                                         :proposal-data="proposedDecisionDetails"
-                                        placeholder_text="Add some details here"
                                         :can_view_richtext_src="true"
                                         :placeholder_text="
                                             selectedApprovalTypeDetailsPlaceholder
@@ -339,7 +340,9 @@
             </ul>
             <p v-if="can_preview"></p>
         </div>
+        <!-- eslint-disable-next-line vue/no-deprecated-slot-attribute -->
         <div slot="footer"></div>
+        <!--eslint-enable-->
     </div>
 </template>
 
@@ -389,12 +392,15 @@ export default {
         },
         applicant_email: {
             type: String,
+            default: null,
         },
         proposedApprovalKey: {
             type: String,
+            default: '0',
         },
         proposedApprovalState: {
             type: String,
+            default: '',
         },
         proposal: {
             type: Object,
@@ -446,7 +452,6 @@ export default {
             },
             warningString:
                 'Please attach Level of Approval document before issuing Approval',
-            uuid: uuid(),
             detailsTexts: {},
         };
     },
@@ -455,6 +460,7 @@ export default {
             if (this.selectedApprovalType && this.selectedApprovalType.id) {
                 return true;
             }
+            return false;
         },
         leaseLicenceApprovalDocumentsUrl: function () {
             return helpers.add_endpoint_join(
@@ -472,16 +478,19 @@ export default {
             if (this.selectedApprovalType) {
                 return this.selectedApprovalType.approval_type_document_types;
             }
+            return [];
         },
         selectedApprovalTypeName: function () {
             if (this.selectedApprovalType) {
                 return this.selectedApprovalType.name;
             }
+            return '';
         },
         selectedApprovalTypeDetailsPlaceholder: function () {
             if (this.selectedApprovalType) {
                 return this.selectedApprovalType.details_placeholder;
             }
+            return '';
         },
         proposedDecisionDetails: function () {
             /** Returns proposed decision details depending on whether the proposed decision
@@ -497,11 +506,12 @@ export default {
                 return this.proposal.proposaldeclineddetails.reason;
             } else {
                 // Use standard text from admin
-                let id = this.$refs.hasOwnProperty(
+                let id = Object.hasOwn(
+                    this.$refs,
                     'registration_of_interest_details'
                 )
                     ? this.$refs.registration_of_interest_details.id
-                    : this.$refs.hasOwnProperty('lease_licence_details')
+                    : Object.hasOwn(this.$refs, 'lease_licence_details')
                     ? this.$refs.lease_licence_details.id
                     : '';
                 return this.detailsTexts[id] || '';
@@ -536,7 +546,6 @@ export default {
                 ? true
                 : false;
         },
-        isApproved: function () {},
         can_preview: function () {
             return this.processing_status == 'With Approver' ? true : false;
         },
@@ -553,6 +562,7 @@ export default {
             ) {
                 return true;
             }
+            return false;
         },
         leaseLicence: function () {
             if (
@@ -561,6 +571,7 @@ export default {
             ) {
                 return true;
             }
+            return false;
         },
     },
     created: async function () {
@@ -629,6 +640,7 @@ export default {
                 this.approval.selected_document_types = [];
             }
             if (this.proposal.proposed_issuance_approval) {
+                // eslint-disable-next-line vue/no-mutating-props
                 this.proposal.proposed_issuance_approval.selected_document_types =
                     [];
             }
@@ -657,8 +669,8 @@ export default {
                 "<form method='POST' target='_blank' name='Preview Licence' action='" +
                 url +
                 "'>";
-            for (var key in postData) {
-                if (postData.hasOwnProperty(key)) {
+            for (let key in postData) {
+                if (Object.hasOwn(postData, key)) {
                     postFormStr +=
                         "<input type='hidden' name='" +
                         key +
@@ -668,7 +680,7 @@ export default {
                 }
             }
             postFormStr += '</form>';
-            var formElement = $(postFormStr);
+            let formElement = $(postFormStr);
             $('body').append(formElement);
             $(formElement).submit();
         },
@@ -806,13 +818,14 @@ export default {
                     var selected = $(e.currentTarget);
                     vm.handleApprovalTypeChangeEvent(Number(selected.val()));
                 })
-                .on('select2:unselecting', function (e) {
+                .on('select2:unselecting', function () {
                     var self = $(this);
                     setTimeout(() => {
                         self.select2('close');
                     }, 0);
                 })
                 .on('select2:unselect', function (e) {
+                    // eslint-disable-next-line no-unused-vars
                     let unselected_id = e.params.data.id;
                 });
         },
