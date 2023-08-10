@@ -27,12 +27,14 @@
                 :proposed-approval-key="proposedApprovalKey"
                 :proposed-approval-state="proposedApprovalState"
                 :always-show-documents="true"
+                :readonly="readonly"
             />
         </modal>
     </div>
 </template>
 
 <script>
+import { constants } from '@/utils/hooks.js';
 import modal from '@vue-utils/bootstrap-modal.vue';
 import ProposedIssuanceForm from '@/components/internal/proposals/proposed_issuance_form.vue';
 export default {
@@ -83,6 +85,14 @@ export default {
             return this.proposal && this.proposal.applicant.email
                 ? this.proposal.applicant.email
                 : '';
+        },
+        readonly: function () {
+            let readonly =
+                constants.PROPOSAL_STATUS.WITH_APPROVER.ID ==
+                this.proposal.processing_status_id
+                    ? true
+                    : false;
+            return readonly;
         },
     },
     watch: {
