@@ -1,4 +1,5 @@
 import logging
+import time
 
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -17,8 +18,8 @@ class Command(BaseCommand):
     FORTY_FIVE = 45
 
     help = (
-        f"This script is designed to run as a daily cron job and send out reminders "
-        f"({SIXTY} days prior and {FORTY_FIVE} days prior) for any custom cpi figures that are due to be entered"
+        f"This script is designed to run as a daily cron job and send out reminders ({SIXTY} days prior and "
+        f"{FORTY_FIVE} days prior to the next invoicing period) for any custom cpi figures that are due to be entered"
     )
 
     def add_arguments(self, parser):
@@ -31,6 +32,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        start = time.time()
+        logger.info("Running send_custom_cpi_reminders management command")
         charge_method_key = "current_proposal__invoicing_details__charge_method__key"
         filters = {
             "status": Approval.APPROVAL_STATUS_CURRENT,
@@ -40,7 +43,26 @@ class Command(BaseCommand):
         approvals = Approval.objects.filter(**filters)
         for approval in approvals:
             logger.debug(f"Checking approval: {approval}")
+            invoicing_details = approval.current_proposal.invoicing_details
+            logger.debug(
+                f"Found invoicing details: {invoicing_details.has_future_invoicing_periods}"
+            )
+            # Just in case
+            if not invoicing_details.has_future_invoicing_periods:
+                logger.info(
+                    f"Skipping approval: {approval} as it has no future invoicing periods"
+                )
+                continue
+
+            if invoicing_details.custom_cpi_entered_for_next_invoicing_period:
+                logger.info(
+                    f"Skipping approval: {approval} as the custom cpi for the next "
+                    "invoicing period has already been entered"
+                )
+                continue
+
             days_due_in = None
+
             if approval.custom_cpi_entry_reminder_due_in(days=self.SIXTY):
                 days_due_in = self.SIXTY
 
@@ -66,3 +88,7 @@ class Command(BaseCommand):
                         f"Error sending cpi entry reminder for approval: {approval}: {e}"
                     )
                     continue
+
+        logger.info("Finished running send_custom_cpi_reminders management command")
+        time_taken = f"{time.time() - start:.4f}"
+        logger.info(f"Total time taken: {time_taken} seconds")
