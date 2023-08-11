@@ -299,7 +299,7 @@
                                 :selected-approval-type-id="
                                     selectedApprovalTypeId
                                 "
-                                :readonly="false"
+                                :readonly="withApprover"
                             />
                         </div>
                         <div>
@@ -319,6 +319,7 @@
                                         class="form-control"
                                         type="text"
                                         required
+                                        :readonly="readonly"
                                     />
                                     <div class="invalid-feedback">
                                         Please enter a record management number.
@@ -557,7 +558,9 @@ export default {
                 : false;
         },
         can_preview: function () {
-            return this.processing_status == 'With Approver' ? true : false;
+            // Currently, all documents are uploaded by the assessor, thus no preview is required
+            return false;
+            // return this.processing_status == 'With Approver' ? true : false;
         },
         preview_licence_url: function () {
             return this.proposal_id
