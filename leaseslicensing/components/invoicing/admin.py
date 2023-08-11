@@ -58,16 +58,18 @@ class InvoicingDateMonthlyAdmin(admin.ModelAdmin):
 @admin.register(models.ConsumerPriceIndex)
 class ConsumerPriceIndexAdmin(admin.ModelAdmin):
     list_display = [
-        "time_period",
+        "year",
+        "quarter",
         "value",
         "datetime_created",
     ]
     list_display_links = [
-        "time_period",
+        "year",
+        "quarter",
         "value",
         "datetime_created",
     ]
-    readonly_fields = ("time_period", "value", "datetime_created")
+    readonly_fields = ("year", "quarter", "value", "datetime_created")
 
     def has_add_permission(self, request, obj=None):
         return False

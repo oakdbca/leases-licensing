@@ -48,9 +48,11 @@ class Command(BaseCommand):
                 continue
 
             time_period = node[0].attrib["value"]
+            year = time_period.split("-")[0]
+            quarter = time_period.split("-")[1].replace("Q", "")
             value = node[1].attrib["value"]
             cpi, created = ConsumerPriceIndex.objects.get_or_create(
-                time_period=time_period, value=value
+                year=year, quarter=quarter, value=value
             )
             if created:
                 logger.info(
