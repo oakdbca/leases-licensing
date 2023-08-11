@@ -500,7 +500,17 @@ export default {
             // This is here to re-evalute the computed property after fetching details texts
             this.uuid;
 
-            if (this.approval.decision) {
+            if (
+                this.proposal.application_type.name ==
+                    constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST &&
+                this.approval.decision
+            ) {
+                return this.approval.details;
+            } else if (
+                this.proposal.application_type.name ==
+                    constants.APPLICATION_TYPES.LEASE_LICENCE &&
+                this.proposal.proposed_decline_status == false
+            ) {
                 return this.approval.details;
             } else if (this.proposal.proposed_decline_status) {
                 return this.proposal.proposaldeclineddetails.reason;
