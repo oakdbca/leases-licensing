@@ -235,10 +235,14 @@ export default {
                 amountRunningTotal = amountRunningTotal.add(
                     amountObject.amount
                 );
+                let issueDateNowOrFuture = issueDate.clone();
+                if (issueDateNowOrFuture.isBefore(moment())) {
+                    issueDateNowOrFuture = moment();
+                }
                 invoices.push({
                     number: i + 1,
                     issueDate: this.getIssueDate(
-                        issueDate,
+                        issueDateNowOrFuture,
                         this.invoicingPeriods[i].endDate
                     ),
                     dueDate: this.getDueDate(dueDate),
@@ -396,65 +400,9 @@ export default {
             return issueDate;
         },
         getFirstIssueDate(startDate) {
-            var today = moment();
             var firstIssueDate = moment(startDate);
             if (this.chargeMethodKey != 'percentage_of_gross_turnover') {
-                firstIssueDate = this.getEndOfNextIntervalAnnual(
-                    firstIssueDate
-                ).add(1, 'days');
-                if (!this.defaultInvoiceDateSet) {
-                    // Instruct the parent component to update the day of month to invoice,
-                    // month of year to invoice (and month of year to invoice if necessary)
-                    this.$emit('updateDefaultInvoicingDate', firstIssueDate);
-                    this.defaultInvoiceDateSet = true;
-                }
-                if (
-                    this.invoicingDetails.invoicing_repetition_type == 1 &&
-                    this.invoicingDetails.invoicing_month_of_year
-                )
-                    firstIssueDate.set(
-                        'month',
-                        this.invoicingDetails.invoicing_month_of_year - 1
-                    );
-                if (this.invoicingDetails.invoicing_day_of_month) {
-                    firstIssueDate.set(
-                        'date',
-                        this.invoicingDetails.invoicing_day_of_month
-                    );
-                }
-
-                let end_of_first_interval = this.invoicingPeriods[0].endDate;
-                if (firstIssueDate.isSameOrBefore(end_of_first_interval)) {
-                    firstIssueDate = this.getEndOfNextIntervalAnnual(
-                        firstIssueDate
-                    ).add(1, 'days');
-                }
-                return firstIssueDate;
-            }
-            firstIssueDate.set(
-                'date',
-                this.invoicingDetails.invoicing_day_of_month
-            );
-            firstIssueDate.set(
-                'month',
-                this.invoicingDetails.invoicing_month_of_year - 1
-            );
-            // This works for quarterly invoicing
-            if (this.invoicingDetails.invoicing_repetition_type == 2) {
-                let firstIssueDate = moment(startDate);
-                while (firstIssueDate.isBefore(today)) {
-                    firstIssueDate = this.getEndOfNextFinancialQuarter(
-                        firstIssueDate
-                    ).add(1, 'days');
-                }
-                return firstIssueDate.set(
-                    'date',
-                    this.invoicingDetails.invoicing_day_of_month
-                );
-            }
-            // This works for annual and monthly invoicing
-            while (firstIssueDate.isBefore(today)) {
-                firstIssueDate = this.addRepetitionInterval(firstIssueDate);
+                firstIssueDate = firstIssueDate.subtract(30, 'days');
             }
             return firstIssueDate;
         },
