@@ -631,8 +631,8 @@ class InvoicingDetails(BaseModel):
         except (AttributeError, IndexError):
             return False
 
-        # The custom cpi percentage is None or 0.00
-        if custom_cpi_percentage is None or custom_cpi_percentage == Decimal("0.00"):
+        # The custom cpi percentage is None
+        if custom_cpi_percentage is None:
             return False
 
         return True
@@ -1062,8 +1062,9 @@ class FinancialQuarter(BaseModel):
 class CustomCPIYear(BaseModel):
     year = models.PositiveSmallIntegerField()
     label = models.CharField(max_length=100, null=True, blank=True)
+    # Do not default percentage to Decimal("0.00") as it is possible for the inflation figure to be 0
     percentage = models.DecimalField(
-        max_digits=4, decimal_places=1, default="0.0", null=True, blank=True
+        max_digits=4, decimal_places=1, null=True, blank=True
     )
     invoicing_details = models.ForeignKey(
         InvoicingDetails,
