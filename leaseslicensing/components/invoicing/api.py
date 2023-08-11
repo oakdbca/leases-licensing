@@ -410,3 +410,13 @@ class InvoicingDetailsViewSet(LicensingViewset):
     queryset = InvoicingDetails.objects.all()
     serializer_class = InvoicingDetailsSerializer
     permission_classes = [IsFinanceOfficer]
+
+    @action(methods=["PUT"], detail=True)
+    def update_and_preview_invoices(self, request, *args, **kwargs):
+        # Save any changes made to the invoicing details
+        self.update(request, *args, **kwargs)
+        return self.preview_invoices(request, *args, **kwargs)
+
+    @action(methods=["GET"], detail=True)
+    def preview_invoices(self, request, *args, **kwargs):
+        return Response(self.get_object().preview_invoices())
