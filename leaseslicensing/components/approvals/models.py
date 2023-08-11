@@ -146,14 +146,21 @@ class ApprovalTypeDocumentType(RevisionedMixin):
     is_license_document = models.BooleanField(default=False)
     # Whether this document type is the cover letter
     is_cover_letter = models.BooleanField(default=False)
+    # Whether this document type is the sign off sheet
+    is_sign_off_sheet = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
         # A document must be either-or or none
         constraints = [
             models.CheckConstraint(
-                check=~Q(is_license_document=True, is_cover_letter=True),
-                name="either_is_license_document_or_is_cover_letter_or_none",
+                check=Q(
+                    ~Q(is_license_document=True, is_cover_letter=True),
+                    ~Q(is_license_document=True, is_sign_off_sheet=True),
+                    ~Q(is_cover_letter=True, is_sign_off_sheet=True),
+                    _connector="AND",
+                ),
+                name="only_one_or_none_of_license_document_cover_letter_sign_off_sheet",
             )
         ]
 
