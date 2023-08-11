@@ -33,13 +33,6 @@
                                         :max="100000000"
                                         :step="100"
                                         class="form-control form-control-sm"
-                                        :readonly="
-                                            item.year <
-                                            yearsElapsedSinceStartDate(
-                                                startDate
-                                            ) +
-                                                1
-                                        "
                                         required
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -58,13 +51,6 @@
                                         :max="100"
                                         :step="0.1"
                                         class="form-control form-control-sm"
-                                        :readonly="
-                                            item.year <
-                                            yearsElapsedSinceStartDate(
-                                                startDate
-                                            ) +
-                                                1
-                                        "
                                         required
                                     />
                                     <span class="input-group-text">%</span>
@@ -79,8 +65,8 @@
 </template>
 
 <script>
-import { v4 as uuid } from 'uuid'
-import { helpers } from '@/utils/hooks'
+import { v4 as uuid } from 'uuid';
+import { helpers } from '@/utils/hooks';
 
 export default {
     name: 'AnnualAmount',
@@ -116,33 +102,33 @@ export default {
             financialYearHasPassed: helpers.financialYearHasPassed,
             yearsElapsedSinceStartDate: helpers.yearsElapsedSinceStartDate,
             ordinalSuffixOf: helpers.ordinalSuffixOf,
-        }
+        };
     },
     computed: {
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
         yearsArrayComputed: {
             get() {
-                return this.yearsArray
+                return this.yearsArray;
             },
             set(value) {
-                console.log('emitting updateYearsArray')
-                this.$emit('updateYearsArray', this.incrementType, value)
+                console.log('emitting updateYearsArray');
+                this.$emit('updateYearsArray', this.incrementType, value);
             },
         },
         valueTitle: function () {
             if (this.incrementType === 'annual_increment_amount')
-                return 'Amount ($AUD)'
+                return 'Amount ($AUD)';
 
-            return 'Percentage (%)'
+            return 'Percentage (%)';
         },
         stepIncrement: function () {
-            if (this.incrementType === 'annual_increment_amount') return 100
-            return 0.1
+            if (this.incrementType === 'annual_increment_amount') return 100;
+            return 0.1;
         },
     },
     mounted: function () {
@@ -157,29 +143,29 @@ export default {
                 year: i + 1,
                 [this.getKeyName()]: 0.0,
                 readonly: false,
-            })
+            });
         }
     },
     methods: {
         deletable: function (item, index) {
-            if (0 == index) return false
+            if (0 == index) return false;
             if (item.id === 0 || !item.readonly)
                 // If the date is a newly added one, or not readonly, it is deletable.
-                return true
-            return false
+                return true;
+            return false;
         },
         getKeyName: function () {
             if (this.incrementType === 'annual_increment_amount')
-                return 'increment_amount'
-            return 'increment_percentage'
+                return 'increment_amount';
+            return 'increment_percentage';
         },
         addAnotherYearClicked: function () {
-            let key_name = this.getKeyName()
-            let year = new Date().getFullYear() + 1
+            let key_name = this.getKeyName();
+            let year = new Date().getFullYear() + 1;
             if (this.yearsArrayComputed.length > 0) {
                 year =
                     this.yearsArrayComputed[this.yearsArrayComputed.length - 1]
-                        .year + 1
+                        .year + 1;
             }
             this.yearsArrayComputed.push({
                 id: 0,
@@ -187,30 +173,30 @@ export default {
                 year: year,
                 [key_name]: 0.0,
                 readonly: false,
-            })
+            });
         },
         removeARow: function (item, e) {
-            let vm = this
-            let $elem = $(e.target)
+            let vm = this;
+            let $elem = $(e.target);
 
             // Fade out a row
-            $elem.closest('.card').remove()
+            $elem.closest('.card').remove();
             if (item.id === 0) {
                 // When a row is newly added one (not stored in the database yet), just remove it from the array
-                console.log('removing a row')
+                console.log('removing a row');
                 console.log(
                     vm.yearsArrayComputed.filter((i) => i.key !== item.key)
-                )
+                );
                 vm.yearsArrayComputed = vm.yearsArrayComputed.filter(
                     (i) => i.key !== item.key
-                )
+                );
             } else {
                 // When a row is the one already stored in the database, flag it to be deleted.
-                item.to_be_deleted = true
+                item.to_be_deleted = true;
             }
         },
     },
-}
+};
 </script>
 <style scoped>
 .year-and-ordinal {
