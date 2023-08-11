@@ -220,6 +220,13 @@ class Approval(LicensingModelVersioned):
         related_name="cover_letter_document",
         on_delete=models.SET_NULL,
     )
+    sign_off_sheet = models.ForeignKey(
+        ApprovalDocument,
+        blank=True,
+        null=True,
+        related_name="sign_off_sheet",
+        on_delete=models.SET_NULL,
+    )
     replaced_by = models.ForeignKey(
         "self", blank=True, null=True, on_delete=models.SET_NULL
     )
