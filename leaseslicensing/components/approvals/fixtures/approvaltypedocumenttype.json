@@ -5,7 +5,8 @@
         "fields": {
             "name": "License (97A)",
             "is_license_document": true,
-            "is_cover_letter": false
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
@@ -14,7 +15,8 @@
         "fields": {
             "name": "License (101)",
             "is_license_document": true,
-            "is_cover_letter": false
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
@@ -23,7 +25,8 @@
         "fields": {
             "name": "Lease (97)",
             "is_license_document": true,
-            "is_cover_letter": false
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
@@ -32,7 +35,8 @@
         "fields": {
             "name": "Lease (100)",
             "is_license_document": true,
-            "is_cover_letter": false
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
@@ -41,7 +45,8 @@
         "fields": {
             "name": "Sign-off sheet",
             "is_license_document": false,
-            "is_cover_letter": false
+            "is_cover_letter": false,
+            "is_sign_off_sheet": true
         }
     },
     {
@@ -50,7 +55,8 @@
         "fields": {
             "name": "Cover letter",
             "is_license_document": false,
-            "is_cover_letter": true
+            "is_cover_letter": true,
+            "is_sign_off_sheet": false
         }
     }
 ]
