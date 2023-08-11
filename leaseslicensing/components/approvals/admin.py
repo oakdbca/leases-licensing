@@ -9,10 +9,10 @@ class ApprovalTypeDocumentTypeForm(forms.ModelForm):
         cleaned_data = super().clean()
         is_license_document = cleaned_data.get("is_license_document")
         is_cover_letter = cleaned_data.get("is_cover_letter")
-        if is_license_document and is_cover_letter:
-            raise ValidationError(
-                "An Approval document cannot be both a license document and a cover letter."
-            )
+        is_sign_off_sheet = cleaned_data.get("is_sign_off_sheet")
+
+        if is_license_document + is_cover_letter + is_sign_off_sheet > 1:
+            raise ValidationError("An Approval document can only be of one or no type.")
 
 
 def document_type(obj):
@@ -36,7 +36,14 @@ class ApprovalTypeDocumentTypeAdmin(admin.ModelAdmin):
     )
     fieldsets = [
         ("Document Name", {"fields": ["name"]}),
-        ("Document Type", {"fields": [("is_license_document", "is_cover_letter")]}),
+        (
+            "Document Type",
+            {
+                "fields": [
+                    ("is_license_document", "is_cover_letter", "is_sign_off_sheet")
+                ]
+            },
+        ),
     ]
 
     form = ApprovalTypeDocumentTypeForm
@@ -46,6 +53,7 @@ class ApprovalTypeDocumentTypeAdmin(admin.ModelAdmin):
         form = super().get_form(request, obj, change, **kwargs)
         form.base_fields["is_license_document"].label = "License Document"
         form.base_fields["is_cover_letter"].label = "Cover Letter"
+        form.base_fields["is_sign_off_sheet"].label = "Sign Off Sheet"
         return form
 
 
