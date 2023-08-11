@@ -1,5 +1,6 @@
 import logging
 
+from dateutil.relativedelta import relativedelta
 from rest_framework import serializers
 
 from leaseslicensing import settings
@@ -17,7 +18,7 @@ from leaseslicensing.components.invoicing.models import (
     PercentageOfGrossTurnover,
     RepetitionType,
 )
-from leaseslicensing.helpers import is_customer, is_finance_officer
+from leaseslicensing.helpers import is_customer, is_finance_officer, today
 
 logger = logging.getLogger(__name__)
 
@@ -178,6 +179,8 @@ class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
 
 
 class CustomCPIYearSerializer(serializers.ModelSerializer):
+    has_passed = serializers.SerializerMethodField()
+
     class Meta:
         model = CustomCPIYear
         fields = (
@@ -185,7 +188,15 @@ class CustomCPIYearSerializer(serializers.ModelSerializer):
             "year",
             "label",
             "percentage",
+            "has_passed",
         )
+
+    def get_has_passed(self, instance):
+        start_date = instance.invoicing_details.approval.start_date
+        if instance.year > 1:
+            start_date = start_date + relativedelta(years=instance.year - 1)
+        logger.debug(f"\n\n\n{start_date}\n\n\n")
+        return not start_date > today()
 
 
 class InvoicingDetailsSerializer(serializers.ModelSerializer):
