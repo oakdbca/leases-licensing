@@ -221,11 +221,33 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def create_license_document(self, approval, filepath=None, filename=None, **kwargs):
-        if filepath is None:
-            buffer = self.approval_buffer(approval)
-        else:
-            buffer = self._filepath_to_buffer(filepath)
+    def create_approval_document(self, approval, filename=None, filepath=None, **kwargs):
+        """
+        Returns an ApprovalDocument named filename from the document at filepath
+        Args:
+            approval: Approval object
+            filename: Name of the approval document file
+            filepath: Path to the approval document file
+        """
+
+        buffer = self._filepath_to_buffer(filepath)
+        document = self.update_approval_document_file(
+            approval, buffer, filename, **kwargs
+        )
+        buffer.close()
+
+        return document
+
+
+    def create_license_document(self, approval, filename=None, **kwargs):
+        """
+        Creates a license document from a template and attaches it to the approval
+        Args:
+            approval: Approval object
+            filename: Name of the license document file
+        """
+
+        buffer = self.approval_buffer(approval)
 
         if filename is None:
             filename = "Approval-{}.pdf".format(approval.lodgement_number)
@@ -239,22 +261,12 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def create_cover_letter(self, approval, filepath=None, filename=None, **kwargs):
-        if filepath is None:
-            raise NotImplementedError(
-                "Please specify a filepath. Creating cover letters from templates is not implemented yet."
-            )
-        else:
-            buffer = self._filepath_to_buffer(filepath)
-
-        if filename is None:
-            filename = "CoverLetter-{}.pdf".format(approval.lodgement_number)
-
-        document = self.update_approval_document_file(
-            approval, buffer, filename, **kwargs
+    def create_cover_letter(self, approval, filename=None, **kwargs):
+        raise NotImplementedError(
+            "Creating cover letters from templates is not implemented yet."
         )
-        buffer.close()
-        # Attach the document to the approval
-        approval.cover_letter_document = document
 
-        return document
+    def create_sign_of_sheet(self, approval, filename=None, **kwargs):
+        raise NotImplementedError(
+            "Creating sign-off sheets from templates is not implemented yet."
+        )
