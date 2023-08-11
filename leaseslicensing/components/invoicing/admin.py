@@ -91,6 +91,7 @@ class CPICalculationMethodAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "display_name",
+        "quarter",
         "archived",
     ]
     list_display_links = [
@@ -100,6 +101,7 @@ class CPICalculationMethodAdmin(admin.ModelAdmin):
     ]
     fields = (
         "name",
+        "quarter",
         "display_name",
         "archived",
     )
