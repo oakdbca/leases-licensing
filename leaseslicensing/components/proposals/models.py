@@ -2513,6 +2513,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @transaction.atomic()
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
+        from leaseslicensing.components.approvals.document import (
+            ApprovalDocumentGenerator,
+        )
+        from leaseslicensing.components.approvals.models import ApprovalDocument
+
+        from leaseslicensing.components.approvals.models import (
+            ApprovalType,
+        )
 
         try:
             self.proposed_decline_status = False
@@ -2527,6 +2535,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 pass
             else:
                 if not self.can_assess(request.user):
+
                     raise exceptions.ProposalNotAuthorized()
                 if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
                     raise ValidationError(
@@ -2545,6 +2554,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             checking_proposal = self
+
+            approval_type_id = checking_proposal.proposed_issuance_approval[
+                "approval_type"
+            ]
+            approval_type = ApprovalType.objects.get(id=approval_type_id)
+            document_generator = ApprovalDocumentGenerator()
             if (
                 self.proposal_type.code == PROPOSAL_TYPE_RENEWAL
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
@@ -2641,6 +2656,75 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                             "record_management_number": record_management_number,
                         },
                     )
+
+                    checking_proposal.proposed_issuance_approval.get(
+                        "approval_type", None
+                    )
+
+                    # Attach lease license documents as provided by the assessor to the approval
+                    license_documents = []
+                    cover_letter = []
+                    sign_off_sheets = []
+                    other_documents = []
+                    for document in self.lease_licence_approval_documents.all():
+                        if document.approval_type_id != approval_type_id:
+                            logger.warn(
+                                f"Ignoring {ApprovalType.objects.get(id=document.approval_type_id)} document `{document}` for Approval of type `{approval_type}`."
+                            )
+                            continue
+
+                        if document.approval_type_document_type.is_license_document:
+                            license_documents.append(document)
+                        elif document.approval_type_document_type.is_cover_letter:
+                            cover_letter.append(document)
+                        elif document.approval_type_document_type.is_sign_off_sheet:
+                            sign_off_sheets.append(document)
+                        else:
+                            other_documents.append(document)
+                    if len(license_documents) != 1:
+                        raise ValidationError(
+                            f"There must be exactly one license document for {approval_type}, but found {len(license_documents)}."
+                        )
+                    if len(cover_letter) != 1:
+                        raise ValidationError(
+                            f"There must be exactly one cover letter for {approval_type}, but found {len(cover_letter)}."
+                        )
+                    if len(sign_off_sheets) != 1:
+                        raise ValidationError(
+                            f"There must be exactly one sign-off sheet for {approval_type}, but found {len(sign_off_sheets)}."
+                        )
+
+                    approval.licence_document = (
+                        document_generator.create_approval_document(
+                            approval,
+                            filename="Approval-{}.pdf".format(
+                                approval.lodgement_number
+                            ),
+                            filepath=license_documents[0]._file.path,
+                            reason=ApprovalDocument.REASON_NEW,
+                        )
+                    )
+                    approval.cover_letter_document = (
+                        document_generator.create_approval_document(
+                            approval,
+                            filename="CoverLetter-{}.pdf".format(
+                                approval.lodgement_number
+                            ),
+                            filepath=cover_letter[0]._file.path,
+                            reason=ApprovalDocument.REASON_NEW,
+                        )
+                    )
+                    approval.sign_off_sheet_document = (
+                        document_generator.create_approval_document(
+                            approval,
+                            filename="SignOffSheet-{}.pdf".format(
+                                approval.lodgement_number
+                            ),
+                            filepath=sign_off_sheets[0]._file.path,
+                            reason=ApprovalDocument.REASON_NEW,
+                        )
+                    )
+                    approval.save()
 
                     self.approval = approval
                     self.save()
