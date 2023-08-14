@@ -17,13 +17,14 @@ from ledger_api_client import settings_base
 
 from leaseslicensing import helpers
 from leaseslicensing.components.invoicing import utils
+from leaseslicensing.components.invoicing.email import (
+    send_new_invoice_raised_internal_notification,
+)
 from leaseslicensing.components.main.models import (
     LicensingModel,
     RevisionedMixin,
     SecureFileField,
 )
-
-PERCENTAGE_VALIDATOR = [MinValueValidator(0.0), MaxValueValidator(100)]
 
 logger = logging.getLogger(__name__)
 
@@ -294,17 +295,9 @@ class InvoicingDateMonthly(BaseModel):
         return invoicing_date_monthly
 
 
-def get_year():
-    cpis = ConsumerPriceIndex.objects.all()
-    if cpis:
-        latest_cpis = cpis.order_by("year").last()
-        return getattr(latest_cpis, "year") + 1
-    else:
-        return ConsumerPriceIndex.start_year
-
-
 class ConsumerPriceIndex(BaseModel):
-    time_period = models.CharField(max_length=7, help_text="Year and Quarter")
+    year = models.PositiveSmallIntegerField(null=True)
+    quarter = models.PositiveSmallIntegerField(null=True)
     value = models.DecimalField(
         max_digits=20,
         decimal_places=1,
@@ -316,14 +309,29 @@ class ConsumerPriceIndex(BaseModel):
         app_label = "leaseslicensing"
         verbose_name = "CPI Data (Perth - All Groups)"
         verbose_name_plural = "CPI Data (Perth - All Groups)"
+        ordering = ["-year", "-quarter"]
 
     def __str__(self):
-        return f"{self.time_period}: {self.value}"
+        return f"{self.year}-Q{self.quarter}: {self.value}"
+
+    @classmethod
+    def get_most_recent_quarter(cls, quarter):
+        return (
+            cls.objects.filter(time_period__contains=f"Q{quarter}")
+            .order_by("-time_period")
+            .first()
+        )
+
+    @classmethod
+    def get_most_recent_quarter_by_date(cls, date, quarter):
+        financial_year = utils.financial_year_from_date(date).split("-")[1]
+        return cls.objects.filter(year__lt=financial_year, quarter=quarter).first()
 
 
 class CPICalculationMethod(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False, editable=False)
     display_name = models.CharField(max_length=255, null=False, blank=False)
+    quarter = models.PositiveSmallIntegerField(null=True)
     archived = models.BooleanField(default=False)
 
     class Meta:
@@ -637,39 +645,51 @@ class InvoicingDetails(BaseModel):
 
         return True
 
-    def preview_invoices(self, show_past_invoices=False):
+    @property
+    def preview_invoices(self):
         """
         Returns a preview array of invoices based on the invoicing periods for the invoicing details object
         By default it will only return invoices for future periods because we can fetch a list of past invoices
         from the database.
         """
         invoices = []
-        first_issue_date = self.get_first_issue_date()
         days_running_total = 0
         amount_running_total = Decimal("0.00")
-        issue_date = first_issue_date
+        issue_date = self.get_first_issue_date()
         for i, invoicing_period in enumerate(self.invoicing_periods):
             # Net 30 payment terms
             due_date = issue_date + relativedelta(days=30)
             days_running_total += invoicing_period["days"]
             amount_object = self.get_amount_for_invoice(
-                issue_date, invoicing_period["end_date"], invoicing_period["days"], i
+                issue_date,
+                invoicing_period["start_date"],
+                invoicing_period["end_date"],
+                invoicing_period["days"],
+                i,
             )
-            amount_running_total = amount_running_total + amount_object["amount"]
+            if amount_object["amount"]:
+                amount_running_total = amount_running_total + amount_object["amount"]
+            else:
+                amount_running_total = amount_running_total + Decimal("0.00")
+            issue_date_now_or_future = issue_date
+            if issue_date < helpers.today():
+                issue_date_now_or_future = helpers.today()
+
             invoices.append(
                 {
                     "number": i + 1,
                     "issue_date": self.get_issue_date(
-                        issue_date, invoicing_period["end_date"]
+                        issue_date_now_or_future, invoicing_period["end_date"]
                     ),
                     "due_date": self.get_due_date(due_date),
                     "time_period": invoicing_period["label"],
                     "amount_object": amount_object,
                     "days": invoicing_period["days"],
                     "days_running_total": days_running_total,
-                    "amount_running_total": amount_running_total,
-                    "hide": not show_past_invoices
-                    and issue_date < timezone.now().date(),
+                    "amount_running_total": amount_running_total.quantize(
+                        Decimal("0.01")
+                    ),
+                    "start_date_has_passed": issue_date <= timezone.now().date(),
                 }
             )
             if i < len(self.invoicing_periods) - 1:
@@ -680,56 +700,41 @@ class InvoicingDetails(BaseModel):
 
         return invoices
 
+    def generate_immediate_invoices(self):
+        """Generate invoices for the next invoicing period and any invoicing periods that have already passed
+        This should only be run once when the finance officer has just finished "editing invoicing" on the
+        application.
+        """
+        immediate_invoices = []
+        for preview_invoice in self.preview_invoices:
+            if preview_invoice["start_date_has_passed"]:
+                immediate_invoices.append(preview_invoice)
+        if len(immediate_invoices) == 0:
+            return
+
+        gst_free = self.approval.approval_type.gst_free
+
+        for invoice_record in immediate_invoices:
+            logger.debug(f"Generating immediate invoice record for {invoice_record}")
+            invoice = Invoice.objects.create(
+                approval=self.approval,
+                amount=invoice_record["amount_object"]["amount"],
+                gst_free=gst_free,
+            )
+
+            # send to the finance group so they can take action
+            send_new_invoice_raised_internal_notification(self.approval, invoice)
+
     def get_first_issue_date(self):
-        start_date = self.approval.start_date
+        first_issue_date = self.approval.start_date
 
         if (
             self.charge_method.key
             != settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
         ):
-            first_issue_date = self.get_end_of_next_interval_sequential_year(
-                start_date
-            ) + relativedelta(days=1)
-            if (
-                self.invoicing_repetition_type.key == settings.REPETITION_TYPE_ANNUALLY
-                and self.invoicing_month_of_year
-            ):
-                first_issue_date = first_issue_date.replace(
-                    month=self.invoicing_month_of_year
-                )
-            if self.invoicing_day_of_month:
-                first_issue_date = first_issue_date.replace(
-                    day=self.invoicing_day_of_month
-                )
-            end_of_first_interval = self.invoicing_periods[0]["end_date"]
-            if (
-                first_issue_date
-                <= datetime.strptime(end_of_first_interval, "%Y-%m-%d").date()
-            ):
-                first_issue_date = self.get_end_of_next_interval_sequential_year(
-                    first_issue_date
-                ) + relativedelta(days=1)
-            return first_issue_date
-
-        first_issue_date = start_date
-        if self.invoicing_month_of_year:
-            first_issue_date.replace(month=self.invoicing_month_of_year)
-        if self.invoicing_day_of_month:
-            first_issue_date.replace(day=self.invoicing_day_of_month)
-
-        # This works for quarterly invoicing
-        today = helpers.today()
-        if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
-            first_issue_date = start_date
-            while first_issue_date < today:
-                first_issue_date = self.get_end_of_next_financial_quarter(
-                    first_issue_date
-                ) + relativedelta(days=1)
-            return first_issue_date.replace(day=self.invoicing_day_of_month)
-
-        # This works for annual and monthly invoicing
-        while first_issue_date < today:
-            first_issue_date = self.addRepetitionInterval(first_issue_date)
+            first_issue_date = first_issue_date - relativedelta(
+                days=settings.DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD
+            )
 
         return first_issue_date
 
@@ -761,7 +766,7 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
             return math.floor(index / self.invoicing_once_every)
 
-    def get_amount_for_invoice(self, issue_date, end_date, days, index):
+    def get_amount_for_invoice(self, start_date, issue_date, end_date, days, index):
         amount_object = {
             "prefix": "$",
             "amount": Decimal("0.00"),
@@ -780,18 +785,35 @@ class InvoicingDetails(BaseModel):
         if not self.base_fee_amount or self.base_fee_amount == Decimal("0.00"):
             return amount_object
 
-        base_fee_amount = self.base_fee_amount
+        base_fee_amount = self.base_fee_amount.quantize(Decimal("0.01"))
 
         # Ignore extra day in leap year so base fee is consistent
         if days == 366:
             days = 365
 
         # Caculate the base fee for this period i.e. days of period * cost per day
+        # Todo: I think they want to calculate each period as a division of the year rather than the days in the period
         base_fee_amount = days * (base_fee_amount / 365)
+        base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
-            amount_object["amount"] = base_fee_amount
-            amount_object["suffix"] = " + CPI (ABS)"
+            if start_date > helpers.today():
+                amount_object["amount"] = base_fee_amount
+                amount_object["suffix"] = " + CPI (NYA)"
+                return amount_object
+
+            cpi = ConsumerPriceIndex.get_most_recent_quarter_by_date(
+                start_date, self.cpi_calculation_method.quarter
+            )
+            if cpi:
+                logger.info(
+                    f"CPI value for most recent Q{self.cpi_calculation_method.quarter} for period starting: "
+                    f"{start_date} was - year: {cpi.year}, quarter: {cpi.quarter}, value: {cpi.value}"
+                )
+                amount_object["amount"] = Decimal(
+                    base_fee_amount * (1 + cpi.value / 100)
+                ).quantize(Decimal("0.01"))
+                amount_object["suffix"] = f" (CPI: {cpi.value}%)"
 
         year_sequence_index = self.get_year_sequence_index(index)
         if (
@@ -801,17 +823,18 @@ class InvoicingDetails(BaseModel):
             amount_object["amount"] = base_fee_amount
             try:
                 custom_cpi_year = self.custom_cpi_years.all()[year_sequence_index]
+                if custom_cpi_year and custom_cpi_year.percentage:
+                    amount_object["amount"] = Decimal(
+                        base_fee_amount * (1 + custom_cpi_year.percentage / 100)
+                    ).quantize(Decimal("0.01"))
+                    amount_object["suffix"] = f" (CPI: {custom_cpi_year.percentage}%)"
+                else:
+                    amount_object["suffix"] = " + CPI (CUSTOM)"
             except IndexError:
                 logger.warning(
                     f"Invoicing Details: {self.id} - No custom CPI year for index "
                     f"{year_sequence_index}. Using base fee amount."
                 )
-            if custom_cpi_year and custom_cpi_year.percentage > Decimal("0.00"):
-                amount_object["amount"] = Decimal(
-                    base_fee_amount * (1 + custom_cpi_year.percentage / 100)
-                ).quantize(Decimal("0.01"))
-            else:
-                amount_object["suffix"] = " + CPI (CUSTOM)"
 
         if (
             self.charge_method.key
@@ -850,23 +873,32 @@ class InvoicingDetails(BaseModel):
                 if year_sequence_index > 0
                 else ""
             )
-            annual_increment_amount = self.invoicingDetails.annual_increment_amounts[
-                year_sequence_index - 1
-            ]
-            if annual_increment_amount:
-                if annual_increment_amount.increment_amount:
-                    increment_amount = annual_increment_amount.increment_amount
-                base_fee_amount = base_fee_amount + increment_amount
-                suffix = ""
+            if year_sequence_index > 0:
+                try:
+                    annual_increment_amount = self.annual_increment_amounts.all()[
+                        year_sequence_index - 1
+                    ]
+                    if annual_increment_amount:
+                        if annual_increment_amount.increment_amount:
+                            increment_amount = annual_increment_amount.increment_amount
+                        base_fee_amount = base_fee_amount + increment_amount
+                        suffix = ""
+                except IndexError:
+                    logger.warning(
+                        f"Invoicing Details: {self.id} - No annual increment amount for index "
+                        f"{index}. Using base fee amount."
+                    )
 
             amount_object["amount"] = Decimal(base_fee_amount).quantize(Decimal("0.01"))
             amount_object["suffix"] = suffix
+
+        amount_object["amount"] = amount_object["amount"].quantize(Decimal("0.01"))
 
         return amount_object
 
     def get_amount_for_gross_turnover_invoice(self, end_date, amount_object):
         amount_object["prefix"] = ""
-        amount_object["amount"] = Decimal("0.00")
+        amount_object["amount"] = None
         end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
         financial_year = utils.financial_year_from_date(end_date)
         year = int(financial_year.split("-")[1])
@@ -957,6 +989,10 @@ class FixedAnnualIncrementAmount(BaseModel):
         ordering = [
             "year",
         ]
+        unique_together = (
+            "year",
+            "invoicing_details",
+        )
 
     def __str__(self):
         return f"Year: {self.year}, Increment Amount: {self.increment_amount}"
@@ -975,7 +1011,6 @@ class FixedAnnualIncrementPercentage(BaseModel):
         default="0.0",
         blank=True,
         null=True,
-        validators=PERCENTAGE_VALIDATOR,
     )
     invoicing_details = models.ForeignKey(
         InvoicingDetails,
@@ -990,6 +1025,10 @@ class FixedAnnualIncrementPercentage(BaseModel):
         ordering = [
             "year",
         ]
+        unique_together = (
+            "year",
+            "invoicing_details",
+        )
 
     def __str__(self):
         return f"Year: {self.year}, Increment Percentage: {self.increment_percentage}"
@@ -1021,6 +1060,10 @@ class PercentageOfGrossTurnover(BaseModel):
         ordering = [
             "year",
         ]
+        unique_together = (
+            "year",
+            "invoicing_details",
+        )
 
     def __str__(self):
         return f"{self.year}: {self.percentage}%"
