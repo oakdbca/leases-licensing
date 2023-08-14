@@ -3214,6 +3214,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         from leaseslicensing.components.approvals.models import Approval
 
         self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
+        self.save()
 
         approval, created = Approval.objects.update_or_create(
             current_proposal=self,
@@ -3225,10 +3226,19 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         )
 
         invoicing_details = self.save_invoicing_details(request, action)
+
+        if (
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
+            == invoicing_details.charge_method.key
+        ):
+            # Nothing else needs to be done
+            return
+
         if (
             settings.CHARGE_METHOD_ONCE_OFF_CHARGE
             == invoicing_details.charge_method.key
         ):
+            # Generate a single once off change invoice
             invoice_amount = invoicing_details.once_off_charge_amount
             logger.debug(f"invoice_amount: {invoice_amount}")
             if not invoice_amount or invoice_amount <= Decimal("0.00"):
@@ -3250,6 +3260,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             # send to the finance group so they can take action
             send_new_invoice_raised_internal_notification(self.approval, invoice)
+            return
 
         if (
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
@@ -3260,8 +3271,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             # Generate compliances from the requirements
             self.generate_compliances(approval, request)
+            return
 
-        self.save()
+        # For all other charge methods, there may be one or more invoice records that need to be
+        # generated immidiately (any past periods and any current period i.e. that has started but not yet finished)
+        invoicing_details.generate_immediate_invoices()
 
     def finance_cancel_editing(self, request, action):
         self.processing_status = Proposal.PROCESSING_STATUS_CURRENT
