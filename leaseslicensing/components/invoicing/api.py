@@ -419,4 +419,4 @@ class InvoicingDetailsViewSet(LicensingViewset):
 
     @action(methods=["GET"], detail=True)
     def preview_invoices(self, request, *args, **kwargs):
-        return Response(self.get_object().preview_invoices())
+        return Response(self.get_object().preview_invoices)
