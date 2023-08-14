@@ -137,10 +137,24 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
     def get_to_be_deleted(self, instance):
         return False
 
-    def update(self, instance, validated_data):
-        # Create or update the financial quarters
+    def create(self, validated_data):
         quarters = validated_data.pop("quarters", [])
-        logger.debug(f"\n\n\n{quarters}\n\n\n")
+        instance = super().create(validated_data)
+        if quarters:
+            for quarter_data in quarters:
+                quarter, created = FinancialQuarter.objects.get_or_create(
+                    year=instance,
+                    quarter=quarter_data.get("quarter"),
+                )
+                gross_turnover = quarter_data.get("gross_turnover")
+                if gross_turnover:
+                    quarter.gross_turnover = gross_turnover
+                    quarter.save()
+
+        return instance
+
+    def update(self, instance, validated_data):
+        quarters = validated_data.pop("quarters", [])
         if quarters:
             for quarter_data in quarters:
                 quarter, created = FinancialQuarter.objects.get_or_create(
@@ -195,7 +209,6 @@ class CustomCPIYearSerializer(serializers.ModelSerializer):
         start_date = instance.invoicing_details.approval.start_date
         if instance.year > 1:
             start_date = start_date + relativedelta(years=instance.year - 1)
-        logger.debug(f"\n\n\n{start_date}\n\n\n")
         return not start_date > today()
 
 
@@ -361,8 +374,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         if non_field_errors:
             raise serializers.ValidationError(non_field_errors)
 
-        logger.debug(f"\n\n --> attrs: {attrs}\n\n")
-
         return attrs
 
     def _validate_annual_increment(
@@ -451,151 +462,74 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     def update_annual_increment_amounts(
         self, validated_annual_increment_amounts_data, instance
     ):
-        initial_data = self.initial_data.get("annual_increment_amounts")
-
+        # Todo: Deal with the case where the approval duration is shortened
+        # and one or more annual increment amounts need to be deleted
         for annual_increment_amount_data in validated_annual_increment_amounts_data:
-            if annual_increment_amount_data.get("id", 0):
-                # This data exists in the database
+            (
+                annual_increment_amount,
+                created,
+            ) = FixedAnnualIncrementAmount.objects.get_or_create(
+                invoicing_details=instance,
+                year=annual_increment_amount_data.get("year"),
+            )
 
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    annual_increment_amount_data, initial_data
-                )
+            logger.debug(f"annual_increment_amount: {annual_increment_amount}")
+            logger.debug(f"created: {created}")
 
-                annual_increment_amount = FixedAnnualIncrementAmount.objects.get(
-                    id=int(annual_increment_amount_data.get("id"))
-                )
-                if to_be_deleted:
-                    # Data is marked as to_be_deleted
-                    if (
-                        not annual_increment_amount.readonly
-                    ):  # Double check if it's not readonly data.
-                        annual_increment_amount.delete()
-                else:
-                    # Update data
-                    serializer = FixedAnnualIncrementAmountSerializer(
-                        annual_increment_amount,
-                        annual_increment_amount_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in annual_increment_amount_data:
-                    annual_increment_amount_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = FixedAnnualIncrementAmountSerializer(
-                    data=annual_increment_amount_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
+            serializer = FixedAnnualIncrementAmountSerializer(
+                annual_increment_amount,
+                data=annual_increment_amount_data,
+                context={"invoicing_details": instance},
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
     def update_annual_increment_percentages(
         self, validated_annual_increment_percentages_data, instance
     ):
-        initial_data = self.initial_data.get("annual_increment_percentages")
-
+        # Todo: Deal with the case where the approval duration is shortened
+        # and one or more annual increment amounts need to be deleted
         for (
             annual_increment_percentage_data
         ) in validated_annual_increment_percentages_data:
-            if annual_increment_percentage_data.get("id", 0):
-                # This data exists in the database
+            (
+                annual_increment_percentage,
+                created,
+            ) = FixedAnnualIncrementPercentage.objects.get_or_create(
+                invoicing_details=instance,
+                year=annual_increment_percentage_data.get("year"),
+            )
 
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    annual_increment_percentage_data, initial_data
-                )
-
-                annual_increment_percentage = (
-                    FixedAnnualIncrementPercentage.objects.get(
-                        id=int(annual_increment_percentage_data.get("id"))
-                    )
-                )
-                if to_be_deleted:
-                    # Data is marked as to_be_deleted
-                    if not annual_increment_percentage.readonly:
-                        annual_increment_percentage.delete()
-                else:
-                    # Update data
-                    serializer = FixedAnnualIncrementPercentageSerializer(
-                        annual_increment_percentage,
-                        annual_increment_percentage_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in annual_increment_percentage_data:
-                    annual_increment_percentage_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = FixedAnnualIncrementPercentageSerializer(
-                    data=annual_increment_percentage_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
+            serializer = FixedAnnualIncrementPercentageSerializer(
+                annual_increment_percentage,
+                data=annual_increment_percentage_data,
+                context={"invoicing_details": instance},
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
     def update_gross_turnover_percentages(
         self, validated_gross_turnover_percentages_data, instance
     ):
-        initial_data = self.initial_data.get("gross_turnover_percentages")
-
         for gross_turnover_percentage_data in validated_gross_turnover_percentages_data:
-            if gross_turnover_percentage_data.get("id", 0):
-                # This data exists in the database
+            (
+                gross_turnover_percentage,
+                created,
+            ) = PercentageOfGrossTurnover.objects.get_or_create(
+                invoicing_details=instance,
+                year=gross_turnover_percentage_data.get("year"),
+            )
 
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    gross_turnover_percentage_data, initial_data
-                )
-
-                gross_turnover_percentage = PercentageOfGrossTurnover.objects.get(
-                    id=int(gross_turnover_percentage_data.get("id"))
-                )
-                if to_be_deleted:
-                    # Data is marked as to_be_deleted
-                    if not gross_turnover_percentage.readonly:
-                        gross_turnover_percentage.delete()
-                else:
-                    # Update data
-                    serializer = PercentageOfGrossTurnoverSerializer(
-                        gross_turnover_percentage,
-                        gross_turnover_percentage_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    instance = serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in gross_turnover_percentage_data:
-                    gross_turnover_percentage_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = PercentageOfGrossTurnoverSerializer(
-                    data=gross_turnover_percentage_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                instance = serializer.save()
-                instance.invoicing_details = instance
-                instance.save()
+            serializer = PercentageOfGrossTurnoverSerializer(
+                gross_turnover_percentage,
+                data=gross_turnover_percentage_data,
+                context={"invoicing_details": instance},
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
     def update_custom_cpi_years(self, validated_custom_cpi_years, instance):
         for custom_cpi_year_data in validated_custom_cpi_years:
-            logger.debug(type(custom_cpi_year_data))
-            logger.debug(custom_cpi_year_data)
             custom_cpi_year, created = CustomCPIYear.objects.get_or_create(
                 invoicing_details=instance, year=custom_cpi_year_data.get("year")
             )
