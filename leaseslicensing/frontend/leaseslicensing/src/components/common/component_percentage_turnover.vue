@@ -31,6 +31,8 @@
                                         max="100"
                                         type="number"
                                         class="form-control"
+                                        @change="$emit('onChangePercentage')"
+                                        @keyup="$emit('onChangePercentage')"
                                     />
                                     <span class="input-group-text">%</span>
                                 </div>
@@ -187,7 +189,7 @@ export default {
             required: true,
         },
     },
-    emits: ['updateGrossTurnoverPercentages'],
+    emits: ['updateGrossTurnoverPercentages', 'onChangePercentage'],
     data: function () {
         return {
             originalAnnualTurnover: null,
@@ -212,15 +214,12 @@ export default {
             this.startDate,
             this.expiryDate
         );
-        if (
-            this.grossTurnoverPercentages.length !=
-            financialYearsIncluded.length
-        ) {
-            this.populateFinancialYearsArray(financialYearsIncluded);
-        }
-        this.populateFinancialQuartersArray(
-            this.grossTurnoverPercentagesComputed
-        );
+        // if (
+        //     this.grossTurnoverPercentages.length !=
+        //     financialYearsIncluded.length
+        // ) {
+        this.populateFinancialYearsArray(financialYearsIncluded);
+        // }
     },
     methods: {
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
@@ -292,6 +291,7 @@ export default {
             }
         },
         populateFinancialYearsArray: function (financialYearsIncluded) {
+            var financialYear = null;
             var financialYears = [];
             console.log('populateFinancialYearsArray');
 
@@ -302,13 +302,37 @@ export default {
                         (x) => x.year == year
                     ).length == 0
                 ) {
-                    financialYears.push({
-                        id: 0,
+                    financialYear = {
                         year: year,
                         financial_year: financialYearsIncluded[i],
                         percentage: 0.0,
                         gross_turnover: null,
-                    });
+                        quarters: [],
+                    };
+                    financialYears.push(financialYear);
+                }
+                for (let j = 0; j < 4; j++) {
+                    console.log(j);
+                    let grossTurnoverPercentage = this
+                        .grossTurnoverPercentagesComputed[i]
+                        ? this.grossTurnoverPercentagesComputed[i]
+                        : financialYear;
+                    if (
+                        !helpers.financialQuarterIncluded(
+                            this.startDate,
+                            this.expiryDate,
+                            grossTurnoverPercentage.financial_year,
+                            j + 1
+                        )
+                    ) {
+                        continue;
+                    }
+                    if (!grossTurnoverPercentage.quarters[j]) {
+                        grossTurnoverPercentage.quarters.push({
+                            quarter: j + 1,
+                            gross_turnover: null,
+                        });
+                    }
                 }
             }
             financialYears = this.grossTurnoverPercentagesComputed.concat(
@@ -317,32 +341,6 @@ export default {
             financialYears.sort((a, b) => a.year - b.year);
             console.log('\n\nFinancial Years: ', financialYears);
             this.grossTurnoverPercentagesComputed = financialYears;
-        },
-        populateFinancialQuartersArray: function (financialYears) {
-            for (let i = 0; i < financialYears.length; i++) {
-                for (let j = 0; j < 4; j++) {
-                    console.log(
-                        'financialYears[i].financial_year: ',
-                        financialYears[i].financial_year
-                    );
-                    if (
-                        !helpers.financialQuarterIncluded(
-                            this.startDate,
-                            this.expiryDate,
-                            financialYears[i].financial_year,
-                            j + 1
-                        )
-                    ) {
-                        continue;
-                    }
-                    if (!this.grossTurnoverPercentagesComputed[i].quarters[j]) {
-                        this.grossTurnoverPercentagesComputed[i].quarters.push({
-                            quarter: j + 1,
-                            gross_turnover: null,
-                        });
-                    }
-                }
-            }
         },
     },
 };
