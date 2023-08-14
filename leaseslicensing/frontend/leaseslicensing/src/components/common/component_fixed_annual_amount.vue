@@ -34,6 +34,8 @@
                                         :step="100"
                                         class="form-control form-control-sm"
                                         required
+                                        @change="$emit('onChangeIncrement')"
+                                        @onkeyup="$emit('onChangeIncrement')"
                                     />
                                     <span class="input-group-text">AUD</span>
                                 </div>
@@ -52,6 +54,8 @@
                                         :step="0.1"
                                         class="form-control form-control-sm"
                                         required
+                                        @change="$emit('onChangeIncrement')"
+                                        @onkeyup="$emit('onChangeIncrement')"
                                     />
                                     <span class="input-group-text">%</span>
                                 </div>
@@ -96,7 +100,7 @@ export default {
             required: true,
         },
     },
-    emits: ['updateYearsArray'],
+    emits: ['updateYearsArray', 'onChangeIncrement'],
     data: function () {
         return {
             financialYearHasPassed: helpers.financialYearHasPassed,
@@ -137,23 +141,17 @@ export default {
             i < this.approvalDurationYears - 1;
             i++
         ) {
-            this.yearsArrayComputed.push({
-                id: 0,
-                key: uuid(),
-                year: i + 1,
-                [this.getKeyName()]: 0.0,
-                readonly: false,
-            });
+            if (!this.yearsArrayComputed[i]) {
+                this.yearsArrayComputed.push({
+                    key: uuid(),
+                    year: i + 1,
+                    [this.getKeyName()]: 0.0,
+                    readonly: false,
+                });
+            }
         }
     },
     methods: {
-        deletable: function (item, index) {
-            if (0 == index) return false;
-            if (item.id === 0 || !item.readonly)
-                // If the date is a newly added one, or not readonly, it is deletable.
-                return true;
-            return false;
-        },
         getKeyName: function () {
             if (this.incrementType === 'annual_increment_amount')
                 return 'increment_amount';
@@ -174,26 +172,6 @@ export default {
                 [key_name]: 0.0,
                 readonly: false,
             });
-        },
-        removeARow: function (item, e) {
-            let vm = this;
-            let $elem = $(e.target);
-
-            // Fade out a row
-            $elem.closest('.card').remove();
-            if (item.id === 0) {
-                // When a row is newly added one (not stored in the database yet), just remove it from the array
-                console.log('removing a row');
-                console.log(
-                    vm.yearsArrayComputed.filter((i) => i.key !== item.key)
-                );
-                vm.yearsArrayComputed = vm.yearsArrayComputed.filter(
-                    (i) => i.key !== item.key
-                );
-            } else {
-                // When a row is the one already stored in the database, flag it to be deleted.
-                item.to_be_deleted = true;
-            }
         },
     },
 };
