@@ -21,7 +21,7 @@
                             :value="charge_method.id"
                             :disabled="chargeMethodDisabled(charge_method)"
                             required
-                            @change="chargeMethodChanged"
+                            @change="onChargeMethodChange"
                         />
                         <label
                             :for="charge_method.key"
@@ -70,6 +70,7 @@
                     step="100"
                     class="form-control"
                     required
+                    @keyup="updatePreviewInvoices"
                 />
             </div>
         </div>
@@ -90,11 +91,7 @@
                             max="20"
                             step="1"
                             class="form-control"
-                            :readonly="
-                                [2, 3].includes(
-                                    invoicingDetailsComputed.review_repetition_type
-                                )
-                            "
+                            :readonly="crown_land_rent_review_readonly"
                             required
                         />
                     </div>
@@ -125,46 +122,57 @@
                 v-for="custom_cpi_year in invoicingDetailsComputed.custom_cpi_years"
                 :key="custom_cpi_year.year"
             >
-                <div class="row my-2">
-                    <div class="div d-flex align-items-center">
-                        <div class="col-sm-2 pe-3">
-                            <div class="input-group">
-                                <span class="input-group-text">Year</span>
-                                <input
-                                    v-model="custom_cpi_year.year"
-                                    type="text"
-                                    readonly
-                                    class="form-control form-control-year text-center"
-                                />
-                            </div>
+                <div class="div d-flex align-items-center mb-3">
+                    <div class="col-sm-2 pe-3">
+                        <div class="input-group">
+                            <span class="input-group-text">Year</span>
+                            <input
+                                v-model="custom_cpi_year.year"
+                                type="text"
+                                readonly
+                                class="form-control form-control-year text-center"
+                            />
                         </div>
-                        <div class="pe-3">Label</div>
-                        <div class="col-sm-6 pe-3">
-                            <div class="input-group">
-                                <input
-                                    v-model="custom_cpi_year.label"
-                                    type="text"
-                                    class="form-control"
-                                />
-                            </div>
-                        </div>
-                        <label class="col-sm-3">
-                            <div class="input-group w-75">
-                                <span class="input-group-text">CPI</span>
-                                <input
-                                    v-model="custom_cpi_year.percentage"
-                                    step="0.1"
-                                    min="-100"
-                                    max="100"
-                                    type="number"
-                                    class="form-control"
-                                />
-                                <span class="input-group-text">%</span>
-                            </div>
-                        </label>
                     </div>
+                    <div class="pe-3">Label</div>
+                    <div class="col-sm-6 pe-3">
+                        <div class="input-group">
+                            <input
+                                v-model="custom_cpi_year.label"
+                                type="text"
+                                class="form-control"
+                                :required="custom_cpi_year.has_passed"
+                            />
+                        </div>
+                    </div>
+                    <label class="col-sm-3">
+                        <div class="input-group">
+                            <span class="input-group-text">CPI</span>
+                            <input
+                                v-model="custom_cpi_year.percentage"
+                                step="0.1"
+                                min="-100"
+                                max="100"
+                                type="number"
+                                class="form-control"
+                                :required="custom_cpi_year.has_passed"
+                                @change="updatePreviewInvoices"
+                                @keyup="updatePreviewInvoices"
+                            />
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </label>
                 </div>
             </template>
+            <div class="row">
+                <div class="col">
+                    <BootstrapAlert
+                        >You will be sent reminders to enter the custom cpi 60
+                        days and 45 days prior to the next invoicing
+                        period</BootstrapAlert
+                    >
+                </div>
+            </div>
         </div>
         <div v-if="show_cpi_method">
             <div class="row mb-3">
@@ -179,6 +187,7 @@
                         class="form-select"
                         aria-label="CPI Calculation Method"
                         required
+                        @change="updatePreviewInvoices"
                     >
                         <option
                             v-for="cpi_calculation_method in cpi_calculation_methods"
@@ -210,6 +219,7 @@
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
                 @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
+                @onChangePercentage="updatePreviewInvoices"
             />
         </div>
         <div
@@ -231,15 +241,12 @@
                             "
                             type="number"
                             min="1"
-                            max="5"
+                            max="6"
                             step="1"
                             class="form-control"
-                            :readonly="
-                                [2, 3].includes(
-                                    invoicingDetailsComputed.invoicing_repetition_type
-                                )
-                            "
+                            :readonly="invoicing_once_every_readonly"
                             required
+                            @change="updatePreviewInvoices"
                         />
                     </div>
                     <div class="">
@@ -249,7 +256,9 @@
                             "
                             class="form-select"
                             aria-label="Repetition Type"
+                            :disabled="invoicing_repetition_type_disabled"
                             required
+                            @change="onInvoicingRepetitionTypeChange"
                         >
                             <option
                                 v-for="repetition_type in repetition_types"
@@ -259,66 +268,6 @@
                                 {{ repetition_type.display_name }}
                             </option>
                         </select>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div
-            v-if="show_invoicing_frequency"
-            class="row mb-3 pb-3 border-bottom"
-        >
-            <label for="invoicing_frequency" class="col-form-label col-sm-4"
-                >Day of the Month to Invoice</label
-            >
-            <div class="col-sm-8">
-                <div class="d-flex align-items-center">
-                    <div class="pe-3">
-                        <input
-                            v-model="
-                                invoicingDetailsComputed.invoicing_day_of_month
-                            "
-                            type="number"
-                            min="1"
-                            max="28"
-                            step="1"
-                            class="form-control"
-                            required
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div
-            v-if="show_month_of_year_to_invoice"
-            class="row mb-3 border-bottom"
-        >
-            <label for="invoicing_frequency" class="col-form-label col-sm-4"
-                >Month of the Year to Invoice</label
-            >
-            <div class="col-sm-8">
-                <div class="d-flex align-items-center">
-                    <div class="pe-3">
-                        <div class="mb-3">
-                            <select
-                                v-model="
-                                    invoicingDetailsComputed.invoicing_month_of_year
-                                "
-                                class="form-select"
-                            >
-                                <option value="1">January</option>
-                                <option value="2">February</option>
-                                <option value="3">March</option>
-                                <option value="4">April</option>
-                                <option value="5">May</option>
-                                <option value="6">June</option>
-                                <option value="7">July</option>
-                                <option value="8">August</option>
-                                <option value="9">September</option>
-                                <option value="10">October</option>
-                                <option value="11">November</option>
-                                <option value="12">December</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -358,6 +307,7 @@
                 :approval-duration-years="approvalDurationYears"
                 :start-date="startDate"
                 @updateYearsArray="updateYearsArray"
+                @onChangeIncrement="updatePreviewInvoices"
             />
         </div>
         <div v-if="show_fixed_annual_percentage">
@@ -370,14 +320,20 @@
                 :start-date="startDate"
                 :approval-duration-years="approvalDurationYears"
                 @updateYearsArray="updateYearsArray"
+                @onChangeIncrement="updatePreviewInvoices"
             />
         </div>
-        <div v-if="show_invoice_previewer" class="row mb-3 border-bottom">
+        <div
+            v-if="show_invoice_previewer"
+            class="row mb-3 border-bottom justify-content-center"
+        >
             <InvoicePreviewer
                 v-if="
+                    previewInvoices &&
                     invoicingDetailsComputed &&
                     invoicingDetailsComputed.invoicing_repetition_type
                 "
+                :preview-invoices="previewInvoices"
                 :invoicing-details="invoicingDetailsComputed"
                 :start-date="startDate"
                 :expiry-date="expiryDate"
@@ -387,6 +343,7 @@
                     )
                 "
                 :show-past-invoices="context == 'Proposal'"
+                :loading-preview-invoices="loadingPreviewInvoices"
                 @updateDefaultInvoicingDate="updateDefaultInvoicingDate"
             />
         </div>
@@ -463,7 +420,7 @@ import AnnualIncrement from '@/components/common/component_fixed_annual_amount.v
 import PercentageTurnover from '@/components/common/component_percentage_turnover.vue';
 import InvoicePreviewer from '@/components/common//invoice_previewer.vue';
 
-import { api_endpoints, constants, helpers } from '@/utils/hooks';
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 
 export default {
     name: 'InvoicingDetails',
@@ -514,6 +471,8 @@ export default {
             charge_methods: [],
             repetition_types: [],
             cpi_calculation_methods: [],
+            previewInvoices: null,
+            loadingPreviewInvoices: false,
         };
     },
     computed: {
@@ -630,6 +589,22 @@ export default {
         show_crown_land_rent_review_date: function () {
             return this.show_base_fee;
         },
+        crown_land_rent_review_readonly: function () {
+            return this.context != 'Proposal';
+        },
+        invoicing_once_every_readonly: function () {
+            return (
+                [1, 2].includes(
+                    this.invoicingDetailsComputed.invoicing_repetition_type
+                ) || this.context != 'Proposal'
+            );
+        },
+        invoicing_repetition_type_disabled: function () {
+            return this.context != 'Proposal';
+        },
+        invoicing_schedule_disabled: function () {
+            return this.context != 'Proposal';
+        },
         show_invoicing_frequency: function () {
             if (this.invoicingDetails) {
                 if (
@@ -652,7 +627,10 @@ export default {
             return false;
         },
         show_invoice_previewer: function () {
-            if (this.context != 'Proposal') {
+            if (
+                this.context != 'Proposal' &&
+                this.getChargeMethodIdByKey('percentage_of_gross_turnover')
+            ) {
                 return false;
             }
             if (this.invoicingDetails) {
@@ -719,22 +697,26 @@ export default {
     methods: {
         getCustomCPIYears: function () {
             const rows = [];
+            let periodStartDate = moment(this.startDate);
             for (let i = 0; i < this.approvalDurationYears; i++) {
+                let hasPassed = periodStartDate.isSameOrBefore(moment());
                 if (!this.invoicingDetailsComputed.custom_cpi_years[i]) {
                     rows.push({
                         year: i + 1,
                         label: '',
-                        percentage: 0.0,
+                        percentage: null,
+                        has_passed: hasPassed,
                     });
                 } else {
                     rows.push(
                         this.invoicingDetailsComputed.custom_cpi_years[i]
                     );
                 }
+                periodStartDate = periodStartDate.add(1, 'year');
             }
             return rows;
         },
-        chargeMethodChanged: function (event) {
+        onChargeMethodChange: function (event) {
             this.$nextTick(() => {
                 $(event.target)
                     .closest('.row')
@@ -750,6 +732,13 @@ export default {
             } else {
                 this.invoicingDetailsComputed.invoicing_repetition_type = 1;
             }
+            this.updatePreviewInvoices();
+        },
+        onInvoicingRepetitionTypeChange: function (event) {
+            if (['1', '2'].includes(event.target.value)) {
+                this.invoicingDetailsComputed.invoicing_once_every = 1;
+            }
+            this.updatePreviewInvoices();
         },
         updateReviewDates: function (review_dates) {
             this.invoicingDetailsComputed = {
@@ -838,6 +827,8 @@ export default {
                 if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
                 let charge_methods = await res.json();
                 vm.charge_methods = charge_methods;
+                // This has to happen here as the show_invoice_previewer computed method depends on the charge_method key
+                this.fetchPreviewInvoices();
             } catch (err) {
                 console.log({ err });
             }
@@ -892,6 +883,32 @@ export default {
             } catch (err) {
                 console.log({ err });
             }
+        },
+        fetchPreviewInvoices: async function () {
+            if (!this.show_invoice_previewer) {
+                return;
+            }
+            this.previewInvoices = await utils.fetchUrl(
+                api_endpoints.invoicing_details +
+                    `${this.invoicingDetails.id}/preview_invoices/`
+            );
+        },
+        updatePreviewInvoices: async function () {
+            if (!this.show_invoice_previewer) {
+                return;
+            }
+            const requestOptions = {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.invoicingDetailsComputed),
+            };
+            this.loadingPreviewInvoices = true;
+            this.previewInvoices = await utils.fetchUrl(
+                api_endpoints.invoicing_details +
+                    `${this.invoicingDetails.id}/update_and_preview_invoices/`,
+                requestOptions
+            );
+            this.loadingPreviewInvoices = false;
         },
     },
 };
