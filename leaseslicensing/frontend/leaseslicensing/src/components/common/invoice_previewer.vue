@@ -12,25 +12,35 @@
             >Additional invoices may be created if there is a discrepency
             between the quarterly and annual turnover</BootstrapAlert
         >
-        <table class="table table-sm table-striped">
+        <div v-if="loadingPreviewInvoices" class="text-center">
+            <BootstrapSpinner
+                class="text-primary invoice-preview-spinner"
+                :center-of-screen="false"
+            />
+        </div>
+
+        <table v-else class="table table-sm table-striped text-left">
             <thead>
                 <tr>
-                    <th>Number</th>
-                    <th>Issue Date</th>
-                    <th>Time Period</th>
-                    <th>Amount</th>
+                    <th class="text-left">Number</th>
+                    <th class="text-left">Issue Date</th>
+                    <th class="text-left">Time Period</th>
+                    <th class="text-left">Amount</th>
                 </tr>
             </thead>
             <tbody>
-                <template v-for="invoice in invoices" :key="invoice.number">
+                <template
+                    v-for="invoice in previewInvoices"
+                    :key="invoice.number"
+                >
                     <tr v-if="!invoice.hide">
                         <td>{{ invoice.number }}</td>
-                        <td>{{ invoice.issueDate }}</td>
-                        <td>{{ invoice.timePeriod }}</td>
+                        <td>{{ invoice.issue_date }}</td>
+                        <td>{{ invoice.time_period }}</td>
                         <td>
-                            {{ invoice.amountObject.prefix }}
-                            {{ invoice.amountObject.amount }}
-                            {{ invoice.amountObject.suffix }}
+                            {{ invoice.amount_object.prefix }}
+                            {{ invoice.amount_object.amount }}
+                            {{ invoice.amount_object.suffix }}
                         </td>
                     </tr>
                 </template>
@@ -50,12 +60,18 @@
 </template>
 
 <script>
+// Todo: Remove all the code that was used to generate the invoice preview
+// as that is now done on the backend
 import currency from 'currency.js';
 import { helpers } from '@/utils/hooks';
 
 export default {
     name: 'InvoicePreviewer',
     props: {
+        previewInvoices: {
+            type: Array,
+            required: true,
+        },
         invoicingDetails: {
             type: Object,
             required: true,
@@ -70,6 +86,10 @@ export default {
         },
         chargeMethodKey: {
             type: String,
+            required: true,
+        },
+        loadingPreviewInvoices: {
+            type: Boolean,
             required: true,
         },
         showPastInvoices: {
@@ -146,11 +166,9 @@ export default {
             if (!this.invoicingDetails.base_fee_amount) {
                 return `Enter Base Fee`;
             }
-            let totalAmount = this.invoices
-                .filter((amountObject) => !amountObject.hide)
-                .reduce(function (a, b) {
-                    return currency(b['amountObject'].amount).add(currency(a));
-                }, 0);
+            let totalAmount =
+                this.previewInvoices[this.previewInvoices.length - 1]
+                    .amount_running_total;
 
             return `$${totalAmount}`;
         },
@@ -220,7 +238,6 @@ export default {
             var daysRunningTotal = 0;
             var amountRunningTotal = currency(0.0);
             var issueDate = firstIssueDate.clone();
-            console.log('\n\n\nfirstIssueDate', firstIssueDate);
 
             for (let i = 0; i < this.invoicingPeriods.length; i++) {
                 // Net 30 payment terms
