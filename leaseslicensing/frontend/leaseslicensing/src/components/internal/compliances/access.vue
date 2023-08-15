@@ -1150,7 +1150,7 @@ export default {
         },
         acceptCompliance: async function () {
             let vm = this;
-            await swal.fire({
+            swal.fire({
                 title: `Approve Compliance ${vm.compliance.lodgement_number}`,
                 text: 'Are you sure you want to approve this compliance?',
                 icon: 'question',
@@ -1163,25 +1163,30 @@ export default {
                     confirmButton: 'btn btn-primary',
                     cancelButton: 'btn btn-secondary me-2',
                 },
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await helpers
+                        .fetchWrapper(
+                            helpers.add_endpoint_json(
+                                api_endpoints.compliances,
+                                vm.compliance.id + '/accept'
+                            )
+                        )
+                        .then(function (response) {
+                            vm.compliance = Object.assign({}, response);
+                            Swal.fire({
+                                title: 'Success',
+                                text: `Compliance ${vm.compliance.reference} has been approved.`,
+                                icon: 'success',
+                                timer: 2000,
+                                showConfirmButton: false,
+                            });
+                            vm.$router.push({
+                                name: 'internal-compliances-dash',
+                            });
+                        });
+                }
             });
-            await helpers
-                .fetchWrapper(
-                    helpers.add_endpoint_json(
-                        api_endpoints.compliances,
-                        vm.compliance.id + '/accept'
-                    )
-                )
-                .then(function (response) {
-                    vm.compliance = Object.assign({}, response);
-                    Swal.fire({
-                        title: 'Success',
-                        text: `Compliance ${vm.compliance.reference} has been approved.`,
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false,
-                    });
-                    vm.$router.push({ name: 'internal-compliances-dash' });
-                });
         },
         amendmentRequest: function () {
             this.$refs.amendment_request.amendment.compliance =
