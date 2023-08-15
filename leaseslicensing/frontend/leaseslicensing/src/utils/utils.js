@@ -364,7 +364,7 @@ export default {
      * @todo Items for future:
      * 1) Best practice way to deal with the resolve and reject from calling code.
      * 2) Does our !response.ok block act appropriately for all possible error response formats that django and drf can respond with.
-     * 3) Doesn't handle the fact that 500 errors can be either response.ok = false or response.ok = true. Therefor is falling
+     * 3) Doesn't handle the fact that 500 errors from django often aren't formatted as json. Therefor is falling
      *      into the network error catch block for 500 errors that don't send a valid response.
      */
     fetchUrl: async function (url, options) {
