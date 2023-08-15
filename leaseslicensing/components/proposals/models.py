@@ -2555,15 +2555,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             checking_proposal = self
 
-            approval_type_id = checking_proposal.proposed_issuance_approval[
-                "approval_type"
-            ]
+            approval_type_id = checking_proposal.proposed_issuance_approval.get(
+                "approval_type", None
+            )
             approval_type = ApprovalType.objects.get(id=approval_type_id)
             document_generator = ApprovalDocumentGenerator()
             if (
                 self.proposal_type.code == PROPOSAL_TYPE_RENEWAL
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
             ):
+                # Lease License (Renewal)
                 if self.previous_application:
                     previous_approval = self.previous_application.approval
                     approval, created = Approval.objects.update_or_create(
@@ -2586,6 +2587,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
             ):
+                # Lease License (Amendment)
                 if self.previous_application:
                     previous_approval = self.previous_application.approval
                     approval, created = Approval.objects.update_or_create(
@@ -2616,7 +2618,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     self.application_type.name
                     == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
                 ):
-                    # Registration of interest (New)
+                    # Registration of Interest (New)
                     if (
                         self.proposed_issuance_approval.get("decision")
                         == "approve_lease_licence"
@@ -2646,19 +2648,24 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         )
                 elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
                     # Lease Licence (New)
+                    start_date = checking_proposal.proposed_issuance_approval.get(
+                        "start_date", None
+                    )
+                    expiry_date = checking_proposal.proposed_issuance_approval.get(
+                        "expiry_date", None
+                    )
                     approval, created = Approval.objects.update_or_create(
                         current_proposal=checking_proposal,
                         defaults={
                             "issue_date": timezone.now(),
-                            "expiry_date": timezone.now().date()
-                            + relativedelta(years=1),
-                            "start_date": timezone.now().date(),
+                            "expiry_date": datetime.datetime.strptime(
+                                expiry_date, "%Y-%m-%d"
+                            ),
+                            "start_date": datetime.datetime.strptime(
+                                start_date, "%Y-%m-%d"
+                            ),
                             "record_management_number": record_management_number,
                         },
-                    )
-
-                    checking_proposal.proposed_issuance_approval.get(
-                        "approval_type", None
                     )
 
                     # Attach lease license documents as provided by the assessor to the approval
