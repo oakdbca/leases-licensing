@@ -126,9 +126,23 @@
                             <div class="row mb-3">
                                 <label
                                     for="approvalType"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label text-nowrap"
                                     >Approval Type</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !approvedBy &&
+                                            !approvedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The approval type has been set to the approval type of the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <select
                                         ref="select_approvaltype"
@@ -154,9 +168,23 @@
                             <div class="row mb-3">
                                 <label
                                     for="start_date"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label"
                                     >Commencement</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !approvedBy &&
+                                            !approvedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The commencement date has been set to one day after the expiry date of the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <div
                                         ref="start_date"
@@ -184,9 +212,23 @@
                             <div class="row mb-3">
                                 <label
                                     for="due_date"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label"
                                     >Expiry</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !approvedBy &&
+                                            !approvedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The duration has been set to the same duration as the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <div
                                         ref="due_date"
@@ -263,9 +305,24 @@
                             <div class="row mb-3">
                                 <label
                                     for="approval_cc"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label text-nowrap"
                                     >CC Emails</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            approval.cc_email &&
+                                            !approvedBy &&
+                                            !approvedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="Emails have been applied from the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <input
                                         ref="cc_email"
@@ -306,12 +363,26 @@
                             <div class="row mb-3">
                                 <div class="col-sm-4">
                                     <label
-                                        class="form-label"
+                                        class="col-form-label text-nowrap"
                                         for="recordManagementNumber"
                                         >Record Management Number</label
                                     >
                                 </div>
-                                <div class="col-sm-8">
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !approvedBy &&
+                                            !approvedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The Record Management Number has been applied from the current approval."
+                                    ></i>
+                                </div>
+                                <div class="col-sm-7">
                                     <input
                                         v-model="
                                             approval.record_management_number
@@ -510,6 +581,7 @@ export default {
             } else if (
                 this.proposal.application_type.name ==
                     constants.APPLICATION_TYPES.LEASE_LICENCE &&
+                this.approval.details &&
                 this.proposal.proposed_decline_status == false
             ) {
                 return this.approval.details;
@@ -543,6 +615,8 @@ export default {
         title: function () {
             return this.processing_status == 'With Approver'
                 ? `Issue Approval for ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`
+                : this.isRenewal
+                ? `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number} - Renewal`
                 : `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`;
         },
         is_amendment: function () {
@@ -586,6 +660,15 @@ export default {
             }
             return false;
         },
+        isRenewal: function () {
+            return this.proposal_type == 'renewal' ? true : false;
+        },
+        approvedBy: function () {
+            return this.proposal.proposed_issuance_approval.approved_by;
+        },
+        approvedOn: function () {
+            return this.proposal.proposed_issuance_approval.approved_on;
+        },
     },
     created: async function () {
         let vm = this;
@@ -625,6 +708,7 @@ export default {
             }
 
             this.initSelectApprovalType();
+            this.initTooltipStyling();
         });
     },
     methods: {
@@ -841,6 +925,23 @@ export default {
                     // eslint-disable-next-line no-unused-vars
                     let unselected_id = e.params.data.id;
                 });
+        },
+        /**
+         * Changes (i-tag) tooltip appearance to the style of bs alert classes
+         */
+        initTooltipStyling: function () {
+            var tooltipTriggerList = [].slice.call(
+                document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            );
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            $('i[data-bs-toggle="tooltip"]').on('mouseenter', function () {
+                let color = $(this).data('color');
+                $('.tooltip-inner').css({
+                    'background-color': `var(--bs-${color})`,
+                });
+            });
         },
     },
 };
