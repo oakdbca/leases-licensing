@@ -19,6 +19,7 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_datatables.filters import DatatablesFilterBackend
 
+from leaseslicensing.components.approvals.serializers import ApprovalSerializer
 from leaseslicensing.components.invoicing.email import (
     send_new_invoice_raised_notification,
 )
@@ -420,3 +421,12 @@ class InvoicingDetailsViewSet(LicensingViewset):
     @action(methods=["GET"], detail=True)
     def preview_invoices(self, request, *args, **kwargs):
         return Response(self.get_object().preview_invoices)
+
+    @action(methods=["PUT"], detail=True)
+    def complete_editing(self, request, *args, **kwargs):
+        self.update(request, *args, **kwargs)
+        instance = self.get_object()
+        instance.approval.status = instance.approval.APPROVAL_STATUS_CURRENT
+        instance.approval.save()
+        serializer = ApprovalSerializer(instance.approval, context={"request": request})
+        return Response(serializer.data)
