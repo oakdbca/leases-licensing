@@ -71,6 +71,7 @@
                 <!-- Main contents -->
                 <template v-if="display_approval_screen">
                     <ApprovalScreen
+                        ref="approval_screen"
                         :proposal="proposal"
                         :readonly="readonly"
                         @updateInvoicingDetails="updateInvoicingDetails"
@@ -1620,18 +1621,18 @@ export default {
             return false;
         },
         completeEditing: async function () {
+            var chargeType = $(
+                'input[type=radio][name=charge_method]:checked'
+            ).attr('id');
             let cancelled = false;
-            if (
-                'once_off_charge' ==
-                $('input[type=radio][name=charge_method]:checked').attr('id')
-            ) {
+            if (constants.CHARGE_METHODS.ONCE_OFF_CHARGE.ID == chargeType) {
                 await swal
                     .fire({
                         title: 'Confirm Once Off Invoice',
                         text: 'You have selected to invoice as a once off charge, \
                         this will create a new invoice record. An oracle invoice must \
                         be attached to the new invoice record before the system will send a payment request to the proponent.',
-                        icon: 'warning',
+                        icon: 'info',
                         showCancelButton: true,
                         buttonsStyling: false,
                         confirmButtonText: 'Confirm',
@@ -1647,6 +1648,63 @@ export default {
                         }
                     });
             }
+            if (
+                [
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT.ID,
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE.ID,
+                    constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM.ID,
+                    constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID,
+                ].includes(chargeType)
+            ) {
+                let previewInvoices =
+                    this.$refs.approval_screen.$refs.invoicing_details
+                        .previewInvoices;
+                let immediateInvoicesHtml =
+                    '<p>Based on the information you have entered, the following invoice records will be generated:</p>';
+                immediateInvoicesHtml +=
+                    '<table class="table table-sm table-striped">';
+                immediateInvoicesHtml +=
+                    '<thead><tr><th>Number</th><th>Issue Date</th><th>Time Period</th><th>Amount</th></tr></thead><tbody>';
+
+                for (let i = 0; i < previewInvoices.length; i++) {
+                    let invoice = previewInvoices[i];
+                    if (invoice.start_date_has_passed) {
+                        immediateInvoicesHtml += '<tr>';
+                        immediateInvoicesHtml += `<td>${invoice.number}</td>`;
+                        immediateInvoicesHtml += `<td>${invoice.issue_date}</td>`;
+                        immediateInvoicesHtml += `<td>${invoice.time_period}</td>`;
+                        immediateInvoicesHtml += `<td>${invoice.amount_object.prefix}${invoice.amount_object.amount}${invoice.amount_object.suffix}</td>`;
+                        immediateInvoicesHtml += '</tr>';
+                    }
+                }
+                immediateInvoicesHtml += '</tbody></table>';
+                immediateInvoicesHtml +=
+                    '<p class="fs-6 text-muted">* An oracle invoice must be attached to each invoice record before the request for payment will be sent.</p>';
+                await swal
+                    .fire({
+                        title: 'Confirm Immediate Invoice Generation',
+                        html: immediateInvoicesHtml,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Confirm',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'swal-extra-wide',
+                            confirmButton: 'btn btn-primary',
+                            cancelButton: 'btn btn-secondary me-2',
+                        },
+                        confirmButtonColor: '#3085d6',
+                        reverseButtons: true,
+                    })
+                    .then((result) => {
+                        if (result.isDismissed) {
+                            cancelled = true;
+                        }
+                    });
+            }
+
             if (!cancelled) {
                 const payload = { proposal: this.proposal };
                 const res = await fetch(
