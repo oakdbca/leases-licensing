@@ -430,6 +430,8 @@ export default {
                     if (vm.is_internal) {
                         if (full.accessing_user_can_process) {
                             links += `<a href='/internal/proposal/${full.id}'>Process</a><br/>`;
+                        } else if (full.can_edit_invoicing_details) {
+                            links += `<a href='/internal/proposal/${full.id}'>Edit Invoicing</a><br/>`;
                         } else {
                             links += `<a href='/internal/proposal/${full.id}'>View</a><br/>`;
                         }

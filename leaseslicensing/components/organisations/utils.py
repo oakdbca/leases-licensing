@@ -2,6 +2,7 @@ import random
 import string
 
 from django.conf import settings
+from django.core.exceptions import EmptyResultSet
 
 from leaseslicensing.helpers import belongs_to_by_user_id
 
@@ -130,13 +131,18 @@ def get_organisation_ids_for_user(email_user_id):
         )
     )
 
+
 def get_admin_emails_for_organisation(organisation_id):
     from leaseslicensing.components.organisations.models import OrganisationContact
 
-    return list(
-        OrganisationContact.objects.filter(
-            organisation_id=organisation_id,
-            user_status="active",
-            user_role="organisation_admin",
-        ).values_list("email", flat=True)
-    )
+    active_admin_contacts = OrganisationContact.objects.filter(
+        organisation_id=organisation_id,
+        user_status="active",
+        user_role="organisation_admin",
+    ).values_list("email", flat=True)
+    if active_admin_contacts.count() == 0:
+        raise EmptyResultSet(
+            f"No active admin contacts found for Organisation: {organisation_id}"
+        )
+
+    return list(active_admin_contacts)

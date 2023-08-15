@@ -166,7 +166,7 @@ export default {
             let vm = this
             $(vm.$refs.email_users)
                 .select2({
-                    dropdownParent: $('#modal_add_party'),
+                    dropdownParent: $('#modal_add_party .modal'),
                     minimumInputLength: 2,
                     theme: 'bootstrap-5',
                     allowClear: true,
@@ -199,7 +199,7 @@ export default {
             let vm = this
             $(vm.$refs.organisations)
                 .select2({
-                    dropdownParent: $('#modal_add_party'),
+                    dropdownParent: $('#modal_add_party .modal'),
                     minimumInputLength: 2,
                     theme: 'bootstrap-5',
                     allowClear: true,

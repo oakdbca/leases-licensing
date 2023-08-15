@@ -34,10 +34,10 @@ const customHeadersJSON = new Headers({
     'Content-Type': 'application/json',
 });
 // eslint-disable-next-line no-global-assign
-fetch = (originalFetch => {
+fetch = ((originalFetch) => {
     return (...args) => {
         if (args.length > 1) {
-            if (typeof (args[1].body) === 'string') {
+            if (typeof args[1].body === 'string') {
                 args[1].headers = customHeadersJSON;
             } else {
                 args[1].headers = customHeaders;
@@ -49,6 +49,20 @@ fetch = (originalFetch => {
 })(fetch);
 
 const app = createApp(App);
+
+app.config.globalProperties.$filters = {
+    pretty(val, indent = 2) {
+        if (typeof val !== 'object') {
+            try {
+                val = JSON.parse(val);
+            } catch (err) {
+                console.warn('value is not JSON');
+                return val;
+            }
+        }
+        return JSON.stringify(val, null, indent);
+    },
+};
 
 app.use(router).use(govVue3Components).use(CKEditor);
 router.isReady().then(() => app.mount('#app'));

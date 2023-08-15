@@ -10,6 +10,8 @@ os.environ.setdefault("BASE_DIR", BASE_DIR)
 
 from ledger_api_client.settings_base import *  # noqa: F403
 
+WORKING_FROM_HOME = env("WORKING_FROM_HOME", False)
+
 if DEBUG:
     ADMINS = [
         ("Oak McIlwain", "oak.mcilwain@dbca.wa.gov.au"),
@@ -43,8 +45,8 @@ STATIC_URL = "/static/"
 INSTALLED_APPS += [
     "reversion",
     "reversion_compare",
-    # 'bootstrap3',
     "webtemplate_dbca",
+    "ledger_api_client",
     "leaseslicensing",
     "leaseslicensing.components.main",
     "leaseslicensing.components.organisations",
@@ -59,7 +61,6 @@ INSTALLED_APPS += [
     "rest_framework",
     "rest_framework_datatables",
     "rest_framework_gis",
-    "ledger_api_client",
     "ckeditor",
 ]
 
@@ -164,7 +165,9 @@ SYSTEM_NAME = env("SYSTEM_NAME", "Leases and Licensing")
 SYSTEM_NAME_SHORT = env("SYSTEM_NAME_SHORT", "LALS")
 SITE_PREFIX = env("SITE_PREFIX")
 SITE_DOMAIN = env("SITE_DOMAIN")
-SUPPORT_EMAIL = env("SUPPORT_EMAIL", "licensing@" + SITE_DOMAIN).lower()
+
+LEASES_LICENSING_EXTERNAL_URL = env("LEASES_LICENSING_EXTERNAL_URL")
+
 DEP_URL = env("DEP_URL", "www." + SITE_DOMAIN)
 DEP_PHONE = env("DEP_PHONE", "(08) 9219 9978")
 DEP_PHONE_FILMING = env("DEP_PHONE_FILMING", "(08) 9219 8411")
@@ -179,16 +182,23 @@ BRANCH_NAME = env("BRANCH_NAME", "Leases and Licensing Branch")
 DEP_ADDRESS = env("DEP_ADDRESS", "17 Dick Perry Avenue, Kensington WA 6151")
 SITE_URL = env("SITE_URL", "https://" + SITE_PREFIX + "." + SITE_DOMAIN)
 PUBLIC_URL = env("PUBLIC_URL", SITE_URL)
-DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@" + SITE_DOMAIN).lower()
 MEDIA_APP_DIR = env("MEDIA_APP_DIR", "leaseslicensing")
 CRON_RUN_AT_TIMES = env("CRON_RUN_AT_TIMES", "04:05")
-CRON_EMAIL = env("CRON_EMAIL", "cron@" + SITE_DOMAIN).lower()
 # for ORACLE Job Notification - override settings_base.py
+
+CRON_EMAIL = env("CRON_EMAIL", "cron@" + SITE_DOMAIN).lower()
+CRON_NOTIFICATION_EMAIL = env("CRON_NOTIFICATION_EMAIL", NOTIFICATION_EMAIL).lower()
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "no-reply@" + SITE_DOMAIN).lower()
+SUPPORT_EMAIL = env("SUPPORT_EMAIL", "licensing@" + SITE_DOMAIN).lower()
 EMAIL_FROM = DEFAULT_FROM_EMAIL
+LEASING_FINANCE_NOTIFICATION_EMAIL = env(
+    "LEASING_FINANCE_NOTIFICATION_EMAIL", "leasing@dbca.wa.gov.au"
+)
+
 OTHER_PAYMENT_ALLOWED = env("OTHER_PAYMENT_ALLOWED", False)  # Cash/Cheque
 
-EMAIL_DELIVERY = env('EMAIL_DELIVERY', 'off')
-EMAIL_INSTANCE = env('EMAIL_INSTANCE', 'DEV')
+EMAIL_DELIVERY = env("EMAIL_DELIVERY", "off")
+EMAIL_INSTANCE = env("EMAIL_INSTANCE", "DEV")
 
 OSCAR_BASKET_COOKIE_OPEN = "cols_basket"
 PAYMENT_SYSTEM_ID = env("PAYMENT_SYSTEM_ID", "S675")
@@ -198,7 +208,8 @@ PAYMENT_SYSTEM_PREFIX = env(
 os.environ[
     "LEDGER_PRODUCT_CUSTOM_FIELDS"
 ] = "('ledger_description','quantity','price_incl_tax','price_excl_tax','oracle_code')"
-CRON_NOTIFICATION_EMAIL = env("CRON_NOTIFICATION_EMAIL", NOTIFICATION_EMAIL).lower()
+
+LEDGER_DEFAULT_LINE_STATUS = 1
 
 if not VALID_SYSTEMS:
     VALID_SYSTEMS = [PAYMENT_SYSTEM_ID]
@@ -348,21 +359,30 @@ APPLICATION_TYPES = [
     (APPLICATION_TYPE_LEASE_LICENCE, "Lease Licence"),
 ]
 KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
+
+ABS_API_URL = env("ABS_API_URL", "https://api.data.abs.gov.au")
+ABS_API_CPI_SUBDIRECTORY = env("ABD_API_CPI_PATH", "/data/CPI/")
+ABS_API_CPI_PATH = env("ABD_API_CPI_PATH", "3.10001.10.5.Q")
+
 KMI_AUTH_USERNAME = env("KMI_AUTH_USERNAME")
 KMI_AUTH_PASSWORD = env("KMI_AUTH_PASSWORD")
 
 APPROVAL_RENEWAL_DAYS_PRIOR_TO_EXPIRY = 90
+
+DEFAULT_DAYS_BEFORE_PAYMENT_DUE = 30  # Net 30 Payment terms
+
+DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD = 30
 
 template_title = "Leases and Licensing"
 template_group = "parkswildlife"
 
 LEDGER_TEMPLATE = "bootstrap5"
 LEDGER_UI_ACCOUNTS_MANAGEMENT = [
-   {'first_name': {'options': {'view': True, 'edit': True}}},
-   {'last_name': {'options': {'view': True, 'edit': True}}},
-   {'residential_address': {'options': {'view': True, 'edit': True}}},
-   {'phone_number': {'options': {'view': True, 'edit': True}}},
-   {'mobile_number': {'options': {'view': True, 'edit': True}}},
+    {"first_name": {"options": {"view": True, "edit": True}}},
+    {"last_name": {"options": {"view": True, "edit": True}}},
+    {"residential_address": {"options": {"view": True, "edit": True}}},
+    {"phone_number": {"options": {"view": True, "edit": True}}},
+    {"mobile_number": {"options": {"view": True, "edit": True}}},
 ]
 LEDGER_UI_CARDS_MANAGEMENT = True
 
@@ -390,9 +410,11 @@ CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE = (
     "base_fee_plus_fixed_annual_percentage"
 )
 CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI = "base_fee_plus_annual_cpi"
+CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM = "base_fee_plus_annual_cpi_custom"
 CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER = "percentage_of_gross_turnover"
 CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE = "no_rent_or_licence_charge"
 CHARGE_METHODS = (
+    (CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE, "No Charge"),
     (CHARGE_METHOD_ONCE_OFF_CHARGE, "Once-off Charge"),
     (
         CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT,
@@ -402,10 +424,21 @@ CHARGE_METHODS = (
         CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE,
         "Base Fee Plus Fixed Annual Percentage",
     ),
-    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base Fee Plus Annual CPI"),
+    (
+        CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM,
+        "Base Fee Plus Annual CPI (Custom)",
+    ),
+    (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base Fee Plus Annual CPI (ABS)"),
     (CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER, "Percentage of Gross Turnover"),
-    (CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE, "No Charge"),
 )
+
+CHARGE_METHODS_REQUIRING_CROWN_LAND_RENT_REVIEW = [
+    CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM,
+    CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI,
+    CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT,
+    CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE,
+]
+
 REPETITION_TYPE_ANNUALLY = "annually"
 REPETITION_TYPE_QUARTERLY = "quarterly"
 REPETITION_TYPE_MONTHLY = "monthly"
@@ -416,6 +449,37 @@ REPETITION_TYPES = (
 )
 
 LATEST_REFERRAL_COUNT = 5
+
+# ---------- Standard Requirements ----------
+
+INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUAL = (
+    "invoicing_percentage_gross_turnover_annual"
+)
+INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTER = (
+    "invoicing_percentage_gross_turnover_quarter"
+)
+
+# ---------- CPI Calculation Methods ----------
+
+CPI_CALCULATION_METHOD_LATEST_SEP_QUARTER = "latest_sep_qtr"
+CPI_CALCULATION_METHOD_LATEST_DEC_QUARTER = "latest_dec_qtr"
+CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER = "latest_mar_qtr"
+CPI_CALCULATION_METHOD_LATEST_JUN_QUARTER = "latest_jun_qtr"
+CPI_CALCULATION_METHOD_LATEST_QUARTER = "latest_qtr"
+CPI_CALCULATION_METHOD_AVERAGE_LATEST_FOUR_QUARTERS = "average_latest_four_qtrs"
+
+CPI_CALCULATION_METHODS = (
+    (CPI_CALCULATION_METHOD_LATEST_SEP_QUARTER, "Latest September Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_DEC_QUARTER, "Latest December Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER, "Latest March Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_JUN_QUARTER, "Latest June Quarter"),
+    (CPI_CALCULATION_METHOD_LATEST_QUARTER, "Latest Quarter"),
+    (
+        CPI_CALCULATION_METHOD_AVERAGE_LATEST_FOUR_QUARTERS,
+        "Average of Latest Four Quarters",
+    ),
+)
+
 
 # ---------- Identifier fields for logging ----------
 

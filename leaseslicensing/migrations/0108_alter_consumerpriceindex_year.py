@@ -11,9 +11,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='consumerpriceindex',
-            name='year',
-            field=models.PositiveSmallIntegerField(blank=True, default=leaseslicensing.components.invoicing.models.get_year, null=True),
-        ),
+        # function used in default no longer exists
+        # migrations.AlterField(
+        #     model_name='consumerpriceindex',
+        #     name='year',
+        #     field=models.PositiveSmallIntegerField(blank=True, default=leaseslicensing.components.invoicing.models.get_year, null=True),
+        # ),
     ]

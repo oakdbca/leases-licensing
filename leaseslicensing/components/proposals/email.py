@@ -1,5 +1,5 @@
-import re
 import logging
+import re
 from datetime import datetime
 
 from django.conf import settings
@@ -12,6 +12,7 @@ from django.utils.encoding import smart_text
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
+from leaseslicensing.helpers import emails_list_for_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
@@ -61,7 +62,10 @@ def send_referral_complete_email_notification(referral, request):
     email_user = retrieve_email_user(referral.referral)
 
     email = TemplateEmailBase(
-        subject=f"{email_user.get_full_name()} has Completed Referral for {application_type} Application {referral.proposal.lodgement_number}",
+        subject=(
+            f"{email_user.get_full_name()} has Completed Referral for "
+            f"{application_type} Application {referral.proposal.lodgement_number}"
+        ),
         html_template="leaseslicensing/emails/proposals/send_referral_complete_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_referral_complete_notification.txt",
     )
@@ -103,7 +107,10 @@ def send_pending_referrals_complete_email_notification(referral, request):
     proposal = referral.proposal
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject=f"All pending referrals for {application_type} Application: {proposal.lodgement_number} have been completed.",
+        subject=(
+            f"All pending referrals for {application_type} Application: "
+            f"{proposal.lodgement_number} have been completed."
+        ),
         html_template="leaseslicensing/emails/proposals/send_pending_referrals_complete_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_pending_referrals_complete_notification.txt",
     )
@@ -255,7 +262,7 @@ def send_approver_decline_email_notification(reason, request, proposal):
     context = {"proposal": proposal, "reason": reason, "url": url}
 
     cc_email_str = request.data.get("cc_email", None)
-    cc_emails = re.split("[\s,;]+", cc_email_str) if cc_email_str else []
+    cc_emails = re.split(r"[\s,;]+", cc_email_str) if cc_email_str else []
 
     msg = email.send(proposal.approver_recipients, cc=cc_emails, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
@@ -402,9 +409,8 @@ def send_proposal_approval_email_notification(proposal, request):
     )
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
 
-    email_entry = _log_proposal_email(msg, proposal, sender=sender)
-
     # Commented out as we have removed the create approval pdf method for now
+    # email_entry = _log_proposal_email(msg, proposal, sender=sender)
     # path_to_file = "{}/proposals/{}/approvals/{}".format(
     #     settings.MEDIA_APP_DIR, proposal.id, file_name
     # )
@@ -435,7 +441,13 @@ def send_license_ready_for_invoicing_notification(proposal, request):
 
     context = {"proposal": proposal, "url": url}
 
-    msg = email.send(proposal.approver_recipients, context=context)
+    finance_group_member_emails = emails_list_for_group(settings.GROUP_FINANCE)
+
+    msg = email.send(
+        finance_group_member_emails,
+        cc=[settings.LEASING_FINANCE_NOTIFICATION_EMAIL],
+        context=context,
+    )
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, proposal, sender=sender)
 
@@ -496,8 +508,13 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
         _log_user_email(msg, proposal.ind_applicant, proposal.submitter, sender=sender)
 
 
-def send_external_referee_invite_email(proposal, request, external_referee_invite, reminder=False):
-    subject = f"Referral Request for DBCA {proposal.application_type.name_display} Application: {proposal.lodgement_number}"
+def send_external_referee_invite_email(
+    proposal, request, external_referee_invite, reminder=False
+):
+    subject = (
+        f"Referral Request for DBCA {proposal.application_type.name_display} "
+        f"Application: {proposal.lodgement_number}"
+    )
     if reminder:
         subject = f"Reminder: {subject}"
     email = TemplateEmailBase(

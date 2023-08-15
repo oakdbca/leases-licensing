@@ -68,7 +68,7 @@ from leaseslicensing.components.users.serializers import (
     UserAddressSerializer,
     UserSerializer,
 )
-from leaseslicensing.helpers import is_assessor, is_internal
+from leaseslicensing.helpers import is_assessor, is_finance_officer, is_internal
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import GROUP_NAME_CHOICES
 
@@ -419,6 +419,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     details_url = serializers.SerializerMethodField(read_only=True)
     competitive_process = serializers.SerializerMethodField(read_only=True)
+    can_edit_invoicing_details = serializers.SerializerMethodField(read_only=True)
 
     # Gis data fields
     identifiers = serializers.SerializerMethodField()
@@ -655,6 +656,14 @@ class BaseProposalSerializer(serializers.ModelSerializer):
 
         return roles
 
+    def get_can_edit_invoicing_details(self, obj):
+        request = self.context["request"]
+        return (
+            Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+            == obj.processing_status
+            and is_finance_officer(request)
+        )
+
     def get_competitive_process(self, obj):
         if obj.originating_competitive_process:
             return CompetitiveProcessSerializer(
@@ -802,6 +811,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "readonly",
             "can_user_edit",
             "can_user_view",
+            "can_edit_invoicing_details",
             "reference",
             "lodgement_number",
             "lodgement_sequence",
@@ -834,6 +844,7 @@ class ListProposalSerializer(BaseProposalSerializer):
             "lodgement_number",
             "can_officer_process",
             "accessing_user_can_process",
+            "can_edit_invoicing_details",
             "site_name",
             "groups",
         )
@@ -1213,6 +1224,8 @@ class InternalProposalSerializer(BaseProposalSerializer):
     approved_by = serializers.SerializerMethodField()
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     requirements = serializers.SerializerMethodField()
+    can_edit_invoicing_details = serializers.SerializerMethodField()
+    approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
 
     class Meta:
         model = Proposal
@@ -1240,6 +1253,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "readonly",
             "can_user_edit",
             "can_user_view",
+            "can_edit_invoicing_details",
             "documents_url",
             "assessor_mode",
             "current_assessor",
@@ -1326,26 +1340,25 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "details_url",
             "external_referral_invites",
             "competitive_process",
-            # "assessor_comment_map",
-            # "deficiency_comment_map",
-            # "assessor_comment_proposal_details",
-            # "deficiency_comment_proposal_details",
-            # "assessor_comment_proposal_impact",
-            # "deficiency_comment_proposal_impact",
-            # "assessor_comment_other",
-            # "deficiency_comment_other",
-            # "assessor_comment_deed_poll",
-            # "deficiency_comment_deed_poll",
-            # "assessor_comment_additional_documents",
-            # "deficiency_comment_additional_documents",
-            # "assessor_comment_proposal_details",
-            # "deficiency_comment_proposal_details",
+            "approval",
         )
 
         datatables_always_serialize = {
             "current_assessor",
         }
         read_only_fields = ("requirements",)
+
+    def get_approval(self, obj):
+        from leaseslicensing.components.approvals.serializers import (
+            ApprovalBasicSerializer,
+        )
+
+        if obj.approval:
+            request = self.context["request"]
+            return ApprovalBasicSerializer(
+                obj.approval, context={"request": request}
+            ).data
+        return None
 
     def get_applicant_obj(self, obj):
         if isinstance(obj.applicant, Organisation):

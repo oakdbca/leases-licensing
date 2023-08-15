@@ -13,7 +13,6 @@ from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_page
-from leaseslicensing.components.users.serializers import ProposalApplicantSerializer
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as detail_route
@@ -99,10 +98,12 @@ from leaseslicensing.components.proposals.utils import (
     save_proponent_data,
     save_referral_data,
 )
+from leaseslicensing.components.users.serializers import ProposalApplicantSerializer
 from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
     is_customer,
+    is_finance_officer,
     is_internal,
     is_referee,
 )
@@ -352,6 +353,11 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     qs = Proposal.objects.filter(submitter=target_email_user_id)
                 else:
                     qs = Proposal.objects.all()
+                qs = Proposal.objects.all()
+            elif is_finance_officer(self.request):
+                qs = Proposal.objects.filter(
+                    processing_status=Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                )
             else:
                 # accessing user might be referral
                 qs = Proposal.objects.filter(
@@ -1779,7 +1785,8 @@ class ProposalViewSet(UserActionLoggingViewset):
     def finance_save(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.save_invoicing_details(request, self.action)
-        return Response({})
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @renderer_classes((JSONRenderer,))
@@ -1787,7 +1794,8 @@ class ProposalViewSet(UserActionLoggingViewset):
     def finance_complete_editing(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.finance_complete_editing(request, self.action)
-        return Response({})
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @detail_route(methods=["post"], detail=True)
     @basic_exception_handler

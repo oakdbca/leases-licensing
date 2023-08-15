@@ -40,7 +40,7 @@
                 <Workflow
                     ref="workflow"
                     :proposal="proposal"
-                    :on_current_revision="on_current_revision"
+                    :on-current-revision="on_current_revision"
                     :is-finalised="isFinalised"
                     :can-action="canAction"
                     :can-limited-action="canLimitedAction"
@@ -60,16 +60,22 @@
                     @discardProposal="discardProposal"
                     @assignRequestUser="assignRequestUser"
                     @assignTo="assignTo"
-                    @completeEditing="completeEditing"
-                    @cancelEditing="cancelEditing"
+                    @completeEditing="validateInvoicingForm"
                     @updateProposalData="updateProposalData"
+                    @updateAssignedApprover="updateAssignedApprover"
+                    @updateAssignedOfficer="updateAssignedOfficer"
                 />
             </div>
 
             <div class="col-md-9">
                 <!-- Main contents -->
                 <template v-if="display_approval_screen">
-                    <ApprovalScreen :proposal="proposal" :readonly="readonly" />
+                    <ApprovalScreen
+                        ref="approval_screen"
+                        :proposal="proposal"
+                        :readonly="readonly"
+                        @updateInvoicingDetails="updateInvoicingDetails"
+                    />
                 </template>
 
                 <template v-if="display_requirements">
@@ -294,6 +300,35 @@
                                             >
                                                 <div class="col">
                                                     <div class="form-floating">
+                                                        <textarea
+                                                            :id="
+                                                                'comment_proposal_details_' +
+                                                                referral.id
+                                                            "
+                                                            v-model="
+                                                                referral.comment_proposal_details
+                                                            "
+                                                            class="form-control referral-comment"
+                                                            :disabled="
+                                                                referral.referral !==
+                                                                profile.id
+                                                            "
+                                                        />
+                                                        <label
+                                                            :for="
+                                                                'comment_proposal_details_' +
+                                                                referral.id
+                                                            "
+                                                            >Referral Comment by
+                                                            <span
+                                                                class="fw-bold"
+                                                                >{{
+                                                                    referral
+                                                                        .referral_obj
+                                                                        .fullname
+                                                                }}</span
+                                                            ></label
+                                                        >
                                                         <textarea
                                                             :id="
                                                                 'comment_proposal_details_' +
@@ -1081,8 +1116,6 @@ import AmendmentRequest from '@/components/internal/proposals/amendment_request.
 import Requirements from '@/components/internal/proposals/proposal_requirements.vue';
 import ProposedApproval from '@/components/internal/proposals/proposed_issuance.vue';
 import ApprovalScreen from '@/components/internal/proposals/proposal_approval.vue';
-// eslint-disable-next-line no-unused-vars
-import ErrorRenderer from '@common-utils/ErrorRenderer.vue';
 import CommsLogs from '@common-utils/comms_logs.vue';
 import Submission from '@common-utils/submission.vue';
 import Workflow from '@common-utils/workflow.vue';
@@ -1112,14 +1145,6 @@ export default {
         FormSection,
         AssessmentComments,
         TableRelatedItems,
-        // ErrorRenderer,
-    },
-    props: {
-        // eslint-disable-next-line vue/require-default-prop
-        proposalId: {
-            type: Number,
-            required: false,
-        },
     },
     data: function () {
         let vm = this;
@@ -1404,7 +1429,7 @@ export default {
                 // Create a new key to make vue reload the component
                 return `${this.proposal.id}-${this.uuid}`;
             }
-            return null;
+            return '';
         },
         debug: function () {
             if (this.$route.query.debug) {
@@ -1582,40 +1607,143 @@ export default {
         this.fetchProposal();
     },
     methods: {
-        completeEditing: async function () {
-            let payload = { proposal: this.proposal };
+        validateInvoicingForm: function () {
+            let vm = this;
+            var form = document.getElementById('invoicing-form');
 
-            const res = await fetch(
-                '/api/proposal/' +
-                    this.proposal.id +
-                    '/finance_complete_editing.json',
-                { body: JSON.stringify(payload), method: 'POST' }
-            );
-
-            if (res.ok) {
-                await swal.fire({
-                    title: 'Saved',
-                    text: 'Your proposal has been saved',
-                    icon: 'success',
-                });
+            if (form.checkValidity()) {
+                vm.completeEditing();
             } else {
-                let errors = [];
-                await res.json().then((json) => {
-                    for (let key in json) {
-                        errors.push(
-                            `${key}: ${
-                                typeof json[key] == 'string'
-                                    ? json[key]
-                                    : json[key].join(',')
-                            }`
-                        );
-                    }
-                    swal.fire({
-                        title: 'Please fix following errors before saving',
-                        text: errors.join(','),
-                        icon: 'error',
+                form.classList.add('was-validated');
+                $('#invoicing-form').find(':invalid').first().focus();
+            }
+
+            return false;
+        },
+        completeEditing: async function () {
+            var chargeType = $(
+                'input[type=radio][name=charge_method]:checked'
+            ).attr('id');
+            let cancelled = false;
+            if (constants.CHARGE_METHODS.ONCE_OFF_CHARGE.ID == chargeType) {
+                await swal
+                    .fire({
+                        title: 'Confirm Once Off Invoice',
+                        text: 'You have selected to invoice as a once off charge, \
+                        this will create a new invoice record. An oracle invoice must \
+                        be attached to the new invoice record before the system will send a payment request to the proponent.',
+                        icon: 'info',
+                        showCancelButton: true,
+                        buttonsStyling: false,
+                        confirmButtonText: 'Confirm',
+                        customClass: {
+                            confirmButton: 'btn btn-primary',
+                            cancelButton: 'btn btn-secondary me-2',
+                        },
+                        reverseButtons: true,
+                    })
+                    .then((result) => {
+                        if (result.isDismissed) {
+                            cancelled = true;
+                        }
                     });
-                });
+            }
+            if (
+                [
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT.ID,
+                    constants.CHARGE_METHODS
+                        .BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE.ID,
+                    constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM.ID,
+                    constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID,
+                ].includes(chargeType)
+            ) {
+                let previewInvoices =
+                    this.$refs.approval_screen.$refs.invoicing_details
+                        .previewInvoices;
+                let immediateInvoicesHtml =
+                    '<p>Based on the information you have entered, the following invoice records will be generated:</p>';
+                immediateInvoicesHtml +=
+                    '<table class="table table-sm table-striped">';
+                immediateInvoicesHtml +=
+                    '<thead><tr><th>Number</th><th>Issue Date</th><th>Time Period</th><th>Amount</th></tr></thead><tbody>';
+
+                for (let i = 0; i < previewInvoices.length; i++) {
+                    let invoice = previewInvoices[i];
+                    if (invoice.start_date_has_passed) {
+                        immediateInvoicesHtml += '<tr>';
+                        immediateInvoicesHtml += `<td>${invoice.number}</td>`;
+                        immediateInvoicesHtml += `<td>${invoice.issue_date}</td>`;
+                        immediateInvoicesHtml += `<td>${invoice.time_period}</td>`;
+                        immediateInvoicesHtml += `<td>${invoice.amount_object.prefix}${invoice.amount_object.amount}${invoice.amount_object.suffix}</td>`;
+                        immediateInvoicesHtml += '</tr>';
+                    }
+                }
+                immediateInvoicesHtml += '</tbody></table>';
+                immediateInvoicesHtml +=
+                    '<p class="fs-6 text-muted">* An oracle invoice must be attached to each invoice record before the request for payment will be sent.</p>';
+                await swal
+                    .fire({
+                        title: 'Confirm Immediate Invoice Generation',
+                        html: immediateInvoicesHtml,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Confirm',
+                        buttonsStyling: false,
+                        customClass: {
+                            popup: 'swal-extra-wide',
+                            confirmButton: 'btn btn-primary',
+                            cancelButton: 'btn btn-secondary me-2',
+                        },
+                        confirmButtonColor: '#3085d6',
+                        reverseButtons: true,
+                    })
+                    .then((result) => {
+                        if (result.isDismissed) {
+                            cancelled = true;
+                        }
+                    });
+            }
+
+            if (!cancelled) {
+                const payload = { proposal: this.proposal };
+                const res = await fetch(
+                    '/api/proposal/' +
+                        this.proposal.id +
+                        '/finance_complete_editing.json',
+                    {
+                        body: JSON.stringify(payload),
+                        method: 'POST',
+                    }
+                );
+
+                if (res.ok) {
+                    swal.fire({
+                        title: 'Saved',
+                        text: 'Your proposal has been saved',
+                        icon: 'success',
+                    });
+                    let data = await res.json();
+                    this.proposal = Object.assign({}, data);
+                } else {
+                    let errors = [];
+                    await res.json().then((json) => {
+                        for (let key in json) {
+                            errors.push(
+                                `${key}: ${
+                                    typeof json[key] == 'string'
+                                        ? json[key]
+                                        : json[key].join(',')
+                                }`
+                            );
+                        }
+                        swal.fire({
+                            title: 'Please fix following errors before saving',
+                            text: errors.join(','),
+                            icon: 'error',
+                        });
+                    });
+                }
             }
         },
         cancelEditing: function () {
@@ -1964,6 +2092,16 @@ export default {
         toggleRequirements: function (value) {
             this.showingRequirements = value;
         },
+        updateAssignedApprover: function (value) {
+            console.log('updateAssignedApprover');
+            let vm = this;
+            vm.proposal.assigned_approver = value;
+        },
+        updateAssignedOfficer: function (value) {
+            console.log('updateAssignedOfficer');
+            let vm = this;
+            vm.proposal.assigned_officer = value;
+        },
         updateAssignedOfficerSelect: function () {
             console.log('updateAssignedOfficerSelect');
             let vm = this;
@@ -2161,9 +2299,7 @@ export default {
                         self.select2('close');
                     }, 0);
                 })
-                .on('select2:unselect', function (e) {
-                    // eslint-disable-next-line no-unused-vars
-                    let selected = $(e.currentTarget);
+                .on('select2:unselect', function () {
                     if (vm.proposal.processing_status == 'With Approver') {
                         vm.proposal.assigned_approver = null;
                     } else {
@@ -2262,16 +2398,28 @@ export default {
                     }
                     this.$nextTick(() => {
                         $('textarea').each(function () {
-                            console.log($(this)[0].scrollHeight);
                             if ($(this)[0].scrollHeight > 70) {
                                 $(this).height($(this)[0].scrollHeight - 30);
                             }
                         });
+                        if (
+                            constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING
+                                .ID == vm.proposal.processing_status_id &&
+                            vm.profile.is_finance_officer
+                        ) {
+                            $(document).scrollTop(
+                                $('#invoicing-form').offset().top - 300
+                            );
+                        }
                     });
                 })
                 .catch((error) => {
                     console.log(error);
                 });
+        },
+        updateInvoicingDetails: function (value) {
+            console.log('updateInvoicingDetails', value);
+            Object.assign(this.proposal.invoicing_details, value);
         },
     },
 };

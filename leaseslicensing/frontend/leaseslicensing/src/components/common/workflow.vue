@@ -13,8 +13,8 @@
                         v-if="proposal.processing_status_id == 'with_approver'"
                     >
                         <select
-                            ref=" assigned_officer"
-                            v-model="proposal.assigned_approver"
+                            ref="assigned_officer"
+                            v-model="assigned_approver"
                             :disabled="!canAction"
                             class="form-select"
                             @change="assignTo()"
@@ -37,8 +37,8 @@
                                 role="button"
                                 class="float-end"
                                 @click.prevent="assignRequestUser()"
-                                >Assign to me</a
-                            >
+                                >Assign to me
+                            </a>
                         </div>
                     </template>
                     <template
@@ -50,7 +50,7 @@
                     >
                         <select
                             ref="assigned_officer"
-                            v-model="proposal.assigned_officer"
+                            v-model="assigned_officer"
                             :disabled="!canAction"
                             class="form-select"
                             @change="assignTo()"
@@ -73,8 +73,8 @@
                                 role="button"
                                 class="float-end"
                                 @click.prevent="assignRequestUser()"
-                                >Assign to me</a
-                            >
+                                >Assign to me
+                            </a>
                         </div>
                     </template>
                 </div>
@@ -114,7 +114,7 @@
                 </div>
             </div>
 
-            <div v-if="isCurrentAssessor" class="card-body border-top">
+            <div v-if="showInviteReferee" class="card-body border-top">
                 <div class="col-sm-12">
                     <div class="fw-bold mb-1">Invite Referee</div>
                     <div class="mb-3">
@@ -388,7 +388,7 @@
         </div>
         <AddExternalReferral
             ref="AddExternalReferral"
-            :proposal_id="proposal.id"
+            :proposal-id="proposal.id"
             :email="external_referral_email"
             @externalRefereeInviteSent="externalRefereeInviteSent"
         />
@@ -413,8 +413,8 @@
                 >
                     <ul class="list-group">
                         <li
-                            v-for="form_section in formSectionLabels"
-                            :key="form_section.id"
+                            v-for="(form_section, idx) in formSectionLabels"
+                            :key="`form_section_${idx}`"
                             class="list-group-item list-group-item-action"
                             role="button"
                             @click="scrollTo(form_section.id)"
@@ -470,7 +470,7 @@ export default {
             type: Object,
             default: null,
         },
-        on_current_revision: {
+        onCurrentRevision: {
             type: Boolean,
             default: true,
         },
@@ -494,7 +494,7 @@ export default {
             type: Boolean,
             default: false,
         },
-        can_user_edit: {
+        canUserEdit: {
             type: Boolean,
             default: false,
         },
@@ -517,6 +517,8 @@ export default {
         'issueApproval',
         'discardProposal',
         'updateProposalData',
+        'updateAssignedApprover',
+        'updateAssignedOfficer',
     ],
     data: function () {
         let vm = this;
@@ -844,7 +846,7 @@ export default {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
                                 [PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID]:
-                                    [ROLES.GROUP_NAME_ASSESSOR.ID],
+                                    [ROLES.FINANCE.ID],
                             },
                         };
                         let show =
@@ -863,8 +865,30 @@ export default {
         };
     },
     computed: {
+        assigned_approver: {
+            get() {
+                return this.proposal.assigned_approver;
+            },
+            set(value) {
+                this.$emit('updateAssignedApprover', value);
+            },
+        },
+        assigned_officer: {
+            get() {
+                return this.proposal.assigned_officer;
+            },
+            set(value) {
+                this.$emit('updateAssignedOfficer', value);
+            },
+        },
         actionsVisible: function () {
-            if (!(this.canAssess || this.isReferee || this.debug)) {
+            if (
+                !(
+                    this.canAssess ||
+                    this.isReferee ||
+                    this.proposal.can_edit_invoicing_details
+                )
+            ) {
                 return false;
             }
             for (let i = 0; i < this.configurations_for_buttons.length; i++) {
@@ -919,6 +943,17 @@ export default {
             } else {
                 return false;
             }
+        },
+        showInviteReferee: function () {
+            return (
+                this.isCurrentAssessor &&
+                [
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
+                    constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                    constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
+                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
+                ].includes(this.proposal.processing_status_id)
+            );
         },
         isAssessorOrApprover: function () {
             return (
@@ -1212,6 +1247,70 @@ export default {
                 'Content-Type': 'application/json',
             };
 
+            vm.sendingReferral = true;
+            await fetch(
+                `/api/proposal/${this.proposal.id}/assessor_save.json`,
+                {
+                    method: 'POST',
+                    headers: my_headers,
+                    body: JSON.stringify({ proposal: vm.proposal }),
+                }
+            )
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            throw new Error(json);
+                        });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then(async () => {
+                    return fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.proposals,
+                            vm.proposal.id + '/assessor_send_referral'
+                        ),
+                        {
+                            method: 'POST',
+                            headers: my_headers,
+                            body: JSON.stringify({
+                                email: vm.selected_referral,
+                                text: vm.referral_text,
+                            }),
+                        }
+                    );
+                })
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            if (Array.isArray(json)) {
+                                throw new Error(json);
+                            } else {
+                                throw new Error(json['non_field_errors']);
+                            }
+                        });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then(async (response) => {
+                    vm.switchStatus(response.processing_status_id); // 'with_referral'
+                })
+                .catch((error) => {
+                    console.log(`Error sending referral. ${error}`);
+                    swal.fire({
+                        title: `${error}`,
+                        text: 'Failed to send referral. Please contact your administrator.',
+                        icon: 'warning',
+                    });
+                })
+                .finally(() => {
+                    vm.sendingReferral = false;
+                    vm.selected_referral = '';
+                    vm.referral_text = '';
+                    $(vm.$refs.department_users).val(null).trigger('change');
+                });
             vm.sendingReferral = true;
             await fetch(
                 `/api/proposal/${this.proposal.id}/assessor_save.json`,

@@ -1,27 +1,44 @@
 <template>
-    <div class="container" id="externalCompliance">
+    <div id="externalCompliance" class="container">
         <div v-if="compliance">
-            <BootstrapAlert v-if="isDiscarded" type="danger" icon="exclamation-triangle-fill">
-                <h3>You cannot access this Compliance as this has been discarded.</h3>
+            <BootstrapAlert
+                v-if="isDiscarded"
+                type="danger"
+                icon="exclamation-triangle-fill"
+            >
+                <h3>
+                    You cannot access this Compliance as this has been
+                    discarded.
+                </h3>
             </BootstrapAlert>
             <div v-else class="row mb-3">
                 <div v-if="!isFinalised">
                     <div v-if="hasAmendmentRequest">
-                        <FormSection customColor="red" label="This Compliance Requires one or more Amendments"
-                            index="amendment_compliance_with_requirements">
+                        <FormSection
+                            custom-color="red"
+                            label="This Compliance Requires one or more Amendments"
+                            index="amendment_compliance_with_requirements"
+                        >
                             <div class="row">
                                 <div class="col">
                                     <ol class="list-group">
-                                        <li v-for="a in amendment_request"
-                                            class="list-group-item d-flex justify-content-between align-items-start">
+                                        <li
+                                            v-for="a in amendment_request"
+                                            class="list-group-item d-flex justify-content-between align-items-start"
+                                        >
                                             <div class="ms-2 me-auto">
                                                 <div class="mt-3">
-                                                    <BootstrapAlert class="alert-sm" type="danger"
-                                                        icon="exclamation-triangle-fill">
+                                                    <BootstrapAlert
+                                                        class="alert-sm"
+                                                        type="danger"
+                                                        icon="exclamation-triangle-fill"
+                                                    >
                                                         {{ a.reason }}
                                                     </BootstrapAlert>
                                                 </div>
-                                                <div class="amendment-text py-3">
+                                                <div
+                                                    class="amendment-text py-3"
+                                                >
                                                     {{ a.text }}
                                                 </div>
                                             </div>
@@ -33,65 +50,161 @@
                     </div>
                 </div>
                 <div class="col-md-12">
-                    <FormSection :label="title" index="compliance_with_requirements">
-                        <form class="needs-validation" id="complianceForm" name="complianceForm" novalidate>
-                            <alert :show.sync="showError" type="danger">
+                    <FormSection
+                        :label="title"
+                        index="compliance_with_requirements"
+                    >
+                        <form
+                            id="complianceForm"
+                            class="needs-validation"
+                            name="complianceForm"
+                            novalidate
+                        >
+                            <alert v-model:show="showError" type="danger">
                                 <strong>{{ errorString }}</strong>
                             </alert>
-                            <div v-if="'Under Review' == compliance.customer_status" class=" row mb-3">
-                                <label class="col-form-label col-sm-2" for="due_date">Status:</label>
+                            <div
+                                v-if="
+                                    'Under Review' == compliance.customer_status
+                                "
+                                class="row mb-3"
+                            >
+                                <label
+                                    class="col-form-label col-sm-2"
+                                    for="due_date"
+                                    >Status:</label
+                                >
                                 <div class="col-sm-6">
-                                    <span class="badge bg-secondary py-2 mt-1"><i class="fa fa-clock"></i> {{
-                                        compliance.customer_status }}</span>
+                                    <span class="badge bg-secondary py-2 mt-1"
+                                        ><i class="fa fa-clock"></i>
+                                        {{ compliance.customer_status }}</span
+                                    >
                                 </div>
                             </div>
-                            <div v-if="'Approved' == compliance.customer_status" class="row mb-3">
-                                <label class="col-form-label col-sm-2" for="due_date">Status:</label>
+                            <div
+                                v-if="'Approved' == compliance.customer_status"
+                                class="row mb-3"
+                            >
+                                <label
+                                    class="col-form-label col-sm-2"
+                                    for="due_date"
+                                    >Status:</label
+                                >
                                 <div class="col-sm-6">
-                                    <span class="badge bg-success py-2 mt-1"><i class="fa fa-check"></i> {{
-                                        compliance.customer_status }}</span>
+                                    <span class="badge bg-success py-2 mt-1"
+                                        ><i class="fa fa-check"></i>
+                                        {{ compliance.customer_status }}</span
+                                    >
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <label class="col-form-label col-sm-2" for="due_date">Due Date:</label>
+                                <label
+                                    class="col-form-label col-sm-2"
+                                    for="due_date"
+                                    >Due Date:</label
+                                >
                                 <div class="col-sm-6">
-                                    <input type="text" readonly class="form-control-plaintext" id="due_date" name="due_date"
-                                        :value="compliance.due_date">
+                                    <input
+                                        id="due_date"
+                                        type="text"
+                                        readonly
+                                        class="form-control-plaintext"
+                                        name="due_date"
+                                        :value="compliance.due_date"
+                                    />
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <label class="col-form-label col-sm-2" for="requirement">Requirement:</label>
+                                <label
+                                    class="col-form-label col-sm-2"
+                                    for="requirement"
+                                    >Requirement:</label
+                                >
                                 <div class="col-sm-6">
-                                    <input type="text" readonly class="form-control-plaintext" id="requirement"
-                                        name="requirement" :value="compliance.requirement" required>
+                                    <input
+                                        id="requirement"
+                                        type="text"
+                                        readonly
+                                        class="form-control-plaintext"
+                                        name="requirement"
+                                        :value="compliance.requirement"
+                                        required
+                                    />
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <label class="col-form-label col-sm-2" for="detail">Details:</label>
+                                <label
+                                    class="col-form-label col-sm-2"
+                                    for="detail"
+                                    >Details:</label
+                                >
                                 <div class="col-sm-9">
-                                    <textarea :disabled="isFinalised" class="form-control" id="detail" name="detail"
-                                        rows="8" v-model="compliance.text" autofocus required></textarea>
+                                    <textarea
+                                        id="detail"
+                                        v-model="compliance.text"
+                                        :disabled="isFinalised"
+                                        class="form-control"
+                                        name="detail"
+                                        rows="8"
+                                        autofocus
+                                        required
+                                    ></textarea>
                                     <div class="invalid-feedback">
-                                        Please provide some details regarding the fulfillment of the above requirement.
+                                        Please provide some details regarding
+                                        the fulfillment of the above
+                                        requirement.
                                     </div>
                                 </div>
                             </div>
                             <div v-if="hasDocuments" class="row mb-3">
-                                <label class="col-form-label col-sm-2">Documents:</label>
+                                <label class="col-form-label col-sm-2"
+                                    >Documents:</label
+                                >
                                 <div class="col-sm-9">
-                                    <template v-if="compliance.documents && compliance.documents.length">
+                                    <template
+                                        v-if="
+                                            compliance.documents &&
+                                            compliance.documents.length
+                                        "
+                                    >
                                         <ul class="list-group">
-                                            <li class="list-group-item rounded" v-for="(d, i) in compliance.documents">
-                                                <a :href="d.secure_url" target="_blank" class="me-1">{{ d.name
-                                                }}</a>
-                                                <span v-if="!isFinalised && d.can_delete">
-                                                    <a @click="delete_document(d)" class="fa fa-trash-o control-label"
-                                                        title="Remove file" style="cursor: pointer; color:red;"></a>
+                                            <li
+                                                v-for="(
+                                                    d, i
+                                                ) in compliance.documents"
+                                                class="list-group-item rounded"
+                                            >
+                                                <a
+                                                    :href="d.secure_url"
+                                                    target="_blank"
+                                                    class="me-1"
+                                                    >{{ d.name }}</a
+                                                >
+                                                <span
+                                                    v-if="
+                                                        !isFinalised &&
+                                                        d.can_delete
+                                                    "
+                                                >
+                                                    <a
+                                                        class="fa fa-trash-o control-label"
+                                                        title="Remove file"
+                                                        style="
+                                                            cursor: pointer;
+                                                            color: red;
+                                                        "
+                                                        @click="
+                                                            delete_document(d)
+                                                        "
+                                                    ></a>
                                                 </span>
                                                 <span v-else>
-                                                    <i class="fa fa-info-circle" aria-hidden="true"
+                                                    <i
+                                                        class="fa fa-info-circle"
+                                                        aria-hidden="true"
                                                         title="Previously submitted documents cannot be deleted"
-                                                        style="cursor: pointer;"></i>
+                                                        style="cursor: pointer"
+                                                    ></i>
                                                 </span>
                                             </li>
                                         </ul>
@@ -99,91 +212,181 @@
                                 </div>
                             </div>
                             <div v-if="!isFinalised" class="row mb-3">
-                                <label class="col-form-label col-sm-2">Attachments:</label>
+                                <label class="col-form-label col-sm-2"
+                                    >Attachments:</label
+                                >
                                 <div class="col-sm-9">
                                     <template v-if="files && files.length">
                                         <ul class="list-group">
-                                            <li class="list-group-item rounded" v-for="(f, i) in files">
+                                            <li
+                                                v-for="(f, i) in files"
+                                                class="list-group-item rounded"
+                                            >
                                                 <div class="row">
                                                     <div class="col">
-                                                        <span v-if="f.file == null"
-                                                            class="btn btn-primary btn-sm btn-file float-start"><i
-                                                                class="fa fa-upload" aria-hidden="true"></i>
-                                                            Attach File <input type="file" :name="'file-upload-' + i"
-                                                                :class="'file-upload-' + i"
-                                                                @change="uploadFile('file-upload-' + i, f)" />
+                                                        <span
+                                                            v-if="
+                                                                f.file == null
+                                                            "
+                                                            class="btn btn-primary btn-sm btn-file float-start"
+                                                            ><i
+                                                                class="fa fa-upload"
+                                                                aria-hidden="true"
+                                                            ></i>
+                                                            Attach File
+                                                            <input
+                                                                type="file"
+                                                                :name="
+                                                                    'file-upload-' +
+                                                                    i
+                                                                "
+                                                                :class="
+                                                                    'file-upload-' +
+                                                                    i
+                                                                "
+                                                                @change="
+                                                                    uploadFile(
+                                                                        'file-upload-' +
+                                                                            i,
+                                                                        f
+                                                                    )
+                                                                "
+                                                            />
                                                         </span>
-                                                        <span v-else
-                                                            class="btn btn-secondary btn-sm btn-file float-start"><i
-                                                                class="fa fa-edit"></i>
-                                                            Update File <input type="file" :name="'file-upload-' + i"
-                                                                :class="'file-upload-' + i"
-                                                                @change="uploadFile('file-upload-' + i, f)" />
+                                                        <span
+                                                            v-else
+                                                            class="btn btn-secondary btn-sm btn-file float-start"
+                                                            ><i
+                                                                class="fa fa-edit"
+                                                            ></i>
+                                                            Update File
+                                                            <input
+                                                                type="file"
+                                                                :name="
+                                                                    'file-upload-' +
+                                                                    i
+                                                                "
+                                                                :class="
+                                                                    'file-upload-' +
+                                                                    i
+                                                                "
+                                                                @change="
+                                                                    uploadFile(
+                                                                        'file-upload-' +
+                                                                            i,
+                                                                        f
+                                                                    )
+                                                                "
+                                                            />
                                                         </span>
                                                     </div>
                                                     <div class="col-sm-7">
-                                                        <span>{{ f.name }}</span>
+                                                        <span>{{
+                                                            f.name
+                                                        }}</span>
                                                     </div>
                                                     <div class="col-sm-1">
-                                                        <button v-if="f.file || i > 0" @click.prevent="removeFile(i)"
-                                                            class="btn btn-danger btn-sm"><i class="fa fa-trash"
-                                                                aria-hidden="true"></i>
+                                                        <button
+                                                            v-if="
+                                                                f.file || i > 0
+                                                            "
+                                                            class="btn btn-danger btn-sm"
+                                                            @click.prevent="
+                                                                removeFile(i)
+                                                            "
+                                                        >
+                                                            <i
+                                                                class="fa fa-trash"
+                                                                aria-hidden="true"
+                                                            ></i>
                                                         </button>
                                                     </div>
-
                                                 </div>
                                             </li>
                                         </ul>
                                     </template>
                                     <div class="border-top mt-3 p-2">
-                                        <button class="btn btn-sm btn-primary" @click.prevent="attachAnother"><i
-                                                class="fa fa-add"></i>
-                                            Add Another
-                                            File</button>
+                                        <button
+                                            class="btn btn-sm btn-primary"
+                                            @click.prevent="attachAnother"
+                                        >
+                                            <i class="fa fa-add"></i> Add
+                                            Another File
+                                        </button>
                                     </div>
                                 </div>
                             </div>
-
                         </form>
                     </FormSection>
                 </div>
-
             </div>
             <div class="navbar fixed-bottom bg-navbar border-top">
                 <div class="container">
                     <div class="col-md-12 text-end">
-                        <button v-if="!isFinalised"
-                            @click.prevent="validateForm(method = 'PATCH', custom_action = 'save', exit_after = true)"
-                            class="btn btn-primary me-2">Save and
-                            Exit</button>
-                        <button v-if="!isFinalised"
-                            @click.prevent="validateForm(method = 'PATCH', custom_action = 'save', exit_after = false)"
-                            class="btn btn-primary me-2">Save and
-                            Continue</button>
-                        <button v-if="!isFinalised" @click.prevent="validateForm()" class="btn btn-primary">Submit</button>
+                        <button
+                            v-if="!isFinalised"
+                            class="btn btn-primary me-2"
+                            @click.prevent="
+                                validateForm(
+                                    (method = 'PATCH'),
+                                    (custom_action = 'save'),
+                                    (exit_after = true)
+                                )
+                            "
+                        >
+                            Save and Exit
+                        </button>
+                        <button
+                            v-if="!isFinalised"
+                            class="btn btn-primary me-2"
+                            @click.prevent="
+                                validateForm(
+                                    (method = 'PATCH'),
+                                    (custom_action = 'save'),
+                                    (exit_after = false)
+                                )
+                            "
+                        >
+                            Save and Continue
+                        </button>
+                        <button
+                            v-if="!isFinalised"
+                            class="btn btn-primary"
+                            @click.prevent="validateForm()"
+                        >
+                            Submit
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        <BootstrapSpinner v-else :isLoading="true" class="text-primary" />
-
+        <BootstrapSpinner v-else :is-loading="true" class="text-primary" />
     </div>
 </template>
 <script>
 import datatable from '@vue-utils/datatable.vue'
 import CommsLogs from '@common-utils/comms_logs.vue'
-import FormSection from "@/components/forms/section_toggle.vue"
-import {
-    api_endpoints,
-    helpers
-}
-    from '@/utils/hooks'
+import FormSection from '@/components/forms/section_toggle.vue'
+import { api_endpoints, helpers } from '@/utils/hooks'
 import alert from '@vue-utils/alert.vue'
 
 export default {
-    name: 'externalComplianceAccess',
+    name: 'ExternalComplianceAccess',
+    components: {
+        datatable,
+        CommsLogs,
+        FormSection,
+        alert,
+    },
+    beforeRouteEnter: function (to, from, next) {
+        next(async (vm) => {
+            if (to.params.compliance_id) {
+                vm.fetchCompliance(to.params.compliance_id)
+            }
+        })
+    },
     data() {
-        let vm = this;
+        let vm = this
         return {
             title: '',
             form: null,
@@ -201,215 +404,266 @@ export default {
             validation_form: null,
             files: [
                 {
-                    'file': null,
-                    'name': ''
-                }
-            ]
+                    file: null,
+                    name: '',
+                },
+            ],
         }
-    },
-    watch: {
-        isFinalised: function () {
-            return this.compliance && (this.compliance.customer_status == "Under Review" || this.compliance.customer_status == "Approved");
-        },
-    },
-    components: {
-        datatable,
-        CommsLogs,
-        FormSection,
-        alert,
     },
     computed: {
         showError: function () {
-            var vm = this;
-            return vm.errors;
+            var vm = this
+            return vm.errors
         },
         isLoading: function () {
-            return this.loading.length > 0;
+            return this.loading.length > 0
         },
         isDiscarded: function () {
-            return this.compliance && (this.compliance.customer_status == "Discarded");
+            return (
+                this.compliance &&
+                this.compliance.customer_status == 'Discarded'
+            )
         },
         hasDocuments: function () {
-            return this.compliance.documents && this.compliance.documents.length > 0;
-        }
+            return (
+                this.compliance.documents &&
+                this.compliance.documents.length > 0
+            )
+        },
+    },
+    watch: {
+        isFinalised: function () {
+            return (
+                this.compliance &&
+                (this.compliance.customer_status == 'Under Review' ||
+                    this.compliance.customer_status == 'Approved')
+            )
+        },
+    },
+    created: function () {
+        let vm = this
+        this.fetchCompliance(this.$route.params.compliance_id)
+    },
+    mounted: function () {
+        let vm = this
+        vm.form = document.forms.complianceForm
     },
     methods: {
         uploadFile(target, file_obj) {
-            let vm = this;
-            let _file = null;
-            var input = $('.' + target)[0];
+            let vm = this
+            let _file = null
+            var input = $('.' + target)[0]
             if (input.files && input.files[0]) {
-                var reader = new FileReader();
-                reader.readAsDataURL(input.files[0]);
+                var reader = new FileReader()
+                reader.readAsDataURL(input.files[0])
                 reader.onload = function (e) {
-                    _file = e.target.result;
-                };
-                _file = input.files[0];
+                    _file = e.target.result
+                }
+                _file = input.files[0]
             }
-            file_obj.file = _file;
-            file_obj.name = _file.name;
+            file_obj.file = _file
+            file_obj.name = _file.name
         },
         removeFile(index) {
-            let length = this.files.length;
-            $('.file-row-' + index).remove();
-            this.files.splice(index, 1);
+            let length = this.files.length
+            $('.file-row-' + index).remove()
+            this.files.splice(index, 1)
             this.$nextTick(() => {
-                length == 1 ? this.attachAnother() : '';
-            });
+                length == 1 ? this.attachAnother() : ''
+            })
         },
         attachAnother() {
             this.files.push({
-                'file': null,
-                'name': ''
+                file: null,
+                name: '',
             })
         },
         close: function () {
-            this.$router.push({ name: 'external-dashboard' });
+            this.$router.push({ name: 'external-dashboard' })
         },
         setAmendmentData: function (amendment_request) {
-            this.amendment_request = amendment_request;
+            this.amendment_request = amendment_request
 
-            if (amendment_request.length > 0)
-                this.hasAmendmentRequest = true;
+            if (amendment_request.length > 0) this.hasAmendmentRequest = true
         },
         delete_document: function (doc) {
-            let vm = this;
-            let data = { 'document': doc }
+            let vm = this
+            let data = { document: doc }
             if (doc) {
-                fetch(helpers.add_endpoint_json(api_endpoints.compliances, vm.compliance.id + '/delete_document'), {
-                    method: 'POST',
-                    body: JSON.stringify(data),
-                }).then(async (response) => {
-                    vm.refreshFromResponse(response);
-                    vm.compliance = await Object.assign({}, response.json());
-                }, (error) => {
-                    vm.errors = true;
-                    vm.errorString = error.message;
-                });
+                fetch(
+                    helpers.add_endpoint_json(
+                        api_endpoints.compliances,
+                        vm.compliance.id + '/delete_document'
+                    ),
+                    {
+                        method: 'POST',
+                        body: JSON.stringify(data),
+                    }
+                ).then(
+                    async (response) => {
+                        vm.refreshFromResponse(response)
+                        vm.compliance = await Object.assign({}, response.json())
+                    },
+                    (error) => {
+                        vm.errors = true
+                        vm.errorString = error.message
+                    }
+                )
             }
         },
-        validateForm: function (method = 'POST', custom_action = 'submit', exit_after = false) {
-            let vm = this;
+        validateForm: function (
+            method = 'POST',
+            custom_action = 'submit',
+            exit_after = false
+        ) {
+            let vm = this
             var form = document.getElementById('complianceForm')
 
             console.log('validateForm')
 
             if (form.checkValidity()) {
-                vm.sendData(method, custom_action, exit_after);
+                vm.sendData(method, custom_action, exit_after)
             } else {
-                form.classList.add('was-validated');
-                $('#complianceForm').find(":invalid").first().focus();
+                form.classList.add('was-validated')
+                $('#complianceForm').find(':invalid').first().focus()
             }
 
-            return false;
+            return false
         },
-        sendData: function (method = 'POST', custom_action = 'submit', exit_after = false) {
+        sendData: function (
+            method = 'POST',
+            custom_action = 'submit',
+            exit_after = false
+        ) {
             this.$nextTick(() => {
-                this.errors = false;
-                let formData = new FormData();
-                formData.append('detail', this.compliance.text);
-                let numFiles = 0;
+                this.errors = false
+                let formData = new FormData()
+                formData.append('detail', this.compliance.text)
+                let numFiles = 0
                 for (let i = 0; i < this.files.length; i++) {
                     if (this.files[i].file && this.files[i].name) {
-                        formData.append('file' + i, this.files[i].file);
-                        formData.append('name' + i, this.files[i].name);
+                        formData.append('file' + i, this.files[i].file)
+                        formData.append('name' + i, this.files[i].name)
                         console.log(this.files[i].file)
-                        numFiles++;
+                        numFiles++
                     }
                 }
-                formData.append('num_files', numFiles);
+                formData.append('num_files', numFiles)
                 console.log('num_files: ' + numFiles)
 
-                fetch(helpers.add_endpoint_json(api_endpoints.compliances, this.compliance.id + '/' + custom_action), {
-                    method: method,
-                    body: formData
-                }).then(async response => {
-                    if (!response.ok) {
-                        return await response.json().then(json => { throw new Error(json); });
-                    } else {
-                        return await response.json();
+                fetch(
+                    helpers.add_endpoint_json(
+                        api_endpoints.compliances,
+                        this.compliance.id + '/' + custom_action
+                    ),
+                    {
+                        method: method,
+                        body: formData,
                     }
-                })
-                    .then(data => {
-                        this.addingCompliance = false;
-                        this.refreshFromResponse(data);
-                        this.compliance = Object.assign({}, data);
+                )
+                    .then(async (response) => {
+                        if (!response.ok) {
+                            return await response.json().then((json) => {
+                                throw new Error(json)
+                            })
+                        } else {
+                            return await response.json()
+                        }
+                    })
+                    .then((data) => {
+                        this.addingCompliance = false
+                        this.refreshFromResponse(data)
+                        this.compliance = Object.assign({}, data)
 
                         if ('submit' == custom_action) {
                             this.$router.push({
                                 name: 'submit_compliance',
-                                params: { compliance_id: this.compliance.id }
-                            });
+                                params: { compliance_id: this.compliance.id },
+                            })
                         } else {
                             swal.fire({
                                 title: `Compliance ${this.compliance.lodgement_number} Saved`,
                                 text: 'Compliance has been saved successfully',
-                                icon: 'success'
+                                icon: 'success',
                             })
                             if (exit_after) {
-                                this.close();
+                                this.close()
                             } else {
-                                this.files = [];
+                                this.files = []
                             }
                         }
                     })
-                    .catch(error => {
-                        this.errors = true;
-                        this.addingCompliance = false;
-                        this.errorString = error.message;
+                    .catch((error) => {
+                        this.errors = true
+                        this.addingCompliance = false
+                        this.errorString = error.message
                         swal.fire({
                             title: 'Compliance Error',
                             text: error.message,
-                            icon: 'error'
-                        });
+                            icon: 'error',
+                        })
                     })
-            });
-        },
-        fetchCompliance: async function (compliance_id) {
-            let vm = this;
-            fetch(helpers.add_endpoint_json(api_endpoints.compliances, compliance_id)).then(async (response) => {
-                const resData = await response.json();
-                vm.compliance = Object.assign({}, resData);
-                if (vm.compliance.customer_status == "Under Review" || vm.compliance.customer_status == "Approved") { vm.isFinalised = true }
-                vm.status = vm.compliance.customer_status;
-
-                if ('Under Review' == vm.compliance.customer_status) {
-                    vm.title = "View Compliance - " + this.compliance.lodgement_number;
-                } else {
-                    vm.title = "Submit Compliance - " + this.compliance.lodgement_number;
-                }
-
-                fetch(helpers.add_endpoint_json(api_endpoints.compliances, compliance_id + '/amendment_request')).then(async (res) => {
-                    vm.setAmendmentData(await res.json());
-                },
-                    err => {
-                        console.log(err);
-                    });
-            }, (error) => {
-                console.log(error);
             })
         },
+        fetchCompliance: async function (compliance_id) {
+            let vm = this
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.compliances,
+                    compliance_id
+                )
+            ).then(
+                async (response) => {
+                    const resData = await response.json()
+                    vm.compliance = Object.assign({}, resData)
+                    if (
+                        vm.compliance.customer_status == 'Under Review' ||
+                        vm.compliance.customer_status == 'Approved'
+                    ) {
+                        vm.isFinalised = true
+                    }
+                    vm.status = vm.compliance.customer_status
+
+                    if ('Under Review' == vm.compliance.customer_status) {
+                        vm.title =
+                            'View Compliance - ' +
+                            this.compliance.lodgement_number
+                    } else {
+                        vm.title =
+                            'Submit Compliance - ' +
+                            this.compliance.lodgement_number
+                    }
+
+                    fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.compliances,
+                            compliance_id + '/amendment_request'
+                        )
+                    ).then(
+                        async (res) => {
+                            vm.setAmendmentData(await res.json())
+                        },
+                        (err) => {
+                            console.log(err)
+                        }
+                    )
+                },
+                (error) => {
+                    console.log(error)
+                }
+            )
+        },
         refreshFromResponse: async function (resData) {
-            this.original_compliance = helpers.copyObject(resData);
-            this.compliance = helpers.copyObject(resData);
-            if (this.compliance.customer_status == "Under Review" || this.compliance.customer_status == "Approved") { this.isFinalised = true }
+            this.original_compliance = helpers.copyObject(resData)
+            this.compliance = helpers.copyObject(resData)
+            if (
+                this.compliance.customer_status == 'Under Review' ||
+                this.compliance.customer_status == 'Approved'
+            ) {
+                this.isFinalised = true
+            }
         },
     },
-    created: function () {
-        let vm = this;
-        this.fetchCompliance(this.$route.params.compliance_id);
-    },
-    mounted: function () {
-        let vm = this;
-        vm.form = document.forms.complianceForm;
-    },
-    beforeRouteEnter: function (to, from, next) {
-        next(async (vm) => {
-            if (to.params.compliance_id) {
-                vm.fetchCompliance(to.params.compliance_id);
-            }
-        })
-    }
 }
 </script>
 
@@ -419,7 +673,7 @@ export default {
     overflow: hidden;
 }
 
-.btn-file input[type=file] {
+.btn-file input[type='file'] {
     position: absolute;
     top: 0;
     right: 0;

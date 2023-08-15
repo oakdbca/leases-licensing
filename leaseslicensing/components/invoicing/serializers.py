@@ -1,9 +1,16 @@
+import logging
+
+from dateutil.relativedelta import relativedelta
 from rest_framework import serializers
 
 from leaseslicensing import settings
+from leaseslicensing.components.approvals.models import ApprovalUserAction
 from leaseslicensing.components.invoicing.models import (
     ChargeMethod,
+    CPICalculationMethod,
     CrownLandRentReviewDate,
+    CustomCPIYear,
+    FinancialQuarter,
     FixedAnnualIncrementAmount,
     FixedAnnualIncrementPercentage,
     Invoice,
@@ -12,7 +19,9 @@ from leaseslicensing.components.invoicing.models import (
     PercentageOfGrossTurnover,
     RepetitionType,
 )
-from leaseslicensing.helpers import is_finance_officer
+from leaseslicensing.helpers import is_customer, is_finance_officer, today
+
+logger = logging.getLogger(__name__)
 
 
 class ChargeMethodSerializer(serializers.ModelSerializer):
@@ -31,6 +40,16 @@ class RepetitionTypeSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "key",
+            "display_name",
+        )
+
+
+class CPICalculationMethodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CPICalculationMethod
+        fields = (
+            "id",
+            "name",
             "display_name",
         )
 
@@ -83,18 +102,31 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
         return False
 
 
+class FinancialQuarterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FinancialQuarter
+        fields = [
+            "quarter",
+            "gross_turnover",
+        ]
+
+
 class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
     readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
+    quarters = FinancialQuarterSerializer(many=True, required=False)
 
     class Meta:
         model = PercentageOfGrossTurnover
         fields = (
             "id",
             "year",
+            "financial_year",
             "percentage",
+            "gross_turnover",
             "readonly",
             "to_be_deleted",
+            "quarters",
         )
         extra_kwargs = {
             "id": {
@@ -105,6 +137,37 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
 
     def get_to_be_deleted(self, instance):
         return False
+
+    def create(self, validated_data):
+        quarters = validated_data.pop("quarters", [])
+        instance = super().create(validated_data)
+        if quarters:
+            for quarter_data in quarters:
+                quarter, created = FinancialQuarter.objects.get_or_create(
+                    year=instance,
+                    quarter=quarter_data.get("quarter"),
+                )
+                gross_turnover = quarter_data.get("gross_turnover")
+                if gross_turnover:
+                    quarter.gross_turnover = gross_turnover
+                    quarter.save()
+
+        return instance
+
+    def update(self, instance, validated_data):
+        quarters = validated_data.pop("quarters", [])
+        if quarters:
+            for quarter_data in quarters:
+                quarter, created = FinancialQuarter.objects.get_or_create(
+                    year=instance,
+                    quarter=quarter_data.get("quarter"),
+                )
+                gross_turnover = quarter_data.get("gross_turnover")
+                if gross_turnover:
+                    quarter.gross_turnover = gross_turnover
+                    quarter.save()
+
+        return super().update(instance, validated_data)
 
 
 class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
@@ -130,7 +193,30 @@ class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
         return False
 
 
+class CustomCPIYearSerializer(serializers.ModelSerializer):
+    has_passed = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CustomCPIYear
+        fields = (
+            "id",
+            "year",
+            "label",
+            "percentage",
+            "has_passed",
+        )
+
+    def get_has_passed(self, instance):
+        start_date = instance.invoicing_details.approval.start_date
+        if instance.year > 1:
+            start_date = start_date + relativedelta(years=instance.year - 1)
+        return not start_date > today()
+
+
 class InvoicingDetailsSerializer(serializers.ModelSerializer):
+    charge_method_key = serializers.CharField(
+        source="charge_method.key", read_only=True
+    )
     annual_increment_amounts = FixedAnnualIncrementAmountSerializer(
         many=True, required=False
     )
@@ -140,25 +226,27 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     gross_turnover_percentages = PercentageOfGrossTurnoverSerializer(
         many=True, required=False
     )
-    crown_land_rent_review_dates = CrownLandRentReviewDateSerializer(
-        many=True, required=False
-    )
+    custom_cpi_years = CustomCPIYearSerializer(many=True, required=False)
 
     class Meta:
         model = InvoicingDetails
         fields = (
             "id",
             "charge_method",  # FK
+            "charge_method_key",
             "base_fee_amount",
             "once_off_charge_amount",
             "review_once_every",
             "review_repetition_type",  # FK
             "invoicing_once_every",
             "invoicing_repetition_type",  # FK
+            "invoicing_month_of_year",
+            "invoicing_day_of_month",
             "annual_increment_amounts",  # ReverseFK
             "annual_increment_percentages",  # ReverseFK
             "gross_turnover_percentages",  # ReverseFK
-            "crown_land_rent_review_dates",  # ReverseFK
+            "custom_cpi_years",  # ReverseFK
+            "cpi_calculation_method",
         )
 
     def set_default_values(self, attrs, fields_excluded):
@@ -170,6 +258,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 "review_repetition_type",
                 "invoicing_once_every",
                 "invoicing_repetition_type",
+                # "cpi_calculation_method",
             ]:
                 if attr_name not in fields_excluded:
                     attrs[attr_name] = None  # Set default value
@@ -177,7 +266,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 "annual_increment_amounts",
                 "annual_increment_percentages",
                 "gross_turnover_percentages",
-                "crown_land_rent_review_dates",
             ]:
                 if attr_name not in fields_excluded:
                     for item in self.initial_data.get(attr_name):
@@ -191,10 +279,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
 
         action = self.context.get("action")
 
-        if action == "finance_save":
-            # When "Save and Continue"/"Save and Exit" button clicked
-            pass
-        elif action == "finance_complete_editing":
+        if action in ["finance_save", "finance_complete_editing"]:
             # When "Complete Editing" clicked
             charge_method = attrs.get("charge_method")
 
@@ -221,7 +306,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         "annual_increment_amounts",
                         "review_once_every",
                         "review_repetition_type",
-                        "crown_land_rent_review_dates",
                         "invoicing_once_every",
                         "invoicing_repetition_type",
                     ],
@@ -230,9 +314,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 annual_increment_amounts_data = attrs.get("annual_increment_amounts")
                 self._validate_annual_increment(
                     annual_increment_amounts_data, field_errors, non_field_errors
-                )
-                self._validate_crown_land_rent_review_dates(
-                    attrs, field_errors, non_field_errors
                 )
 
             elif (
@@ -247,7 +328,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         "annual_increment_percentages",
                         "review_once_every",
                         "review_repetition_type",
-                        "crown_land_rent_review_dates",
                         "invoicing_once_every",
                         "invoicing_repetition_type",
                     ],
@@ -255,8 +335,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 annual_increment_percentages_data = attrs.get(
                     "annual_increment_percentages"
                 )
-                self._validate_annual_increment(annual_increment_percentages_data)
-                self._validate_crown_land_rent_review_dates(attrs)
+                self._validate_annual_increment(
+                    annual_increment_percentages_data, field_errors, non_field_errors
+                )
             elif charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
                 self.set_default_values(
                     attrs,
@@ -265,12 +346,11 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                         "base_fee_amount",
                         "review_once_every",
                         "review_repetition_type",
-                        "crown_land_rent_review_dates",
                         "invoicing_once_every",
                         "invoicing_repetition_type",
+                        "cpi_calculation_method",
                     ],
                 )
-                self._validate_crown_land_rent_review_dates(attrs)
             elif (
                 charge_method.key == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
             ):
@@ -286,7 +366,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 gross_turnover_percentages_data = attrs.get(
                     "gross_turnover_percentages"
                 )
-                self._validate_annual_increment(gross_turnover_percentages_data)
+                self._validate_annual_increment(
+                    gross_turnover_percentages_data, field_errors, non_field_errors
+                )
             elif charge_method.key == settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE:
                 self.set_default_values(attrs, [])
 
@@ -313,26 +395,21 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             else:
                 years.append(a_year)
 
-    def _validate_crown_land_rent_review_dates(
-        self, attrs, field_errors, non_field_errors
-    ):
-        # Make sure there are no duplication of 'date'
-        crown_land_rent_review_dates_data = attrs.get("crown_land_rent_review_dates")
-        dates = []
-        for crown_land_rent_review_date_data in crown_land_rent_review_dates_data:
-            date = crown_land_rent_review_date_data.get("review_date")
-            if date in dates:
-                non_field_errors.append(
-                    f"Review date: {str(date)} is duplicated. It must be unique."
-                )
-            else:
-                dates.append(date)
-
     def update(self, instance, validated_data):
+        # Not really sure the following code is needed up to instance.save()
+        # As could just call super().update(instance, validated_data) to achieve the same result?
         # Local fields
+        if instance.base_fee_amount != validated_data.get("base_fee_amount"):
+            instance.approval.log_user_action(
+                ApprovalUserAction.ACTION_REVIEW_INVOICING_DETAILS_BASE_FEE_APPROVAL.format(
+                    instance.base_fee_amount, validated_data.get("base_fee_amount")
+                ),
+                self.context["request"],
+            )
         instance.base_fee_amount = validated_data.get(
             "base_fee_amount", instance.base_fee_amount
         )
+
         instance.once_off_charge_amount = validated_data.get(
             "once_off_charge_amount", instance.once_off_charge_amount
         )
@@ -341,6 +418,12 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         )
         instance.invoicing_once_every = validated_data.get(
             "invoicing_once_every", instance.invoicing_once_every
+        )
+        instance.invoicing_day_of_month = validated_data.get(
+            "invoicing_day_of_month", instance.invoicing_day_of_month
+        )
+        instance.invoicing_month_of_year = validated_data.get(
+            "invoicing_month_of_year", instance.invoicing_month_of_year
         )
 
         # FK fields
@@ -352,6 +435,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         )
         instance.invoicing_repetition_type = validated_data.get(
             "invoicing_repetition_type", instance.invoicing_repetition_type
+        )
+        instance.cpi_calculation_method = validated_data.get(
+            "cpi_calculation_method", instance.cpi_calculation_method
         )
 
         # Update local and FK fields
@@ -365,9 +451,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         gross_turnover_percentages_data = validated_data.pop(
             "gross_turnover_percentages"
         )
-        crown_land_rent_review_dates_data = validated_data.pop(
-            "crown_land_rent_review_dates"
-        )
+        custom_cpi_years_data = validated_data.pop("custom_cpi_years")
         self.update_annual_increment_amounts(annual_increment_amounts_data, instance)
         self.update_annual_increment_percentages(
             annual_increment_percentages_data, instance
@@ -375,10 +459,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         self.update_gross_turnover_percentages(
             gross_turnover_percentages_data, instance
         )
-        self.update_crown_land_rent_review_dates(
-            crown_land_rent_review_dates_data, instance
-        )
-
+        self.update_custom_cpi_years(custom_cpi_years_data, instance)
         return instance
 
     @staticmethod
@@ -394,192 +475,81 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     def update_annual_increment_amounts(
         self, validated_annual_increment_amounts_data, instance
     ):
-        initial_data = self.initial_data.get("annual_increment_amounts")
-
+        # Todo: Deal with the case where the approval duration is shortened
+        # and one or more annual increment amounts need to be deleted
         for annual_increment_amount_data in validated_annual_increment_amounts_data:
-            if annual_increment_amount_data.get("id", 0):
-                # This data exists in the database
+            (
+                annual_increment_amount,
+                created,
+            ) = FixedAnnualIncrementAmount.objects.get_or_create(
+                invoicing_details=instance,
+                year=annual_increment_amount_data.get("year"),
+            )
 
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    annual_increment_amount_data, initial_data
-                )
+            logger.debug(f"annual_increment_amount: {annual_increment_amount}")
+            logger.debug(f"created: {created}")
 
-                annual_increment_amount = FixedAnnualIncrementAmount.objects.get(
-                    id=int(annual_increment_amount_data.get("id"))
-                )
-                if to_be_deleted:
-                    # Data is marked as to_be_deleted
-                    if (
-                        not annual_increment_amount.readonly
-                    ):  # Double check if it's not readonly data.
-                        annual_increment_amount.delete()
-                else:
-                    # Update data
-                    serializer = FixedAnnualIncrementAmountSerializer(
-                        annual_increment_amount,
-                        annual_increment_amount_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in annual_increment_amount_data:
-                    annual_increment_amount_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = FixedAnnualIncrementAmountSerializer(
-                    data=annual_increment_amount_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
+            serializer = FixedAnnualIncrementAmountSerializer(
+                annual_increment_amount,
+                data=annual_increment_amount_data,
+                context={"invoicing_details": instance},
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
     def update_annual_increment_percentages(
         self, validated_annual_increment_percentages_data, instance
     ):
-        initial_data = self.initial_data.get("annual_increment_percentages")
-
+        # Todo: Deal with the case where the approval duration is shortened
+        # and one or more annual increment amounts need to be deleted
         for (
             annual_increment_percentage_data
         ) in validated_annual_increment_percentages_data:
-            if annual_increment_percentage_data.get("id", 0):
-                # This data exists in the database
+            (
+                annual_increment_percentage,
+                created,
+            ) = FixedAnnualIncrementPercentage.objects.get_or_create(
+                invoicing_details=instance,
+                year=annual_increment_percentage_data.get("year"),
+            )
 
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    annual_increment_percentage_data, initial_data
-                )
-
-                annual_increment_percentage = (
-                    FixedAnnualIncrementPercentage.objects.get(
-                        id=int(annual_increment_percentage_data.get("id"))
-                    )
-                )
-                if to_be_deleted:
-                    # Data is marked as to_be_deleted
-                    if not annual_increment_percentage.readonly:
-                        annual_increment_percentage.delete()
-                else:
-                    # Update data
-                    serializer = FixedAnnualIncrementPercentageSerializer(
-                        annual_increment_percentage,
-                        annual_increment_percentage_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in annual_increment_percentage_data:
-                    annual_increment_percentage_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = FixedAnnualIncrementPercentageSerializer(
-                    data=annual_increment_percentage_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
+            serializer = FixedAnnualIncrementPercentageSerializer(
+                annual_increment_percentage,
+                data=annual_increment_percentage_data,
+                context={"invoicing_details": instance},
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
     def update_gross_turnover_percentages(
         self, validated_gross_turnover_percentages_data, instance
     ):
-        initial_data = self.initial_data.get("gross_turnover_percentages")
-
         for gross_turnover_percentage_data in validated_gross_turnover_percentages_data:
-            if gross_turnover_percentage_data.get("id", 0):
-                # This data exists in the database
+            (
+                gross_turnover_percentage,
+                created,
+            ) = PercentageOfGrossTurnover.objects.get_or_create(
+                invoicing_details=instance,
+                year=gross_turnover_percentage_data.get("year"),
+            )
 
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    gross_turnover_percentage_data, initial_data
-                )
+            serializer = PercentageOfGrossTurnoverSerializer(
+                gross_turnover_percentage,
+                data=gross_turnover_percentage_data,
+                context={"invoicing_details": instance},
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
-                gross_turnover_percentage = PercentageOfGrossTurnover.objects.get(
-                    id=int(gross_turnover_percentage_data.get("id"))
-                )
-                if to_be_deleted:
-                    # Data is marked as to_be_deleted
-                    if not gross_turnover_percentage.readonly:
-                        gross_turnover_percentage.delete()
-                else:
-                    # Update data
-                    serializer = PercentageOfGrossTurnoverSerializer(
-                        gross_turnover_percentage,
-                        gross_turnover_percentage_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in gross_turnover_percentage_data:
-                    gross_turnover_percentage_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = PercentageOfGrossTurnoverSerializer(
-                    data=gross_turnover_percentage_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
-
-    def update_crown_land_rent_review_dates(
-        self, validated_crown_land_rent_review_dates_data, instance
-    ):
-        initial_data = self.initial_data.get("crown_land_rent_review_dates")
-
-        for (
-            crown_land_rent_review_date_data
-        ) in validated_crown_land_rent_review_dates_data:
-            if crown_land_rent_review_date_data.get("id", 0):
-                # This data exists in the database
-
-                # Check if it is marked as to_be_deleted
-                to_be_deleted = self._to_be_deleted(
-                    crown_land_rent_review_date_data, initial_data
-                )
-
-                crown_land_rent_review_date = CrownLandRentReviewDate.objects.get(
-                    id=int(crown_land_rent_review_date_data.get("id"))
-                )
-                if to_be_deleted:
-                    if not crown_land_rent_review_date.readonly:
-                        crown_land_rent_review_date.delete()
-                else:
-                    serializer = CrownLandRentReviewDateSerializer(
-                        crown_land_rent_review_date,
-                        crown_land_rent_review_date_data,
-                        context={"invoicing_details": instance},
-                    )
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # This is new data, not stored in the database yet.
-                if "id" in crown_land_rent_review_date_data:
-                    crown_land_rent_review_date_data.pop(
-                        "id"
-                    )  # Delete the item 'id: 0' from the dictionary
-                    # because we don't want to save a new record with id=0
-                serializer = CrownLandRentReviewDateSerializer(
-                    data=crown_land_rent_review_date_data,
-                    context={"invoicing_details": instance},
-                )
-                serializer.is_valid(raise_exception=True)
-                new_record = serializer.save()
-                new_record.invoicing_details = instance
-                new_record.save()
+    def update_custom_cpi_years(self, validated_custom_cpi_years, instance):
+        for custom_cpi_year_data in validated_custom_cpi_years:
+            custom_cpi_year, created = CustomCPIYear.objects.get_or_create(
+                invoicing_details=instance, year=custom_cpi_year_data.get("year")
+            )
+            custom_cpi_year.label = custom_cpi_year_data["label"]
+            if "percentage" in custom_cpi_year_data:
+                custom_cpi_year.percentage = custom_cpi_year_data["percentage"]
+            custom_cpi_year.save()
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -592,6 +562,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     invoice_pdf_secure_url = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     is_finance_officer = serializers.SerializerMethodField()
+    is_customer = serializers.SerializerMethodField()
     transaction_count = serializers.IntegerField(
         source="transactions.count", read_only=True
     )
@@ -609,25 +580,29 @@ class InvoiceSerializer(serializers.ModelSerializer):
             "status",
             "status_display",
             "invoice_pdf_secure_url",
+            "ledger_invoice_url",
             "oracle_invoice_number",
             "amount",
             "transaction_count",
             "balance",
-            "inc_gst",
+            "gst_free",
             "date_issued",
             "date_due",
             "is_finance_officer",
+            "is_customer",
         ]
         datatables_always_serialize = [
             "status",
             "transaction_count",
             "balance",
             "is_finance_officer",
+            "oracle_invoice_number",
+            "is_customer",
         ]
 
     def get_approval_type(self, obj):
         # update this once we have a proper approval_type field on the approval object
-        return "update this"
+        return obj.approval.approval_type.name
 
     def get_invoice_pdf_secure_url(self, obj):
         if obj.invoice_pdf:
@@ -641,13 +616,22 @@ class InvoiceSerializer(serializers.ModelSerializer):
         request = self.context.get("request")
         return is_finance_officer(request)
 
+    def get_is_customer(self, obj):
+        request = self.context.get("request")
+        return is_customer(request)
+
 
 class InvoiceEditOracleInvoiceNumberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = [
             "id",
+            "invoice_pdf",
             "oracle_invoice_number",
+            "date_issued",
+            "date_due",
+            "oracle_invoice_number",
+            "status",
         ]
 
 

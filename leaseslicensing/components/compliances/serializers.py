@@ -236,6 +236,7 @@ class InternalComplianceSerializer(BaseComplianceSerializer):
         model = Compliance
         fields = BaseComplianceSerializer.Meta.fields + [
             "approval",
+            "due_date",
             "reference",
             "assigned_to",
             "lodgement_date",

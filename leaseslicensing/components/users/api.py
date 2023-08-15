@@ -31,9 +31,9 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationRequestDTSerializer,
 )
 from leaseslicensing.components.proposals.models import (
-    Referral,
     Proposal,
     ProposalApplicant,
+    Referral,
 )
 from leaseslicensing.components.users.models import EmailUserAction, EmailUserLogEntry
 from leaseslicensing.components.users.serializers import (
@@ -41,11 +41,11 @@ from leaseslicensing.components.users.serializers import (
     EmailUserActionSerializer,
     EmailUserLogEntrySerializer,
     PersonalSerializer,
+    ProposalApplicantSerializer,
     UserAddressSerializer,
     UserFilterSerializer,
     UserSerializer,
     UserSystemSettingsSerializer,
-    ProposalApplicantSerializer,
 )
 from leaseslicensing.helpers import is_internal
 
@@ -180,7 +180,7 @@ class UserViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def request_user_account(self, request, *args, **kwargs):
         instance = EmailUser.objects.get(id=request.user.id)
-        serializer = UserSerializer(instance)
+        serializer = UserSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
     @action(
@@ -341,7 +341,7 @@ class UserViewSet(UserActionLoggingViewset):
         serializer = PersonalSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        serializer = UserSerializer(instance)
+        serializer = UserSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
     @detail_route(
@@ -356,7 +356,7 @@ class UserViewSet(UserActionLoggingViewset):
         serializer = ContactSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
-        serializer = UserSerializer(instance)
+        serializer = UserSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
     @detail_route(
@@ -402,7 +402,7 @@ class UserViewSet(UserActionLoggingViewset):
             instance.postal_same_as_residential = False
 
         instance.save()
-        serializer = UserSerializer(instance)
+        serializer = UserSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
     @detail_route(

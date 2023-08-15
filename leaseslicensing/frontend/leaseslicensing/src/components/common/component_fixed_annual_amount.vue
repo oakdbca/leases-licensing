@@ -1,172 +1,185 @@
 <template>
-    <div class="row mb-4">
+    <div class="row mb-3 border-bottom">
         <div class="col">
-            <template v-for="item in years_array" :key="item.key">
-                <div class="card mb-3">
-                    <div class="card-body">
-                        <div class="row mb-2 row_wrapper align-items-center">
-                            <label class="col-sm-2 col-form-label">Increment <span v-if="debug" class="debug_msg">id:{{
-                                item.id }}</span></label>
-                            <label class="col-sm-1 col-form-label">year</label>
-                            <div class="col-sm-2 align-items-center">
-                                <input type="number" :min="min_year" :max="max_year" :step="step_year"
-                                    class="form-control form-control-sm" v-model="item.year" :disabled="item.readonly" />
+            <template v-for="item in yearsArrayComputed" :key="item.key">
+                <div class="card mb-2">
+                    <div class="card-body py-1">
+                        <div class="div d-flex align-items-center">
+                            <label class="col-sm-4 col-form-label"
+                                >Increment
+                            </label>
+                            <div class="pe-3">
+                                After
+                                <div
+                                    class="badge bg-primary rounded-pill year-and-ordinal text-center mx-1"
+                                >
+                                    {{ ordinalSuffixOf(item.year) }} Year
+                                </div>
+                                increase by
                             </div>
-                            <label class="col-sm-3 col-form-label">{{ value_title }}</label>
-                            <div class="col-sm-2">
-                                <input v-if="increment_type === 'annual_increment_amount'" type="number"
-                                    :min="min_increment" :max="max_increment" :step="step_increment"
-                                    class="form-control form-control-sm" v-model="item.increment_amount"
-                                    :disabled="item.readonly" />
-                                <input v-else-if="increment_type === 'annual_increment_percentage'" type="number"
-                                    :min="min_increment" :max="max_increment" :step="step_increment"
-                                    class="form-control form-control-sm" v-model="item.increment_percentage"
-                                    :disabled="item.readonly" />
-                                <input v-else-if="increment_type === 'gross_turnover_percentage'" type="number"
-                                    :min="min_increment" :max="max_increment" :step="step_increment"
-                                    class="form-control form-control-sm" v-model="item.percentage"
-                                    :disabled="item.readonly" />
-                            </div>
-                            <div class="col-sm-1">
-                                <template v-if="deletable(item)">
-                                    <span class="remove_a_row text-danger" @click="remove_a_row(item, $event)"><i
-                                            class="bi bi-x-circle-fill"></i></span>
-                                </template>
+                            <div class="pe-3">
+                                <div
+                                    v-if="
+                                        incrementType ===
+                                        'annual_increment_amount'
+                                    "
+                                    class="input-group"
+                                >
+                                    <span class="input-group-text">$</span>
+                                    <input
+                                        v-model="item.increment_amount"
+                                        type="number"
+                                        :min="0"
+                                        :max="100000000"
+                                        :step="100"
+                                        class="form-control form-control-sm"
+                                        required
+                                        @change="$emit('onChangeIncrement')"
+                                        @onkeyup="$emit('onChangeIncrement')"
+                                    />
+                                    <span class="input-group-text">AUD</span>
+                                </div>
+                                <div
+                                    v-else-if="
+                                        incrementType ===
+                                        'annual_increment_percentage'
+                                    "
+                                    class="input-group"
+                                >
+                                    <input
+                                        v-model="item.increment_percentage"
+                                        type="number"
+                                        :min="0"
+                                        :max="100"
+                                        :step="0.1"
+                                        class="form-control form-control-sm"
+                                        required
+                                        @change="$emit('onChangeIncrement')"
+                                        @onkeyup="$emit('onChangeIncrement')"
+                                    />
+                                    <span class="input-group-text">%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </template>
-            <button class="btn btn-primary" @click="addAnotherYearClicked"><i class="fa fa-add"></i> Add increment
-                year</button>
         </div>
     </div>
 </template>
 
 <script>
-import { v4 as uuid } from 'uuid'
+import { v4 as uuid } from 'uuid';
+import { helpers } from '@/utils/hooks';
 
 export default {
     name: 'AnnualAmount',
     props: {
-        increment_type: {
+        incrementType: {
             type: String,
             required: true,
         },
-        years_array: {
+        yearsArray: {
             type: Array,
             required: true,
         },
-        min_year: {
-            type: Number,
-            default: 2021,
-        },
-        max_year: {
-            type: Number,
-            default: 2100,
-        },
-        step_year: {
+        stepYear: {
             type: Number,
             default: 1,
-        }
+        },
+        minIncrement: {
+            type: Number,
+            default: 1,
+        },
+        approvalDurationYears: {
+            type: Number,
+            required: true,
+        },
+        startDate: {
+            type: String,
+            required: true,
+        },
     },
+    emits: ['updateYearsArray', 'onChangeIncrement'],
     data: function () {
-        let vm = this;
         return {
-
-        }
-    },
-    created: function () {
-
-    },
-    mounted: function () {
-
+            financialYearHasPassed: helpers.financialYearHasPassed,
+            yearsElapsedSinceStartDate: helpers.yearsElapsedSinceStartDate,
+            ordinalSuffixOf: helpers.ordinalSuffixOf,
+        };
     },
     computed: {
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'true'
+                return this.$route.query.debug === 'true';
             }
-            return false
+            return false;
         },
-        // temp: function(){
-        //     if (this.increment_type === 'annual_increment_amount')
-        //         return this.years_array.increment_amount
-        //     else if (this.increment_type === 'annual_increment_percentage')
-        //         return this.years_array.increment_percentage
-        //     else if (this.increment_type === 'gross_turnover_percentage')
-        //         return this.years_array.percentage
-        //     return 5
-        // },
-        value_title: function () {
-            if (this.increment_type === 'annual_increment_amount')
-                return 'amount [AU$]'
-            else if (['annual_increment_percentage', 'gross_turnover_percentage'].includes(this.increment_type))
-                return 'percentage [%]'
+        yearsArrayComputed: {
+            get() {
+                return this.yearsArray;
+            },
+            set(value) {
+                console.log('emitting updateYearsArray');
+                this.$emit('updateYearsArray', this.incrementType, value);
+            },
         },
-        step_increment: function () {
-            if (this.increment_type === 'annual_increment_amount')
-                return 100
-            else if (['annual_increment_percentage', 'gross_turnover_percentage'].includes(this.increment_type))
-                return 0.1
+        valueTitle: function () {
+            if (this.incrementType === 'annual_increment_amount')
+                return 'Amount ($AUD)';
+
+            return 'Percentage (%)';
         },
+        stepIncrement: function () {
+            if (this.incrementType === 'annual_increment_amount') return 100;
+            return 0.1;
+        },
+    },
+    mounted: function () {
+        for (
+            let i = this.yearsArrayComputed.length;
+            i < this.approvalDurationYears - 1;
+            i++
+        ) {
+            if (!this.yearsArrayComputed[i]) {
+                this.yearsArrayComputed.push({
+                    key: uuid(),
+                    year: i + 1,
+                    [this.getKeyName()]: 0.0,
+                    readonly: false,
+                });
+            }
+        }
     },
     methods: {
-        deletable: function (item) {
-            if (item.id === 0 || !item.readonly)
-                // If the date is a newly added one, or not readonly, it is deletable.
-                return true
-            return false
+        getKeyName: function () {
+            if (this.incrementType === 'annual_increment_amount')
+                return 'increment_amount';
+            return 'increment_percentage';
         },
-        addAnotherYearClicked: function (e) {
-            e.preventDefault()
-
-            let key_name = ''
-            if (this.increment_type === 'annual_increment_amount')
-                key_name = 'increment_amount'
-            else if (this.increment_type === 'annual_increment_percentage')
-                key_name = 'increment_percentage'
-            else if (this.increment_type === 'gross_turnover_percentage')
-                key_name = 'percentage'
-
-            this.years_array.push({
-                'id': 0,
-                'key': uuid(),
-                'year': null,
-                [key_name]: null,
-                'readonly': false,
-            })
-
-        },
-        remove_a_row: function (item, e) {
-            let vm = this
-            let $elem = $(e.target)
-
-            // Fade out a row
-            $elem.closest('.row_wrapper').fadeOut(500, function () {
-                if (item.id === 0) {
-                    // When a row is newly added one (not stored in the database yet), just remove it from the array
-                    const index = vm.years_array.indexOf(item)
-                    if (index > -1) {
-                        vm.years_array.splice(index, 1)
-                    }
-                } else {
-                    // When a row is the one already stored in the database, flag it to be deleted.
-                    item.to_be_deleted = true
-                }
-            })
+        addAnotherYearClicked: function () {
+            let key_name = this.getKeyName();
+            let year = new Date().getFullYear() + 1;
+            if (this.yearsArrayComputed.length > 0) {
+                year =
+                    this.yearsArrayComputed[this.yearsArrayComputed.length - 1]
+                        .year + 1;
+            }
+            this.yearsArrayComputed.push({
+                id: 0,
+                key: uuid(),
+                year: year,
+                [key_name]: 0.0,
+                readonly: false,
+            });
         },
     },
-}
+};
 </script>
-
 <style scoped>
-.remove_a_row {
-    cursor: pointer;
-}
-
-.debug_msg {
-    font-size: 0.6em;
-    color: darkgray;
+.year-and-ordinal {
+    display: inline-block;
+    width: 90px;
+    font-size: 0.9em;
 }
 </style>

@@ -1,0 +1,15 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+    A new invoice has been raised for {{ approval.approval_type }} {{ approval.lodgement_number }}.
+
+    Due Date: {{ invoice.date_due }}
+
+    To view all your invoices:
+
+    {{external_invoices_url}}
+
+    To pay this invoice:
+
+    {{pay_now_url}}
+{%  endblock %}

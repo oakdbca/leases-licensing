@@ -1,7 +1,11 @@
 <template>
     <div id="invoicesDash" class="container">
-        <FormSection :form-collapse="false" label="Invoices" index="invoices">
-            <InvoicesTable level="internal" />
+        <FormSection
+            :form-collapse="false"
+            label="Invoice Records"
+            index="invoices"
+        >
+            <InvoicesTable :level="level" />
         </FormSection>
     </div>
 </template>
@@ -16,8 +20,11 @@ export default {
         InvoicesTable,
     },
     data() {
-        return {};
+        return {
+            level: this.$route.name.includes('external')
+                ? 'external'
+                : 'internal',
+        };
     },
-    methods: {},
 };
 </script>

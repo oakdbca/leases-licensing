@@ -1,11 +1,18 @@
 import logging
 import os
+from datetime import date
 
 from django.core.files import File
+from django.utils import timezone
 from ledger_api_client.managed_models import SystemGroup
 
 from leaseslicensing import settings
-from leaseslicensing.components.invoicing.models import ChargeMethod, RepetitionType
+from leaseslicensing.components.invoicing.models import (
+    ChargeMethod,
+    CPICalculationMethod,
+    InvoicingAndReviewDates,
+    RepetitionType,
+)
 from leaseslicensing.components.main.models import ApplicationType, GlobalSettings
 from leaseslicensing.components.proposals.models import ProposalType
 
@@ -80,6 +87,18 @@ class DefaultDataManager:
             except Exception as e:
                 logger.error(f"{e}, RepetitionType: {item[1]}")
 
+        for item in settings.CPI_CALCULATION_METHODS:
+            try:
+                myType, created = CPICalculationMethod.objects.get_or_create(
+                    name=item[0]
+                )
+                if created:
+                    myType.display_name = item[1]
+                    myType.save()
+                    logger.info(f"Created CPICalculationMethod: {item[1]}")
+            except Exception as e:
+                logger.error(f"{e}, CPICalculationMethod: {item[1]}")
+
         for a_group in settings.GROUP_NAME_CHOICES:
             try:
                 myGroup, created = SystemGroup.objects.get_or_create(
@@ -89,3 +108,16 @@ class DefaultDataManager:
                     logger.info(f"Created SystemGroup: {item[0]}")
             except Exception as e:
                 logger.error(f"{e}, SystemGroup: {item[1]}")
+
+        year = timezone.now().year
+        for year in range(year, year + 100):
+            try:
+                InvoicingAndReviewDates.objects.get(
+                    year=year,
+                )
+            except InvoicingAndReviewDates.DoesNotExist:
+                InvoicingAndReviewDates.objects.create(
+                    year=year,
+                    invoicing_date_annually=date(year, 1, 1),
+                    review_date_annually=date(year, 1, 1),
+                )

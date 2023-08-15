@@ -39,6 +39,15 @@
                 :selected-requirement="selectedRequirement"
                 @updateRequirements="updatedRequirements"
             />
+            <RequirementDetail
+                v-if="proposal && requirements"
+                ref="requirement_detail"
+                :key="uuid"
+                :proposal_id="proposal.id"
+                :requirements="requirements"
+                :selected-requirement="selectedRequirement"
+                @updateRequirements="updatedRequirements"
+            />
         </FormSection>
     </div>
 </template>
@@ -333,15 +342,6 @@ export default {
                     var id = $(this).attr('data-id');
                     e.preventDefault();
                     vm.removeRequirement(id);
-                }
-            );
-            vm.$refs.requirements_datatable.vmDataTable.on(
-                'click',
-                '.editRequirement',
-                function (e) {
-                    var id = $(this).attr('data-id');
-                    e.preventDefault();
-                    vm.editRequirement(id);
                 }
             );
         },

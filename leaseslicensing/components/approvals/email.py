@@ -117,9 +117,7 @@ def send_approval_expire_email_notification(approval):
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     if approval.is_org_applicant:
-        _log_org_email(
-            msg, approval.applicant, proposal.submitter, sender=sender_user
-        )
+        _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
@@ -148,9 +146,7 @@ def send_approval_cancel_email_notification(approval):
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     if approval.is_org_applicant:
-        _log_org_email(
-            msg, approval.applicant, proposal.submitter, sender=sender_user
-        )
+        _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
@@ -190,9 +186,7 @@ def send_approval_suspend_email_notification(approval, request=None):
     _log_approval_email(msg, approval, sender=sender_user)
     # _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     if approval.is_org_applicant:
-        _log_org_email(
-            msg, approval.applicant, proposal.submitter, sender=sender_user
-        )
+        _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
@@ -228,9 +222,7 @@ def send_approval_surrender_email_notification(approval, request=None):
     sender = settings.DEFAULT_FROM_EMAIL
     _log_approval_email(msg, approval, sender=sender_user)
     if approval.is_org_applicant:
-        _log_org_email(
-            msg, approval.applicant, proposal.submitter, sender=sender_user
-        )
+        _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender_user)
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)
 
@@ -306,6 +298,78 @@ def send_approval_reinstate_email_notification(approval, request):
         _log_org_email(msg, approval.applicant, proposal.submitter, sender=sender)
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender)
+
+
+def send_approval_crown_land_rent_review_email_notification(approval, months_due_in):
+    email = TemplateEmailBase(
+        subject=f"Crown Land Rent Review due for {approval.approval_type} {approval.lodgement_number}",
+        html_template="leaseslicensing/emails/approval_crown_land_rent_review_notification.html",
+        txt_template="leaseslicensing/emails/approval_crown_land_rent_review_notification.txt",
+    )
+    url = settings.SITE_URL
+    url += reverse("internal-approval-detail", kwargs={"pk": approval.pk})
+
+    due_text = "today" if months_due_in <= 0 else f" in {months_due_in} months"
+
+    context = {
+        "approval": approval,
+        "invoicing_details": approval.current_proposal.invoicing_details,
+        "due_text": due_text,
+        "url": url,
+    }
+    finance_group_member_emails = emails_list_for_group(settings.GROUP_FINANCE)
+    msg = email.send(
+        finance_group_member_emails,
+        cc=[settings.LEASING_FINANCE_NOTIFICATION_EMAIL],
+        context=context,
+    )
+    sender = settings.DEFAULT_FROM_EMAIL
+    try:
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+    except EmailUser.DoesNotExist:
+        EmailUser.objects.create(email=sender, password="")
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+
+    _log_approval_email(msg, approval, sender=sender_user)
+
+
+def send_approval_custom_cpi_entry_email_notification(approval, days_due_in):
+    email = TemplateEmailBase(
+        subject=f"Custom CPI Entry Required for {approval.approval_type} {approval.lodgement_number}",
+        html_template="leaseslicensing/emails/approval_custom_cpi_entry_notification.html",
+        txt_template="leaseslicensing/emails/approval_custom_cpi_entry_notification.txt",
+    )
+    url = settings.SITE_URL
+    url += reverse("internal-approval-detail", kwargs={"pk": approval.pk})
+
+    invoicing_details = approval.current_proposal.invoicing_details
+
+    days_left = f"{days_due_in} days"
+    next_reminder_date = invoicing_details.invoicing_periods_next_reminder_date
+    start_of_next_invoicing_period = invoicing_details.invoicing_periods_next_start_date
+
+    context = {
+        "approval": approval,
+        "invoicing_details": invoicing_details,
+        "days_left": days_left,
+        "next_reminder_date": next_reminder_date,
+        "start_of_next_invoicing_period": start_of_next_invoicing_period,
+        "url": url,
+    }
+    finance_group_member_emails = emails_list_for_group(settings.GROUP_FINANCE)
+    msg = email.send(
+        finance_group_member_emails,
+        cc=[settings.LEASING_FINANCE_NOTIFICATION_EMAIL],
+        context=context,
+    )
+    sender = settings.DEFAULT_FROM_EMAIL
+    try:
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+    except EmailUser.DoesNotExist:
+        EmailUser.objects.create(email=sender, password="")
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+
+    _log_approval_email(msg, approval, sender=sender_user)
 
 
 def _log_approval_email(email_message, approval, sender=None):

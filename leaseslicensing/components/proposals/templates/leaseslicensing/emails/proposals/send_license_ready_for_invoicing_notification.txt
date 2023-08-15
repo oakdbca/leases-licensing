@@ -1,7 +1,7 @@
 {%  extends 'leaseslicensing/emails/base_email.txt' %}
 
 {%  block content %}
-    A lease or license application {{ proposal.lodgement_number }} has been approved and invoicing details can now be entered..
+    A lease or license application {{ proposal.lodgement_number }} has been approved and invoicing details can now be entered.
 
     You can access this Application using the following link:
 

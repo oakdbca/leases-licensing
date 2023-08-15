@@ -2,6 +2,7 @@ import datetime
 import logging
 import re
 
+from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models, transaction
@@ -10,6 +11,7 @@ from django.db.models.deletion import ProtectedError
 from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.approvals.email import (
     send_approval_cancel_email_notification,
@@ -21,8 +23,8 @@ from leaseslicensing.components.approvals.email import (
 )
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
-    LicensingModelVersioned,
     Document,
+    LicensingModelVersioned,
     RevisionedMixin,
     SecureFileField,
     UserAction,
@@ -38,7 +40,6 @@ from leaseslicensing.components.proposals.models import (
 )
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
 
 logger = logging.getLogger(__name__)
@@ -104,8 +105,16 @@ class Meta:
 
 
 class ApprovalType(RevisionedMixin):
+    APPROVAL_TYPE_LEASE = "lease"
+    APPROVAL_TYPE_LICENCE = "licence"
+    APPROVAL_TYPE_CHOICES = (
+        (APPROVAL_TYPE_LEASE, "Lease"),
+        (APPROVAL_TYPE_LICENCE, "Licence"),
+    )
+    type = models.CharField(max_length=10, choices=APPROVAL_TYPE_CHOICES, null=True)
     name = models.CharField(max_length=200, unique=True)
     details_placeholder = models.CharField(max_length=200, blank=True)
+    gst_free = models.BooleanField(default=False)
     approvaltypedocumenttypes = models.ManyToManyField(
         "ApprovalTypeDocumentType", through="ApprovalTypeDocumentTypeOnApprovalType"
     )
@@ -168,6 +177,7 @@ class Approval(LicensingModelVersioned):
         (APPROVAL_STATUS_AWAITING_PAYMENT, "Awaiting Payment"),
         (APPROVAL_STATUS_CURRENT_EDITING_INVOICING, "Current (Editing Invoicing)"),
     )
+    approval_type = models.ForeignKey(ApprovalType, on_delete=models.PROTECT, null=True)
     status = models.CharField(
         max_length=40, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
@@ -441,7 +451,7 @@ class Approval(LicensingModelVersioned):
 
     @property
     def can_renew(self):
-        if not self.status in [
+        if self.status not in [
             self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL,
             self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL_REVIEW,
         ]:
@@ -479,6 +489,10 @@ class Approval(LicensingModelVersioned):
         return self.current_proposal.approved_by
 
     @property
+    def invoicing_details(self):
+        return self.current_proposal.invoicing_details
+
+    @property
     def requirement_docs(self):
         if self.current_proposal:
             requirement_ids = (
@@ -496,6 +510,52 @@ class Approval(LicensingModelVersioned):
                 f"Approval {self.lodgement_number} does not have current_proposal"
             )
         return None
+
+    @property
+    def proponent_reference_number(self):
+        return self.current_proposal.proponent_reference_number
+
+    @property
+    def crown_land_rent_review_dates(self):
+        review_once_every = self.current_proposal.invoicing_details.review_once_every
+        if not review_once_every:
+            logger.warning(
+                f"Approval {self.lodgement_number} "
+                "does not have a crown land rent review interval set. Returning empty list."
+            )
+            return []
+
+        review_dates = []
+        review_date = self.start_date + relativedelta(years=review_once_every)
+        expiry_date = self.expiry_date
+        while review_date < expiry_date:
+            review_dates.append(review_date)
+            review_date = review_date + relativedelta(years=review_once_every)
+
+        return review_dates
+
+    @property
+    def crown_land_rent_review_due_today(self):
+        today = timezone.localtime(timezone.now()).date()
+        return today in self.crown_land_rent_review_dates
+
+    def crown_land_rent_review_reminder_due_in(self, months=12):
+        today = timezone.localtime(timezone.now()).date()
+        return today + relativedelta(months=months) in self.crown_land_rent_review_dates
+
+    @property
+    def next_crown_land_rent_review_date(self):
+        for review_date in self.crown_land_rent_review_dates:
+            if review_date > timezone.now().date():
+                return review_date
+        return None
+
+    def custom_cpi_entry_reminder_due_in(self, days=30):
+        today = timezone.localtime(timezone.now()).date()
+        return (
+            today + relativedelta(days=days)
+            in self.invoicing_details.invoicing_periods_start_dates
+        )
 
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
@@ -809,6 +869,7 @@ class ApprovalSuspensionDocument(Document):
 class ApprovalUserAction(UserAction):
     ACTION_CREATE_APPROVAL = "Create licence {}"
     ACTION_UPDATE_APPROVAL = "Create licence {}"
+    ACTION_REVIEW_INVOICING_DETAILS_BASE_FEE_APPROVAL = "Base Fee changed from {} to {}"
     ACTION_EXPIRE_APPROVAL = "Expire licence {}"
     ACTION_CANCEL_APPROVAL = "Cancel licence {}"
     ACTION_EXTEND_APPROVAL = "Extend licence {}"

@@ -143,15 +143,15 @@ class Organisation(models.Model):
 
     @property
     def ledger_organisation(self):
-        logger.info(
-            f"Retrieving organisation {self.ledger_organisation_id} from ledger."
-        )
         if self.ledger_organisation_id:
             cache_key = settings.CACHE_KEY_LEDGER_ORGANISATION.format(
                 self.ledger_organisation_id
             )
             organisation = cache.get(cache_key)
             if organisation is None:
+                logger.info(
+                    f"Retrieving organisation {self.ledger_organisation_id} from ledger."
+                )
                 organisation_response = get_organisation(self.ledger_organisation_id)
                 if status.HTTP_200_OK == organisation_response["status"]:
                     organisation = organisation_response["data"]
@@ -163,7 +163,7 @@ class Organisation(models.Model):
                     )
                     logger.error(error_message)
                     raise UnableToRetrieveLedgerOrganisation(error_message)
-            logger.info(f"Retrieved organisation {organisation} from ledger.")
+                logger.info(f"Retrieved organisation {organisation} from ledger.")
             return organisation
 
         critical_message = (
@@ -1056,8 +1056,6 @@ class OrganisationRequest(models.Model):
                 if 200 == search_organisation_response["status"]:
                     data = search_organisation_response["data"]
                     ledger_org = data[0]
-
-            logger.debug("ledger_org = " + str(ledger_org))
 
             org, created = Organisation.objects.get_or_create(
                 ledger_organisation_id=ledger_org["organisation_id"]

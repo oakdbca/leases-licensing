@@ -40,9 +40,19 @@ router.register("groups", tenure_api.GroupViewSet, basename="groups")
 
 router.register("invoices", invoicing_api.InvoiceViewSet, basename="invoices")
 router.register(
+    "invoicing_details",
+    invoicing_api.InvoicingDetailsViewSet,
+    basename="invoicing_details",
+)
+router.register(
     "invoice_transactions",
     invoicing_api.InvoiceTransactionViewSet,
     basename="invoice_transactions",
+)
+router.register(
+    "cpi_calculation_methods",
+    invoicing_api.CPICalculationMethodViewSet,
+    basename="cpi_calculation_methods",
 )
 
 router.register(
@@ -110,15 +120,19 @@ api_patterns = [
         name="get-request-user-id",
     ),
     url(r"^api/profile$", users_api.GetProfile.as_view(), name="get-profile"),
-    url(r'^api/profile/(?P<proposal_pk>\d+)$', users_api.GetProposalApplicant.as_view(), name='get-proposal-applicant'),
+    url(
+        r"^api/profile/(?P<proposal_pk>\d+)$",
+        users_api.GetProposalApplicant.as_view(),
+        name="get-proposal-applicant",
+    ),
     url(r"^api/countries$", users_api.GetCountries.as_view(), name="get-countries"),
     url(
-        r"^api/charge_methods$",
+        r"^api/charge_methods/$",
         users_api.GetChargeMethods.as_view(),
         name="get-charge-methods",
     ),
     url(
-        r"^api/repetition_types$",
+        r"^api/repetition_types/$",
         users_api.GetRepetitionTypes.as_view(),
         name="get-repetition-types",
     ),
@@ -212,6 +226,16 @@ urlpatterns = (
             name="internal-approvals",
         ),
         url(
+            r"^external/invoices/$",
+            views.ExternalView.as_view(),
+            name="external-invoices",
+        ),
+        url(
+            r"^internal/invoices/$",
+            views.InternalView.as_view(),
+            name="internal-invoices",
+        ),
+        url(
             r"^external/approval/(?P<approval_pk>\d+)/$",
             views.ExternalView.as_view(),
             name="external-approval-detail",
@@ -299,6 +323,26 @@ urlpatterns = (
             r"^internal/competitive_process/(?P<pk>\d+)/$",
             views.InternalCompetitiveProcessView.as_view(),
             name="internal-competitiveprocess-detail",
+        ),
+        url(
+            r"^api/invoices/(?P<pk>\d+)/pay_invoice/$",
+            invoicing_api.InvoiceViewSet.as_view(actions={"get": "pay_invoice"}),
+            name="external-pay-invoice",
+        ),
+        url(
+            r"^api/invoicing/ledger-api-invoice-success-callback/(?P<uuid>.+)$",
+            invoicing_api.PayInvoiceSuccessCallbackView.as_view(),
+            name="ledger-api-invoice-success-callback",
+        ),
+        url(
+            r"^external/invoice/(?P<id>.+)/payment-success$",
+            views.ExternalView.as_view(),
+            name="external-pay-invoice-success",
+        ),
+        url(
+            r"^external/invoice/(?P<id>.+)/payment-failure$",
+            views.ExternalView.as_view(),
+            name="external-pay-invoice-failure",
         ),
     ]
     + ledger_patterns

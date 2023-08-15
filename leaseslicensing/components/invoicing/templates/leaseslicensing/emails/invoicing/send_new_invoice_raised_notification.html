@@ -1,0 +1,15 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+        <p>
+            A new invoice has been raised for {{ approval.approval_type }} {{ approval.lodgement_number }}.
+        </p>
+
+        <p>
+            <strong>Due Date: {{ invoice.date_due }}</strong>
+        </p>
+
+        <a href="{{external_invoices_url}}">View All Your Invoices</a>
+
+        <a href="{{pay_now_url}}">Pay This Invoice</a>
+{%  endblock %}

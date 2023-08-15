@@ -1,12 +1,11 @@
 import copy
-import datetime
 import json
 import logging
 import subprocess
+from decimal import Decimal
 
 import geopandas as gpd
 import pandas as pd
-from django_countries.fields import CountryField
 from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
@@ -22,8 +21,10 @@ from django.db import IntegrityError, models, transaction
 from django.db.models import JSONField, Max, Min, Q
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext as _
+from django_countries.fields import CountryField
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from ledger_api_client.ledger_models import Invoice
+from ledger_api_client.ledger_models import Invoice as LedgerInvoice
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
 from reversion.models import Version
@@ -33,7 +34,11 @@ from leaseslicensing.components.competitive_processes.email import (
     send_competitive_process_create_notification,
 )
 from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
-from leaseslicensing.components.invoicing.models import InvoicingDetails
+from leaseslicensing.components.invoicing import utils as invoicing_utils
+from leaseslicensing.components.invoicing.email import (
+    send_new_invoice_raised_internal_notification,
+)
+from leaseslicensing.components.invoicing.models import Invoice, InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
     ApplicationType,
     CommunicationsLogEntry,
@@ -51,11 +56,13 @@ from leaseslicensing.components.main.utils import (
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.utils import (
     can_admin_org,
+    get_admin_emails_for_organisation,
     get_organisation_ids_for_user,
 )
 from leaseslicensing.components.proposals.email import (
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
+    send_license_ready_for_invoicing_notification,
     send_pending_referrals_complete_email_notification,
     send_proposal_approval_email_notification,
     send_proposal_approver_sendback_email_notification,
@@ -933,7 +940,9 @@ class ProposalManager(models.Manager):
         return (
             super()
             .get_queryset()
-            .select_related("proposal_type", "org_applicant", "application_type")
+            .select_related(
+                "proposal_type", "org_applicant", "application_type", "approval"
+            )
         )
 
 
@@ -1135,6 +1144,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
+        related_name="proposal",
     )
     # Registration of Interest additional form fields
     # proposal details
@@ -1282,13 +1292,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             return True
 
     @property
-    def applicant_email(self):
-        if (
-            self.org_applicant
-            and hasattr(self.org_applicant.ledger_organisation_id, "email")
-            and self.org_applicant.ledger_organisation_id.email
-        ):
-            return self.org_applicant.ledger_organisation_id.email
+    def applicant_emails(self):
+        if self.org_applicant:
+            return get_admin_emails_for_organisation(self.org_applicant.id)
         elif self.ind_applicant:
             email_user = retrieve_email_user(self.ind_applicant)
         elif self.proxy_applicant:
@@ -1296,7 +1302,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         else:
             email_user = retrieve_email_user(self.submitter)
 
-        return email_user.email
+        return [email_user.email]
 
     @property
     def applicant_name(self):
@@ -2637,6 +2643,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         self.processing_status = (
                             Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                         )
+                        send_license_ready_for_invoicing_notification(self, request)
 
                     # TODO: additional logic required for amendment, reissue, etc?
 
@@ -2644,7 +2651,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     # self.create_approval_pdf(request)
                     # TODO: Send notification email to approver after the finance team
                     # has created the invoice
-                    # send_license_ready_for_invoicing_notification(self, request)
 
                     # Send notification email to applicant
                     send_proposal_approval_email_notification(self, request)
@@ -2688,14 +2694,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             raise e
         else:
             if not self.org_applicant:
-                original_applicant = ProposalApplicant.objects.get(
-                    proposal=self
-                )
+                original_applicant = ProposalApplicant.objects.get(proposal=self)
                 # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
                 original_applicant.copy_self_to_proposal(lease_licence)
 
-
             from copy import deepcopy
+
             for geo in self.proposalgeometry.all():
                 # add geometry
                 new_geo = deepcopy(geo)
@@ -2710,7 +2714,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def generate_compliances(self, approval, request):
         today = timezone.now().date()
-        timedelta = datetime.timedelta
         from leaseslicensing.components.compliances.models import (
             Compliance,
             ComplianceUserAction,
@@ -2772,14 +2775,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         for x in range(req.recurrence_schedule):
                             # Weekly
                             if req.recurrence_pattern == 1:
-                                current_date += timedelta(weeks=1)
+                                current_date += relativedelta(weeks=1)
                             # Monthly
                             elif req.recurrence_pattern == 2:
-                                current_date += timedelta(weeks=4)
+                                current_date += relativedelta(month=1)
                                 pass
                             # Yearly
                             elif req.recurrence_pattern == 3:
-                                current_date += timedelta(days=365)
+                                current_date += relativedelta(years=1)
                         # Create the compliance
                         if current_date <= approval.expiry_date:
                             try:
@@ -2800,6 +2803,75 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                     ),
                                     request,
                                 )
+
+    def generate_gross_turnover_requirements(self, approval, request):
+        end_of_first_financial_quarter = invoicing_utils.end_of_next_financial_quarter(
+            approval.start_date
+        )
+        end_of_first_financial_year = invoicing_utils.end_of_next_financial_year(
+            approval.start_date
+        )
+
+        first_quarterly_due_date = end_of_first_financial_quarter + relativedelta(
+            days=30
+        )
+        first_annual_due_date = end_of_first_financial_year.replace(month=10).replace(
+            day=31
+        )
+
+        try:
+            annual_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUAL
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                f"ProposalStandardRequirement not found: code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUAL}"
+            )
+            raise
+        (
+            annual_financial_statement_requirement,
+            created,
+        ) = ProposalRequirement.objects.get_or_create(
+            proposal=self,
+            standard_requirement=annual_standard_requirement,
+            due_date=first_annual_due_date,
+            reminder_date=end_of_first_financial_year + relativedelta(days=1),
+            recurrence=True,
+            recurrence_pattern=2,  # Monthly
+            recurrence_schedule=3,  # Every 3 months (quarterly)
+        )
+        if created:
+            logger.info(
+                "New Annual Financial Statement Proposal Requirement: "
+                f"{annual_financial_statement_requirement} created for {self}"
+            )
+
+        try:
+            quarterly_standard_requirement = ProposalStandardRequirement.objects.get(
+                code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTER
+            )
+        except ProposalStandardRequirement.DoesNotExist:
+            logger.error(
+                f"ProposalStandardRequirement not found: code={settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTER}"
+            )
+            raise
+        (
+            quarterly_financial_statement_requirement,
+            created,
+        ) = ProposalRequirement.objects.get_or_create(
+            proposal=self,
+            standard_requirement=quarterly_standard_requirement,
+            due_date=first_quarterly_due_date,
+            reminder_date=end_of_first_financial_year + relativedelta(days=1),
+            recurrence=True,
+            recurrence_pattern=3,  # Annually
+            recurrence_schedule=1,  # Every 1 year
+        )
+        if created:
+            logger.info(
+                "New Quarterly Financial Statement Proposal Requirement: "
+                f"{annual_financial_statement_requirement} created for {self}"
+            )
 
     @property
     def proposal_applicant(self):
@@ -2836,8 +2908,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         polygon=pg.polygon,
                         intersects=pg.intersects,
                         copied_from=pg,
-                        drawn_by=pg.drawn_by, # EmailUser
-                        locked=pg.locked, # Should evaluate to true
+                        drawn_by=pg.drawn_by,  # EmailUser
+                        locked=pg.locked,  # Should evaluate to true
                     )
 
                 # Copy over any tourism, general, prn str type proposal details and documents
@@ -2856,6 +2928,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 ]
 
                 from copy import deepcopy
+
                 for field in details_fields:
                     f_text = f"{field}_text"
                     setattr(proposal, f_text, getattr(previous_proposal, f_text))
@@ -2868,10 +2941,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         new_doc.id = None
                         new_doc.save()
 
-                for field in ["proponent_reference_number",
-                    "site_name_id"]:
+                for field in ["proponent_reference_number", "site_name_id"]:
                     setattr(proposal, field, getattr(previous_proposal, field))
-
 
                 # Copy over previous groups
                 for group in previous_proposal.groups.all():
@@ -3099,57 +3170,104 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.invoicing_details:
             raise ValidationError(
                 "Couldn't generate an invoicing details. "
-                f"Proposal {self} has already generated a Invoicing Details: {self.generated_competitive_process}"
+                f"Proposal {self} has already generated a Invoicing Details: {self.invoicing_details}"
             )
 
         new_invoicing_details = InvoicingDetails.objects.create()
         self.invoicing_details = new_invoicing_details
         self.save()
 
+    @transaction.atomic
     def save_invoicing_details(self, request, action):
         from leaseslicensing.components.invoicing.serializers import (
             InvoicingDetailsSerializer,
         )
 
-        with transaction.atomic():
-            try:
-                # Retrieve invoicing_details data
-                proposal_data = request.data.get("proposal", {})
-                invoicing_details_data = (
-                    proposal_data.get("invoicing_details", {}) if proposal_data else {}
-                )
-
-                # Save invoicing details
-                invoicing_details = InvoicingDetails.objects.get(
-                    id=invoicing_details_data.get("id")
-                )
-                serializer = InvoicingDetailsSerializer(
-                    invoicing_details,
-                    data=invoicing_details_data,
-                    context={"action": action},
-                )
-                serializer.is_valid(raise_exception=True)
-                serializer.save()
-            except Exception as e:
-                logger.exception(e)
-                raise ValidationError("Couldn't save invoicing details.")
-
-    def finance_complete_editing(self, request, action):
-        from leaseslicensing.components.approvals.models import Approval
-
-        self.save_invoicing_details(request, action)
-        self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
-
-        approval, created = Approval.objects.update_or_create(
-            current_proposal=self,
-            defaults={
-                "issue_date": timezone.now(),
-                "expiry_date": timezone.now().date() + relativedelta(years=1),
-                "start_date": timezone.now().date(),
-            },
+        # Retrieve invoicing_details data
+        proposal_data = request.data.get("proposal", {})
+        invoicing_details_data = (
+            proposal_data.get("invoicing_details", {}) if proposal_data else {}
         )
 
-        self.generate_compliances(approval, request)
+        # Save invoicing details
+        id = invoicing_details_data.get("id")
+        try:
+            invoicing_details = InvoicingDetails.objects.get(id=id)
+        except InvoicingDetails.DoesNotExist:
+            raise serializers.ValidationError(
+                _("Invoicing details with id {id} not found", code="invalid")
+            )
+
+        serializer = InvoicingDetailsSerializer(
+            invoicing_details,
+            data=invoicing_details_data,
+            context={"action": action},
+        )
+        serializer.is_valid(raise_exception=True)
+
+        instance = serializer.save()
+        logger.debug(type(instance))
+        return instance
+
+    @transaction.atomic
+    def finance_complete_editing(self, request, action):
+        self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
+        self.save()
+
+        invoicing_details = self.save_invoicing_details(request, action)
+        approval = invoicing_details.approval
+        if (
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
+            == invoicing_details.charge_method.key
+        ):
+            # Nothing else needs to be done
+            return
+
+        if (
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE
+            == invoicing_details.charge_method.key
+        ):
+            # Generate a single once off change invoice
+            invoice_amount = invoicing_details.once_off_charge_amount
+            logger.debug(f"invoice_amount: {invoice_amount}")
+            if not invoice_amount or invoice_amount <= Decimal("0.00"):
+                raise serializers.ValidationError(
+                    _(f"Invalid invoice amount: {invoice_amount}", code="invalid")
+                )
+
+            gst_free = approval.approval_type.gst_free
+
+            invoice = Invoice(
+                approval=self.approval,
+                amount=invoice_amount,
+                gst_free=gst_free,
+            )
+            if approval.proponent_reference_number:
+                invoice.proponent_reference_number = approval.proponent_reference_number
+
+            invoice.save()
+
+            # send to the finance group so they can take action
+            send_new_invoice_raised_internal_notification(self.approval, invoice)
+            return
+
+        if (
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+            == invoicing_details.charge_method.key
+        ):
+            # Generate requirements for the proponent to submit quarterly and annual financial statements
+            self.generate_gross_turnover_requirements(approval, request)
+
+            # Generate compliances from the requirements
+            self.generate_compliances(approval, request)
+            return
+
+        # For all other charge methods, there may be one or more invoice records that need to be
+        # generated immediately (any past periods and any current period i.e. that has started but not yet finished)
+        invoicing_details.generate_immediate_invoices()
+
+    def finance_cancel_editing(self, request, action):
+        self.processing_status = Proposal.PROCESSING_STATUS_CURRENT
         self.save()
 
     @classmethod
@@ -3308,11 +3426,11 @@ class ProposalApplicant(RevisionedMixin):
 
 
 def update_sticker_doc_filename(instance, filename):
-    return "{}/stickers/batch/{}".format(settings.MEDIA_APP_DIR, filename)
+    return f"{settings.MEDIA_APP_DIR}/stickers/batch/{filename}"
 
 
 def update_sticker_response_doc_filename(instance, filename):
-    return "{}/stickers/response/{}".format(settings.MEDIA_APP_DIR, filename)
+    return f"{settings.MEDIA_APP_DIR}/stickers/response/{filename}"
 
 
 class ProposalIdentifier(models.Model):
@@ -3505,9 +3623,11 @@ class ApplicationFeeDiscount(RevisionedMixin):
     @property
     def invoice(self):
         try:
-            invoice = Invoice.objects.get(reference=self.proposal.fee_invoice_reference)
+            invoice = LedgerInvoice.objects.get(
+                reference=self.proposal.fee_invoice_reference
+            )
             return invoice
-        except Invoice.DoesNotExist:
+        except LedgerInvoice.DoesNotExist:
             pass
         return False
 
@@ -3793,7 +3913,7 @@ class ProposalOnHold(models.Model):
 
 class ProposalStandardRequirement(RevisionedMixin):
     text = models.TextField()
-    code = models.CharField(max_length=10, unique=True)
+    code = models.CharField(max_length=50, unique=True)
     obsolete = models.BooleanField(default=False)
     application_type = models.ForeignKey(
         ApplicationType, null=True, blank=True, on_delete=models.SET_NULL

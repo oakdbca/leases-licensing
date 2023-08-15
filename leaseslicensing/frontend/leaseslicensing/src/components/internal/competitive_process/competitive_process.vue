@@ -430,6 +430,7 @@
             </div>
         </div>
     </div>
+    <BootstrapSpinner v-else :loading="true" class="text-primary" />
 </template>
 
 <script>
