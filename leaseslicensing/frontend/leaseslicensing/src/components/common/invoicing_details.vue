@@ -187,6 +187,7 @@
                         class="form-select"
                         aria-label="CPI Calculation Method"
                         required
+                        :disabled="cpi_calculation_method_disabled"
                         @change="updatePreviewInvoices"
                     >
                         <option
@@ -598,6 +599,9 @@ export default {
                     this.invoicingDetailsComputed.invoicing_repetition_type
                 ) || this.context != 'Proposal'
             );
+        },
+        cpi_calculation_method_disabled: function () {
+            return this.context != 'Proposal';
         },
         invoicing_repetition_type_disabled: function () {
             return this.context != 'Proposal';
