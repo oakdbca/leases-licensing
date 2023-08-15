@@ -493,6 +493,12 @@ export default {
         },
         getGrossTurnoverChanges: function () {
             if (
+                constants.CHARGE_METHODS.PERCENTAGE_OF_GROSS_TURNOVER.ID !=
+                this.approval.invoicing_details.charge_method_key
+            ) {
+                return [];
+            }
+            if (
                 this.original_invoicing_details ==
                 this.approval.invoicing_details
             ) {
@@ -674,10 +680,10 @@ export default {
             utils
                 .fetchUrl(
                     api_endpoints.invoicing_details +
-                        `${this.approval.invoicing_details.id}/`,
+                        `${this.approval.invoicing_details.id}/complete_editing/`,
                     requestOptions
                 )
-                .then(() => {
+                .then((data) => {
                     swal.fire({
                         title: 'Invoicing Details Saved',
                         text: 'The invoicing details have been saved.',
@@ -685,6 +691,7 @@ export default {
                         confirmButtonText: 'OK',
                         confirmButtonColor: '#3085d6',
                     });
+                    this.approval = Object.assign({}, data);
                 })
                 .catch((error) => {
                     Swal.fire({
