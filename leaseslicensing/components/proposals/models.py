@@ -2999,7 +2999,34 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 )
                 proposal.submitter = request.user.id
                 proposal.previous_application = self
-                proposal.proposed_issuance_approval = None
+
+                # Pre-populate proposed approval issuance information from previous proposal
+                proposed_issuance = {
+                    k: v
+                    for k, v in previous_proposal.proposed_issuance_approval.items()
+                }
+                proposed_issuance["details"] = None  # Assessor needs to fill this in
+                proposed_issuance["approved_on"] = None  # Populated by the system
+                proposed_issuance["approved_by"] = None  # Populated by the system
+
+                time_format = "%Y-%m-%d"
+                original_start_date = datetime.datetime.strptime(
+                    proposed_issuance["start_date"], time_format
+                )
+                original_expiry_date = datetime.datetime.strptime(
+                    proposed_issuance["expiry_date"], time_format
+                )
+                proposed_issuance["start_date"] = (
+                    original_expiry_date + datetime.timedelta(days=1)
+                ).strftime(
+                    time_format
+                )  # Start date is the day after the expiry date of the original proposal
+                proposed_issuance["expiry_date"] = (
+                    original_expiry_date + (original_expiry_date - original_start_date)
+                ).strftime(
+                    time_format
+                )  # Expiry date is after the same duration as the original proposal
+                proposal.proposed_issuance_approval = proposed_issuance
 
                 # copy any proposal geometry from the previous proposal
                 for pg in previous_proposal.proposalgeometry.all():
