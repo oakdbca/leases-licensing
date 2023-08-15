@@ -1,15 +1,11 @@
 import logging
-import traceback
 from datetime import datetime
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from rest_framework import filters, generics, serializers, views, viewsets
+from rest_framework import serializers, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
@@ -27,7 +23,6 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
     ApprovalDocumentHistorySerializer,
     ApprovalLogEntrySerializer,
-    ApprovalPaymentSerializer,
     ApprovalSerializer,
     ApprovalSurrenderSerializer,
     ApprovalSuspensionSerializer,
@@ -35,11 +30,11 @@ from leaseslicensing.components.approvals.serializers import (
 )
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.serializers import InvoiceSerializer
+from leaseslicensing.components.main.api import UserActionLoggingViewset
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
-from leaseslicensing.components.organisations.models import OrganisationContact
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
@@ -209,7 +204,7 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             view,
             ledger_lookup_fields=[
                 "current_proposal__org_applicant",
-            ], # "current_proposal__ind_applicant" replaced by ProposalApplicant member
+            ],  # "current_proposal__ind_applicant" replaced by ProposalApplicant member
         )
         setattr(view, "_datatables_total_count", total_count)
         return queryset
@@ -334,7 +329,7 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ApprovalViewSet(viewsets.ModelViewSet):
+class ApprovalViewSet(UserActionLoggingViewset):
     # queryset = Approval.objects.all()
     queryset = Approval.objects.none()
     serializer_class = ApprovalSerializer
