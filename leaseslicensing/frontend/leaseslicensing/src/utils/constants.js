@@ -120,7 +120,33 @@ module.exports = {
         PROCESSING_STATUS_RECALLED: { ID: 'recalled', TEXT: 'Recalled' },
         PROCESSING_STATUS_COMPLETED: { ID: 'completed', TEXT: 'Completed' },
     },
-
+    CHARGE_METHODS: {
+        NO_RENT_OR_LICENCE_CHARGE: {
+            ID: 'no_rent_or_licence_charge',
+            TEXT: 'No Charge',
+        },
+        ONCE_OFF_CHARGE: { ID: 'once_off_charge', TEXT: 'Once-off Charge' },
+        BASE_FEE_PLUS_FIXED_ANNUAL_INCREMENT: {
+            ID: 'base_fee_plus_fixed_annual_increment',
+            TEXT: 'Base Fee Plus Fixed Annual Increment',
+        },
+        BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE: {
+            ID: 'base_fee_plus_fixed_annual_percentage',
+            TEXT: 'Base Fee Plus Fixed Annual Percentage',
+        },
+        BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM: {
+            ID: 'base_fee_plus_annual_cpi',
+            TEXT: 'Base Fee Plus Annual CPI (Custom)',
+        },
+        BASE_FEE_PLUS_ANNUAL_CPI: {
+            ID: 'base_fee_plus_annual_cpi_custom',
+            TEXT: 'Base Fee Plus Annual CPI (ABS)',
+        },
+        PERCENTAGE_OF_GROSS_TURNOVER: {
+            ID: 'percentage_of_gross_turnover',
+            TEXT: 'Percentage of Gross Turnover',
+        },
+    },
     DATATABLE_PROCESSING_HTML:
         '<div class="d-flex justify-content-center"><div class="d-flex spinner-border text-primary my-4" role="status"><span class="visually-hidden">Loading...</span></div></div>',
 
