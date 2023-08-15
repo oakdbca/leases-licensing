@@ -581,6 +581,33 @@ class InvoicingDetails(BaseModel):
         ]
 
     @property
+    def preview_invoices_issue_dates(self):
+        return [period["issue_date"] for period in self.preview_invoices]
+
+    @property
+    def invoices_due_for_issue_today(self):
+        invoices_due_today = [
+            period
+            for period in self.preview_invoices
+            if datetime.strptime(period["issue_date"], "%d/%m/%Y").date()
+            == helpers.today()
+        ]
+
+        # Make sure the system has not generated any invoices for the same approval
+        # and same amount today as they will most likely be duplicates
+        for invoice in invoices_due_today.copy():
+            if Invoice.objects.filter(
+                approval=self.approval,
+                amount=invoice["amount_object"]["amount"],
+            ).exists():
+                logger.warn(
+                    f"Suspected duplicate invoice skipped for approval: {self.approval}"
+                )
+                invoices_due_today.remove(invoice)
+
+        return invoices_due_today
+
+    @property
     def invoicing_periods_next_start_date(self):
         today = helpers.today()
         for start_date in self.invoicing_periods_start_dates:
@@ -806,10 +833,6 @@ class InvoicingDetails(BaseModel):
                 start_date, self.cpi_calculation_method.quarter
             )
             if cpi:
-                logger.info(
-                    f"CPI value for most recent Q{self.cpi_calculation_method.quarter} for period starting: "
-                    f"{start_date} was - year: {cpi.year}, quarter: {cpi.quarter}, value: {cpi.value}"
-                )
                 amount_object["amount"] = Decimal(
                     base_fee_amount * (1 + cpi.value / 100)
                 ).quantize(Decimal("0.01"))
