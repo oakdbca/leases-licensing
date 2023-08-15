@@ -119,6 +119,7 @@
         >
             <InvoicingDetails
                 v-if="proposal.approval"
+                ref="invoicing_details"
                 context="Proposal"
                 :invoicing-details="proposal.invoicing_details"
                 :start-date="proposal.approval.start_date"
