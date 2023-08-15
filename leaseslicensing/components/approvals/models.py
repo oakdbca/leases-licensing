@@ -869,6 +869,7 @@ class ApprovalSuspensionDocument(Document):
 class ApprovalUserAction(UserAction):
     ACTION_CREATE_APPROVAL = "Create licence {}"
     ACTION_UPDATE_APPROVAL = "Create licence {}"
+    ACTION_REVIEW_INVOICING_DETAILS_BASE_FEE_APPROVAL = "Base Fee changed from {} to {}"
     ACTION_EXPIRE_APPROVAL = "Expire licence {}"
     ACTION_CANCEL_APPROVAL = "Cancel licence {}"
     ACTION_EXTEND_APPROVAL = "Extend licence {}"
