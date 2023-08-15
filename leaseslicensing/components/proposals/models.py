@@ -2099,7 +2099,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         )
                 self.processing_status = status
                 self.save()
-                if status == "with_assessor_conditions":
+                # Only add standard requirements if no requirements exist so far
+                if (
+                    status == "with_assessor_conditions"
+                    and len(self.requirements.all()) == 0
+                ):
                     self.add_default_requirements()
 
                 # Lock the proposal geometries associated with this proposal and owned by the current user
