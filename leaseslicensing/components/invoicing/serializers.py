@@ -4,6 +4,7 @@ from dateutil.relativedelta import relativedelta
 from rest_framework import serializers
 
 from leaseslicensing import settings
+from leaseslicensing.components.approvals.models import ApprovalUserAction
 from leaseslicensing.components.invoicing.models import (
     ChargeMethod,
     CPICalculationMethod,
@@ -213,6 +214,9 @@ class CustomCPIYearSerializer(serializers.ModelSerializer):
 
 
 class InvoicingDetailsSerializer(serializers.ModelSerializer):
+    charge_method_key = serializers.CharField(
+        source="charge_method.key", read_only=True
+    )
     annual_increment_amounts = FixedAnnualIncrementAmountSerializer(
         many=True, required=False
     )
@@ -229,6 +233,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "charge_method",  # FK
+            "charge_method_key",
             "base_fee_amount",
             "once_off_charge_amount",
             "review_once_every",
@@ -394,9 +399,17 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         # Not really sure the following code is needed up to instance.save()
         # As could just call super().update(instance, validated_data) to achieve the same result?
         # Local fields
+        if instance.base_fee_amount != validated_data.get("base_fee_amount"):
+            instance.approval.log_user_action(
+                ApprovalUserAction.ACTION_REVIEW_INVOICING_DETAILS_BASE_FEE_APPROVAL.format(
+                    instance.base_fee_amount, validated_data.get("base_fee_amount")
+                ),
+                self.context["request"],
+            )
         instance.base_fee_amount = validated_data.get(
             "base_fee_amount", instance.base_fee_amount
         )
+
         instance.once_off_charge_amount = validated_data.get(
             "once_off_charge_amount", instance.once_off_charge_amount
         )
