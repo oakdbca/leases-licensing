@@ -133,8 +133,8 @@
                                     <i
                                         v-if="
                                             isRenewal &&
-                                            !approvedBy &&
-                                            !approvedOn
+                                            !assessedBy &&
+                                            !assessedOn
                                         "
                                         class="alert-info fa-solid fa-circle-info"
                                         data-color="info"
@@ -175,8 +175,8 @@
                                     <i
                                         v-if="
                                             isRenewal &&
-                                            !approvedBy &&
-                                            !approvedOn
+                                            !assessedBy &&
+                                            !assessedOn
                                         "
                                         class="alert-info fa-solid fa-circle-info"
                                         data-color="info"
@@ -219,8 +219,8 @@
                                     <i
                                         v-if="
                                             isRenewal &&
-                                            !approvedBy &&
-                                            !approvedOn
+                                            !assessedBy &&
+                                            !assessedOn
                                         "
                                         class="alert-info fa-solid fa-circle-info"
                                         data-color="info"
@@ -313,8 +313,8 @@
                                         v-if="
                                             isRenewal &&
                                             approval.cc_email &&
-                                            !approvedBy &&
-                                            !approvedOn
+                                            !assessedBy &&
+                                            !assessedOn
                                         "
                                         class="alert-info fa-solid fa-circle-info"
                                         data-color="info"
@@ -372,8 +372,8 @@
                                     <i
                                         v-if="
                                             isRenewal &&
-                                            !approvedBy &&
-                                            !approvedOn
+                                            !assessedBy &&
+                                            !assessedOn
                                         "
                                         class="alert-info fa-solid fa-circle-info"
                                         data-color="info"
@@ -663,11 +663,11 @@ export default {
         isRenewal: function () {
             return this.proposal_type == 'renewal' ? true : false;
         },
-        approvedBy: function () {
-            return this.proposal.proposed_issuance_approval.approved_by;
+        assessedBy: function () {
+            return this.proposal.proposed_issuance_approval.assessed_by;
         },
-        approvedOn: function () {
-            return this.proposal.proposed_issuance_approval.approved_on;
+        assessedOn: function () {
+            return this.proposal.proposed_issuance_approval.assessed_on;
         },
     },
     created: async function () {

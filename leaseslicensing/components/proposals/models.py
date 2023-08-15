@@ -2459,7 +2459,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             if mandatory_doc_errors:
                 raise serializers.ValidationError(mandatory_doc_errors)
 
-        if self.processing_status == "with_approver":
+        if self.processing_status in [
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+        ]:
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+            # Add date of approval and the approver to `proposed_issuance_approval` dictionary
+            self.proposed_issuance_approval["assessed_on"] = timezone.now().timestamp()
+            self.proposed_issuance_approval["assessed_by"] = request.user.id
+
+        if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
             # Add date of approval and the approver to `proposed_issuance_approval` dictionary
             self.proposed_issuance_approval["approved_on"] = timezone.now().timestamp()
             self.proposed_issuance_approval["approved_by"] = request.user.id
