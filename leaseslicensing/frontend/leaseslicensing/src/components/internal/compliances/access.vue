@@ -19,13 +19,15 @@
                     </div>
                     <div class="card-body card-collapse border-top">
                         <div class="mb-1 fw-bold">Currently assigned to</div>
-                        <select v-show="isLoading" class="form-select">
+                        <select v-if="isLoading" class="form-select">
                             <option value="">Loading...</option>
                         </select>
                         <select
-                            v-if="!isLoading"
+                            v-else
                             v-model="compliance.assigned_to"
-                            :disabled="canViewonly || !check_assessor()"
+                            :disabled="
+                                isFinalised || canViewonly || !check_assessor()
+                            "
                             class="form-select mb-2"
                             @change="assignTo"
                         >
@@ -53,6 +55,7 @@
 
                     <div
                         v-if="
+                            !isFinalised &&
                             compliance.assigned_to &&
                             compliance.assigned_to == profile.id
                         "
@@ -197,7 +200,7 @@
                                                     />
                                                 </a>
                                             </template>
-                                            <template v-else>
+                                            <template v-else-if="!isFinalised">
                                                 <small
                                                     ><a
                                                         role="button"
@@ -231,9 +234,9 @@
                                 </tbody>
                             </table>
                             <MoreReferrals
+                                v-if="!isFinalised"
                                 ref="more_referrals"
                                 :can-action="true"
-                                :is-finalised="isFinalised"
                                 :referral_url="referralListURL"
                                 :api_endpoint="referrals_api_endpoint"
                                 @switchStatus="switchStatus"
