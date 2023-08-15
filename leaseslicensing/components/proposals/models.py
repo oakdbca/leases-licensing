@@ -3211,22 +3211,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     @transaction.atomic
     def finance_complete_editing(self, request, action):
-        from leaseslicensing.components.approvals.models import Approval
-
         self.processing_status = Proposal.PROCESSING_STATUS_APPROVED
         self.save()
 
-        approval, created = Approval.objects.update_or_create(
-            current_proposal=self,
-            defaults={
-                "issue_date": timezone.now(),
-                "expiry_date": timezone.now().date() + relativedelta(years=1),
-                "start_date": timezone.now().date(),
-            },
-        )
-
         invoicing_details = self.save_invoicing_details(request, action)
-
+        approval = invoicing_details.approval
         if (
             settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
             == invoicing_details.charge_method.key
@@ -3274,7 +3263,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             return
 
         # For all other charge methods, there may be one or more invoice records that need to be
-        # generated immidiately (any past periods and any current period i.e. that has started but not yet finished)
+        # generated immediately (any past periods and any current period i.e. that has started but not yet finished)
         invoicing_details.generate_immediate_invoices()
 
     def finance_cancel_editing(self, request, action):
