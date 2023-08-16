@@ -1092,10 +1092,10 @@ class PercentageOfGrossTurnover(BaseModel):
     def __str__(self):
         return f"{self.year}: {self.percentage}%"
 
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
+    def save(self, *args, **kwargs):
+        if self.gross_turnover:
+            self.locked = True
+        super().save(*args, **kwargs)
 
     @property
     def financial_year(self):
@@ -1125,6 +1125,11 @@ class FinancialQuarter(BaseModel):
 
     def __str__(self):
         return f"Q{self.quarter} {self.year}: Gross Turnover: {self.gross_turnover or 'Not yet entered'}"
+
+    def save(self, *args, **kwargs):
+        if self.gross_turnover:
+            self.locked = True
+        super().save(*args, **kwargs)
 
 
 class CustomCPIYear(BaseModel):
