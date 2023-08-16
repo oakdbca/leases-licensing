@@ -21,6 +21,7 @@ from rest_framework_datatables.filters import DatatablesFilterBackend
 
 from leaseslicensing.components.approvals.serializers import ApprovalSerializer
 from leaseslicensing.components.invoicing.email import (
+    send_new_invoice_raised_internal_notification,
     send_new_invoice_raised_notification,
 )
 from leaseslicensing.components.invoicing.models import (
@@ -51,6 +52,8 @@ logger = logging.getLogger(__name__)
 
 class InvoiceFilterBackend(DatatablesFilterBackend):
     def filter_queryset(self, request, queryset, view):
+        total_count = queryset.count()
+
         approval_id = request.GET.get("approval_id", None)
         if approval_id:
             queryset = queryset.filter(approval_id=approval_id)
@@ -93,6 +96,15 @@ class InvoiceFilterBackend(DatatablesFilterBackend):
                 filter_invoice_due_date_to, "%Y-%m-%d"
             )
             queryset = queryset.filter(date_due__lte=filter_invoice_due_date_to)
+
+        fields = self.get_fields(request)
+        ordering = self.get_ordering(request, view, fields)
+        queryset = queryset.order_by(*ordering)
+        if len(ordering):
+            queryset = queryset.order_by(*ordering)
+
+        queryset = super().filter_queryset(request, queryset, view)
+        setattr(view, "_datatables_total_count", total_count)
 
         return queryset
 
@@ -424,9 +436,90 @@ class InvoicingDetailsViewSet(LicensingViewset):
 
     @action(methods=["PUT"], detail=True)
     def complete_editing(self, request, *args, **kwargs):
-        self.update(request, *args, **kwargs)
         instance = self.get_object()
+
+        # Check for any changes made to the gross turnover amounts for financial quarters
+        self.process_gross_turnover_changes(instance, request.data)
+
+        self.update(request, *args, **kwargs)
         instance.approval.status = instance.approval.APPROVAL_STATUS_CURRENT
         instance.approval.save()
         serializer = ApprovalSerializer(instance.approval, context={"request": request})
         return Response(serializer.data)
+
+    def process_gross_turnover_changes(self, instance, data):
+        """When the finance group user enters amounts for financial quarters and years
+        the system"""
+        annual_gross_turnover_changes = []
+        quarterly_gross_turnover_changes = []
+        new_gross_turnover_percentages = data.get("gross_turnover_percentages")
+        gross_turnover_percentages = list(instance.gross_turnover_percentages.all())
+        for i, gross_turnover_percentage in enumerate(gross_turnover_percentages):
+            if not new_gross_turnover_percentages[i]:
+                continue
+
+            if (
+                new_gross_turnover_percentages[i]["gross_turnover"]
+                != gross_turnover_percentage.gross_turnover
+            ):
+                annual_gross_turnover_changes.append(new_gross_turnover_percentages[i])
+
+            quarters = list(gross_turnover_percentage.quarters.all())
+            new_quarters = new_gross_turnover_percentages[i].get("quarters")
+            for j, quarter in enumerate(quarters):
+                if not new_quarters[j]:
+                    continue
+
+                if new_quarters[j]["gross_turnover"] != quarter.gross_turnover:
+                    new_quarters[j]["percentage"] = Decimal(
+                        new_gross_turnover_percentages[i]["percentage"]
+                    ).quantize(Decimal("0.01"))
+                    quarterly_gross_turnover_changes.append(new_quarters[j])
+
+        gst_free = instance.approval.approval_type.gst_free
+
+        # Raise an invoice for each quarterly gross turnover entered
+        for quarterly_gross_turnover_change in quarterly_gross_turnover_changes:
+            percentage = quarterly_gross_turnover_change["percentage"]
+            logger.debug(f"percentage: {type(percentage)}")
+            logger.debug(
+                "quarterly_gross_turnover_change[gross_turnover]: "
+                f"{type(quarterly_gross_turnover_change['gross_turnover'])}"
+            )
+            amount = quarterly_gross_turnover_change["gross_turnover"] * (
+                percentage / 100
+            )
+            invoice = Invoice.objects.create(
+                approval=instance.approval, amount=amount, gst_free=gst_free
+            )
+
+            # Send email to notify finance group users
+            send_new_invoice_raised_internal_notification(instance.approval, invoice)
+
+        # For annual gross turnover amounts, check if there is a discrepancy between the
+        # total of the quarters and the annual amount. If there is, raise an invoice for the difference
+        for annual_gross_turnover_change in annual_gross_turnover_changes:
+            total_of_quarters = sum(
+                [
+                    quarter["gross_turnover"]
+                    for quarter in annual_gross_turnover_change["quarters"]
+                ]
+            )
+            if annual_gross_turnover_change["gross_turnover"] != total_of_quarters:
+                difference = (
+                    annual_gross_turnover_change["gross_turnover"] - total_of_quarters
+                )
+                amount = difference * (percentage / 100)
+                invoice = Invoice.objects.create(
+                    approval=instance.approval, amount=amount, gst_free=gst_free
+                )
+
+                # Send email to notify finance group users
+                send_new_invoice_raised_internal_notification(
+                    instance.approval, invoice
+                )
+
+        logger.debug(f"annual_gross_turnover_changes: {annual_gross_turnover_changes}")
+        logger.debug(
+            f"quarterly_gross_turnover_changes: {quarterly_gross_turnover_changes}"
+        )
