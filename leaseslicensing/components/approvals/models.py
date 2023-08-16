@@ -88,7 +88,7 @@ class ApprovalDocument(Document, RevisionedMixin):
         (REASON_NEW, "New"),
         (REASON_AMENDED, "Amended"),
         (REASON_RENEWED, "Renewed"),
-        (REASON_RENEWED, "Reissued"),
+        (REASON_REISSUED, "Reissued"),
         (REASON_INVOICING_UPDATED, "Invoicing updated"),
     )
 
