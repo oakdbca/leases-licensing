@@ -31,6 +31,10 @@
                                         max="100"
                                         type="number"
                                         class="form-control"
+                                        :readonly="
+                                            hasGrossTurnoverEntries(year) ||
+                                            year.locked
+                                        "
                                         @change="$emit('onChangePercentage')"
                                         @keyup="$emit('onChangePercentage')"
                                     />
@@ -46,7 +50,8 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            grossAnnualTurnoverReadonly(year)
+                                            grossAnnualTurnoverReadonly(year) ||
+                                            year.locked
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
@@ -120,7 +125,7 @@
                                             grossQuarterlyTurnoverReadonly(
                                                 year.financial_year,
                                                 quarter.quarter
-                                            )
+                                            ) || year.locked
                                         "
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -284,6 +289,17 @@ export default {
             } else {
                 year.discrepency = 0;
             }
+        },
+        hasGrossTurnoverEntries: function (year) {
+            for (let i = 0; i < year.quarters.length; i++) {
+                if (
+                    year.quarters[i].gross_turnover != null &&
+                    year.quarters[i].gross_turnover != ''
+                ) {
+                    return true;
+                }
+            }
+            return false;
         },
         populateFinancialYearsArray: function (financialYearsIncluded) {
             var financialYear = null;
