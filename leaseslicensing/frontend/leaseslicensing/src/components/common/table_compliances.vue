@@ -42,7 +42,6 @@
                             </option>
                         </select>
                     </div>
-                    V
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
