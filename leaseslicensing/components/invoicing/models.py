@@ -1077,6 +1077,7 @@ class PercentageOfGrossTurnover(BaseModel):
         on_delete=models.CASCADE,
         related_name="gross_turnover_percentages",
     )
+    locked = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1113,6 +1114,7 @@ class FinancialQuarter(BaseModel):
     gross_turnover = models.DecimalField(
         null=True, blank=True, max_digits=10, decimal_places=2
     )
+    locked = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
