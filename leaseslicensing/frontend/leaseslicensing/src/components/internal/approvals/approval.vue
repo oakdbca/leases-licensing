@@ -81,9 +81,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- <divclass="row mt-2 mb-2">
-                    <div class="col"> -->
                 <div
                     v-if="showEditingInvoicingOptions"
                     class="card card-default sticky-top mt-2 mb-2"
@@ -548,7 +545,9 @@ export default {
                         gross_turnover:
                             this.approval.invoicing_details
                                 .gross_turnover_percentages[i].gross_turnover,
-                        difference: difference,
+                        discrepency:
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i].discrepency,
                     });
                 }
                 let quarters =
@@ -657,17 +656,26 @@ export default {
             if (turnoverChanges.length == 0) {
                 return '';
             }
+
             let changesHtml = '';
-            changesHtml = `<div class="mb-3 float-left">Annual Turnover Amounts</div>`;
+            changesHtml = `<div class="mb-3 float-left">Annual Turnover Discrepencies</div>`;
             changesHtml += '<table class="table table-sm table-striped">';
             changesHtml +=
                 '<thead><tr><th>Financial Year</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
             for (let i = 0; i < turnoverChanges.length; i++) {
+                let suffix = 'Charge';
+                let discrepencyClass = 'danger';
+                if (turnoverChanges[i].discrepency < 0) {
+                    suffix = 'Refund';
+                    discrepencyClass = 'success';
+                }
                 changesHtml += `<tr><td>${turnoverChanges[i].year - 1}-${
                     turnoverChanges[i].year
                 }</td><td>${turnoverChanges[i].percentage}%</td><td>$${currency(
                     turnoverChanges[i].gross_turnover
-                )}</td><td>$${turnoverChanges[i].difference}</td></tr>`;
+                )}</td><td class="text-${discrepencyClass}">$${Math.abs(
+                    turnoverChanges[i].discrepency
+                )} ${suffix}</td></tr>`;
             }
             changesHtml += '</tbody></table>';
             return changesHtml;
