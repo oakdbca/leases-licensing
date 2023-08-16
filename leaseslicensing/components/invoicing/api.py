@@ -458,10 +458,13 @@ class InvoicingDetailsViewSet(LicensingViewset):
             if not new_gross_turnover_percentages[i]:
                 continue
 
-            if (
+            if not new_gross_turnover_percentages[i]["gross_turnover"]:
+                continue
+
+            new_gross_turnover = Decimal(
                 new_gross_turnover_percentages[i]["gross_turnover"]
-                != gross_turnover_percentage.gross_turnover
-            ):
+            ).quantize(Decimal("0.01"))
+            if new_gross_turnover != gross_turnover_percentage.gross_turnover:
                 annual_gross_turnover_changes.append(new_gross_turnover_percentages[i])
 
             quarters = list(gross_turnover_percentage.quarters.all())
@@ -470,7 +473,13 @@ class InvoicingDetailsViewSet(LicensingViewset):
                 if not new_quarters[j]:
                     continue
 
-                if new_quarters[j]["gross_turnover"] != quarter.gross_turnover:
+                if not new_quarters[j]["gross_turnover"]:
+                    continue
+
+                new_gross_turnover = Decimal(
+                    new_quarters[j]["gross_turnover"]
+                ).quantize(Decimal("0.01"))
+                if new_gross_turnover != quarter.gross_turnover:
                     new_quarters[j]["percentage"] = Decimal(
                         new_gross_turnover_percentages[i]["percentage"]
                     ).quantize(Decimal("0.01"))
@@ -481,11 +490,6 @@ class InvoicingDetailsViewSet(LicensingViewset):
         # Raise an invoice for each quarterly gross turnover entered
         for quarterly_gross_turnover_change in quarterly_gross_turnover_changes:
             percentage = quarterly_gross_turnover_change["percentage"]
-            logger.debug(f"percentage: {type(percentage)}")
-            logger.debug(
-                "quarterly_gross_turnover_change[gross_turnover]: "
-                f"{type(quarterly_gross_turnover_change['gross_turnover'])}"
-            )
             amount = quarterly_gross_turnover_change["gross_turnover"] * (
                 percentage / 100
             )
@@ -518,8 +522,3 @@ class InvoicingDetailsViewSet(LicensingViewset):
                 send_new_invoice_raised_internal_notification(
                     instance.approval, invoice
                 )
-
-        logger.debug(f"annual_gross_turnover_changes: {annual_gross_turnover_changes}")
-        logger.debug(
-            f"quarterly_gross_turnover_changes: {quarterly_gross_turnover_changes}"
-        )
