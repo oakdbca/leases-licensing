@@ -60,7 +60,10 @@
                             </div>
                         </div>
                     </div>
-                    <div v-if="year.discrepency" class="card-body">
+                    <div
+                        v-if="year.gross_turnover && year.discrepency"
+                        class="card-body"
+                    >
                         <BootstrapAlert>
                             <template v-if="year.discrepency > 0">
                                 The gross annual turnover entered is greater
@@ -214,12 +217,7 @@ export default {
             this.startDate,
             this.expiryDate
         );
-        // if (
-        //     this.grossTurnoverPercentages.length !=
-        //     financialYearsIncluded.length
-        // ) {
         this.populateFinancialYearsArray(financialYearsIncluded);
-        // }
     },
     methods: {
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
@@ -278,14 +276,11 @@ export default {
                 0
             );
             console.log('total_of_quarters', total_of_quarters);
-            if (event.target.value > total_of_quarters) {
-                year.discrepency =
+            if (event.target.value != total_of_quarters) {
+                year.discrepency = currency(
                     (event.target.value * year.percentage) / 100 -
-                    (total_of_quarters * year.percentage) / 100;
-            } else if (event.target.value < total_of_quarters) {
-                year.discrepency =
-                    (event.target.value * year.percentage) / 100 -
-                    (total_of_quarters * year.percentage) / 100;
+                        (total_of_quarters * year.percentage) / 100
+                );
             } else {
                 year.discrepency = 0;
             }
@@ -293,7 +288,6 @@ export default {
         populateFinancialYearsArray: function (financialYearsIncluded) {
             var financialYear = null;
             var financialYears = [];
-            console.log('populateFinancialYearsArray');
 
             for (let i = 0; i < financialYearsIncluded.length; i++) {
                 let year = financialYearsIncluded[i].split('-')[1];
