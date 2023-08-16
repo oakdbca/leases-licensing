@@ -1,8 +1,8 @@
 <template>
     <div>
-        <CollapsibleComponent
+        <CollapsibleFilters
             ref="collapsible_filters"
-            component-title="Filters"
+            component_title="Filters"
             class="mb-2"
             @created="collapsible_component_mounted"
         >
@@ -82,7 +82,7 @@
                     </div>
                 </div>
             </div>
-        </CollapsibleComponent>
+        </CollapsibleFilters>
 
         <div class="row">
             <div class="col-lg-12">
@@ -127,6 +127,7 @@ import datatable from '@/utils/vue/datatable.vue';
 import InvoiceViewTransactions from '../internal/invoices/invoice_view_transactions.vue';
 import InvoiceRecordTransaction from '../internal/invoices/invoice_record_transaction.vue';
 import UploadOracleInvoice from '../internal/invoices/invoice_upload_oracle_invoice.vue';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 
 import { v4 as uuid } from 'uuid';
 import { api_endpoints, constants } from '@/utils/hooks';
@@ -134,6 +135,7 @@ import { api_endpoints, constants } from '@/utils/hooks';
 export default {
     name: 'TableInvoices',
     components: {
+        CollapsibleFilters,
         datatable,
         InvoiceViewTransactions,
         UploadOracleInvoice,
@@ -304,6 +306,7 @@ export default {
                 orderable: true,
                 searchable: false, // TODO: Change this once approvals have a proper approval type field
                 visible: true,
+                name: 'approval__approval_type__name',
                 render: function (row, type, full) {
                     return full.approval_type;
                 },
@@ -312,7 +315,7 @@ export default {
         holderColumn: function () {
             return {
                 data: 'holder',
-                orderable: true,
+                orderable: false,
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
@@ -352,7 +355,7 @@ export default {
         oracleInvoicePDFColumn: function () {
             return {
                 data: 'invoice_pdf_secure_url',
-                orderable: true,
+                orderable: false,
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
@@ -366,7 +369,7 @@ export default {
         ledgerInvoicePDFColumn: function () {
             return {
                 data: 'ledger_invoice_url',
-                orderable: true,
+                orderable: false,
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
@@ -565,7 +568,7 @@ export default {
                 },
                 responsive: true,
                 serverSide: true,
-
+                ordering: true,
                 ajax: {
                     url: vm.url,
                     dataSrc: 'data',
@@ -587,6 +590,7 @@ export default {
                     "<'row'<'col-sm-12'tr>>" +
                     "<'d-flex align-items-center'<'me-auto'i>p>",
                 buttons: buttons,
+                order: [[1, 'desc']],
                 columns: vm.applicableColumns,
                 processing: true,
                 initComplete: function () {
@@ -627,7 +631,7 @@ export default {
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
-                this.$refs.collapsible_filters.showWarningIcon(
+                this.$refs.collapsible_filters.show_warning_icon(
                     this.filterApplied
                 );
             }
@@ -643,7 +647,9 @@ export default {
     },
     methods: {
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.showWarningIcon(this.filterApplied);
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         adjust_table_width: function () {
             this.$refs.invoices_datatable.vmDataTable.columns.adjust();
