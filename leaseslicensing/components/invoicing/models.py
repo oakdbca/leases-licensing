@@ -589,7 +589,7 @@ class InvoicingDetails(BaseModel):
         invoices_due_today = [
             period
             for period in self.preview_invoices
-            if datetime.strptime(period["issue_date"], "%d/%m/%Y").date()
+            if datetime.strptime(period["original_issue_date"], "%d/%m/%Y").date()
             == helpers.today()
         ]
 
@@ -705,6 +705,9 @@ class InvoicingDetails(BaseModel):
             invoices.append(
                 {
                     "number": i + 1,
+                    "original_issue_date": issue_date.strftime(
+                        "%d/%m/%Y"
+                    ),  # This is the issue date before it is changed to today if it is in the past
                     "issue_date": self.get_issue_date(
                         issue_date_now_or_future, invoicing_period["end_date"]
                     ),
