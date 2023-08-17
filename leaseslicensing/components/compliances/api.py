@@ -92,9 +92,9 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             if request.GET.get("filter_compliance_status") != "all"
             else ""
         )
-        filter_application_type = (
-            request.GET.get("filter_application_type")
-            if request.GET.get("filter_application_type") != "all"
+        filter_approval_type = (
+            request.GET.get("filter_approval_type")
+            if request.GET.get("filter_approval_type") != "all"
             else ""
         )
 
@@ -106,11 +106,9 @@ class ComplianceFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(due_date__lte=filter_due_date_to)
         if filter_compliance_status:
             queryset = queryset.filter(processing_status=filter_compliance_status)
-        if filter_application_type:
-            filter_application_type = int(filter_application_type)
-            queryset = queryset.filter(
-                proposal__application_type=filter_application_type
-            )
+        if filter_approval_type:
+            filter_approval_type = int(filter_approval_type)
+            queryset = queryset.filter(approval__approval_type__id=filter_approval_type)
 
         queryset = self.apply_request(
             request, queryset, view, ledger_lookup_fields=["ind_applicant"]

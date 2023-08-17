@@ -11,16 +11,16 @@
                     <div class="form-group">
                         <label for="">Type</label>
                         <select
-                            v-model="filterComplianceType"
+                            v-model="filterApprovalType"
                             class="form-control"
                         >
                             <option value="all">All</option>
                             <option
-                                v-for="t in compliance_types"
+                                v-for="t in approval_types"
                                 :key="t.id"
                                 :value="t.id"
                             >
-                                {{ t.name_display }}
+                                {{ t.name }}
                             </option>
                         </select>
                     </div>
@@ -143,8 +143,8 @@ export default {
             datatable_id: 'compliances-datatable-' + vm._.uid,
 
             // selected values for filtering
-            filterComplianceType: sessionStorage.getItem('filterComplianceType')
-                ? sessionStorage.getItem('filterComplianceType')
+            filterApprovalType: sessionStorage.getItem('filterApprovalType')
+                ? sessionStorage.getItem('filterApprovalType')
                 : 'all',
             filterComplianceStatus: sessionStorage.getItem(
                 'filterComplianceStatus'
@@ -163,7 +163,7 @@ export default {
                 : '',
 
             // filtering options
-            compliance_types: [],
+            approval_types: [],
             compliance_statuses: [],
 
             // Filters toggle
@@ -199,7 +199,7 @@ export default {
         },
         filterApplied: function () {
             if (
-                this.filterComplianceType === 'all' &&
+                this.filterApprovalType === 'all' &&
                 this.filterComplianceStatus.toLowerCase() === 'all' &&
                 this.filterComplianceDueDateFrom.toLowerCase() === '' &&
                 this.filterComplianceDueDateTo.toLowerCase() === ''
@@ -265,28 +265,26 @@ export default {
         holderColumn: function () {
             return {
                 data: 'holder',
-                orderable: true,
-                searchable: true,
+                orderable: false,
+                searchable: false,
                 visible: true,
                 render: function (row, type, full) {
                     //return full.approval_submitter;
                     return full.holder;
                 },
-                name: 'proposal__ind_applicant__first_name, proposal__ind_applicant__last_name',
             };
         },
         applicationTypeColumn: function () {
             return {
-                data: 'application_type',
+                data: 'approval_type',
                 orderable: true,
                 searchable: true,
                 visible: true,
+                name: 'approval__approval_type__name',
                 render: function (row, type, full) {
-                    return full.application_type;
+                    return full.approval_type;
                     //return full.id;
                 },
-                // Searches for `registration_of_interest` or `lease_licence`, but should suffice
-                name: 'proposal__application_type__name',
             };
         },
         lodgementNumberColumn: function () {
@@ -475,7 +473,7 @@ export default {
                     // adding extra GET params for Custom filtering
                     data: function (d) {
                         // Add filters selected
-                        d.filter_application_type = vm.filterComplianceType;
+                        d.filter_approval_type = vm.filterApprovalType;
                         d.filter_compliance_status = vm.filterComplianceStatus;
                         d.filter_due_date_from = vm.filterComplianceDueDateFrom;
                         d.filter_due_date_to = vm.filterComplianceDueDateTo;
@@ -496,11 +494,11 @@ export default {
         },
     },
     watch: {
-        filterComplianceType: function () {
+        filterApprovalType: function () {
             this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                'filterComplianceType',
-                this.filterComplianceType
+                'filterApprovalType',
+                this.filterApprovalType
             );
         },
         filterComplianceStatus: function () {
@@ -609,7 +607,7 @@ export default {
             let vm = this;
 
             // Types
-            fetch(api_endpoints.application_types + 'key-value-list/')
+            fetch(api_endpoints.approval_types_dict)
                 .then(async (response) => {
                     const data = await response.json();
                     if (!response.ok) {
@@ -618,9 +616,7 @@ export default {
                         console.log(error);
                         return Promise.reject(error);
                     }
-                    vm.compliance_types = data;
-                    console.log('Compliance Types: ');
-                    console.log(vm.compliance_types);
+                    vm.approval_types = data;
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);

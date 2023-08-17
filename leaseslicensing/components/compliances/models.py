@@ -180,7 +180,7 @@ class Compliance(LicensingModelVersioned):
     @property
     def can_process(self):
         """
-        :return: True if the compliance is ready for assessment.
+        :return: True if the compliance is readtruey for assessment.
         """
         return self.processing_status == "with_assessor"
 

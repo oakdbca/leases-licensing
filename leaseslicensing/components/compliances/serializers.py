@@ -108,6 +108,9 @@ class ComplianceAmendmentRequestSerializer(serializers.ModelSerializer):
 
 
 class BaseComplianceSerializer(serializers.ModelSerializer):
+    approval_type = serializers.CharField(
+        source="approval.approval_type.name", read_only=True
+    )
     title = serializers.CharField(source="proposal.title", read_only=True)
     holder = serializers.CharField(read_only=True)
     processing_status_display = serializers.CharField(
@@ -158,6 +161,7 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
             "assessment",
             "referrals",
             "latest_referrals",
+            "approval_type",
         ]
         datatables_always_serialize = [
             "id",
@@ -191,7 +195,6 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
 
 
 class ComplianceSerializer(BaseComplianceSerializer):
-    application_type = serializers.SerializerMethodField(read_only=True)
     due_date = serializers.SerializerMethodField(read_only=True)
     lodgement_date_display = serializers.SerializerMethodField(read_only=True)
     assigned_to_name = serializers.CharField(read_only=True)
@@ -199,7 +202,6 @@ class ComplianceSerializer(BaseComplianceSerializer):
     class Meta:
         model = Compliance
         fields = BaseComplianceSerializer.Meta.fields + [
-            "application_type",
             "due_date",
             "lodgement_date_display",
             "assigned_to_name",
@@ -210,11 +212,6 @@ class ComplianceSerializer(BaseComplianceSerializer):
 
     def get_due_date(self, obj):
         return obj.due_date.strftime("%d/%m/%Y") if obj.due_date else ""
-
-    def get_application_type(self, obj):
-        if obj.proposal.application_type:
-            return obj.proposal.application_type.name_display
-        return None
 
     def get_lodgement_date_display(self, obj):
         if obj.lodgement_date:
