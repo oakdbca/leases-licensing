@@ -222,7 +222,7 @@ export default {
             let headers = [
                 'Id',
                 'Number',
-                'Type',
+                'Approval Type',
                 'Holder',
                 'Approval',
                 'Status',
@@ -233,7 +233,7 @@ export default {
                 headers = [
                     'Id',
                     'Number',
-                    'Type',
+                    'Approval Type',
                     'Approval',
                     'Status',
                     'Due Date',
@@ -243,7 +243,7 @@ export default {
                 headers = [
                     'Id',
                     'Number',
-                    'Type',
+                    'Approval Type',
                     'Holder',
                     'Approval',
                     'Status',
