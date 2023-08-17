@@ -28,6 +28,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        logger.info(f"Running command {__name__}")
         approvals = Approval.objects.filter(
             status=Approval.APPROVAL_STATUS_CURRENT,
             current_proposal__processing_status=Proposal.PROCESSING_STATUS_APPROVED,
@@ -44,6 +45,7 @@ class Command(BaseCommand):
             ]
         )
 
+        invoices_generated = []
         for approval in approvals:
             if (
                 not hasattr(approval, "invoicing_details")
@@ -64,10 +66,16 @@ class Command(BaseCommand):
                 invoicing_details.invoices_due_for_issue_today
             )
             for invoice in invoices_due_for_issue_today:
-                self.generate_invoice(approval, invoice, test=options["test"])
+                invoices_generated.apend(
+                    self.generate_invoice(approval, invoice, test=options["test"])
+                )
+
+        logger.info(f"Generated the following invoices {invoices_generated}")
+        logger.info(f"Finished running command {__name__}")
 
     @transaction.atomic
     def generate_invoice(self, approval, invoice, test=False):
+        logger.info(f"\tGenerating Invoice from preview: {invoice}")
         invoice = Invoice(
             approval=approval,
             amount=invoice["amount_object"]["amount"],
@@ -85,6 +93,8 @@ class Command(BaseCommand):
         # send to the applicant and cc finance officer
         send_new_invoice_raised_notification(approval, invoice)
 
-        self.stdout.write(
+        logger.info(
             self.style.SUCCESS(f"\tGenerated Invoice: {invoice.lodgement_number}\n")
         )
+
+        return invoice.lodgement_number
