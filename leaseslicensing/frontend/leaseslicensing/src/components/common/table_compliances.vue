@@ -9,7 +9,7 @@
             <div class="row mt-1 p-2">
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for="">Type</label>
+                        <label for="">Approval Type</label>
                         <select
                             v-model="filterApprovalType"
                             class="form-control"
