@@ -322,7 +322,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         instance.save()
 
         # Send request for payment to proponent
-        send_new_invoice_raised_notification(request, approval, instance)
+        send_new_invoice_raised_notification(approval, instance)
 
         return Response(serializer.data)
 
