@@ -722,6 +722,7 @@ export default {
                         confirmButtonColor: '#3085d6',
                     });
                     this.approval = Object.assign({}, data);
+                    this.$refs.invoice_table.$refs.invoices_datatable.vmDataTable.draw();
                 })
                 .catch((error) => {
                     Swal.fire({
