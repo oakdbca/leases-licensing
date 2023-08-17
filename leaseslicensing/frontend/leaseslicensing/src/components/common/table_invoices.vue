@@ -355,9 +355,10 @@ export default {
         oracleInvoicePDFColumn: function () {
             return {
                 data: 'invoice_pdf_secure_url',
-                orderable: false,
-                searchable: false,
+                orderable: true,
+                searchable: true,
                 visible: true,
+                name: 'oracle_invoice_number',
                 render: function (row, type, full) {
                     if (!full.invoice_pdf_secure_url) {
                         return 'Not Yet Uploaded';
