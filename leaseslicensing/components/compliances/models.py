@@ -227,6 +227,22 @@ class Compliance(LicensingModelVersioned):
             "-lodged_on"
         )[: settings.LATEST_REFERRAL_COUNT]
 
+    @property
+    def submitter_emailuser(self):
+        if self.submitter:
+            return retrieve_email_user(self.submitter)
+        if self.proposal.submitter:
+            return retrieve_email_user(self.proposal.submitter)
+        logger.warn(f"Submitter not found for compliance {self.id}")
+        return None
+
+    @property
+    def submitter_email(self):
+        if self.submitter_emailuser:
+            return self.submitter_emailuser.email
+        logger.warn(f"Submitter email not found for compliance {self.id}")
+        return None
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not hasattr(self, "assessment"):
@@ -312,12 +328,9 @@ class Compliance(LicensingModelVersioned):
             send_compliance_accept_email_notification(self, request)
 
     @transaction.atomic
-    def send_reminder(self, user):
+    def send_reminder(self, emailuser_id):
+        reminder_sent = False
         today = timezone.localtime(timezone.now()).date()
-        # Why bother with this? Shouldn't we just construct a query that only returns the compliances
-        # that are due?
-        if self.processing_status is not Compliance.PROCESSING_STATUS_DUE:
-            return
 
         if (
             self.due_date < today
@@ -332,13 +345,15 @@ class Compliance(LicensingModelVersioned):
             ComplianceUserAction.log_action(
                 self,
                 ComplianceUserAction.ACTION_REMINDER_SENT.format(self.id),
-                user,
+                emailuser_id,
             )
             logger.info(
                 "Post due date reminder sent for Compliance {} ".format(
                     self.lodgement_number
                 )
             )
+            reminder_sent = True
+
         # if today is with 14 days of due_date, and email reminder is not sent
         # (deals with Compliances created with the reminder period)
         elif (
@@ -350,8 +365,8 @@ class Compliance(LicensingModelVersioned):
                 send_notification_only_email(self)
                 send_internal_notification_only_email(self)
                 self.reminder_sent = True
-                self.processing_status = "approved"
-                self.customer_status = "approved"
+                self.processing_status = Compliance.PROCESSING_STATUS_APPROVED
+                self.customer_status = Compliance.PROCESSING_STATUS_APPROVED
                 self.save()
             else:
                 send_due_email_notification(self)
@@ -361,13 +376,15 @@ class Compliance(LicensingModelVersioned):
             ComplianceUserAction.log_action(
                 self,
                 ComplianceUserAction.ACTION_REMINDER_SENT.format(self.id),
-                user,
+                emailuser_id,
             )
             logger.info(
                 "Pre due date reminder sent for Compliance {} ".format(
                     self.lodgement_number
                 )
             )
+            reminder_sent = True
+        return reminder_sent
 
     @transaction.atomic
     def send_referral(self, request, referral_email, referral_text):
