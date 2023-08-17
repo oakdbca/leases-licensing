@@ -455,18 +455,19 @@ class InvoicingDetailsViewSet(LicensingViewset):
         the system"""
         annual_gross_turnover_changes = []
         quarterly_gross_turnover_changes = []
+        new_gross_turnover = None
         new_gross_turnover_percentages = data.get("gross_turnover_percentages")
         gross_turnover_percentages = list(instance.gross_turnover_percentages.all())
         for i, gross_turnover_percentage in enumerate(gross_turnover_percentages):
             if not new_gross_turnover_percentages[i]:
                 continue
 
-            if not new_gross_turnover_percentages[i]["gross_turnover"]:
-                continue
+            new_gross_turnover = None
+            if new_gross_turnover_percentages[i]["gross_turnover"]:
+                new_gross_turnover = Decimal(
+                    new_gross_turnover_percentages[i]["gross_turnover"]
+                ).quantize(Decimal("0.01"))
 
-            new_gross_turnover = Decimal(
-                new_gross_turnover_percentages[i]["gross_turnover"]
-            ).quantize(Decimal("0.01"))
             if new_gross_turnover != gross_turnover_percentage.gross_turnover:
                 annual_gross_turnover_changes.append(new_gross_turnover_percentages[i])
 
