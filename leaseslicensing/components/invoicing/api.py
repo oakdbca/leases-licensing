@@ -52,11 +52,11 @@ logger = logging.getLogger(__name__)
 
 class InvoiceFilterBackend(DatatablesFilterBackend):
     def filter_queryset(self, request, queryset, view):
-        total_count = queryset.count()
-
         approval_id = request.GET.get("approval_id", None)
         if approval_id:
             queryset = queryset.filter(approval_id=approval_id)
+
+        total_count = queryset.count()
 
         filter_invoice_organisation = (
             request.GET.get("filter_invoice_organisation")
@@ -104,6 +104,8 @@ class InvoiceFilterBackend(DatatablesFilterBackend):
             queryset = queryset.order_by(*ordering)
 
         queryset = super().filter_queryset(request, queryset, view)
+
+        setattr(view, "_datatables_filtered_count", queryset.count())
         setattr(view, "_datatables_total_count", total_count)
 
         return queryset
@@ -113,6 +115,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
     serializer_class = InvoiceSerializer
     filter_backends = [InvoiceFilterBackend]
+    search_fields = ["lodgement_number", "oracle_invoice_number"]
 
     def get_queryset(self):
         if is_customer(self.request):
