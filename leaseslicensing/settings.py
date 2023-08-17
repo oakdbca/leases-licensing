@@ -498,9 +498,11 @@ CACHE_TIMEOUT_1_MINUTE = 60
 CACHE_TIMEOUT_5_MINUTES = 60 * 5
 CACHE_TIMEOUT_2_HOURS = 60 * 60 * 2
 CACHE_TIMEOUT_24_HOURS = 60 * 60 * 24
+CACHE_TIMEOUT_NEVER = None
 
 # ---------- Cache Keys ----------
 
+CACHE_KEY_DEFAULT_FROM_EMAIL = "default-from-email"
 CACHE_KEY_LEDGER_EMAIL_USER = "ledger-emailuser-{}"
 CACHE_KEY_LEDGER_ORGANISATION = "ledger-organisation-{}"
 CACHE_KEY_ORGANISATION_IDS = "cache_organisation_ids"
