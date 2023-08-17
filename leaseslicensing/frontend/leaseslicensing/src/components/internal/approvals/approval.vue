@@ -234,15 +234,21 @@
                         role="tabpanel"
                         aria-labelledby="pills-invoicing-tab"
                     >
-                        <InvoicesTable
-                            v-if="loadInvoices"
-                            ref="invoice_table"
-                            :approval-id="approval.id"
-                            level="internal"
-                        />
+                        <FormSection
+                            class="mb-3"
+                            :form-collapse="false"
+                            label="Invoices"
+                            index="invoicing_details"
+                        >
+                            <InvoicesTable
+                                v-if="loadInvoices"
+                                ref="invoice_table"
+                                :approval-id="approval.id"
+                                level="internal"
+                            />
+                        </FormSection>
                         <FormSection
                             v-if="loadInvoices && showEditingInvoicingOptions"
-                            class="mt-5"
                             :form-collapse="false"
                             label="Edit Invoicing Details"
                             index="invoicing_details"
@@ -331,6 +337,7 @@ export default {
                 address: {},
             },
             loadInvoices: false,
+            savingInvoicingDetails: false,
             loadMap: false,
             // Filters
             logs_url: helpers.add_endpoint_json(
@@ -693,6 +700,7 @@ export default {
             }, 0);
         },
         saveInvoicingDetails: function () {
+            this.savingInvoicingDetails = true;
             const requestOptions = {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -705,6 +713,7 @@ export default {
                     requestOptions
                 )
                 .then((data) => {
+                    this.savingInvoicingDetails = false;
                     swal.fire({
                         title: 'Invoicing Details Saved',
                         text: 'The invoicing details have been saved.',
