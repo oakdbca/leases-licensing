@@ -52,6 +52,7 @@
                     type="number"
                     min="1"
                     class="form-control"
+                    :readonly="context != 'Proposal'"
                     required
                 />
             </div>
