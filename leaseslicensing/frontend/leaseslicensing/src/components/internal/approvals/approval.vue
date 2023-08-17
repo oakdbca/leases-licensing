@@ -247,6 +247,10 @@
                                 level="internal"
                             />
                         </FormSection>
+                        <BootstrapSpinner
+                            v-if="savingInvoicingDetails"
+                            class="text-primary"
+                        ></BootstrapSpinner>
                         <FormSection
                             v-if="loadInvoices && showEditingInvoicingOptions"
                             :form-collapse="false"
