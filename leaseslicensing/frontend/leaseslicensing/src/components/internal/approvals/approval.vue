@@ -3,7 +3,8 @@
         <div class="row">
             <div class="col">
                 <h3>
-                    {{ approvalLabel }}: {{ approval.lodgement_number }}
+                    {{ approval.approval_type }}:
+                    {{ approval.lodgement_number }}
                     <small
                         v-if="approval.original_leaselicense_number"
                         class="text-muted"
@@ -88,6 +89,15 @@
                     <div class="card-header">Edit Invoicing Details</div>
                     <div class="card-body card-collapse">
                         <div class="mb-2">
+                            <textarea
+                                ref="comment_text"
+                                v-model="
+                                    approval.invoicing_details.comment_text
+                                "
+                                class="form-control mb-3"
+                                rows="4"
+                                placeholder="Enter the reason you are editing the invoicing details here."
+                            ></textarea>
                             <button
                                 class="btn btn-primary btn-licensing"
                                 @click.prevent="completeEditingInvoicing()"
@@ -105,10 +115,15 @@
                         </div>
                     </div>
                 </div>
-                <!-- </div>
-                </div> -->
             </div>
             <div class="col-md-9">
+                <BootstrapAlert type="success"
+                    >This {{ approval.approval_type }} was approved by
+                    <span class="fw-bold">{{ approval.approved_by }}</span> on
+                    <span class="fw-bold">{{
+                        new Date(approval.issue_date).toLocaleDateString()
+                    }}</span></BootstrapAlert
+                >
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button
@@ -374,15 +389,6 @@ export default {
         isLoading: function () {
             return this.loading.length > 0;
         },
-        approvalLabel: function () {
-            let description = '';
-            if (this.approval && this.approval.approval_type_dict) {
-                description = this.approval.approval_type_dict.description;
-            } else {
-                description = 'License';
-            }
-            return description;
-        },
         showEditingInvoicingOptions: function () {
             return (
                 this.approval &&
@@ -600,6 +606,13 @@ export default {
             };
         },
         completeEditingInvoicing: function () {
+            if (
+                !this.approval.invoicing_details.comment_text ||
+                this.approval.invoicing_details.comment_text.trim() == ''
+            ) {
+                this.$refs.comment_text.focus();
+                return;
+            }
             let changes = this.getGrossTurnoverChanges();
             if (changes.count > 0) {
                 let quarterlyChangesHtml = '';
@@ -608,6 +621,8 @@ export default {
                     quarterlyChangesHtml = this.getQuarterlyTurnoverChangesHtml(
                         changes.quarterlyTurnoverChanges
                     );
+                }
+                if (changes.annualTurnoverChanges.length > 0) {
                     annualChangesHtml = this.getAnnualTurnoverChangesHtml(
                         changes.annualTurnoverChanges
                     );
@@ -622,7 +637,8 @@ export default {
                         quarterlyChangesHtml +
                         '<br/>' +
                         annualChangesHtml +
-                        'When you click the confirm button, invoice records will be generated with the amounts listed.<br/>',
+                        '<p>When you click the confirm button, invoice records will be generated with the amounts listed.</p>' +
+                        '<p class="fs-6 text-muted">* An oracle invoice must be attached to each invoice record before the request for payment will be sent.</p>',
                     icon: 'info',
                     imageWidth: 100,
                     customClass: 'swal-extra-wide',

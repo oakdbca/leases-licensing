@@ -223,6 +223,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         many=True, required=False
     )
     custom_cpi_years = CustomCPIYearSerializer(many=True, required=False)
+    comment_text = serializers.CharField(required=False)
 
     class Meta:
         model = InvoicingDetails
@@ -243,6 +244,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "gross_turnover_percentages",  # ReverseFK
             "custom_cpi_years",  # ReverseFK
             "cpi_calculation_method",
+            "comment_text",
         )
 
     def set_default_values(self, attrs, fields_excluded):
@@ -395,6 +397,17 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         # Not really sure the following code is needed up to instance.save()
         # As could just call super().update(instance, validated_data) to achieve the same result?
         # Local fields
+
+        if "comment_text" in validated_data:
+            # When editing from the approval details page log the reason the edit was made
+            comment_text = validated_data.pop("comment_text")
+            instance.approval.log_user_action(
+                ApprovalUserAction.ACTION_UPDATE_APPROVAL_INVOICING_DETAILS.format(
+                    instance.approval.lodgement_number, comment_text
+                ),
+                self.context["request"],
+            )
+
         if instance.base_fee_amount != validated_data.get("base_fee_amount"):
             instance.approval.log_user_action(
                 ApprovalUserAction.ACTION_REVIEW_INVOICING_DETAILS_BASE_FEE_APPROVAL.format(

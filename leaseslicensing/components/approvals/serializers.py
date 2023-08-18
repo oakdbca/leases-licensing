@@ -122,6 +122,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     approval_type = serializers.CharField(source="approval_type.name", read_only=True)
     gis_data = serializers.SerializerMethodField(read_only=True)
     geometry_objs = serializers.SerializerMethodField(read_only=True)
+    approved_by = serializers.SerializerMethodField()
 
     class Meta:
         model = Approval
@@ -173,6 +174,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "approval_type",
             "gis_data",
             "geometry_objs",
+            "approved_by",
         )
         # the serverSide functionality of datatables is such that only columns that have
         # field 'data' defined are requested from the serializer. We
@@ -297,6 +299,15 @@ class ApprovalSerializer(serializers.ModelSerializer):
         )
 
         return geometry_data
+
+    def get_approved_by(self, obj):
+        approved_by_id = obj.current_proposal.proposed_issuance_approval.get(
+            "approved_by", None
+        )
+        if not approved_by_id:
+            return "Approver not assigned"
+        user = EmailUser.objects.get(id=approved_by_id)
+        return user.get_full_name()
 
 
 class ApprovalExtendSerializer(serializers.Serializer):

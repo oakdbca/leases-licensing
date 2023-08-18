@@ -446,7 +446,7 @@ class InvoicingDetailsViewSet(LicensingViewset):
 
         self.update(request, *args, **kwargs)
         instance.approval.status = instance.approval.APPROVAL_STATUS_CURRENT
-        instance.approval.save()
+        instance.approval.save(version_comment="Completed Editing Invoicing Details")
         serializer = ApprovalSerializer(instance.approval, context={"request": request})
         return Response(serializer.data)
 
