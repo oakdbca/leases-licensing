@@ -2619,6 +2619,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     previous_approval.replaced_by = approval
                     previous_approval.save()
 
+                self.approved_by = request.user.id
                 # Send notification email to applicant
                 send_proposal_approval_email_notification(self, request)
                 self.save(
@@ -2728,6 +2729,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                     )
                     send_license_ready_for_invoicing_notification(self, request)
+
+                self.approved_by = request.user.id
 
                 # TODO: additional logic required for amendment, reissue, etc?
 
