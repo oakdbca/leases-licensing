@@ -90,8 +90,13 @@
                     <div class="card-body card-collapse">
                         <div class="mb-2">
                             <textarea
-                                class="form-control mb-2"
+                                ref="comment_text"
+                                v-model="
+                                    approval.invoicing_details.comment_text
+                                "
+                                class="form-control mb-3"
                                 rows="4"
+                                placeholder="Enter the reason you are editing the invoicing details here."
                             ></textarea>
                             <button
                                 class="btn btn-primary btn-licensing"
@@ -601,6 +606,13 @@ export default {
             };
         },
         completeEditingInvoicing: function () {
+            if (
+                !this.approval.invoicing_details.comment_text ||
+                this.approval.invoicing_details.comment_text.trim() == ''
+            ) {
+                this.$refs.comment_text.focus();
+                return;
+            }
             let changes = this.getGrossTurnoverChanges();
             if (changes.count > 0) {
                 let quarterlyChangesHtml = '';

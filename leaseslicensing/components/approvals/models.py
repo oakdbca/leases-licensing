@@ -867,17 +867,20 @@ class ApprovalSuspensionDocument(Document):
 
 
 class ApprovalUserAction(UserAction):
-    ACTION_CREATE_APPROVAL = "Create licence {}"
-    ACTION_UPDATE_APPROVAL = "Create licence {}"
+    ACTION_CREATE_APPROVAL = "Create Lease/License {}"
+    ACTION_UPDATE_APPROVAL = "Update Lease/License {}"
+    ACTION_UPDATE_APPROVAL_INVOICING_DETAILS = (
+        "Update Lease/License {} Invoicing Details. Comment text: {}"
+    )
     ACTION_REVIEW_INVOICING_DETAILS_BASE_FEE_APPROVAL = "Base Fee changed from {} to {}"
-    ACTION_EXPIRE_APPROVAL = "Expire licence {}"
-    ACTION_CANCEL_APPROVAL = "Cancel licence {}"
-    ACTION_EXTEND_APPROVAL = "Extend licence {}"
-    ACTION_SUSPEND_APPROVAL = "Suspend licence {}"
-    ACTION_REINSTATE_APPROVAL = "Reinstate licence {}"
-    ACTION_SURRENDER_APPROVAL = "surrender licence {}"
-    ACTION_RENEW_APPROVAL = "Create renewal Application for licence {}"
-    ACTION_AMEND_APPROVAL = "Create amendment Application for licence {}"
+    ACTION_EXPIRE_APPROVAL = "Expire Lease/License {}"
+    ACTION_CANCEL_APPROVAL = "Cancel Lease/License {}"
+    ACTION_EXTEND_APPROVAL = "Extend Lease/License {}"
+    ACTION_SUSPEND_APPROVAL = "Suspend Lease/License {}"
+    ACTION_REINSTATE_APPROVAL = "Reinstate Lease/License {}"
+    ACTION_SURRENDER_APPROVAL = "Surrender Lease/License {}"
+    ACTION_RENEW_APPROVAL = "Create Renewal Application for Lease/License {}"
+    ACTION_AMEND_APPROVAL = "Create Amendment Application for Lease/License {}"
 
     class Meta:
         app_label = "leaseslicensing"
