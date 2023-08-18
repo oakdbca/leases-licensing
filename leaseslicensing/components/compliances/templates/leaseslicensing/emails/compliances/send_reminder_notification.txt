@@ -1,14 +1,16 @@
 {%  extends 'leaseslicensing/emails/base_email.txt' %}
 
 {%  block content %}
-    Please be aware that the following is overdue:
-    {{ compliance.reference }} - {{compliance.requirement.requirement}}
+    Please be aware that the following is {{compliance.get_customer_status_display|lower}}:
+
+    {{compliance.reference}} - {{compliance.requirement.requirement}}
+
+    Status: {{compliance.get_customer_status_display}}
+    Due Date: {{compliance.due_date}}
 
     To complete the licence requirement please login to your account <a href="{{url}}">here</a>.
 
     It is a condition of your licence that you complete all requirements. Failure to do so may result in cancellation or suspension of the commercial operations licence.
 
     If you have any queries please contact a licensing officer on {{settings.DEP_PHONE}}, or email {{settings.SUPPORT_EMAIL}}
-
-
 {%  endblock %}

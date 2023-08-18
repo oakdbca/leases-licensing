@@ -20,7 +20,7 @@
                                 :key="ap.id"
                                 :value="ap.id"
                             >
-                                {{ ap.name_display }}
+                                {{ ap.name }}
                             </option>
                         </select>
                     </div>
@@ -437,14 +437,14 @@ export default {
         },
         columnType: function () {
             return {
-                data: 'application_type',
+                data: 'approval_type',
                 orderable: true,
                 searchable: false, // FIXME: make searchable
                 visible: true,
                 render: function (row, type, full) {
-                    return full.application_type;
+                    return full.approval_type;
                 },
-                name: 'current_proposal__application_type__name_display', // FIXME: replace with application type model field
+                name: 'approval_type__name', // FIXME: replace with application type model field
             };
         },
         columnSite: function () {
@@ -1118,7 +1118,7 @@ export default {
         fetchFilterLists: async function () {
             let vm = this;
             // Types
-            fetch(api_endpoints.application_types + 'key-value-list/')
+            fetch(api_endpoints.approval_types_dict)
                 .then(async (response) => {
                     const data = await response.json();
                     if (!response.ok) {

@@ -105,14 +105,10 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
 class FinancialQuarterSerializer(serializers.ModelSerializer):
     class Meta:
         model = FinancialQuarter
-        fields = [
-            "quarter",
-            "gross_turnover",
-        ]
+        fields = ["quarter", "gross_turnover", "locked"]
 
 
 class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
-    readonly = serializers.BooleanField(read_only=True)
     to_be_deleted = serializers.SerializerMethodField()
     quarters = FinancialQuarterSerializer(many=True, required=False)
 
@@ -124,7 +120,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "financial_year",
             "percentage",
             "gross_turnover",
-            "readonly",
+            "locked",
             "to_be_deleted",
             "quarters",
         )

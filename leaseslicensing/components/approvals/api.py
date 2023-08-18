@@ -149,9 +149,7 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
         if filter_approval_type:
             filter_approval_type = int(filter_approval_type)
             logger.debug(f"filter_approval_type: {filter_approval_type}")
-            queryset = queryset.filter(
-                current_proposal__application_type=filter_approval_type
-            )
+            queryset = queryset.filter(approval_type__id=filter_approval_type)
         if filter_approval_status:
             queryset = queryset.filter(status=filter_approval_status)
         if filter_approval_expiry_date_from:

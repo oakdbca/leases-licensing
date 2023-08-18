@@ -1648,6 +1648,9 @@ export default {
                         }
                     });
             }
+            let previewInvoices =
+                this.$refs.approval_screen.$refs.invoicing_details
+                    .previewInvoices;
             if (
                 [
                     constants.CHARGE_METHODS
@@ -1656,11 +1659,11 @@ export default {
                         .BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE.ID,
                     constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM.ID,
                     constants.CHARGE_METHODS.BASE_FEE_PLUS_ANNUAL_CPI.ID,
-                ].includes(chargeType)
+                ].includes(chargeType) &&
+                previewInvoices.find(
+                    (invoice) => invoice.start_date_has_passed == true
+                )
             ) {
-                let previewInvoices =
-                    this.$refs.approval_screen.$refs.invoicing_details
-                        .previewInvoices;
                 let immediateInvoicesHtml =
                     '<p>Based on the information you have entered, the following invoice records will be generated:</p>';
                 immediateInvoicesHtml +=

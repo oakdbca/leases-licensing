@@ -2,9 +2,9 @@
 
 {%  block content %}
 
-This is a reminder that your <insert_approval_type> <strong> {{ approval.lodgement_number}}</strong> expires on <strong>{{approval.expiry_date}}</strong>.
+This is a reminder that your {{ approval.approval_type}} <strong> {{ approval.lodgement_number}}</strong> expires on <strong>{{approval.expiry_date}}</strong>.
 
-To renew your <insert_approval_type> please visit the following url: {{url}}
+To renew your {{ approval.approval_type}} please visit the following url: {{url}}
 
 If you intend to apply for renewal, please do so as soon as possible so that we can process it before expiry.
 

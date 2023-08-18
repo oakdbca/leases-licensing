@@ -581,6 +581,33 @@ class InvoicingDetails(BaseModel):
         ]
 
     @property
+    def preview_invoices_issue_dates(self):
+        return [period["issue_date"] for period in self.preview_invoices]
+
+    @property
+    def invoices_due_for_issue_today(self):
+        invoices_due_today = [
+            period
+            for period in self.preview_invoices
+            if datetime.strptime(period["original_issue_date"], "%d/%m/%Y").date()
+            == helpers.today()
+        ]
+
+        # Make sure the system has not generated any invoices for the same approval
+        # and same amount today as they will most likely be duplicates
+        for invoice in invoices_due_today.copy():
+            if Invoice.objects.filter(
+                approval=self.approval,
+                amount=invoice["amount_object"]["amount"],
+            ).exists():
+                logger.warn(
+                    f"Suspected duplicate invoice skipped for approval: {self.approval}"
+                )
+                invoices_due_today.remove(invoice)
+
+        return invoices_due_today
+
+    @property
     def invoicing_periods_next_start_date(self):
         today = helpers.today()
         for start_date in self.invoicing_periods_start_dates:
@@ -678,6 +705,9 @@ class InvoicingDetails(BaseModel):
             invoices.append(
                 {
                     "number": i + 1,
+                    "original_issue_date": issue_date.strftime(
+                        "%d/%m/%Y"
+                    ),  # This is the issue date before it is changed to today if it is in the past
                     "issue_date": self.get_issue_date(
                         issue_date_now_or_future, invoicing_period["end_date"]
                     ),
@@ -806,10 +836,6 @@ class InvoicingDetails(BaseModel):
                 start_date, self.cpi_calculation_method.quarter
             )
             if cpi:
-                logger.info(
-                    f"CPI value for most recent Q{self.cpi_calculation_method.quarter} for period starting: "
-                    f"{start_date} was - year: {cpi.year}, quarter: {cpi.quarter}, value: {cpi.value}"
-                )
                 amount_object["amount"] = Decimal(
                     base_fee_amount * (1 + cpi.value / 100)
                 ).quantize(Decimal("0.01"))
@@ -1054,6 +1080,7 @@ class PercentageOfGrossTurnover(BaseModel):
         on_delete=models.CASCADE,
         related_name="gross_turnover_percentages",
     )
+    locked = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1068,10 +1095,10 @@ class PercentageOfGrossTurnover(BaseModel):
     def __str__(self):
         return f"{self.year}: {self.percentage}%"
 
-    @property
-    def readonly(self):
-        # TODO: implement
-        return False
+    def save(self, *args, **kwargs):
+        if self.gross_turnover:
+            self.locked = True
+        super().save(*args, **kwargs)
 
     @property
     def financial_year(self):
@@ -1090,6 +1117,7 @@ class FinancialQuarter(BaseModel):
     gross_turnover = models.DecimalField(
         null=True, blank=True, max_digits=10, decimal_places=2
     )
+    locked = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1100,6 +1128,11 @@ class FinancialQuarter(BaseModel):
 
     def __str__(self):
         return f"Q{self.quarter} {self.year}: Gross Turnover: {self.gross_turnover or 'Not yet entered'}"
+
+    def save(self, *args, **kwargs):
+        if self.gross_turnover:
+            self.locked = True
+        super().save(*args, **kwargs)
 
 
 class CustomCPIYear(BaseModel):
@@ -1240,7 +1273,7 @@ class Invoice(LicensingModel):
         null=True,
         blank=True,
     )
-    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     gst_free = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, null=False)
     date_updated = models.DateTimeField(auto_now=True, null=False)

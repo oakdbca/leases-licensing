@@ -1,51 +1,59 @@
-from django.core.management.base import BaseCommand
-from django.utils import timezone
-from django.conf import settings
-from leaseslicensing.components.compliances.models import Compliance
-#from ledger.accounts.models import EmailUser
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-import datetime
-
-import itertools
-
 import logging
+import traceback
+
+from django.conf import settings
+from django.core.management.base import BaseCommand
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+
+from leaseslicensing.components.compliances.models import Compliance
 
 logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Send notification emails for compliances which has past due dates, and also reminder notification emails for those that are within the daterange prior to due_date (eg. within 14 days of due date)"
+    help = (
+        "Send notification emails for compliances which has past due dates, "
+        "and also reminder notification emails for those that are within the daterange "
+        "prior to due_date (eg. within 14 days of due date)"
+    )
 
     def handle(self, *args, **options):
         try:
             user = EmailUser.objects.get(email=settings.CRON_EMAIL)
-        except:
+        except EmailUser.DoesNotExist:
             user = EmailUser.objects.create(email=settings.CRON_EMAIL, password="")
 
         errors = []
-        updates = []
-        #today = timezone.localtime(timezone.now()).date()
-        logger.info("Running command {}".format(__name__))
-        for c in Compliance.objects.filter(processing_status="due"):
+        reminders_sent = []
+
+        logger.info(f"Running command {__name__}")
+        for c in Compliance.objects.filter(
+            processing_status__in=[
+                Compliance.PROCESSING_STATUS_DUE,
+                Compliance.PROCESSING_STATUS_OVERDUE,
+            ]
+        ):
             try:
-                c.send_reminder(user)
-                c.save()
-                updates.append(c.lodgement_number)
+                if c.send_reminder(user.id):
+                    reminders_sent.append(c.lodgement_number)
+
             except Exception as e:
-                err_msg = "Error sending Reminder Compliance {}\n{}".format(
+                err_msg = "Error sending Reminder Compliance {}\n".format(
                     c.lodgement_number
                 )
-                logger.error("{}\n{}".format(err_msg, str(e)))
+                logger.error(f"{err_msg}\n{str(e)}\n{str(traceback.format_exc())}")
                 errors.append(err_msg)
 
         cmd_name = __name__.split(".")[-1].replace("_", " ").upper()
         err_str = (
-            '<strong style="color: red;">Errors: {}</strong>'.format(len(errors))
+            f'<strong style="color: red;">Errors: {len(errors)}</strong>'
             if len(errors) > 0
             else '<strong style="color: green;">Errors: 0</strong>'
         )
-        msg = "<p>{} completed. Errors: {}. IDs updated: {}.</p>".format(
-            cmd_name, err_str, updates
+        msg = "<p>{} completed. Errors: {}. Reminders sent for the following compliances: {}.</p>".format(
+            cmd_name, err_str, reminders_sent
         )
         logger.info(msg)
-        print(msg)  # will redirect to cron_tasks.log file, by the parent script
+        self.stdout.write(
+            msg
+        )  # will redirect to cron_tasks.log file, by the parent script

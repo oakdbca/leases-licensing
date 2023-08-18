@@ -22,7 +22,7 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 class ApprovalExpireNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = f"{settings.DEP_NAME} - Commercial Operations Licence expired."
+        self.subject = f"{settings.DEP_NAME} - Lease or Licence has expired."
         self.html_template = "leaseslicensing/emails/approval_expire_notification.html"
         self.txt_template = "leaseslicensing/emails/approval_expire_notification.txt"
 
@@ -30,7 +30,7 @@ class ApprovalExpireNotificationEmail(TemplateEmailBase):
 class ApprovalCancelNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = f"{settings.DEP_NAME} - Commercial Operations Licence cancelled."
+        self.subject = f"{settings.DEP_NAME} - Lease or Licence has been cancelled."
         self.html_template = "leaseslicensing/emails/approval_cancel_notification.html"
         self.txt_template = "leaseslicensing/emails/approval_cancel_notification.txt"
 
@@ -38,7 +38,7 @@ class ApprovalCancelNotificationEmail(TemplateEmailBase):
 class ApprovalSuspendNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = f"{settings.DEP_NAME} - Commercial Operations Licence suspended."
+        self.subject = f"{settings.DEP_NAME} - Lease or Licence has been suspended."
         self.html_template = "leaseslicensing/emails/approval_suspend_notification.html"
         self.txt_template = "leaseslicensing/emails/approval_suspend_notification.txt"
 
@@ -46,7 +46,7 @@ class ApprovalSuspendNotificationEmail(TemplateEmailBase):
 class ApprovalSurrenderNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "{} - Commercial Operations Licence surrendered.".format(
+        self.subject = "{} - Lease or Licence has been surrendered.".format(
             settings.DEP_NAME
         )
         self.html_template = (
@@ -58,9 +58,7 @@ class ApprovalSurrenderNotificationEmail(TemplateEmailBase):
 class ApprovalReinstateNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = (
-            f"{settings.DEP_NAME} - Commercial Operations Licence reinstated."
-        )
+        self.subject = f"{settings.DEP_NAME} - Lease or Licence has been reinstated."
         self.html_template = (
             "leaseslicensing/emails/approval_reinstate_notification.html"
         )
@@ -71,7 +69,7 @@ class ApprovalRenewalReviewNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
         self.subject = (
-            f"{settings.DEP_NAME} - {settings.SYSTEM_NAME} lease / licence renewal."
+            f"{settings.DEP_NAME} - Lease or Licence requires renewal decision."
         )
         self.html_template = (
             "leaseslicensing/emails/approval_renewal_review_notification.html"
@@ -84,7 +82,7 @@ class ApprovalRenewalReviewNotificationEmail(TemplateEmailBase):
 class ApprovalRenewalNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = f"{settings.DEP_NAME} - {settings.SYSTEM_NAME} lease / licence renewal update."
+        self.subject = f"{settings.DEP_NAME} - Lease or Licence ready for renewal."
         self.html_template = "leaseslicensing/emails/approval_renewal_notification.html"
         self.txt_template = "leaseslicensing/emails/approval_renewal_notification.txt"
 

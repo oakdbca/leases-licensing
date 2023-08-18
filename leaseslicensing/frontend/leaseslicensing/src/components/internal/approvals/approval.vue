@@ -81,9 +81,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- <divclass="row mt-2 mb-2">
-                    <div class="col"> -->
                 <div
                     v-if="showEditingInvoicingOptions"
                     class="card card-default sticky-top mt-2 mb-2"
@@ -93,7 +90,7 @@
                         <div class="mb-2">
                             <button
                                 class="btn btn-primary btn-licensing"
-                                @click.prevent="completeEditingInvoicing(true)"
+                                @click.prevent="completeEditingInvoicing()"
                             >
                                 Complete Editing
                             </button>
@@ -101,7 +98,7 @@
                         <div>
                             <button
                                 class="btn btn-secondary btn-licensing"
-                                @click.prevent="cancelEditingInvoicing(false)"
+                                @click.prevent="cancelEditingInvoicing()"
                             >
                                 Cancel Editing
                             </button>
@@ -237,15 +234,25 @@
                         role="tabpanel"
                         aria-labelledby="pills-invoicing-tab"
                     >
-                        <InvoicesTable
-                            v-if="loadInvoices"
-                            ref="invoice_table"
-                            :approval-id="approval.id"
-                            level="internal"
-                        />
+                        <FormSection
+                            class="mb-3"
+                            :form-collapse="false"
+                            label="Invoices"
+                            index="invoicing_details"
+                        >
+                            <InvoicesTable
+                                v-if="loadInvoices"
+                                ref="invoice_table"
+                                :approval-id="approval.id"
+                                level="internal"
+                            />
+                        </FormSection>
+                        <BootstrapSpinner
+                            v-if="savingInvoicingDetails"
+                            class="text-primary"
+                        ></BootstrapSpinner>
                         <FormSection
                             v-if="loadInvoices && showEditingInvoicingOptions"
-                            class="mt-5"
                             :form-collapse="false"
                             label="Edit Invoicing Details"
                             index="invoicing_details"
@@ -334,6 +341,7 @@ export default {
                 address: {},
             },
             loadInvoices: false,
+            savingInvoicingDetails: false,
             loadMap: false,
             // Filters
             logs_url: helpers.add_endpoint_json(
@@ -516,11 +524,29 @@ export default {
                 if (
                     this.approval.invoicing_details.gross_turnover_percentages[
                         i
-                    ].gross_turnover !=
-                    this.original_invoicing_details.gross_turnover_percentages[
+                    ].gross_turnover &&
+                    this.approval.invoicing_details.gross_turnover_percentages[
                         i
-                    ].gross_turnover
+                    ].gross_turnover !=
+                        this.original_invoicing_details
+                            .gross_turnover_percentages[i].gross_turnover
                 ) {
+                    let totalOfFinancialQuarters =
+                        this.getTotalOfFinancialQuarters(
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i].year
+                        );
+                    let difference =
+                        currency(totalOfFinancialQuarters) -
+                        currency(
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i].gross_turnover
+                        );
+                    difference =
+                        difference *
+                        (this.approval.invoicing_details
+                            .gross_turnover_percentages[i].percentage /
+                            100);
                     annualTurnoverChanges.push({
                         year: this.approval.invoicing_details
                             .gross_turnover_percentages[i].year,
@@ -530,6 +556,9 @@ export default {
                         gross_turnover:
                             this.approval.invoicing_details
                                 .gross_turnover_percentages[i].gross_turnover,
+                        discrepency:
+                            this.approval.invoicing_details
+                                .gross_turnover_percentages[i].discrepency,
                     });
                 }
                 let quarters =
@@ -540,13 +569,8 @@ export default {
                     let new_quarter =
                         this.approval.invoicing_details
                             .gross_turnover_percentages[i].quarters[j];
-                    console.log(quarters[j].gross_turnover);
-                    console.log(
-                        this.approval.invoicing_details
-                            .gross_turnover_percentages[i].quarters[j]
-                            .gross_turnover
-                    );
                     if (
+                        new_quarter.gross_turnover &&
                         quarters[j].gross_turnover != new_quarter.gross_turnover
                     ) {
                         quarterlyTurnoverChanges.push({
@@ -579,36 +603,14 @@ export default {
             let changes = this.getGrossTurnoverChanges();
             if (changes.count > 0) {
                 let quarterlyChangesHtml = '';
+                let annualChangesHtml = '';
                 if (changes.quarterlyTurnoverChanges.length > 0) {
-                    quarterlyChangesHtml =
-                        '<div class="mb-3 float-left">Quarterly Turnover Amounts</div>';
-                    quarterlyChangesHtml +=
-                        '<table class="table table-sm table-striped">';
-                    quarterlyChangesHtml +=
-                        '<thead><tr><th>Financial Year</th><th>Quarter</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
-                    for (
-                        let i = 0;
-                        i < changes.quarterlyTurnoverChanges.length;
-                        i++
-                    ) {
-                        let invoice_amount = currency(
-                            changes.quarterlyTurnoverChanges[i].gross_turnover
-                        ).multiply(
-                            changes.quarterlyTurnoverChanges[i].percentage / 100
-                        );
-                        quarterlyChangesHtml += `<tr><td>${
-                            changes.quarterlyTurnoverChanges[i].year - 1
-                        }-${
-                            changes.quarterlyTurnoverChanges[i].year
-                        }</td><td>Q${
-                            changes.quarterlyTurnoverChanges[i].quarter
-                        }</td><td>${
-                            changes.quarterlyTurnoverChanges[i].percentage
-                        }%</td><td>$${currency(
-                            changes.quarterlyTurnoverChanges[i].gross_turnover
-                        )}</td><td>$${invoice_amount}</td></tr>`;
-                    }
-                    quarterlyChangesHtml += '</tbody></table>';
+                    quarterlyChangesHtml = this.getQuarterlyTurnoverChangesHtml(
+                        changes.quarterlyTurnoverChanges
+                    );
+                    annualChangesHtml = this.getAnnualTurnoverChangesHtml(
+                        changes.annualTurnoverChanges
+                    );
                 }
 
                 swal.fire({
@@ -618,6 +620,8 @@ export default {
                         this.approval.lodgement_number +
                         '</strong>:</p>' +
                         quarterlyChangesHtml +
+                        '<br/>' +
+                        annualChangesHtml +
                         'When you click the confirm button, invoice records will be generated with the amounts listed.<br/>',
                     icon: 'info',
                     imageWidth: 100,
@@ -635,12 +639,12 @@ export default {
                 this.saveInvoicingDetails();
             }
         },
-        getTurnoverChangesHtml: function (turnoverChanges, interval) {
+        getQuarterlyTurnoverChangesHtml: function (turnoverChanges) {
             if (turnoverChanges.length == 0) {
                 return '';
             }
             let changesHtml = '';
-            changesHtml = `<div class="mb-3 float-left">${interval} Turnover Amounts</div>`;
+            changesHtml = `<div class="mb-3 float-left">Quarterly Turnover Amounts</div>`;
             changesHtml += '<table class="table table-sm table-striped">';
             changesHtml +=
                 '<thead><tr><th>Financial Year</th><th>Quarter</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
@@ -659,6 +663,34 @@ export default {
             changesHtml += '</tbody></table>';
             return changesHtml;
         },
+        getAnnualTurnoverChangesHtml: function (turnoverChanges) {
+            if (turnoverChanges.length == 0) {
+                return '';
+            }
+
+            let changesHtml = '';
+            changesHtml = `<div class="mb-3 float-left">Annual Turnover Discrepencies</div>`;
+            changesHtml += '<table class="table table-sm table-striped">';
+            changesHtml +=
+                '<thead><tr><th>Financial Year</th><th>Percentage</th><th>Gross Turnover</th><th>Invoice Amount</th></tr></thead><tbody>';
+            for (let i = 0; i < turnoverChanges.length; i++) {
+                let suffix = 'Charge';
+                let discrepencyClass = 'danger';
+                if (turnoverChanges[i].discrepency < 0) {
+                    suffix = 'Refund';
+                    discrepencyClass = 'success';
+                }
+                changesHtml += `<tr><td>${turnoverChanges[i].year - 1}-${
+                    turnoverChanges[i].year
+                }</td><td>${turnoverChanges[i].percentage}%</td><td>$${currency(
+                    turnoverChanges[i].gross_turnover
+                )}</td><td class="text-${discrepencyClass}">$${Math.abs(
+                    turnoverChanges[i].discrepency
+                )} ${suffix}</td></tr>`;
+            }
+            changesHtml += '</tbody></table>';
+            return changesHtml;
+        },
         getTotalOfFinancialQuarters(year) {
             var gross_turnover_percentage =
                 this.approval.invoicing_details.gross_turnover_percentages.find(
@@ -672,6 +704,7 @@ export default {
             }, 0);
         },
         saveInvoicingDetails: function () {
+            this.savingInvoicingDetails = true;
             const requestOptions = {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -684,6 +717,7 @@ export default {
                     requestOptions
                 )
                 .then((data) => {
+                    this.savingInvoicingDetails = false;
                     swal.fire({
                         title: 'Invoicing Details Saved',
                         text: 'The invoicing details have been saved.',
@@ -692,6 +726,7 @@ export default {
                         confirmButtonColor: '#3085d6',
                     });
                     this.approval = Object.assign({}, data);
+                    this.$refs.invoice_table.$refs.invoices_datatable.vmDataTable.draw();
                 })
                 .catch((error) => {
                     Swal.fire({
@@ -705,7 +740,7 @@ export default {
             let vm = this;
             Swal.fire({
                 title: 'Cancel Editing Invoicing Details',
-                text: 'Are you sure you want to cancel editing invoicing details (any unsaved changes will be lost)?',
+                text: 'Are you sure you want to cancel editing invoicing details (any unsaved changes may be lost)?',
                 icon: 'warning',
                 showCancelButton: true,
                 reverseButtons: true,

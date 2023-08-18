@@ -17,18 +17,18 @@ logger = logging.getLogger(__name__)
 SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
-def send_new_invoice_raised_notification(request, approval, invoice):
+def send_new_invoice_raised_notification(approval, invoice):
     email = TemplateEmailBase(
         subject=f"New Invoice Ready for {approval.approval_type} {approval.lodgement_number}",
         html_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_notification.html",
         txt_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_notification.txt",
     )
-    logger.debug(reverse("external-invoices"))
-    external_invoices_url = request.build_absolute_uri(reverse("external-invoices"))
 
-    pay_now_url = request.build_absolute_uri(
-        reverse("external-pay-invoice", kwargs={"pk": invoice.id})
-    )
+    external_invoices_url = settings.SITE_URL
+    external_invoices_url += reverse("external-invoices")
+
+    pay_now_url = settings.SITE_URL
+    pay_now_url = reverse("external-pay-invoice", kwargs={"pk": invoice.id})
 
     context = {
         "approval": approval,
@@ -45,9 +45,12 @@ def send_new_invoice_raised_notification(request, approval, invoice):
     sender = settings.DEFAULT_FROM_EMAIL
     sender_user = EmailUser.objects.get(email=sender)
 
-    if approval.org_applicant:
+    if approval.current_proposal.org_applicant:
         _log_org_email(
-            msg, approval.org_applicant, proposal.submitter, sender=sender_user
+            msg,
+            approval.current_proposal.org_applicant,
+            proposal.submitter,
+            sender=sender_user,
         )
     else:
         _log_user_email(msg, approval.submitter, proposal.submitter, sender=sender_user)

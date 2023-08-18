@@ -5,6 +5,4 @@
  	{{ compliance.reference }} {{compliance.requirement.requirement}}
 
     To complete the licence requirement please login to your account <a href="{{url}}">here</a>.
-
-
 {%  endblock %}
