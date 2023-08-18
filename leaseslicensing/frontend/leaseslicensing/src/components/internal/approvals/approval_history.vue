@@ -84,8 +84,8 @@ export default {
                 'Application',
                 'Reason',
                 'Expiry Date',
-                'Letter',
                 'Document',
+                'Letter',
                 // 'Action',
             ];
         },
@@ -109,7 +109,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.approval_lodgement_number;
+                    return full.lodgement_number;
                 },
             };
         },
@@ -146,6 +146,17 @@ export default {
                 },
             };
         },
+        column_application: function () {
+            return {
+                data: 'id',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return full.application;
+                },
+            };
+        },
         column_approval_status: function () {
             return {
                 data: 'id',
@@ -153,7 +164,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.approval_status;
+                    return full.status;
                 },
             };
         },
@@ -175,21 +186,10 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.reason;
-                },
-            };
-        },
-        column_cover_letter: function () {
-            return {
-                data: 'id',
-                orderable: true,
-                searchable: true,
-                visible: true,
-                render: function (row, type, full) {
-                    let filename = full.cover_letter_filename
-                        ? full.cover_letter_filename
-                        : 'CoverLetter.PDF';
-                    return `<div><a href='${full.cover_letter_url}' target='_blank'><i style='color:red;' class='fa fa-file-pdf'></i>${filename}</a></div>`;
+                    let reason = full.licence_document
+                        ? full.licence_document.reason
+                        : '';
+                    return reason;
                 },
             };
         },
@@ -200,10 +200,26 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    let filename = full.license_document_filename
-                        ? full.license_document_filename
+                    if (!full.licence_document) return '';
+                    let filename = full.licence_document.filename
+                        ? full.licence_document.filename
                         : 'Approval.PDF';
-                    return `<div><a href='${full.license_document_url}' target='_blank'><i style='color:red;' class='fa fa-file-pdf'></i>${filename}</a></div>`;
+                    return `<div><a href='${full.licence_document.url}' target='_blank'><i style='color:red;' class='fa fa-file-pdf'></i>${filename}</a></div>`;
+                },
+            };
+        },
+        column_cover_letter: function () {
+            return {
+                data: 'id',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    if (!full.cover_letter) return '';
+                    let filename = full.cover_letter.filename
+                        ? full.cover_letter.filename
+                        : 'CoverLetter.PDF';
+                    return `<div><a href='${full.cover_letter.url}' target='_blank'><i style='color:red;' class='fa fa-file-pdf'></i>${filename}</a></div>`;
                 },
             };
         },
@@ -215,11 +231,12 @@ export default {
                 vm.column_type,
                 // vm.column_sticker_numbers,
                 vm.column_holder,
-                vm.column_approval_status,
+                vm.column_application,
+                // vm.column_approval_status,
                 vm.column_reason,
                 vm.column_expiry_date,
-                vm.column_cover_letter,
                 vm.column_license_document,
+                vm.column_cover_letter,
             ];
 
             return {
