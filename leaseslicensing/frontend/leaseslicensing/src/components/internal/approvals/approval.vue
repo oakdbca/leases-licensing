@@ -89,6 +89,10 @@
                     <div class="card-header">Edit Invoicing Details</div>
                     <div class="card-body card-collapse">
                         <div class="mb-2">
+                            <textarea
+                                class="form-control mb-2"
+                                rows="4"
+                            ></textarea>
                             <button
                                 class="btn btn-primary btn-licensing"
                                 @click.prevent="completeEditingInvoicing()"
@@ -605,6 +609,8 @@ export default {
                     quarterlyChangesHtml = this.getQuarterlyTurnoverChangesHtml(
                         changes.quarterlyTurnoverChanges
                     );
+                }
+                if (changes.annualTurnoverChanges.length > 0) {
                     annualChangesHtml = this.getAnnualTurnoverChangesHtml(
                         changes.annualTurnoverChanges
                     );
@@ -619,7 +625,8 @@ export default {
                         quarterlyChangesHtml +
                         '<br/>' +
                         annualChangesHtml +
-                        'When you click the confirm button, invoice records will be generated with the amounts listed.<br/>',
+                        '<p>When you click the confirm button, invoice records will be generated with the amounts listed.</p>' +
+                        '<p class="fs-6 text-muted">* An oracle invoice must be attached to each invoice record before the request for payment will be sent.</p>',
                     icon: 'info',
                     imageWidth: 100,
                     customClass: 'swal-extra-wide',
