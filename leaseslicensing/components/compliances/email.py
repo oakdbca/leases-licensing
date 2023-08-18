@@ -19,7 +19,7 @@ SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 class ComplianceExternalSubmitSendNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "{} - Commercial Operations licence requirement.".format(
+        self.subject = "{} - Lease or Licence compliance requirement submitted successfully.".format(
             settings.DEP_NAME
         )
         self.html_template = (
@@ -33,7 +33,9 @@ class ComplianceExternalSubmitSendNotificationEmail(TemplateEmailBase):
 class ComplianceSubmitSendNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "A new Compliance has been submitted."
+        self.subject = "{} - A new Compliance has been submitted.".format(
+            settings.DEP_NAME
+        )
         self.html_template = (
             "leaseslicensing/emails/compliances/send_submit_notification.html"
         )
@@ -45,7 +47,7 @@ class ComplianceSubmitSendNotificationEmail(TemplateEmailBase):
 class ComplianceAcceptNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "{} - Commercial Operations- Confirmation - Licence requirement completed.".format(
+        self.subject = "{} - Lease or Licence compliance requirement approved.".format(
             settings.DEP_NAME
         )
         self.html_template = (
@@ -59,8 +61,10 @@ class ComplianceAcceptNotificationEmail(TemplateEmailBase):
 class ComplianceAmendmentRequestSendNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "{} - Commercial Operations licence requirement.".format(
-            settings.DEP_NAME
+        self.subject = (
+            "{} - Lease or Licence compliance requirement requires amendments.".format(
+                settings.DEP_NAME
+            )
         )
         self.html_template = (
             "leaseslicensing/emails/compliances/send_amendment_notification.html"
@@ -71,10 +75,10 @@ class ComplianceAmendmentRequestSendNotificationEmail(TemplateEmailBase):
 
 
 class ComplianceReminderNotificationEmail(TemplateEmailBase):
-    def __init__(self):
+    def __init__(self, customer_status_display):
         super().__init__()
-        self.subject = "{} - Commercial Operations Licence requirement overdue.".format(
-            settings.DEP_NAME
+        self.subject = "{} - Leases or Licence compliance requirement {}.".format(
+            settings.DEP_NAME, customer_status_display.lower()
         )
         self.html_template = (
             "leaseslicensing/emails/compliances/send_reminder_notification.html"
@@ -87,7 +91,11 @@ class ComplianceReminderNotificationEmail(TemplateEmailBase):
 class ComplianceInternalReminderNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "A Compliance with requirements has passed the due date."
+        self.subject = (
+            "{} - A Compliance with requirements has passed the due date.".format(
+                settings.DEP_NAME
+            )
+        )
         self.html_template = "leaseslicensing/emails/compliances/send_internal_reminder_notification.html"
         self.txt_template = (
             "leaseslicensing/emails/compliances/send_internal_reminder_notification.txt"
@@ -97,7 +105,7 @@ class ComplianceInternalReminderNotificationEmail(TemplateEmailBase):
 class ComplianceDueNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "{} - Commercial Operations Licence requirement due.".format(
+        self.subject = "{} - Lease or Licence compliance requirement due.".format(
             settings.DEP_NAME
         )
         self.html_template = (
@@ -111,7 +119,9 @@ class ComplianceDueNotificationEmail(TemplateEmailBase):
 class ComplianceInternalDueNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = "A Compliance with requirements is due for submission."
+        self.subject = "{} - Lease or Licence compliance requirement is due for submission.".format(
+            settings.DEP_NAME
+        )
         self.html_template = (
             "leaseslicensing/emails/compliances/send_internal_due_notification.html"
         )
@@ -123,10 +133,8 @@ class ComplianceInternalDueNotificationEmail(TemplateEmailBase):
 class ComplianceNotificationOnlyEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
-        self.subject = (
-            "{} - Commercial Operations Licence requirement notification.".format(
-                settings.DEP_NAME
-            )
+        self.subject = "{} - Lease or Licence requirement notification.".format(
+            settings.DEP_NAME
         )
         self.html_template = (
             "leaseslicensing/emails/compliances/send_notification_only_email.html"
@@ -298,13 +306,16 @@ def send_pending_referrals_complete_email_notification(referral, request):
 
 def send_reminder_email_notification(compliance, is_test=False):
     """Used by the management command, therefore have no request object - therefore explicitly defining base_url"""
-    email = ComplianceReminderNotificationEmail()
+    email = ComplianceReminderNotificationEmail(
+        compliance.get_customer_status_display()
+    )
     url = settings.SITE_URL if settings.SITE_URL else ""
     url += reverse(
         "external-compliance-detail", kwargs={"compliance_pk": compliance.id}
     )
     login_url = settings.SITE_URL if settings.SITE_URL else ""
     login_url += reverse("external")
+
     context = {"compliance": compliance, "url": url, "login_url": login_url}
 
     submitter = compliance.submitter_emailuser

@@ -12,7 +12,7 @@ LOGFILE = "logs/cron_tasks.log"
 
 
 class Command(BaseCommand):
-    help = "Run the Commercial Operator Cron tasks"
+    help = "Run the Leases Licensing cron tasks"
 
     def handle(self, *args, **options):
         stdout_redirect = f" | tee -a {LOGFILE}"
