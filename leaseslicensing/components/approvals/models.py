@@ -113,6 +113,10 @@ class ApprovalDocument(Document, RevisionedMixin):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.approval.user_has_object_permission(user_id)
 
+    @property
+    def approval_lodgement_sequence(self):
+        return self.approval.lodgement_sequence
+
 
 class Meta:
     app_label = "leaseslicensing"
@@ -273,6 +277,7 @@ class Approval(LicensingModelVersioned):
     )
     migrated = models.BooleanField(default=False)
     record_management_number = models.CharField(max_length=100, blank=True, null=True)
+    lodgement_sequence = models.IntegerField(blank=True, default=0)
 
     class Meta:
         app_label = "leaseslicensing"
