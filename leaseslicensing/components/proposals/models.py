@@ -2614,11 +2614,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                 )
 
-                if created:
-                    # TODO: Still needed when updating the same approval?
-                    previous_approval.replaced_by = approval
-                    previous_approval.save()
-
                 self.approved_by = request.user.id
                 # Send notification email to applicant
                 send_proposal_approval_email_notification(self, request)
@@ -2644,9 +2639,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                             "record_management_number": record_management_number,
                         },
                     )
-                    if created:
-                        previous_approval.replaced_by = approval
-                        previous_approval.save()
             elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
                 # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
                 # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING

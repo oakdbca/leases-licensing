@@ -238,9 +238,6 @@ class Approval(LicensingModelVersioned):
         related_name="sign_off_sheet",
         on_delete=models.SET_NULL,
     )
-    replaced_by = models.ForeignKey(
-        "self", blank=True, null=True, on_delete=models.SET_NULL
-    )
     current_proposal = models.ForeignKey(
         Proposal, related_name="approvals", null=True, on_delete=models.SET_NULL
     )

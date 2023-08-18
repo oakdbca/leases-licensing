@@ -111,7 +111,6 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "linked_applications",
             "licence_document",
-            "replaced_by",
             "current_proposal_processing_status",
             "tenure",
             "renewal_notification_sent_to_holder",

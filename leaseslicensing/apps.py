@@ -56,7 +56,6 @@ class LeasesLicensingConfig(AppConfig):
                     "licence_document",
                     "cover_letter_document",
                     "sign_off_sheet",
-                    "replaced_by",
                     "current_proposal",
                     "renewal_document",
                 ],
