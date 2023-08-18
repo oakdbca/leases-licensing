@@ -64,14 +64,15 @@ class ApprovalDocumentGenerator:
                     )
 
     @transaction.atomic
-    def _approval_document_for_filename(self, approval, filename):
+    def _approval_document_for_filename(self, approval, filename_prefix):
         """
         Gets or creates an ApprovalDocument for the given approval
         """
 
         try:
             document, created = ApprovalDocument.objects.get_or_create(
-                approval=approval, name=filename
+                approval=approval,
+                name__startswith=f"{filename_prefix}{approval.lodgement_number}",
             )
         except IntegrityError as e:
             logger.exception(e)
@@ -175,7 +176,9 @@ class ApprovalDocumentGenerator:
         return approval_buffer
 
     @basic_exception_handler
-    def update_approval_document_file(self, approval, buffer, filename, **kwargs):
+    def update_approval_document_file(
+        self, approval, buffer, filename_prefix, **kwargs
+    ):
         """
         Updates the ApprovalDocument file identified by filename with buffer
         Args:
@@ -183,8 +186,8 @@ class ApprovalDocumentGenerator:
                 Approval object
             buffer:
                 File buffer object
-            filename:
-                Name of the ApprovalDocument file
+            filename_prefix:
+                Prefix to the name of the ApprovalDocument file
             reason:
                 Reason for creating the document. Must be one of the choices in ApprovalDocument.REASON_CHOICES
         Returns:
@@ -192,7 +195,7 @@ class ApprovalDocumentGenerator:
         """
 
         file = File(buffer)
-
+        filename_prefix = filename_prefix or ""
         reason = kwargs.get("reason", "new").lower()
 
         # Validate reason
@@ -203,10 +206,9 @@ class ApprovalDocumentGenerator:
             )
 
         # Get the current or create a new approval document
-        document, created = self._approval_document_for_filename(approval, filename)
-
-        version_comment = f"{reasons[reason]} Approval document: {document.name}"
-        logger.info(version_comment)
+        document, created = self._approval_document_for_filename(
+            approval, filename_prefix
+        )
 
         if not created:
             # If the document already exists, update the reason unless it is 'new'
@@ -216,44 +218,48 @@ class ApprovalDocumentGenerator:
                 )
             document.reason = reason
 
+        # Save the actual file object
+        filename = f"{filename_prefix}{approval.lodgement_number}-{approval.lodgement_sequence}.pdf"
         document._file.save(filename, file, save=True)
+        # Save the ApprovalDocument object
+        document.name = filename
+        version_comment = f"{reasons[reason]} Approval document: {filename}"
+        logger.info(version_comment)
         document.save(version_comment=version_comment)
 
         return document
 
-    def create_approval_document(self, approval, filename=None, filepath=None, **kwargs):
+    def create_approval_document(
+        self, approval, filepath=None, filename_prefix=None, **kwargs
+    ):
         """
         Returns an ApprovalDocument named filename from the document at filepath
         Args:
             approval: Approval object
-            filename: Name of the approval document file
             filepath: Path to the approval document file
+            filename_prefix: Prefix to the name of the approval document file
         """
 
         buffer = self._filepath_to_buffer(filepath)
         document = self.update_approval_document_file(
-            approval, buffer, filename, **kwargs
+            approval, buffer, filename_prefix, **kwargs
         )
         buffer.close()
 
         return document
 
-
-    def create_license_document(self, approval, filename=None, **kwargs):
+    def create_license_document(self, approval, filename_prefix=None, **kwargs):
         """
         Creates a license document from a template and attaches it to the approval
         Args:
             approval: Approval object
-            filename: Name of the license document file
+            filename_prefix: Prefix to the name of the license document file
         """
 
         buffer = self.approval_buffer(approval)
 
-        if filename is None:
-            filename = "Approval-{}.pdf".format(approval.lodgement_number)
-
         document = self.update_approval_document_file(
-            approval, buffer, filename, **kwargs
+            approval, buffer, filename_prefix, **kwargs
         )
         buffer.close()
         # Attach the document to the approval
@@ -261,12 +267,12 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def create_cover_letter(self, approval, filename=None, **kwargs):
+    def create_cover_letter(self, approval, filename_prefix=None, **kwargs):
         raise NotImplementedError(
             "Creating cover letters from templates is not implemented yet."
         )
 
-    def create_sign_of_sheet(self, approval, filename=None, **kwargs):
+    def create_sign_of_sheet(self, approval, filename_prefix=None, **kwargs):
         raise NotImplementedError(
             "Creating sign-off sheets from templates is not implemented yet."
         )
