@@ -1095,7 +1095,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         default=REVIEW_STATUS_CHOICES[0][0],
     )
     approval = models.ForeignKey(
-        "leaseslicensing.Approval", null=True, blank=True, on_delete=models.SET_NULL
+        "leaseslicensing.Approval",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="proposals",
     )
     previous_application = models.ForeignKey(
         "self", blank=True, null=True, on_delete=models.SET_NULL
@@ -2526,14 +2530,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @transaction.atomic()
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
-        from leaseslicensing.components.approvals.document import (
-            ApprovalDocumentGenerator,
-        )
         from leaseslicensing.components.approvals.models import ApprovalDocument
-
-        from leaseslicensing.components.approvals.models import (
-            ApprovalType,
-        )
 
         try:
             self.proposed_decline_status = False
@@ -2568,33 +2565,65 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             checking_proposal = self
 
-            approval_type_id = checking_proposal.proposed_issuance_approval.get(
-                "approval_type", None
-            )
-            approval_type = ApprovalType.objects.get(id=approval_type_id)
-            document_generator = ApprovalDocumentGenerator()
+            proposal_type_comment_names = {t1: t2 for t1, t2 in settings.PROPOSAL_TYPES}
+
             if (
                 self.proposal_type.code == PROPOSAL_TYPE_RENEWAL
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
             ):
                 # Lease License (Renewal)
-                if self.previous_application:
-                    previous_approval = self.previous_application.approval
-                    approval, created = Approval.objects.update_or_create(
-                        current_proposal=checking_proposal,
-                        defaults={
-                            "issue_date": timezone.now(),
-                            "expiry_date": timezone.now().date()
-                            + relativedelta(years=1),
-                            "start_date": timezone.now().date(),
-                            "lodgement_number": previous_approval.lodgement_number,
-                            "record_management_number": record_management_number,
-                        },
+                if self.previous_application.approval.id != self.approval.id:
+                    raise ValidationError(
+                        "The previous application's approval does not match the current approval."
                     )
 
-                    if created:
-                        previous_approval.replaced_by = approval
-                        previous_approval.save()
+                # if self.previous_application:
+                start_date = checking_proposal.proposed_issuance_approval.get(
+                    "start_date", None
+                )
+                expiry_date = checking_proposal.proposed_issuance_approval.get(
+                    "expiry_date", None
+                )
+
+                approval, created = Approval.objects.update_or_create(
+                    current_proposal=self.approval.current_proposal,
+                    defaults={
+                        "expiry_date": datetime.datetime.strptime(
+                            expiry_date, "%Y-%m-%d"
+                        ).date(),
+                        "start_date": datetime.datetime.strptime(
+                            start_date, "%Y-%m-%d"
+                        ).date(),
+                        "status": Approval.APPROVAL_STATUS_CURRENT,
+                        "current_proposal": self,
+                        "renewal_review_notification_sent_to_assessors": False,
+                    },
+                )
+                # Update the approval documents
+                self.generate_license_documents(
+                    approval, self, reason=ApprovalDocument.REASON_RENEWED
+                )
+                approval.save(
+                    version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]}"
+                )
+                # TODO: Do compliances need to be created again for renewed approvals?
+                self.generate_compliances(approval, request)
+                # TODO: Do invoicing details need to be created again for renewed approvals?
+                self.generate_invoicing_details()
+                self.processing_status = (
+                    Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                )
+
+                if created:
+                    # TODO: Still needed when updating the same approval?
+                    previous_approval.replaced_by = approval
+                    previous_approval.save()
+
+                # Send notification email to applicant
+                send_proposal_approval_email_notification(self, request)
+                self.save(
+                    version_comment=f"Lease License Approval: {self.approval.lodgement_number} ({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]                        })"
+                )
 
             elif (
                 self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
@@ -2673,83 +2702,28 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                             "issue_date": timezone.now(),
                             "expiry_date": datetime.datetime.strptime(
                                 expiry_date, "%Y-%m-%d"
-                            ),
+                            ).date(),
                             "start_date": datetime.datetime.strptime(
                                 start_date, "%Y-%m-%d"
-                            ),
+                            ).date(),
                             "record_management_number": record_management_number,
                         },
                     )
-
-                    # Attach lease license documents as provided by the assessor to the approval
-                    license_documents = []
-                    cover_letter = []
-                    sign_off_sheets = []
-                    other_documents = []
-                    for document in self.lease_licence_approval_documents.all():
-                        if document.approval_type_id != approval_type_id:
-                            logger.warn(
-                                f"Ignoring {ApprovalType.objects.get(id=document.approval_type_id)} document `{document}` for Approval of type `{approval_type}`."
-                            )
-                            continue
-
-                        if document.approval_type_document_type.is_license_document:
-                            license_documents.append(document)
-                        elif document.approval_type_document_type.is_cover_letter:
-                            cover_letter.append(document)
-                        elif document.approval_type_document_type.is_sign_off_sheet:
-                            sign_off_sheets.append(document)
-                        else:
-                            other_documents.append(document)
-                    if len(license_documents) != 1:
-                        raise ValidationError(
-                            f"There must be exactly one license document for {approval_type}, but found {len(license_documents)}."
-                        )
-                    if len(cover_letter) != 1:
-                        raise ValidationError(
-                            f"There must be exactly one cover letter for {approval_type}, but found {len(cover_letter)}."
-                        )
-                    if len(sign_off_sheets) != 1:
-                        raise ValidationError(
-                            f"There must be exactly one sign-off sheet for {approval_type}, but found {len(sign_off_sheets)}."
-                        )
-
-                    approval.licence_document = (
-                        document_generator.create_approval_document(
-                            approval,
-                            filename="Approval-{}.pdf".format(
-                                approval.lodgement_number
-                            ),
-                            filepath=license_documents[0]._file.path,
-                            reason=ApprovalDocument.REASON_NEW,
-                        )
+                    # raise
+                    # Generate the approval documents
+                    self.generate_license_documents(
+                        approval, checking_proposal, reason=ApprovalDocument.REASON_NEW
                     )
-                    approval.cover_letter_document = (
-                        document_generator.create_approval_document(
-                            approval,
-                            filename="CoverLetter-{}.pdf".format(
-                                approval.lodgement_number
-                            ),
-                            filepath=cover_letter[0]._file.path,
-                            reason=ApprovalDocument.REASON_NEW,
-                        )
+
+                    approval.save(
+                        version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_NEW]}"
                     )
-                    approval.sign_off_sheet_document = (
-                        document_generator.create_approval_document(
-                            approval,
-                            filename="SignOffSheet-{}.pdf".format(
-                                approval.lodgement_number
-                            ),
-                            filepath=sign_off_sheets[0]._file.path,
-                            reason=ApprovalDocument.REASON_NEW,
-                        )
-                    )
-                    approval.save()
 
                     self.approval = approval
                     self.save()
                     self.generate_compliances(approval, request)
                     self.generate_invoicing_details()
+                    # Update the current proposal's status
                     self.processing_status = (
                         Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                     )
@@ -2767,7 +2741,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                 if self.approval:
                     self.save(
-                        version_comment=f"Final Approval: {self.approval.lodgement_number}"
+                        version_comment=f"Lease License Approval: {self.approval.lodgement_number}"
                     )
                     if self.approval.documents:
                         self.approval.documents.all().update(can_delete=False)
@@ -3010,8 +2984,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 proposal.proposal_type = ProposalType.objects.get(
                     code=PROPOSAL_TYPE_RENEWAL
                 )
-                proposal.submitter = request.user.id
-                proposal.previous_application = self
+                # proposal.submitter = request.user.id # Should be set on submit
+                # proposal.previous_application = self # Is already set in fn clone_proposal_with_status_reset
 
                 # Pre-populate proposed approval issuance information from previous proposal
                 proposed_issuance = {
@@ -3434,6 +3408,77 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def categories_list(self):
         return self.categories.values_list("category__name", flat=True)
+
+    def generate_license_documents(self, approval, proposal, **kwargs):
+        """ """
+
+        from leaseslicensing.components.approvals.models import ApprovalDocument
+        from leaseslicensing.components.approvals.document import (
+            ApprovalDocumentGenerator,
+        )
+        from leaseslicensing.components.approvals.models import (
+            ApprovalType,
+        )
+
+        reason = kwargs.get("reason", ApprovalDocument.REASON_NEW)
+
+        approval_type_id = proposal.proposed_issuance_approval.get(
+            "approval_type", None
+        )
+        approval_type = ApprovalType.objects.get(id=approval_type_id)
+        document_generator = ApprovalDocumentGenerator()
+
+        # Attach lease license documents as provided by the assessor to the approval
+        license_documents = []
+        cover_letter = []
+        sign_off_sheets = []
+        other_documents = []
+        for document in self.lease_licence_approval_documents.all():
+            if document.approval_type_id != approval_type_id:
+                logger.warn(
+                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type_id)} document `{document}` for Approval of type `{approval_type}`."
+                )
+                continue
+
+            if document.approval_type_document_type.is_license_document:
+                license_documents.append(document)
+            elif document.approval_type_document_type.is_cover_letter:
+                cover_letter.append(document)
+            elif document.approval_type_document_type.is_sign_off_sheet:
+                sign_off_sheets.append(document)
+            else:
+                other_documents.append(document)
+        if len(license_documents) != 1:
+            raise ValidationError(
+                f"There must be exactly one license document for {approval_type}, but found {len(license_documents)}."
+            )
+        if len(cover_letter) != 1:
+            raise ValidationError(
+                f"There must be exactly one cover letter for {approval_type}, but found {len(cover_letter)}."
+            )
+        if len(sign_off_sheets) != 1:
+            raise ValidationError(
+                f"There must be exactly one sign-off sheet for {approval_type}, but found {len(sign_off_sheets)}."
+            )
+
+        approval.licence_document = document_generator.create_approval_document(
+            approval,
+            filepath=license_documents[0]._file.path,
+            filename_prefix="Approval-",  # {approval.lodgement_number}-{approval.lodgement_sequence+1}.pdf",
+            reason=reason,
+        )
+        approval.cover_letter_document = document_generator.create_approval_document(
+            approval,
+            filepath=cover_letter[0]._file.path,
+            filename_prefix="CoverLetter-",  # {approval.lodgement_number}-{approval.lodgement_sequence+1}.pdf",
+            reason=reason,
+        )
+        approval.sign_off_sheet_document = document_generator.create_approval_document(
+            approval,
+            filepath=sign_off_sheets[0]._file.path,
+            filename_prefix="SignOffSheet-",  # {approval.lodgement_number}-{approval.lodgement_sequence+1}.pdf",
+            reason=reason,
+        )
 
 
 class ProposalApplicant(RevisionedMixin):
@@ -5135,7 +5180,7 @@ def clone_proposal_with_status_reset(original_proposal):
     application_type = ApplicationType.objects.get(name="lease_licence")
 
     try:
-        proposal = Proposal.objects.create(
+        cloned_proposal = Proposal.objects.create(
             application_type=application_type,
             ind_applicant=original_proposal.ind_applicant,
             org_applicant=original_proposal.org_applicant,
@@ -5154,8 +5199,8 @@ def clone_proposal_with_status_reset(original_proposal):
                 proposal=original_proposal
             )
             # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
-            original_applicant.copy_self_to_proposal(proposal)
-        return proposal
+            original_applicant.copy_self_to_proposal(cloned_proposal)
+        return cloned_proposal
 
 
 def clone_documents(proposal, original_proposal, media_prefix):
