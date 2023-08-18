@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 from rest_framework_datatables.renderers import DatatablesRenderer
 from reversion.models import Version
+from reversion.errors import RevertError
 
 from leaseslicensing.components.approvals.models import (
     Approval,
@@ -23,6 +24,7 @@ from leaseslicensing.components.approvals.models import (
 from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
     ApprovalDocumentHistorySerializer,
+    ApprovalHistorySerializer,
     ApprovalLogEntrySerializer,
     ApprovalSerializer,
     ApprovalSurrenderSerializer,
@@ -554,7 +556,7 @@ class ApprovalViewSet(UserActionLoggingViewset):
             logger.warning("No license document found for approval {}".format(instance))
             return Response({})
 
-        versions = Version.objects.get_for_object(instance.licence_document).order_by(
+        versions = Version.objects.get_for_object(instance).order_by(
             "-revision__date_created"
         )
 
@@ -567,11 +569,36 @@ class ApprovalViewSet(UserActionLoggingViewset):
             # | Q(revision_id=first.revision_id)
         )
 
-        approval_documents = []
+        approvals = []
         for version in versions:
-            approval_documents.append(ApprovalDocument(**version.field_dict))
+            version_set = version.revision.version_set.all()
 
-        serializer = ApprovalDocumentHistorySerializer(approval_documents, many=True)
+            approval = None
+            documents = []
+            for vs in version_set:
+                try:
+                    obj_class = vs._object_version.object.__class__
+                except RevertError:
+                    logger.exception("Error reverting object version")
+                    continue
+                if obj_class == Approval:
+                    approval = vs._object_version.object
+                elif obj_class == ApprovalDocument:
+                    documents.append(vs._object_version.object)
+
+            if not approval:
+                continue
+
+            for doc in documents:
+                if doc.id == approval.licence_document_id:
+                    approval.licence_document = doc
+                if doc.id == approval.cover_letter_document_id:
+                    approval.cover_letter_document = doc
+
+            approval.revision_id = version.revision_id
+            approvals.append(approval)
+
+        serializer = ApprovalHistorySerializer(approvals, many=True)
         return Response(serializer.data)
 
     @detail_route(
