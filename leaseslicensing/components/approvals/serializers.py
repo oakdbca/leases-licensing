@@ -301,7 +301,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return geometry_data
 
     def get_approved_by(self, obj):
-        approved_by_id = obj.current_proposal.proposed_issuance_approval["approved_by"]
+        approved_by_id = obj.current_proposal.proposed_issuance_approval.get(
+            "approved_by", None
+        )
         if not approved_by_id:
             return "Approver not assigned"
         user = EmailUser.objects.get(id=approved_by_id)
