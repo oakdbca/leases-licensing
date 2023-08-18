@@ -3,7 +3,8 @@
         <div class="row">
             <div class="col">
                 <h3>
-                    {{ approvalLabel }}: {{ approval.lodgement_number }}
+                    {{ approval.approval_type }}:
+                    {{ approval.lodgement_number }}
                     <small
                         v-if="approval.original_leaselicense_number"
                         class="text-muted"
@@ -105,10 +106,15 @@
                         </div>
                     </div>
                 </div>
-                <!-- </div>
-                </div> -->
             </div>
             <div class="col-md-9">
+                <BootstrapAlert type="success"
+                    >This {{ approval.approval_type }} was approved by
+                    <span class="fw-bold">{{ approval.approved_by }}</span> on
+                    <span class="fw-bold">{{
+                        new Date(approval.issue_date).toLocaleDateString()
+                    }}</span></BootstrapAlert
+                >
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button
@@ -373,15 +379,6 @@ export default {
         },
         isLoading: function () {
             return this.loading.length > 0;
-        },
-        approvalLabel: function () {
-            let description = '';
-            if (this.approval && this.approval.approval_type_dict) {
-                description = this.approval.approval_type_dict.description;
-            } else {
-                description = 'License';
-            }
-            return description;
         },
         showEditingInvoicingOptions: function () {
             return (
