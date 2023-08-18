@@ -72,7 +72,7 @@
                     />
                 </div>
             </div>
-            <div class="row mb2">
+            <div v-if="!isInternal" class="row mb2">
                 <div class="col">
                     <a
                         role="button"
