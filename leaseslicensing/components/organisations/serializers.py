@@ -3,6 +3,7 @@ from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
 from leaseslicensing.components.main.serializers import CommunicationLogEntrySerializer
+from leaseslicensing.components.main.utils import get_secure_document_url
 from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationAction,
@@ -378,6 +379,7 @@ class OrganisationRequestCommsSerializer(serializers.ModelSerializer):
 
 class OrganisationCommsSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField()
+    document_urls = serializers.SerializerMethodField()
 
     class Meta:
         model = OrganisationLogEntry
@@ -385,6 +387,11 @@ class OrganisationCommsSerializer(serializers.ModelSerializer):
 
     def get_documents(self, obj):
         return [[d.name, d._file.url] for d in obj.documents.all()]
+
+    def get_document_urls(self, obj):
+        return [
+            get_secure_document_url(obj, "documents", d.id) for d in obj.documents.all()
+        ]
 
 
 class OrganisationRequestLogEntrySerializer(CommunicationLogEntrySerializer):
