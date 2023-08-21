@@ -67,6 +67,7 @@ from leaseslicensing.components.proposals.email import (
     send_proposal_approval_email_notification,
     send_proposal_approver_sendback_email_notification,
     send_proposal_decline_email_notification,
+    send_proposal_roi_approval_email_notification,
     send_referral_complete_email_notification,
     send_referral_email_notification,
 )
@@ -2677,7 +2678,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @transaction.atomic
     def create_lease_licence_from_registration_of_interest(self):
         try:
-            lease_licence = Proposal.objects.create(
+            lease_licence_proposal = Proposal.objects.create(
                 application_type=ApplicationType.objects.get(
                     name=APPLICATION_TYPE_LEASE_LICENCE
                 ),
@@ -2696,21 +2697,23 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             if not self.org_applicant:
                 original_applicant = ProposalApplicant.objects.get(proposal=self)
                 # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
-                original_applicant.copy_self_to_proposal(lease_licence)
+                original_applicant.copy_self_to_proposal(lease_licence_proposal)
 
             from copy import deepcopy
 
             for geo in self.proposalgeometry.all():
                 # add geometry
                 new_geo = deepcopy(geo)
-                new_geo.proposal = lease_licence
+                new_geo.proposal = lease_licence_proposal
                 new_geo.copied_from = geo
                 new_geo.id = None
                 new_geo.drawn_by = geo.drawn_by
                 new_geo.locked = geo.locked
                 new_geo.save()
 
-            return lease_licence
+            send_proposal_roi_approval_email_notification(self, lease_licence_proposal)
+
+            return lease_licence_proposal
 
     def generate_compliances(self, approval, request):
         today = timezone.now().date()
