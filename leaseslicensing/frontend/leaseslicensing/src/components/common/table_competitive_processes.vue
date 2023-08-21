@@ -100,12 +100,11 @@
 </template>
 
 <script>
-/*globals swal, moment */
-import datatable from '@/utils/vue/datatable.vue'
-import { api_endpoints, constants } from '@/utils/hooks'
-import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
-import { v4 as uuid } from 'uuid'
-import { expandToggleCP } from '@/components/common/table_functions.js'
+import datatable from '@/utils/vue/datatable.vue';
+import { api_endpoints, constants } from '@/utils/hooks';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
+import { v4 as uuid } from 'uuid';
+import { expandToggleCP } from '@/components/common/table_functions.js';
 
 export default {
     name: 'TableCompetitiveProcesses',
@@ -154,31 +153,31 @@ export default {
             td_expand_class_name: 'expand-icon',
             td_collapse_class_name: 'collapse-icon',
             expandable_row_class_name: 'expandable_row_class_name',
-        }
+        };
     },
     computed: {
         number_of_columns: function () {
             let num = this.$refs.competitive_process_datatable.vmDataTable
                 .columns(':visible')
-                .nodes().length
-            return num
+                .nodes().length;
+            return num;
         },
         filterApplied: function () {
-            let filter_applied = true
+            let filter_applied = true;
             if (
                 this.filterApplicationStatus.toLowerCase() === 'all' &&
                 this.filterCompetitiveProcessCreatedFrom.toLowerCase() === '' &&
                 this.filterCompetitiveProcessCreatedTo.toLowerCase() === ''
             ) {
-                filter_applied = false
+                filter_applied = false;
             }
-            return filter_applied
+            return filter_applied;
         },
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'Tru3'
+                return this.$route.query.debug === 'Tru3';
             }
-            return false
+            return false;
         },
         datatable_headers: function () {
             return [
@@ -189,7 +188,7 @@ export default {
                 'Created On',
                 'Assigned Officer',
                 'Action',
-            ]
+            ];
         },
         column_id: function () {
             return {
@@ -199,9 +198,9 @@ export default {
                 searchable: false,
                 visible: false,
                 render: function (row, type, full) {
-                    return full.id
+                    return full.id;
                 },
-            }
+            };
         },
         column_lodgement_number: function () {
             return {
@@ -212,12 +211,12 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.migrated) {
-                        return full.lodgement_number + ' (M)'
+                        return full.lodgement_number + ' (M)';
                     } else {
-                        return full.lodgement_number
+                        return full.lodgement_number;
                     }
                 },
-            }
+            };
         },
         column_registration_of_interest: function () {
             return {
@@ -228,12 +227,12 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.registration_of_interest) {
-                        return `<a href="/internal/proposal/${full.registration_of_interest.id}">${full.registration_of_interest.lodgement_number}</a>`
+                        return `<a href="/internal/proposal/${full.registration_of_interest.id}">${full.registration_of_interest.lodgement_number}</a>`;
                     } else {
-                        return ''
+                        return '';
                     }
                 },
-            }
+            };
         },
         column_status: function () {
             return {
@@ -242,7 +241,7 @@ export default {
                 orderable: true,
                 searchable: true,
                 visible: true,
-            }
+            };
         },
         column_created_on: function () {
             return {
@@ -252,9 +251,9 @@ export default {
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    return moment(full.created_at).format('DD/MM/YYYY')
+                    return moment(full.created_at).format('DD/MM/YYYY');
                 },
-            }
+            };
         },
         column_assigned_to: function () {
             return {
@@ -265,12 +264,12 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (full.assigned_officer) {
-                        return full.assigned_officer.fullname
+                        return full.assigned_officer.fullname;
                     } else {
-                        return ''
+                        return '';
                     }
                 },
-            }
+            };
         },
         column_action: function () {
             return {
@@ -281,25 +280,25 @@ export default {
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    console.log({ full })
-                    let links = ''
+                    console.log({ full });
+                    let links = '';
                     if (full.can_accessing_user_process) {
                         links +=
                             '<a href="/internal/competitive_process/' +
                             full.id +
-                            '">Process</a>'
+                            '">Process</a>';
                     } else if (full.can_accessing_user_view) {
                         links +=
                             '<a href="/internal/competitive_process/' +
                             full.id +
-                            '">View</a>'
+                            '">View</a>';
                     }
-                    return links
+                    return links;
                 },
-            }
+            };
         },
         datatable_options: function () {
-            let vm = this
+            let vm = this;
 
             let columns = [
                 vm.column_id,
@@ -309,8 +308,8 @@ export default {
                 vm.column_created_on,
                 vm.column_assigned_to,
                 vm.column_action,
-            ]
-            let search = true
+            ];
+            let search = true;
             let buttons = [
                 {
                     extend: 'excel',
@@ -328,7 +327,7 @@ export default {
                         columns: ':visible',
                     },
                 },
-            ]
+            ];
 
             return {
                 autoWidth: false,
@@ -336,12 +335,12 @@ export default {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 rowCallback: function (row, competitive_process) {
-                    let row_jq = $(row)
+                    let row_jq = $(row);
                     row_jq.attr(
                         'id',
                         'competitive_process_id_' + competitive_process.id
-                    )
-                    row_jq.children().first().addClass(vm.td_expand_class_name)
+                    );
+                    row_jq.children().first().addClass(vm.td_expand_class_name);
                 },
                 responsive: true,
                 serverSide: true,
@@ -354,11 +353,11 @@ export default {
 
                     // adding extra GET params for Custom filtering
                     data: function (d) {
-                        d.filter_status = vm.filterApplicationStatus
+                        d.filter_status = vm.filterApplicationStatus;
                         d.filter_competitive_process_created_from =
-                            vm.filterCompetitiveProcessCreatedFrom
+                            vm.filterCompetitiveProcessCreatedFrom;
                         d.filter_competitive_process_created_to =
-                            vm.filterCompetitiveProcessCreatedTo
+                            vm.filterCompetitiveProcessCreatedTo;
                     },
                 },
                 //dom: 'lBfrtip',
@@ -372,50 +371,50 @@ export default {
                 columns: columns,
                 processing: true,
                 initComplete: function () {},
-            }
+            };
         },
     },
     watch: {
         filterApplicationStatus: function () {
-            this.$refs.competitive_process_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            this.$refs.competitive_process_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterApplicationStatus',
                 this.filterApplicationStatus
-            )
+            );
         },
         filterCompetitiveProcessCreatedFrom: function () {
-            console.log('filterCompetitiveProcessCreatedFrom changed')
-            this.$refs.competitive_process_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            console.log('filterCompetitiveProcessCreatedFrom changed');
+            this.$refs.competitive_process_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterCompetitiveProcessCreatedFrom',
                 this.filterCompetitiveProcessCreatedFrom
-            )
+            );
         },
         filterCompetitiveProcessCreatedTo: function () {
-            console.log('filterCompetitiveProcessCreatedTo changed')
-            this.$refs.competitive_process_datatable.vmDataTable.draw() // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
+            console.log('filterCompetitiveProcessCreatedTo changed');
+            this.$refs.competitive_process_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterCompetitiveProcessCreatedTo',
                 this.filterCompetitiveProcessCreatedTo
-            )
+            );
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
                 this.$refs.collapsible_filters.show_warning_icon(
                     this.filterApplied
-                )
+                );
             }
         },
     },
     created: function () {
-        this.fetchFilterLists()
+        this.fetchFilterLists();
     },
     mounted: function () {
-        let vm = this
+        let vm = this;
         this.$nextTick(() => {
-            vm.addEventListeners()
-        })
+            vm.addEventListeners();
+        });
     },
     methods: {
         createNewCompetitiveProcess: async function () {
@@ -423,40 +422,42 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            throw new Error(json)
-                        })
+                            throw new Error(json);
+                        });
                     } else {
-                        return await response.json()
+                        return await response.json();
                     }
                 })
                 .then((data) => {
-                    const competitive_process = Object.assign({}, data)
+                    const competitive_process = Object.assign({}, data);
                     this.$router.push({
                         name: 'internal-competitive-process',
                         params: {
                             competitive_process_id: competitive_process.id,
                         },
-                    })
+                    });
                 })
                 .catch((error) => {
                     console.log(
                         `Error fetching external approval data ${error.message}`
-                    )
-                    throw error
-                })
+                    );
+                    throw error;
+                });
         },
         adjust_table_width: function () {
-            this.$refs.competitive_process_datatable.vmDataTable.columns.adjust()
-            this.$refs.competitive_process_datatable.vmDataTable.responsive.recalc()
+            this.$refs.competitive_process_datatable.vmDataTable.columns.adjust();
+            this.$refs.competitive_process_datatable.vmDataTable.responsive.recalc();
         },
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         expandCollapseFilters: function () {
-            this.filters_expanded = !this.filters_expanded
+            this.filters_expanded = !this.filters_expanded;
         },
         new_competitive_process_clicked: function () {
-            let vm = this
+            let vm = this;
             swal.fire({
                 title: 'Create New Competitive Process',
                 text: 'Are you sure you want to create new competitive process?',
@@ -464,15 +465,15 @@ export default {
                 showCancelButton: true,
                 confirmButtonText: 'Create New Competitive Process',
                 preConfirm: () => {
-                    return true
+                    return true;
                 },
                 // confirmButtonColor:'#dc3545'
             })
                 .then(async (result) => {
                     if (result.isConfirmed) {
                         // When Yes
-                        await vm.createNewCompetitiveProcess()
-                        vm.datatable_key = uuid()
+                        await vm.createNewCompetitiveProcess();
+                        vm.datatable_key = uuid();
                     }
                 })
                 .catch((error) => {
@@ -480,37 +481,37 @@ export default {
                         title: 'New Competitive Process',
                         text: error.message,
                         icon: 'error',
-                    })
-                })
+                    });
+                });
 
             //this.$router.push({
             //    name: 'apply_proposal'
             //})
-            console.log('New Competitive Process Clicked')
+            console.log('New Competitive Process Clicked');
         },
         fetchFilterLists: async function () {
-            let vm = this
+            let vm = this;
             const res = await fetch(
                 api_endpoints.competitive_process_statuses_dict
-            )
-            if (!res.ok) throw new Error(res.statusText) // 400s or 500s error
+            );
+            if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
 
-            let aho = await res.json()
-            vm.application_statuses = aho
+            let aho = await res.json();
+            vm.application_statuses = aho;
         },
         addEventListeners: function () {
-            let vm = this
+            let vm = this;
             // Listener for thr row
             vm.$refs.competitive_process_datatable.vmDataTable.on(
                 'click',
                 'td',
                 function () {
-                    expandToggleCP(vm, this)
+                    expandToggleCP(vm, this);
                 }
-            )
+            );
         },
     },
-}
+};
 </script>
 <style scoped>
 .expand-icon {
