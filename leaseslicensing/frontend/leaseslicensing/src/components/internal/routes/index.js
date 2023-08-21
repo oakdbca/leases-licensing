@@ -1,18 +1,18 @@
-import { RouterView } from 'vue-router'
-import InternalDashboard from '@/components/internal/dashboard.vue'
-import OrgAccessTable from '@/components/internal/organisations/dashboard.vue'
-import OrgAccess from '@/components/internal/organisations/access.vue'
-import Organisation from '@/components/internal/organisations/manage.vue'
-import Proposal from '@/components/internal/proposals/proposal.vue'
-import ApprovalDash from '@/components/internal/approvals/dashboard.vue'
-import ComplianceDash from '@/components/internal/compliances/dashboard.vue'
-import InvoicesDash from '@/components/internal/invoices/dashboard.vue'
-import Search from '@/components/internal/search/dashboard.vue'
-import PersonDetail from '@/components/internal/person/person_detail.vue'
-import Compliance from '../compliances/access.vue'
-import Reports from '@/components/reports/reports.vue'
-import Approval from '@/components/internal/approvals/approval.vue'
-import CompetitiveProcess from '@/components/internal/competitive_process/competitive_process.vue'
+import { RouterView } from 'vue-router';
+import InternalDashboard from '@/components/internal/dashboard.vue';
+import OrgAccessTable from '@/components/internal/organisations/dashboard.vue';
+import OrgAccess from '@/components/internal/organisations/access.vue';
+import Organisation from '@/components/internal/organisations/manage.vue';
+import Proposal from '@/components/internal/proposals/proposal.vue';
+import ApprovalDash from '@/components/internal/approvals/dashboard.vue';
+import ComplianceDash from '@/components/internal/compliances/dashboard.vue';
+import InvoicesDash from '@/components/internal/invoices/dashboard.vue';
+import Search from '@/components/internal/search/dashboard.vue';
+import PersonDetail from '@/components/internal/person/person_detail.vue';
+import Compliance from '../compliances/access.vue';
+import Reports from '@/components/reports/reports.vue';
+import Approval from '@/components/internal/approvals/approval.vue';
+import CompetitiveProcess from '@/components/internal/competitive_process/competitive_process.vue';
 
 export default {
     path: '/internal',
@@ -94,4 +94,4 @@ export default {
             name: 'internal-competitive-process',
         },
     ],
-}
+};
