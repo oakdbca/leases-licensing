@@ -24,6 +24,7 @@ from leaseslicensing.components.proposals.email import (
 )
 from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
+    ProposalAdditionalDocumentType,
     ProposalApplicant,
     ProposalAssessmentAnswer,
     ProposalDeclinedDetails,
@@ -553,6 +554,9 @@ def save_assessor_data(proposal, request, viewset):
     groups = proposal_data.get("groups", None)
     save_groups_data(proposal, groups)
 
+    additional_document_types = proposal_data.get("additional_document_types", None)
+    save_additional_document_types(proposal, additional_document_types)
+
     # Save checklist answers
     if is_assessor(request):
         # When this assessment is for the accessing user
@@ -796,3 +800,24 @@ def get_proposal_geometries_for_map_component(proposal, context, feature_collect
         feature_collection["features"].append(g)
 
     return feature_collection
+
+
+def save_additional_document_types(proposal, additional_document_types):
+    for document_type in additional_document_types:
+        (
+            additional_document_type,
+            created,
+        ) = ProposalAdditionalDocumentType.objects.get_or_create(
+            proposal=proposal, additional_document_type_id=document_type
+        )
+        if created:
+            logger.info(f"Created additional document type: {additional_document_type}")
+    if ProposalAdditionalDocumentType.objects.filter(proposal=proposal).count() != len(
+        additional_document_types
+    ):
+        deleted = (
+            ProposalAdditionalDocumentType.objects.filter(proposal=proposal)
+            .exclude(additional_document_type_id__in=additional_document_types)
+            .delete()
+        )
+        logger.info(f"Deleted additional document types: {deleted}")

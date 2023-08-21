@@ -3580,7 +3580,9 @@ class ProposalLGA(models.Model):
 
 
 class ProposalAdditionalDocumentType(models.Model):
-    proposal = models.ForeignKey(Proposal, on_delete=models.CASCADE)
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.CASCADE, related_name="additional_document_types"
+    )
     additional_document_type = models.ForeignKey(
         AdditionalDocumentType, on_delete=models.CASCADE
     )

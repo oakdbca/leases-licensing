@@ -1004,6 +1004,7 @@
                                     >Select one or more documents that need to
                                     be provided by the applicant:</strong
                                 >
+
                                 <div
                                     v-show="
                                         select2AppliedToAdditionalDocumentTypes
@@ -1011,6 +1012,9 @@
                                 >
                                     <select
                                         ref="select_additional_document_types"
+                                        v-model="
+                                            proposal.additional_document_types
+                                        "
                                         class="form-select"
                                     ></select>
                                 </div>
@@ -1768,14 +1772,18 @@ export default {
                         multiple: true,
                         data: option_data,
                     })
-                    .on('select2:select', function () {
-                        //vm.updateApplicationTypeFilterCache()
-                        //vm.main_manager.show_me()
+                    .on('select2:select', function (e) {
+                        vm.proposal.additional_document_types = $(
+                            e.currentTarget
+                        ).val();
                     })
-                    .on('select2:unselect', function () {
-                        //vm.updateApplicationTypeFilterCache()
-                        //vm.main_manager.show_me()
-                    });
+                    .on('select2:unselect', function (e) {
+                        vm.proposal.additional_document_types = $(
+                            e.currentTarget
+                        ).val();
+                    })
+                    .val(vm.proposal.additional_document_types)
+                    .trigger('change');
                 vm.select2AppliedToAdditionalDocumentTypes = true;
             }
         },

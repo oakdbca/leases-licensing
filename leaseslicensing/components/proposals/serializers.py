@@ -1341,6 +1341,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "external_referral_invites",
             "competitive_process",
             "approval",
+            "additional_document_types",
         )
 
         datatables_always_serialize = {
