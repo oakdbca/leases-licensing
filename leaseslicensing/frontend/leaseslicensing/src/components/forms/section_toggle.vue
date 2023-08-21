@@ -1,5 +1,5 @@
 <template lang="html">
-    <div :id="custom_id" class="card mb-2 section-toggle">
+    <div :id="custom_id" class="card mb-3 section-toggle">
         <div class="card-header fw-bold h4 p-4">
             <div
                 :id="'show_hide_switch_' + section_body_id"
