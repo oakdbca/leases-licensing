@@ -1,7 +1,9 @@
 <template>
     <div id="internalOrgInfo" class="container">
         <div v-if="org" class="row">
-            <h3>{{ org.trading_name }} [ABN: {{ formattedABN }}]</h3>
+            <h3>
+                {{ org.ledger_organisation_name }} [ABN: {{ formattedABN }}]
+            </h3>
             <div class="col-md-3">
                 <CommsLogs
                     :comms_url="comms_url"
@@ -55,16 +57,41 @@
                                 method="post"
                             >
                                 <div class="row mb-2">
-                                    <label for="" class="col-sm-3 control-label"
+                                    <label
+                                        for="ledger_organisation_name"
+                                        class="col-sm-3 control-label"
+                                        >Name</label
+                                    >
+                                    <div class="col-sm-9">
+                                        <input
+                                            v-model="
+                                                org.ledger_organisation_name
+                                            "
+                                            type="text"
+                                            class="form-control"
+                                            name="ledger_organisation_name"
+                                            :readonly="true"
+                                        />
+                                    </div>
+                                </div>
+                                <div
+                                    v-if="org.ledger_organisation_trading_name"
+                                    class="row mb-2"
+                                >
+                                    <label
+                                        for="ledger_organisation_trading_name"
+                                        class="col-sm-3 control-label"
                                         >Trading Name</label
                                     >
                                     <div class="col-sm-9">
                                         <input
-                                            v-model="org.trading_name"
+                                            v-model="
+                                                org.ledger_organisation_trading_name
+                                            "
                                             type="text"
                                             class="form-control"
-                                            name="trading_name"
-                                            placeholder=""
+                                            name="ledger_organisation_trading_name"
+                                            :readonly="true"
                                         />
                                     </div>
                                 </div>
@@ -72,7 +99,7 @@
                                     <label for="" class="col-md-3 control-label"
                                         >ABN</label
                                     >
-                                    <div class="col-md-7">
+                                    <div class="col-md-2">
                                         <input
                                             v-model="
                                                 org.ledger_organisation_abn
@@ -84,6 +111,7 @@
                                             :disabled="
                                                 !is_leaseslicensing_admin
                                             "
+                                            :readonly="true"
                                         />
                                     </div>
                                 </div>
@@ -100,175 +128,15 @@
                                             class="form-control"
                                             name="ledger_organisation_email"
                                             placeholder=""
+                                            :readonly="true"
                                         />
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <label
-                                        for=""
-                                        class="col-sm-3 control-label fw-bold"
-                                        >Waivers</label
-                                    >
-                                </div>
-                                <div class="row row-waiver mb-3">
-                                    <div class="col-sm-4">
-                                        <label
-                                            class="control-label float-end"
-                                            for="Name"
-                                        >
-                                            T Class application fee
-                                        </label>
-                                    </div>
-                                    <div class="col-sm-1">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                ref="application_discount_yes"
-                                                v-model="
-                                                    org.apply_application_discount
-                                                "
-                                                class="form-check-input"
-                                                type="checkbox"
-                                                :value="true"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <div
-                                            v-show="
-                                                org.apply_application_discount
-                                            "
-                                            class="row"
-                                        >
-                                            <div class="col-auto">
-                                                <div
-                                                    class="input-group input-group-sm"
-                                                >
-                                                    <span
-                                                        id="dollars-addon"
-                                                        class="input-group-text"
-                                                        >$</span
-                                                    >
-                                                    <input
-                                                        v-model.number="
-                                                            org.application_discount
-                                                        "
-                                                        type="number"
-                                                        class="form-control discount"
-                                                        min="0"
-                                                        name="application_discount"
-                                                        aria-label="application_discount"
-                                                        aria-describedby="dollars-addon"
-                                                        @input="
-                                                            handleApplicationCurrencyInput
-                                                        "
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div
-                                                v-show="
-                                                    !validateLicenceDiscount()
-                                                "
-                                                class="col-auto"
-                                            >
-                                                <div
-                                                    class="text-danger form-text"
-                                                >
-                                                    Must be between $0 - $10,000
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row row-waiver mb-3">
-                                    <div class="col-sm-4">
-                                        <label
-                                            class="control-label float-end"
-                                            for="Name"
-                                            >T Class licence fee</label
-                                        >
-                                    </div>
-                                    <div class="col-sm-1">
-                                        <div class="form-check form-switch">
-                                            <input
-                                                ref="licence_discount_yes"
-                                                v-model="
-                                                    org.apply_licence_discount
-                                                "
-                                                class="form-check-input"
-                                                type="checkbox"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-7">
-                                        <div
-                                            v-show="org.apply_licence_discount"
-                                            class="row"
-                                        >
-                                            <div class="col-auto">
-                                                <div
-                                                    class="input-group input-group-sm mb-0"
-                                                >
-                                                    <span
-                                                        id="dollars-addon"
-                                                        class="input-group-text"
-                                                        >$</span
-                                                    >
-                                                    <input
-                                                        v-model.number="
-                                                            org.licence_discount
-                                                        "
-                                                        type="number"
-                                                        class="form-control discount"
-                                                        min="0"
-                                                        name="licence_discount"
-                                                        aria-label="licence_discount"
-                                                        aria-describedby="dollars-addon"
-                                                        @input="
-                                                            handleLicenceCurrencyInput
-                                                        "
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div
-                                                v-show="
-                                                    !validateLicenceDiscount()
-                                                "
-                                                class="col-auto"
-                                            >
-                                                <div
-                                                    class="text-danger form-text"
-                                                >
-                                                    Must be between $0 - $10,000
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="row mb-2">
-                                    <div class="col-sm-12">
-                                        <button
-                                            v-if="!updatingDetails"
-                                            class="float-end btn btn-primary"
-                                            :disabled="!can_update()"
-                                            @click.prevent="updateDetails()"
-                                        >
-                                            Update
-                                        </button>
-                                        <button
-                                            v-else
-                                            disabled
-                                            class="float-end btn btn-primary"
-                                        >
-                                            <i class="fa fa-spin fa-spinner"></i
-                                            >&nbsp;Updating
-                                        </button>
                                     </div>
                                 </div>
                             </form>
                         </FormSection>
                         <FormSection
                             v-if="orgHasAddress"
-                            :form-collapse="true"
+                            :form-collapse="false"
                             label="Address Details"
                             index="addressdetails"
                         >
@@ -288,6 +156,7 @@
                                             class="form-control"
                                             name="street"
                                             placeholder=""
+                                            :readonly="true"
                                         />
                                     </div>
                                 </div>
@@ -302,6 +171,7 @@
                                             class="form-control"
                                             name="surburb"
                                             placeholder=""
+                                            :readonly="true"
                                         />
                                     </div>
                                 </div>
@@ -316,6 +186,7 @@
                                             class="form-control"
                                             name="country"
                                             placeholder=""
+                                            :readonly="true"
                                         />
                                     </div>
                                     <label for="" class="col-sm-2 control-label"
@@ -328,6 +199,7 @@
                                             class="form-control"
                                             name="postcode"
                                             placeholder=""
+                                            :readonly="true"
                                         />
                                     </div>
                                 </div>
@@ -340,6 +212,7 @@
                                             v-model="org.address.country"
                                             class="form-control"
                                             name="country"
+                                            :readonly="true"
                                         >
                                             <option
                                                 v-for="c in countries"
@@ -351,29 +224,10 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="row mb-2">
-                                    <div class="col-sm-12">
-                                        <button
-                                            v-if="!updatingAddress"
-                                            class="float-end btn btn-primary"
-                                            @click.prevent="updateAddress()"
-                                        >
-                                            Update
-                                        </button>
-                                        <button
-                                            v-else
-                                            disabled
-                                            class="float-end btn btn-primary"
-                                        >
-                                            <i class="fa fa-spin fa-spinner"></i
-                                            >&nbsp;Updating
-                                        </button>
-                                    </div>
-                                </div>
                             </form>
                         </FormSection>
                         <FormSection
-                            :form-collapse="true"
+                            :form-collapse="false"
                             label="Contacts"
                             index="contacts"
                         >
@@ -384,7 +238,7 @@
                             />
                         </FormSection>
                         <FormSection
-                            :form-collapse="true"
+                            :form-collapse="false"
                             label="Linked User Accounts"
                             index="linkeduseraccounts"
                         >
