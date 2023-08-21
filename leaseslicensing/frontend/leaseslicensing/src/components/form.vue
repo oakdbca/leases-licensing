@@ -313,7 +313,7 @@ export default {
         },
         show_additional_documents_tab: {
             type: Boolean,
-            default: false,
+            default: true,
         },
         proposal: {
             type: Object,
