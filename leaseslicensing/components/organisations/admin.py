@@ -36,18 +36,6 @@ class OrganisationAdmin(admin.ModelAdmin):
         "admin_pin_two",
         "user_pin_one",
         "user_pin_two",
-        "bpay_allowed",
-        "monthly_invoicing_allowed",
-        "monthly_invoicing_period",
-        "monthly_payment_due_period",
-        "apply_application_discount",
-        "apply_licence_discount",
-        "licence_discount",
-        "event_training_completed",
-        "event_training_date",
-        "charge_once_per_year",
-        "last_event_application_fee_date",
-        "max_num_months_ahead",
     ]
     readonly_fields = [
         "ledger_organisation_name",
