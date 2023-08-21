@@ -2618,7 +2618,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # Send notification email to applicant
                 send_proposal_approval_email_notification(self, request)
                 self.save(
-                    version_comment=f"Lease License Approval: {self.approval.lodgement_number} ({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]                        })"
+                    version_comment=f"Lease License Approval: {self.approval.lodgement_number} ({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
                 )
 
             elif (

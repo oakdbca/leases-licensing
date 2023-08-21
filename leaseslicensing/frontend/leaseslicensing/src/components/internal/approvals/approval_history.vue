@@ -186,10 +186,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    let reason = full.licence_document
-                        ? full.licence_document.reason
-                        : '';
-                    return reason;
+                    return full.reason;
                 },
             };
         },

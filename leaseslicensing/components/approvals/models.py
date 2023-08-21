@@ -625,7 +625,7 @@ class Approval(LicensingModelVersioned):
                     send_approval_cancel_email_notification(self)
             else:
                 self.set_to_cancel = True
-            self.save()
+            self.save(version_comment="status_change: Approval canceled")
             # Log proposal action
             self.log_user_action(
                 ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id), request

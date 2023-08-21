@@ -379,6 +379,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
     start_date_str = serializers.SerializerMethodField()
     expiry_date_str = serializers.SerializerMethodField()
+    reason = serializers.SerializerMethodField()
 
     class Meta:
         model = Approval
@@ -396,6 +397,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
             "status",
             "start_date_str",
             "expiry_date_str",
+            "reason",
         )
 
     def get_revision_id(self, obj):
@@ -460,6 +462,17 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
 
     def get_expiry_date_str(self, obj):
         return obj.approval.expiry_date.strftime("%d/%m/%Y")
+
+    def get_reason(self, obj):
+        if obj.status == Approval.APPROVAL_STATUS_CURRENT:
+            # For current licenses return the reason of the last change to the approval document
+            return (
+                obj.licence_document.get_reason_display()
+                if obj.licence_document
+                else ""
+            )
+        # Else (Cancel, Surrender, Suspend) return the status of the approval
+        return obj.get_status_display()
 
 
 class ApprovalTypeSerializer(serializers.ModelSerializer):
