@@ -408,8 +408,6 @@ class UserSystemSettings(models.Model):
     # Setting for user if they want to see Payment (Park Entry Fees Dashboard)
     # by one row per park or one row per booking
     user = models.IntegerField(unique=True)  # EmailUserRO
-    event_training_completed = models.BooleanField(default=False)
-    event_training_date = models.DateField(blank=True, null=True)
 
     class Meta:
         app_label = "leaseslicensing"
