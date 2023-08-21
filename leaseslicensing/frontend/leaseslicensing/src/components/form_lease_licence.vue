@@ -2,7 +2,7 @@
     <div>
         <div v-if="debug">components/form_lease_licence.vue</div>
         <FormSection
-            v-if="proposal"
+            v-if="proposal && show_tourism_proposal_details"
             :form-collapse="false"
             label="Tourism Proposal Details"
             index="tourism_proposal_details"
@@ -557,6 +557,14 @@ export default {
         },
         proposalId: function () {
             return this.proposal ? this.proposal.id : null;
+        },
+        show_tourism_proposal_details: function () {
+            return (
+                this.proposal &&
+                this.proposal.groups.find(
+                    (group) => group.name.trim().toLowerCase() == 'tourism'
+                )
+            );
         },
         profitAndLossDocumentsUrl: function () {
             return helpers.add_endpoint_join(

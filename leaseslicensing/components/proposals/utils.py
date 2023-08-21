@@ -477,6 +477,10 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
 
     save_groups_data(proposal, proposal_data["groups"])
 
+    if proposal.groups.filter(name__iexact="tourism").exists():
+        # Todo: If we need to do any specific validation of the tourism proposal details
+        pass
+
     geometry_data = request.data.get("proposalgeometry", None)
     if geometry_data:
         save_geometry(request, proposal, "proposals", geometry_data)
