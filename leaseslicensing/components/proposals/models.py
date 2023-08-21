@@ -16,7 +16,6 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
 from django.db import IntegrityError, models, transaction
 from django.db.models import JSONField, Max, Min, Q
 from django.urls import reverse
@@ -24,7 +23,6 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 from django_countries.fields import CountryField
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from ledger_api_client.ledger_models import Invoice as LedgerInvoice
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
 from reversion.models import Version
@@ -2559,8 +2557,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                             previous_approval.replaced_by = approval
                             previous_approval.save()
 
-                        self.reset_licence_discount(request.user)
-
                 elif (
                     self.proposal_type == "amendment"
                     and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
@@ -3598,48 +3594,6 @@ class AdditionalDocument(Document):
     proposal_additional_document_type = models.ForeignKey(
         ProposalAdditionalDocumentType, null=True, blank=True, on_delete=models.SET_NULL
     )
-
-    class Meta:
-        app_label = "leaseslicensing"
-
-
-class ApplicationFeeDiscount(RevisionedMixin):
-    DISCOUNT_TYPE_APPLICATION = 0
-    DISCOUNT_TYPE_LICENCE = 1
-    DISCOUNT_TYPE_CHOICES = (
-        (DISCOUNT_TYPE_APPLICATION, "Discount application"),
-        (DISCOUNT_TYPE_LICENCE, "Discount licence"),
-    )
-    proposal = models.ForeignKey(
-        Proposal, related_name="fee_discounts", null=True, on_delete=models.CASCADE
-    )
-    discount_type = models.CharField(max_length=40, choices=DISCOUNT_TYPE_CHOICES)
-    discount = models.FloatField(validators=[MinValueValidator(0.0)])
-    created = models.DateTimeField(auto_now_add=True)
-    user = models.IntegerField()  # EmailUserRO
-    reset_date = models.DateTimeField(blank=True, null=True)
-
-    def __str__(self):
-        return "{} - {}% - {}".format(
-            self.get_discount_type_display(),
-            self.discount,
-            self.proposal.fee_invoice_reference,
-        )
-
-    @property
-    def invoice(self):
-        try:
-            invoice = LedgerInvoice.objects.get(
-                reference=self.proposal.fee_invoice_reference
-            )
-            return invoice
-        except LedgerInvoice.DoesNotExist:
-            pass
-        return False
-
-    @property
-    def payment_amount(self):
-        return self.invoice.amount
 
     class Meta:
         app_label = "leaseslicensing"
