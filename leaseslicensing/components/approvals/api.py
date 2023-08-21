@@ -556,9 +556,7 @@ class ApprovalViewSet(UserActionLoggingViewset):
             logger.warning("No license document found for approval {}".format(instance))
             return Response({})
 
-        versions = Version.objects.get_for_object(instance).order_by(
-            "-revision__date_created"
-        )
+        versions = Version.objects.get_for_object(instance)
 
         first = versions.first()
         if not first:
@@ -567,9 +565,12 @@ class ApprovalViewSet(UserActionLoggingViewset):
         versions = versions.filter(
             ~Q(revision__comment="")
             # | Q(revision_id=first.revision_id)
-        )
+        ).order_by("-revision__date_created")
 
-        approvals = []
+        approvals = []  # List of history approvals to return
+        lodgement_sequences = (
+            []
+        )  # List to make sure there is only one approval (the most recent one) per lodgement sequence
         for version in versions:
             version_set = version.revision.version_set.all()
 
@@ -586,8 +587,10 @@ class ApprovalViewSet(UserActionLoggingViewset):
                 elif obj_class == ApprovalDocument:
                     documents.append(vs._object_version.object)
 
-            if not approval:
+            if not approval or approval.lodgement_sequence in lodgement_sequences:
+                # Don't add to the history when there is no approval or when the lodgement sequence is already in the list
                 continue
+            lodgement_sequences.append(approval.lodgement_sequence)
 
             for doc in documents:
                 if doc.id == approval.licence_document_id:
@@ -596,8 +599,19 @@ class ApprovalViewSet(UserActionLoggingViewset):
                     approval.cover_letter_document = doc
 
             approval.revision_id = version.revision_id
-            approvals.append(approval)
 
+            version_date = version.revision.date_created.strftime(
+                "%d/%m/%Y %I:%M:%S %p"
+            )
+            logger.info(
+                f"Adding approval {approval}-{approval.lodgement_sequence} from {version_date} to history table"
+            )
+            approvals.append(approval)
+        logger.info(
+            f"Returning Approval history: {', '.join([f'{approval}-{ls}' for ls in lodgement_sequences])}"
+        )
+        # Sort by lodgement sequence (don't trust the revision date)
+        approvals = sorted(approvals, key=lambda x: x.lodgement_sequence, reverse=True)
         serializer = ApprovalHistorySerializer(approvals, many=True)
         return Response(serializer.data)
 
