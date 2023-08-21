@@ -37,8 +37,6 @@ logger = logging.getLogger(__name__)
 class ApprovalPaymentSerializer(serializers.ModelSerializer):
     # proposal = serializers.SerializerMethodField(read_only=True)
     org_applicant = serializers.SerializerMethodField(read_only=True)
-    bpay_allowed = serializers.SerializerMethodField(read_only=True)
-    monthly_invoicing_allowed = serializers.SerializerMethodField(read_only=True)
     other_allowed = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
@@ -48,8 +46,6 @@ class ApprovalPaymentSerializer(serializers.ModelSerializer):
             "current_proposal",
             "expiry_date",
             "org_applicant",
-            "bpay_allowed",
-            "monthly_invoicing_allowed",
             "other_allowed",
         )
         read_only_fields = (
@@ -57,8 +53,6 @@ class ApprovalPaymentSerializer(serializers.ModelSerializer):
             "current_proposal",
             "expiry_date",
             "org_applicant",
-            "bpay_allowed",
-            "monthly_invoicing_allowed",
             "other_allowed",
         )
 
@@ -69,23 +63,8 @@ class ApprovalPaymentSerializer(serializers.ModelSerializer):
             else None
         )
 
-    def get_bpay_allowed(self, obj):
-        return obj.bpay_allowed
-
-    def get_monthly_invoicing_allowed(self, obj):
-        return obj.monthly_invoicing_allowed
-
     def get_other_allowed(self, obj):
         return settings.OTHER_PAYMENT_ALLOWED
-
-    # def get_monthly_invoicing_period(self,obj):
-    #    return obj.monthly_invoicing_period
-
-    # def get_monthly_payment_due_period(self,obj):
-    #    return obj.monthly_payment_due_period
-
-    # def get_proposal_id(self,obj):
-    #    return obj.current_proposal_id
 
 
 class ApprovalSerializer(serializers.ModelSerializer):

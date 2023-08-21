@@ -18,14 +18,15 @@ class LeasesLicensingConfig(AppConfig):
                 ApprovalTypeDocumentType,
                 ApprovalTypeDocumentTypeOnApprovalType,
             )
+            from leaseslicensing.components.competitive_processes.models import (
+                CompetitiveProcessParty,
+            )
             from leaseslicensing.components.compliances.models import Compliance
             from leaseslicensing.components.main.models import ApplicationType
             from leaseslicensing.components.organisations import signals  # noqa
             from leaseslicensing.components.proposals import signals  # noqa
-            from leaseslicensing.components.users import signals  # noqa
             from leaseslicensing.components.proposals.models import (
                 AdditionalDocumentType,
-                ApplicationFeeDiscount,
                 ChecklistQuestion,
                 CompetitiveProcess,
                 Organisation,
@@ -43,9 +44,7 @@ class LeasesLicensingConfig(AppConfig):
                 SectionChecklist,
                 ShapefileDocument,
             )
-            from leaseslicensing.components.competitive_processes.models import (
-                CompetitiveProcessParty,
-            )
+            from leaseslicensing.components.users import signals  # noqa
 
             # main
             reversion.register(ApplicationType, follow=[])
@@ -80,7 +79,6 @@ class LeasesLicensingConfig(AppConfig):
             )
             reversion.register(ShapefileDocument, follow=["proposal"])
             reversion.register(AdditionalDocumentType)
-            reversion.register(ApplicationFeeDiscount, follow=["proposal"])
             reversion.register(ProposalStandardRequirement, follow=["application_type"])
             reversion.register(Referral, follow=["proposal", "document"])
             reversion.register(ReferralDocument, follow=["referral"])

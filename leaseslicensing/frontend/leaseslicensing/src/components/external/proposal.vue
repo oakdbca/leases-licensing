@@ -454,20 +454,27 @@ export default {
                 payload.proposal.mining_tenement_text =
                     this.$refs.application_form.$refs.registration_of_interest.$refs.mining_tenement_text.detailsText;
             } else if (this.leaseLicence) {
-                payload.proposal.profit_and_loss_text =
-                    this.$refs.application_form.$refs.lease_licence.$refs.profit_and_loss_text.detailsText;
-                payload.proposal.cash_flow_text =
-                    this.$refs.application_form.$refs.lease_licence.$refs.cash_flow_text.detailsText;
-                payload.proposal.capital_investment_text =
-                    this.$refs.application_form.$refs.lease_licence.$refs.capital_investment_text.detailsText;
-                payload.proposal.financial_capacity_text =
-                    this.$refs.application_form.$refs.lease_licence.$refs.financial_capacity_text.detailsText;
-                payload.proposal.available_activities_text =
-                    this.$refs.application_form.$refs.lease_licence.$refs.available_activities_text.detailsText;
-                payload.proposal.market_analysis_text =
-                    this.$refs.application_form.$refs.lease_licence.$refs.market_analysis_text.detailsText;
-                payload.proposal.staffing_text =
-                    this.$refs.application_form.$refs.lease_licence.$refs.staffing_text.detailsText;
+                if (
+                    this.proposal.groups.find(
+                        (group) => group.name.trim().toLowerCase() == 'tourism'
+                    )
+                ) {
+                    payload.proposal.profit_and_loss_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.profit_and_loss_text.detailsText;
+                    payload.proposal.cash_flow_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.cash_flow_text.detailsText;
+                    payload.proposal.capital_investment_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.capital_investment_text.detailsText;
+                    payload.proposal.financial_capacity_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.financial_capacity_text.detailsText;
+                    payload.proposal.available_activities_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.available_activities_text.detailsText;
+                    payload.proposal.market_analysis_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.market_analysis_text.detailsText;
+                    payload.proposal.staffing_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.staffing_text.detailsText;
+                }
+
                 payload.proposal.key_personnel_text =
                     this.$refs.application_form.$refs.lease_licence.$refs.key_personnel_text.detailsText;
                 payload.proposal.key_milestones_text =

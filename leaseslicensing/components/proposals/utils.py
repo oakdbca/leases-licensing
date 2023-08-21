@@ -477,6 +477,10 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
 
     save_groups_data(proposal, proposal_data["groups"])
 
+    if proposal.groups.filter(group__name__iexact="tourism").exists():
+        # Todo: If we need to do any specific validation of the tourism proposal details
+        pass
+
     geometry_data = request.data.get("proposalgeometry", None)
     if geometry_data:
         save_geometry(request, proposal, "proposals", geometry_data)
@@ -543,8 +547,11 @@ def save_assessor_data(proposal, request, viewset):
         # request.data is a dictionary of the proposal {'id': ..., ...}
         proposal_data = request.data
 
-    save_site_name(proposal, proposal_data["site_name"])
-    save_groups_data(proposal, proposal_data["groups"])
+    site_name = proposal_data.get("site_name", None)
+    save_site_name(proposal, site_name)
+
+    groups = proposal_data.get("groups", None)
+    save_groups_data(proposal, groups)
 
     # Save checklist answers
     if is_assessor(request):

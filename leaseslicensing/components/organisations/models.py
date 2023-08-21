@@ -3,7 +3,6 @@ import logging
 from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
 from django.db import models, transaction
 from django.utils.text import slugify
 from ledger_api_client.managed_models import SystemGroupPermission
@@ -78,42 +77,6 @@ class Organisation(models.Model):
     admin_pin_two = models.CharField(max_length=50, blank=True)
     user_pin_one = models.CharField(max_length=50, blank=True)
     user_pin_two = models.CharField(max_length=50, blank=True)
-    bpay_allowed = models.BooleanField("BPAY Allowed", default=False)
-    monthly_invoicing_allowed = models.BooleanField(default=False)
-    monthly_invoicing_period = models.SmallIntegerField(
-        "Monthly Invoicing Period (in #days from beginning of the following month)",
-        default=0,
-    )
-    monthly_payment_due_period = models.SmallIntegerField(
-        "Monthly Payment Due Period (in #days from Invoicing Date)", default=20
-    )
-
-    apply_application_discount = models.BooleanField(default=False)
-    application_discount = models.FloatField(
-        default=0.0, validators=[MinValueValidator(0.0)]
-    )
-
-    apply_licence_discount = models.BooleanField(default=False)
-    licence_discount = models.FloatField(
-        default=0.0, validators=[MinValueValidator(0.0)]
-    )
-    event_training_completed = models.BooleanField(default=False)
-    event_training_date = models.DateField(blank=True, null=True)
-
-    charge_once_per_year = models.DateField(
-        "Charge Application Fee once per year from given start date (Charge always if null)",
-        blank=True,
-        null=True,
-    )
-    last_event_application_fee_date = models.DateField(
-        "The last date a fee was charged for an Eventi Application",
-        blank=True,
-        null=True,
-    )
-    max_num_months_ahead = models.SmallIntegerField(
-        "Maximum number of months ahead an Event can be booked (Any if equal to zero)",
-        default=0,
-    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -270,8 +233,6 @@ class Organisation(models.Model):
         )
 
     def generate_pins(self):
-        # self.pin_one = self._generate_pin()
-        # self.pin_two = self._generate_pin()
         self.admin_pin_one = self._generate_pin()
         self.admin_pin_two = self._generate_pin()
         self.user_pin_one = self._generate_pin()
@@ -745,9 +706,6 @@ class Organisation(models.Model):
             .distinct()
             .only("id", "ledger_organisation_name")
         )
-
-
-# @python_2_unicode_compatible
 
 
 class OrganisationContact(models.Model):

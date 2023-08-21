@@ -170,7 +170,9 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             logger.debug(
                 f"filter_approval_organisation: {filter_approval_organisation}"
             )
-            queryset = queryset.filter(org_applicant_id=filter_approval_organisation)
+            queryset = queryset.filter(
+                current_proposal__org_applicant_id=filter_approval_organisation
+            )
         if filter_approval_region:
             filter_approval_region = int(filter_approval_region)
             logger.debug(f"filter_approval_region: {filter_approval_region}")
@@ -257,8 +259,8 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         ):
             logger.debug(f"target_organisation_id: {target_organisation_id}")
             target_organisation_id = int(target_organisation_id)
-            qs = qs.exclude(org_applicant__isnull=True).filter(
-                org_applicant__id=target_organisation_id
+            qs = qs.exclude(current_proposal__org_applicant__isnull=True).filter(
+                current_proposal__org_applicant__id=target_organisation_id
             )
 
         target_compliance_id = self.request.query_params.get(

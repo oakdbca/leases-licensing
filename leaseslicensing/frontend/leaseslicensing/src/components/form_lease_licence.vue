@@ -2,7 +2,7 @@
     <div>
         <div v-if="debug">components/form_lease_licence.vue</div>
         <FormSection
-            v-if="proposal"
+            v-if="proposal && show_tourism_proposal_details"
             :form-collapse="false"
             label="Tourism Proposal Details"
             index="tourism_proposal_details"
@@ -31,6 +31,7 @@
                         :proposal-data="proposal.profit_and_loss_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        required
                     />
                 </div>
             </div>
@@ -70,6 +71,7 @@
                         :proposal-data="proposal.cash_flow_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        required
                     />
                 </div>
             </div>
@@ -108,6 +110,7 @@
                         :proposal-data="proposal.capital_investment_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        required
                     />
                 </div>
             </div>
@@ -153,6 +156,7 @@
                         :proposal-data="proposal.financial_capacity_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        required
                     />
                 </div>
             </div>
@@ -196,6 +200,7 @@
                         :proposal-data="proposal.available_activities_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        required
                     />
                 </div>
             </div>
@@ -239,6 +244,7 @@
                         :proposal-data="proposal.market_analysis_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        required
                     />
                 </div>
             </div>
@@ -280,6 +286,7 @@
                         :proposal-data="proposal.staffing_text"
                         :readonly="readonly"
                         :can_view_richtext_src="true"
+                        required
                     />
                 </div>
             </div>
@@ -557,6 +564,14 @@ export default {
         },
         proposalId: function () {
             return this.proposal ? this.proposal.id : null;
+        },
+        show_tourism_proposal_details: function () {
+            return (
+                this.proposal &&
+                this.proposal.groups.find(
+                    (group) => group.name.trim().toLowerCase() == 'tourism'
+                )
+            );
         },
         profitAndLossDocumentsUrl: function () {
             return helpers.add_endpoint_join(

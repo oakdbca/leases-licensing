@@ -13,7 +13,10 @@ from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.helpers import emails_list_for_group
-from leaseslicensing.ledger_api_utils import retrieve_email_user
+from leaseslicensing.ledger_api_utils import (
+    retrieve_default_from_email_user,
+    retrieve_email_user,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -420,6 +423,39 @@ def send_proposal_approval_email_notification(proposal, request):
         _log_org_email(msg, proposal.org_applicant, proposal.submitter, sender=sender)
     elif proposal.ind_applicant:
         _log_user_email(msg, proposal.ind_applicant, proposal.submitter, sender=sender)
+
+
+def send_proposal_roi_approval_email_notification(roi_proposal, lease_license_proposal):
+    application_type = roi_proposal.application_type.name_display
+    email = TemplateEmailBase(
+        subject=f"{settings.DEP_NAME} - {application_type} Approved.",
+        html_template="leaseslicensing/emails/proposals/send_roi_approval_notification.html",
+        txt_template="leaseslicensing/emails/proposals/send_roi_approval_notification.txt",
+    )
+
+    url = f"{settings.SITE_URL}{reverse('external-proposal-detail', kwargs={'proposal_pk': lease_license_proposal.pk})}"
+
+    context = {
+        "url": url,
+        "settings": settings,
+    }
+
+    msg = email.send(
+        retrieve_email_user(roi_proposal.submitter).email,
+        context=context,
+    )
+    sender = retrieve_default_from_email_user()
+
+    _log_proposal_email(msg, roi_proposal, sender=sender)
+
+    if roi_proposal.org_applicant:
+        _log_org_email(
+            msg, roi_proposal.org_applicant, roi_proposal.submitter, sender=sender
+        )
+    elif roi_proposal.ind_applicant:
+        _log_user_email(
+            msg, roi_proposal.ind_applicant, roi_proposal.submitter, sender=sender
+        )
 
 
 def send_license_ready_for_invoicing_notification(proposal, request):
