@@ -122,16 +122,6 @@ class OrganisationSerializer(serializers.ModelSerializer):
         child=OrganisationContactSerializer(), read_only=True
     )
     ledger_organisation_name = serializers.CharField(read_only=True)
-    apply_application_discount = serializers.SerializerMethodField(read_only=True)
-    application_discount = serializers.SerializerMethodField(read_only=True)
-    apply_licence_discount = serializers.SerializerMethodField(read_only=True)
-    licence_discount = serializers.SerializerMethodField(read_only=True)
-    charge_once_per_year = serializers.DateField(
-        format="%d/%m", input_formats=["%d/%m"], required=False, allow_null=True
-    )
-    last_event_application_fee_date = serializers.DateField(
-        format="%d/%m/%Y", input_formats=["%d/%m/%Y"], required=False, allow_null=True
-    )
     contacts = OrganisationContactSerializer(many=True, read_only=True)
 
     class Meta:
@@ -145,33 +135,11 @@ class OrganisationSerializer(serializers.ModelSerializer):
             "ledger_organisation_email",
             "phone_number",
             "pins",
-            "apply_application_discount",
-            "application_discount",
-            "apply_licence_discount",
-            "licence_discount",
-            "charge_once_per_year",
-            "max_num_months_ahead",
-            "last_event_application_fee_date",
             "delegates",
             "delegate_organisation_contacts",
             "contacts",
             "address",
         )
-
-    def get_apply_application_discount(self, obj):
-        return obj.apply_application_discount
-
-    def get_application_discount(self, obj):
-        return obj.application_discount
-
-    def get_apply_licence_discount(self, obj):
-        return obj.apply_licence_discount
-
-    def get_licence_discount(self, obj):
-        return obj.licence_discount
-
-    def get_charge_once_per_year(self, obj):
-        return obj.charge_once_per_year
 
     def get_trading_name(self, obj):
         return obj.ledger_organisation_name
@@ -214,14 +182,10 @@ class OrganisationDetailsSerializer(serializers.ModelSerializer):
         default="",
     )
     organisation_email = serializers.EmailField(
-        source="ledger_organisation_email",
-        required=False,
-        allow_blank=True
+        source="ledger_organisation_email", required=False, allow_blank=True
     )
     organisation_trading_name = serializers.CharField(
-        source="ledger_organisation_trading_name",
-        required=False,
-        allow_blank=True
+        source="ledger_organisation_trading_name", required=False, allow_blank=True
     )
 
     class Meta:
@@ -295,20 +259,6 @@ class MyOrganisationsSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         # Check if the request user is among the first five delegates in the organisation
         return can_admin_org(obj, user.id)
-
-
-class SaveDiscountSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Organisation
-        fields = (
-            "id",
-            "apply_application_discount",
-            "application_discount",
-            "apply_licence_discount",
-            "licence_discount",
-            "charge_once_per_year",
-            "max_num_months_ahead",
-        )
 
 
 class OrgRequestRequesterSerializer(serializers.ModelSerializer):
