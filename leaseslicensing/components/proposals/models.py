@@ -3350,6 +3350,9 @@ class ProposalApplicant(RevisionedMixin):
     class Meta:
         app_label = "leaseslicensing"
 
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.email})"
+
     @transaction.atomic
     def copy_self_to_proposal(self, target_proposal):
         try:
