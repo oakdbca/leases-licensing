@@ -240,43 +240,6 @@ class Approval(LicensingModelVersioned):
         unique_together = ("lodgement_number", "issue_date")
         verbose_name = "Lease/License"
 
-    # @classmethod
-    # def approval_types_dict(cls, include_codes=[]):
-    #    type_list = []
-    #    for approval_type in Approval.__subclasses__():
-    #        if hasattr(approval_type, 'code'):
-    #            if approval_type.code in include_codes:
-    #                type_list.append({
-    #                    "code": approval_type.code,
-    #                    "description": approval_type.description,
-    #                })
-
-    #    return type_list
-
-    @property
-    def bpay_allowed(self):
-        if self.is_org_applicant:
-            return self.applicant.bpay_allowed
-        return False
-
-    @property
-    def monthly_invoicing_allowed(self):
-        if self.is_org_applicant:
-            return self.applicant.monthly_invoicing_allowed
-        return False
-
-    @property
-    def monthly_invoicing_period(self):
-        if self.is_org_applicant:
-            return self.applicant.monthly_invoicing_period
-        return None
-
-    @property
-    def monthly_payment_due_period(self):
-        if self.is_org_applicant:
-            return self.applicant.monthly_payment_due_period
-        return None
-
     @property
     def applicant(self):
         return self.current_proposal.applicant
