@@ -3323,7 +3323,7 @@ class ProposalApplicant(RevisionedMixin):
     residential_postcode = models.CharField(max_length=10, blank=True)
 
     # Postal address
-    postal_same_as_residential = models.NullBooleanField(default=False)
+    postal_same_as_residential = models.BooleanField(default=False)
     postal_line1 = models.CharField("Line 1", max_length=255, blank=True)
     postal_line2 = models.CharField("Line 2", max_length=255, blank=True)
     postal_line3 = models.CharField("Line 3", max_length=255, blank=True)
