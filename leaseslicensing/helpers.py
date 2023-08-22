@@ -1,5 +1,6 @@
 import logging
 import re
+from decimal import Decimal
 
 from django.apps import apps
 from django.conf import settings
@@ -14,6 +15,14 @@ logger = logging.getLogger(__name__)
 
 def today():
     return timezone.localtime(timezone.now()).date()
+
+
+def gst_from_total(total_inc_gst):
+    # Only to be used for totals that include gst
+    # as will not return 0.00 for totals that do not include gst
+    gst_rate = Decimal(settings.LEDGER_GST).quantize(Decimal("0.01"))
+    gst = gst_rate / (100 + gst_rate) * total_inc_gst
+    return Decimal(gst).quantize(Decimal("0.01"))
 
 
 def user_ids_in_group(group_name):
