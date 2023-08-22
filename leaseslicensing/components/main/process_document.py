@@ -1,6 +1,5 @@
 import logging
 import os
-import traceback
 
 from django.core.files.base import ContentFile
 
@@ -10,7 +9,7 @@ from leaseslicensing.components.approvals.models import (
 )
 from leaseslicensing.components.main.models import upload_protected_files_storage
 from leaseslicensing.components.main.utils import get_secure_document_url
-
+from leaseslicensing.components.proposals.models import ProposalAdditionalDocumentType
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +126,8 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
                 documents_qs = instance.approval_surrender_documents
             elif document_type == "approval_suspension_document":
                 documents_qs = instance.approval_suspension_documents
+            elif document_type == "additional_document":
+                documents_qs = instance.additional_documents
 
             elif document_type == "lease_licence_approval_document":
                 documents_qs = instance.lease_licence_approval_documents
@@ -252,6 +253,8 @@ def delete_document(request, instance, comms_instance, document_type, input_name
             document = instance.approval_surrender_documents.get(id=document_id)
         elif document_type == "approval_suspension_document":
             document = instance.approval_suspension_documents.get(id=document_id)
+        elif document_type == "additional_document":
+            document = instance.additional_documents.get(id=document_id)
 
     # comms_log doc store delete
     elif comms_instance and "document_id" in request.data:
@@ -475,6 +478,18 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
                 input_name=input_name, name=filename
             )[0]
             path_format_string = "proposals/{}/proposed_decline_documents/{}"
+        elif document_type == "additional_document":
+            proposal_additional_document_type = (
+                ProposalAdditionalDocumentType.objects.get(
+                    proposal=instance, additional_document_type__name=input_name
+                )
+            )
+            document = instance.additional_documents.get_or_create(
+                input_name=input_name,
+                name=filename,
+                proposal_additional_document_type=proposal_additional_document_type,
+            )[0]
+            path_format_string = "proposals/{}/additional_documents/{}"
         elif document_type == "lease_licence_approval_document":
             approval_type = request.data.get("approval_type")
             approval_type_document_type = request.data.get(
