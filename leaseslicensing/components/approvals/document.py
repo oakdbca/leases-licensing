@@ -17,9 +17,14 @@ logger = logging.getLogger(__name__)
 
 
 class ApprovalDocumentGenerator:
+    """
+    Class to handle approval document generation
+    """
 
-    # Test template property. May be overwritten.
-    _license_template = f"{settings.BASE_DIR}/leaseslicensing/templates/doc/leases_licence_template.docx"
+    _license_templates = {
+        # Test template for fn _example_approval_document_from_template
+        "default": f"{settings.BASE_DIR}/leaseslicensing/templates/doc/leases_licence_template.docx",
+    }
 
     def _docx_replace_regex(
         self,
@@ -94,21 +99,16 @@ class ApprovalDocumentGenerator:
         else:
             return BytesIO(buffer)
 
-    @property
-    def license_template(self):
-        return self._license_template
-
-    @license_template.setter
-    def license_template(self, value):
-        self._license_template = value
-
     @basic_exception_handler
-    def approval_buffer(self, approval):
+    def _example_approval_document_from_template(self, approval, template):
         """
-        Test function to create a very basic Approval document from the test template
+        Test function to create a very basic Approval license document from a template
+
+        Returns:
+            BytesIO object
         """
 
-        doc = Document(self._license_template)
+        doc = Document(template)
 
         proposal = approval.current_proposal
 
@@ -168,12 +168,23 @@ class ApprovalDocumentGenerator:
             + temp_directory
         )
 
-        approval_buffer = self._filepath_to_buffer(new_pdf_file)
+        buffer = self._filepath_to_buffer(new_pdf_file)
 
         os.remove(new_doc_file)
         os.remove(new_pdf_file)
 
-        return approval_buffer
+        return buffer
+
+    def has_template(self, approval_type_name):
+        """
+        Returns True if the approval type has a template
+        Args:
+            approval_type_name:
+                Name of the approval type
+                E.g. "License (100)"
+        """
+
+        return approval_type_name in self._license_templates.keys()
 
     @basic_exception_handler
     def update_approval_document_file(
@@ -229,15 +240,19 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def create_approval_document(
+    def create_or_update_approval_document(
         self, approval, filepath=None, filename_prefix=None, **kwargs
     ):
         """
-        Returns an ApprovalDocument named filename from the document at filepath
+        Returns an ApprovalDocument named filename from the document at filepath,
+        either creating a new one or updating an existing one.
         Args:
-            approval: Approval object
-            filepath: Path to the approval document file
-            filename_prefix: Prefix to the name of the approval document file
+            approval:
+                Approval object
+            filepath:
+                Path to the approval document file
+            filename_prefix:
+                Prefix to the name of the approval document file
         """
 
         buffer = self._filepath_to_buffer(filepath)
@@ -248,15 +263,38 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def create_license_document(self, approval, filename_prefix=None, **kwargs):
+    def preview_approval_document(self, approval, filename_prefix=None, **kwargs):
+        raise NotImplementedError(
+            "Preview of template-generated documents is not implemented yet."
+        )
+
+    def create_license_document_from_template(
+        self, approval, filename_prefix=None, **kwargs
+    ):
         """
         Creates a license document from a template and attaches it to the approval
         Args:
-            approval: Approval object
-            filename_prefix: Prefix to the name of the license document file
+            approval:
+                Approval object
+            filename_prefix:
+                Prefix to the name of the license document file
         """
 
-        buffer = self.approval_buffer(approval)
+        # TODO: Replace with actual approval type name derived from approval
+        approval_type_name = "default"
+        if not self.has_template(approval_type_name):
+            raise AttributeError(
+                f"Requested Approval type {approval_type_name} does not have a template."
+            )
+
+        # TODO: Branching conditional logic here
+        if approval_type_name == "default":
+            template = self._license_templates[approval_type_name]
+            buffer = self._example_approval_document_from_template(approval, template)
+        else:
+            raise NotImplementedError(
+                f"Approval document generation from template for approval type {approval_type_name} is not implemented yet."
+            )
 
         document = self.update_approval_document_file(
             approval, buffer, filename_prefix, **kwargs
@@ -266,13 +304,3 @@ class ApprovalDocumentGenerator:
         approval.licence_document = document
 
         return document
-
-    def create_cover_letter(self, approval, filename_prefix=None, **kwargs):
-        raise NotImplementedError(
-            "Creating cover letters from templates is not implemented yet."
-        )
-
-    def create_sign_of_sheet(self, approval, filename_prefix=None, **kwargs):
-        raise NotImplementedError(
-            "Creating sign-off sheets from templates is not implemented yet."
-        )

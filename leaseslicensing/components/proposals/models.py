@@ -3456,22 +3456,22 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 f"There must be exactly one sign-off sheet for {approval_type}, but found {len(sign_off_sheets)}."
             )
 
-        approval.licence_document = document_generator.create_approval_document(
+        approval.licence_document = document_generator.create_or_update_approval_document(
             approval,
             filepath=license_documents[0]._file.path,
-            filename_prefix="Approval-",  # {approval.lodgement_number}-{approval.lodgement_sequence+1}.pdf",
+            filename_prefix="Approval-",
             reason=reason,
         )
-        approval.cover_letter_document = document_generator.create_approval_document(
+        approval.cover_letter_document = document_generator.create_or_update_approval_document(
             approval,
             filepath=cover_letter[0]._file.path,
-            filename_prefix="CoverLetter-",  # {approval.lodgement_number}-{approval.lodgement_sequence+1}.pdf",
+            filename_prefix="CoverLetter-",
             reason=reason,
         )
-        approval.sign_off_sheet_document = document_generator.create_approval_document(
+        approval.sign_off_sheet_document = document_generator.create_or_update_approval_document(
             approval,
             filepath=sign_off_sheets[0]._file.path,
-            filename_prefix="SignOffSheet-",  # {approval.lodgement_number}-{approval.lodgement_sequence+1}.pdf",
+            filename_prefix="SignOffSheet-",
             reason=reason,
         )
 
