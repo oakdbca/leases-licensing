@@ -23,7 +23,9 @@ class ApprovalDocumentGenerator:
 
     _license_templates = {
         # Test template for fn _example_approval_document_from_template
-        "default": f"{settings.BASE_DIR}/leaseslicensing/templates/doc/leases_licence_template.docx",
+        "default type": {
+            "default_document": f"{settings.BASE_DIR}/leaseslicensing/templates/doc/leases_licence_template.docx"
+        },
     }
 
     def _docx_replace_regex(
@@ -175,16 +177,26 @@ class ApprovalDocumentGenerator:
 
         return buffer
 
-    def has_template(self, approval_type_name):
+    def has_template(self, approval_type_name, document_name=None):
         """
         Returns True if the approval type has a template
         Args:
             approval_type_name:
                 Name of the approval type
                 E.g. "License (100)"
+            document_name (optional):
+                Name of the associated document
+                E.g. "Cover Letter" or "License (100)" for the actual license document
+                Defaults to the approval type name
         """
 
-        return approval_type_name in self._license_templates.keys()
+        if approval_type_name not in self._license_templates.keys():
+            return False
+
+        if document_name is None:
+            document_name = approval_type_name
+
+        return document_name in self._license_templates[approval_type_name]
 
     @basic_exception_handler
     def update_approval_document_file(
@@ -281,15 +293,18 @@ class ApprovalDocumentGenerator:
         """
 
         # TODO: Replace with actual approval type name derived from approval
-        approval_type_name = "default"
-        if not self.has_template(approval_type_name):
+        approval_type_name = "default type"
+        document_name = "default document"
+        if not self.has_template(approval_type_name, document_name):
             raise AttributeError(
-                f"Requested Approval type {approval_type_name} does not have a template."
+                f"Requested document {document_name} Approval type {approval_type_name} does not have a template."
             )
 
-        # TODO: Branching conditional logic here
+        # TODO: Branching conditional logics here
         if approval_type_name == "default":
-            template = self._license_templates[approval_type_name]
+            templates = self._license_templates[approval_type_name]
+            # TODO: For-loop over templates or similar
+            template = templates[document_name]
             buffer = self._example_approval_document_from_template(approval, template)
         else:
             raise NotImplementedError(

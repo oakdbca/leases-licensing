@@ -41,6 +41,9 @@ from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
+from leaseslicensing.components.approvals.document import (
+    ApprovalDocumentGenerator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +54,7 @@ class GetApprovalTypesDict(views.APIView):
     ]
 
     def get(self, request, format=None):
+        document_generator = ApprovalDocumentGenerator()
         approval_types_dict = cache.get("approval_types_dict")
         if not approval_types_dict:
             approval_types_dict = [
@@ -63,6 +67,9 @@ class GetApprovalTypesDict(views.APIView):
                             "id": doc_type_link.approval_type_document_type.id,
                             "name": doc_type_link.approval_type_document_type.name,
                             "mandatory": doc_type_link.mandatory,
+                            "has_template": document_generator.has_template(
+                                t.name, doc_type_link.approval_type_document_type.name
+                            ),
                         }
                         # for doc_type in t.approvaltypedocumenttypes.all()
                         for doc_type_link in t.approvaltypedocumenttypeonapprovaltype_set.all()

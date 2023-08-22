@@ -55,7 +55,22 @@
                                         {{ docType.name }}
                                     </div>
                                 </div>
-                                <div class="row mb-3">
+                                <div
+                                    v-if="hasTemplate(docType)"
+                                    class="row mb-3"
+                                >
+                                    <div class="col">
+                                        <span
+                                            class="fa-solid fa-file-pdf"
+                                            style="color: blue"
+                                            >&nbsp;</span
+                                        >
+                                        <a href="#" @click.prevent="preview"
+                                            >Preview {{ docType.name }}</a
+                                        >
+                                    </div>
+                                </div>
+                                <div v-else class="row mb-3">
                                     <div class="col">
                                         <FileField
                                             :id="
@@ -296,6 +311,32 @@ export default {
             } else {
                 return false;
             }
+        },
+        /**
+         * Returns whether the document type for a Lease/License `approval_type_name` is generated from a template.
+         * @param {str} approval_type_name The name of the lease or license
+         */
+        hasTemplate(docType) {
+            let vm = this;
+
+            if (vm.availableDocumentTypes.length == 0) {
+                return false;
+            }
+
+            let docTypes = vm.availableDocumentTypes.filter(
+                (availableDocType) => {
+                    if (availableDocType.name === docType.name) {
+                        return availableDocType;
+                    }
+                }
+            );
+            if (docTypes.length > 0) {
+                return docTypes[0].has_template;
+            }
+            console.warn(
+                `No available document type found for ${docType.name}`
+            );
+            return false;
         },
     },
 };
