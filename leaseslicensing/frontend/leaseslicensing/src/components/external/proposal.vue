@@ -64,7 +64,50 @@
             :lease-licence="leaseLicence"
             @updateSubmitText="updateSubmitText"
             @refreshFromResponse="refreshFromResponse"
-        />
+        >
+            <template #slot_additional_documents_assessment_comments>
+                <div class="row">
+                    <div
+                        v-for="additional_document_type in proposal.additional_document_types"
+                        :key="additional_document_type.id"
+                        class="col-sm-6"
+                    >
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h4 class="card-title">
+                                    {{ additional_document_type.name }}
+                                </h4>
+                                <p class="card-text">
+                                    <label for="" class="form-label"
+                                        >Document:
+                                    </label>
+                                    <FileField
+                                        :id="additional_document_type.id"
+                                        :ref="additional_document_type.id"
+                                        :name="additional_document_type.name"
+                                        :is-repeatable="false"
+                                        :document-action-url="
+                                            additionalDocumentUrl
+                                        "
+                                        :replace_button_by_text="true"
+                                    />
+                                    <small
+                                        v-if="
+                                            additional_document_type.help_text
+                                        "
+                                        id="helpId"
+                                        class="form-text text-muted"
+                                        >{{
+                                            additional_document_type.help_text
+                                        }}</small
+                                    >
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </ApplicationForm>
         <div v-else>
             <BootstrapSpinner
                 :is-loading="true"
@@ -165,12 +208,15 @@
 
 <script>
 import ApplicationForm from '../form.vue';
+import FileField from '@/components/forms/filefield_immediate.vue';
+
 import { api_endpoints, helpers } from '@/utils/hooks';
 
 export default {
     name: 'ExternalProposal',
     components: {
         ApplicationForm,
+        FileField,
     },
     beforeRouteEnter(to, from, next) {
         next((vm) => {
@@ -205,6 +251,13 @@ export default {
         };
     },
     computed: {
+        additionalDocumentUrl: function () {
+            return (
+                api_endpoints.proposal +
+                this.proposal.id +
+                '/process_additional_document/'
+            );
+        },
         navbarButtonsDisabled: function () {
             return this.submitting || this.savingProposal || this.paySubmitting;
         },

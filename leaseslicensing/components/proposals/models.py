@@ -148,10 +148,12 @@ def update_additional_doc_filename(instance, filename):
 
 class AdditionalDocumentType(RevisionedMixin):
     name = models.CharField(max_length=255, null=True, blank=True)
+    help_text = models.CharField(max_length=255, null=True, blank=True)
     enabled = models.BooleanField(default=True)
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ["name"]
 
 
 class DefaultDocument(Document):
@@ -1527,6 +1529,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.proposal_type == ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT):
             return True
         return False
+
+    @property
+    def additional_documents(self):
+        return AdditionalDocument.objects.filter(
+            proposal_additional_document_type__proposal=self
+        )
 
     def get_assessor_group(self):
         # TODO: Take application_type into account
@@ -3323,7 +3331,7 @@ class ProposalApplicant(RevisionedMixin):
     residential_postcode = models.CharField(max_length=10, blank=True)
 
     # Postal address
-    postal_same_as_residential = models.NullBooleanField(default=False)
+    postal_same_as_residential = models.BooleanField(default=False)
     postal_line1 = models.CharField("Line 1", max_length=255, blank=True)
     postal_line2 = models.CharField("Line 2", max_length=255, blank=True)
     postal_line3 = models.CharField("Line 3", max_length=255, blank=True)
@@ -3580,7 +3588,9 @@ class ProposalLGA(models.Model):
 
 
 class ProposalAdditionalDocumentType(models.Model):
-    proposal = models.ForeignKey(Proposal, on_delete=models.CASCADE)
+    proposal = models.ForeignKey(
+        Proposal, on_delete=models.CASCADE, related_name="additional_document_types"
+    )
     additional_document_type = models.ForeignKey(
         AdditionalDocumentType, on_delete=models.CASCADE
     )
@@ -3589,10 +3599,14 @@ class ProposalAdditionalDocumentType(models.Model):
         app_label = "leaseslicensing"
 
 
-class AdditionalDocument(Document):
+class AdditionalDocument(DefaultDocument):
     _file = SecureFileField(upload_to=update_additional_doc_filename, max_length=512)
     proposal_additional_document_type = models.ForeignKey(
-        ProposalAdditionalDocumentType, null=True, blank=True, on_delete=models.SET_NULL
+        ProposalAdditionalDocumentType,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="document",
     )
 
     class Meta:

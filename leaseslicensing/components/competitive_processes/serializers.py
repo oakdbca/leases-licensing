@@ -158,7 +158,6 @@ class PartyDetailSerializer(serializers.ModelSerializer):
                 )[0]
                 if temp_doc_collection:
                     for doc in temp_doc_collection.documents.all():
-                        logger.debug(f"\n --- doc.name={doc.name}")
                         self.save_party_detail_document_obj(instance, doc)
                     temp_doc_collection.delete()
                     # instance.temporary_document_collection_id = None
@@ -589,17 +588,16 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
             "competitive_process_parties"
         )
 
-        super().update(instance, validated_data)
-
-        # competitive_process
-        if isinstance(validated_data["winner"], dict):
-            instance.winner = CompetitiveProcessParty.objects.get(
-                pk=dict(validated_data["winner"])["id"]
-            )
+        winner = validated_data.pop("winner", None)
+        if winner and isinstance(winner, dict):
+            instance.winner = CompetitiveProcessParty.objects.get(pk=winner["id"])
         else:
-            instance.winner = validated_data["winner"]
+            instance.winner = winner
+
         instance.details = validated_data["details"]
         instance.save()
+
+        super().update(instance, validated_data)
 
         # competitive_process_parties
         for competitive_process_party_data in competitive_process_parties_data:
@@ -660,6 +658,7 @@ class CompetitiveProcessUserActionSerializer(serializers.ModelSerializer):
         fullname = email_user.get_full_name()
         return fullname
 
+
 class CompetitiveProcessMapFeatureInfoSerializer(CompetitiveProcessSerializer):
     created_at_display = serializers.DateTimeField(
         read_only=True, format="%d/%m/%Y", source="created_at"
@@ -670,11 +669,11 @@ class CompetitiveProcessMapFeatureInfoSerializer(CompetitiveProcessSerializer):
         model = CompetitiveProcess
         fields = (
             "id",
-            "label", # application_type_name_display
+            "label",  # application_type_name_display
             "details_url",
             "lodgement_number",
-            "created_at_display", # lodgement_date_display @proposal
-            "status_display", # processing_status_display"
+            "created_at_display",  # lodgement_date_display @proposal
+            "status_display",  # processing_status_display"
         )
 
     def get_status_display(self, obj):

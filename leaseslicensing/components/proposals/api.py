@@ -1075,6 +1075,19 @@ class ProposalViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def process_additional_document(self, request, *args, **kwargs):
+        instance = self.get_object()
+        returned_data = process_generic_document(
+            request, instance, document_type="additional_document"
+        )
+        if returned_data:
+            return Response(returned_data)
+        else:
+            return Response()
+
     def list(self, request, *args, **kwargs):
         proposals = self.get_queryset()
 

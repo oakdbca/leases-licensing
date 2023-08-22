@@ -34,11 +34,11 @@
 </template>
 
 <script>
-import { v4 as uuid } from 'uuid'
-import datatable from '@/utils/vue/datatable.vue'
-import AddPartyModal from '@/components/common/modal_add_party.vue'
-import { expandToggleParties } from '@/components/common/table_functions.js'
-import { api_endpoints, constants } from '@/utils/hooks.js'
+import { v4 as uuid } from 'uuid';
+import datatable from '@/utils/vue/datatable.vue';
+import AddPartyModal from '@/components/common/modal_add_party.vue';
+import { expandToggleParties } from '@/components/common/table_functions.js';
+import { api_endpoints, constants } from '@/utils/hooks.js';
 
 export default {
     name: 'TableParties',
@@ -54,7 +54,7 @@ export default {
         competitiveProcessParties: {
             type: Array,
             default: function () {
-                return []
+                return [];
             },
         },
         competitiveProcessId: {
@@ -64,7 +64,7 @@ export default {
         accessingUser: {
             type: Object,
             default: function () {
-                return null
+                return null;
             },
         },
         processing: {
@@ -100,7 +100,7 @@ export default {
             td_collapse_class_name: 'collapse-icon',
             expandable_row_class_name: 'expandable_row',
             custom_row_apps: {},
-        }
+        };
     },
     computed: {
         column_id: () => {
@@ -111,35 +111,36 @@ export default {
                 searchable: false,
                 visible: false,
                 render: function (row, type, full) {
-                    return full.id
+                    return full.id;
                 },
-            }
+            };
         },
         column_name: function () {
             return {
                 data: null,
+                className: 'text-truncate',
                 render: function (row, type, full) {
                     if (full.is_person) {
                         return 'fullname' in full.person
                             ? full.person.fullname
                             : 'full_name' in full.person
                             ? full.person.full_name
-                            : '(name)'
+                            : '(name)';
                     } else {
-                        return ''
+                        return '';
                     }
                 },
-            }
+            };
         },
         column_organisation: () => {
             return {
                 data: null,
                 render: function (row, type, full) {
                     if (full.is_organisation)
-                        return full.organisation.ledger_organisation_name
-                    return ''
+                        return full.organisation.ledger_organisation_name;
+                    return '';
                 },
-            }
+            };
         },
         column_phone: () => {
             return {
@@ -148,21 +149,21 @@ export default {
                     if (full.is_person && full.person) {
                         return full.person.phone_number
                             ? full.person.phone_number
-                            : ''
+                            : '';
                     } else if (full.is_organisation && full.organisation) {
                         // Return the phone number of the first org contact in the list
                         if (
                             full.organisation.contacts &&
                             full.organisation.contacts.length > 0
                         ) {
-                            return full.organisation.contacts[0].phone_number
+                            return full.organisation.contacts[0].phone_number;
                         }
-                        return ''
+                        return '';
                     } else {
-                        return '(phone)'
+                        return '(phone)';
                     }
                 },
-            }
+            };
         },
         column_mobile: () => {
             return {
@@ -171,41 +172,41 @@ export default {
                     if (full.is_person && full.person) {
                         return full.person.mobile_number
                             ? full.person.mobile_number
-                            : ''
+                            : '';
                     } else if (full.is_organisation && full.organisation) {
                         // Return the mobile number of the first org contact in the list
                         if (
                             full.organisation.contacts &&
                             full.organisation.contacts.length > 0
                         ) {
-                            return full.organisation.contacts[0].mobile_number
+                            return full.organisation.contacts[0].mobile_number;
                         }
-                        return ''
+                        return '';
                     } else {
-                        return '(mobile)'
+                        return '(mobile)';
                     }
                 },
-            }
+            };
         },
         column_email: () => {
             return {
                 data: null,
                 render: function (row, type, full) {
                     if (full.is_person && full.person) {
-                        return full.person.email ? full.person.email : ''
+                        return full.person.email ? full.person.email : '';
                     } else if (full.is_organisation) {
-                        return full.organisation.ledger_organisation_email
+                        return full.organisation.ledger_organisation_email;
                     } else {
-                        return '(email)'
+                        return '(email)';
                     }
                 },
-            }
+            };
         },
         is_external: function () {
-            return this.level == 'external'
+            return this.level == 'external';
         },
         is_internal: function () {
-            return this.level == 'internal'
+            return this.level == 'internal';
         },
         datatable_headers: function () {
             if (this.is_internal) {
@@ -216,15 +217,15 @@ export default {
                     'Phone',
                     'Mobile',
                     'Email',
-                ]
+                ];
             }
-            return []
+            return [];
         },
         datatable_options: function () {
-            let vm = this
+            let vm = this;
 
-            let columns = []
-            let search = null
+            let columns = [];
+            let search = null;
             if (vm.is_internal) {
                 columns = [
                     vm.column_id,
@@ -233,8 +234,8 @@ export default {
                     vm.column_phone,
                     vm.column_mobile,
                     vm.column_email,
-                ]
-                search = true
+                ];
+                search = true;
             }
 
             return {
@@ -250,11 +251,11 @@ export default {
                     { responsivePriority: 4, targets: 5 },
                 ],
                 createdRow: function (row, full_data) {
-                    full_data.expanded = false
+                    full_data.expanded = false;
                 },
                 rowCallback: function (row) {
-                    let $row = $(row)
-                    $row.children().first().addClass(vm.td_expand_class_name)
+                    let $row = $(row);
+                    $row.children().first().addClass(vm.td_expand_class_name);
                 },
                 responsive: true,
                 serverSide: false,
@@ -267,9 +268,9 @@ export default {
                 columns: columns,
                 processing: true,
                 initComplete: function () {
-                    console.log('in initComplete')
+                    console.log('in initComplete');
                 },
-            }
+            };
         },
         elementDisabled: function () {
             // Returns whether an element is disabled
@@ -280,21 +281,21 @@ export default {
                 this.finalised ||
                 this.declined ||
                 this.completed
-            )
+            );
         },
     },
     created: function () {},
     mounted: function () {
-        let vm = this
+        let vm = this;
         vm.$nextTick(() => {
-            vm.addEventListeners()
-        })
+            vm.addEventListeners();
+        });
     },
     methods: {
         addParty: async function (params) {
-            let url
-            let is_person = params.type === 'person'
-            let is_organisation = params.type === 'organisation'
+            let url;
+            let is_person = params.type === 'person';
+            let is_organisation = params.type === 'organisation';
 
             if (is_person) {
                 for (let party of this.competitiveProcessParties) {
@@ -303,9 +304,9 @@ export default {
                         party.person_id === params.party_to_add.id
                     )
                         // Person has been already added
-                        return
+                        return;
                 }
-                url = `${api_endpoints.users}${params.party_to_add.id}`
+                url = `${api_endpoints.users}${params.party_to_add.id}`;
             } else if (is_organisation) {
                 for (let party of this.competitiveProcessParties) {
                     if (
@@ -313,12 +314,12 @@ export default {
                         party.organisation === params.party_to_add.id
                     )
                         // Organisation has already been added
-                        return
+                        return;
                 }
-                url = `${api_endpoints.organisations}${params.party_to_add.id}`
+                url = `${api_endpoints.organisations}${params.party_to_add.id}`;
             }
 
-            console.log(api_endpoints)
+            console.log(api_endpoints);
             await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -327,11 +328,11 @@ export default {
             })
                 .then(async (response) => {
                     if (response.ok) {
-                        return await response.json()
+                        return await response.json();
                     } else {
                         return response.text().then((text) => {
-                            throw new Error(text)
-                        })
+                            throw new Error(text);
+                        });
                     }
                 })
                 .then((data) => {
@@ -347,83 +348,83 @@ export default {
                         removed_at: null,
                         party_details: [],
                         expanded: false,
-                    }
-                    this.$emit('add-party', new_data)
+                    };
+                    this.$emit('add-party', new_data);
                     this.$refs.parties_datatable.vmDataTable.row
                         .add(new_data)
-                        .draw()
+                        .draw();
                 })
                 .catch((error) => {
-                    console.error(error.message)
-                })
+                    console.error(error.message);
+                });
 
             for (let party of this.competitiveProcessParties) {
                 // Somehow all the expander collapsed when adding a new row.  Accordingly set the expanded attribute to false
-                party.expanded = false
+                party.expanded = false;
             }
         },
         openAddPartyModal: function () {
             this.$nextTick(() => {
-                this.$refs.add_party.isModalOpen = true
-            })
+                this.$refs.add_party.isModalOpen = true;
+            });
         },
         closeModal: function () {
-            this.uuid++
+            this.uuid++;
         },
         refreshFromResponse: async function () {
             // await this.$refs.vessels_datatable.vmDataTable.ajax.reload();
-            console.log('TODO: update table')
+            console.log('TODO: update table');
         },
         number_of_columns: function () {
             // Return the number of visible columns
             let num = this.$refs.parties_datatable.vmDataTable
                 .columns(':visible')
-                .nodes().length
-            return num
+                .nodes().length;
+            return num;
         },
         updateCustomRowColSpan: function () {
             // Set colspan to the manually added table row
             $('tr.' + this.expandable_row_class_name + ' td').attr(
                 'colspan',
                 this.number_of_columns()
-            )
+            );
             // The tr padding was breaking the bounds of the containing element
-            $('tr.' + this.expandable_row_class_name + ' td').addClass('p-0')
+            $('tr.' + this.expandable_row_class_name + ' td').addClass('p-0');
         },
         add_party_clicked: function () {
-            this.openAddPartyModal()
+            this.openAddPartyModal();
         },
         addClickEventHandler: function () {
-            let vm = this
+            let vm = this;
 
             vm.$refs.parties_datatable.vmDataTable.on(
                 'click',
                 'td',
                 function () {
-                    expandToggleParties(vm, this)
+                    expandToggleParties(vm, this);
                 }
-            )
+            );
         },
         addResponsiveResizeHandler: function () {
-            console.log('in addResponsiveResizeHandler')
+            console.log('in addResponsiveResizeHandler');
             // When columns are shown/hidden, expand/collapse the child row according to the current expand-collapse status of each row
-            let vm = this
+            let vm = this;
             vm.$refs.parties_datatable.vmDataTable.on(
                 'responsive-resize',
                 function (e, datatable) {
                     // This event can be used to inform external libraries and controls that Responsive has changed the visibility of columns in the table in response to a resize or recalculation event.
-                    vm.updateCustomRowColSpan()
+                    vm.updateCustomRowColSpan();
                     datatable.rows().every(function () {
                         // Work on each row
-                        let full_data = this.data()
+                        let full_data = this.data();
                         if (full_data.expanded) {
-                            this.child.show()
+                            this.child.show();
                         } else {
-                            this.child.hide()
+                            this.child.hide();
                         }
-                    })
+                    });
                 }
-            )
+            );
         },
         addTableDrawListener: function () {
             /** Listens on datatable draw events and adds a negative id to new rows.
@@ -432,32 +433,32 @@ export default {
              *  adding new details/documents.
              */
 
-            let vm = this
+            let vm = this;
             // The id of the datatable
-            let id = $(vm.$refs.parties_datatable)[0].id
+            let id = $(vm.$refs.parties_datatable)[0].id;
 
             $(`#${id}`)
                 .DataTable()
                 .on('draw.dt', function (e, table) {
                     // Iterate through all new rows and add a negative id to those with id = 0
                     $(table.aoData).each(function (_, row) {
-                        let _id = row._aData['id']
+                        let _id = row._aData['id'];
                         if (_id == 0) {
-                            row._aData['id'] = vm.new_party_id
-                            console.log('ID', row._aData['id'])
-                            vm.new_party_id--
+                            row._aData['id'] = vm.new_party_id;
+                            console.log('ID', row._aData['id']);
+                            vm.new_party_id--;
                         }
-                    })
-                })
+                    });
+                });
         },
         addEventListeners: function () {
-            console.log('in addEventListener')
-            this.addTableDrawListener()
-            this.addClickEventHandler()
-            this.addResponsiveResizeHandler()
+            console.log('in addEventListener');
+            this.addTableDrawListener();
+            this.addClickEventHandler();
+            this.addResponsiveResizeHandler();
         },
     },
-}
+};
 </script>
 
 <style scoped>
