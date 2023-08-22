@@ -63,8 +63,7 @@
 </template>
 
 <script>
-/*globals swal */
-import { api_endpoints, helpers } from '@/utils/hooks'
+import { api_endpoints, helpers } from '@/utils/hooks';
 export default {
     name: 'FileField',
     props: {
@@ -94,8 +93,8 @@ export default {
                     'application/pdf,text/csv,application/msword,application/vnd.ms-excel,application/x-msaccess,' +
                     'application/x-7z-compressed,application/x-bzip,application/x-bzip2,application/zip,' +
                     '.dbf,.gdb,.gpx,.prj,.shp,.shx,' +
-                    '.json,.kml,.gpx'
-                return file_types
+                    '.json,.kml,.gpx';
+                return file_types;
             },
         },
         isRepeatable: {
@@ -141,46 +140,46 @@ export default {
             help_text_url: '',
             commsLogId: null,
             temporary_document_collection_id: null,
-        }
+        };
     },
     computed: {
         numDocuments: function () {
             if (this.documents) {
-                return this.documents.length
+                return this.documents.length;
             } else {
-                return 0
+                return 0;
             }
         },
         ffu_input_element_classname: function () {
             if (this.replace_button_by_text) {
-                return 'ffu-input-elem'
+                return 'ffu-input-elem';
             }
-            return ''
+            return '';
         },
         csrf_token: function () {
-            return helpers.getCookie('csrftoken')
+            return helpers.getCookie('csrftoken');
         },
         document_action_url: function () {
-            let url = ''
+            let url = '';
             if (this.documentActionUrl == 'temporary_document') {
                 if (!this.temporary_document_collection_id) {
-                    url = api_endpoints.temporary_document
+                    url = api_endpoints.temporary_document;
                 } else {
                     url =
                         api_endpoints.temporary_document +
                         this.temporary_document_collection_id +
-                        '/process_temp_document/'
+                        '/process_temp_document/';
                 }
             } else {
-                url = this.documentActionUrl
+                url = this.documentActionUrl;
             }
-            return url
+            return url;
         },
     },
     watch: {
         documents: {
             handler: async function () {
-                await this.$emit('update-parent')
+                await this.$emit('update-parent');
             },
             deep: true,
         },
@@ -188,8 +187,8 @@ export default {
             // read in prop value
             if (this.temporaryDocumentCollectionId) {
                 this.temporary_document_collection_id =
-                    this.temporaryDocumentCollectionId
-                this.get_documents()
+                    this.temporaryDocumentCollectionId;
+                this.get_documents();
             }
         },
     },
@@ -201,9 +200,9 @@ export default {
             ) {
                 // pass
             } else {
-                await this.get_documents()
+                await this.get_documents();
             }
-        })
+        });
     },
 
     methods: {
@@ -212,97 +211,97 @@ export default {
                 // Input field id contains the document name which may contain
                 // special characters (e.g. !"#$%&'()*+,./:;<=>?@[]^`{|}~)
                 // Exact match treats values as strings.
-                $(`input[id='${value}']`).trigger('click')
+                $(`input[id='${value}']`).trigger('click');
             }
         },
         handleChange: async function (e) {
-            console.log('Change', e.target.files)
+            console.log('Change', e.target.files);
             if (e.target.files.length > 0) {
-                await this.save_document(e)
+                await this.save_document(e);
             }
         },
         get_documents: async function () {
-            var formData = new FormData()
-            this.show_spinner = true
+            var formData = new FormData();
+            this.show_spinner = true;
 
             if (this.document_action_url) {
-                formData.append('action', 'list')
+                formData.append('action', 'list');
                 if (this.commsLogId) {
-                    formData.append('comms_log_id', this.commsLogId)
+                    formData.append('comms_log_id', this.commsLogId);
                 }
-                formData.append('input_name', this.name)
-                formData.append('csrfmiddlewaretoken', this.csrf_token)
+                formData.append('input_name', this.name);
+                formData.append('csrfmiddlewaretoken', this.csrf_token);
                 const res = await fetch(this.document_action_url, {
                     body: formData,
                     method: 'POST',
-                })
-                const resData = await res.json()
-                this.documents = resData.filedata
-                this.commsLogId = resData.comms_instance_id
+                });
+                const resData = await res.json();
+                this.documents = resData.filedata;
+                this.commsLogId = resData.comms_instance_id;
             }
-            this.show_spinner = false
+            this.show_spinner = false;
         },
         delete_all_documents: function () {
-            console.log('aho')
+            console.log('aho');
             for (let item of this.documents) {
-                this.delete_document(item)
+                this.delete_document(item);
             }
         },
         delete_document: async function (file) {
-            var formData = new FormData()
-            this.show_spinner = true
+            var formData = new FormData();
+            this.show_spinner = true;
 
-            formData.append('action', 'delete')
-            formData.append('input_name', this.name)
+            formData.append('action', 'delete');
+            formData.append('input_name', this.name);
             if (this.commsLogId) {
-                formData.append('comms_log_id', this.commsLogId)
+                formData.append('comms_log_id', this.commsLogId);
             }
-            formData.append('document_id', file.id)
-            formData.append('csrfmiddlewaretoken', this.csrf_token)
+            formData.append('document_id', file.id);
+            formData.append('csrfmiddlewaretoken', this.csrf_token);
             if (this.document_action_url) {
                 const res = await fetch(this.document_action_url, {
                     body: formData,
                     method: 'POST',
-                })
-                const resData = await res.json()
-                this.documents = resData.filedata
-                this.commsLogId = resData.comms_instance_id
+                });
+                const resData = await res.json();
+                this.documents = resData.filedata;
+                this.commsLogId = resData.comms_instance_id;
             }
-            this.show_spinner = false
+            this.show_spinner = false;
         },
         cancel: async function () {
-            this.show_spinner = true
+            this.show_spinner = true;
 
-            let formData = new FormData()
-            formData.append('action', 'cancel')
-            formData.append('input_name', this.name)
+            let formData = new FormData();
+            formData.append('action', 'cancel');
+            formData.append('input_name', this.name);
             if (this.commsLogId) {
-                formData.append('comms_log_id', this.commsLogId)
+                formData.append('comms_log_id', this.commsLogId);
             }
-            formData.append('csrfmiddlewaretoken', this.csrf_token)
+            formData.append('csrfmiddlewaretoken', this.csrf_token);
             if (this.document_action_url) {
                 await fetch(this.document_action_url, {
                     body: formData,
                     method: 'POST',
-                })
+                });
             }
-            this.show_spinner = false
+            this.show_spinner = false;
         },
         uploadFile(e) {
-            let _file = null
+            let _file = null;
 
             if (e.target.files && e.target.files[0]) {
-                let reader = new FileReader()
-                reader.readAsDataURL(e.target.files[0])
+                let reader = new FileReader();
+                reader.readAsDataURL(e.target.files[0]);
                 reader.onload = function (e) {
-                    _file = e.target.result
-                }
-                _file = e.target.files[0]
+                    _file = e.target.result;
+                };
+                _file = e.target.files[0];
             }
-            return _file
+            return _file;
         },
         handleChangeWrapper: async function (e) {
-            this.show_spinner = true
+            this.show_spinner = true;
             if (
                 this.documentActionUrl === 'temporary_document' &&
                 !this.temporary_document_collection_id
@@ -310,42 +309,42 @@ export default {
                 // If temporary_document, create TemporaryDocumentCollection object and allow document_action_url to update
                 const res = await fetch(this.document_action_url, {
                     method: 'POST',
-                })
-                const resData = await res.json()
-                this.temporary_document_collection_id = resData.id
-                await this.handleChange(e)
+                });
+                const resData = await res.json();
+                this.temporary_document_collection_id = resData.id;
+                await this.handleChange(e);
                 await this.$emit(
                     'update-temp-doc-coll-id',
                     this.temporary_document_collection_id
-                )
+                );
             } else {
-                await this.handleChange(e)
+                await this.handleChange(e);
             }
-            this.show_spinner = false
+            this.show_spinner = false;
         },
 
         save_document: async function (e) {
-            var formData = new FormData()
+            var formData = new FormData();
             if (this.document_action_url) {
-                formData.append('action', 'save')
+                formData.append('action', 'save');
                 if (this.commsLogId) {
-                    formData.append('comms_log_id', this.commsLogId)
+                    formData.append('comms_log_id', this.commsLogId);
                 }
                 if (this.temporary_document_collection_id) {
                     formData.append(
                         'temporary_document_collection_id',
                         this.temporary_document_collection_id
-                    )
+                    );
                 }
-                formData.append('input_name', this.name)
-                formData.append('approval_type', this.approval_type)
+                formData.append('input_name', this.name);
+                formData.append('approval_type', this.approval_type);
                 formData.append(
                     'approval_type_document_type',
                     this.approval_type_document_type
-                )
-                formData.append('filename', e.target.files[0].name)
-                formData.append('_file', this.uploadFile(e))
-                formData.append('csrfmiddlewaretoken', this.csrf_token)
+                );
+                formData.append('filename', e.target.files[0].name);
+                formData.append('_file', this.uploadFile(e));
+                formData.append('csrfmiddlewaretoken', this.csrf_token);
 
                 await fetch(this.document_action_url, {
                     body: formData,
@@ -354,27 +353,27 @@ export default {
                     .then(async (response) => {
                         if (!response.ok) {
                             return await response.json().then((json) => {
-                                throw new Error(json)
-                            })
+                                throw new Error(json);
+                            });
                         } else {
-                            return await response.json()
+                            return await response.json();
                         }
                     })
                     .then((data) => {
-                        this.documents = data.filedata
-                        this.commsLogId = data.comms_instance_id
+                        this.documents = data.filedata;
+                        this.commsLogId = data.comms_instance_id;
                     })
                     .catch((error) => {
                         swal.fire({
                             title: 'File Error',
                             text: error,
                             icon: 'error',
-                        })
-                    })
+                        });
+                    });
             }
         },
     },
-}
+};
 </script>
 
 <style scoped lang="css">
