@@ -1277,6 +1277,7 @@ class Invoice(LicensingModel):
     gst_free = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, null=False)
     date_updated = models.DateTimeField(auto_now=True, null=False)
+    date_paid = models.DateTimeField(null=True, blank=False)
     date_issued = models.DateTimeField(null=True, blank=False)
     date_due = models.DateTimeField(null=True, blank=False)
     proponent_reference_number = models.CharField(null=True, blank=True, max_length=50)
@@ -1297,6 +1298,7 @@ class Invoice(LicensingModel):
         upload_to=invoice_pdf_upload_path, null=True, blank=True
     )
     oracle_invoice_number = models.CharField(max_length=50, null=True, blank=True)
+    description = models.TextField(null=True, blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -1335,6 +1337,17 @@ class Invoice(LicensingModel):
             + "/"
             + self.invoice_reference
         )
+
+    @property
+    def gst(self):
+        gst = Decimal("0.00")
+        if not self.gst_free:
+            gst = helpers.gst_from_total(self.amount)
+        return gst
+
+    @property
+    def amount_excl_gst(self):
+        return self.amount - self.gst
 
 
 class InvoiceTransactionManager(models.Manager):
