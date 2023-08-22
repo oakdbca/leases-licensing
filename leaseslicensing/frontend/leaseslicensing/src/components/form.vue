@@ -246,7 +246,7 @@
                         </div>
                     </FormSection>
 
-                    <template v-if="show_additional_documents_tab">
+                    <template v-if="proposal.additional_document_types">
                         <FormSection
                             label="Additional Documents"
                             index="additional_documents"
@@ -310,10 +310,6 @@ export default {
         show_related_items_tab: {
             type: Boolean,
             default: false,
-        },
-        show_additional_documents_tab: {
-            type: Boolean,
-            default: true,
         },
         proposal: {
             type: Object,
