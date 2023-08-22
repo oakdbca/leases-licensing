@@ -3,16 +3,10 @@
         <div v-if="numDocuments > 0">
             <div v-for="v in documents" :key="v.id">
                 <div>
-                    <span
-                        v-if="v.name.endsWith('.pdf')"
-                        class="fa fa-file-pdf"
-                        style="color: red"
-                    >
+                    <span v-if="v.name.endsWith('.pdf')" class="fa fa-file-pdf">
                         &nbsp;
                     </span>
-                    <span v-else class="fa fa-file" style="color: red">
-                        &nbsp;
-                    </span>
+                    <span v-else class="fa fa-file"> &nbsp; </span>
                     <a :href="v.secure_url" target="_blank">
                         {{ v.name }}
                     </a>
@@ -29,7 +23,11 @@
             </div>
         </div>
         <div v-if="show_spinner">
-            <i class="fa fa-2x fa-spinner fa-spin"></i>
+            <BootstrapSpinner
+                class="text-primary"
+                :center-of-screen="false"
+                :small="true"
+            />
         </div>
         <div
             v-if="
