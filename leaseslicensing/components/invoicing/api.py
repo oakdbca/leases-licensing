@@ -406,6 +406,7 @@ class PayInvoiceSuccessCallbackView(APIView):
             )
 
             invoice.status = Invoice.INVOICE_STATUS_PAID
+            invoice.date_paid = timezone.now()
             invoice.save()
 
             send_invoice_paid_external_notification(invoice)
