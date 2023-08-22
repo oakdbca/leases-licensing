@@ -21,6 +21,8 @@ def document_type(obj):
         return "License Document"
     elif obj.is_cover_letter:
         return "Cover Letter"
+    elif obj.is_sign_off_sheet:
+        return "Sign Off Sheet"
     else:
         return "Other"
 

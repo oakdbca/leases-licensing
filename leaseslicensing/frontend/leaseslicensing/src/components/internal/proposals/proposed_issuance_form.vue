@@ -664,9 +664,15 @@ export default {
             return this.proposal_type == 'renewal' ? true : false;
         },
         assessedBy: function () {
+            if (!this.proposal.proposed_issuance_approval) {
+                return null;
+            }
             return this.proposal.proposed_issuance_approval.assessed_by;
         },
         assessedOn: function () {
+            if (!this.proposal.proposed_issuance_approval) {
+                return null;
+            }
             return this.proposal.proposed_issuance_approval.assessed_on;
         },
     },

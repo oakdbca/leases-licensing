@@ -58,5 +58,15 @@
             "is_cover_letter": true,
             "is_sign_off_sheet": false
         }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 7,
+        "fields": {
+            "name": "Other",
+            "is_license_document": false,
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
+        }
     }
 ]
