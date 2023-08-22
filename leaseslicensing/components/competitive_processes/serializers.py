@@ -158,7 +158,6 @@ class PartyDetailSerializer(serializers.ModelSerializer):
                 )[0]
                 if temp_doc_collection:
                     for doc in temp_doc_collection.documents.all():
-                        logger.debug(f"\n --- doc.name={doc.name}")
                         self.save_party_detail_document_obj(instance, doc)
                     temp_doc_collection.delete()
                     # instance.temporary_document_collection_id = None
@@ -588,8 +587,6 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
         competitive_process_parties_data = validated_data.pop(
             "competitive_process_parties"
         )
-
-        logger.debug(f"validated_data={validated_data}")
 
         winner = validated_data.pop("winner", None)
         if winner and isinstance(winner, dict):
