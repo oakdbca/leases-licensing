@@ -117,7 +117,6 @@
                             :readonly="readonly"
                             :submitter-id="submitter_id"
                             :show_related_items_tab="true"
-                            :show_additional_documents_tab="true"
                             :registration-of-interest="isRegistrationOfInterest"
                             :lease-licence="isLeaseLicence"
                             @formMounted="applicationFormMounted"
@@ -1009,6 +1008,7 @@
                                     v-show="
                                         select2AppliedToAdditionalDocumentTypes
                                     "
+                                    class="mb-3"
                                 >
                                     <select
                                         ref="select_additional_document_types"
@@ -1017,6 +1017,48 @@
                                         "
                                         class="form-select"
                                     ></select>
+                                </div>
+                                <div class="row">
+                                    <div
+                                        v-for="additional_document in proposal.additional_documents"
+                                        :key="additional_document.id"
+                                        class="col-sm-6"
+                                    >
+                                        <div class="card mb-3">
+                                            <div class="card-body">
+                                                <h4 class="card-title">
+                                                    {{
+                                                        additional_document.input_name
+                                                    }}
+                                                </h4>
+                                                <p
+                                                    class="card-text d-flex align-items-center"
+                                                >
+                                                    <label
+                                                        for=""
+                                                        class="d-inline-block pe-2"
+                                                        >Document:
+                                                    </label>
+
+                                                    <i
+                                                        class="fa fa-file-text pe-2"
+                                                        aria-hidden="true"
+                                                    ></i>
+                                                    <a
+                                                        class="d-inline-block text-truncate"
+                                                        style="max-width: 250px"
+                                                        :href="
+                                                            additional_document.secure_url
+                                                        "
+                                                        target="_blank"
+                                                        >{{
+                                                            additional_document.name
+                                                        }}</a
+                                                    >
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </template>
 
