@@ -38,9 +38,11 @@ class AmendmentReasonAdmin(admin.ModelAdmin):
 class AdditionalDocumentTypeAdmin(admin.ModelAdmin):
     list_display = [
         "name",
+        "help_text",
         "enabled",
     ]
     list_filter = ("enabled",)
+    ordering = ("name",)
 
 
 @admin.register(models.Proposal)
@@ -203,6 +205,7 @@ class GlobalSettingsAdmin(admin.ModelAdmin):
 @admin.register(models.ExternalRefereeInvite)
 class ExternalRefereeInviteAdmin(admin.ModelAdmin):
     pass
+
 
 @admin.register(models.ProposalApplicant)
 class ProposalApplicantAdmin(admin.ModelAdmin):
