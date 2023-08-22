@@ -16,16 +16,21 @@ from leaseslicensing.components.main.serializers import (
     CommunicationLogEntrySerializer,
     EmailUserSerializer,
 )
-from leaseslicensing.components.main.utils import get_polygon_source
+from leaseslicensing.components.main.utils import (
+    get_polygon_source,
+    get_secure_file_url,
+)
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.organisations.serializers import OrganisationSerializer
 from leaseslicensing.components.proposals.models import (
+    AdditionalDocument,
     AdditionalDocumentType,
     AmendmentRequest,
     ChecklistQuestion,
     ExternalRefereeInvite,
     Proposal,
     ProposalAct,
+    ProposalAdditionalDocumentType,
     ProposalApplicant,
     ProposalApplicantDetails,
     ProposalAssessment,
@@ -911,6 +916,36 @@ class ProposalReferralSerializer(serializers.ModelSerializer):
         return serializer.data
 
 
+class AdditionalDocumentSerializer(serializers.ModelSerializer):
+    secure_url = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = AdditionalDocument
+        fields = "__all__"
+
+    def get_secure_url(self, obj):
+        return [get_secure_file_url(obj, "_file")]
+
+
+class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
+    text = serializers.CharField(source="name")
+
+    class Meta:
+        model = AdditionalDocumentType
+        fields = "__all__"
+
+
+class ProposalAdditionalDocumentTypeSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="additional_document_type.name")
+
+    class Meta:
+        model = ProposalAdditionalDocumentType
+        fields = [
+            "id",
+            "name",
+        ]
+
+
 class ProposalSerializer(BaseProposalSerializer):
     submitter = serializers.SerializerMethodField(read_only=True)
     processing_status = serializers.SerializerMethodField(read_only=True)
@@ -920,6 +955,9 @@ class ProposalSerializer(BaseProposalSerializer):
     lodgement_versions = serializers.SerializerMethodField(read_only=True)
     referrals = ProposalReferralSerializer(many=True)
     processing_status_id = serializers.SerializerMethodField(read_only=True)
+    additional_document_types = ProposalAdditionalDocumentTypeSerializer(
+        many=True, read_only=True
+    )
 
     class Meta:
         model = Proposal
@@ -1226,6 +1264,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     requirements = serializers.SerializerMethodField()
     can_edit_invoicing_details = serializers.SerializerMethodField()
     approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
+    additional_documents = AdditionalDocumentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Proposal
@@ -1342,6 +1381,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "competitive_process",
             "approval",
             "additional_document_types",
+            "additional_documents",
         )
 
         datatables_always_serialize = {
@@ -1775,14 +1815,6 @@ class ReferralSerializer(serializers.ModelSerializer):
             request.user._wrapped if hasattr(request.user, "_wrapped") else request.user
         )
         return obj.can_process(user)
-
-
-class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
-    text = serializers.CharField(source="name")
-
-    class Meta:
-        model = AdditionalDocumentType
-        fields = "__all__"
 
 
 class ProposalGisDataSerializer(BaseProposalSerializer):
