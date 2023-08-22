@@ -937,12 +937,14 @@ class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
 
 class ProposalAdditionalDocumentTypeSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="additional_document_type.name")
+    help_text = serializers.CharField(source="additional_document_type.help_text")
 
     class Meta:
         model = ProposalAdditionalDocumentType
         fields = [
             "id",
             "name",
+            "help_text",
         ]
 
 
