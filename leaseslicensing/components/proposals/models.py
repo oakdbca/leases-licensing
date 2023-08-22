@@ -148,10 +148,12 @@ def update_additional_doc_filename(instance, filename):
 
 class AdditionalDocumentType(RevisionedMixin):
     name = models.CharField(max_length=255, null=True, blank=True)
+    help_text = models.CharField(max_length=255, null=True, blank=True)
     enabled = models.BooleanField(default=True)
 
     class Meta:
         app_label = "leaseslicensing"
+        ordering = ["name"]
 
 
 class DefaultDocument(Document):
@@ -1527,6 +1529,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.proposal_type == ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT):
             return True
         return False
+
+    @property
+    def additional_documents(self):
+        return AdditionalDocument.objects.filter(
+            proposal_additional_document_type__proposal=self
+        )
 
     def get_assessor_group(self):
         # TODO: Take application_type into account
@@ -3591,10 +3599,14 @@ class ProposalAdditionalDocumentType(models.Model):
         app_label = "leaseslicensing"
 
 
-class AdditionalDocument(Document):
+class AdditionalDocument(DefaultDocument):
     _file = SecureFileField(upload_to=update_additional_doc_filename, max_length=512)
     proposal_additional_document_type = models.ForeignKey(
-        ProposalAdditionalDocumentType, null=True, blank=True, on_delete=models.SET_NULL
+        ProposalAdditionalDocumentType,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="document",
     )
 
     class Meta:
