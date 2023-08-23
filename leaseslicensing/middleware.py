@@ -1,8 +1,8 @@
 import re
+from urllib.parse import quote_plus
 
 from django.shortcuts import redirect
 from django.urls import reverse
-from django.utils.http import urlquote_plus
 from reversion.middleware import RevisionMiddleware
 from reversion.views import _request_creates_revision
 
@@ -29,7 +29,7 @@ class FirstTimeNagScreenMiddleware:
                     return redirect(
                         reverse("first_time")
                         + "?next="
-                        + urlquote_plus(request.get_full_path())
+                        + quote_plus(request.get_full_path())
                     )
 
 
