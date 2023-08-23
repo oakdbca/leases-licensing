@@ -568,7 +568,9 @@ export default {
                             },
                         };
                         let show =
-                            vm.check_role_conditions(condition_to_display);
+                            vm.check_role_conditions(condition_to_display) &&
+                            !vm.proposal.additional_documents_missing.length >
+                                0;
 
                         return show;
                     },
@@ -688,7 +690,9 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.isCurrentAssessor;
+                            vm.isCurrentAssessor &&
+                            !vm.proposal.additional_documents_missing.length >
+                                0;
                         return show;
                     },
                     function_to_disable: () => {
@@ -722,7 +726,9 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.isCurrentAssessor;
+                            vm.isCurrentAssessor &&
+                            !vm.proposal.additional_documents_missing.length >
+                                0;
                         return show;
                     },
                     function_to_disable: () => {
@@ -947,6 +953,7 @@ export default {
         showInviteReferee: function () {
             return (
                 this.isCurrentAssessor &&
+                !this.proposal.additional_documents_missing.length > 0 &&
                 [
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
