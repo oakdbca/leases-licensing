@@ -1818,11 +1818,19 @@ export default {
                         vm.proposal.additional_document_types = $(
                             e.currentTarget
                         ).val();
+                        console.log(JSON.stringify(e.params.data));
+                        vm.proposal.additional_documents_missing.push({
+                            name: e.params.data.name,
+                        });
                     })
                     .on('select2:unselect', function (e) {
                         vm.proposal.additional_document_types = $(
                             e.currentTarget
                         ).val();
+                        vm.proposal.additional_documents_missing =
+                            vm.proposal.additional_documents_missing.filter(
+                                (item) => item.name != e.params.data.name
+                            );
                     })
                     .val(vm.proposal.additional_document_types)
                     .trigger('change');
