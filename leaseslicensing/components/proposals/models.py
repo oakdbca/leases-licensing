@@ -2523,9 +2523,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 logger.error(e)
                 raise e
 
-    def preview_approval(self, request, details):
-        # I don't think we need this now that approvals are uploaded from hard copy scans?
-        pass
+    def preview_document(self, request, details):
+        from leaseslicensing.components.approvals.document import (
+            ApprovalDocumentGenerator,
+        )
+
+        document_generator = ApprovalDocumentGenerator()
+        try:
+            return document_generator.preview_approval_document()
+        except NotImplementedError as e:
+            raise e
 
     @transaction.atomic()
     def final_approval(self, request, details):
@@ -3456,23 +3463,29 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 f"There must be exactly one sign-off sheet for {approval_type}, but found {len(sign_off_sheets)}."
             )
 
-        approval.licence_document = document_generator.create_or_update_approval_document(
-            approval,
-            filepath=license_documents[0]._file.path,
-            filename_prefix="Approval-",
-            reason=reason,
+        approval.licence_document = (
+            document_generator.create_or_update_approval_document(
+                approval,
+                filepath=license_documents[0]._file.path,
+                filename_prefix="Approval-",
+                reason=reason,
+            )
         )
-        approval.cover_letter_document = document_generator.create_or_update_approval_document(
-            approval,
-            filepath=cover_letter[0]._file.path,
-            filename_prefix="CoverLetter-",
-            reason=reason,
+        approval.cover_letter_document = (
+            document_generator.create_or_update_approval_document(
+                approval,
+                filepath=cover_letter[0]._file.path,
+                filename_prefix="CoverLetter-",
+                reason=reason,
+            )
         )
-        approval.sign_off_sheet_document = document_generator.create_or_update_approval_document(
-            approval,
-            filepath=sign_off_sheets[0]._file.path,
-            filename_prefix="SignOffSheet-",
-            reason=reason,
+        approval.sign_off_sheet_document = (
+            document_generator.create_or_update_approval_document(
+                approval,
+                filepath=sign_off_sheets[0]._file.path,
+                filename_prefix="SignOffSheet-",
+                reason=reason,
+            )
         )
 
 

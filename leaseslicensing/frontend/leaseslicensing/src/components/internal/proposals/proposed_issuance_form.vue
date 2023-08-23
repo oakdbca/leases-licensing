@@ -428,6 +428,7 @@ import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue';
 import Swal from 'sweetalert2';
+import { initTooltipStyling } from '@/components/common/style_functions.js';
 
 export default {
     name: 'ProposedApprovalForm',
@@ -714,7 +715,7 @@ export default {
             }
 
             this.initSelectApprovalType();
-            this.initTooltipStyling();
+            initTooltipStyling();
         });
     },
     methods: {
@@ -931,23 +932,6 @@ export default {
                     // eslint-disable-next-line no-unused-vars
                     let unselected_id = e.params.data.id;
                 });
-        },
-        /**
-         * Changes (i-tag) tooltip appearance to the style of bs alert classes
-         */
-        initTooltipStyling: function () {
-            var tooltipTriggerList = [].slice.call(
-                document.querySelectorAll('[data-bs-toggle="tooltip"]')
-            );
-            tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-            $('i[data-bs-toggle="tooltip"]').on('mouseenter', function () {
-                let color = $(this).data('color');
-                $('.tooltip-inner').css({
-                    'background-color': `var(--bs-${color})`,
-                });
-            });
         },
     },
 };

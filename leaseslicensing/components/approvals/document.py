@@ -275,7 +275,7 @@ class ApprovalDocumentGenerator:
 
         return document
 
-    def preview_approval_document(self, approval, filename_prefix=None, **kwargs):
+    def preview_approval_document(self, **kwargs):
         raise NotImplementedError(
             "Preview of template-generated documents is not implemented yet."
         )
@@ -293,8 +293,8 @@ class ApprovalDocumentGenerator:
         """
 
         # TODO: Replace with actual approval type name derived from approval
-        approval_type_name = "default type"
-        document_name = "default document"
+        approval_type_name = kwargs.get("approval_type_name", "default type")
+        document_name = kwargs.get("document_name", "default document")
         if not self.has_template(approval_type_name, document_name):
             raise AttributeError(
                 f"Requested document {document_name} Approval type {approval_type_name} does not have a template."
