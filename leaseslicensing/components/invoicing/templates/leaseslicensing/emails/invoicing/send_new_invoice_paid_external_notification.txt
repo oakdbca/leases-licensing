@@ -1,0 +1,19 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+            We have received your payment of {{ invoice.amount }} for Invoice {{ invoice.lodgement_number }} in relation to {{ approval.approval_type }} {{ approval.lodgement_number }}.
+
+            Business Name: {{ dbca.name }}
+            ABN: {{ dbca.abn }}
+
+            Invoice Number: {{ invoice.oracle_invoice_number }}
+            Date Issued: {{ invoice.date_issued }}
+            Date Paid: {{ invoice.date_paid }} inc gst
+            Amount Received: {{ invoice.amount }} inc gst
+            GST Component: {{ invoice.gst }}
+            Description: {{ invoice.description }}
+
+            To view your invoices visit:
+
+            {{external_invoices_url}}
+{%  endblock %}

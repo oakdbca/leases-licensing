@@ -17,7 +17,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, transaction
-from django.db.models import JSONField, Max, Min, Q
+from django.db.models import F, JSONField, Max, Min, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -58,6 +58,7 @@ from leaseslicensing.components.organisations.utils import (
     get_organisation_ids_for_user,
 )
 from leaseslicensing.components.proposals.email import (
+    send_amendment_email_notification,
     send_approver_approve_email_notification,
     send_approver_decline_email_notification,
     send_license_ready_for_invoicing_notification,
@@ -1534,6 +1535,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def additional_documents(self):
         return AdditionalDocument.objects.filter(
             proposal_additional_document_type__proposal=self
+        )
+
+    @property
+    def additional_documents_missing(self):
+        # Check if the proposal has all the required additional documents
+        return (
+            self.additional_document_types.filter(document__isnull=True)
+            .annotate(name=F("additional_document_type__name"))
+            .values("name")
         )
 
     def get_assessor_group(self):
@@ -3780,65 +3790,51 @@ class AmendmentReason(models.Model):
 
 
 class AmendmentRequest(ProposalRequest):
-    STATUS_CHOICES = (("requested", "Requested"), ("amended", "Amended"))
-    # REASON_CHOICES = (('insufficient_detail', 'The information provided was insufficient'),
-    #                  ('missing_information', 'There was missing information'),
-    #                  ('other', 'Other'))
-    # try:
-    #     # model requires some choices if AmendmentReason does not yet exist or is empty
-    #     REASON_CHOICES = list(AmendmentReason.objects.values_list('id', 'reason'))
-    #     if not REASON_CHOICES:
-    #         REASON_CHOICES = ((0, 'The information provided was insufficient'),
-    #                           (1, 'There was missing information'),
-    #                           (2, 'Other'))
-    # except Exception as e:
-    #     REASON_CHOICES = ((0, 'The information provided was insufficient'),
-    #                       (1, 'There was missing information'),
-    #                       (2, 'Other'))
+    STATUS_CHOICE_REQUESTED = "requested"
+    STATUS_CHOICE_AMENDED = "amended"
+    STATUS_CHOICES = (
+        (STATUS_CHOICE_REQUESTED, "Requested"),
+        (STATUS_CHOICE_AMENDED, "Amended"),
+    )
 
     status = models.CharField(
         "Status", max_length=30, choices=STATUS_CHOICES, default=STATUS_CHOICES[0][0]
     )
-    # reason = models.CharField('Reason', max_length=30, choices=REASON_CHOICES, default=REASON_CHOICES[0][0])
     reason = models.ForeignKey(
         AmendmentReason, blank=True, null=True, on_delete=models.SET_NULL
     )
-    # reason = models.ForeignKey(AmendmentReason)
 
     class Meta:
         app_label = "leaseslicensing"
 
+    @transaction.atomic
     def generate_amendment(self, request):
-        with transaction.atomic():
-            try:
-                if not self.proposal.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.status == "requested":
-                    proposal = self.proposal
-                    if proposal.processing_status != "draft":
-                        proposal.processing_status = "draft"
-                        proposal.save(
-                            version_comment=f"Proposal amendment requested {request.data.get('reason', '')}"
-                        )
-                        # proposal.documents.all().update(can_hide=True)
-                        # proposal.required_documents.all().update(can_hide=True)
-                    # Create a log entry for the proposal
-                    proposal.log_user_action(
-                        ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
-                    )
-                    # Create a log entry for the organisation
-                    # applicant_field = getattr(proposal, proposal.applicant_field)
-                    # applicant_field.log_user_action(
-                    #    ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
-                    # )
+        if not self.proposal.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
 
-                    # send email
-                    # send_amendment_email_notification(self, request, proposal)
+        if self.status == AmendmentRequest.STATUS_CHOICE_REQUESTED:
+            proposal = self.proposal
+            if proposal.processing_status != Proposal.PROCESSING_STATUS_DRAFT:
+                proposal.processing_status = Proposal.PROCESSING_STATUS_DRAFT
+                proposal.save(
+                    version_comment=f"Proposal amendment requested {request.data.get('reason', '')}"
+                )
+                # Todo: Do we need to update all the related document models to can_hide=True?
+                # proposal.documents.all().update(can_hide=True)
 
-                self.save()
-            except Exception as e:
-                logger.exception(e)
-                raise e
+            # Create a log entry for the proposal
+            proposal.log_user_action(
+                ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
+            )
+            # Create a log entry for the organisation
+            self.log_user_action(
+                ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
+            )
+
+            # send email
+            send_amendment_email_notification(self, request, self.proposal)
+
+        self.save()
 
 
 class Assessment(ProposalRequest):

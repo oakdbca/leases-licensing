@@ -7,48 +7,43 @@
                 icon="exclamation-triangle-fill"
             >
                 <h3>
-                    You cannot access this Compliance as this has been
-                    discarded.
+                    You cannot access this Compliance as it has been discarded.
                 </h3>
             </BootstrapAlert>
-            <div v-else class="row mb-3">
-                <div v-if="!isFinalised">
-                    <div v-if="hasAmendmentRequest">
-                        <FormSection
-                            custom-color="red"
-                            label="This Compliance Requires one or more Amendments"
-                            index="amendment_compliance_with_requirements"
-                        >
-                            <div class="row">
-                                <div class="col">
-                                    <ol class="list-group">
-                                        <li
-                                            v-for="a in amendment_request"
-                                            class="list-group-item d-flex justify-content-between align-items-start"
-                                        >
-                                            <div class="ms-2 me-auto">
-                                                <div class="mt-3">
-                                                    <BootstrapAlert
-                                                        class="alert-sm"
-                                                        type="danger"
-                                                        icon="exclamation-triangle-fill"
-                                                    >
-                                                        {{ a.reason }}
-                                                    </BootstrapAlert>
-                                                </div>
-                                                <div
-                                                    class="amendment-text py-3"
-                                                >
-                                                    {{ a.text }}
-                                                </div>
-                                            </div>
-                                        </li>
-                                    </ol>
-                                </div>
-                            </div>
-                        </FormSection>
+            <div v-else class="">
+                <FormSection
+                    v-if="!isFinalised && hasAmendmentRequest"
+                    custom-color="red"
+                    label="This Compliance Requires one or more Amendments"
+                    index="amendment_compliance_with_requirements"
+                >
+                    <div class="row mb-3">
+                        <div class="col">
+                            <ol class="list-group">
+                                <li
+                                    v-for="a in amendment_request"
+                                    :key="a.id"
+                                    class="list-group-item d-flex justify-content-between align-items-start"
+                                >
+                                    <div class="ms-2 me-auto">
+                                        <div class="mt-3">
+                                            <BootstrapAlert
+                                                class="alert-sm d-inline-flex"
+                                                type="danger"
+                                                icon="exclamation-triangle-fill"
+                                            >
+                                                {{ a.reason }}
+                                            </BootstrapAlert>
+                                        </div>
+                                        <div class="amendment-text py-3">
+                                            <pre>{{ a.text }}</pre>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
                     </div>
-                </div>
+                </FormSection>
                 <div class="col-md-12">
                     <FormSection
                         :label="title"
@@ -169,9 +164,8 @@
                                     >
                                         <ul class="list-group">
                                             <li
-                                                v-for="(
-                                                    d, i
-                                                ) in compliance.documents"
+                                                v-for="d in compliance.documents"
+                                                :key="d.id"
                                                 class="list-group-item rounded"
                                             >
                                                 <a
@@ -220,6 +214,7 @@
                                         <ul class="list-group">
                                             <li
                                                 v-for="(f, i) in files"
+                                                :key="f"
                                                 class="list-group-item rounded"
                                             >
                                                 <div class="row">
@@ -364,29 +359,25 @@
     </div>
 </template>
 <script>
-import datatable from '@vue-utils/datatable.vue'
-import CommsLogs from '@common-utils/comms_logs.vue'
-import FormSection from '@/components/forms/section_toggle.vue'
-import { api_endpoints, helpers } from '@/utils/hooks'
-import alert from '@vue-utils/alert.vue'
+import FormSection from '@/components/forms/section_toggle.vue';
+import { api_endpoints, helpers } from '@/utils/hooks';
+import alert from '@vue-utils/alert.vue';
 
 export default {
     name: 'ExternalComplianceAccess',
     components: {
-        datatable,
-        CommsLogs,
         FormSection,
         alert,
     },
     beforeRouteEnter: function (to, from, next) {
         next(async (vm) => {
             if (to.params.compliance_id) {
-                vm.fetchCompliance(to.params.compliance_id)
+                vm.fetchCompliance(to.params.compliance_id);
             }
-        })
+        });
     },
     data() {
-        let vm = this
+        let vm = this;
         return {
             title: '',
             form: null,
@@ -400,7 +391,6 @@ export default {
             errorString: '',
             pdBody: 'pdBody' + vm._uid,
             oBody: 'oBody' + vm._uid,
-            pdBody: 'pdBody' + vm._uid,
             validation_form: null,
             files: [
                 {
@@ -408,27 +398,27 @@ export default {
                     name: '',
                 },
             ],
-        }
+        };
     },
     computed: {
         showError: function () {
-            var vm = this
-            return vm.errors
+            var vm = this;
+            return vm.errors;
         },
         isLoading: function () {
-            return this.loading.length > 0
+            return this.loading.length > 0;
         },
         isDiscarded: function () {
             return (
                 this.compliance &&
                 this.compliance.customer_status == 'Discarded'
-            )
+            );
         },
         hasDocuments: function () {
             return (
                 this.compliance.documents &&
                 this.compliance.documents.length > 0
-            )
+            );
         },
     },
     watch: {
@@ -437,58 +427,55 @@ export default {
                 this.compliance &&
                 (this.compliance.customer_status == 'Under Review' ||
                     this.compliance.customer_status == 'Approved')
-            )
+            );
         },
     },
     created: function () {
-        let vm = this
-        this.fetchCompliance(this.$route.params.compliance_id)
+        this.fetchCompliance(this.$route.params.compliance_id);
     },
     mounted: function () {
-        let vm = this
-        vm.form = document.forms.complianceForm
+        this.form = document.forms.complianceForm;
     },
     methods: {
         uploadFile(target, file_obj) {
-            let vm = this
-            let _file = null
-            var input = $('.' + target)[0]
+            let _file = null;
+            var input = $('.' + target)[0];
             if (input.files && input.files[0]) {
-                var reader = new FileReader()
-                reader.readAsDataURL(input.files[0])
+                let reader = new FileReader();
+                reader.readAsDataURL(input.files[0]);
                 reader.onload = function (e) {
-                    _file = e.target.result
-                }
-                _file = input.files[0]
+                    _file = e.target.result;
+                };
+                _file = input.files[0];
             }
-            file_obj.file = _file
-            file_obj.name = _file.name
+            file_obj.file = _file;
+            file_obj.name = _file.name;
         },
         removeFile(index) {
-            let length = this.files.length
-            $('.file-row-' + index).remove()
-            this.files.splice(index, 1)
+            let length = this.files.length;
+            $('.file-row-' + index).remove();
+            this.files.splice(index, 1);
             this.$nextTick(() => {
-                length == 1 ? this.attachAnother() : ''
-            })
+                length == 1 ? this.attachAnother() : '';
+            });
         },
         attachAnother() {
             this.files.push({
                 file: null,
                 name: '',
-            })
+            });
         },
         close: function () {
-            this.$router.push({ name: 'external-dashboard' })
+            this.$router.push({ name: 'external-dashboard' });
         },
         setAmendmentData: function (amendment_request) {
-            this.amendment_request = amendment_request
+            this.amendment_request = amendment_request;
 
-            if (amendment_request.length > 0) this.hasAmendmentRequest = true
+            if (amendment_request.length > 0) this.hasAmendmentRequest = true;
         },
         delete_document: function (doc) {
-            let vm = this
-            let data = { document: doc }
+            let vm = this;
+            let data = { document: doc };
             if (doc) {
                 fetch(
                     helpers.add_endpoint_json(
@@ -501,14 +488,17 @@ export default {
                     }
                 ).then(
                     async (response) => {
-                        vm.refreshFromResponse(response)
-                        vm.compliance = await Object.assign({}, response.json())
+                        vm.refreshFromResponse(response);
+                        vm.compliance = await Object.assign(
+                            {},
+                            response.json()
+                        );
                     },
                     (error) => {
-                        vm.errors = true
-                        vm.errorString = error.message
+                        vm.errors = true;
+                        vm.errorString = error.message;
                     }
-                )
+                );
             }
         },
         validateForm: function (
@@ -516,19 +506,19 @@ export default {
             custom_action = 'submit',
             exit_after = false
         ) {
-            let vm = this
-            var form = document.getElementById('complianceForm')
+            let vm = this;
+            var form = document.getElementById('complianceForm');
 
-            console.log('validateForm')
+            console.log('validateForm');
 
             if (form.checkValidity()) {
-                vm.sendData(method, custom_action, exit_after)
+                vm.sendData(method, custom_action, exit_after);
             } else {
-                form.classList.add('was-validated')
-                $('#complianceForm').find(':invalid').first().focus()
+                form.classList.add('was-validated');
+                $('#complianceForm').find(':invalid').first().focus();
             }
 
-            return false
+            return false;
         },
         sendData: function (
             method = 'POST',
@@ -536,20 +526,20 @@ export default {
             exit_after = false
         ) {
             this.$nextTick(() => {
-                this.errors = false
-                let formData = new FormData()
-                formData.append('detail', this.compliance.text)
-                let numFiles = 0
+                this.errors = false;
+                let formData = new FormData();
+                formData.append('detail', this.compliance.text);
+                let numFiles = 0;
                 for (let i = 0; i < this.files.length; i++) {
                     if (this.files[i].file && this.files[i].name) {
-                        formData.append('file' + i, this.files[i].file)
-                        formData.append('name' + i, this.files[i].name)
-                        console.log(this.files[i].file)
-                        numFiles++
+                        formData.append('file' + i, this.files[i].file);
+                        formData.append('name' + i, this.files[i].name);
+                        console.log(this.files[i].file);
+                        numFiles++;
                     }
                 }
-                formData.append('num_files', numFiles)
-                console.log('num_files: ' + numFiles)
+                formData.append('num_files', numFiles);
+                console.log('num_files: ' + numFiles);
 
                 fetch(
                     helpers.add_endpoint_json(
@@ -564,49 +554,49 @@ export default {
                     .then(async (response) => {
                         if (!response.ok) {
                             return await response.json().then((json) => {
-                                throw new Error(json)
-                            })
+                                throw new Error(json);
+                            });
                         } else {
-                            return await response.json()
+                            return await response.json();
                         }
                     })
                     .then((data) => {
-                        this.addingCompliance = false
-                        this.refreshFromResponse(data)
-                        this.compliance = Object.assign({}, data)
+                        this.addingCompliance = false;
+                        this.refreshFromResponse(data);
+                        this.compliance = Object.assign({}, data);
 
                         if ('submit' == custom_action) {
                             this.$router.push({
                                 name: 'submit_compliance',
                                 params: { compliance_id: this.compliance.id },
-                            })
+                            });
                         } else {
                             swal.fire({
                                 title: `Compliance ${this.compliance.lodgement_number} Saved`,
                                 text: 'Compliance has been saved successfully',
                                 icon: 'success',
-                            })
+                            });
                             if (exit_after) {
-                                this.close()
+                                this.close();
                             } else {
-                                this.files = []
+                                this.files = [];
                             }
                         }
                     })
                     .catch((error) => {
-                        this.errors = true
-                        this.addingCompliance = false
-                        this.errorString = error.message
+                        this.errors = true;
+                        this.addingCompliance = false;
+                        this.errorString = error.message;
                         swal.fire({
                             title: 'Compliance Error',
                             text: error.message,
                             icon: 'error',
-                        })
-                    })
-            })
+                        });
+                    });
+            });
         },
         fetchCompliance: async function (compliance_id) {
-            let vm = this
+            let vm = this;
             fetch(
                 helpers.add_endpoint_json(
                     api_endpoints.compliances,
@@ -614,24 +604,24 @@ export default {
                 )
             ).then(
                 async (response) => {
-                    const resData = await response.json()
-                    vm.compliance = Object.assign({}, resData)
+                    const resData = await response.json();
+                    vm.compliance = Object.assign({}, resData);
                     if (
                         vm.compliance.customer_status == 'Under Review' ||
                         vm.compliance.customer_status == 'Approved'
                     ) {
-                        vm.isFinalised = true
+                        vm.isFinalised = true;
                     }
-                    vm.status = vm.compliance.customer_status
+                    vm.status = vm.compliance.customer_status;
 
                     if ('Under Review' == vm.compliance.customer_status) {
                         vm.title =
                             'View Compliance - ' +
-                            this.compliance.lodgement_number
+                            this.compliance.lodgement_number;
                     } else {
                         vm.title =
                             'Submit Compliance - ' +
-                            this.compliance.lodgement_number
+                            this.compliance.lodgement_number;
                     }
 
                     fetch(
@@ -641,30 +631,30 @@ export default {
                         )
                     ).then(
                         async (res) => {
-                            vm.setAmendmentData(await res.json())
+                            vm.setAmendmentData(await res.json());
                         },
                         (err) => {
-                            console.log(err)
+                            console.log(err);
                         }
-                    )
+                    );
                 },
                 (error) => {
-                    console.log(error)
+                    console.log(error);
                 }
-            )
+            );
         },
         refreshFromResponse: async function (resData) {
-            this.original_compliance = helpers.copyObject(resData)
-            this.compliance = helpers.copyObject(resData)
+            this.original_compliance = helpers.copyObject(resData);
+            this.compliance = helpers.copyObject(resData);
             if (
                 this.compliance.customer_status == 'Under Review' ||
                 this.compliance.customer_status == 'Approved'
             ) {
-                this.isFinalised = true
+                this.isFinalised = true;
             }
         },
     },
-}
+};
 </script>
 
 <style scoped>

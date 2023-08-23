@@ -178,6 +178,7 @@ DEP_POSTAL = env(
 )
 DEP_NAME = env("DEP_NAME", "Department of Biodiversity, Conservation and Attractions")
 DEP_NAME_SHORT = env("DEP_NAME_SHORT", "DBCA")
+
 BRANCH_NAME = env("BRANCH_NAME", "Leases and Licensing Branch")
 DEP_ADDRESS = env("DEP_ADDRESS", "17 Dick Perry Avenue, Kensington WA 6151")
 SITE_URL = env("SITE_URL", "https://" + SITE_PREFIX + "." + SITE_DOMAIN)
@@ -502,6 +503,7 @@ CACHE_TIMEOUT_NEVER = None
 
 # ---------- Cache Keys ----------
 
+CACHE_KEY_DBCA_LEDGER_ORGANISATION = "dbca_ledger_organisation"
 CACHE_KEY_DEFAULT_FROM_EMAIL = "default-from-email"
 CACHE_KEY_LEDGER_EMAIL_USER = "ledger-emailuser-{}"
 CACHE_KEY_LEDGER_ORGANISATION = "ledger-organisation-{}"

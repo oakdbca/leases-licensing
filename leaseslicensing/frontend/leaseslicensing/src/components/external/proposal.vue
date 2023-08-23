@@ -1,38 +1,39 @@
 <template lang="html">
     <div class="container">
-        <div v-if="!proposal_readonly">
-            <div v-if="hasAmendmentRequest" class="row" style="color: red">
-                <div class="col-lg-12 pull-right">
-                    <div class="card card-default">
-                        <div class="card-header">
-                            <h3 class="card-title" style="color: red">
-                                An amendment has been requested for this
-                                Application
-                                <a
-                                    class="panelClicker"
-                                    :href="'#' + pBody"
-                                    data-toggle="collapse"
-                                    data-parent="#userInfo"
-                                    expanded="true"
-                                    :aria-controls="pBody"
+        <div v-if="proposal && !proposal.readonly">
+            <div v-if="amendment_request">
+                <FormSection
+                    custom-color="red"
+                    label="This Application Requires One or More Amendments"
+                    index="amendments_requested"
+                >
+                    <div class="row">
+                        <div class="col-12">
+                            <ol class="list-group">
+                                <li
+                                    v-for="a in amendment_request"
+                                    :key="a.id"
+                                    class="list-group-item d-flex"
                                 >
-                                    <span
-                                        class="glyphicon glyphicon-chevron-down pull-right"
-                                    ></span>
-                                </a>
-                            </h3>
-                        </div>
-                        <div :id="pBody" class="card-body collapse in">
-                            <div v-for="a in amendment_request" :key="a.id">
-                                <p>Reason: {{ a.reason }}</p>
-                                <p>Details:</p>
-                                <p v-for="t in splitText(a.text)" :key="t">
-                                    {{ t }}
-                                </p>
-                            </div>
+                                    <div class="ms-2 me-auto">
+                                        <div class="mt-3">
+                                            <BootstrapAlert
+                                                class="alert-sm d-inline-flex"
+                                                type="danger"
+                                                icon="exclamation-triangle-fill"
+                                            >
+                                                {{ a.reason }}
+                                            </BootstrapAlert>
+                                        </div>
+                                        <div class="amendment-text py-3">
+                                            <pre>{{ a.text }}</pre>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ol>
                         </div>
                     </div>
-                </div>
+                </FormSection>
             </div>
         </div>
 
@@ -209,6 +210,7 @@
 <script>
 import ApplicationForm from '../form.vue';
 import FileField from '@/components/forms/filefield_immediate.vue';
+import FormSection from '@/components/forms/section_toggle.vue';
 
 import { api_endpoints, helpers } from '@/utils/hooks';
 
@@ -217,6 +219,7 @@ export default {
     components: {
         ApplicationForm,
         FileField,
+        FormSection,
     },
     beforeRouteEnter(to, from, next) {
         next((vm) => {
@@ -228,9 +231,9 @@ export default {
     data: function () {
         return {
             proposal: null,
+            amendment_request: null,
             loading: [],
             loadingProposal: false,
-            amendment_request: [],
             proposal_readonly: true,
             hasAmendmentRequest: false,
             submitting: false,
@@ -618,26 +621,17 @@ export default {
                 });
             });
         },
-
         save_wo_confirm: function () {
             this.save(false);
         },
         setdata: function (readonly) {
             this.proposal_readonly = readonly;
         },
-
-        setAmendmentData: function (amendment_request) {
-            this.amendment_request = amendment_request;
-
-            if (amendment_request.length > 0) this.hasAmendmentRequest = true;
-        },
-
         splitText: function (aText) {
             let newText = '';
             newText = aText.split('\n');
             return newText;
         },
-
         leaving: function (e) {
             let vm = this;
             var dialogText = 'You have some unsaved changes.';
@@ -648,7 +642,6 @@ export default {
                 return null;
             }
         },
-
         highlight_missing_fields: function () {
             let vm = this;
             for (let missing_field of vm.missing_fields) {
@@ -723,6 +716,21 @@ export default {
                     }
                     vm.proposal = data;
                     console.log('Proposal: ', vm.proposal);
+
+                    fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.proposals,
+                            vm.proposal.id + '/amendment_request'
+                        )
+                    ).then(
+                        async (res) => {
+                            this.amendment_request = await res.json();
+                        },
+                        (err) => {
+                            console.log(err);
+                        }
+                    );
+
                     vm.loadingProposal = false;
                 })
                 .catch((error) => {
@@ -735,3 +743,15 @@ export default {
     },
 };
 </script>
+<style scoped>
+.alert-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+    margin-bottom: 0;
+    border-radius: 0.2rem;
+}
+
+.amendment-text {
+    white-space: pre-wrap;
+}
+</style>

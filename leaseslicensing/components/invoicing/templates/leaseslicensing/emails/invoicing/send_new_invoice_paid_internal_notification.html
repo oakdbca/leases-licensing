@@ -1,0 +1,10 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+        <p>
+            Invoice {{ invoice.lodgement_number }} has been paid and the related invoice
+            in Oracle needs to be marked as paid.
+        </p>
+
+        <a href="{{internal_invoices_url}}">Access Invoices</a>
+{%  endblock %}

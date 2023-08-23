@@ -21,6 +21,8 @@ from rest_framework_datatables.filters import DatatablesFilterBackend
 
 from leaseslicensing.components.approvals.serializers import ApprovalSerializer
 from leaseslicensing.components.invoicing.email import (
+    send_invoice_paid_external_notification,
+    send_invoice_paid_internal_notification,
     send_new_invoice_raised_internal_notification,
     send_new_invoice_raised_notification,
 )
@@ -43,7 +45,7 @@ from leaseslicensing.components.organisations.models import (
     OrganisationContact,
 )
 from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
-from leaseslicensing.helpers import is_customer, is_finance_officer
+from leaseslicensing.helpers import gst_from_total, is_customer, is_finance_officer
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.permissions import IsFinanceOfficer
 
@@ -232,7 +234,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         price_excl_tax = instance.amount
 
         if not approval.approval_type.gst_free:
-            price_excl_tax = price_incl_tax - (price_incl_tax / 11)
+            price_excl_tax = price_incl_tax - gst_from_total(price_incl_tax)
 
         ledger_order_lines = []
 
@@ -404,7 +406,12 @@ class PayInvoiceSuccessCallbackView(APIView):
             )
 
             invoice.status = Invoice.INVOICE_STATUS_PAID
+            invoice.date_paid = timezone.now()
             invoice.save()
+
+            send_invoice_paid_external_notification(invoice)
+
+            send_invoice_paid_internal_notification(invoice)
 
             logger.info(
                 "Returning status.HTTP_200_OK. Invoice marked as paid successfully.",

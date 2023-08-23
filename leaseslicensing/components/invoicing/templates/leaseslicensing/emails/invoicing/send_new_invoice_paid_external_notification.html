@@ -1,0 +1,22 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+            <p>
+                We have received your payment of {{ invoice.amount }} for Invoice {{ invoice.lodgement_number }} in relation to
+                {{ approval.approval_type }} {{ approval.lodgement_number }}.
+            </p>
+
+            <p>
+                <strong>Name:</strong> {{ dbca.name }}<br />
+                <strong>ABN:</strong> {{ dbca.abn }}<br />
+
+                <strong>Invoice Number:</strong> {{ invoice.oracle_invoice_number }}<br />
+                <strong>Date Issued:</strong> {{ invoice.date_issued }}<br />
+                <strong>Date Paid:</strong> {{ invoice.date_paid }} inc gst<br />
+                <strong>Amount Received:</strong> {{ invoice.amount }} inc gst<br />
+                <strong>GST Component:</strong> {{ invoice.gst }}<br />
+                <strong>Description:</strong> {{ invoice.description }}<br />
+            </p>
+
+            <a href="{{external_invoices_url}}">View Your Invoices</a>
+{%  endblock %}

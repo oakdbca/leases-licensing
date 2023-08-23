@@ -146,16 +146,10 @@ def send_amendment_email_notification(amendment_request, request, proposal):
         html_template="leaseslicensing/emails/proposals/send_amendment_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_amendment_notification.txt",
     )
-    # email = AmendmentRequestSendNotificationEmail()
-    # reason = amendment_request.get_reason_display()
     reason = amendment_request.reason.reason
     url = request.build_absolute_uri(
         reverse("external-proposal-detail", kwargs={"proposal_pk": proposal.id})
     )
-
-    if "-internal" in url:
-        # remove '-internal'. This email is for external submitters
-        url = "".join(url.split("-internal"))
 
     context = {
         "proposal": proposal,
@@ -172,7 +166,9 @@ def send_amendment_email_notification(amendment_request, request, proposal):
     email_addr = EmailUser.objects.get(id=proposal.submitter).email
     msg = email.send(email_addr, cc=all_ccs, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
+
     _log_proposal_email(msg, proposal, sender=sender)
+
     if proposal.org_applicant:
         _log_org_email(msg, proposal.org_applicant, proposal.submitter, sender=sender)
     elif proposal.ind_applicant:
