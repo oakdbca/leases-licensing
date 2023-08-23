@@ -17,7 +17,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, transaction
-from django.db.models import JSONField, Max, Min, Q
+from django.db.models import F, JSONField, Max, Min, Q
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -1534,6 +1534,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def additional_documents(self):
         return AdditionalDocument.objects.filter(
             proposal_additional_document_type__proposal=self
+        )
+
+    @property
+    def additional_documents_missing(self):
+        # Check if the proposal has all the required additional documents
+        return (
+            self.additional_document_types.filter(document__isnull=True)
+            .annotate(name=F("additional_document_type__name"))
+            .values("name")
         )
 
     def get_assessor_group(self):
