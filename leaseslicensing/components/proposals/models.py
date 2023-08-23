@@ -3807,7 +3807,7 @@ class AmendmentRequest(ProposalRequest):
     class Meta:
         app_label = "leaseslicensing"
 
-    @transaction.Atomic
+    @transaction.atomic
     def generate_amendment(self, request):
         if not self.proposal.can_assess(request.user):
             raise exceptions.ProposalNotAuthorized()
@@ -3832,7 +3832,7 @@ class AmendmentRequest(ProposalRequest):
             )
 
             # send email
-            send_amendment_email_notification(self, request, proposal)
+            send_amendment_email_notification(self, request, self.proposal)
 
         self.save()
 
