@@ -1,7 +1,7 @@
 from django.conf import settings
-from django.conf.urls import include, url
 from django.conf.urls.static import static
-from django.urls import path
+from django.urls import include, path
+from django.urls import re_path as url
 from django_media_serv.urls import urlpatterns as media_serv_patterns
 from ledger_api_client.urls import urlpatterns as ledger_patterns
 from rest_framework import routers
