@@ -1267,6 +1267,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     can_edit_invoicing_details = serializers.SerializerMethodField()
     approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
     additional_documents = AdditionalDocumentSerializer(many=True, read_only=True)
+    additional_documents_missing = serializers.ListField(read_only=True)
 
     class Meta:
         model = Proposal
@@ -1384,6 +1385,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "approval",
             "additional_document_types",
             "additional_documents",
+            "additional_documents_missing",
         )
 
         datatables_always_serialize = {
