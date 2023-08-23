@@ -3,7 +3,7 @@ from copy import deepcopy
 from datetime import datetime
 
 from django.core.files.base import ContentFile
-from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from django.db import transaction
 from django.db.models import Q
 from rest_framework import serializers, views, viewsets
@@ -329,7 +329,11 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                 filename = request.data.get("name" + str(i))
                 _file = request.data.get("file" + str(i))
 
-                if not isinstance(_file, InMemoryUploadedFile):
+                logger.debug(f" ----> {type(_file)}")
+
+                if not isinstance(_file, InMemoryUploadedFile) and not isinstance(
+                    _file, TemporaryUploadedFile
+                ):
                     raise serializers.ValidationError("No files attached")
 
                 document = instance.documents.get_or_create(name=filename)[0]
