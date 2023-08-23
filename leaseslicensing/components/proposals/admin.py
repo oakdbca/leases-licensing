@@ -1,8 +1,8 @@
-from django.conf.urls import url
 from django.contrib import admin
 from django.db.models import TextField
 from django.forms import Textarea
 from django.http import HttpResponseRedirect
+from django.urls import re_path as url
 
 from leaseslicensing.components.main.models import (
     ApplicationType,
