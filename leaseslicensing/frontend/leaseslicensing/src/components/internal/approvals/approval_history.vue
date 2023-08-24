@@ -153,7 +153,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.application;
+                    return `<a href="${full.detail_url}" target="_blank">${full.application}</a>`;
                 },
             };
         },

@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.utils import timezone
 from django.db.models import Q
+from django.urls import reverse
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
@@ -380,6 +381,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
     start_date_str = serializers.SerializerMethodField()
     expiry_date_str = serializers.SerializerMethodField()
     reason = serializers.SerializerMethodField()
+    detail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Approval
@@ -398,6 +400,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
             "start_date_str",
             "expiry_date_str",
             "reason",
+            "detail_url",
         )
 
     def get_revision_id(self, obj):
@@ -473,6 +476,11 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
             )
         # Else (Cancel, Surrender, Suspend) return the status of the approval
         return obj.get_status_display()
+
+    def get_detail_url(self, obj):
+        return reverse(
+            "internal-proposal-detail", kwargs={"pk": obj.current_proposal.id}
+        )
 
 
 class ApprovalTypeSerializer(serializers.ModelSerializer):
