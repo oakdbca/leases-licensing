@@ -356,6 +356,9 @@
                                 :selected-approval-type-id="
                                     selectedApprovalTypeId
                                 "
+                                :selected-document-types="
+                                    approval.selected_document_types
+                                "
                                 :readonly="withApprover"
                             />
                         </div>
