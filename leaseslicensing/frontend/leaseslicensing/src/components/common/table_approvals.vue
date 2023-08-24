@@ -437,12 +437,13 @@ export default {
         },
         columnType: function () {
             return {
-                data: 'approval_type',
+                // data: 'approval_type',
+                data: 'application_type',
                 orderable: true,
                 searchable: false, // FIXME: make searchable
                 visible: true,
                 render: function (row, type, full) {
-                    return full.approval_type;
+                    return full.application_type;
                 },
                 name: 'approval_type__name', // FIXME: replace with application type model field
             };

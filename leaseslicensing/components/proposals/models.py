@@ -3025,9 +3025,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         intersects=pg.intersects,
                         copied_from=pg,
                         drawn_by=pg.drawn_by,  # EmailUser
-                        locked=pg.locked,  # Should evaluate to true
-                        drawn_by=pg.drawn_by,  # EmailUser
-                        locked=pg.locked,  # Should evaluate to true
+                        locked=pg.locked,  # Should evaluate to true                        
                     )
 
                 # Copy over any tourism, general, prn str type proposal details and documents

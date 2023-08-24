@@ -361,12 +361,6 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
         return obj.filename
 
 
-class ApprovalTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ApprovalType
-        fields = "__all__"
-
-
 class ApprovalHistorySerializer(serializers.ModelSerializer):
     revision_id = serializers.SerializerMethodField()
     lodgement_number = serializers.SerializerMethodField()
@@ -464,7 +458,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
         return obj.start_date.strftime("%d/%m/%Y")
 
     def get_expiry_date_str(self, obj):
-        return obj.approval.expiry_date.strftime("%d/%m/%Y")
+        return obj.expiry_date.strftime("%d/%m/%Y")
 
     def get_reason(self, obj):
         if obj.status == Approval.APPROVAL_STATUS_CURRENT:

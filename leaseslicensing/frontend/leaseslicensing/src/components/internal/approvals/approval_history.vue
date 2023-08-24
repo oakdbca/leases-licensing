@@ -37,6 +37,7 @@ import modal from '@vue-utils/bootstrap-modal.vue';
 import alert from '@vue-utils/alert.vue';
 import { helpers, api_endpoints, constants, utils } from '@/utils/hooks.js';
 import datatable from '@/utils/vue/datatable.vue';
+import { v4 as uuid } from 'uuid';
 
 export default {
     name: 'ApprovalHistory',
@@ -56,9 +57,8 @@ export default {
         },
     },
     data: function () {
-        let vm = this;
         return {
-            datatable_id: 'history-datatable-' + vm._uid,
+            datatable_id: 'history-datatable-' + uuid(),
             approvalDetails: {
                 approvalLodgementNumber: null,
             },
