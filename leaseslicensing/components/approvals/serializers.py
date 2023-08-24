@@ -381,7 +381,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
     start_date_str = serializers.SerializerMethodField()
     expiry_date_str = serializers.SerializerMethodField()
     reason = serializers.SerializerMethodField()
-    detail_url = serializers.SerializerMethodField()
+    application_detail_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Approval
@@ -400,7 +400,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
             "start_date_str",
             "expiry_date_str",
             "reason",
-            "detail_url",
+            "application_detail_url",
         )
 
     def get_revision_id(self, obj):
@@ -477,7 +477,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
         # Else (Cancel, Surrender, Suspend) return the status of the approval
         return obj.get_status_display()
 
-    def get_detail_url(self, obj):
+    def get_application_detail_url(self, obj):
         return reverse(
             "internal-proposal-detail", kwargs={"pk": obj.current_proposal.id}
         )
