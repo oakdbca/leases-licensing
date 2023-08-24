@@ -23,6 +23,7 @@ class ApprovalDocumentGenerator:
 
     _license_templates = {
         # Test template for fn _example_approval_document_from_template
+        # Example: "License (101)": {"License (101)": "/path/to/license/template/dir"}
         "default type": {
             "default_document": f"{settings.BASE_DIR}/leaseslicensing/templates/doc/leases_licence_template.docx"
         },
