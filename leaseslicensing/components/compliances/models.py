@@ -194,15 +194,6 @@ class Compliance(LicensingModelVersioned):
         )
 
     @property
-    def participant_number_required(self):
-        if (
-            self.requirement.standard_requirement
-            and self.requirement.standard_requirement.participant_number_required
-        ):
-            return True
-        return False
-
-    @property
     def application_type(self):
         if self.proposal.application_type:
             return self.proposal.application_type.name_display

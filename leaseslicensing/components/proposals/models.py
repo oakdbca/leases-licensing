@@ -3888,7 +3888,6 @@ class ProposalStandardRequirement(RevisionedMixin):
     application_type = models.ForeignKey(
         ApplicationType, null=True, blank=True, on_delete=models.SET_NULL
     )
-    participant_number_required = models.BooleanField(default=False)
     gross_turnover_required = models.BooleanField(default=False)
     default = models.BooleanField(default=False)
 
