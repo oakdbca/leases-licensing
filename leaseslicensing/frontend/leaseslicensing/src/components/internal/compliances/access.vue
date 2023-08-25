@@ -502,7 +502,7 @@
                                     </div>
                                     <div class="row mb-3">
                                         <label
-                                            for=""
+                                            for="requirement"
                                             class="col-sm-3 col-form-label"
                                             >Requirement</label
                                         >
@@ -519,7 +519,7 @@
                                     </div>
                                     <div class="row mb-3">
                                         <label
-                                            for="details"
+                                            for="text"
                                             class="col-sm-3 col-form-label"
                                             >Details</label
                                         >
@@ -529,8 +529,40 @@
                                                 v-model="compliance.text"
                                                 disabled
                                                 class="form-control"
-                                                name="details"
+                                                name="text"
                                             />
+                                        </div>
+                                    </div>
+                                    <div
+                                        v-if="
+                                            compliance.gross_turnover_required
+                                        "
+                                        class="row mb-3"
+                                    >
+                                        <label
+                                            for="gross_turnover"
+                                            class="col-sm-3 col-form-label"
+                                            >Gross Turnover</label
+                                        >
+                                        <div class="col-sm-4">
+                                            <div class="input-group">
+                                                <span class="input-group-text"
+                                                    >$</span
+                                                >
+                                                <input
+                                                    id="details"
+                                                    v-model="
+                                                        compliance.gross_turnover
+                                                    "
+                                                    type="number"
+                                                    disabled
+                                                    class="form-control"
+                                                    name="gross_turnover"
+                                                />
+                                                <span class="input-group-text"
+                                                    >AUD</span
+                                                >
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="row mb-3">

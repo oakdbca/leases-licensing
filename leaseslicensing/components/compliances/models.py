@@ -222,9 +222,9 @@ class Compliance(LicensingModelVersioned):
         return None
 
     @property
-    def requires_gross_turnover(self):
+    def gross_turnover_required(self):
         if self.requirement.standard_requirement:
-            return self.requirement.standard_requirement.requires_gross_turnover
+            return self.requirement.standard_requirement.gross_turnover_required
         return False
 
     def save(self, *args, **kwargs):

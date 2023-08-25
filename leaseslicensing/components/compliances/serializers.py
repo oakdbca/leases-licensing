@@ -136,6 +136,10 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
     referrals = ComplianceReferralSerializer(many=True, read_only=True)
     latest_referrals = ComplianceReferralSerializer(many=True, read_only=True)
     is_referee = serializers.SerializerMethodField(read_only=True)
+    gross_turnover_required = serializers.BooleanField(read_only=True)
+    gross_turnover = serializers.DecimalField(
+        allow_null=True, max_digits=8, decimal_places=2, read_only=True
+    )
 
     class Meta:
         model = Compliance
@@ -162,6 +166,8 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
             "referrals",
             "latest_referrals",
             "approval_type",
+            "gross_turnover_required",
+            "gross_turnover",
         ]
         datatables_always_serialize = [
             "id",

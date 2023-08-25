@@ -151,6 +151,33 @@
                                     </div>
                                 </div>
                             </div>
+                            <div
+                                v-if="compliance.gross_turnover_required"
+                                class="row mb-3"
+                            >
+                                <label
+                                    for="gross_turnover"
+                                    class="col-sm-2 col-form-label"
+                                    >Gross Turnover</label
+                                >
+                                <div class="col-sm-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input
+                                            id="details"
+                                            v-model="compliance.gross_turnover"
+                                            type="number"
+                                            class="form-control"
+                                            name="gross_turnover"
+                                            required
+                                        />
+                                        <div class="invalid-feedback">
+                                            Please provide the gross turnover
+                                            for the period.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div v-if="hasDocuments" class="row mb-3">
                                 <label class="col-form-label col-sm-2"
                                     >Documents:</label
