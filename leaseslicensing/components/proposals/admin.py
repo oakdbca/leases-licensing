@@ -69,6 +69,7 @@ class ProposalStandardRequirementAdmin(admin.ModelAdmin):
         "obsolete",
         "application_type",
         "participant_number_required",
+        "gross_turnover_required",
         "default",
     ]
 

@@ -120,6 +120,9 @@ class Compliance(LicensingModelVersioned):
     submitter = models.IntegerField(null=True)  # EmailUserRO
     reminder_sent = models.BooleanField(default=False)
     post_reminder_sent = models.BooleanField(default=False)
+    gross_turnover = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True
+    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -226,6 +229,12 @@ class Compliance(LicensingModelVersioned):
             return self.submitter_emailuser.email
         logger.warn(f"Submitter email not found for compliance {self.id}")
         return None
+
+    @property
+    def requires_gross_turnover(self):
+        if self.requirement.standard_requirement:
+            return self.requirement.standard_requirement.requires_gross_turnover
+        return False
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
