@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from ledger_api_client.ledger_models import Invoice
 
 from leaseslicensing.components.compliances.email import (
     send_amendment_email_notification,
@@ -121,9 +120,6 @@ class Compliance(LicensingModelVersioned):
     submitter = models.IntegerField(null=True)  # EmailUserRO
     reminder_sent = models.BooleanField(default=False)
     post_reminder_sent = models.BooleanField(default=False)
-    fee_invoice_reference = models.CharField(
-        max_length=50, null=True, blank=True, default=""
-    )
 
     class Meta:
         app_label = "leaseslicensing"
@@ -202,18 +198,6 @@ class Compliance(LicensingModelVersioned):
         ):
             return True
         return False
-
-    @property
-    def fee_paid(self):
-        return True if self.fee_invoice_reference else False
-
-    @property
-    def fee_amount(self):
-        return (
-            Invoice.objects.get(reference=self.fee_invoice_reference).amount
-            if self.fee_paid
-            else None
-        )
 
     @property
     def application_type(self):

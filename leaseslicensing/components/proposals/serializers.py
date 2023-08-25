@@ -1517,9 +1517,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
             email_user = retrieve_email_user(user)
             return f"{email_user.first_name} {email_user.last_name}"
 
-    # def get_fee_invoice_url(self,obj):
-    #     return '/cols/payments/invoice-pdf/{}'.format(obj.fee_invoice_reference) if obj.fee_paid else None
-
 
 class ProposalUserActionSerializer(serializers.ModelSerializer):
     who = serializers.SerializerMethodField()
