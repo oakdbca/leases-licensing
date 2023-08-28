@@ -1,0 +1,9 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+            A new Compliance: {{ compliance.reference }}  with audited financial statement document(s) has been submitted and is ready for assessment.
+
+            You can access this Compliance using the following link:
+
+            {{url}}
+{%  endblock %}
