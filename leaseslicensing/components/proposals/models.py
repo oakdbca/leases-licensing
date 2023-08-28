@@ -3827,9 +3827,11 @@ class AmendmentRequest(ProposalRequest):
                 ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
             )
             # Create a log entry for the organisation
-            self.log_user_action(
-                ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
-            )
+            if proposal.org_applicant:
+                proposal.org_applicant.log_user_action(
+                    ProposalUserAction.ACTION_REQUESTED_AMENDMENT.format(proposal.id),
+                    request,
+                )
 
             # send email
             send_amendment_email_notification(self, request, self.proposal)
@@ -3927,29 +3929,13 @@ class ProposalUserAction(UserAction):
     ACTION_EXPIRED_APPROVAL_ = "Expire Approval for proposal {}"
     ACTION_DISCARD_PROPOSAL = "Discard application {}"
     ACTION_APPROVAL_LEVEL_DOCUMENT = "Assign Approval level document {}"
-    # T-Class licence
-    ACTION_LINK_PARK = "Link park {} to application {}"
-    ACTION_UNLINK_PARK = "Unlink park {} from application {}"
-    ACTION_LINK_ACCESS = "Link access {} to park {}"
-    ACTION_UNLINK_ACCESS = "Unlink access {} from park {}"
-    ACTION_LINK_ACTIVITY = "Link activity {} to park {}"
-    ACTION_UNLINK_ACTIVITY = "Unlink activity {} from park {}"
-    ACTION_LINK_ACTIVITY_SECTION = "Link activity {} to section {} of trail {}"
-    ACTION_UNLINK_ACTIVITY_SECTION = "Unlink activity {} from section {} of trail {}"
-    ACTION_LINK_ACTIVITY_ZONE = "Link activity {} to zone {} of park {}"
-    ACTION_UNLINK_ACTIVITY_ZONE = "Unlink activity {} from zone {} of park {}"
-    ACTION_LINK_TRAIL = "Link trail {} to application {}"
-    ACTION_UNLINK_TRAIL = "Unlink trail {} from application {}"
-    ACTION_LINK_SECTION = "Link section {} to trail {}"
-    ACTION_UNLINK_SECTION = "Unlink section {} from trail {}"
-    ACTION_LINK_ZONE = "Link zone {} to park {}"
-    ACTION_UNLINK_ZONE = "Unlink zone {} from park {}"
-    SEND_TO_DISTRICTS = "Send Proposal {} to district assessors"
+
     # Assessors
     ACTION_SAVE_ASSESSMENT_ = "Save assessment {}"
     ACTION_CONCLUDE_ASSESSMENT_ = "Conclude assessment {}"
     ACTION_PROPOSED_APPROVAL = "Application {} has been proposed for approval"
     ACTION_PROPOSED_DECLINE = "Application {} has been proposed for decline"
+    ACTION_REQUESTED_AMENDMENT = "Amendment requested for Application: {}"
 
     # Referrals
     ACTION_SEND_REFERRAL_TO = "Send referral {} for application {} to {}"
@@ -3976,53 +3962,7 @@ class ProposalUserAction(UserAction):
     ACTION_SURRENDER_APPROVAL = "Surrender licence for application {}"
     ACTION_RENEW_PROPOSAL = "Create Renewal application for application {}"
     ACTION_AMEND_PROPOSAL = "Create Amendment application for application {}"
-    # Vehicle
-    ACTION_CREATE_VEHICLE = "Create Vehicle {}"
-    ACTION_EDIT_VEHICLE = "Edit Vehicle {}"
-    # Vessel
-    ACTION_CREATE_VESSEL = "Create Vessel {}"
-    ACTION_EDIT_VESSEL = "Edit Vessel {}"
-    ACTION_PUT_ONHOLD = "Put Application On-hold {}"
-    ACTION_REMOVE_ONHOLD = "Remove Application On-hold {}"
-    ACTION_WITH_QA_OFFICER = "Send Application QA Officer {}"
     ACTION_QA_OFFICER_COMPLETED = "QA Officer Assessment Completed {}"
-
-    # Filming
-    ACTION_CREATE_FILMING_PARK = "Create Filming Park {}"
-    ACTION_EDIT_FILMING_PARK = "Edit Filming Park {}"
-    ACTION_ASSIGN_TO_DISTRICT_APPROVER = (
-        "Assign District application {} of application {} to {} as the approver"
-    )
-    ACTION_ASSIGN_TO_DISTRICT_ASSESSOR = (
-        "Assign District application {} of application {} to {} as the assessor"
-    )
-    ACTION_UNASSIGN_DISTRICT_ASSESSOR = (
-        "Unassign assessor from District application {} of application {}"
-    )
-    ACTION_UNASSIGN_DISTRICT_APPROVER = (
-        "Unassign approver from District application {} of application {}"
-    )
-    ACTION_BACK_TO_PROCESSING_DISTRICT = (
-        "Back to processing for district application {} of application {}"
-    )
-    ACTION_ENTER_REQUIREMENTS_DISTRICT = (
-        "Enter Requirements for district application {} of application {}"
-    )
-    ACTION_DISTRICT_PROPOSED_APPROVAL = (
-        "District application {} of application {} has been proposed for approval"
-    )
-    ACTION_DISTRICT_PROPOSED_DECLINE = (
-        "District application {} of application {} has been proposed for decline"
-    )
-    ACTION_DISTRICT_DECLINE = (
-        "District application {} of application {} has been declined"
-    )
-    ACTION_UPDATE_APPROVAL_DISTRICT = (
-        "Update Licence by district application {} of application {}"
-    )
-    ACTION_ISSUE_APPROVAL_DISTRICT = (
-        "Issue Licence by district application {} of application {}"
-    )
 
     # monthly invoicing by cron
     ACTION_SEND_BPAY_INVOICE = "Send BPAY invoice {} for application {} to {}"
