@@ -562,7 +562,6 @@ class CompetitiveProcessLogEntry(CommunicationsLogEntry):
 
 class CompetitiveProcessUserAction(UserAction):
     ACTION_CREATE_CUSTOMER_ = "Create customer {}"
-    ACTION_LINK_PARK = "Link park {} to application {}"
     ACTION_ASSIGN_TO = "Assign to {}"
     ACTION_UNASSIGN = "Unassign"
 
