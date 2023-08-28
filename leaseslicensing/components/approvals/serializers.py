@@ -2,6 +2,8 @@ import logging
 
 from django.conf import settings
 from django.utils import timezone
+from django.db.models import Q
+from django.urls import reverse
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
@@ -98,7 +100,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
     current_proposal_processing_status = serializers.CharField(
         source="current_proposal.processing_status", read_only=True
     )
-    approval_type = serializers.CharField(source="approval_type.name", read_only=True)
+    approval_type = serializers.CharField(
+        source="approval_type.name", allow_null=True, read_only=True
+    )
     gis_data = serializers.SerializerMethodField(read_only=True)
     geometry_objs = serializers.SerializerMethodField(read_only=True)
     approved_by = serializers.SerializerMethodField()
@@ -110,7 +114,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "linked_applications",
             "licence_document",
-            "replaced_by",
+            "current_proposal",
             "current_proposal_processing_status",
             "tenure",
             "renewal_notification_sent_to_holder",
@@ -177,6 +181,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
+            "current_proposal",  # current proposal id is (at least) needed for renewal
             "current_proposal_processing_status",
             "renewal_notification_sent_to_holder",
             "application_type",
@@ -280,9 +285,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return geometry_data
 
     def get_approved_by(self, obj):
-        approved_by_id = obj.current_proposal.proposed_issuance_approval.get(
-            "approved_by", None
+        proposed_issuance_approval = (
+            obj.current_proposal.proposed_issuance_approval or {}
         )
+        approved_by_id = proposed_issuance_approval.get("approved_by", None)
         if not approved_by_id:
             return "Approver not assigned"
         user = EmailUser.objects.get(id=approved_by_id)
@@ -328,13 +334,18 @@ class ApprovalLogEntrySerializer(CommunicationLogEntrySerializer):
 
 class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
     history_date = serializers.SerializerMethodField()
-    history_document_url = serializers.SerializerMethodField()
+    url = serializers.SerializerMethodField()
+    filename = serializers.CharField()
+    reason = serializers.CharField(source="get_reason_display", read_only=True)
 
     class Meta:
         model = ApprovalDocument
         fields = (
+            "id",
             "history_date",
-            "history_document_url",
+            "url",
+            "filename",
+            "reason",
         )
 
     def get_history_date(self, obj):
@@ -343,10 +354,134 @@ class ApprovalDocumentHistorySerializer(serializers.ModelSerializer):
 
         return history_date
 
-    def get_history_document_url(self, obj):
-        # Todo: Change to secure file / document url
-        url = obj._file.url
-        return url
+    def get_url(self, obj):
+        revision_id = self.context.get("revision_id", None)
+        if not obj or not obj._file:
+            return None
+        return get_secure_file_url(obj, "_file", revision_id=revision_id)
+
+    def get_filename(self, obj):
+        if not obj or not obj._file:
+            return None
+        return obj.filename
+
+
+class ApprovalHistorySerializer(serializers.ModelSerializer):
+    revision_id = serializers.SerializerMethodField()
+    lodgement_number = serializers.SerializerMethodField()
+    licence_document = serializers.SerializerMethodField()
+    sign_off_sheet = serializers.SerializerMethodField()
+    cover_letter = serializers.SerializerMethodField()
+    application = serializers.SerializerMethodField()
+    approval_type = serializers.SerializerMethodField()
+    sticker_numbers = serializers.SerializerMethodField()
+    holder = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+    start_date_str = serializers.SerializerMethodField()
+    expiry_date_str = serializers.SerializerMethodField()
+    reason = serializers.SerializerMethodField()
+    application_detail_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Approval
+        fields = (
+            "id",
+            "revision_id",
+            "lodgement_number",
+            "licence_document",
+            "sign_off_sheet",
+            "cover_letter",
+            "application",
+            "approval_type",
+            "sticker_numbers",
+            "holder",
+            "status",
+            "start_date_str",
+            "expiry_date_str",
+            "reason",
+            "application_detail_url",
+        )
+
+    def get_revision_id(self, obj):
+        return obj.revision_id
+
+    def get_lodgement_number(self, obj):
+        return f"{obj.lodgement_number}-{obj.lodgement_sequence}"
+
+    def get_licence_document(self, obj):
+        try:
+            document = obj.licence_document
+        except ApprovalDocument.DoesNotExist:
+            return None
+        else:
+            if not document or not document._file:
+                return None
+            return ApprovalDocumentHistorySerializer(
+                document, context={"revision_id": obj.revision_id}
+            ).data
+
+    def get_sign_off_sheet(self, obj):
+        try:
+            document = obj.sign_off_sheet
+        except ApprovalDocument.DoesNotExist:
+            return None
+        else:
+            if not document or not document._file:
+                return None
+            return ApprovalDocumentHistorySerializer(
+                document, context={"revision_id": obj.revision_id}
+            ).data
+
+    def get_cover_letter(self, obj):
+        try:
+            document = obj.cover_letter_document
+        except ApprovalDocument.DoesNotExist:
+            return None
+        else:
+            if not document or not document._file:
+                return None
+            return ApprovalDocumentHistorySerializer(
+                document, context={"revision_id": obj.revision_id}
+            ).data
+
+    def get_application(self, obj):
+        return obj.current_proposal.lodgement_number
+
+    def get_approval_type(self, obj):
+        return ApprovalTypeSerializer(obj.approval_type).data
+        # return obj.approval_type
+        # return obj.current_proposal.application_type.name_display
+
+    def get_sticker_numbers(self, obj):
+        return "(todo) sticker_numbers"
+
+    def get_holder(self, obj):
+        return obj.holder
+
+    def get_status(self, obj):
+        return obj.get_status_display()
+
+    def get_start_date_str(self, obj):
+        return obj.start_date.strftime("%d/%m/%Y")
+
+    def get_expiry_date_str(self, obj):
+        return obj.expiry_date.strftime("%d/%m/%Y")
+
+    def get_reason(self, obj):
+        if obj.status == Approval.APPROVAL_STATUS_CURRENT:
+            # For current licenses return the reason of the last change to the approval document
+            return (
+                obj.licence_document.get_reason_display()
+                if obj.licence_document
+                else ""
+            )
+        # Else (Cancel, Surrender, Suspend) return the status of the approval
+        return obj.get_status_display()
+
+    def get_application_detail_url(self, obj):
+        return reverse(
+            "internal-proposal-detail", kwargs={"pk": obj.current_proposal.id}
+        )
 
 
 class ApprovalTypeSerializer(serializers.ModelSerializer):

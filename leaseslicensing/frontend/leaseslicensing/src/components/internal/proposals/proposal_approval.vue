@@ -77,7 +77,7 @@
                         ? proposal.submitter.email
                         : ''
                 "
-                :applicant_email="proposal.applicant"
+                :applicant_email="proposal.applicant_obj.email"
                 :proposed-approval-key="proposedApprovalKey"
                 :proposed-approval-state="proposedApprovalState"
                 :proposal-is-approved="displayApprovedMessage"
@@ -98,15 +98,13 @@
             <ProposedApprovalDocuments
                 v-if="proposal"
                 ref="proposed_issuance_documents"
+                :key="selectedApprovalTypeId"
                 :proposal="proposal"
-                :processing_status="proposal.processing_status"
                 :proposal-id="proposal.id"
-                :selected-document-types="
-                    proposal.proposed_issuance_approval
-                        ? proposal.proposed_issuance_approval
-                              .selected_document_types
-                        : []
-                "
+                :processing_status="proposal.processing_status"
+                :approval-types="approvalTypes"
+                :proposal_id="proposal.id"
+                :selected-approval-type-id="selectedApprovalTypeId"
                 :readonly="true"
             />
         </FormSection>
@@ -134,7 +132,7 @@
     </div>
 </template>
 <script>
-import { api_endpoints, helpers } from '@/utils/hooks';
+import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import { constants } from '@/utils/hooks';
 import ProposedIssuanceForm from '@/components/internal/proposals/proposed_issuance_form.vue';
 import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue';
@@ -175,6 +173,8 @@ export default {
             proposedLevel: 'proposal-level-' + vm._.uid,
             uploadedFile: null,
             component_site_selection_key: '',
+            approvalTypes: [],
+            selectedApprovalTypeId: null,
         };
     },
     computed: {
@@ -385,6 +385,19 @@ export default {
             return decision_label;
         },
     },
+    watch: {},
+    created: function () {
+        let vm = this;
+        let initialisers = [utils.fetchApprovalTypes()];
+        Promise.all(initialisers).then((data) => {
+            for (let approvalType of data[0]) {
+                vm.approvalTypes.push(approvalType);
+            }
+            vm.selectedApprovalTypeId =
+                vm.proposal.proposed_issuance_approval.approval_type;
+        });
+    },
+    mounted: function () {},
     methods: {
         readFile: function () {
             let vm = this;

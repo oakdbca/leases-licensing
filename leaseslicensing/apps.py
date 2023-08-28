@@ -55,7 +55,7 @@ class LeasesLicensingConfig(AppConfig):
                 follow=[
                     "licence_document",
                     "cover_letter_document",
-                    "replaced_by",
+                    "sign_off_sheet",
                     "current_proposal",
                     "renewal_document",
                 ],
@@ -63,7 +63,7 @@ class LeasesLicensingConfig(AppConfig):
             reversion.register(ApprovalType, follow=["approvaltypedocumenttypes"])
             reversion.register(ApprovalTypeDocumentType)
             reversion.register(ApprovalTypeDocumentTypeOnApprovalType)
-            reversion.register(ApprovalDocument)
+            reversion.register(ApprovalDocument, follow=["approval"])
 
             # proposal
             reversion.register(ProposalType)

@@ -130,6 +130,7 @@ export default {
             required: false,
         },
     },
+    emits: ['update-parent', 'update-temp-doc-coll-id'],
     data: function () {
         return {
             show_spinner: false,

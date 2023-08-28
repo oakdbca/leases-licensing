@@ -1,4 +1,5 @@
 import copy
+import datetime
 import json
 import logging
 import subprocess
@@ -92,6 +93,7 @@ from leaseslicensing.settings import (
     GROUP_NAME_ASSESSOR,
     PROPOSAL_TYPE_AMENDMENT,
     PROPOSAL_TYPE_RENEWAL,
+    PROPOSAL_TYPE_NEW,
 )
 
 logger = logging.getLogger(__name__)
@@ -1094,7 +1096,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         default=REVIEW_STATUS_CHOICES[0][0],
     )
     approval = models.ForeignKey(
-        "leaseslicensing.Approval", null=True, blank=True, on_delete=models.SET_NULL
+        "leaseslicensing.Approval",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="proposals",
     )
     previous_application = models.ForeignKey(
         "self", blank=True, null=True, on_delete=models.SET_NULL
@@ -2098,7 +2104,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         )
                 self.processing_status = status
                 self.save()
-                if status == "with_assessor_conditions":
+                # Only add standard requirements if no requirements exist so far
+                if (
+                    status == "with_assessor_conditions"
+                    and len(self.requirements.all()) == 0
+                ):
                     self.add_default_requirements()
 
                 # Lock the proposal geometries associated with this proposal and owned by the current user
@@ -2454,7 +2464,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             if mandatory_doc_errors:
                 raise serializers.ValidationError(mandatory_doc_errors)
 
-        if self.processing_status == "with_approver":
+        if self.processing_status in [
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+        ]:
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+            # Add date of approval and the approver to `proposed_issuance_approval` dictionary
+            self.proposed_issuance_approval["assessed_on"] = timezone.now().timestamp()
+            self.proposed_issuance_approval["assessed_by"] = request.user.id
+
+        if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
             # Add date of approval and the approver to `proposed_issuance_approval` dictionary
             self.proposed_issuance_approval["approved_on"] = timezone.now().timestamp()
             self.proposed_issuance_approval["approved_by"] = request.user.id
@@ -2505,189 +2524,246 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 logger.error(e)
                 raise e
 
-    def preview_approval(self, request, details):
-        # I don't think we need this now that approvals are uploaded from hard copy scans?
-        pass
+    def preview_document(self, request, details):
+        from leaseslicensing.components.approvals.document import (
+            ApprovalDocumentGenerator,
+        )
 
+        document_generator = ApprovalDocumentGenerator()
+        try:
+            return document_generator.preview_approval_document()
+        except NotImplementedError as e:
+            raise e
+
+    @transaction.atomic()
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
+        from leaseslicensing.components.approvals.models import ApprovalDocument
+        from leaseslicensing.components.approvals.models import ApprovalType
 
-        with transaction.atomic():
-            try:
-                self.proposed_decline_status = False
+        try:
+            self.proposed_decline_status = False
 
-                record_management_number = self.proposed_issuance_approval.get(
-                    "record_management_number", None
+            record_management_number = self.proposed_issuance_approval.get(
+                "record_management_number", None
+            )
+
+            if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT:
+                # for 'Awaiting Payment' approval.
+                # External/Internal user fires this method after full payment via Make/Record Payment
+                pass
+            else:
+                if not self.can_assess(request.user):
+
+                    raise exceptions.ProposalNotAuthorized()
+                if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
+                    raise ValidationError(
+                        "You cannot issue the approval if it is not with an approver"
+                    )
+                if not self.applicant_address:
+                    raise ValidationError(
+                        "The applicant needs to have set their postal address before approving this proposal."
+                    )
+
+            self.store_proposed_approval_data(request, details)
+
+            # Log proposal action
+            self.log_user_action(
+                ProposalUserAction.ACTION_ISSUE_APPROVAL_.format(self.id), request
+            )
+
+            checking_proposal = self
+
+            proposal_type_comment_names = {t1: t2 for t1, t2 in settings.PROPOSAL_TYPES}
+
+            if (
+                self.proposal_type.code == PROPOSAL_TYPE_RENEWAL
+                and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+            ):
+                # Lease License (Renewal)
+                if self.previous_application.approval.id != self.approval.id:
+                    raise ValidationError(
+                        "The previous application's approval does not match the current approval."
+                    )
+
+                # if self.previous_application:
+                start_date = checking_proposal.proposed_issuance_approval.get(
+                    "start_date", None
+                )
+                expiry_date = checking_proposal.proposed_issuance_approval.get(
+                    "expiry_date", None
+                )
+                approval_type = ApprovalType.objects.get(id=details["approval_type"])
+
+                approval, created = Approval.objects.update_or_create(
+                    current_proposal=self.approval.current_proposal,
+                    defaults={
+                        "expiry_date": datetime.datetime.strptime(
+                            expiry_date, "%Y-%m-%d"
+                        ).date(),
+                        "start_date": datetime.datetime.strptime(
+                            start_date, "%Y-%m-%d"
+                        ).date(),
+                        "status": Approval.APPROVAL_STATUS_CURRENT,
+                        "current_proposal": self,
+                        "renewal_review_notification_sent_to_assessors": False,
+                        "approval_type": approval_type,
+                    },
+                )
+                # Update the approval documents
+                self.generate_license_documents(
+                    approval, reason=ApprovalDocument.REASON_RENEWED
+                )
+                approval.save(
+                    version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]}"
+                )
+                # TODO: Do compliances need to be created again for renewed approvals?
+                self.generate_compliances(approval, request)
+                # TODO: Do invoicing details need to be created again for renewed approvals?
+                self.generate_invoicing_details()
+                self.processing_status = (
+                    Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                 )
 
-                # if (self.processing_status==Proposal.PROCESSING_STATUS_AWAITING_PAYMENT
-                # and self.fee_paid) or (self.proposal_type=='amendment'):
-                if self.proposal_type == "amendment":
-                    # for 'Awaiting Payment' approval.
-                    # External/Internal user fires this method after full payment via Make/Record Payment
-                    pass
-                else:
-                    if not self.can_assess(request.user):
-                        raise exceptions.ProposalNotAuthorized()
-                    if self.processing_status != "with_approver":
-                        raise ValidationError(
-                            "You cannot issue the approval if it is not with an approver"
-                        )
-                    # if not self.applicant.organisation.postal_address:
-                    # TODO: add this check after ledger forms are available
-                    # if not self.applicant_address:
-                    #   raise ValidationError('The applicant needs to have set their postal address
-                    # before approving this proposal.')
-
-                self.store_proposed_approval_data(request, details)
-
-                # self.processing_status = "approved"
-
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_ISSUE_APPROVAL_.format(self.id), request
+                self.approved_by = request.user.id
+                # Send notification email to applicant
+                send_proposal_approval_email_notification(self, request)
+                self.save(
+                    version_comment=f"Lease License Approval: {self.approval.lodgement_number} ({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
                 )
-                # Log entry for organisation
-                # applicant_field=getattr(self, self.applicant_field)
-                # applicant_field.log_user_action(ProposalUserAction.ACTION_ISSUE_APPROVAL_.format(self.id),request)
 
-                # if self.processing_status == self.PROCESSING_STATUS_APPROVED:
-                # TODO if it is an ammendment proposal then check appropriately
-                checking_proposal = self
+            elif (
+                self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
+                and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+            ):
+                # Lease License (Amendment)
+                if self.previous_application:
+                    previous_approval = self.previous_application.approval
+                    approval, created = Approval.objects.update_or_create(
+                        current_proposal=checking_proposal,
+                        defaults={
+                            "issue_date": timezone.now(),
+                            "expiry_date": timezone.now().date()
+                            + relativedelta(years=1),
+                            "start_date": timezone.now().date(),
+                            "lodgement_number": previous_approval.lodgement_number,
+                            "record_management_number": record_management_number,
+                        },
+                    )
+            elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
+                # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
+                # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                # When Registration_of_Interest
+                #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
+                #     or
+                #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
+                # When Lease Licence
+                #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+
                 if (
-                    self.proposal_type == "renewal"
-                    and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+                    self.application_type.name
+                    == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
                 ):
-                    if self.previous_application:
-                        previous_approval = self.previous_application.approval
-                        approval, created = Approval.objects.update_or_create(
-                            current_proposal=checking_proposal,
-                            defaults={
-                                "issue_date": timezone.now(),
-                                "expiry_date": timezone.now().date()
-                                + relativedelta(years=1),
-                                "start_date": timezone.now().date(),
-                                "lodgement_number": previous_approval.lodgement_number,
-                                "record_management_number": record_management_number,
-                            },
-                        )
-                        if created:
-                            previous_approval.replaced_by = approval
-                            previous_approval.save()
-
-                elif (
-                    self.proposal_type == "amendment"
-                    and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
-                ):
-                    if self.previous_application:
-                        previous_approval = self.previous_application.approval
-                        approval, created = Approval.objects.update_or_create(
-                            current_proposal=checking_proposal,
-                            defaults={
-                                "issue_date": timezone.now(),
-                                "expiry_date": timezone.now().date()
-                                + relativedelta(years=1),
-                                "start_date": timezone.now().date(),
-                                "lodgement_number": previous_approval.lodgement_number,
-                                "record_management_number": record_management_number,
-                            },
-                        )
-                        if created:
-                            previous_approval.replaced_by = approval
-                            previous_approval.save()
-                else:
-                    # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
-                    # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
-                    # When Registration_of_Interest
-                    #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
-                    #     or
-                    #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
-                    # When Lease Licence
-                    #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
-
+                    # Registration of Interest (New)
                     if (
-                        self.application_type.name
-                        == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
+                        self.proposed_issuance_approval.get("decision")
+                        == "approve_lease_licence"
+                        and not self.generated_proposal
                     ):
-                        # Registration of interest
-                        if (
-                            self.proposed_issuance_approval.get("decision")
-                            == "approve_lease_licence"
-                            and not self.generated_proposal
-                        ):
-                            lease_licence = (
-                                self.create_lease_licence_from_registration_of_interest()
-                            )
-                            self.generated_proposal = lease_licence
-                            self.processing_status = (
-                                Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
-                            )
-                        elif (
-                            self.proposed_issuance_approval.get("decision")
-                            == "approve_competitive_process"
-                            and not self.generated_proposal
-                        ):
-                            self.generate_competitive_process()
-                            # Email notify all Competitive Process assessors
-                            send_competitive_process_create_notification(
-                                request,
-                                self.generated_competitive_process,
-                                details=details,
-                            )
-                            self.processing_status = (
-                                Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
-                            )
-                    elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
-                        # lease_licence (new)
-                        approval, created = Approval.objects.update_or_create(
-                            current_proposal=checking_proposal,
-                            defaults={
-                                "issue_date": timezone.now(),
-                                "expiry_date": timezone.now().date()
-                                + relativedelta(years=1),
-                                "start_date": timezone.now().date(),
-                                "record_management_number": record_management_number,
-                            },
+                        lease_licence = (
+                            self.create_lease_licence_from_registration_of_interest()
                         )
-
-                        # Lease Licence (New)
-                        self.approval = approval
-                        self.save()
-                        self.generate_compliances(approval, request)
-                        self.generate_invoicing_details()
+                        self.generated_proposal = lease_licence
                         self.processing_status = (
-                            Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                            Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
                         )
-                        send_license_ready_for_invoicing_notification(self, request)
-
-                    # TODO: additional logic required for amendment, reissue, etc?
-
-                    # Generate approval (license) document
-                    # self.create_approval_pdf(request)
-                    # TODO: Send notification email to approver after the finance team
-                    # has created the invoice
-
-                    # Send notification email to applicant
-                    send_proposal_approval_email_notification(self, request)
-
-                    # FIXME: Cramming all the branched decisions and dependencies into this one
-                    # function (and the same api endpoint) makes the flow of logic really hard to
-                    # follow and easy to introduce errors. Can we refactor the nested if/else
-                    # statements into dedicated api endpoints and functions?
-                    if self.approval:
-                        self.save(
-                            version_comment=f"Final Approval: {self.approval.lodgement_number}"
+                    elif (
+                        self.proposed_issuance_approval.get("decision")
+                        == "approve_competitive_process"
+                        and not self.generated_proposal
+                    ):
+                        self.generate_competitive_process()
+                        # Email notify all Competitive Process assessors
+                        send_competitive_process_create_notification(
+                            request,
+                            self.generated_competitive_process,
+                            details=details,
                         )
-                        if self.approval.documents:
-                            self.approval.documents.all().update(can_delete=False)
-                    else:
-                        self.save(
-                            version_comment=f"Registration of Interest Approval: {self.lodgement_number}"
+                        self.processing_status = (
+                            Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
                         )
+                elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
+                    # Lease Licence (New)
+                    start_date = details.get("start_date", None)
+                    expiry_date = details.get("expiry_date", None)
+                    approval_type = ApprovalType.objects.get(
+                        id=details["approval_type"]
+                    )
 
-            except Exception as e:
-                logger.exception(e)
-                raise e
+                    approval, created = Approval.objects.update_or_create(
+                        current_proposal=checking_proposal,
+                        defaults={
+                            "issue_date": timezone.now(),
+                            "expiry_date": datetime.datetime.strptime(
+                                expiry_date, "%Y-%m-%d"
+                            ).date(),
+                            "start_date": datetime.datetime.strptime(
+                                start_date, "%Y-%m-%d"
+                            ).date(),
+                            "record_management_number": record_management_number,
+                            "approval_type": approval_type,
+                        },
+                    )
+                    # Generate the approval documents
+                    self.generate_license_documents(
+                        approval, reason=ApprovalDocument.REASON_NEW
+                    )
+
+                    approval.save(
+                        version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_NEW]}"
+                    )
+
+                    self.approval = approval
+                    self.save()
+                    self.generate_compliances(approval, request)
+                    self.generate_invoicing_details()
+                    # Update the current proposal's status
+                    self.processing_status = (
+                        Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                    )
+                    send_license_ready_for_invoicing_notification(self, request)
+
+                self.approved_by = request.user.id
+
+                # TODO: additional logic required for amendment, reissue, etc?
+
+                # Generate approval (license) document
+                # self.create_approval_pdf(request)
+                # TODO: Send notification email to approver after the finance team
+                # has created the invoice
+
+                # Send notification email to applicant
+                send_proposal_approval_email_notification(self, request)
+
+                if self.approval:
+                    self.save(
+                        version_comment=f"Lease License Approval: {self.approval.lodgement_number}"
+                    )
+                    if self.approval.documents:
+                        self.approval.documents.all().update(can_delete=False)
+                else:
+                    self.save(
+                        version_comment=f"Registration of Interest Approval: {self.lodgement_number}"
+                    )
+            else:
+                # Using this clause to raise an error when no other condition is met, so nothing is written to the database without prior checks.
+                raise ValidationError(
+                    "Proposal or Application type not supported for approval issuance"
+                )
+
+        except Exception as e:
+            logger.exception(e)
+            raise e
 
     @transaction.atomic
     def create_lease_licence_from_registration_of_interest(self):
@@ -2737,7 +2813,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         )
 
         # For amendment type of Proposal, check for copied requirements from previous proposal
-        if self.proposal_type == "amendment":
+        if self.proposal_type == PROPOSAL_TYPE_AMENDMENT:
             try:
                 for r in self.requirements.filter(copied_from__isnull=False):
                     cs = []
@@ -2914,9 +2990,36 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 proposal.proposal_type = ProposalType.objects.get(
                     code=PROPOSAL_TYPE_RENEWAL
                 )
-                proposal.submitter = request.user.id
-                proposal.previous_application = self
-                proposal.proposed_issuance_approval = None
+                # proposal.submitter = request.user.id # Should be set on submit
+                # proposal.previous_application = self # Is already set in fn clone_proposal_with_status_reset
+
+                # Pre-populate proposed approval issuance information from previous proposal
+                proposed_issuance = {
+                    k: v
+                    for k, v in previous_proposal.proposed_issuance_approval.items()
+                }
+                proposed_issuance["details"] = None  # Assessor needs to fill this in
+                proposed_issuance["approved_on"] = None  # Populated by the system
+                proposed_issuance["approved_by"] = None  # Populated by the system
+
+                time_format = "%Y-%m-%d"
+                original_start_date = datetime.datetime.strptime(
+                    proposed_issuance["start_date"], time_format
+                )
+                original_expiry_date = datetime.datetime.strptime(
+                    proposed_issuance["expiry_date"], time_format
+                )
+                proposed_issuance["start_date"] = (
+                    original_expiry_date + datetime.timedelta(days=1)
+                ).strftime(
+                    time_format
+                )  # Start date is the day after the expiry date of the original proposal
+                proposed_issuance["expiry_date"] = (
+                    original_expiry_date + (original_expiry_date - original_start_date)
+                ).strftime(
+                    time_format
+                )  # Expiry date is after the same duration as the original proposal
+                proposal.proposed_issuance_approval = proposed_issuance
 
                 # copy any proposal geometry from the previous proposal
                 for pg in previous_proposal.proposalgeometry.all():
@@ -3308,6 +3411,89 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def categories_list(self):
         return self.categories.values_list("category__name", flat=True)
+
+    def generate_license_documents(self, approval, **kwargs):
+        """
+        Creates or updates documents for the approval, based on the documents provided by the assessor
+        Args:
+            approval:
+                The approval object
+            reason: str (optional)
+                The reason for creating the document. Must be one of the values in ApprovalDocument.REASON_CHOICES.
+                Defaults to ApprovalDocument.REASON_NEW.
+        """
+
+        from leaseslicensing.components.approvals.models import ApprovalDocument
+        from leaseslicensing.components.approvals.document import (
+            ApprovalDocumentGenerator,
+        )
+        from leaseslicensing.components.approvals.models import (
+            ApprovalType,
+        )
+
+        reason = kwargs.get("reason", ApprovalDocument.REASON_NEW)
+
+        # Get the approval type object
+        approval_type = approval.approval_type
+        document_generator = ApprovalDocumentGenerator()
+
+        # Attach lease license documents as provided by the assessor to the approval
+        license_documents = []
+        cover_letter = []
+        sign_off_sheets = []
+        other_documents = []
+        for document in self.lease_licence_approval_documents.all():
+            if document.approval_type_id != approval_type.id:
+                logger.warn(
+                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} document `{document}` for Approval of type `{approval_type}`."
+                )
+                continue
+
+            if document.approval_type_document_type.is_license_document:
+                license_documents.append(document)
+            elif document.approval_type_document_type.is_cover_letter:
+                cover_letter.append(document)
+            elif document.approval_type_document_type.is_sign_off_sheet:
+                sign_off_sheets.append(document)
+            else:
+                other_documents.append(document)
+        if len(license_documents) != 1:
+            raise ValidationError(
+                f"There must be exactly one license document for {approval_type}, but found {len(license_documents)}."
+            )
+        if len(cover_letter) != 1:
+            raise ValidationError(
+                f"There must be exactly one cover letter for {approval_type}, but found {len(cover_letter)}."
+            )
+        if len(sign_off_sheets) != 1:
+            raise ValidationError(
+                f"There must be exactly one sign-off sheet for {approval_type}, but found {len(sign_off_sheets)}."
+            )
+
+        approval.licence_document = (
+            document_generator.create_or_update_approval_document(
+                approval,
+                filepath=license_documents[0]._file.path,
+                filename_prefix="Approval-",
+                reason=reason,
+            )
+        )
+        approval.cover_letter_document = (
+            document_generator.create_or_update_approval_document(
+                approval,
+                filepath=cover_letter[0]._file.path,
+                filename_prefix="CoverLetter-",
+                reason=reason,
+            )
+        )
+        approval.sign_off_sheet_document = (
+            document_generator.create_or_update_approval_document(
+                approval,
+                filepath=sign_off_sheets[0]._file.path,
+                filename_prefix="SignOffSheet-",
+                reason=reason,
+            )
+        )
 
 
 class ProposalApplicant(RevisionedMixin):
@@ -4949,7 +5135,7 @@ def clone_proposal_with_status_reset(original_proposal):
     application_type = ApplicationType.objects.get(name="lease_licence")
 
     try:
-        proposal = Proposal.objects.create(
+        cloned_proposal = Proposal.objects.create(
             application_type=application_type,
             ind_applicant=original_proposal.ind_applicant,
             org_applicant=original_proposal.org_applicant,
@@ -4968,8 +5154,8 @@ def clone_proposal_with_status_reset(original_proposal):
                 proposal=original_proposal
             )
             # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
-            original_applicant.copy_self_to_proposal(proposal)
-        return proposal
+            original_applicant.copy_self_to_proposal(cloned_proposal)
+        return cloned_proposal
 
 
 def clone_documents(proposal, original_proposal, media_prefix):

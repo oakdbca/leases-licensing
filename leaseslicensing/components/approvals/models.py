@@ -78,7 +78,20 @@ def update_approval_suspension_doc_filename(instance, filename):
     )
 
 
-class ApprovalDocument(Document):
+class ApprovalDocument(Document, RevisionedMixin):
+    REASON_NEW = "new"
+    REASON_AMENDED = "amended"
+    REASON_RENEWED = "renewed"
+    REASON_REISSUED = "reissued"
+    REASON_INVOICING_UPDATED = "invoicing_updated"
+    REASON_CHOICES = (
+        (REASON_NEW, "New"),
+        (REASON_AMENDED, "Amended"),
+        (REASON_RENEWED, "Renewed"),
+        (REASON_REISSUED, "Reissued"),
+        (REASON_INVOICING_UPDATED, "Invoicing updated"),
+    )
+
     approval = models.ForeignKey(
         "Approval", related_name="documents", on_delete=models.CASCADE
     )
@@ -86,6 +99,7 @@ class ApprovalDocument(Document):
     can_delete = models.BooleanField(
         default=True
     )  # after initial submit prevent document from being deleted
+    reason = models.CharField(max_length=25, choices=REASON_CHOICES, default="new")
 
     def delete(self):
         if self.can_delete:
@@ -98,6 +112,10 @@ class ApprovalDocument(Document):
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.approval.user_has_object_permission(user_id)
+
+    @property
+    def approval_lodgement_sequence(self):
+        return self.approval.lodgement_sequence
 
 
 class Meta:
@@ -128,9 +146,27 @@ class ApprovalType(RevisionedMixin):
 
 class ApprovalTypeDocumentType(RevisionedMixin):
     name = models.CharField(max_length=200, unique=True)
+    # Whether this document type is the license document
+    is_license_document = models.BooleanField(default=False)
+    # Whether this document type is the cover letter
+    is_cover_letter = models.BooleanField(default=False)
+    # Whether this document type is the sign off sheet
+    is_sign_off_sheet = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"
+        # A document must be either-or or none
+        constraints = [
+            models.CheckConstraint(
+                check=Q(
+                    ~Q(is_license_document=True, is_cover_letter=True),
+                    ~Q(is_license_document=True, is_sign_off_sheet=True),
+                    ~Q(is_cover_letter=True, is_sign_off_sheet=True),
+                    _connector="AND",
+                ),
+                name="only_one_or_none_of_license_document_cover_letter_sign_off_sheet",
+            )
+        ]
 
     def __str__(self):
         return self.name
@@ -195,8 +231,12 @@ class Approval(LicensingModelVersioned):
         related_name="cover_letter_document",
         on_delete=models.SET_NULL,
     )
-    replaced_by = models.ForeignKey(
-        "self", blank=True, null=True, on_delete=models.SET_NULL
+    sign_off_sheet = models.ForeignKey(
+        ApprovalDocument,
+        blank=True,
+        null=True,
+        related_name="sign_off_sheet",
+        on_delete=models.SET_NULL,
     )
     current_proposal = models.ForeignKey(
         Proposal, related_name="approvals", null=True, on_delete=models.SET_NULL
@@ -234,6 +274,7 @@ class Approval(LicensingModelVersioned):
     )
     migrated = models.BooleanField(default=False)
     record_management_number = models.CharField(max_length=100, blank=True, null=True)
+    lodgement_sequence = models.IntegerField(blank=True, default=0)
 
     class Meta:
         app_label = "leaseslicensing"
@@ -584,7 +625,7 @@ class Approval(LicensingModelVersioned):
                     send_approval_cancel_email_notification(self)
             else:
                 self.set_to_cancel = True
-            self.save()
+            self.save(version_comment="status_change: Approval canceled")
             # Log proposal action
             self.log_user_action(
                 ApprovalUserAction.ACTION_CANCEL_APPROVAL.format(self.id), request
@@ -662,6 +703,9 @@ class Approval(LicensingModelVersioned):
                 self.suspension_details = {}
 
             self.status = "current"
+            self.renewal_review_notification_sent_to_assessors = (
+                False  # Should be able to renew again
+            )
             # self.suspension_details = {}
             self.save(version_comment="status_change: Approval reinstated")
             send_approval_reinstate_email_notification(self, request)

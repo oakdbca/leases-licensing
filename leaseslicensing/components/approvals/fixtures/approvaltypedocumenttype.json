@@ -3,35 +3,70 @@
         "model": "leaseslicensing.approvaltypedocumenttype",
         "pk": 1,
         "fields": {
-            "name": "License (97A)"
+            "name": "License (97A)",
+            "is_license_document": true,
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
         "model": "leaseslicensing.approvaltypedocumenttype",
         "pk": 2,
         "fields": {
-            "name": "License (101)"
+            "name": "License (101)",
+            "is_license_document": true,
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
         "model": "leaseslicensing.approvaltypedocumenttype",
         "pk": 3,
         "fields": {
-            "name": "Lease (97)"
+            "name": "Lease (97)",
+            "is_license_document": true,
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
         "model": "leaseslicensing.approvaltypedocumenttype",
         "pk": 4,
         "fields": {
-            "name": "Lease (100)"
+            "name": "Lease (100)",
+            "is_license_document": true,
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     },
     {
         "model": "leaseslicensing.approvaltypedocumenttype",
         "pk": 5,
         "fields": {
-            "name": "Sign-off sheet"
+            "name": "Sign-off sheet",
+            "is_license_document": false,
+            "is_cover_letter": false,
+            "is_sign_off_sheet": true
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 6,
+        "fields": {
+            "name": "Cover letter",
+            "is_license_document": false,
+            "is_cover_letter": true,
+            "is_sign_off_sheet": false
+        }
+    },
+    {
+        "model": "leaseslicensing.approvaltypedocumenttype",
+        "pk": 7,
+        "fields": {
+            "name": "Other",
+            "is_license_document": false,
+            "is_cover_letter": false,
+            "is_sign_off_sheet": false
         }
     }
 ]
