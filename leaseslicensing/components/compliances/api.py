@@ -309,6 +309,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             data = {
                 "text": request.data.get("detail"),
+                "gross_turnover": request.data.get("gross_turnover"),
             }
 
             serializer = SaveComplianceSerializer(instance, data=data)
