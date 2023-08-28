@@ -138,7 +138,7 @@ class BaseComplianceSerializer(serializers.ModelSerializer):
     is_referee = serializers.SerializerMethodField(read_only=True)
     gross_turnover_required = serializers.BooleanField(read_only=True)
     gross_turnover = serializers.DecimalField(
-        allow_null=True, max_digits=8, decimal_places=2, read_only=True
+        allow_null=True, max_digits=8, decimal_places=2
     )
 
     class Meta:
@@ -260,6 +260,7 @@ class SaveComplianceSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "text",
+            "gross_turnover",
             "num_participants",
         )
 
@@ -271,6 +272,7 @@ class AssessorSaveComplianceSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "text",
+            "gross_turnover",
             "num_participants",
         )
 
