@@ -169,6 +169,7 @@
                                             type="number"
                                             class="form-control"
                                             name="gross_turnover"
+                                            :disabled="isFinalised"
                                             required
                                         />
                                         <div class="invalid-feedback">
@@ -387,7 +388,7 @@
 </template>
 <script>
 import FormSection from '@/components/forms/section_toggle.vue';
-import { api_endpoints, helpers } from '@/utils/hooks';
+import { api_endpoints, constants, helpers } from '@/utils/hooks';
 import alert from '@vue-utils/alert.vue';
 
 export default {
@@ -413,7 +414,6 @@ export default {
             original_compliance: {},
             amendment_request: [],
             hasAmendmentRequest: false,
-            isFinalised: false,
             errors: false,
             errorString: '',
             pdBody: 'pdBody' + vm._uid,
@@ -438,8 +438,20 @@ export default {
         isDiscarded: function () {
             return (
                 this.compliance &&
-                this.compliance.customer_status == 'Discarded'
+                this.compliance.customer_status ==
+                    constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED
             );
+        },
+        hasAttachments: function () {
+            if (this.files.length == 0) {
+                return false;
+            }
+            for (let i = 0; i < this.files.length; i++) {
+                if (this.files[i].file && this.files[i].name) {
+                    return true;
+                }
+            }
+            return false;
         },
         hasDocuments: function () {
             return (
@@ -447,13 +459,16 @@ export default {
                 this.compliance.documents.length > 0
             );
         },
-    },
-    watch: {
         isFinalised: function () {
+            console.log(
+                constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID
+            );
             return (
                 this.compliance &&
-                (this.compliance.customer_status == 'Under Review' ||
-                    this.compliance.customer_status == 'Approved')
+                (this.compliance.customer_status ==
+                    constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID ||
+                    this.compliance.customer_status ==
+                        constants.COMPLIANCE_PROCESSING_STATUS.APPROVED.ID)
             );
         },
     },
@@ -536,7 +551,18 @@ export default {
             let vm = this;
             var form = document.getElementById('complianceForm');
 
-            console.log('validateForm');
+            if (
+                vm.compliance.gross_turnover_required &&
+                !vm.hasDocuments &&
+                !vm.hasAttachments
+            ) {
+                swal.fire({
+                    title: 'Audited Financial Statement Required',
+                    text: 'Please attach an audited finanacial statement for the period',
+                    icon: 'error',
+                });
+                return false;
+            }
 
             if (form.checkValidity()) {
                 vm.sendData(method, custom_action, exit_after);
@@ -556,6 +582,10 @@ export default {
                 this.errors = false;
                 let formData = new FormData();
                 formData.append('detail', this.compliance.text);
+                formData.append(
+                    'gross_turnover',
+                    this.compliance.gross_turnover
+                );
                 let numFiles = 0;
                 for (let i = 0; i < this.files.length; i++) {
                     if (this.files[i].file && this.files[i].name) {
