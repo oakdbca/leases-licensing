@@ -803,6 +803,7 @@ export default {
             return (
                 this.compliance &&
                 [
+                    constants.COMPLIANCE_PROCESSING_STATUS.DUE.ID,
                     constants.COMPLIANCE_PROCESSING_STATUS.APPROVED.ID,
                     constants.COMPLIANCE_PROCESSING_STATUS.DISCARDED.ID,
                 ].includes(this.compliance.processing_status)
