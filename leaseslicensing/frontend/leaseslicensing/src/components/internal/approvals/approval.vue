@@ -65,7 +65,7 @@
                                 <div class="mb-2">
                                     <button
                                         class="btn btn-primary btn-licensing"
-                                        @click="renewalRevew(true)"
+                                        @click="renewalReview(true)"
                                     >
                                         Allow Renewal
                                     </button>
@@ -73,7 +73,7 @@
                                 <div>
                                     <button
                                         class="btn btn-danger btn-licensing"
-                                        @click="renewalRevew(false)"
+                                        @click="renewalReview(false)"
                                     >
                                         Disallow Renewal
                                     </button>

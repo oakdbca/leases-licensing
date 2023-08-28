@@ -13,6 +13,8 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 from rest_framework_datatables.renderers import DatatablesRenderer
+from reversion.models import Version
+from reversion.errors import RevertError
 
 from leaseslicensing.components.approvals.models import (
     Approval,
@@ -22,6 +24,7 @@ from leaseslicensing.components.approvals.models import (
 from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
     ApprovalDocumentHistorySerializer,
+    ApprovalHistorySerializer,
     ApprovalLogEntrySerializer,
     ApprovalSerializer,
     ApprovalSurrenderSerializer,
@@ -38,6 +41,9 @@ from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
+from leaseslicensing.components.approvals.document import (
+    ApprovalDocumentGenerator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +54,7 @@ class GetApprovalTypesDict(views.APIView):
     ]
 
     def get(self, request, format=None):
+        document_generator = ApprovalDocumentGenerator()
         approval_types_dict = cache.get("approval_types_dict")
         if not approval_types_dict:
             approval_types_dict = [
@@ -60,6 +67,9 @@ class GetApprovalTypesDict(views.APIView):
                             "id": doc_type_link.approval_type_document_type.id,
                             "name": doc_type_link.approval_type_document_type.name,
                             "mandatory": doc_type_link.mandatory,
+                            "has_template": document_generator.has_template(
+                                t.name, doc_type_link.approval_type_document_type.name
+                            ),
                         }
                         # for doc_type in t.approvaltypedocumenttypes.all()
                         for doc_type_link in t.approvaltypedocumenttypeonapprovaltype_set.all()
@@ -549,11 +559,67 @@ class ApprovalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def approval_history(self, request, *args, **kwargs):
         instance = self.get_object()
-        approval_documents = ApprovalDocument.objects.filter(
-            approval__lodgement_number=instance.lodgement_number,
-            name__icontains="approval",
-        ).order_by("-uploaded_date")
-        serializer = ApprovalDocumentHistorySerializer(approval_documents, many=True)
+        if not instance.licence_document:
+            logger.warning("No license document found for approval {}".format(instance))
+            return Response({})
+
+        versions = Version.objects.get_for_object(instance)
+
+        first = versions.first()
+        if not first:
+            return Response({})
+
+        versions = versions.filter(
+            ~Q(revision__comment="")
+            # | Q(revision_id=first.revision_id)
+        ).order_by("-revision__date_created")
+
+        approvals = []  # List of history approvals to return
+        lodgement_sequences = (
+            []
+        )  # List to make sure there is only one approval (the most recent one) per lodgement sequence
+        for version in versions:
+            version_set = version.revision.version_set.all()
+
+            approval = None
+            documents = []
+            for vs in version_set:
+                try:
+                    obj_class = vs._object_version.object.__class__
+                except RevertError:
+                    logger.exception("Error reverting object version")
+                    continue
+                if obj_class == Approval:
+                    approval = vs._object_version.object
+                elif obj_class == ApprovalDocument:
+                    documents.append(vs._object_version.object)
+
+            if not approval or approval.lodgement_sequence in lodgement_sequences:
+                # Don't add to the history when there is no approval or when the lodgement sequence is already in the list
+                continue
+            lodgement_sequences.append(approval.lodgement_sequence)
+
+            for doc in documents:
+                if doc.id == approval.licence_document_id:
+                    approval.licence_document = doc
+                if doc.id == approval.cover_letter_document_id:
+                    approval.cover_letter_document = doc
+
+            approval.revision_id = version.revision_id
+
+            version_date = version.revision.date_created.strftime(
+                "%d/%m/%Y %I:%M:%S %p"
+            )
+            logger.info(
+                f"Adding approval {approval}-{approval.lodgement_sequence} from {version_date} to history table"
+            )
+            approvals.append(approval)
+        logger.info(
+            f"Returning Approval history: {', '.join([f'{approval}-{ls}' for ls in lodgement_sequences])}"
+        )
+        # Sort by lodgement sequence (don't trust the revision date)
+        approvals = sorted(approvals, key=lambda x: x.lodgement_sequence, reverse=True)
+        serializer = ApprovalHistorySerializer(approvals, many=True)
         return Response(serializer.data)
 
     @detail_route(

@@ -444,7 +444,7 @@ export default {
                 render: function (row, type, full) {
                     return full.approval_type;
                 },
-                name: 'approval_type__name', // FIXME: replace with application type model field
+                name: 'approval_type__name',
             };
         },
         columnSite: function () {

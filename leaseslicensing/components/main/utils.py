@@ -780,8 +780,10 @@ def save_groups_data(instance, groups_data, foreign_key_field=None):
     ).delete()
 
 
-def get_secure_file_url(instance, file_field_name):
+def get_secure_file_url(instance, file_field_name, revision_id=None):
     base_path = settings.SECURE_FILE_API_BASE_PATH
+    if revision_id:
+        return f"{base_path}{instance._meta.model.__name__}/{instance.id}/{file_field_name}/{revision_id}/"
     return (
         f"{base_path}{instance._meta.model.__name__}/{instance.id}/{file_field_name}/"
     )

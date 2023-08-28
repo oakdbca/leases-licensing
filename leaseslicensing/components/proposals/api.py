@@ -2030,6 +2030,22 @@ class ProposalViewSet(UserActionLoggingViewset):
         data["recordsTotal"] = queryset.count()
         return Response(data=data)
 
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    def preview_document(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            document = instance.preview_document(request, request.data)
+        except NotImplementedError as e:
+            e.args[0]
+            raise serializers.ValidationError(e.args[0])
+
+        return Response({})
+
 
 class ReferralViewSet(viewsets.ModelViewSet):
     # queryset = Referral.objects.all()

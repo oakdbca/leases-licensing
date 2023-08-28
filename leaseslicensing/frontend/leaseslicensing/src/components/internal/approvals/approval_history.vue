@@ -1,16 +1,28 @@
 <template lang="html">
     <div id="approvalHistory">
-        <modal transition="modal fade" @cancel="close()" :title="'History for Approval ' + approvalLodgementNumber"
-            :extraLarge="true" cancelText="Close" okText="">
+        <modal
+            transition="modal fade"
+            :title="'History for Approval ' + approvalLodgementNumber"
+            :extra-large="true"
+            cancel-text="Close"
+            ok-text=""
+            @cancel="close()"
+        >
             <div class="container-fluid">
                 <div class="row">
-                    <alert v-if="errorString" type="danger"><strong>{{ errorString }}</strong></alert>
+                    <alert v-if="errorString" type="danger"
+                        ><strong>{{ errorString }}</strong></alert
+                    >
                     <div class="col-sm-12">
                         <div class="form-group">
                             <div class="row">
                                 <div v-if="approvalId" class="col-lg-12">
-                                    <datatable ref="history_datatable" :id="datatable_id" :dtOptions="datatable_options"
-                                        :dtHeaders="datatable_headers" />
+                                    <datatable
+                                        :id="datatable_id"
+                                        ref="history_datatable"
+                                        :dt-options="datatable_options"
+                                        :dt-headers="datatable_headers"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -21,13 +33,14 @@
     </div>
 </template>
 <script>
-import modal from '@vue-utils/bootstrap-modal.vue'
-import alert from '@vue-utils/alert.vue'
-import { helpers, api_endpoints, constants } from "@/utils/hooks.js"
-import datatable from '@/utils/vue/datatable.vue'
+import modal from '@vue-utils/bootstrap-modal.vue';
+import alert from '@vue-utils/alert.vue';
+import { helpers, api_endpoints, constants, utils } from '@/utils/hooks.js';
+import datatable from '@/utils/vue/datatable.vue';
+import { v4 as uuid } from 'uuid';
 
 export default {
-    name: 'approvalHistory',
+    name: 'ApprovalHistory',
     components: {
         modal,
         alert,
@@ -44,143 +57,184 @@ export default {
         },
     },
     data: function () {
-        let vm = this;
         return {
-            datatable_id: 'history-datatable-' + vm._uid,
+            datatable_id: 'history-datatable-' + uuid(),
             approvalDetails: {
                 approvalLodgementNumber: null,
             },
             isModalOpen: false,
             messageDetails: '',
             ccEmail: '',
-            isModalOpen: false,
             validation_form: null,
             errorString: '',
             successString: '',
             success: false,
-        }
+        };
     },
     computed: {
         csrf_token: function () {
-            return helpers.getCookie('csrftoken')
+            return helpers.getCookie('csrftoken');
         },
         datatable_headers: function () {
-            return ['id', 'Number', 'Type', 'Holder', 'Application', 'Reason', 'Expiry Date', 'Document', 'Action']
+            return [
+                'id',
+                'Number',
+                'Type',
+                'Holder',
+                'Application',
+                'Reason',
+                'Expiry Date',
+                'Document',
+                'Letter',
+                // 'Action',
+            ];
         },
         column_id: function () {
             return {
                 // 1. ID
-                data: "id",
+                data: 'id',
                 orderable: false,
                 searchable: false,
                 visible: false,
-                'render': function (row, type, full) {
-                    return full.id
-                }
-            }
+                render: function (row, type, full) {
+                    return full.id;
+                },
+            };
         },
         column_lodgement_number: function () {
             return {
                 // 2. Lodgement Number
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
-                    return full.approval_lodgement_number
+                render: function (row, type, full) {
+                    return full.lodgement_number;
                 },
-            }
+            };
         },
         column_type: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
-                    return full.approval_type_description;
-                }
-            }
+                render: function (row, type, full) {
+                    return full.approval_type.name;
+                },
+            };
         },
         column_sticker_numbers: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
+                render: function (row, type, full) {
                     return full.sticker_numbers;
-                }
-            }
+                },
+            };
         },
         column_holder: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
+                render: function (row, type, full) {
                     return full.holder;
-                }
-            }
+                },
+            };
+        },
+        column_application: function () {
+            return {
+                data: 'id',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    return `<a href="${full.application_detail_url}" target="_blank">${full.application}</a>`;
+                },
+            };
         },
         column_approval_status: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
-                    return full.approval_status;
-                }
-            }
+                render: function (row, type, full) {
+                    return full.status;
+                },
+            };
         },
-        column_start_date: function () {
+        column_expiry_date: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
-                    return full.start_date_str
-                }
-            }
+                render: function (row, type, full) {
+                    return full.expiry_date_str;
+                },
+            };
         },
         column_reason: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
+                render: function (row, type, full) {
                     return full.reason;
-                }
-            }
+                },
+            };
         },
-        column_approval_letter: function () {
+        column_license_document: function () {
             return {
-                data: "id",
+                data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
-                'render': function (row, type, full) {
-                    return `<div><a href='${full.approval_letter}' target='_blank'><i style='color:red;' class='fa fa-file-pdf-o'></i></a></div>`;
-                }
-            }
+                render: function (row, type, full) {
+                    if (!full.licence_document) return '';
+                    let filename = full.licence_document.filename
+                        ? full.licence_document.filename
+                        : 'Approval.PDF';
+                    return `<div><a href='${full.licence_document.url}' target='_blank'><i style='color:red;' class='fa fa-file-pdf'></i>${filename}</a></div>`;
+                },
+            };
+        },
+        column_cover_letter: function () {
+            return {
+                data: 'id',
+                orderable: true,
+                searchable: true,
+                visible: true,
+                render: function (row, type, full) {
+                    if (!full.cover_letter) return '';
+                    let filename = full.cover_letter.filename
+                        ? full.cover_letter.filename
+                        : 'CoverLetter.PDF';
+                    return `<div><a href='${full.cover_letter.url}' target='_blank'><i style='color:red;' class='fa fa-file-pdf'></i>${filename}</a></div>`;
+                },
+            };
         },
         datatable_options: function () {
-            let vm = this
+            let vm = this;
             let columns = [
                 vm.column_id,
                 vm.column_lodgement_number,
                 vm.column_type,
-                vm.column_sticker_numbers,
+                // vm.column_sticker_numbers,
                 vm.column_holder,
-                vm.column_approval_status,
-                vm.column_start_date,
+                vm.column_application,
+                // vm.column_approval_status,
                 vm.column_reason,
-                vm.column_approval_letter,
-            ]
+                vm.column_expiry_date,
+                vm.column_license_document,
+                vm.column_cover_letter,
+            ];
 
             return {
                 autoWidth: false,
@@ -192,22 +246,25 @@ export default {
                 ordering: true,
                 order: [[0, 'desc']],
                 ajax: {
-                    "url": api_endpoints.lookupApprovalHistory(this.approvalId),
-                    "dataSrc": 'data',
+                    url: api_endpoints.lookupApprovalHistory(this.approvalId),
+                    dataSrc: 'data',
 
                     // adding extra GET params for Custom filtering
-                    "data": function (d) {
-                    }
+                    // eslint-disable-next-line no-unused-vars
+                    data: function (d) {},
                 },
                 dom: 'lBfrtip',
                 buttons: [],
                 columns: columns,
                 processing: true,
                 initComplete: function () {
-                    console.log('in initComplete')
+                    console.log('in initComplete');
                 },
-            }
-        }
+            };
+        },
+    },
+    created: function () {
+        this.fetchApprovalDetails();
     },
     methods: {
         close: function () {
@@ -216,14 +273,19 @@ export default {
             $('.has-error').removeClass('has-error');
         },
         fetchApprovalDetails: async function () {
-            const res = await fetch(api_endpoints.lookupApprovalDetails(this.approvalId));
-            if (res.ok) {
-                this.approvalDetails = Object.assign({}, res.body);
-            }
+            let vm = this;
+            let url = api_endpoints.lookupApprovalHistory(this.approvalId);
+            utils
+                .fetchUrl(url)
+                .then((data) => {
+                    vm.approvalDetails = Object.assign({}, data);
+                    console.log('Fetched approval details', vm.approvalDetails);
+                })
+                .catch((error) => {
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.log(`Error fetching approval details: ${error}`);
+                });
         },
     },
-    created: function () {
-        this.fetchApprovalDetails();
-    },
-}
+};
 </script>

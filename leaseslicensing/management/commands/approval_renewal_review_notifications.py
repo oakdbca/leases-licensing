@@ -33,7 +33,6 @@ class Command(BaseCommand):
         renewal_conditions = {
             "expiry_date__lte": expiry_notification_date,
             "renewal_review_notification_sent_to_assessors": False,
-            "replaced_by__isnull": True,
         }
         logger.info(f"Running command {__name__}")
         approvals = Approval.objects.filter(

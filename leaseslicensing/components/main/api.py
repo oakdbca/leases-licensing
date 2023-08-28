@@ -13,6 +13,8 @@ from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
+from reversion.models import Version
+from reversion.errors import RevertError
 
 from leaseslicensing import helpers
 from leaseslicensing.components.main.decorators import basic_exception_handler
@@ -257,15 +259,16 @@ class UserActionLoggingViewset(LicensingViewset):
 
 
 class SecureFileAPIView(views.APIView):
-    """Allows permissioned access to a file field on a model instance"""
+    """Allows permissioned and (optionally) versioned access to a file field on a model instance"""
 
     permission_classes = [IsInternalOrHasObjectDocumentsPermission]
 
     def get(self, request, *args, **kwargs):
-        model, instance_id, file_field_name = (
+        model, instance_id, file_field_name, revision_id = (
             kwargs["model"],
             kwargs["instance_id"],
             kwargs["file_field_name"],
+            kwargs.get("revision_id", None),
         )
         try:
             instance = apps.get_model(
@@ -273,6 +276,22 @@ class SecureFileAPIView(views.APIView):
             ).objects.get(id=instance_id)
         except ObjectDoesNotExist:
             raise Http404
+        else:
+            if revision_id:
+                versions = (
+                    Version.objects.get_for_object(instance)
+                    .filter(revision_id=revision_id)
+                    .order_by("-revision__date_created")
+                )
+
+                first = versions.first()
+                if not first:
+                    return FileResponse({})
+                try:
+                    instance = first._object_version.object
+                except RevertError:
+                    logger.exception("Error reverting object version")
+                    raise Http404
 
         self.check_object_permissions(request, instance)
 

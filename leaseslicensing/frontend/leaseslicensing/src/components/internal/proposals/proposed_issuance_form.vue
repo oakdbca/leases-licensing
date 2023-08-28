@@ -9,8 +9,10 @@
             >
                 <div class="row pt-2">
                     <VueAlert v-model:show="showError" type="danger"
-                        ><strong v-html="errorString"></strong
-                    ></VueAlert>
+                        ><!-- eslint-disable-next-line vue/no-v-html -->
+                        <strong v-html="errorString"></strong>
+                        <!--eslint-enable-->
+                    </VueAlert>
                     <div v-if="registrationOfInterest" class="col-sm-12">
                         <div class="row mb-3">
                             <label class="col-sm-3 col-form-label">{{
@@ -124,9 +126,23 @@
                             <div class="row mb-3">
                                 <label
                                     for="approvalType"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label text-nowrap"
                                     >Approval Type</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !assessedBy &&
+                                            !assessedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The approval type has been set to the approval type of the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <select
                                         ref="select_approvaltype"
@@ -152,9 +168,23 @@
                             <div class="row mb-3">
                                 <label
                                     for="start_date"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label"
                                     >Commencement</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !assessedBy &&
+                                            !assessedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The commencement date has been set to one day after the expiry date of the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <div
                                         ref="start_date"
@@ -182,9 +212,23 @@
                             <div class="row mb-3">
                                 <label
                                     for="due_date"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label"
                                     >Expiry</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !assessedBy &&
+                                            !assessedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The duration has been set to the same duration as the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <div
                                         ref="due_date"
@@ -222,7 +266,6 @@
                                         :key="uuid"
                                         v-model="approval.details"
                                         :proposal-data="proposedDecisionDetails"
-                                        placeholder_text="Add some details here"
                                         :can_view_richtext_src="true"
                                         :placeholder_text="
                                             selectedApprovalTypeDetailsPlaceholder
@@ -262,9 +305,24 @@
                             <div class="row mb-3">
                                 <label
                                     for="approval_cc"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-2 col-form-label text-nowrap"
                                     >CC Emails</label
                                 >
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            approval.cc_email &&
+                                            !assessedBy &&
+                                            !assessedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="Emails have been applied from the current approval."
+                                    ></i>
+                                </div>
                                 <div class="col-sm-9">
                                     <input
                                         ref="cc_email"
@@ -298,19 +356,36 @@
                                 :selected-approval-type-id="
                                     selectedApprovalTypeId
                                 "
-                                :readonly="false"
+                                :selected-document-types="
+                                    approval.selected_document_types
+                                "
+                                :readonly="withApprover"
                             />
                         </div>
                         <div>
                             <div class="row mb-3">
                                 <div class="col-sm-4">
                                     <label
-                                        class="form-label"
+                                        class="col-form-label text-nowrap"
                                         for="recordManagementNumber"
                                         >Record Management Number</label
                                     >
                                 </div>
-                                <div class="col-sm-8">
+                                <div class="col-sm-1 col-form-label">
+                                    <i
+                                        v-if="
+                                            isRenewal &&
+                                            !assessedBy &&
+                                            !assessedOn
+                                        "
+                                        class="alert-info fa-solid fa-circle-info"
+                                        data-color="info"
+                                        data-bs-toggle="tooltip"
+                                        data-bs-placement="right"
+                                        title="The Record Management Number has been applied from the current approval."
+                                    ></i>
+                                </div>
+                                <div class="col-sm-7">
                                     <input
                                         v-model="
                                             approval.record_management_number
@@ -318,6 +393,7 @@
                                         class="form-control"
                                         type="text"
                                         required
+                                        :readonly="readonly"
                                     />
                                     <div class="invalid-feedback">
                                         Please enter a record management number.
@@ -339,7 +415,9 @@
             </ul>
             <p v-if="can_preview"></p>
         </div>
+        <!-- eslint-disable-next-line vue/no-deprecated-slot-attribute -->
         <div slot="footer"></div>
+        <!--eslint-enable-->
     </div>
 </template>
 
@@ -353,6 +431,7 @@ import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue';
 import Swal from 'sweetalert2';
+import { initTooltipStyling } from '@/components/common/style_functions.js';
 
 export default {
     name: 'ProposedApprovalForm',
@@ -389,12 +468,15 @@ export default {
         },
         applicant_email: {
             type: String,
+            default: null,
         },
         proposedApprovalKey: {
             type: String,
+            default: '0',
         },
         proposedApprovalState: {
             type: String,
+            default: '',
         },
         proposal: {
             type: Object,
@@ -446,7 +528,6 @@ export default {
             },
             warningString:
                 'Please attach Level of Approval document before issuing Approval',
-            uuid: uuid(),
             detailsTexts: {},
         };
     },
@@ -455,6 +536,7 @@ export default {
             if (this.selectedApprovalType && this.selectedApprovalType.id) {
                 return true;
             }
+            return false;
         },
         leaseLicenceApprovalDocumentsUrl: function () {
             return helpers.add_endpoint_join(
@@ -472,16 +554,19 @@ export default {
             if (this.selectedApprovalType) {
                 return this.selectedApprovalType.approval_type_document_types;
             }
+            return [];
         },
         selectedApprovalTypeName: function () {
             if (this.selectedApprovalType) {
                 return this.selectedApprovalType.name;
             }
+            return '';
         },
         selectedApprovalTypeDetailsPlaceholder: function () {
             if (this.selectedApprovalType) {
                 return this.selectedApprovalType.details_placeholder;
             }
+            return '';
         },
         proposedDecisionDetails: function () {
             /** Returns proposed decision details depending on whether the proposed decision
@@ -491,17 +576,29 @@ export default {
             // This is here to re-evalute the computed property after fetching details texts
             this.uuid;
 
-            if (this.approval.decision) {
+            if (
+                this.proposal.application_type.name ==
+                    constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST &&
+                this.approval.decision
+            ) {
+                return this.approval.details;
+            } else if (
+                this.proposal.application_type.name ==
+                    constants.APPLICATION_TYPES.LEASE_LICENCE &&
+                this.approval.details &&
+                this.proposal.proposed_decline_status == false
+            ) {
                 return this.approval.details;
             } else if (this.proposal.proposed_decline_status) {
                 return this.proposal.proposaldeclineddetails.reason;
             } else {
                 // Use standard text from admin
-                let id = this.$refs.hasOwnProperty(
+                let id = Object.hasOwn(
+                    this.$refs,
                     'registration_of_interest_details'
                 )
                     ? this.$refs.registration_of_interest_details.id
-                    : this.$refs.hasOwnProperty('lease_licence_details')
+                    : Object.hasOwn(this.$refs, 'lease_licence_details')
                     ? this.$refs.lease_licence_details.id
                     : '';
                 return this.detailsTexts[id] || '';
@@ -522,6 +619,8 @@ export default {
         title: function () {
             return this.processing_status == 'With Approver'
                 ? `Issue Approval for ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`
+                : this.isRenewal
+                ? `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number} - Renewal`
                 : `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`;
         },
         is_amendment: function () {
@@ -536,9 +635,10 @@ export default {
                 ? true
                 : false;
         },
-        isApproved: function () {},
         can_preview: function () {
-            return this.processing_status == 'With Approver' ? true : false;
+            // Currently, all documents are uploaded by the assessor, thus no preview is required
+            return false;
+            // return this.processing_status == 'With Approver' ? true : false;
         },
         preview_licence_url: function () {
             return this.proposal_id
@@ -553,6 +653,7 @@ export default {
             ) {
                 return true;
             }
+            return false;
         },
         leaseLicence: function () {
             if (
@@ -561,6 +662,22 @@ export default {
             ) {
                 return true;
             }
+            return false;
+        },
+        isRenewal: function () {
+            return this.proposal_type == 'renewal' ? true : false;
+        },
+        assessedBy: function () {
+            if (!this.proposal.proposed_issuance_approval) {
+                return null;
+            }
+            return this.proposal.proposed_issuance_approval.assessed_by;
+        },
+        assessedOn: function () {
+            if (!this.proposal.proposed_issuance_approval) {
+                return null;
+            }
+            return this.proposal.proposed_issuance_approval.assessed_on;
         },
     },
     created: async function () {
@@ -601,6 +718,7 @@ export default {
             }
 
             this.initSelectApprovalType();
+            initTooltipStyling();
         });
     },
     methods: {
@@ -629,6 +747,7 @@ export default {
                 this.approval.selected_document_types = [];
             }
             if (this.proposal.proposed_issuance_approval) {
+                // eslint-disable-next-line vue/no-mutating-props
                 this.proposal.proposed_issuance_approval.selected_document_types =
                     [];
             }
@@ -657,8 +776,8 @@ export default {
                 "<form method='POST' target='_blank' name='Preview Licence' action='" +
                 url +
                 "'>";
-            for (var key in postData) {
-                if (postData.hasOwnProperty(key)) {
+            for (let key in postData) {
+                if (Object.hasOwn(postData, key)) {
                     postFormStr +=
                         "<input type='hidden' name='" +
                         key +
@@ -668,7 +787,7 @@ export default {
                 }
             }
             postFormStr += '</form>';
-            var formElement = $(postFormStr);
+            let formElement = $(postFormStr);
             $('body').append(formElement);
             $(formElement).submit();
         },
@@ -806,13 +925,14 @@ export default {
                     var selected = $(e.currentTarget);
                     vm.handleApprovalTypeChangeEvent(Number(selected.val()));
                 })
-                .on('select2:unselecting', function (e) {
+                .on('select2:unselecting', function () {
                     var self = $(this);
                     setTimeout(() => {
                         self.select2('close');
                     }, 0);
                 })
                 .on('select2:unselect', function (e) {
+                    // eslint-disable-next-line no-unused-vars
                     let unselected_id = e.params.data.id;
                 });
         },
