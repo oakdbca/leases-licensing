@@ -233,7 +233,9 @@
                                 </strong>
                             </p>
 
-                            <label for="deed_poll_document">Deed poll:</label>
+                            <label for="deed_poll_document" class="mb-3"
+                                >Deed poll:</label
+                            >
                             <FileField
                                 id="deed_poll_document"
                                 ref="deed_poll_document"
