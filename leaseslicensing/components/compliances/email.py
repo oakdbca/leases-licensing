@@ -698,11 +698,16 @@ def _log_org_email(email_message, organisation, customer, sender=None):
             raise ValueError("staff must be an int (i.e. EmailUser.id)")
         staff = staff.id
 
+    if type(customer) is not int:
+        if not hasattr(customer, "id"):
+            raise ValueError("customer must be an int (i.e. EmailUser.id)")
+        customer = customer.id
+
     kwargs = {
         "subject": subject,
         "text": text,
         "organisation": organisation,
-        "customer": customer.id,
+        "customer": customer,
         "staff": staff,
         "to": to,
         "fromm": fromm,
