@@ -258,7 +258,7 @@
                                 class="btn btn-primary"
                                 @click.prevent="acceptCompliance()"
                             >
-                                Approve
+                                {{ approveButtonText }}
                             </button>
                             <button
                                 v-if="compliance.is_referee"
@@ -809,6 +809,11 @@ export default {
                 ].includes(this.compliance.processing_status)
             );
         },
+        approveButtonText: function () {
+            return this.compliance.gross_turnover_required
+                ? 'Approve and Edit Invoicing Details'
+                : 'Approve';
+        },
         canViewActions: function () {
             return this.compliance.is_referee || this.canViewAssessorActions;
         },
@@ -1214,9 +1219,45 @@ export default {
                                 timer: 2000,
                                 showConfirmButton: false,
                             });
-                            vm.$router.push({
-                                name: 'internal-compliances-dash',
-                            });
+                            if (vm.compliance.gross_turnover_required) {
+                                let requestOptions = {
+                                    method: 'PATCH',
+                                };
+                                fetch(
+                                    helpers.add_endpoint_join(
+                                        api_endpoints.approvals,
+                                        vm.compliance.approval +
+                                            '/review_invoice_details/'
+                                    ),
+                                    requestOptions
+                                ).then(
+                                    async (response) => {
+                                        const data = await response.json();
+                                        if (!response.ok) {
+                                            const error =
+                                                (data && data.message) ||
+                                                response.statusText;
+                                            console.log(error);
+                                            Promise.reject(error);
+                                        }
+                                        vm.$router.push({
+                                            name: 'internal-approval-detail',
+                                            hash: '#edit-invoicing',
+                                            params: {
+                                                approval_id:
+                                                    vm.compliance.approval,
+                                            },
+                                        });
+                                    },
+                                    (error) => {
+                                        console.log(error);
+                                    }
+                                );
+                            } else {
+                                vm.$router.push({
+                                    name: 'internal-compliances-dash',
+                                });
+                            }
                         });
                 }
             });
