@@ -17,8 +17,9 @@
                     >
                         <VueAlert v-model:show="showError" type="danger">
                             <!-- eslint-disable-next-line vue/no-v-html -->
-                            <strong v-html="errorString"></strong
-                        ></VueAlert>
+                            <strong v-html="errorString"></strong>
+                            <!-- eslint-enable -->
+                        </VueAlert>
                         <div class="col">
                             <div class="row mb-3">
                                 <label class="col-form-label col-sm-3"
@@ -364,7 +365,7 @@ export default {
         validateForm: function () {
             let vm = this;
             var form = document.getElementById('requirementForm');
-            form.classList.add('was-validated');
+
             if (form.checkValidity()) {
                 console.log('Form valid');
                 vm.sendData();

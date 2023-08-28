@@ -1,4 +1,5 @@
 import copy
+import datetime
 import json
 import logging
 import subprocess
@@ -2538,6 +2539,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def final_approval(self, request, details):
         from leaseslicensing.components.approvals.models import Approval
         from leaseslicensing.components.approvals.models import ApprovalDocument
+        from leaseslicensing.components.approvals.models import ApprovalType
 
         try:
             self.proposed_decline_status = False
@@ -2591,6 +2593,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 expiry_date = checking_proposal.proposed_issuance_approval.get(
                     "expiry_date", None
                 )
+                approval_type = ApprovalType.objects.get(id=details["approval_type"])
 
                 approval, created = Approval.objects.update_or_create(
                     current_proposal=self.approval.current_proposal,
@@ -2604,11 +2607,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         "status": Approval.APPROVAL_STATUS_CURRENT,
                         "current_proposal": self,
                         "renewal_review_notification_sent_to_assessors": False,
+                        "approval_type": approval_type,
                     },
                 )
                 # Update the approval documents
                 self.generate_license_documents(
-                    approval, self, reason=ApprovalDocument.REASON_RENEWED
+                    approval, reason=ApprovalDocument.REASON_RENEWED
                 )
                 approval.save(
                     version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]}"
@@ -2690,12 +2694,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         )
                 elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
                     # Lease Licence (New)
-                    start_date = checking_proposal.proposed_issuance_approval.get(
-                        "start_date", None
+                    start_date = details.get("start_date", None)
+                    expiry_date = details.get("expiry_date", None)
+                    approval_type = ApprovalType.objects.get(
+                        id=details["approval_type"]
                     )
-                    expiry_date = checking_proposal.proposed_issuance_approval.get(
-                        "expiry_date", None
-                    )
+
                     approval, created = Approval.objects.update_or_create(
                         current_proposal=checking_proposal,
                         defaults={
@@ -2707,12 +2711,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                 start_date, "%Y-%m-%d"
                             ).date(),
                             "record_management_number": record_management_number,
+                            "approval_type": approval_type,
                         },
                     )
-                    # raise
                     # Generate the approval documents
                     self.generate_license_documents(
-                        approval, checking_proposal, reason=ApprovalDocument.REASON_NEW
+                        approval, reason=ApprovalDocument.REASON_NEW
                     )
 
                     approval.save(
@@ -2733,10 +2737,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                 # TODO: additional logic required for amendment, reissue, etc?
 
-                    # Generate approval (license) document
-                    # self.create_approval_pdf(request)
-                    # TODO: Send notification email to approver after the finance team
-                    # has created the invoice
+                # Generate approval (license) document
+                # self.create_approval_pdf(request)
+                # TODO: Send notification email to approver after the finance team
+                # has created the invoice
 
                 # Send notification email to applicant
                 send_proposal_approval_email_notification(self, request)
@@ -3025,7 +3029,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         intersects=pg.intersects,
                         copied_from=pg,
                         drawn_by=pg.drawn_by,  # EmailUser
-                        locked=pg.locked,  # Should evaluate to true                        
+                        locked=pg.locked,  # Should evaluate to true
                     )
 
                 # Copy over any tourism, general, prn str type proposal details and documents
@@ -3044,7 +3048,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 ]
 
                 from copy import deepcopy
-
 
                 for field in details_fields:
                     f_text = f"{field}_text"
@@ -3409,8 +3412,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def categories_list(self):
         return self.categories.values_list("category__name", flat=True)
 
-    def generate_license_documents(self, approval, proposal, **kwargs):
-        """ """
+    def generate_license_documents(self, approval, **kwargs):
+        """
+        Creates or updates documents for the approval, based on the documents provided by the assessor
+        Args:
+            approval:
+                The approval object
+            reason: str (optional)
+                The reason for creating the document. Must be one of the values in ApprovalDocument.REASON_CHOICES.
+                Defaults to ApprovalDocument.REASON_NEW.
+        """
 
         from leaseslicensing.components.approvals.models import ApprovalDocument
         from leaseslicensing.components.approvals.document import (
@@ -3422,10 +3433,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         reason = kwargs.get("reason", ApprovalDocument.REASON_NEW)
 
-        approval_type_id = proposal.proposed_issuance_approval.get(
-            "approval_type", None
-        )
-        approval_type = ApprovalType.objects.get(id=approval_type_id)
+        # Get the approval type object
+        approval_type = approval.approval_type
         document_generator = ApprovalDocumentGenerator()
 
         # Attach lease license documents as provided by the assessor to the approval
@@ -3434,9 +3443,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         sign_off_sheets = []
         other_documents = []
         for document in self.lease_licence_approval_documents.all():
-            if document.approval_type_id != approval_type_id:
+            if document.approval_type_id != approval_type.id:
                 logger.warn(
-                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type_id)} document `{document}` for Approval of type `{approval_type}`."
+                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} document `{document}` for Approval of type `{approval_type}`."
                 )
                 continue
 

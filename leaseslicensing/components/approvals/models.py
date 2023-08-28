@@ -703,6 +703,9 @@ class Approval(LicensingModelVersioned):
                 self.suspension_details = {}
 
             self.status = "current"
+            self.renewal_review_notification_sent_to_assessors = (
+                False  # Should be able to renew again
+            )
             # self.suspension_details = {}
             self.save(version_comment="status_change: Approval reinstated")
             send_approval_reinstate_email_notification(self, request)

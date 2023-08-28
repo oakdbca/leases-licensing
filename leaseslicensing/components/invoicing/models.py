@@ -439,7 +439,8 @@ class InvoicingDetails(BaseModel):
         app_label = "leaseslicensing"
 
     def __str__(self):
-        return f"Invoicing Details for Approval: {self.approval} (Current Proposal: {self.approval.current_proposal})"
+        proposal = self.approval.current_proposal if self.approval else None
+        return f"Invoicing Details for Approval: {self.approval} (Current Proposal: {proposal})"
 
     @property
     def approval(self):

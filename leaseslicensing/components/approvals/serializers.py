@@ -100,7 +100,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
     current_proposal_processing_status = serializers.CharField(
         source="current_proposal.processing_status", read_only=True
     )
-    approval_type = serializers.CharField(source="approval_type.name", read_only=True)
+    approval_type = serializers.CharField(
+        source="approval_type.name", allow_null=True, read_only=True
+    )
     gis_data = serializers.SerializerMethodField(read_only=True)
     geometry_objs = serializers.SerializerMethodField(read_only=True)
     approved_by = serializers.SerializerMethodField()
@@ -112,6 +114,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "linked_applications",
             "licence_document",
+            "current_proposal",
             "current_proposal_processing_status",
             "tenure",
             "renewal_notification_sent_to_holder",
@@ -178,6 +181,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
+            "current_proposal",  # current proposal id is (at least) needed for renewal
             "current_proposal_processing_status",
             "renewal_notification_sent_to_holder",
             "application_type",
@@ -281,9 +285,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return geometry_data
 
     def get_approved_by(self, obj):
-        approved_by_id = obj.current_proposal.proposed_issuance_approval.get(
-            "approved_by", None
+        proposed_issuance_approval = (
+            obj.current_proposal.proposed_issuance_approval or {}
         )
+        approved_by_id = proposed_issuance_approval.get("approved_by", None)
         if not approved_by_id:
             return "Approver not assigned"
         user = EmailUser.objects.get(id=approved_by_id)
@@ -368,7 +373,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
     sign_off_sheet = serializers.SerializerMethodField()
     cover_letter = serializers.SerializerMethodField()
     application = serializers.SerializerMethodField()
-    approval_type_description = serializers.SerializerMethodField()
+    approval_type = serializers.SerializerMethodField()
     sticker_numbers = serializers.SerializerMethodField()
     holder = serializers.SerializerMethodField()
     status = serializers.SerializerMethodField()
@@ -387,7 +392,7 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
             "sign_off_sheet",
             "cover_letter",
             "application",
-            "approval_type_description",
+            "approval_type",
             "sticker_numbers",
             "holder",
             "status",
@@ -442,8 +447,10 @@ class ApprovalHistorySerializer(serializers.ModelSerializer):
     def get_application(self, obj):
         return obj.current_proposal.lodgement_number
 
-    def get_approval_type_description(self, obj):
-        return obj.current_proposal.application_type.name_display
+    def get_approval_type(self, obj):
+        return ApprovalTypeSerializer(obj.approval_type).data
+        # return obj.approval_type
+        # return obj.current_proposal.application_type.name_display
 
     def get_sticker_numbers(self, obj):
         return "(todo) sticker_numbers"

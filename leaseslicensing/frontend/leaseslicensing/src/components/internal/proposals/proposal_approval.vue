@@ -100,6 +100,7 @@
                 ref="proposed_issuance_documents"
                 :key="selectedApprovalTypeId"
                 :proposal="proposal"
+                :proposal-id="proposal.id"
                 :processing_status="proposal.processing_status"
                 :approval-types="approvalTypes"
                 :proposal_id="proposal.id"

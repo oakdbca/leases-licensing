@@ -120,7 +120,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.approval_type_description;
+                    return full.approval_type.name;
                 },
             };
         },
@@ -153,7 +153,7 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return `<a href="${full.detail_url}" target="_blank">${full.application}</a>`;
+                    return `<a href="${full.application_detail_url}" target="_blank">${full.application}</a>`;
                 },
             };
         },
