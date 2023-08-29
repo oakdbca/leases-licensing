@@ -545,7 +545,7 @@ export default {
                     {
                         extend: 'excel',
                         text: '<i class="fa-solid fa-download"></i> Excel',
-                        className: 'btn btn-primary ml-2',
+                        className: 'btn btn-primary rounded me-2',
                         exportOptions: {
                             columns: ':visible',
                         },
@@ -553,7 +553,7 @@ export default {
                     {
                         extend: 'csv',
                         text: '<i class="fa-solid fa-download"></i> CSV',
-                        className: 'btn btn-primary',
+                        className: 'btn btn-primary rounded',
                         exportOptions: {
                             columns: ':visible',
                         },

@@ -1,14 +1,24 @@
 <template>
     <div>
-        <CollapsibleComponent componentTitle="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
-            class="mb-2">
+        <CollapsibleComponent
+            ref="collapsible_filters"
+            component-title="Filters"
+            class="mb-2"
+            @created="collapsible_component_mounted"
+        >
             <div class="row mt-1 p-2">
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Organisation</label>
-                        <select class="form-control" v-model="filterOrganisation">
+                        <select
+                            v-model="filterOrganisation"
+                            class="form-control"
+                        >
                             <option value="">All</option>
-                            <option v-for="organisation in organisations" :value="organisation.id">
+                            <option
+                                v-for="organisation in organisations"
+                                :value="organisation.id"
+                            >
                                 {{ organisation.ledger_organisation_name }}
                             </option>
                         </select>
@@ -17,7 +27,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Role</label>
-                        <select class="form-control" v-model="filterRole">
+                        <select v-model="filterRole" class="form-control">
                             <option value="">All</option>
                             <option value="employee">Employee</option>
                             <option value="consultant">Consultant</option>
@@ -27,7 +37,7 @@
                 <div class="col-md-3">
                     <div class="form-group">
                         <label for="">Status</label>
-                        <select class="form-control" v-model="filterStatus">
+                        <select v-model="filterStatus" class="form-control">
                             <option value="">All</option>
                             <option value="with_assessor">With Assessor</option>
                             <option value="approved">Approved</option>
@@ -40,26 +50,33 @@
 
         <div class="row">
             <div class="col-lg-12">
-                <datatable ref="organisation_requests_datatable" :id="datatable_id" :dtOptions="dtOptions"
-                    :dtHeaders="dtHeaders" />
+                <datatable
+                    :id="datatable_id"
+                    ref="organisation_requests_datatable"
+                    :dt-options="dtOptions"
+                    :dt-headers="dtHeaders"
+                />
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import datatable from '@/utils/vue/datatable.vue'
-import { api_endpoints, constants, helpers } from '@/utils/hooks'
+import datatable from '@/utils/vue/datatable.vue';
+import { api_endpoints, constants, helpers } from '@/utils/hooks';
 
 export default {
     name: 'TableOrganisationRequests',
+    components: {
+        datatable,
+    },
     props: {
         level: {
             type: String,
             required: true,
             validator: function (val) {
-                let options = ['internal', 'referral', 'external']
-                return options.indexOf(val) != -1 ? true : false
+                let options = ['internal', 'referral', 'external'];
+                return options.indexOf(val) != -1 ? true : false;
             },
         },
         target_email_user_id: {
@@ -69,7 +86,7 @@ export default {
         },
     },
     data() {
-        let vm = this
+        let vm = this;
         return {
             datatable_id: 'invoices-datatable-' + vm._uid,
 
@@ -88,41 +105,7 @@ export default {
             statuses: [],
             // Filters toggle
             filters_expanded: false,
-        }
-    },
-    components: {
-        datatable,
-    },
-    watch: {
-        filterOrganisation: function () {
-            this.$refs.organisation_requests_datatable.vmDataTable.draw()
-            sessionStorage.setItem(
-                'filterOrganisation',
-                this.filterOrganisation
-            )
-        },
-        filterRole: function () {
-            this.$refs.organisation_requests_datatable.vmDataTable.draw()
-            sessionStorage.setItem(
-                'filterRole',
-                this.filterRole
-            )
-        },
-        filterStatus: function () {
-            this.$refs.organisation_requests_datatable.vmDataTable.draw()
-            sessionStorage.setItem(
-                'filterStatus',
-                this.filterStatus
-            )
-        },
-        filterApplied: function () {
-            if (this.$refs.collapsible_filters) {
-                // Collapsible component exists
-                this.$refs.collapsible_filters.showWarningIcon(
-                    this.filterApplied
-                )
-            }
-        },
+        };
     },
     computed: {
         filterApplied: function () {
@@ -131,16 +114,16 @@ export default {
                 this.filterRole.toLowerCase() === '' &&
                 this.filterStatus.toLowerCase() === ''
             ) {
-                return false
+                return false;
             } else {
-                return true
+                return true;
             }
         },
         is_external: function () {
-            return this.level == 'external'
+            return this.level == 'external';
         },
         is_internal: function () {
-            return this.level == 'internal'
+            return this.level == 'internal';
         },
         dtHeaders: function () {
             return [
@@ -152,7 +135,7 @@ export default {
                 'Lodged On',
                 'Assigned To',
                 'Action',
-            ]
+            ];
         },
         idColumn: function () {
             return {
@@ -161,9 +144,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.holder
+                    return full.holder;
                 },
-            }
+            };
         },
         lodgementNumberColumn: function () {
             return {
@@ -172,9 +155,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.lodgement_number
+                    return full.lodgement_number;
                 },
-            }
+            };
         },
         OrganisationNameColumn: function () {
             return {
@@ -183,9 +166,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.ledger_organisation_name
+                    return full.ledger_organisation_name;
                 },
-            }
+            };
         },
         applicantColumn: function () {
             return {
@@ -194,9 +177,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.requester_name
+                    return full.requester_name;
                 },
-            }
+            };
         },
         roleColumn: function () {
             return {
@@ -205,9 +188,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.role
+                    return full.role;
                 },
-            }
+            };
         },
         statusColumn: function () {
             return {
@@ -216,9 +199,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.status
+                    return full.status;
                 },
-            }
+            };
         },
         lodgedOnColumn: function () {
             return {
@@ -227,9 +210,9 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.lodgement_date
+                    return full.lodgement_date;
                 },
-            }
+            };
         },
         assignedToColumn: function () {
             return {
@@ -239,32 +222,32 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     if (!full.assigned_officer) {
-                        return 'Unassigned'
+                        return 'Unassigned';
                     }
-                    return full.assigned_officer_name
+                    return full.assigned_officer_name;
                 },
-            }
+            };
         },
         actionColumn: function () {
-            let vm = this
+            let vm = this;
             return {
                 data: 'id',
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    let label = ''
+                    let label = '';
                     // If the processing status is approved or declined, then show the view link
                     // Otherwise show a process link and check another system for what is supposed to happen upon processing
 
                     if ('With Assessor' == full.status) {
-                        label += 'Process'
+                        label += 'Process';
                     } else {
-                        label += 'View'
+                        label += 'View';
                     }
-                    return `<a href='/internal/organisations/access/${full.id}'>${label}</a>`
+                    return `<a href='/internal/organisations/access/${full.id}'>${label}</a>`;
                 },
-            }
+            };
         },
         applicableColumns: function () {
             return [
@@ -276,18 +259,17 @@ export default {
                 this.lodgedOnColumn,
                 this.assignedToColumn,
                 this.actionColumn,
-            ]
-
+            ];
         },
         dtOptions: function () {
-            let vm = this
-            let buttons = []
+            let vm = this;
+            let buttons = [];
             if (this.level === 'internal') {
                 buttons = [
                     {
                         extend: 'excel',
                         text: '<i class="fa-solid fa-download"></i> Excel',
-                        className: 'btn btn-primary ml-2',
+                        className: 'btn btn-primary rounded me-2',
                         exportOptions: {
                             columns: ':visible',
                         },
@@ -295,12 +277,12 @@ export default {
                     {
                         extend: 'csv',
                         text: '<i class="fa-solid fa-download"></i> CSV',
-                        className: 'btn btn-primary',
+                        className: 'btn btn-primary rounded',
                         exportOptions: {
                             columns: ':visible',
                         },
                     },
-                ]
+                ];
             }
 
             return {
@@ -320,9 +302,9 @@ export default {
                     // adding extra GET params for Custom filtering
                     data: function (d) {
                         // Add filters selected
-                        d.filter_organisation = vm.filterOrganisation
-                        d.filter_role = vm.filterRole
-                        d.filter_status = vm.filterStatus
+                        d.filter_organisation = vm.filterOrganisation;
+                        d.filter_role = vm.filterRole;
+                        d.filter_status = vm.filterStatus;
                     },
                 },
                 order: [[0, 'desc']],
@@ -334,40 +316,65 @@ export default {
                 columns: vm.applicableColumns,
                 processing: true,
                 initComplete: function () {
-                    console.log('in initComplete')
+                    console.log('in initComplete');
                 },
-            }
+            };
         },
     },
-    methods: {
-        fetchOrganisations: function () {
-            let vm = this
-            fetch(api_endpoints.organisations + 'key-value-list/')
-                .then(async (response) => {
-                    const data = await response.json()
-                    if (!response.ok) {
-                        const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        return Promise.reject(error)
-                    }
-                    vm.organisations = data
-                    console.log(vm.members)
-                })
-                .catch((error) => {
-                    this.errorMessage = constants.ERRORS.API_ERROR
-                    console.error('There was an error!', error)
-                })
+    watch: {
+        filterOrganisation: function () {
+            this.$refs.organisation_requests_datatable.vmDataTable.draw();
+            sessionStorage.setItem(
+                'filterOrganisation',
+                this.filterOrganisation
+            );
         },
-        collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.showWarningIcon(this.filterApplied)
+        filterRole: function () {
+            this.$refs.organisation_requests_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterRole', this.filterRole);
         },
-        expandCollapseFilters: function () {
-            this.filters_expanded = !this.filters_expanded
+        filterStatus: function () {
+            this.$refs.organisation_requests_datatable.vmDataTable.draw();
+            sessionStorage.setItem('filterStatus', this.filterStatus);
+        },
+        filterApplied: function () {
+            if (this.$refs.collapsible_filters) {
+                // Collapsible component exists
+                this.$refs.collapsible_filters.showWarningIcon(
+                    this.filterApplied
+                );
+            }
         },
     },
     created: function () {
         this.fetchOrganisations();
     },
-}
+    methods: {
+        fetchOrganisations: function () {
+            let vm = this;
+            fetch(api_endpoints.organisations + 'key-value-list/')
+                .then(async (response) => {
+                    const data = await response.json();
+                    if (!response.ok) {
+                        const error =
+                            (data && data.message) || response.statusText;
+                        console.log(error);
+                        return Promise.reject(error);
+                    }
+                    vm.organisations = data;
+                    console.log(vm.members);
+                })
+                .catch((error) => {
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.error('There was an error!', error);
+                });
+        },
+        collapsible_component_mounted: function () {
+            this.$refs.collapsible_filters.showWarningIcon(this.filterApplied);
+        },
+        expandCollapseFilters: function () {
+            this.filters_expanded = !this.filters_expanded;
+        },
+    },
+};
 </script>
