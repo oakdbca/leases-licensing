@@ -44,6 +44,16 @@ class ComplianceSubmitSendNotificationEmail(TemplateEmailBase):
         )
 
 
+class ComplianceFinancialStatementSubmitSendNotificationEmail(TemplateEmailBase):
+    def __init__(self):
+        super().__init__()
+        self.subject = "{} - A new Compliance with audited financial statements has been submitted.".format(
+            settings.DEP_NAME
+        )
+        self.html_template = "leaseslicensing/emails/compliances/send_financial_statement_submit_notification.html"
+        self.txt_template = "leaseslicensing/emails/compliances/send_financial_statement_submit_notification.txt"
+
+
 class ComplianceAcceptNotificationEmail(TemplateEmailBase):
     def __init__(self):
         super().__init__()
@@ -499,6 +509,9 @@ def send_external_submit_email_notification(request, compliance, is_test=False):
 
 def send_submit_email_notification(request, compliance, is_test=False):
     email = ComplianceSubmitSendNotificationEmail()
+    if compliance.gross_turnover_required:
+        email = ComplianceFinancialStatementSubmitSendNotificationEmail()
+
     url = request.build_absolute_uri(
         reverse("internal-compliance-detail", kwargs={"pk": compliance.id})
     )
@@ -698,11 +711,16 @@ def _log_org_email(email_message, organisation, customer, sender=None):
             raise ValueError("staff must be an int (i.e. EmailUser.id)")
         staff = staff.id
 
+    if type(customer) is not int:
+        if not hasattr(customer, "id"):
+            raise ValueError("customer must be an int (i.e. EmailUser.id)")
+        customer = customer.id
+
     kwargs = {
         "subject": subject,
         "text": text,
         "organisation": organisation,
-        "customer": customer.id,
+        "customer": customer,
         "staff": staff,
         "to": to,
         "fromm": fromm,

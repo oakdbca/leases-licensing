@@ -9,6 +9,8 @@ import 'datatables.net-bs5';
 import 'datatables.net-buttons-bs5';
 import 'datatables.net-responsive-bs5';
 import 'datatables.net-buttons/js/dataTables.buttons.js';
+import jsZip from 'jszip';
+window.JSZip = jsZip;
 import 'datatables.net-buttons/js/buttons.html5.js';
 import 'select2';
 import 'currency.js';

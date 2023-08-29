@@ -1,7 +1,7 @@
 <template lang="html">
     <div :class="headerCSS">
-        <div v-if="numDocuments > 0">
-            <div v-for="v in documents" :key="v.id">
+        <ul v-if="numDocuments > 0" class="list-group mb-3">
+            <li v-for="v in documents" :key="v.id" class="list-group-item">
                 <div>
                     <span v-if="v.name.endsWith('.pdf')" class="fa fa-file-pdf">
                         &nbsp;
@@ -20,8 +20,8 @@
                         ></a>
                     </span>
                 </div>
-            </div>
-        </div>
+            </li>
+        </ul>
         <div v-if="show_spinner">
             <BootstrapSpinner
                 class="text-primary"
@@ -386,5 +386,9 @@ input {
 .ffu-input-text {
     color: #337ab7;
     cursor: pointer;
+}
+
+.list-group {
+    display: inline-block;
 }
 </style>
