@@ -345,7 +345,7 @@ export default {
         },
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'True';
+                return this.$route.query.debug === 'true';
             }
             return false;
         },
@@ -1451,41 +1451,48 @@ export default {
                 }
             });
         },
-
         amendApproval: async function (proposal_id) {
             let vm = this;
-            swal.fire({
+            // eslint-disable-next-line no-unused-vars
+            let status = 'with_approver';
+            Swal.fire({
                 title: 'Amend Approval',
                 text: 'Are you sure you want to amend this approval?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Amend approval',
-            });
-            try {
-                fetch(
-                    helpers.add_endpoint_json(
-                        api_endpoints.proposal,
-                        proposal_id + '/renew_amend_approval_wrapper'
-                    ) +
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    let url =
+                        helpers.add_endpoint_json(
+                            api_endpoints.proposal,
+                            proposal_id + '/renew_amend_approval_wrapper'
+                        ) +
                         '?debug=' +
                         vm.debug +
-                        '&type=amend',
-                    {
+                        '&type=amend';
+                    let requestOptions = {
                         method: 'POST',
-                    }
-                );
-                vm.$router.push({
-                    name: 'draft_proposal',
-                    params: { proposal_id: proposal_id },
-                });
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: 'Amend Approval',
-                    text: error.body,
-                    icon: 'error',
-                });
-            }
+                    };
+                    utils
+                        .fetchUrl(url, requestOptions)
+                        .then(() => {
+                            console.log('Amend Approval');
+                            Swal.fire(
+                                'Amend',
+                                'You may amend your approval',
+                                'success'
+                            );
+                            vm.$router.push({
+                                name: 'draft_proposal',
+                                params: { proposal_id: proposal_id },
+                            });
+                        })
+                        .catch((error) => {
+                            Swal.fire('Amend Approval', error, 'error');
+                        });
+                }
+            });
         },
         transferApproval: async function (approval_id, lodgement_number) {
             swal.fire({
