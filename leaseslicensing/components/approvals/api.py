@@ -13,9 +13,10 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework_datatables.pagination import DatatablesPageNumberPagination
 from rest_framework_datatables.renderers import DatatablesRenderer
-from reversion.models import Version
 from reversion.errors import RevertError
+from reversion.models import Version
 
+from leaseslicensing.components.approvals.document import ApprovalDocumentGenerator
 from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
@@ -23,7 +24,6 @@ from leaseslicensing.components.approvals.models import (
 )
 from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
-    ApprovalDocumentHistorySerializer,
     ApprovalHistorySerializer,
     ApprovalLogEntrySerializer,
     ApprovalSerializer,
@@ -41,9 +41,6 @@ from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
-from leaseslicensing.components.approvals.document import (
-    ApprovalDocumentGenerator,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -187,23 +184,20 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             filter_approval_region = int(filter_approval_region)
             logger.debug(f"filter_approval_region: {filter_approval_region}")
             queryset = queryset.filter(
-                current_proposal__localities__district__region_id=filter_approval_region
+                current_proposal__regions__region_id=filter_approval_region
             )
         if filter_approval_district:
             filter_approval_district = int(filter_approval_district)
             logger.debug(f"filter_approval_district: {filter_approval_district}")
             queryset = queryset.filter(
-                current_proposal__localities__district_id=filter_approval_district
+                current_proposal__districts__district_id=filter_approval_district
             )
         if filter_approval_group:
             filter_approval_group = int(filter_approval_group)
             logger.debug(f"filter_approval_group: {filter_approval_group}")
-            proposal_ids = (
-                Proposal.objects.filter(groups__id__contains=filter_approval_group)
-                .distinct()
-                .values_list("id", flat=True)
+            queryset = queryset.filter(
+                current_proposal__groups__group_id=filter_approval_group
             )
-            queryset = queryset.filter(current_proposal__in=proposal_ids)
 
         # getter = request.query_params.get
         # fields = self.get_fields(getter)
@@ -560,7 +554,7 @@ class ApprovalViewSet(UserActionLoggingViewset):
     def approval_history(self, request, *args, **kwargs):
         instance = self.get_object()
         if not instance.licence_document:
-            logger.warning("No license document found for approval {}".format(instance))
+            logger.warning(f"No license document found for approval {instance}")
             return Response({})
 
         versions = Version.objects.get_for_object(instance)
@@ -595,7 +589,8 @@ class ApprovalViewSet(UserActionLoggingViewset):
                     documents.append(vs._object_version.object)
 
             if not approval or approval.lodgement_sequence in lodgement_sequences:
-                # Don't add to the history when there is no approval or when the lodgement sequence is already in the list
+                # Don't add to the history when there is no approval
+                # or when the lodgement sequence is already in the list
                 continue
             lodgement_sequences.append(approval.lodgement_sequence)
 
