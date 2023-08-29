@@ -122,6 +122,8 @@ class ProposalGeometrySerializer(GeoFeatureModelSerializer):
             "id",
             "proposal_id",
             "polygon",
+            "area_sqm",
+            "area_sqhm",
             "intersects",
             "polygon_source",
             "locked",
