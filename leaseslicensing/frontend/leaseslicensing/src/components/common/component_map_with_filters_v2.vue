@@ -388,6 +388,12 @@
                                             {{ selectedModel.polygon_source }}
                                         </td>
                                     </tr>
+                                    <tr v-if="selectedModel.area_sqm">
+                                        <th scope="row">Area (m&#178;)</th>
+                                        <td>
+                                            {{ selectedModel.area_sqm }}
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1493,6 +1499,7 @@ export default {
                                 selected.getProperties().polygon_source;
                             model.copied_from =
                                 selected.getProperties().copied_from;
+                            model.area_sqm = selected.getProperties().area_sqm;
                         }
                         vm.selectedModel = model;
                         selected.setStyle(hoverSelect);
@@ -1916,6 +1923,7 @@ export default {
                 polygon_source: featureData.properties.polygon_source,
                 locked: featureData.properties.locked,
                 copied_from: featureData.properties.proposal_copied_from,
+                area_sqm: featureData.properties.area_sqm,
             });
             // Id of the model object (https://datatracker.ietf.org/doc/html/rfc7946#section-3.2)
             feature.setId(featureData.id);
