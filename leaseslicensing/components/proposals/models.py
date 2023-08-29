@@ -12,6 +12,7 @@ from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
 from django.conf import settings
 from django.contrib.gis.db.models.fields import PolygonField
+from django.contrib.gis.db.models.functions import Area
 from django.contrib.gis.gdal import SpatialReference
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.postgres.fields import ArrayField
@@ -19,6 +20,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, JSONField, Max, Min, Q
+from django.db.models.functions import Cast
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -92,8 +94,8 @@ from leaseslicensing.settings import (
     GROUP_NAME_APPROVER,
     GROUP_NAME_ASSESSOR,
     PROPOSAL_TYPE_AMENDMENT,
-    PROPOSAL_TYPE_RENEWAL,
     PROPOSAL_TYPE_NEW,
+    PROPOSAL_TYPE_RENEWAL,
 )
 
 logger = logging.getLogger(__name__)
@@ -2537,9 +2539,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     @transaction.atomic()
     def final_approval(self, request, details):
-        from leaseslicensing.components.approvals.models import Approval
-        from leaseslicensing.components.approvals.models import ApprovalDocument
-        from leaseslicensing.components.approvals.models import ApprovalType
+        from leaseslicensing.components.approvals.models import (
+            Approval,
+            ApprovalDocument,
+            ApprovalType,
+        )
 
         try:
             self.proposed_decline_status = False
@@ -2554,7 +2558,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 pass
             else:
                 if not self.can_assess(request.user):
-
                     raise exceptions.ProposalNotAuthorized()
                 if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
                     raise ValidationError(
@@ -2629,7 +2632,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # Send notification email to applicant
                 send_proposal_approval_email_notification(self, request)
                 self.save(
-                    version_comment=f"Lease License Approval: {self.approval.lodgement_number} ({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
+                    version_comment=(
+                        f"Lease License Approval: {self.approval.lodgement_number} "
+                        f"({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
+                    )
                 )
 
             elif (
@@ -2756,7 +2762,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         version_comment=f"Registration of Interest Approval: {self.lodgement_number}"
                     )
             else:
-                # Using this clause to raise an error when no other condition is met, so nothing is written to the database without prior checks.
+                # Using this clause to raise an error when no other condition is met,
+                # so nothing is written to the database without prior checks.
                 raise ValidationError(
                     "Proposal or Application type not supported for approval issuance"
                 )
@@ -3423,11 +3430,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 Defaults to ApprovalDocument.REASON_NEW.
         """
 
-        from leaseslicensing.components.approvals.models import ApprovalDocument
         from leaseslicensing.components.approvals.document import (
             ApprovalDocumentGenerator,
         )
         from leaseslicensing.components.approvals.models import (
+            ApprovalDocument,
             ApprovalType,
         )
 
@@ -3445,7 +3452,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         for document in self.lease_licence_approval_documents.all():
             if document.approval_type_id != approval_type.id:
                 logger.warn(
-                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} document `{document}` for Approval of type `{approval_type}`."
+                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} "
+                    f"document `{document}` for Approval of type `{approval_type}`."
                 )
                 continue
 
@@ -3809,7 +3817,18 @@ class AdditionalDocument(DefaultDocument):
         app_label = "leaseslicensing"
 
 
+class ProposalGeometryManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .annotate(area=Area(Cast("polygon", PolygonField(geography=True))))
+        )
+
+
 class ProposalGeometry(models.Model):
+    objects = ProposalGeometryManager()
+
     proposal = models.ForeignKey(
         Proposal, on_delete=models.CASCADE, related_name="proposalgeometry"
     )
@@ -3823,6 +3842,20 @@ class ProposalGeometry(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+
+    @property
+    def area_sqm(self):
+        if not self.area:
+            logger.warn(f"ProposalGeometry: {self.id} has no area")
+            return None
+        return self.area.sq_m
+
+    @property
+    def area_sqhm(self):
+        if not self.area:
+            logger.warn(f"ProposalGeometry: {self.id} has no area")
+            return None
+        return self.area.sq_m / 1000
 
 
 class ProposalLogDocument(Document):
