@@ -10,6 +10,7 @@ div#app .container h3 {
 .btn-primary{
     color: #fff  !important;
     background-color: #226fbb !important;
+    border-color: #226fbb !important;
 }
 
 .btn-primary:hover {
