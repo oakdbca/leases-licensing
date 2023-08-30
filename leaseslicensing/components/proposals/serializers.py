@@ -411,6 +411,7 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
 
 
 class BaseProposalSerializer(serializers.ModelSerializer):
+    model_name = serializers.CharField(read_only=True)
     readonly = serializers.SerializerMethodField(read_only=True)
     documents_url = serializers.SerializerMethodField()
     proposal_type = ProposalTypeSerializer()
