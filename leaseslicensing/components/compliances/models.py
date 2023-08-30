@@ -6,7 +6,6 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-from ledger_api_client.ledger_models import Invoice
 
 from leaseslicensing.components.compliances.email import (
     send_amendment_email_notification,
@@ -121,8 +120,8 @@ class Compliance(LicensingModelVersioned):
     submitter = models.IntegerField(null=True)  # EmailUserRO
     reminder_sent = models.BooleanField(default=False)
     post_reminder_sent = models.BooleanField(default=False)
-    fee_invoice_reference = models.CharField(
-        max_length=50, null=True, blank=True, default=""
+    gross_turnover = models.DecimalField(
+        max_digits=12, decimal_places=2, blank=True, null=True
     )
 
     class Meta:
@@ -195,27 +194,6 @@ class Compliance(LicensingModelVersioned):
         )
 
     @property
-    def participant_number_required(self):
-        if (
-            self.requirement.standard_requirement
-            and self.requirement.standard_requirement.participant_number_required
-        ):
-            return True
-        return False
-
-    @property
-    def fee_paid(self):
-        return True if self.fee_invoice_reference else False
-
-    @property
-    def fee_amount(self):
-        return (
-            Invoice.objects.get(reference=self.fee_invoice_reference).amount
-            if self.fee_paid
-            else None
-        )
-
-    @property
     def application_type(self):
         if self.proposal.application_type:
             return self.proposal.application_type.name_display
@@ -242,6 +220,12 @@ class Compliance(LicensingModelVersioned):
             return self.submitter_emailuser.email
         logger.warn(f"Submitter email not found for compliance {self.id}")
         return None
+
+    @property
+    def gross_turnover_required(self):
+        if self.requirement.standard_requirement:
+            return self.requirement.standard_requirement.gross_turnover_required
+        return False
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

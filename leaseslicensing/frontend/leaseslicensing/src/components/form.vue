@@ -233,7 +233,9 @@
                                 </strong>
                             </p>
 
-                            <label for="deed_poll_document">Deed poll:</label>
+                            <label for="deed_poll_document" class="mb-3"
+                                >Deed poll:</label
+                            >
                             <FileField
                                 id="deed_poll_document"
                                 ref="deed_poll_document"
@@ -246,7 +248,9 @@
                         </div>
                     </FormSection>
 
-                    <template v-if="proposal.additional_document_types">
+                    <template
+                        v-if="proposal.additional_document_types.length > 0"
+                    >
                         <FormSection
                             label="Additional Documents"
                             index="additional_documents"

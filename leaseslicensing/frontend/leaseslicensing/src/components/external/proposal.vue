@@ -1,7 +1,7 @@
 <template lang="html">
     <div class="container">
         <div v-if="proposal && !proposal.readonly">
-            <div v-if="amendment_request">
+            <div v-if="amendment_request && amendment_request.length > 0">
                 <FormSection
                     custom-color="red"
                     label="This Application Requires One or More Amendments"
@@ -79,7 +79,9 @@
                                     {{ additional_document_type.name }}
                                 </h4>
                                 <p class="card-text">
-                                    <label for="" class="form-label"
+                                    <label
+                                        :for="additional_document_type.name"
+                                        class="form-label"
                                         >Document:
                                     </label>
                                     <FileField

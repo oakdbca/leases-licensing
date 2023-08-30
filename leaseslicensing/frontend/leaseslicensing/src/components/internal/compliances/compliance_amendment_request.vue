@@ -1,47 +1,92 @@
 <template lang="html">
     <div id="internal-compliance-amend">
-        <modal transition="modal fade" @ok="validateForm()" @cancel="close()"
-            :title="'Amendment Request for Compliance: ' + compliance_lodgement_number" large>
+        <modal
+            transition="modal fade"
+            :title="
+                'Amendment Request for Compliance: ' +
+                compliance_lodgement_number
+            "
+            large
+            :ok-disabled="loading"
+            @ok="validateForm()"
+            @cancel="close()"
+        >
             <div class="container-fluid">
                 <div class="row py-3">
-                    <form class="needs-validation" name="complianceAmendmentRequestForm" novalidate>
-                        <VueAlert :show.sync="showError" type="danger"><strong v-html="errorString"></strong></VueAlert>
+                    <form
+                        class="needs-validation"
+                        name="complianceAmendmentRequestForm"
+                        novalidate
+                    >
+                        <VueAlert v-model:show="showError" type="danger"
+                            ><strong v-html="errorString"></strong
+                        ></VueAlert>
                         <div class="col">
                             <div class="row mb-3">
-                                <label class="col-form-label col-sm-2" for="reasons">Reason</label>
+                                <label
+                                    class="col-form-label col-sm-2"
+                                    for="reasons"
+                                    >Reason</label
+                                >
                                 <div class="col-sm-10">
-                                    <select class="form-select" id="reasons" name="reasons" ref="reasons"
-                                        v-model="amendment.reason" required>
-                                        <option v-for="reason in reason_choices" :value="reason.key" :key="reason.key">
-                                            {{ reason.value }}</option>
+                                    <select
+                                        id="reasons"
+                                        ref="reasons"
+                                        v-model="amendment.reason"
+                                        class="form-select"
+                                        name="reasons"
+                                        required
+                                    >
+                                        <option
+                                            v-for="reason in reason_choices"
+                                            :key="reason.key"
+                                            :value="reason.key"
+                                        >
+                                            {{ reason.value }}
+                                        </option>
                                     </select>
                                 </div>
                             </div>
                             <div class="row">
-                                <label class="col-form-label col-sm-2" for="text">Details</label>
+                                <label
+                                    class="col-form-label col-sm-2"
+                                    for="text"
+                                    >Details</label
+                                >
                                 <div class="col-sm-10">
-                                    <textarea class="form-control" ref="text" id="text" name="text" v-model="amendment.text"
-                                        required></textarea>
+                                    <textarea
+                                        id="text"
+                                        ref="text"
+                                        v-model="amendment.text"
+                                        class="form-control"
+                                        name="text"
+                                        required
+                                    ></textarea>
                                 </div>
                             </div>
                         </div>
                     </form>
                 </div>
             </div>
+            <BootstrapSpinner
+                v-if="loading"
+                class="text-primary"
+                :center-of-screen="false"
+            />
         </modal>
     </div>
 </template>
 
 <script>
-import modal from '@vue-utils/bootstrap-modal.vue'
-import VueAlert from '@vue-utils/alert.vue'
-import { helpers, api_endpoints } from "@/utils/hooks.js"
+import modal from '@vue-utils/bootstrap-modal.vue';
+import VueAlert from '@vue-utils/alert.vue';
+import { helpers } from '@/utils/hooks.js';
 
 export default {
     name: 'ComplianceAmendmentRequest',
     components: {
         modal,
-        VueAlert
+        VueAlert,
     },
     props: {
         compliance_id: {
@@ -61,30 +106,36 @@ export default {
             amendment: {
                 reason: '',
                 amendingcompliance: false,
-                compliance: vm.compliance_id
+                compliance: vm.compliance_id,
             },
             reason_choices: null,
+            loading: false,
             errors: false,
             errorString: '',
             validation_form: null,
-        }
+        };
+    },
+    computed: {
+        showError: function () {
+            var vm = this;
+            return vm.errors;
+        },
     },
     watch: {
         isModalOpen: function (val) {
-            console.log(`isModalOpen: ${val}`)
+            console.log(`isModalOpen: ${val}`);
             if (val) {
                 console.log('focusing text field');
                 this.$nextTick(() => {
                     this.$refs.text.focus();
                 });
             }
-        }
+        },
     },
-    computed: {
-        showError: function () {
-            var vm = this;
-            return vm.errors;
-        }
+    mounted: function () {
+        let vm = this;
+        vm.form = document.forms.complianceAmendmentRequestForm;
+        vm.fetchAmendmentChoices();
     },
     methods: {
         close: function () {
@@ -103,19 +154,21 @@ export default {
         },
         sendData: async function () {
             let vm = this;
+            vm.loading = true;
             vm.errors = false;
             const amendment = JSON.stringify(vm.amendment);
             const url = '/api/compliance_amendment_request.json';
             const response = await fetch(url, {
                 method: 'POST',
-                body: amendment
+                body: amendment,
             });
-            console.log(response)
+            console.log(response);
             if (!response.ok) {
                 vm.errors = true;
-                this.errorString = await helpers.parseFetchError(response)
+                this.errorString = await helpers.parseFetchError(response);
                 vm.amendingcompliance = true;
             } else {
+                this.loading = false;
                 new swal(
                     'Sent',
                     `An email has been sent to applicant with the request to amend compliance ${vm.compliance_lodgement_number}.`,
@@ -130,25 +183,21 @@ export default {
             let vm = this;
 
             // Intialise select2
-            $(vm.$refs.reasons).select2({
-                "theme": "bootstrap-5",
-                allowClear: true,
-                placeholder: "Select Reason"
-            }).
-                on("select2:select", function (e) {
+            $(vm.$refs.reasons)
+                .select2({
+                    theme: 'bootstrap-5',
+                    allowClear: true,
+                    placeholder: 'Select Reason',
+                })
+                .on('select2:select', function (e) {
                     var selected = $(e.currentTarget);
                     vm.amendment.reason = selected.val();
-                }).
-                on("select2:unselect", function (e) {
+                })
+                .on('select2:unselect', function (e) {
                     var selected = $(e.currentTarget);
                     vm.amendment.reason = selected.val();
                 });
-        }
+        },
     },
-    mounted: function () {
-        let vm = this;
-        vm.form = document.forms.complianceAmendmentRequestForm;
-        vm.fetchAmendmentChoices();
-    }
-}
+};
 </script>

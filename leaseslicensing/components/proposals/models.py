@@ -12,6 +12,7 @@ from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
 from django.conf import settings
 from django.contrib.gis.db.models.fields import PolygonField
+from django.contrib.gis.db.models.functions import Area
 from django.contrib.gis.gdal import SpatialReference
 from django.contrib.gis.geos import GEOSGeometry
 from django.contrib.postgres.fields import ArrayField
@@ -19,6 +20,7 @@ from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, models, transaction
 from django.db.models import F, JSONField, Max, Min, Q
+from django.db.models.functions import Cast
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -92,8 +94,8 @@ from leaseslicensing.settings import (
     GROUP_NAME_APPROVER,
     GROUP_NAME_ASSESSOR,
     PROPOSAL_TYPE_AMENDMENT,
-    PROPOSAL_TYPE_RENEWAL,
     PROPOSAL_TYPE_NEW,
+    PROPOSAL_TYPE_RENEWAL,
 )
 
 logger = logging.getLogger(__name__)
@@ -2537,9 +2539,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     @transaction.atomic()
     def final_approval(self, request, details):
-        from leaseslicensing.components.approvals.models import Approval
-        from leaseslicensing.components.approvals.models import ApprovalDocument
-        from leaseslicensing.components.approvals.models import ApprovalType
+        from leaseslicensing.components.approvals.models import (
+            Approval,
+            ApprovalDocument,
+            ApprovalType,
+        )
 
         try:
             self.proposed_decline_status = False
@@ -2554,7 +2558,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 pass
             else:
                 if not self.can_assess(request.user):
-
                     raise exceptions.ProposalNotAuthorized()
                 if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
                     raise ValidationError(
@@ -2629,7 +2632,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # Send notification email to applicant
                 send_proposal_approval_email_notification(self, request)
                 self.save(
-                    version_comment=f"Lease License Approval: {self.approval.lodgement_number} ({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
+                    version_comment=(
+                        f"Lease License Approval: {self.approval.lodgement_number} "
+                        f"({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
+                    )
                 )
 
             elif (
@@ -2756,7 +2762,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         version_comment=f"Registration of Interest Approval: {self.lodgement_number}"
                     )
             else:
-                # Using this clause to raise an error when no other condition is met, so nothing is written to the database without prior checks.
+                # Using this clause to raise an error when no other condition is met,
+                # so nothing is written to the database without prior checks.
                 raise ValidationError(
                     "Proposal or Application type not supported for approval issuance"
                 )
@@ -3423,11 +3430,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 Defaults to ApprovalDocument.REASON_NEW.
         """
 
-        from leaseslicensing.components.approvals.models import ApprovalDocument
         from leaseslicensing.components.approvals.document import (
             ApprovalDocumentGenerator,
         )
         from leaseslicensing.components.approvals.models import (
+            ApprovalDocument,
             ApprovalType,
         )
 
@@ -3445,7 +3452,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         for document in self.lease_licence_approval_documents.all():
             if document.approval_type_id != approval_type.id:
                 logger.warn(
-                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} document `{document}` for Approval of type `{approval_type}`."
+                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} "
+                    f"document `{document}` for Approval of type `{approval_type}`."
                 )
                 continue
 
@@ -3809,7 +3817,18 @@ class AdditionalDocument(DefaultDocument):
         app_label = "leaseslicensing"
 
 
+class ProposalGeometryManager(models.Manager):
+    def get_queryset(self):
+        return (
+            super()
+            .get_queryset()
+            .annotate(area=Area(Cast("polygon", PolygonField(geography=True))))
+        )
+
+
 class ProposalGeometry(models.Model):
+    objects = ProposalGeometryManager()
+
     proposal = models.ForeignKey(
         Proposal, on_delete=models.CASCADE, related_name="proposalgeometry"
     )
@@ -3823,6 +3842,20 @@ class ProposalGeometry(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
+
+    @property
+    def area_sqm(self):
+        if not self.area:
+            logger.warn(f"ProposalGeometry: {self.id} has no area")
+            return None
+        return self.area.sq_m
+
+    @property
+    def area_sqhm(self):
+        if not self.area:
+            logger.warn(f"ProposalGeometry: {self.id} has no area")
+            return None
+        return self.area.sq_m / 1000
 
 
 class ProposalLogDocument(Document):
@@ -4013,9 +4046,11 @@ class AmendmentRequest(ProposalRequest):
                 ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
             )
             # Create a log entry for the organisation
-            self.log_user_action(
-                ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
-            )
+            if proposal.org_applicant:
+                proposal.org_applicant.log_user_action(
+                    ProposalUserAction.ACTION_REQUESTED_AMENDMENT.format(proposal.id),
+                    request,
+                )
 
             # send email
             send_amendment_email_notification(self, request, self.proposal)
@@ -4074,7 +4109,7 @@ class ProposalStandardRequirement(RevisionedMixin):
     application_type = models.ForeignKey(
         ApplicationType, null=True, blank=True, on_delete=models.SET_NULL
     )
-    participant_number_required = models.BooleanField(default=False)
+    gross_turnover_required = models.BooleanField(default=False)
     default = models.BooleanField(default=False)
 
     def __str__(self):
@@ -4113,29 +4148,13 @@ class ProposalUserAction(UserAction):
     ACTION_EXPIRED_APPROVAL_ = "Expire Approval for proposal {}"
     ACTION_DISCARD_PROPOSAL = "Discard application {}"
     ACTION_APPROVAL_LEVEL_DOCUMENT = "Assign Approval level document {}"
-    # T-Class licence
-    ACTION_LINK_PARK = "Link park {} to application {}"
-    ACTION_UNLINK_PARK = "Unlink park {} from application {}"
-    ACTION_LINK_ACCESS = "Link access {} to park {}"
-    ACTION_UNLINK_ACCESS = "Unlink access {} from park {}"
-    ACTION_LINK_ACTIVITY = "Link activity {} to park {}"
-    ACTION_UNLINK_ACTIVITY = "Unlink activity {} from park {}"
-    ACTION_LINK_ACTIVITY_SECTION = "Link activity {} to section {} of trail {}"
-    ACTION_UNLINK_ACTIVITY_SECTION = "Unlink activity {} from section {} of trail {}"
-    ACTION_LINK_ACTIVITY_ZONE = "Link activity {} to zone {} of park {}"
-    ACTION_UNLINK_ACTIVITY_ZONE = "Unlink activity {} from zone {} of park {}"
-    ACTION_LINK_TRAIL = "Link trail {} to application {}"
-    ACTION_UNLINK_TRAIL = "Unlink trail {} from application {}"
-    ACTION_LINK_SECTION = "Link section {} to trail {}"
-    ACTION_UNLINK_SECTION = "Unlink section {} from trail {}"
-    ACTION_LINK_ZONE = "Link zone {} to park {}"
-    ACTION_UNLINK_ZONE = "Unlink zone {} from park {}"
-    SEND_TO_DISTRICTS = "Send Proposal {} to district assessors"
+
     # Assessors
     ACTION_SAVE_ASSESSMENT_ = "Save assessment {}"
     ACTION_CONCLUDE_ASSESSMENT_ = "Conclude assessment {}"
     ACTION_PROPOSED_APPROVAL = "Application {} has been proposed for approval"
     ACTION_PROPOSED_DECLINE = "Application {} has been proposed for decline"
+    ACTION_REQUESTED_AMENDMENT = "Amendment requested for Application: {}"
 
     # Referrals
     ACTION_SEND_REFERRAL_TO = "Send referral {} for application {} to {}"
@@ -4162,53 +4181,7 @@ class ProposalUserAction(UserAction):
     ACTION_SURRENDER_APPROVAL = "Surrender licence for application {}"
     ACTION_RENEW_PROPOSAL = "Create Renewal application for application {}"
     ACTION_AMEND_PROPOSAL = "Create Amendment application for application {}"
-    # Vehicle
-    ACTION_CREATE_VEHICLE = "Create Vehicle {}"
-    ACTION_EDIT_VEHICLE = "Edit Vehicle {}"
-    # Vessel
-    ACTION_CREATE_VESSEL = "Create Vessel {}"
-    ACTION_EDIT_VESSEL = "Edit Vessel {}"
-    ACTION_PUT_ONHOLD = "Put Application On-hold {}"
-    ACTION_REMOVE_ONHOLD = "Remove Application On-hold {}"
-    ACTION_WITH_QA_OFFICER = "Send Application QA Officer {}"
     ACTION_QA_OFFICER_COMPLETED = "QA Officer Assessment Completed {}"
-
-    # Filming
-    ACTION_CREATE_FILMING_PARK = "Create Filming Park {}"
-    ACTION_EDIT_FILMING_PARK = "Edit Filming Park {}"
-    ACTION_ASSIGN_TO_DISTRICT_APPROVER = (
-        "Assign District application {} of application {} to {} as the approver"
-    )
-    ACTION_ASSIGN_TO_DISTRICT_ASSESSOR = (
-        "Assign District application {} of application {} to {} as the assessor"
-    )
-    ACTION_UNASSIGN_DISTRICT_ASSESSOR = (
-        "Unassign assessor from District application {} of application {}"
-    )
-    ACTION_UNASSIGN_DISTRICT_APPROVER = (
-        "Unassign approver from District application {} of application {}"
-    )
-    ACTION_BACK_TO_PROCESSING_DISTRICT = (
-        "Back to processing for district application {} of application {}"
-    )
-    ACTION_ENTER_REQUIREMENTS_DISTRICT = (
-        "Enter Requirements for district application {} of application {}"
-    )
-    ACTION_DISTRICT_PROPOSED_APPROVAL = (
-        "District application {} of application {} has been proposed for approval"
-    )
-    ACTION_DISTRICT_PROPOSED_DECLINE = (
-        "District application {} of application {} has been proposed for decline"
-    )
-    ACTION_DISTRICT_DECLINE = (
-        "District application {} of application {} has been declined"
-    )
-    ACTION_UPDATE_APPROVAL_DISTRICT = (
-        "Update Licence by district application {} of application {}"
-    )
-    ACTION_ISSUE_APPROVAL_DISTRICT = (
-        "Issue Licence by district application {} of application {}"
-    )
 
     # monthly invoicing by cron
     ACTION_SEND_BPAY_INVOICE = "Send BPAY invoice {} for application {} to {}"

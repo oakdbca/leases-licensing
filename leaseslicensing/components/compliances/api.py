@@ -309,6 +309,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
             instance = self.get_object()
             data = {
                 "text": request.data.get("detail"),
+                "gross_turnover": request.data.get("gross_turnover"),
             }
 
             serializer = SaveComplianceSerializer(instance, data=data)
@@ -391,7 +392,9 @@ class ComplianceViewSet(viewsets.ModelViewSet):
     def assign_request_user(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.assign_to(request.user.id, request)
-        serializer = InternalComplianceSerializer(instance)
+        serializer = InternalComplianceSerializer(
+            instance, context={"request": request}
+        )
         return Response(serializer.data)
 
     @detail_route(
@@ -405,7 +408,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         doc = request.data.get("document")
         instance.delete_document(request, doc)
-        serializer = ComplianceSerializer(instance)
+        serializer = ComplianceSerializer(instance, context={"request": request})
         return Response(serializer.data)
 
     @detail_route(
@@ -421,7 +424,9 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         if not user_id:
             raise serializers.ValiationError("A user id is required")
         instance.assign_to(user_id, request)
-        serializer = InternalComplianceSerializer(instance)
+        serializer = InternalComplianceSerializer(
+            instance, context={"request": request}
+        )
         return Response(serializer.data)
 
     @detail_route(
@@ -435,7 +440,9 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         logger.debug("unassign")
         instance = self.get_object()
         instance.unassign(request)
-        serializer = InternalComplianceSerializer(instance)
+        serializer = InternalComplianceSerializer(
+            instance, context={"request": request}
+        )
         return Response(serializer.data)
 
     @detail_route(
@@ -448,7 +455,9 @@ class ComplianceViewSet(viewsets.ModelViewSet):
     def accept(self, request, *args, **kwargs):
         instance = self.get_object()
         instance.accept(request)
-        serializer = InternalComplianceSerializer(instance)
+        serializer = InternalComplianceSerializer(
+            instance, context={"request": request}
+        )
         return Response(serializer.data)
 
     @detail_route(
