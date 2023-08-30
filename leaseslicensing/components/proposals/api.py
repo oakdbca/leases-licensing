@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import CharField, F, Func, Q, Value
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
@@ -2007,17 +2007,39 @@ class ProposalViewSet(UserActionLoggingViewset):
         """Uses union to combine a queryset of multiple different model types
         and uses a generic related item serializer to return the data"""
         instance = self.get_object()
-        proposals_queryset = Proposal.objects.filter(
-            generated_proposal_id=instance.id
-        ).values("id", "lodgement_number", "processing_status")
-        competitive_process_queryset = CompetitiveProcess.objects.filter(
-            id__in=[
-                instance.generated_competitive_process_id,
-                instance.originating_competitive_process_id,
-            ]
-        ).values("id", "lodgement_number", "status")
-        approval_queryset = Approval.objects.filter(id=instance.approval_id).values(
-            "id", "lodgement_number", "status"
+        proposals_queryset = (
+            Proposal.objects.filter(generated_proposal_id=instance.id)
+            .annotate(
+                description=F("processing_status"),
+                type=Value("proposal", output_field=CharField()),
+            )
+            .values("id", "lodgement_number", "description", "type")
+        )
+        competitive_process_queryset = (
+            CompetitiveProcess.objects.filter(
+                id__in=[
+                    instance.generated_competitive_process_id,
+                    instance.originating_competitive_process_id,
+                ]
+            )
+            .annotate(
+                description=F("status"),
+                type=Value("competitiveprocess", output_field=CharField()),
+            )
+            .values("id", "lodgement_number", "description", "type")
+        )
+        approval_queryset = (
+            Approval.objects.filter(id=instance.approval_id)
+            .annotate(
+                description=Func(
+                    F("expiry_date"),
+                    Value("DD/MM/YYYY"),
+                    function="to_char",
+                    output_field=CharField(),
+                ),
+                type=Value("approval", output_field=CharField()),
+            )
+            .values("id", "lodgement_number", "description", "type")
         )
         queryset = proposals_queryset.union(
             competitive_process_queryset, approval_queryset
@@ -2044,7 +2066,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             e.args[0]
             raise serializers.ValidationError(e.args[0])
 
-        return Response({})
+        return Response({document})
 
 
 class ReferralViewSet(viewsets.ModelViewSet):

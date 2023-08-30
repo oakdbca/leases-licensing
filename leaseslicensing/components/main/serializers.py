@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.urls import reverse
 from ledger_api_client.ledger_models import EmailUserRO
@@ -16,6 +18,8 @@ from leaseslicensing.components.main.models import (
 )
 from leaseslicensing.components.main.utils import get_secure_document_url
 from leaseslicensing.helpers import get_model_by_lodgement_number
+
+logger = logging.getLogger(__name__)
 
 
 class CommunicationLogEntrySerializer(serializers.ModelSerializer):
@@ -247,7 +251,11 @@ class RelatedItemSerializer(serializers.Serializer):
 
     def get_description(self, obj):
         model = get_model_by_lodgement_number(obj["lodgement_number"])
-        processing_status = obj["processing_status"]
+
+        if obj["type"] == "approval":
+            return "Expiry Date: " + obj["description"]
+
+        processing_status = obj["description"]
         # Would be nice to have all the models use the same status field name in future
         if hasattr(model, "STATUS_CHOICES"):
             processing_status = dict(model.STATUS_CHOICES)[processing_status]

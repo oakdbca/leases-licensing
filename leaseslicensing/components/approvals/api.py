@@ -4,7 +4,7 @@ from datetime import datetime
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import CharField, F, Q, Value
 from rest_framework import serializers, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -694,12 +694,20 @@ class ApprovalViewSet(UserActionLoggingViewset):
         and uses a generic related item serializer to return the data
         Todo: Pagination is not working."""
         instance = self.get_object()
-        proposals_queryset = Proposal.objects.filter(
-            approval__lodgement_number=instance.lodgement_number
-        ).values("id", "lodgement_number", "processing_status")
-        compliances_queryset = instance.compliances.values(
-            "id", "lodgement_number", "processing_status"
+        proposals_queryset = (
+            Proposal.objects.filter(
+                approval__lodgement_number=instance.lodgement_number
+            )
+            .annotate(
+                description=F("processing_status"),
+                type=Value("proposal", output_field=CharField()),
+            )
+            .values("id", "lodgement_number", "description", "type")
         )
+        compliances_queryset = instance.compliances.annotate(
+            description=F("processing_status"),
+            type=Value("compliance", output_field=CharField()),
+        ).values("id", "lodgement_number", "processing_status", "type")
         queryset = proposals_queryset.union(compliances_queryset).order_by(
             "lodgement_number"
         )
