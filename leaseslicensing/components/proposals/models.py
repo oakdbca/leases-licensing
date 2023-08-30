@@ -2544,26 +2544,27 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             checking_proposal = self
-
             proposal_type_comment_names = {t1: t2 for t1, t2 in settings.PROPOSAL_TYPES}
 
             if (
-                self.proposal_type.code == PROPOSAL_TYPE_RENEWAL
+                self.proposal_type.code
+                in [PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL]
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
             ):
-                # Lease License (Renewal)
+                # Lease License (Amendment or Renewal)
                 if self.previous_application.approval.id != self.approval.id:
                     raise ValidationError(
                         "The previous application's approval does not match the current approval."
                     )
+                proposal_type_comment_name = (
+                    proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]
+                    if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
+                    else proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]
+                )
+                logger.info(f"Approval {proposal_type_comment_name} for {self}")
 
-                # if self.previous_application:
-                start_date = checking_proposal.proposed_issuance_approval.get(
-                    "start_date", None
-                )
-                expiry_date = checking_proposal.proposed_issuance_approval.get(
-                    "expiry_date", None
-                )
+                start_date = details.get("start_date", None)
+                expiry_date = details.get("expiry_date", None)
                 approval_type = ApprovalType.objects.get(id=details["approval_type"])
 
                 approval, created = Approval.objects.update_or_create(
@@ -2582,15 +2583,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     },
                 )
                 # Update the approval documents
-                self.generate_license_documents(
-                    approval, reason=ApprovalDocument.REASON_RENEWED
+                reason = (
+                    ApprovalDocument.REASON_AMENDED
+                    if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
+                    else ApprovalDocument.REASON_RENEWED
                 )
+                self.generate_license_documents(approval, reason=reason)
+
+                # Create a versioned approval save
                 approval.save(
-                    version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]}"
+                    version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
                 )
-                # TODO: Do compliances need to be created again for renewed approvals?
+
+                # TODO: Do compliances need to be created again for amended or renewed approvals?
                 self.generate_compliances(approval, request)
-                # TODO: Do invoicing details need to be created again for renewed approvals?
+                # TODO: Do invoicing details need to be created again for amended or renewed approvals?
                 self.generate_invoicing_details()
                 self.processing_status = (
                     Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
@@ -2601,61 +2608,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 send_proposal_approval_email_notification(self, request)
                 self.save(
                     version_comment=(
-                        f"Lease License Approval: {self.approval.lodgement_number} "
-                        f"({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
-                    )
-                )
-
-            elif (
-                self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
-                and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
-            ):
-                # Lease License (Amendment)
-                if self.previous_application.approval.id != self.approval.id:
-                    raise ValidationError(
-                        "The previous application's approval does not match the current approval."
-                    )
-
-                start_date = details.get("start_date", None)
-                expiry_date = details.get("expiry_date", None)
-                approval_type = ApprovalType.objects.get(id=details["approval_type"])
-
-                approval, created = Approval.objects.update_or_create(
-                    current_proposal=self.approval.current_proposal,
-                    defaults={
-                        "expiry_date": datetime.datetime.strptime(
-                            expiry_date, "%Y-%m-%d"
-                        ).date(),
-                        "start_date": datetime.datetime.strptime(
-                            start_date, "%Y-%m-%d"
-                        ).date(),
-                        "status": Approval.APPROVAL_STATUS_CURRENT,
-                        "current_proposal": self,
-                        "approval_type": approval_type,
-                    },
-                )
-                # Update the approval documents
-                self.generate_license_documents(
-                    approval, reason=ApprovalDocument.REASON_AMENDED
-                )
-                approval.save(
-                    version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]}"
-                )
-                # TODO: Do compliances need to be created again for renewed approvals?
-                self.generate_compliances(approval, request)
-                # TODO: Do invoicing details need to be created again for renewed approvals?
-                self.generate_invoicing_details()
-                self.processing_status = (
-                    Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
-                )
-
-                self.approved_by = request.user.id
-                # Send notification email to applicant
-                send_proposal_approval_email_notification(self, request)
-                self.save(
-                    version_comment=(
-                        f"Lease License Approval: {self.approval.lodgement_number} "
-                        f"({proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]})"
+                        f"Lease License Approval: {self.approval.lodgement_number} {reason}"
                     )
                 )
             elif (
