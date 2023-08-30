@@ -110,7 +110,7 @@
                             :ows-query="owsQuery"
                             style-by="assessor"
                             :filterable="false"
-                            :drawable="true"
+                            :drawable="is_internal || !leaseLicence"
                             :selectable="true"
                             level="internal"
                             :map-info-text="
@@ -173,7 +173,10 @@
 
                     <FormSection label="Geospatial Data" index="other_section">
                         <slot name="slot_other_assessment_comments"></slot>
-                        <GisDataDetails :selected-data="gis_data" />
+                        <GisDataDetails
+                            :selected-data="gis_data"
+                            :readonly="!is_internal || !leaseLicence"
+                        />
                     </FormSection>
 
                     <FormSection label="Categorisation" index="categorisation">
@@ -210,6 +213,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
+                                    :disabled="!is_internal || !leaseLicence"
                                 />
                             </div>
                         </div>
