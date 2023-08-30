@@ -2521,28 +2521,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         )
 
         try:
-            self.proposed_decline_status = False
+            if not self.can_assess(request.user):
+                raise exceptions.ProposalNotAuthorized()
+            if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
+                raise ValidationError(
+                    "You cannot issue the approval if it is not with an approver"
+                )
+            if not self.applicant_address:
+                raise ValidationError(
+                    "The applicant needs to have set their postal address before approving this proposal."
+                )
 
+            self.proposed_decline_status = False
             record_management_number = self.proposed_issuance_approval.get(
                 "record_management_number", None
             )
-
-            if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT:
-                # for 'Awaiting Payment' approval.
-                # External/Internal user fires this method after full payment via Make/Record Payment
-                pass
-            else:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
-                    raise ValidationError(
-                        "You cannot issue the approval if it is not with an approver"
-                    )
-                if not self.applicant_address:
-                    raise ValidationError(
-                        "The applicant needs to have set their postal address before approving this proposal."
-                    )
-
             self.store_proposed_approval_data(request, details)
 
             # Log proposal action
@@ -2618,19 +2611,53 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
             ):
                 # Lease License (Amendment)
-                if self.previous_application:
-                    previous_approval = self.previous_application.approval
-                    approval, created = Approval.objects.update_or_create(
-                        current_proposal=checking_proposal,
-                        defaults={
-                            "issue_date": timezone.now(),
-                            "expiry_date": timezone.now().date()
-                            + relativedelta(years=1),
-                            "start_date": timezone.now().date(),
-                            "lodgement_number": previous_approval.lodgement_number,
-                            "record_management_number": record_management_number,
-                        },
+                if self.previous_application.approval.id != self.approval.id:
+                    raise ValidationError(
+                        "The previous application's approval does not match the current approval."
                     )
+
+                start_date = details.get("start_date", None)
+                expiry_date = details.get("expiry_date", None)
+                approval_type = ApprovalType.objects.get(id=details["approval_type"])
+
+                approval, created = Approval.objects.update_or_create(
+                    current_proposal=self.approval.current_proposal,
+                    defaults={
+                        "expiry_date": datetime.datetime.strptime(
+                            expiry_date, "%Y-%m-%d"
+                        ).date(),
+                        "start_date": datetime.datetime.strptime(
+                            start_date, "%Y-%m-%d"
+                        ).date(),
+                        "status": Approval.APPROVAL_STATUS_CURRENT,
+                        "current_proposal": self,
+                        "approval_type": approval_type,
+                    },
+                )
+                # Update the approval documents
+                self.generate_license_documents(
+                    approval, reason=ApprovalDocument.REASON_AMENDED
+                )
+                approval.save(
+                    version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]}"
+                )
+                # TODO: Do compliances need to be created again for renewed approvals?
+                self.generate_compliances(approval, request)
+                # TODO: Do invoicing details need to be created again for renewed approvals?
+                self.generate_invoicing_details()
+                self.processing_status = (
+                    Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+                )
+
+                self.approved_by = request.user.id
+                # Send notification email to applicant
+                send_proposal_approval_email_notification(self, request)
+                self.save(
+                    version_comment=(
+                        f"Lease License Approval: {self.approval.lodgement_number} "
+                        f"({proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]})"
+                    )
+                )
             elif (
                 self.proposal_type.code == PROPOSAL_TYPE_TRANSFER
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
