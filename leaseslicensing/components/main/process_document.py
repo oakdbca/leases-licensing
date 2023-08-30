@@ -134,7 +134,7 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
 
                 returned_file_data = [
                     dict(
-                        file=get_secure_document_url(
+                        secure_url=get_secure_document_url(
                             instance, document_type + "s", d.id
                         ),
                         id=d.id,
@@ -152,7 +152,9 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
             # default file attributes
             returned_file_data = [
                 dict(
-                    file=get_secure_document_url(instance, document_type + "s", d.id),
+                    secure_url=get_secure_document_url(
+                        instance, document_type + "s", d.id
+                    ),
                     id=d.id,
                     name=d.name,
                 )

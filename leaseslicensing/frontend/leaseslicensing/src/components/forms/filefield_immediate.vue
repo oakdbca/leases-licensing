@@ -7,7 +7,14 @@
                         &nbsp;
                     </span>
                     <span v-else class="fa fa-file"> &nbsp; </span>
-                    <a :href="v.secure_url" target="_blank">
+                    <a
+                        :href="
+                            Object.hasOwn(v, 'secure_url')
+                                ? v.secure_url
+                                : v.file
+                        "
+                        target="_blank"
+                    >
                         {{ v.name }}
                     </a>
                     <span v-if="!readonly">
