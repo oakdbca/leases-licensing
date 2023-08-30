@@ -1466,30 +1466,31 @@ export default {
                     let url =
                         helpers.add_endpoint_json(
                             api_endpoints.proposal,
-                            proposal_id + '/renew_amend_approval_wrapper'
+                            proposal_id + '/amend_approval'
                         ) +
                         '?debug=' +
                         vm.debug +
                         '&type=amend';
                     let requestOptions = {
-                        method: 'POST',
+                        method: 'GET',
                     };
                     utils
                         .fetchUrl(url, requestOptions)
-                        .then(() => {
-                            console.log('Amend Approval');
-                            Swal.fire(
-                                'Amend',
-                                'You may amend your approval',
-                                'success'
+                        .then((response) => {
+                            console.log(
+                                `Created proposal ${response.id} to amend an approval.`
                             );
                             vm.$router.push({
                                 name: 'draft_proposal',
-                                params: { proposal_id: proposal_id },
+                                params: { proposal_id: response.id },
                             });
                         })
                         .catch((error) => {
-                            Swal.fire('Amend Approval', error, 'error');
+                            Swal.fire({
+                                title: 'Amend Approval',
+                                text: error,
+                                icon: 'error',
+                            });
                         });
                 }
             });

@@ -1474,6 +1474,15 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def amend_approval(self, request, *args, **kwargs):
         instance = self.get_object()
+        error_msg = _("Not allowed to amend this approval.")
+
+        if not is_customer(request):
+            raise serializers.ValidationError(error_msg, code="invalid")
+
+        proposals = Proposal.get_proposals_for_emailuser(request.user.id)
+        if not proposals.filter(id=instance.id).exists():
+            raise serializers.ValidationError(error_msg, code="invalid")
+
         instance = instance.amend_approval(request)
         serializer = SaveProposalSerializer(instance, context={"request": request})
         return Response(serializer.data)
