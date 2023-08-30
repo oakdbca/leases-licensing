@@ -249,7 +249,10 @@
                     </FormSection>
 
                     <template
-                        v-if="proposal.additional_document_types.length > 0"
+                        v-if="
+                            is_internal ||
+                            proposal.additional_document_types.length > 0
+                        "
                     >
                         <FormSection
                             label="Additional Documents"
