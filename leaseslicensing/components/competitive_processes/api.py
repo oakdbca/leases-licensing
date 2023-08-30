@@ -2,7 +2,7 @@ import logging
 from datetime import datetime
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import CharField, F, Q, Value
 from rest_framework import views
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
@@ -28,7 +28,6 @@ from leaseslicensing.components.main.decorators import (
 )
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
-from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.main.utils import (
     populate_gis_data,
@@ -275,14 +274,6 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
         else:
             return Response()
 
-    @detail_route(methods=["get"], detail=True)
-    @basic_exception_handler
-    def get_related_items(self, request, *args, **kwargs):
-        instance = self.get_object()
-        related_items = instance.get_related_items()
-        serializer = RelatedItemsSerializer(related_items, many=True)
-        return Response(serializer.data)
-
     @detail_route(
         methods=["GET"],
         detail=True,
@@ -294,14 +285,26 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
         and uses a generic related item serializer to return the data"""
         instance = self.get_object()
         if hasattr(instance, "originating_proposal"):
-            queryset = Proposal.objects.filter(
-                Q(id=instance.originating_proposal.id)
-                | Q(id__in=instance.generated_proposal.values_list("id", flat=True))
-            ).values("id", "lodgement_number", "processing_status")
+            queryset = (
+                Proposal.objects.annotate(
+                    description=F("processing_status"),
+                    type=Value("competitiveprocess", output_field=CharField()),
+                )
+                .filter(
+                    Q(id=instance.originating_proposal.id)
+                    | Q(id__in=instance.generated_proposal.values_list("id", flat=True))
+                )
+                .values("id", "lodgement_number", "description", "type")
+            )
         else:
-            queryset = Proposal.objects.filter(
-                id__in=instance.generated_proposal.values_list("id", flat=True)
-            ).values("id", "lodgement_number", "processing_status")
+            queryset = (
+                Proposal.objects.annotate(
+                    description=F("processing_status"),
+                    type=Value("competitiveprocess", output_field=CharField()),
+                )
+                .filter(id__in=instance.generated_proposal.values_list("id", flat=True))
+                .values("id", "lodgement_number", "description", "type")
+            )
         logger.debug(f"{queryset.query}")
         serializer = RelatedItemSerializer(queryset, many=True)
         data = {}
