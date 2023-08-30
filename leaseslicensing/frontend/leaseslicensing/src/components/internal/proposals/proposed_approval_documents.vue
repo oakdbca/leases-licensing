@@ -65,8 +65,7 @@
                                     </div>
                                     <div class="col-sm-1 col-form-label">
                                         <i
-                                            class="alert-info fa-solid fa-circle-info"
-                                            data-color="info"
+                                            class="text-primary fa-solid fa-circle-info"
                                             data-bs-toggle="tooltip"
                                             data-bs-placement="left"
                                             :title="

@@ -136,7 +136,7 @@
                                             !assessedBy &&
                                             !assessedOn
                                         "
-                                        class="alert-info fa-solid fa-circle-info"
+                                        class="text-primary fa-solid fa-circle-info"
                                         data-color="info"
                                         data-bs-toggle="tooltip"
                                         data-bs-placement="right"
@@ -178,8 +178,7 @@
                                             !assessedBy &&
                                             !assessedOn
                                         "
-                                        class="alert-info fa-solid fa-circle-info"
-                                        data-color="info"
+                                        class="text-primary fa-solid fa-circle-info"
                                         data-bs-toggle="tooltip"
                                         data-bs-placement="right"
                                         title="The commencement date has been set to one day after the expiry date of the current approval."
@@ -222,8 +221,7 @@
                                             !assessedBy &&
                                             !assessedOn
                                         "
-                                        class="alert-info fa-solid fa-circle-info"
-                                        data-color="info"
+                                        class="text-primary fa-solid fa-circle-info"
                                         data-bs-toggle="tooltip"
                                         data-bs-placement="right"
                                         title="The duration has been set to the same duration as the current approval."
@@ -316,8 +314,7 @@
                                             !assessedBy &&
                                             !assessedOn
                                         "
-                                        class="alert-info fa-solid fa-circle-info"
-                                        data-color="info"
+                                        class="text-primary fa-solid fa-circle-info"
                                         data-bs-toggle="tooltip"
                                         data-bs-placement="right"
                                         title="Emails have been applied from the current approval."
@@ -378,8 +375,7 @@
                                             !assessedBy &&
                                             !assessedOn
                                         "
-                                        class="alert-info fa-solid fa-circle-info"
-                                        data-color="info"
+                                        class="text-primary fa-solid fa-circle-info"
                                         data-bs-toggle="tooltip"
                                         data-bs-placement="right"
                                         title="The Record Management Number has been applied from the current approval."
