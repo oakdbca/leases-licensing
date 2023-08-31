@@ -10,7 +10,8 @@
             type="warning"
             icon="exclamation-triangle-fill"
             >Additional invoices may be created if there is a discrepency
-            between the quarterly and annual turnover</BootstrapAlert
+            between the {{ billingCycleAdverb }} and annual
+            turnover</BootstrapAlert
         >
         <div v-if="loadingPreviewInvoices" class="text-center">
             <BootstrapSpinner
@@ -181,6 +182,18 @@ export default {
             }
             if (this.invoicingDetails.invoicing_repetition_type == 3) {
                 return 'Month';
+            }
+            return 'Unknown';
+        },
+        billingCycleAdverb: function () {
+            if (this.invoicingDetails.invoicing_repetition_type == 1) {
+                return 'annually';
+            }
+            if (this.invoicingDetails.invoicing_repetition_type == 2) {
+                return 'quarterly';
+            }
+            if (this.invoicingDetails.invoicing_repetition_type == 3) {
+                return 'monthly';
             }
             return 'Unknown';
         },
