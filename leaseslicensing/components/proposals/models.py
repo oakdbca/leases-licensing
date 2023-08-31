@@ -1796,7 +1796,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     gdf_transform["valid"] = True
 
                     ProposalGeometry.objects.create(
-                        proposal=self, polygon=polygon, intersects=True
+                        proposal=self,
+                        polygon=polygon,
+                        intersects=True,
+                        drawn_by=request.user.id,
                     )
                     logger.debug(f"{self.shapefile_json}")
 
@@ -1810,6 +1813,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
                 shp_json = gdf_merged.to_json()
 
+                # Todo: maybe axe this at some point as we are convering the shapefile into a proposalgeometry
+                # which is more useful in this application. Why store it in two places?
                 if type(shp_json) == str:
                     self.shapefile_json = json.loads(shp_json)
                 else:
@@ -1817,6 +1822,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                 self.save()
                 valid_geometry_saved = True
+
+            # Delete all shapefile documents so the user can upload another one if they wish.
+            self.shapefile_documents.all().delete()
 
         except ValidationError:
             raise
