@@ -10,6 +10,7 @@ from leaseslicensing.components.invoicing.models import (
     CPICalculationMethod,
     CrownLandRentReviewDate,
     CustomCPIYear,
+    FinancialMonth,
     FinancialQuarter,
     FixedAnnualIncrementAmount,
     FixedAnnualIncrementPercentage,
@@ -102,6 +103,12 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
         return False
 
 
+class FinancialMonthSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FinancialMonth
+        fields = ["year", "month", "gross_turnover", "locked"]
+
+
 class FinancialQuarterSerializer(serializers.ModelSerializer):
     class Meta:
         model = FinancialQuarter
@@ -111,6 +118,7 @@ class FinancialQuarterSerializer(serializers.ModelSerializer):
 class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
     to_be_deleted = serializers.SerializerMethodField()
     quarters = FinancialQuarterSerializer(many=True, required=False)
+    months = FinancialMonthSerializer(many=True, required=False)
 
     class Meta:
         model = PercentageOfGrossTurnover
@@ -123,6 +131,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "locked",
             "to_be_deleted",
             "quarters",
+            "months",
         )
         extra_kwargs = {
             "id": {
@@ -136,22 +145,20 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         quarters = validated_data.pop("quarters", [])
+        months = validated_data.pop("months", [])
         instance = super().create(validated_data)
-        if quarters:
-            for quarter_data in quarters:
-                quarter, created = FinancialQuarter.objects.get_or_create(
-                    year=instance,
-                    quarter=quarter_data.get("quarter"),
-                )
-                gross_turnover = quarter_data.get("gross_turnover")
-                if gross_turnover:
-                    quarter.gross_turnover = gross_turnover
-                    quarter.save()
-
+        self.get_or_create_quarters(quarters, instance)
+        self.get_or_create_months(months, instance)
         return instance
 
     def update(self, instance, validated_data):
         quarters = validated_data.pop("quarters", [])
+        months = validated_data.pop("months", [])
+        self.get_or_create_quarters(quarters, instance)
+        self.get_or_create_months(months, instance)
+        return super().update(instance, validated_data)
+
+    def get_or_create_quarters(self, quarters, instance):
         if quarters:
             for quarter_data in quarters:
                 quarter, created = FinancialQuarter.objects.get_or_create(
@@ -163,7 +170,18 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
                     quarter.gross_turnover = gross_turnover
                     quarter.save()
 
-        return super().update(instance, validated_data)
+    def get_or_create_months(self, months, instance):
+        if months:
+            for month_data in months:
+                month, created = FinancialMonth.objects.get_or_create(
+                    financial_year=instance,
+                    year=month_data.get("year"),
+                    month=month_data.get("month"),
+                )
+                gross_turnover = month_data.get("gross_turnover")
+                if gross_turnover:
+                    month.gross_turnover = gross_turnover
+                    month.save()
 
 
 class CrownLandRentReviewDateSerializer(serializers.ModelSerializer):
