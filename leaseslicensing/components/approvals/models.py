@@ -142,7 +142,9 @@ class ApprovalType(RevisionedMixin):
     details_placeholder = models.CharField(max_length=200, blank=True)
     gst_free = models.BooleanField(default=False)
     approvaltypedocumenttypes = models.ManyToManyField(
-        "ApprovalTypeDocumentType", through="ApprovalTypeDocumentTypeOnApprovalType"
+        "ApprovalTypeDocumentType",
+        through="ApprovalTypeDocumentTypeOnApprovalType",
+        related_name="approval_type",
     )
 
     class Meta:
@@ -531,9 +533,29 @@ class Approval(LicensingModelVersioned):
     # copy amend_renew() from ML?
     @property
     def can_amend(self):
-        # try:
-        if self.renewal_document and self.renewal_notification_sent_to_holder:
-            # amend_renew = 'renew'
+        try:
+            # FIXME: As of now there are no Renewal Documents implemented for leases. Assuming we will add them,
+            # at the time we do so, they will be implemented as a new ApprovalTypeDocumentType object
+            # with a new boolean field `is_renewal_document`. We can already check the approval for a document
+            # of that type with that field now and simply treat any approval as if it were not meant to have
+            # a renewal document. Thus any underlying logic and model definition can largely be left intact until
+            # there is more informationm on renewal documents in leases available.
+            can_provide_renewal_document = ApprovalTypeDocumentType.objects.filter(
+                approval_type=self.approval_type, is_renewal_document=True
+            ).exists()
+        except:
+            logger.warning(
+                f"{self.approval_type} {self.lodgement_number} does not allow for renewal documents"
+            )
+            can_provide_renewal_document = False
+
+        if (
+            not can_provide_renewal_document
+            and self.renewal_notification_sent_to_holder
+        ):
+            # Renewal document is not provided for this approval type. Don't need to check for it on the model.
+            return False
+        elif self.renewal_document and self.renewal_notification_sent_to_holder:
             return False
         else:
             amend_conditions = {

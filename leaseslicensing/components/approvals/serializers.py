@@ -157,7 +157,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
     licence_document = serializers.SerializerMethodField()
-    # renewal_document = serializers.SerializerMethodField(read_only=True)
+    renewal_document = serializers.SerializerMethodField(read_only=True)
     status = serializers.CharField(source="get_status_display")
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
@@ -203,6 +203,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "linked_applications",
             "licence_document",
+            "renewal_document",
             "current_proposal",
             "current_proposal_processing_status",
             "tenure",
@@ -306,9 +307,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return obj.linked_applications
 
     def get_renewal_document(self, obj):
-        if obj.renewal_document and obj.renewal_document._file:
-            return obj.renewal_document._file.url
-        return None
+        if not obj.renewal_document or not obj.renewal_document._file:
+            return None
+        return obj.renewal_document._file.url
 
     def get_application_type(self, obj):
         if obj.current_proposal:

@@ -2579,6 +2579,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         "status": Approval.APPROVAL_STATUS_CURRENT,
                         "current_proposal": self,
                         "renewal_review_notification_sent_to_assessors": False,
+                        "renewal_notification_sent_to_holder": False,
                         "approval_type": approval_type,
                     },
                 )
