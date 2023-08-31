@@ -596,6 +596,7 @@ export default {
                 processing: true,
                 initComplete: function () {
                     console.log('in initComplete');
+                    vm.$refs.invoices_datatable.vmDataTable.draw('page');
                 },
             };
         },
@@ -653,8 +654,9 @@ export default {
             );
         },
         adjust_table_width: function () {
-            this.$refs.invoices_datatable.vmDataTable.columns.adjust();
-            this.$refs.invoices_datatable.vmDataTable.responsive.recalc();
+            this.$refs.invoices_datatable.vmDataTable.columns
+                .adjust()
+                .responsive.recalc();
         },
         expandCollapseFilters: function () {
             this.filters_expanded = !this.filters_expanded;
