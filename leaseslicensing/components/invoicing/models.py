@@ -777,8 +777,12 @@ class InvoicingDetails(BaseModel):
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             q = utils.financial_quarter_from_date(end_date)
             financial_year = f"{issue_date.year - 1}-{issue_date.year}"
-            return f"On receipt of Q{q} {financial_year} financial statement"
-
+            if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+                text = f"Q{q} {financial_year}"
+            else:
+                month = utils.month_string_from_date(end_date)
+                text = f"{month} {end_date.year}"
+            return f"On receipt of {text} financial statement"
         return issue_date.strftime("%d/%m/%Y")
 
     def get_due_date(self, due_date):
