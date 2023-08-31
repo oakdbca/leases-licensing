@@ -26,7 +26,7 @@
                                 <div class="input-group">
                                     <input
                                         v-model="year.percentage"
-                                        step="0.01"
+                                        step="0.1"
                                         min="0"
                                         max="100"
                                         type="number"
