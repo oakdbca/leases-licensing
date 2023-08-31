@@ -2570,6 +2570,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 approval, created = Approval.objects.update_or_create(
                     current_proposal=self.approval.current_proposal,
                     defaults={
+                        "issue_date": timezone.now(),  # Update the issue date as the old ones can be fetched from the reversion history
                         "expiry_date": datetime.datetime.strptime(
                             expiry_date, "%Y-%m-%d"
                         ).date(),

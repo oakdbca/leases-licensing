@@ -122,7 +122,10 @@
                     <span class="fw-bold">{{ approval.approved_by }}</span> on
                     <span class="fw-bold">{{
                         new Date(approval.issue_date).toLocaleDateString()
-                    }}</span></BootstrapAlert
+                    }}</span>
+                    <span>
+                        ({{ approval.current_proposal_proposal_type }})</span
+                    ></BootstrapAlert
                 >
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item" role="presentation">

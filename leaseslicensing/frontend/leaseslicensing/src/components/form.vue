@@ -7,7 +7,7 @@
             class=""
         >
             <h3>
-                {{ applicationTypeText }} Proposal:
+                {{ applicationTypeText }} - {{ proposalTypeText }}:
                 {{ proposal.lodgement_number }}
             </h3>
         </div>
@@ -516,6 +516,13 @@ export default {
             let text = '';
             if (this.proposal) {
                 text = this.proposal.application_type.name_display;
+            }
+            return text;
+        },
+        proposalTypeText: function () {
+            let text = '';
+            if (this.proposal) {
+                text = this.proposal.proposal_type.description;
             }
             return text;
         },
