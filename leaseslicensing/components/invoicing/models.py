@@ -1135,7 +1135,48 @@ class FinancialQuarter(BaseModel):
         return f"Q{self.quarter} {self.year}: Gross Turnover: {self.gross_turnover or 'Not yet entered'}"
 
     def save(self, *args, **kwargs):
-        if self.gross_turnover:
+        if not self.locked and self.gross_turnover:
+            self.locked = True
+        super().save(*args, **kwargs)
+
+
+class FinancialMonth(BaseModel):
+    financial_year = models.ForeignKey(
+        PercentageOfGrossTurnover,
+        on_delete=models.CASCADE,
+        related_name="months",
+    )
+    month = models.PositiveSmallIntegerField(
+        null=False,
+        blank=False,
+        validators=[MinValueValidator(1), MaxValueValidator(12)],
+    )
+    year = models.PositiveSmallIntegerField(
+        null=False,
+        blank=False,
+        validators=[MinValueValidator(1950), MaxValueValidator(9999)],
+    )
+    gross_turnover = models.DecimalField(
+        null=True, blank=True, max_digits=10, decimal_places=2
+    )
+    locked = models.BooleanField(default=False)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = [
+            "year",
+            "month",
+        ]
+
+    @property
+    def month_name(self):
+        return utils.month_string_from_month(self.month)
+
+    def __str__(self):
+        return f"{self.month_name} {self.year}: Gross Turnover: {self.gross_turnover or 'Not yet entered'}"
+
+    def save(self, *args, **kwargs):
+        if not self.locked and self.gross_turnover:
             self.locked = True
         super().save(*args, **kwargs)
 
