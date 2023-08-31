@@ -466,8 +466,75 @@
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
         </div>
-        <div class="row">
-            <div class="col-sm-6"></div>
+        <div class="row shapefile-row">
+            <div class="col-sm-6 border p-2">
+                <div class="row mb-2">
+                    <div class="col">
+                        <label for="shapefile_document" class="fw-bold"
+                            >Upload Shapefile
+                        </label>
+                    </div>
+                    <div class="col">
+                        <FileField
+                            id="shapefile_document_document"
+                            ref="shapefile_document"
+                            :readonly="false"
+                            name="shapefile_document"
+                            :is-repeatable="true"
+                            :document-action-url="shapefileDocumentUrl"
+                            :replace_button_by_text="true"
+                            file-types=".dbf, .prj, .shp, .shx"
+                            text_string="Attach File (.prj .dbf .shp
+                                .shx)"
+                        />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <BootstrapAlert
+                            >If you do not upload a .prj file, we will use
+                            <a
+                                href="https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84"
+                                target="_blank"
+                                >WGS 84</a
+                            >
+                            / 'EPSG:4326'
+                        </BootstrapAlert>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <button
+                            v-if="isValidating"
+                            type="button"
+                            disabled
+                            class="btn btn-primary"
+                        >
+                            <div class="row">
+                                <div
+                                    class="col-sm-12 text-nowrap text-truncate"
+                                >
+                                    <i class="fa fa-spinner fa-spin"></i>
+                                </div>
+                            </div>
+                        </button>
+                        <button
+                            v-else
+                            type="button"
+                            class="btn btn-primary"
+                            @click="validate_map_docs"
+                        >
+                            <div class="row">
+                                <div
+                                    class="col-sm-12 text-nowrap text-truncate"
+                                >
+                                    Process Files
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </div>
             <div class="col-sm-6">
                 <div id="legend_title"></div>
                 <div id="legend">
@@ -480,7 +547,7 @@
 
 <script>
 import { v4 as uuid } from 'uuid';
-import { api_endpoints, utils } from '@/utils/hooks';
+import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 import VueAlert from '@vue-utils/alert.vue';
 
@@ -501,6 +568,7 @@ import GeoJSON from 'ol/format/GeoJSON';
 import Overlay from 'ol/Overlay.js';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js';
 import RangeSlider from '@/components/forms/range_slider.vue';
+import FileField from '@/components/forms/filefield_immediate.vue';
 import {
     addOptionalLayers,
     set_mode,
@@ -511,6 +579,7 @@ export default {
     name: 'MapComponentWithFiltersV2',
     components: {
         CollapsibleFilters,
+        FileField,
         RangeSlider,
         VueAlert,
     },
@@ -691,7 +760,7 @@ export default {
             default: false,
         },
     },
-    emits: ['filter-appied', 'validate-feature'],
+    emits: ['filter-appied', 'validate-feature', 'refreshFromResponse'],
     data() {
         let vm = this;
         return {
@@ -776,12 +845,33 @@ export default {
                 width: 1,
             }),
             set_mode: set_mode,
+            isValidating: false,
             errorMessage: null,
             overlayFeatureInfo: {},
             deletedFeatures: [], // keep track of deleted features
         };
     },
     computed: {
+        shapefileDocumentUrl: function () {
+            let endpoint = '';
+            let obj_id = 0;
+            if (this.context.model_name == 'proposal') {
+                endpoint = api_endpoints.proposal;
+                obj_id = this.context.id;
+            } else if (this.context.model_name == 'competitiveprocess') {
+                endpoint = api_endpoints.competitive_process;
+                obj_id = this.context.id;
+            } else {
+                console.warn('shapefileDocumentUrl: invalid context');
+                return ''; // Should not reach here.
+            }
+            let url = helpers.add_endpoint_join(
+                endpoint,
+                '/' + obj_id + '/process_shapefile_document/'
+            );
+            console.log({ url });
+            return url;
+        },
         filterApplied: function () {
             let filter_applied = true;
             if (
@@ -1269,7 +1359,7 @@ export default {
             vm.initialiseDrawLayer();
 
             // update map extent when new features added
-            vm.map.on('rendercomplete', vm.fitToLayer);
+            vm.map.on('rendercomplete', vm.displayAllFeatures());
 
             vm.initialisePointerMoveEvent();
             vm.initialiseSelectFeatureEvent();
@@ -2111,6 +2201,57 @@ export default {
                 vm.deletedFeatures.push(feature);
             }
         },
+        validate_map_docs: function () {
+            let vm = this;
+            vm.isValidating = true;
+            vm.errorString = '';
+            const options = {
+                method: 'POST',
+                'content-type': 'application/json',
+            };
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.proposals,
+                    vm.context.id + '/validate_map_files'
+                ),
+                options
+            )
+                .then(async (response) => {
+                    if (!response.ok) {
+                        const text = await response.json();
+                        throw new Error(text);
+                    } else {
+                        return response.json();
+                    }
+                })
+                .then((data) => {
+                    vm.$emit('refreshFromResponse', data);
+                    // Once the shapefile is converted to a proposal geometry the files are deleted
+                    // so calling this will remove the file list from the front end
+                    vm.$refs.shapefile_document.get_documents();
+                    vm.$nextTick(() => {
+                        vm.loadFeatures([data]);
+                        vm.displayAllFeatures();
+                        swal.fire(
+                            'Success',
+                            'Shapefile processed successfully',
+                            'success'
+                        );
+                    });
+                })
+                .catch((error) => {
+                    console.log(error);
+                    vm.errorString = helpers.apiVueResourceError(error);
+                    swal.fire({
+                        title: 'Validation',
+                        text: error,
+                        icon: 'error',
+                    });
+                })
+                .finally(() => {
+                    vm.isValidating = false;
+                });
+        },
     },
 };
 </script>
@@ -2148,5 +2289,11 @@ export default {
 }
 .map-spinner {
     position: absolute !important;
+}
+
+.shapefile-row {
+    /* Works to make the Upload shapefile section fit neatly with the map
+    haven't investigated why it's needed. */
+    margin-left: 0px;
 }
 </style>

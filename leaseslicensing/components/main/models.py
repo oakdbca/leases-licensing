@@ -476,6 +476,10 @@ class LicensingModel(models.Model):
             self.lodgement_number = new_lodgement_id
             self.save()
 
+    @property
+    def model_name(self):
+        return self._meta.model_name
+
 
 class LicensingModelVersioned(LicensingModel, RevisionedMixin):
     class Meta:

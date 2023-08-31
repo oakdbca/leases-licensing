@@ -38,6 +38,27 @@ def financial_quarter_from_date(date):
         return 2
 
 
+def month_string_from_date(date):
+    return month_string_from_month(date.month)
+
+
+def month_string_from_month(month):
+    return [
+        "JAN",
+        "FEB",
+        "MAR",
+        "APR",
+        "MAY",
+        "JUN",
+        "JUL",
+        "AUG",
+        "SEP",
+        "OCT",
+        "NOV",
+        "DEC",
+    ][month - 1]
+
+
 def financial_year_from_date(date):
     month = date.month
     year = date.year

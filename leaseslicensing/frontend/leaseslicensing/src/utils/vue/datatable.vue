@@ -1,10 +1,10 @@
 <template lang="html">
-    <div id="DataTable">
+    <div id="DataTable" class="table-responsive">
         <table
             :id="id"
-            class="hover table border table-striped table-bordered dt-responsive nowrap"
+            class="hover table border table-striped table-bordered dt-responsive nowrap w-100"
             cellspacing="0"
-            width="100%"
+            style="width: 100%"
         >
             <thead>
                 <tr>
@@ -22,9 +22,6 @@
     </div>
 </template>
 <script>
-//import {$, DataTableBs} from '../../hooks'
-//import ResponsiveDatatablesHelper from "../responsive_datatable_helper.js"
-//module.exports = {
 export default {
     name: 'DataTable',
     props: {
@@ -52,43 +49,33 @@ export default {
         let vm = this;
         vm.table = $('#' + vm.id);
         $.fn.dataTable.ext.errMode = 'throw';
-        // $.fn.dataTable.ext.classes.sPageButton = 'page-link page-item';
         vm.initEvents();
     },
     methods: {
         initEvents: function () {
             let vm = this;
-            //var responsiveHelper;
-            // eslint-disable-next-line no-unused-vars
-            var breakpointDefinition = {
-                //bootstrap grid values
-                tablet: 992,
-                phone: 768,
-            };
-            /*
-           var responsiveOptions = {
-               autoWidth        : false,
-               preDrawCallback: function () {
-                 // Initialize the responsive datatables helper once.
-                 if (!responsiveHelper) {
-                     responsiveHelper = new ResponsiveDatatablesHelper(vm.table, breakpointDefinition);
-                 }
-             },
-             rowCallback    : function (nRow) {
-                 responsiveHelper.createExpandIcon(nRow);
-             },
-             drawCallback   : function (oSettings) {
-                 responsiveHelper.respond();
-             },
-           }
-           */
-            //var options = Object.assign(vm.dtOptions,responsiveOptions)
-            // forget about ResponsiveDatatablesHelper
             var options = Object.assign(vm.dtOptions);
             vm.vmDataTable = $(vm.table).DataTable(options);
             $(vm.table).resize(function () {
                 vm.vmDataTable.draw(true);
             });
+            // $(vm.table).on('draw.dt', function () {
+            //     console.log('draw datatable');
+            //     vm.vmDataTable.columns
+            //         .adjust()
+            //         .responsive.rebuild()
+            //         .responsive.recalc();
+            // });
+            // $(vm.table).init(function () {
+            //     console.log('init datatable');
+            //     vm.$nextTick(() => {
+            //         vm.vmDataTable.columns
+            //             .adjust()
+            //             .responsive.rebuild()
+            //             .responsive.recalc()
+            //             .draw();
+            //     });
+            // });
         },
     },
 };

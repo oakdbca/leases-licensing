@@ -263,7 +263,7 @@
                             @change="onInvoicingRepetitionTypeChange"
                         >
                             <option
-                                v-for="repetition_type in repetition_types"
+                                v-for="repetition_type in filtered_repetition_types"
                                 :key="repetition_type.key"
                                 :value="repetition_type.id"
                             >
@@ -598,7 +598,9 @@ export default {
             return (
                 [1, 2].includes(
                     this.invoicingDetailsComputed.invoicing_repetition_type
-                ) || this.context != 'Proposal'
+                ) ||
+                this.getChargeMethodIdByKey('percentage_of_gross_turnover') ||
+                this.context != 'Proposal'
             );
         },
         cpi_calculation_method_disabled: function () {
@@ -623,6 +625,9 @@ export default {
                         this.getChargeMethodIdByKey('base_fee_plus_annual_cpi'),
                         this.getChargeMethodIdByKey(
                             'base_fee_plus_annual_cpi_custom'
+                        ),
+                        this.getChargeMethodIdByKey(
+                            'percentage_of_gross_turnover'
                         ),
                     ].includes(this.invoicingDetails.charge_method)
                 )
@@ -680,6 +685,20 @@ export default {
         show_ad_hoc_invoicing: function () {
             // Todo: add logic
             return constants.APPROVAL_TYPE.LICENCE == this.approvalType;
+        },
+        filtered_repetition_types: function () {
+            // Don't show annual invoicing option for gross turnover charge method
+            if (this.invoicingDetails) {
+                if (
+                    this.invoicingDetails.charge_method ==
+                    this.getChargeMethodIdByKey('percentage_of_gross_turnover')
+                ) {
+                    return this.repetition_types.filter(
+                        (repetition_type) => repetition_type.id != 1
+                    );
+                }
+            }
+            return this.repetition_types;
         },
     },
     created: function () {

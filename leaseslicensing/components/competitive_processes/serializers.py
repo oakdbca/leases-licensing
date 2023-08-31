@@ -508,6 +508,7 @@ class ListCompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
 
 
 class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
+    model_name = serializers.CharField(read_only=True)
     accessing_user = serializers.SerializerMethodField()
     competitive_process_parties = CompetitiveProcessPartySerializer(
         many=True, required=False
@@ -526,6 +527,7 @@ class CompetitiveProcessSerializer(CompetitiveProcessSerializerBase):
         model = CompetitiveProcess
         fields = (
             "id",
+            "model_name",
             "lodgement_number",
             "registration_of_interest",
             "generated_proposal",

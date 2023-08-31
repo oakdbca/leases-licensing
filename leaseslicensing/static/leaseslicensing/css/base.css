@@ -293,3 +293,30 @@ table.dataTable a:hover {
     margin-top: 0px !important;
     margin-left: 0px !important;
 }
+
+
+/* Tooltip styles */
+
+.tooltip .tooltip-inner {
+    background-color: #226fbb !important;
+}
+
+.tooltip .tooltip-arrow {
+    border-right-color: #226fbb !important;
+}
+
+.tooltip.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: #226fbb !important;
+}
+
+.tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+    border-bottom-color: #226fbb !important;
+}
+
+.tooltip.bs-tooltip-start .tooltip-arrow::before {
+    border-left-color: #226fbb !important;
+}
+
+.tooltip.bs-tooltip-end .tooltip-arrow::before {
+    border-right-color: #226fbb !important;
+}

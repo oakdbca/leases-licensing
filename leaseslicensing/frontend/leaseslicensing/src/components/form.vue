@@ -110,7 +110,7 @@
                             :ows-query="owsQuery"
                             style-by="assessor"
                             :filterable="false"
-                            :drawable="true"
+                            :drawable="is_internal || !leaseLicence"
                             :selectable="true"
                             level="internal"
                             :map-info-text="
@@ -119,6 +119,7 @@
                                     : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the application and continue at a later time.'
                             "
                             @validate-feature="validateFeature.bind(this)()"
+                            @refreshFromResponse="refreshFromResponse"
                         />
                     </FormSection>
                 </div>
@@ -173,7 +174,10 @@
 
                     <FormSection label="Geospatial Data" index="other_section">
                         <slot name="slot_other_assessment_comments"></slot>
-                        <GisDataDetails :selected-data="gis_data" />
+                        <GisDataDetails
+                            :selected-data="gis_data"
+                            :readonly="!is_internal || !leaseLicence"
+                        />
                     </FormSection>
 
                     <FormSection label="Categorisation" index="categorisation">
@@ -210,6 +214,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
+                                    :disabled="!is_internal || !leaseLicence"
                                 />
                             </div>
                         </div>
@@ -249,7 +254,10 @@
                     </FormSection>
 
                     <template
-                        v-if="proposal.additional_document_types.length > 0"
+                        v-if="
+                            is_internal ||
+                            proposal.additional_document_types.length > 0
+                        "
                     >
                         <FormSection
                             label="Additional Documents"
