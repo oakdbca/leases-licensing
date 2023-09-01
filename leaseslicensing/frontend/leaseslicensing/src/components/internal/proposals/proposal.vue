@@ -1888,7 +1888,7 @@ export default {
                 this.$router.push({ name: 'internal-dashboard' });
             });
         },
-        completeReferral: async function () {
+        completeReferral: async function (referral_text) {
             let vm = this;
             vm.checkAssessorData();
             swal.fire({
@@ -1911,6 +1911,7 @@ export default {
                             body: JSON.stringify({
                                 proposal: this.proposal,
                                 referee_id: this.profile.id,
+                                referral_text: referral_text,
                             }),
                             method: 'POST',
                             headers: {

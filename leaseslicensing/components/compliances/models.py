@@ -426,16 +426,6 @@ class Compliance(LicensingModelVersioned):
             request,
         )
 
-        # Create a log entry for the applicant
-        self.proposal.applicant.log_user_action(
-            ComplianceUserAction.ACTION_SEND_REFERRAL_TO.format(
-                referral.id,
-                self.lodgement_number,
-                f"{user.get_full_name()}({user.email})",
-            ),
-            request,
-        )
-
         send_referral_email_notification(
             referral,
             [
@@ -651,8 +641,10 @@ class ComplianceReferral(RevisionedMixin):
         choices=PROCESSING_STATUS_CHOICES,
         default=PROCESSING_STATUS_CHOICES[0][0],
     )
-    text = models.TextField(blank=True)
-    referral_text = models.TextField(blank=True)
+    text = models.TextField(blank=True)  # Comments from the assessor to the referee
+    referral_text = models.TextField(
+        blank=True
+    )  # Comments from the referee when they complete the referral
     assigned_officer = models.IntegerField()  # EmailUserRO
     comment = models.TextField(blank=True)
 
@@ -752,19 +744,14 @@ class ComplianceReferral(RevisionedMixin):
 
     @transaction.atomic
     def complete(self, request):
+        referral_text = request.data.get("referral_text", None)
+        if referral_text:
+            self.referral_text = referral_text
         self.processing_status = ComplianceReferral.PROCESSING_STATUS_COMPLETED
         self.save()
 
         # Log proposal action
         self.compliance.log_user_action(
-            ComplianceUserAction.CONCLUDE_REFERRAL.format(
-                request.user.get_full_name(), self.id, self.compliance.lodgement_number
-            ),
-            request,
-        )
-
-        # log applicant_field
-        self.applicant.log_user_action(
             ComplianceUserAction.CONCLUDE_REFERRAL.format(
                 request.user.get_full_name(), self.id, self.compliance.lodgement_number
             ),

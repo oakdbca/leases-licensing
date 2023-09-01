@@ -1762,7 +1762,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             )
             raise serializers.ValidationError(msg, code="invalid")
 
-        save_referral_data(instance, request, True)
+        save_referral_data(instance, request)
 
         referral = instance.referrals.get(referral=referee_id)
         referral.complete(request)
@@ -1775,7 +1775,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def referral_save(self, request, *args, **kwargs):
         instance = self.get_object()
-        save_referral_data(instance, request, False)
+        save_referral_data(instance, request)
 
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
@@ -1834,8 +1834,10 @@ class ProposalViewSet(UserActionLoggingViewset):
             application_type = ApplicationType.objects.get(name=application_type_str)
             proposal_type = ProposalType.objects.get(code="new")
 
+            org_applicant = request.data.get("org_applicant", None)
+
             data = {
-                "org_applicant": request.data.get("org_applicant", None),
+                "org_applicant": org_applicant,
                 "ind_applicant": request.user.id
                 if not request.data.get("org_applicant")
                 else None,  # if no org_applicant, assume this application is for individual.
@@ -1847,7 +1849,8 @@ class ProposalViewSet(UserActionLoggingViewset):
             serializer.is_valid(raise_exception=True)
             instance = serializer.save()
 
-            make_proposal_applicant_ready(instance, request)
+            if not org_applicant:
+                make_proposal_applicant_ready(instance, request)
 
             serializer = SaveProposalSerializer(instance)
             return Response(serializer.data)

@@ -500,13 +500,15 @@ def _save_answer_dict(answer_dict):
     return answer_obj
 
 
-def save_referral_data(proposal, request, referral_completed=False):
+def save_referral_data(proposal, request):
     with transaction.atomic():
         proposal_data = (
             request.data.get("proposal") if request.data.get("proposal") else {}
         )
         if not proposal_data:
             return
+
+        referral_text = request.data.get("referral_text", None)
 
         for referral in proposal_data["referrals"]:
             logger.info(f"Saving referral data for {referral}")
@@ -517,6 +519,7 @@ def save_referral_data(proposal, request, referral_completed=False):
             referral = Referral(
                 pk=referral["id"],
                 proposal=proposal,
+                referral_text=referral_text,
                 comment_map=referral["comment_map"],
                 comment_proposal_details=referral["comment_proposal_details"],
                 comment_proposal_impact=referral["comment_proposal_impact"],
@@ -527,6 +530,7 @@ def save_referral_data(proposal, request, referral_completed=False):
             # Only allow updating of comment fields
             referral.save(
                 update_fields=[
+                    "referral_text",
                     "comment_map",
                     "comment_proposal_details",
                     "comment_proposal_impact",
@@ -747,6 +751,7 @@ def make_proposal_applicant_ready(proposal, request):
         proposal=proposal
     )
     if created:
+        proposal_applicant.emailuser_id = request.user.id
         proposal_applicant.first_name = request.user.first_name
         proposal_applicant.last_name = request.user.last_name
         proposal_applicant.dob = request.user.dob

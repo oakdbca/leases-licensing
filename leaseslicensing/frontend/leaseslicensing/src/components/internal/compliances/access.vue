@@ -66,19 +66,17 @@
                             <select ref="referees" class="form-select" />
                             <template v-if="!sendingReferral">
                                 <template v-if="selected_referral">
-                                    <label
-                                        class="control-label pull-left"
-                                        for="Name"
-                                        >Comments</label
-                                    >
                                     <textarea
-                                        v-model="referral_text"
-                                        class="form-control comments_to_referral"
+                                        ref="assessor_referral_text"
+                                        v-model="assessor_referral_text"
+                                        class="form-control comments_to_referral my-2"
                                         name="name"
+                                        rows="5"
+                                        placeholder="Enter any comments for the referee before sending"
                                     />
                                     <div class="text-end">
                                         <a
-                                            class="actionBtn"
+                                            class="btn btn-primary"
                                             role="button"
                                             @click.prevent="sendReferral()"
                                             >Send</a
@@ -260,13 +258,22 @@
                             >
                                 {{ approveButtonText }}
                             </button>
-                            <button
-                                v-if="compliance.is_referee"
-                                class="btn btn-primary"
-                                @click.prevent="completeReferral()"
-                            >
-                                Complete Referral
-                            </button>
+                            <template v-if="compliance.is_referee">
+                                <textarea
+                                    ref="referral_text"
+                                    v-model="referral_text"
+                                    class="form-control comments_to_referral my-2"
+                                    name="name"
+                                    rows="5"
+                                    placeholder="Enter any final comments for the assessor before completing the referral"
+                                />
+                                <button
+                                    class="btn btn-primary"
+                                    @click.prevent="completeReferral()"
+                                >
+                                    Complete Referral
+                                </button>
+                            </template>
                         </div>
                     </div>
                 </div>
@@ -731,6 +738,7 @@ export default {
             members: [],
             sendingReferral: false,
             selected_referral: null,
+            assessor_referral_text: '',
             referral_text: '',
             savingCompliance: false,
             saveExitCompliance: false,
@@ -956,6 +964,7 @@ export default {
                     },
                     body: JSON.stringify({
                         comment: referral.comment,
+                        referral_text: vm.referral_text,
                     }),
                 }
             )
@@ -1104,7 +1113,7 @@ export default {
                             headers: my_headers,
                             body: JSON.stringify({
                                 email: vm.selected_referral,
-                                text: vm.referral_text,
+                                text: vm.assessor_referral_text,
                             }),
                         }
                     );
@@ -1126,12 +1135,6 @@ export default {
                 .catch((error) => {
                     let errorText = '';
                     try {
-                        // console.log(`error type. ${typeof error}`);
-                        // console.log(`Error sending referral. ${error}`);
-                        // console.log(`${error.type}`);
-                        // console.log(`${JSON.stringify(error, Object.getOwnPropertyNames(error))}`);
-                        // console.log(`${JSON.parse(error.message).type}`);
-
                         error = JSON.parse(error.message);
                         console.log(`error type. ${typeof error}`);
                         errorText = helpers.formatErrorV2(error);
@@ -1149,7 +1152,7 @@ export default {
                 .finally(() => {
                     vm.sendingReferral = false;
                     vm.selected_referral = '';
-                    vm.referral_text = '';
+                    vm.assessor_referral_text = '';
                     $(vm.$refs.referees).val(null).trigger('change');
                 });
         },
@@ -1181,6 +1184,10 @@ export default {
                 .on('select2:select', function (e) {
                     let data = e.params.data.id;
                     vm.selected_referral = data;
+                    console.log(vm.$refs);
+                    vm.$nextTick(() => {
+                        vm.$refs.assessor_referral_text.focus();
+                    });
                 })
                 .on('select2:unselect', function () {
                     vm.selected_referral = null;

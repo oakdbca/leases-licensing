@@ -3517,6 +3517,8 @@ class ProposalApplicant(RevisionedMixin):
         Proposal, null=True, blank=True, on_delete=models.SET_NULL
     )
 
+    emailuser_id = models.IntegerField(null=True, blank=True)
+
     # Name, etc
     first_name = models.CharField(
         max_length=128, blank=True, verbose_name="Given name(s)"
@@ -3645,6 +3647,17 @@ class ProposalApplicant(RevisionedMixin):
             for k, v in self.__dict__.items()
             if k in address_mapping.keys()
         }
+
+    def log_user_action(self, action, request):
+        try:
+            emailuser = retrieve_email_user(self.emailuser_id)
+        except EmailUser.DoesNotExist:
+            logger.warn(
+                f"Tried to log user action for proposal applicant {self.id} "
+                f"but couldn't find ledger user with id {self.emailuser_id}"
+            )
+            return
+        return emailuser.log_user_action(action, request)
 
 
 def update_sticker_doc_filename(instance, filename):
@@ -4308,8 +4321,10 @@ class Referral(RevisionedMixin):
         choices=PROCESSING_STATUS_CHOICES,
         default=PROCESSING_STATUS_CHOICES[0][0],
     )
-    text = models.TextField(blank=True)  # Assessor text
-    referral_text = models.TextField(blank=True)
+    text = models.TextField(blank=True)  # Comments from the assessor to the referee
+    referral_text = models.TextField(
+        blank=True
+    )  # Comments from the referee when they complete the referral
     document = models.ForeignKey(
         ReferralDocument,
         blank=True,

@@ -445,6 +445,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
         model = Proposal
         fields = (
             "id",
+            "model_name",
             "allowed_assessors",
             "application_type",
             "applicant_type",
@@ -968,6 +969,7 @@ class ProposalSerializer(BaseProposalSerializer):
         model = Proposal
         fields = "__all__"
         extra_fields = [
+            "model_name",
             "assessor_mode",
             "lodgement_versions",
             "referrals",
@@ -1276,6 +1278,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
         model = Proposal
         fields = (
             "id",
+            "model_name",
             "application_type",
             "approval_level",
             "approval_level_document",
