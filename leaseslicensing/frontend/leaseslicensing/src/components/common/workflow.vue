@@ -131,7 +131,7 @@
                                     >Comments</label
                                 >
                                 <textarea
-                                    v-model="referral_text"
+                                    v-model="assessor_referral_text"
                                     class="form-control"
                                     name="name"
                                 ></textarea>
@@ -371,6 +371,20 @@
                             v-for="configuration in configurations_for_buttons"
                             :key="configuration.key"
                         >
+                            <template
+                                v-if="
+                                    isReferee &&
+                                    configuration.key == 'complete_referral'
+                                "
+                            >
+                                <textarea
+                                    v-model="referral_text"
+                                    class="form-control my-2"
+                                    name="name"
+                                    rows="5"
+                                    placeholder="Enter any final comments for the assessor here before completing the referral"
+                                ></textarea>
+                            </template>
                             <button
                                 v-if="configuration.function_to_show_hide()"
                                 class="btn btn-primary w-75 my-1"
@@ -537,6 +551,7 @@ export default {
 
             department_users: [],
             selected_referral: '',
+            assessor_referral_text: '',
             referral_text: '',
             external_referral_email: '',
             sendingReferral: false,
@@ -1283,7 +1298,7 @@ export default {
                             headers: my_headers,
                             body: JSON.stringify({
                                 email: vm.selected_referral,
-                                text: vm.referral_text,
+                                text: vm.assessor_referral_text,
                             }),
                         }
                     );
@@ -1315,7 +1330,7 @@ export default {
                 .finally(() => {
                     vm.sendingReferral = false;
                     vm.selected_referral = '';
-                    vm.referral_text = '';
+                    vm.assessor_referral_text = '';
                     $(vm.$refs.department_users).val(null).trigger('change');
                 });
             vm.sendingReferral = true;
@@ -1347,7 +1362,7 @@ export default {
                             headers: my_headers,
                             body: JSON.stringify({
                                 email: vm.selected_referral,
-                                text: vm.referral_text,
+                                text: vm.assessor_referral_text,
                             }),
                         }
                     );
@@ -1379,7 +1394,7 @@ export default {
                 .finally(() => {
                     vm.sendingReferral = false;
                     vm.selected_referral = '';
-                    vm.referral_text = '';
+                    vm.assessor_referral_text = '';
                     $(vm.$refs.department_users).val(null).trigger('change');
                 });
         },
@@ -1523,7 +1538,7 @@ export default {
             this.$emit('amendmentRequest');
         },
         completeReferral: function () {
-            this.$emit('completeReferral');
+            this.$emit('completeReferral', this.referral_text);
         },
         proposedDecline: function () {
             this.$emit('proposedDecline');
