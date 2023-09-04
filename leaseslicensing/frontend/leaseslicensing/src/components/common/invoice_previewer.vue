@@ -40,7 +40,7 @@
                         <td>{{ invoice.time_period }}</td>
                         <td>
                             {{ invoice.amount_object.prefix }}
-                            {{ invoice.amount_object.amount }}
+                            {{ currency(invoice.amount_object.amount) }}
                             {{ invoice.amount_object.suffix }}
                         </td>
                     </tr>
@@ -107,7 +107,10 @@ export default {
     },
     computed: {
         showTotal: function () {
-            return this.chargeMethodKey != 'percentage_of_gross_turnover';
+            return ![
+                'percentage_of_gross_turnover',
+                'percentage_of_gross_turnover_in_advance',
+            ].includes(this.chargeMethodKey);
         },
         daysDifference: function () {
             const dateStart = moment(this.startDate);
@@ -161,9 +164,6 @@ export default {
                 .length;
         },
         totalAmount: function () {
-            if (this.chargeMethodKey == 'percentage_of_gross_turnover') {
-                return `Unknowable`;
-            }
             if (!this.invoicingDetails.base_fee_amount) {
                 return `Enter Base Fee`;
             }
@@ -290,6 +290,7 @@ export default {
     },
     mounted() {},
     methods: {
+        currency,
         getAmountForInvoice(issueDate, endDate, days, index) {
             const amountObject = {
                 prefix: '$',
