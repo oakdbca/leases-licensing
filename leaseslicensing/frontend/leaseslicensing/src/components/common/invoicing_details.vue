@@ -419,7 +419,7 @@
 
 <script>
 import AnnualIncrement from '@/components/common/component_fixed_annual_amount.vue';
-import PercentageTurnover from '@/components/common/component_percentage_turnover.vue';
+import PercentageTurnover from '@/components/common/component_percentage_gross_turnover_arrears.vue';
 import InvoicePreviewer from '@/components/common//invoice_previewer.vue';
 
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
