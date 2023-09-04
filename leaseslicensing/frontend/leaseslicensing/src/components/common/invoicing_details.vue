@@ -210,8 +210,8 @@
                 </div>
             </div>
         </div>
-        <div v-if="show_percentage_of_gross_turnover">
-            <PercentageTurnover
+        <div v-if="show_percentage_of_gross_turnover_arrears">
+            <PercentageTurnoverArrears
                 v-if="invoicingDetailsComputed"
                 :start-date="startDate"
                 :expiry-date="expiryDate"
@@ -222,6 +222,24 @@
                 :context="context"
                 @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
                 @onChangePercentage="updatePreviewInvoices"
+            />
+        </div>
+        <div v-if="show_percentage_of_gross_turnover_advance">
+            <PercentageTurnoverAdvance
+                v-if="invoicingDetailsComputed"
+                :start-date="startDate"
+                :expiry-date="expiryDate"
+                :gross-turnover-percentages="
+                    invoicingDetailsComputed.gross_turnover_percentages
+                "
+                :invoicing-repetition-type="
+                    invoicingDetailsComputed.invoicing_repetition_type
+                "
+                :proposal-processing-status-id="proposalProcessingStatusId"
+                :context="context"
+                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
+                @onChangePercentage="updatePreviewInvoices"
+                @onChangeGrossTurnoverEstimate="updatePreviewInvoices"
             />
         </div>
         <div
@@ -419,7 +437,8 @@
 
 <script>
 import AnnualIncrement from '@/components/common/component_fixed_annual_amount.vue';
-import PercentageTurnover from '@/components/common/component_percentage_gross_turnover_arrears.vue';
+import PercentageTurnoverAdvance from '@/components/common/component_percentage_gross_turnover_advance.vue';
+import PercentageTurnoverArrears from '@/components/common/component_percentage_gross_turnover_arrears.vue';
 import InvoicePreviewer from '@/components/common//invoice_previewer.vue';
 
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
@@ -428,7 +447,8 @@ export default {
     name: 'InvoicingDetails',
     components: {
         AnnualIncrement,
-        PercentageTurnover,
+        PercentageTurnoverAdvance,
+        PercentageTurnoverArrears,
         InvoicePreviewer,
     },
     props: {
@@ -579,7 +599,18 @@ export default {
                     return true;
             return false;
         },
-        show_percentage_of_gross_turnover: function () {
+        show_percentage_of_gross_turnover_advance: function () {
+            if (this.invoicingDetails && this.invoicingDetails.charge_method)
+                if (
+                    this.invoicingDetails.charge_method ===
+                    this.getChargeMethodIdByKey(
+                        'percentage_of_gross_turnover_in_advance'
+                    )
+                )
+                    return true;
+            return false;
+        },
+        show_percentage_of_gross_turnover_arrears: function () {
             if (this.invoicingDetails && this.invoicingDetails.charge_method)
                 if (
                     this.invoicingDetails.charge_method ===
@@ -600,6 +631,9 @@ export default {
                     this.invoicingDetailsComputed.invoicing_repetition_type
                 ) ||
                 this.getChargeMethodIdByKey('percentage_of_gross_turnover') ||
+                this.getChargeMethodIdByKey(
+                    'percentage_of_gross_turnover_in_advance'
+                ) ||
                 this.context != 'Proposal'
             );
         },
@@ -629,6 +663,9 @@ export default {
                         this.getChargeMethodIdByKey(
                             'percentage_of_gross_turnover'
                         ),
+                        this.getChargeMethodIdByKey(
+                            'percentage_of_gross_turnover_in_advance'
+                        ),
                     ].includes(this.invoicingDetails.charge_method)
                 )
                     return true;
@@ -639,7 +676,10 @@ export default {
         show_invoice_previewer: function () {
             if (
                 this.context != 'Proposal' &&
-                this.getChargeMethodIdByKey('percentage_of_gross_turnover')
+                (this.getChargeMethodIdByKey('percentage_of_gross_turnover') ||
+                    this.getChargeMethodIdByKey(
+                        'percentage_of_gross_turnover_in_advance'
+                    ))
             ) {
                 return false;
             }
@@ -659,6 +699,9 @@ export default {
                         this.getChargeMethodIdByKey(
                             'percentage_of_gross_turnover'
                         ),
+                        this.getChargeMethodIdByKey(
+                            'percentage_of_gross_turnover_in_advance'
+                        ),
                     ].includes(this.invoicingDetails.charge_method)
                 )
                     return true;
@@ -667,11 +710,16 @@ export default {
             return false;
         },
         show_invoicing_quarters: function () {
+            console.log(this.invoicingDetails);
             return (
-                this.invoicingDetails.charge_method ==
+                (this.invoicingDetails.charge_method ==
                     this.getChargeMethodIdByKey(
                         'percentage_of_gross_turnover'
-                    ) &&
+                    ) ||
+                    this.invoicingDetails.charge_method ==
+                        this.getChargeMethodIdByKey(
+                            'percentage_of_gross_turnover_in_advance'
+                        )) &&
                 this.show_invoicing_frequency &&
                 this.invoicingDetailsComputed.invoicing_repetition_type == 2
             );
@@ -691,7 +739,13 @@ export default {
             if (this.invoicingDetails) {
                 if (
                     this.invoicingDetails.charge_method ==
-                    this.getChargeMethodIdByKey('percentage_of_gross_turnover')
+                        this.getChargeMethodIdByKey(
+                            'percentage_of_gross_turnover'
+                        ) ||
+                    this.invoicingDetails.charge_method ==
+                        this.getChargeMethodIdByKey(
+                            'percentage_of_gross_turnover_in_advance'
+                        )
                 ) {
                     return this.repetition_types.filter(
                         (repetition_type) => repetition_type.id != 1
@@ -751,7 +805,12 @@ export default {
             const chargeMethodKey = this.getChargeMethodKeyById(
                 this.invoicingDetailsComputed.charge_method
             );
-            if ('percentage_of_gross_turnover' == chargeMethodKey) {
+            if (
+                [
+                    'percentage_of_gross_turnover',
+                    'percentage_of_gross_turnover_in_advance',
+                ].includes(chargeMethodKey)
+            ) {
                 this.invoicingDetailsComputed.invoicing_repetition_type = 2;
             } else {
                 this.invoicingDetailsComputed.invoicing_repetition_type = 1;
