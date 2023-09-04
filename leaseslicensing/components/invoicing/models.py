@@ -1289,53 +1289,6 @@ class CrownLandRentReviewDate(BaseModel):
         return False
 
 
-class LeaseLicenceFee(BaseModel):
-    """
-    This model handles each invoice and the information surrounding it.
-    An object of this model is created at an invoicing date.
-    """
-
-    invoicing_details = models.ForeignKey(
-        InvoicingDetails,
-        null=True,
-        blank=True,
-        on_delete=models.SET_NULL,
-        related_name="lease_licence_fees",
-    )
-    invoice_reference = models.CharField(
-        max_length=50, null=True, blank=True, default=""
-    )
-    invoice_cover_start_date = models.DateField(null=True, blank=True)
-    invoice_cover_end_date = models.DateField(null=True, blank=True)
-    date_invoice_sent = models.DateField(null=True, blank=True)
-
-    class Meta:
-        app_label = "leaseslicensing"
-
-    def __str__(self):
-        if self.invoicing_details.approval:
-            return f"Approval: {self.invoicing_details.approval}, Invoice: {self.invoice_reference}"
-        else:
-            return (
-                f"Proposal: {self.invoicing_details}, Invoice: {self.invoice_reference}"
-            )
-
-    @property
-    def invoice(self):
-        invoice = None
-        if self.invoice_reference:
-            invoice = Invoice.objects.get(reference=self.invoice_reference)
-        return invoice
-
-    @property
-    def amount(self):
-        amount = None
-        if self.invoice_reference:
-            invoice = Invoice.objects.get(reference=self.invoice_reference)
-            amount = invoice.amount
-        return amount
-
-
 def invoice_pdf_upload_path(instance, filename):
     return f"approvals/{instance.approval.id}/invoices/{instance.id}/{filename}"
 
