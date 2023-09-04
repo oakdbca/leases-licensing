@@ -689,7 +689,6 @@ class InvoicingDetails(BaseModel):
             due_date = issue_date + relativedelta(days=30)
             days_running_total += invoicing_period["days"]
             amount_object = self.get_amount_for_invoice(
-                issue_date,
                 invoicing_period["start_date"],
                 invoicing_period["end_date"],
                 invoicing_period["days"],
@@ -783,6 +782,7 @@ class InvoicingDetails(BaseModel):
                 month = utils.month_string_from_date(end_date)
                 text = f"{month} {end_date.year}"
             return f"On receipt of {text} financial statement"
+
         return issue_date.strftime("%d/%m/%Y")
 
     def get_due_date(self, due_date):
@@ -801,7 +801,7 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
             return math.floor(index / self.invoicing_once_every)
 
-    def get_amount_for_invoice(self, start_date, issue_date, end_date, days, index):
+    def get_amount_for_invoice(self, start_date, end_date, days, index):
         amount_object = {
             "prefix": "$",
             "amount": Decimal("0.00"),
@@ -817,6 +817,15 @@ class InvoicingDetails(BaseModel):
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
         ):
             return self.get_amount_for_gross_turnover_invoice(end_date, amount_object)
+
+        if (
+            self.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
+        ):
+            return self.get_amount_for_gross_turnover_in_advance_invoice(
+                start_date, amount_object
+            )
+
         if not self.base_fee_amount or self.base_fee_amount == Decimal("0.00"):
             return amount_object
 
@@ -943,6 +952,57 @@ class InvoicingDetails(BaseModel):
         amount_object[
             "suffix"
         ] = f"{gross_turnover_percentage.percentage}% of Gross Turnover"
+        return amount_object
+
+    def get_amount_for_gross_turnover_in_advance_invoice(
+        self, start_date, amount_object
+    ):
+        amount_object["prefix"] = ""
+        amount_object["amount"] = None
+
+        if not self.gross_turnover_percentages.filter(
+            estimated_gross_turnover__isnull=False
+        ).exists():
+            amount_object["suffix"] = "No initial turnover estimate found"
+            return amount_object
+
+        start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+
+        year = utils.financial_year_from_date(start_date).split("-")[1]
+
+        logger.debug(f"start_date: {start_date}")
+        logger.debug(f"year: {year}")
+
+        gross_turnover_percentage = self.gross_turnover_percentages.filter(
+            year=year
+        ).first()
+        estimated_gross_turnover = gross_turnover_percentage.estimated_gross_turnover
+        if not estimated_gross_turnover:
+            # No estimate for this year, so use the most recent estimate
+            estimated_gross_turnover = (
+                self.gross_turnover_percentages.filter(
+                    estimated_gross_turnover__isnull=False,
+                )
+                .last()
+                .estimated_gross_turnover
+            )
+
+        invoice_amount = Decimal(
+            estimated_gross_turnover * gross_turnover_percentage.percentage / 100
+        ).quantize(Decimal("0.01"))
+
+        amount_object["prefix"] = "$"
+
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+            amount_object["amount"] = Decimal(invoice_amount / 4).quantize(
+                Decimal("0.01")
+            )
+
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
+            amount_object["amount"] = Decimal(invoice_amount / 12).quantize(
+                Decimal("0.01")
+            )
+
         return amount_object
 
     def get_end_of_next_interval(self, start_date):
@@ -1075,8 +1135,11 @@ class PercentageOfGrossTurnover(BaseModel):
     percentage = models.DecimalField(
         max_digits=4, decimal_places=1, default="0.0", null=True, blank=True
     )
+    estimated_gross_turnover = models.DecimalField(
+        null=True, blank=True, max_digits=12, decimal_places=2
+    )
     gross_turnover = models.DecimalField(
-        null=True, blank=True, max_digits=10, decimal_places=2
+        null=True, blank=True, max_digits=12, decimal_places=2
     )
     invoicing_details = models.ForeignKey(
         InvoicingDetails,
