@@ -104,9 +104,11 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
 
 
 class FinancialMonthSerializer(serializers.ModelSerializer):
+    label = serializers.CharField(source="month_name", read_only=True)
+
     class Meta:
         model = FinancialMonth
-        fields = ["year", "month", "gross_turnover", "locked"]
+        fields = ["year", "month", "label", "gross_turnover", "locked"]
 
 
 class FinancialQuarterSerializer(serializers.ModelSerializer):
