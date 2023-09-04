@@ -1062,6 +1062,37 @@ class InvoicingDetails(BaseModel):
             return issue_date + relativedelta(months=1)
 
 
+class ScheduledInvoice(BaseModel):
+    """
+    Not to be confused with the Invoice model (further down)
+
+    Used to keep track of when invoices need to be generated, if they have been generated
+    and if they have been sent to the internal and external user.
+
+    The amount for the invoice is still calculated dynamically as it may change over time depending
+    on what data has been entered by the finance officer group members."""
+
+    date_to_generate = models.DateField(null=False, blank=False)
+    period_start_date = models.DateField(null=False, blank=False)
+    period_end_date = models.DateField(null=False, blank=False)
+    invoice_has_been_generated = models.BooleanField(default=False)
+    attempts_to_send_internal_email = models.PositiveSmallIntegerField(default=0)
+    internal_email_sent = models.BooleanField(default=False)
+    attempts_to_send_external_email = models.PositiveSmallIntegerField(default=0)
+    external_email_sent = models.BooleanField(default=False)
+    generated_from = models.ForeignKey(
+        InvoicingDetails,
+        on_delete=models.CASCADE,
+        related_name="scheduled_invoices",
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = [
+            "date_to_generate",
+        ]
+
+
 class FixedAnnualIncrementAmount(BaseModel):
     year = models.PositiveSmallIntegerField(null=True, blank=True)
     increment_amount = models.DecimalField(
