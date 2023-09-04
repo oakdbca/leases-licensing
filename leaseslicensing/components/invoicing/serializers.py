@@ -129,6 +129,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "year",
             "financial_year",
             "percentage",
+            "estimated_gross_turnover",
             "gross_turnover",
             "locked",
             "to_be_deleted",
