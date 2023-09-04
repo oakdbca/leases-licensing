@@ -517,6 +517,22 @@ module.exports = {
     getFinancialQuarterLabel: function (quarter) {
         return ['JUL-SEP', 'OCT-DEC', 'JAN-MAR', 'APR-JUN'][quarter - 1];
     },
+    getFinancialMonths: function (financialYear) {
+        return [
+            { year: financialYear.split('-')[0], month: 7, label: 'JUL' },
+            { year: financialYear.split('-')[0], month: 8, label: 'AUG' },
+            { year: financialYear.split('-')[0], month: 9, label: 'SEP' },
+            { year: financialYear.split('-')[0], month: 10, label: 'OCT' },
+            { year: financialYear.split('-')[0], month: 11, label: 'NOV' },
+            { year: financialYear.split('-')[0], month: 12, label: 'DEC' },
+            { year: financialYear.split('-')[1], month: 1, label: 'JAN' },
+            { year: financialYear.split('-')[1], month: 2, label: 'FEB' },
+            { year: financialYear.split('-')[1], month: 3, label: 'MAR' },
+            { year: financialYear.split('-')[1], month: 4, label: 'APR' },
+            { year: financialYear.split('-')[1], month: 5, label: 'MAY' },
+            { year: financialYear.split('-')[1], month: 6, label: 'JUN' },
+        ];
+    },
     financialQuarterIncluded: function (
         startDate,
         endDate,
