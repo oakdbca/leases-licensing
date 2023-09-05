@@ -516,7 +516,49 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.linked_applications.join(', ');
+                    var text = full.linked_applications.join(', ');
+                    var ellipsis = '...',
+                        truncated = _.truncate(text, {
+                            length: 25,
+                            omission: ellipsis,
+                            separator: ' ',
+                        }),
+                        isTruncated = _.endsWith(truncated, ellipsis),
+                        result =
+                            '<span>' +
+                            (isTruncated
+                                ? truncated.slice(0, -ellipsis.length)
+                                : truncated) +
+                            '</span>',
+                        popTemplate = _.template(
+                            '<a tabindex="0" ' +
+                                'data-bs-title="Applications for ' +
+                                full.lodgement_number +
+                                '" ' +
+                                'data-bs-template=\'<div class="popover" role="tooltip"><div class="arrow"></div>' +
+                                '<div class="row ps-0">' +
+                                '<div class="col-md-12 text-nowrap">' +
+                                '<h3 class="popover-header"></h3>' +
+                                '</div>' +
+                                '</div>' +
+                                '<div type="button" id="close" class="popover-close">' +
+                                '<i class="fa fa-window-close" aria-hidden="true"></i>' +
+                                '</div>' +
+                                '<div class="popover-body"></div>\' ' +
+                                'role="button" ' +
+                                'data-bs-toggle="popover" ' +
+                                'data-bs-trigger="hover click" ' +
+                                'data-bs-placement="top" ' +
+                                'data-bs-content="<%= text %>" ' +
+                                `><b>${ellipsis}</b></a>`
+                        );
+                    if (isTruncated) {
+                        result += popTemplate({
+                            text: text,
+                        });
+                    }
+
+                    return result;
                 },
             };
         },
@@ -939,15 +981,39 @@ export default {
                     }
                 })
                 .on('draw.dt', function () {
-                    var tablePopover = $(this).find('[data-toggle="popover"]');
-                    if (tablePopover.length > 0) {
-                        tablePopover.popover();
-                        // the next line prevents from scrolling up to the top after clicking on the popover.
-                        $(tablePopover).on('click', function (e) {
-                            e.preventDefault();
-                            return true;
-                        });
-                    }
+                    var popoverTriggerList = [].slice.call(
+                        document.querySelectorAll('a[data-bs-toggle="popover"]')
+                    );
+                    popoverTriggerList.map(function (popoverTriggerEl) {
+                        let popover = new bootstrap.Popover(popoverTriggerEl);
+                        // Listeners to hide popovers on 'x'-click
+                        vm.$refs.approvals_datatable.vmDataTable.on(
+                            'click',
+                            'a[data-bs-toggle="popover"]',
+                            function (e) {
+                                e.preventDefault();
+                                let attributes = e.currentTarget.attributes;
+                                let popoverId;
+                                if (attributes && attributes.length > 0) {
+                                    popoverId = attributes['10'].value;
+                                }
+
+                                if (
+                                    popover.tip &&
+                                    popover.tip.id == popoverId
+                                ) {
+                                    // Ideally the listener would only be shown on popover show, but that does work okay for now
+                                    console.log(`Toggle ${popoverId}`);
+                                    $(`#${popoverId}`)
+                                        .find('.popover-close')
+                                        .off('click')
+                                        .on('click', () => popover.hide());
+                                }
+                            }
+                        );
+
+                        return popover;
+                    });
                 });
             // Internal Reissue listener
             vm.$refs.approvals_datatable.vmDataTable.on(
@@ -1533,4 +1599,11 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style>
+.popover-close {
+    position: absolute;
+    top: -0.6rem;
+    right: 0.25rem;
+    font-size: 2.5em;
+}
+</style>
