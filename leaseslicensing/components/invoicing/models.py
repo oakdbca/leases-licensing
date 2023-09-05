@@ -760,11 +760,13 @@ class InvoicingDetails(BaseModel):
 
         if (
             self.charge_method.key
-            != settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+            != settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER  # (Arrears)
         ):
             first_issue_date = first_issue_date - relativedelta(
                 days=settings.DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD
             )
+
+        logger.debug(f"first_issue_date: {first_issue_date}")
 
         return first_issue_date
 
@@ -827,6 +829,9 @@ class InvoicingDetails(BaseModel):
             )
 
         if not self.base_fee_amount or self.base_fee_amount == Decimal("0.00"):
+            amount_object["prefix"] = ""
+            amount_object["amount"] = None
+            amount_object["suffix"] = "Enter Base Fee"
             return amount_object
 
         base_fee_amount = self.base_fee_amount.quantize(Decimal("0.01"))
@@ -841,6 +846,7 @@ class InvoicingDetails(BaseModel):
         base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
             if start_date > helpers.today():
                 amount_object["amount"] = base_fee_amount
                 amount_object["suffix"] = " + CPI (NYA)"
@@ -970,9 +976,6 @@ class InvoicingDetails(BaseModel):
 
         year = utils.financial_year_from_date(start_date).split("-")[1]
 
-        logger.debug(f"start_date: {start_date}")
-        logger.debug(f"year: {year}")
-
         gross_turnover_percentage = self.gross_turnover_percentages.filter(
             year=year
         ).first()
@@ -1006,10 +1009,10 @@ class InvoicingDetails(BaseModel):
         return amount_object
 
     def get_end_of_next_interval(self, start_date):
-        if (
-            self.charge_method.key
-            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
-        ):
+        if self.charge_method.key in [
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
+        ]:
             return self.get_end_of_next_interval_gross_turnover(start_date)
 
         # All other charge methods are based around each year of the duration of the lease/license
@@ -1036,22 +1039,11 @@ class InvoicingDetails(BaseModel):
 
         if settings.REPETITION_TYPE_QUARTERLY == self.invoicing_repetition_type.key:
             return utils.end_of_next_financial_quarter(
-                start_date, self.invoicing_quarters_start_month
+                start_date, start_month=self.invoicing_quarters_start_month
             )
 
         if settings.REPETITION_TYPE_MONTHLY == self.invoicing_repetition_type.key:
             return utils.end_of_month(start_date)
-
-    def get_end_of_next_financial_quarter(self, start_date):
-        quarters = utils.quarters_from_start_month(self.invoicing_quarters_start_month)
-        for quarter in quarters:
-            end_of_financial_quarter = utils.end_of_next_financial_quarter(start_date)
-
-            if start_date < end_of_financial_quarter:
-                return end_of_financial_quarter
-
-        # None of the four quarters were after the start date, so use the first quarter of the next year
-        return start_date.replace(month=quarters[0] + 1) + relativedelta(years=1)
 
     def add_repetition_interval(self, issue_date):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_ANNUALLY:
