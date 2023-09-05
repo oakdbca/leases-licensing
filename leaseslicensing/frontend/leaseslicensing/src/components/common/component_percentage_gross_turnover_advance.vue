@@ -191,21 +191,6 @@ export default {
                 this.$emit('updateGrossTurnoverPercentages', value);
             },
         },
-        invoicingReptitionQuarterly: function () {
-            return this.invoicingRepetitionType == 2;
-        },
-    },
-    watch: {
-        invoicingRepetitionType: function (newVal) {
-            if (newVal) {
-                this.populateFinancialYearsArray(
-                    helpers.financialYearsIncluded(
-                        this.startDate,
-                        this.expiryDate
-                    )
-                );
-            }
-        },
     },
     created: function () {
         const financialYearsIncluded = helpers.financialYearsIncluded(
@@ -264,19 +249,6 @@ export default {
             }
             return true;
         },
-        quartersTotal: function (grossTurnoverPercentage) {
-            return grossTurnoverPercentage.quarters.reduce(
-                (total, quarter) =>
-                    total + parseFloat(quarter.gross_turnover || 0),
-                0
-            );
-        },
-        monthsTotal: function (grossTurnoverPercentage) {
-            return grossTurnoverPercentage.months.reduce(
-                (total, month) => total + parseFloat(month.gross_turnover || 0),
-                0
-            );
-        },
         grossAnnualTurnoverEstimateChanged: function (event, year) {
             // Todo populate the next years estimate with this years actual
             console.log('grossAnnualTurnoverEstimateChanged', event, year);
@@ -316,77 +288,6 @@ export default {
                         months: [],
                     };
                     financialYears.push(financialYear);
-                }
-                if (this.invoicingReptitionQuarterly) {
-                    let grossTurnoverPercentage = this
-                        .grossTurnoverPercentagesComputed[i]
-                        ? this.grossTurnoverPercentagesComputed[i]
-                        : financialYear;
-                    grossTurnoverPercentage.months = [];
-                    for (let j = 0; j < 4; j++) {
-                        console.log(j);
-
-                        if (
-                            !helpers.financialQuarterIncluded(
-                                this.startDate,
-                                this.expiryDate,
-                                grossTurnoverPercentage.financial_year,
-                                j + 1
-                            )
-                        ) {
-                            continue;
-                        }
-                        if (!grossTurnoverPercentage.quarters[j]) {
-                            grossTurnoverPercentage.quarters.push({
-                                quarter: j + 1,
-                                gross_turnover: null,
-                            });
-                        }
-                    }
-                } else {
-                    let financialMonths = helpers.getFinancialMonths(
-                        financialYearsIncluded[i]
-                    );
-                    let grossTurnoverPercentage = this
-                        .grossTurnoverPercentagesComputed[i]
-                        ? this.grossTurnoverPercentagesComputed[i]
-                        : financialYear;
-                    grossTurnoverPercentage.quarters = [];
-                    for (let j = 0; j < financialMonths.length; j++) {
-                        let year = financialMonths[j].year;
-                        let month = financialMonths[j].month;
-                        let monthStart = moment(
-                            `${year}-${month}-01`,
-                            'YYYY-MM-DD'
-                        );
-                        let monthEnd = moment(monthStart).endOf('month');
-                        if (
-                            !helpers.datesOverlap(
-                                this.startDate,
-                                this.expiryDate,
-                                monthStart,
-                                monthEnd
-                            )
-                        ) {
-                            console.log('datesOverlap', false);
-                            continue;
-                        }
-                        if (
-                            !grossTurnoverPercentage.months.find(
-                                (element) =>
-                                    element.year == year &&
-                                    element.month == month
-                            )
-                        ) {
-                            console.log('pushing');
-                            grossTurnoverPercentage.months.push({
-                                year: year,
-                                month: month,
-                                label: financialMonths[j].label,
-                                gross_turnover: null,
-                            });
-                        }
-                    }
                 }
             }
             financialYears = this.grossTurnoverPercentagesComputed.concat(
