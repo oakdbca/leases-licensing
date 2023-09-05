@@ -14,7 +14,7 @@
                 <FormSection
                     v-if="!isFinalised && hasAmendmentRequest"
                     custom-color="red"
-                    label="This Compliance Requires one or more Amendments"
+                    label="This Compliance Requires One or More Amendments"
                     index="amendment_compliance_with_requirements"
                 >
                     <div class="row mb-3">
