@@ -40,7 +40,9 @@
                         <td>{{ invoice.time_period }}</td>
                         <td>
                             {{ invoice.amount_object.prefix }}
-                            {{ currency(invoice.amount_object.amount) }}
+                            <span v-if="invoice.amount_object.amount != null">{{
+                                currency(invoice.amount_object.amount)
+                            }}</span>
                             {{ invoice.amount_object.suffix }}
                         </td>
                     </tr>
