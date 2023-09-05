@@ -9,7 +9,7 @@ from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models import Avg, F, Sum, Window
+from django.db.models import F, Sum, Window
 from django.db.models.functions import Coalesce
 from django.forms import ValidationError
 from django.utils import timezone
@@ -451,73 +451,6 @@ class InvoicingDetails(BaseModel):
 
         return self.proposal.approval
 
-    def base_fee_plus_cpi(self):
-        if not self.cpi_calculation_method:
-            logger.warn(
-                f"No CPI calculation method set for Invoicing Details: {self.id}"
-            )
-            return self.base_fee_amount
-
-        if (
-            settings.CPI_CALCULATION_METHOD_LATEST_MAR_QUARTER
-            == self.cpi_calculation_method.display_name
-        ):
-            cpi_value = (
-                ConsumerPriceIndex.objects.filter(time_period__contains="Q1")
-                .last()
-                .value
-            )
-
-        if (
-            settings.CPI_CALCULATION_METHOD_LATEST_JUN_QUARTER
-            == self.cpi_calculation_method.name
-        ):
-            cpi_value = (
-                ConsumerPriceIndex.objects.filter(time_period__contains="Q2")
-                .last()
-                .value
-            )
-
-        if (
-            settings.CPI_CALCULATION_METHOD_LATEST_SEP_QUARTER
-            == self.cpi_calculation_method.name
-        ):
-            cpi_value = (
-                ConsumerPriceIndex.objects.filter(time_period__contains="Q3")
-                .last()
-                .value
-            )
-
-        if (
-            settings.CPI_CALCULATION_METHOD_LATEST_DEC_QUARTER
-            == self.cpi_calculation_method.name
-        ):
-            cpi_value = (
-                ConsumerPriceIndex.objects.filter(time_period__contains="Q4")
-                .last()
-                .value
-            )
-
-        if (
-            settings.CPI_CALCULATION_METHOD_LATEST_QUARTER
-            == self.cpi_calculation_method.name
-        ):
-            cpi_value = ConsumerPriceIndex.objects.last().value
-
-        if (
-            settings.CPI_CALCULATION_METHOD_AVERAGE_LATEST_FOUR_QUARTERS
-            == self.cpi_calculation_method.name
-        ):
-            cpi_value = (
-                ConsumerPriceIndex.objects.all()
-                .order_by("-time_period")[:4]
-                .aggregate(Avg("value"))["value__avg"]
-            )
-
-        return Decimal(self.base_fee_amount * (1 + cpi_value / 100)).quantize(
-            Decimal("0.01")
-        )
-
     @property
     def total_invoice_count(self):
         return len(self.invoicing_periods)
@@ -677,8 +610,6 @@ class InvoicingDetails(BaseModel):
     def preview_invoices(self):
         """
         Returns a preview array of invoices based on the invoicing periods for the invoicing details object
-        By default it will only return invoices for future periods because we can fetch a list of past invoices
-        from the database.
         """
         invoices = []
         days_running_total = 0
@@ -713,6 +644,8 @@ class InvoicingDetails(BaseModel):
                     ),
                     "due_date": self.get_due_date(due_date),
                     "time_period": invoicing_period["label"],
+                    "start_date": invoicing_period["start_date"],
+                    "end_date": invoicing_period["end_date"],
                     "amount_object": amount_object,
                     "days": invoicing_period["days"],
                     "days_running_total": days_running_total,
@@ -729,6 +662,30 @@ class InvoicingDetails(BaseModel):
                 issue_date = self.approval.expiry_date + relativedelta(days=1)
 
         return invoices
+
+    def generate_invoice_schedule(self):
+        """Generate scheduled invoices for any invoicing periods"""
+        future_invoices = []
+        for preview_invoice in self.preview_invoices:
+            if not preview_invoice["start_date_has_passed"]:
+                future_invoices.append(preview_invoice)
+        if len(future_invoices) == 0:
+            return
+
+        for invoice in future_invoices:
+            date_to_generate = datetime.strptime(
+                invoice["issue_date"], "%d/%m/%Y"
+            ).date()
+            start_date = datetime.strptime(invoice["start_date"], "%Y-%m-%d").date()
+            end_date = datetime.strptime(invoice["end_date"], "%Y-%m-%d").date()
+            scheduled_invoice, created = ScheduledInvoice.objects.get_or_create(
+                date_to_generate=date_to_generate,
+                period_start_date=start_date,
+                period_end_date=end_date,
+                generated_from=self,
+            )
+            if created:
+                logger.info(f"Scheduled invoice created: {scheduled_invoice}")
 
     def generate_immediate_invoices(self):
         """Generate invoices for the next invoicing period and any invoicing periods that have already passed
