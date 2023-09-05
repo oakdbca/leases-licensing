@@ -218,6 +218,9 @@
                 :gross-turnover-percentages="
                     invoicingDetailsComputed.gross_turnover_percentages
                 "
+                :invoicing-repetition-type="
+                    invoicingDetailsComputed.invoicing_repetition_type
+                "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
                 @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
@@ -231,9 +234,6 @@
                 :expiry-date="expiryDate"
                 :gross-turnover-percentages="
                     invoicingDetailsComputed.gross_turnover_percentages
-                "
-                :invoicing-repetition-type="
-                    invoicingDetailsComputed.invoicing_repetition_type
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
@@ -304,6 +304,7 @@
                                 invoicingDetailsComputed.invoicing_quarters_start_month
                             "
                             class="form-select"
+                            @change="updatePreviewInvoices"
                         >
                             <option :value="1">
                                 NOV-JAN, FEB-APR, MAY-JUL, AUG-OCT
