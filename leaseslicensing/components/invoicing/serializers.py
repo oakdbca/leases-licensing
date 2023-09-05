@@ -260,6 +260,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "invoicing_repetition_type",  # FK
             "invoicing_month_of_year",
             "invoicing_day_of_month",
+            "invoicing_quarters_start_month",
             "annual_increment_amounts",  # ReverseFK
             "annual_increment_percentages",  # ReverseFK
             "gross_turnover_percentages",  # ReverseFK
@@ -455,7 +456,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         instance.invoicing_month_of_year = validated_data.get(
             "invoicing_month_of_year", instance.invoicing_month_of_year
         )
-
+        instance.invoicing_quarters_start_month = validated_data.get(
+            "invoicing_quarters_start_month", instance.invoicing_quarters_start_month
+        )
         # FK fields
         instance.charge_method = validated_data.get(
             "charge_method", instance.charge_method
