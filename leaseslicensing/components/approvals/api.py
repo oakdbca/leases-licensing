@@ -25,6 +25,7 @@ from leaseslicensing.components.approvals.models import (
 from leaseslicensing.components.approvals.serializers import (
     ApprovalCancellationSerializer,
     ApprovalHistorySerializer,
+    ApprovalKeyValueSerializer,
     ApprovalLogEntrySerializer,
     ApprovalSerializer,
     ApprovalSurrenderSerializer,
@@ -33,7 +34,10 @@ from leaseslicensing.components.approvals.serializers import (
 )
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.serializers import InvoiceSerializer
-from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.api import (
+    KeyValueListMixin,
+    UserActionLoggingViewset,
+)
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
@@ -333,11 +337,13 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         return self.paginator.get_paginated_response(serializer.data)
 
 
-class ApprovalViewSet(UserActionLoggingViewset):
+class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
     # queryset = Approval.objects.all()
     queryset = Approval.objects.none()
     serializer_class = ApprovalSerializer
     pagination_class = DatatablesPageNumberPagination
+    key_value_display_field = "lodgement_number"
+    key_value_serializer_class = ApprovalKeyValueSerializer
 
     def get_queryset(self):
         if is_internal(self.request):
