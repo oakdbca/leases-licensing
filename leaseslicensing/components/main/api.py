@@ -13,8 +13,8 @@ from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import renderer_classes
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
-from reversion.models import Version
 from reversion.errors import RevertError
+from reversion.models import Version
 
 from leaseslicensing import helpers
 from leaseslicensing.components.main.decorators import basic_exception_handler
@@ -139,9 +139,9 @@ class TemporaryDocumentCollectionViewSet(viewsets.ModelViewSet):
 class KeyValueListMixin:
     @action(detail=False, methods=["get"], url_path="key-value-list")
     def key_value_list(self, request):
-        if not self.key_value_display_field:
+        if not hasattr(self, "key_value_display_field"):
             raise AttributeError("key_value_display_field is not defined on viewset")
-        if not self.key_value_serializer_class:
+        if not hasattr(self, "key_value_serializer_class"):
             raise AttributeError("key_value_serializer_class is not defined on viewset")
 
         queryset = self.get_queryset().only("id", self.key_value_display_field)
