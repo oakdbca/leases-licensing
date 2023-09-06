@@ -84,6 +84,17 @@
             </div>
         </CollapsibleFilters>
 
+        <div class="row mb-2">
+            <div class="col">
+                <button
+                    class="btn btn-primary float-end"
+                    @click="generateAdHocInvoiceRecord"
+                >
+                    Generate Ad Hoc Invoice Record
+                </button>
+            </div>
+        </div>
+
         <div class="row">
             <div class="col-lg-12">
                 <datatable
@@ -94,7 +105,11 @@
                 />
             </div>
         </div>
-
+        <GenerateAdHocInvoiceRecord
+            ref="invoice_raise_ad_hoc"
+            @adHocInvoiceRecordGenerated="adHocInvoiceRecordGenerated"
+        >
+        </GenerateAdHocInvoiceRecord>
         <InvoiceViewTransactions
             ref="invoice_view_transactions"
             :invoice_id="selectedInvoiceId"
@@ -127,6 +142,7 @@ import datatable from '@/utils/vue/datatable.vue';
 import InvoiceViewTransactions from '../internal/invoices/invoice_view_transactions.vue';
 import InvoiceRecordTransaction from '../internal/invoices/invoice_record_transaction.vue';
 import UploadOracleInvoice from '../internal/invoices/invoice_upload_oracle_invoice.vue';
+import GenerateAdHocInvoiceRecord from '../internal/invoices/invoice_generate_ad_hoc_record.vue';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 
 import { v4 as uuid } from 'uuid';
@@ -139,6 +155,7 @@ export default {
         datatable,
         InvoiceViewTransactions,
         UploadOracleInvoice,
+        GenerateAdHocInvoiceRecord,
         InvoiceRecordTransaction,
     },
     props: {
@@ -595,7 +612,6 @@ export default {
                 columns: vm.applicableColumns,
                 processing: true,
                 initComplete: function () {
-                    console.log('in initComplete');
                     vm.$refs.invoices_datatable.vmDataTable.draw('page');
                 },
             };
@@ -682,13 +698,22 @@ export default {
                         console.log(error);
                         Promise.reject(error);
                     }
-                    console.log('organisations: ', data);
                     vm.organisations = data;
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
                     Promise.reject(error);
                 });
+        },
+        generateAdHocInvoiceRecord: function () {
+            let vm = this;
+            vm.$refs.invoice_raise_ad_hoc.isModalOpen = true;
+        },
+        adHocInvoiceRecordGenerated: function () {
+            alert('Ad Hoc Invoice Record Generated');
+            let vm = this;
+            vm.$refs.invoice_raise_ad_hoc.isModalOpen = false;
+            vm.$refs.invoices_datatable.vmDataTable.draw();
         },
         viewTransactions: function (id, lodgement_number, amount) {
             let vm = this;
