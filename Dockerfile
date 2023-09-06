@@ -1,3 +1,5 @@
+# syntax = docker/dockerfile:1.2
+
 # Prepare the base environment.
 FROM ubuntu:22.04 as builder_base_oim_leaseslicensing
 
@@ -16,14 +18,15 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SITE_DOMAIN='dbca.wa.gov.au' \
     OSCAR_SHOP_NAME='Parks & Wildlife' \
     BPAY_ALLOWED=False \
-    POETRY_VERSION=1.5.1
+    POETRY_VERSION=1.5.1 \
+    POETRY_CACHE_DIR='/tmp/poetry_cache'
 
 # Use Australian Mirrors
 RUN sed 's/archive.ubuntu.com/au.archive.ubuntu.com/g' /etc/apt/sources.list > /etc/apt/sourcesau.list && \
     mv /etc/apt/sourcesau.list /etc/apt/sources.list
 # Use Australian Mirrors
 
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     apt-get upgrade -y && \
     apt-get install --no-install-recommends -y \
     binutils \
@@ -91,8 +94,8 @@ WORKDIR /app
 USER oim
 ENV PATH=/app/.local/bin:$PATH
 COPY --chown=oim:oim gunicorn.ini manage.py manage.sh startup.sh pyproject.toml poetry.lock ./
-RUN pip install "poetry==$POETRY_VERSION" && \
-    poetry install --only main --no-interaction --no-ansi
+RUN pip install "poetry==$POETRY_VERSION"
+RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --only main --no-interaction --no-ansi
 
 COPY --chown=oim:oim leaseslicensing ./leaseslicensing
 COPY --chown=oim:oim .git ./.git
