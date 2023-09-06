@@ -173,14 +173,18 @@
                     </LeaseLicence>
 
                     <FormSection label="Geospatial Data" index="other_section">
-                        <slot name="slot_other_assessment_comments"></slot>
+                        <slot name="slot_gis_data_assessment_comments"></slot>
                         <GisDataDetails
                             :selected-data="gis_data"
-                            :readonly="!is_internal || !leaseLicence"
+                            :readonly="is_external && leaseLicence"
                         />
                     </FormSection>
 
                     <FormSection label="Categorisation" index="categorisation">
+                        <slot
+                            name="slot_categorisation_assessment_comments"
+                        ></slot>
+
                         <div
                             v-if="proposal.site_name || is_internal"
                             class="row mb-3"
@@ -214,7 +218,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
-                                    :disabled="!is_internal || !leaseLicence"
+                                    :disabled="is_external && leaseLicence"
                                 />
                             </div>
                         </div>
