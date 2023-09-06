@@ -139,10 +139,11 @@
                                                     <textarea
                                                         id="assessor_comment_map"
                                                         v-model="
-                                                            assessment.assessor_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_map
                                                         "
                                                         class="form-control"
-                                                        placeholder=""
                                                         :disabled="
                                                             !canEditComments
                                                         "
@@ -161,10 +162,11 @@
                                                     <textarea
                                                         id="deficiency_comment_map"
                                                         v-model="
-                                                            assessment.deficiency_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_map
                                                         "
                                                         class="form-control"
-                                                        placeholder=""
                                                         :disabled="
                                                             !canEditComments
                                                         "
@@ -248,7 +250,9 @@
                                                     <textarea
                                                         id="assessor_comment_tourism_proposal_details"
                                                         v-model="
-                                                            assessment.assessor_comment_tourism_proposal_details
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_tourism_proposal_details
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -269,7 +273,9 @@
                                                     <textarea
                                                         id="deficiency_comment_tourism_proposal_details"
                                                         v-model="
-                                                            assessment.deficiency_comment_tourism_proposal_details
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_tourism_proposal_details
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -384,7 +390,9 @@
                                                     <textarea
                                                         id="assessor_comment_general_proposal_details"
                                                         v-model="
-                                                            assessment.assessor_comment_general_proposal_details
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_general_proposal_details
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -405,7 +413,9 @@
                                                     <textarea
                                                         id="deficiency_comment_general_proposal_details"
                                                         v-model="
-                                                            assessment.deficiency_comment_general_proposal_details
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_general_proposal_details
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -491,7 +501,9 @@
                                                     <textarea
                                                         id="assessor_comment_proposal_details"
                                                         v-model="
-                                                            assessment.assessor_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_proposal_details
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -512,7 +524,9 @@
                                                     <textarea
                                                         id="deficiency_comment_proposal_details"
                                                         v-model="
-                                                            assessment.deficiency_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_proposal_details
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -596,7 +610,9 @@
                                                     <textarea
                                                         id="assessor_comment_proposal_impact"
                                                         v-model="
-                                                            assessment.assessor_comment_proposal_impact
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_proposal_impact
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -617,7 +633,9 @@
                                                     <textarea
                                                         id="deficiency_comment_proposal_impact"
                                                         v-model="
-                                                            assessment.deficiency_comment_proposal_impact
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_proposal_impact
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -684,14 +702,14 @@
                                 </AssessmentComments>
                             </template>
 
-                            <template #slot_other_assessment_comments>
+                            <template #slot_gis_data_assessment_comments>
                                 <AssessmentComments
-                                    ref="collapsible_other_comments"
+                                    ref="collapsible_gis_data_comments"
                                     :collapsed="collapseAssessmentComments"
                                     component_title="Geospatial Data Assessment Comments"
                                     class="mb-2"
                                     @created="
-                                        collapsible_other_comments_component_mounted
+                                        collapsible_gis_data_comments_component_mounted
                                     "
                                 >
                                     <div class="container px-3">
@@ -699,9 +717,11 @@
                                             <div class="col">
                                                 <div class="form-floating">
                                                     <textarea
-                                                        id="assessor_comment_other"
+                                                        id="assessor_comment_gis_data"
                                                         v-model="
-                                                            assessment.assessor_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_gis_data
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -709,7 +729,7 @@
                                                         "
                                                     />
                                                     <label
-                                                        for="assessor_comment_other"
+                                                        for="assessor_comment_gis_data"
                                                         >Assessor
                                                         Comments</label
                                                     >
@@ -720,9 +740,11 @@
                                             <div class="col">
                                                 <div class="form-floating">
                                                     <textarea
-                                                        id="deficiency_comment_other"
+                                                        id="assessor_comment_gis_data"
                                                         v-model="
-                                                            assessment.deficiency_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_gis_data
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -730,7 +752,7 @@
                                                         "
                                                     />
                                                     <label
-                                                        for="deficiency_comment_other"
+                                                        for="assessor_comment_gis_data"
                                                         >Deficiency
                                                         Comments</label
                                                     >
@@ -754,11 +776,11 @@
                                                     <div class="form-floating">
                                                         <textarea
                                                             :id="
-                                                                'comment_other_' +
+                                                                'comment_gis_data_' +
                                                                 referral.id
                                                             "
                                                             v-model="
-                                                                referral.comment_other
+                                                                referral.comment_gis_data
                                                             "
                                                             class="form-control referral-comment"
                                                             :disabled="
@@ -768,7 +790,116 @@
                                                         />
                                                         <label
                                                             :for="
-                                                                'comment_other_' +
+                                                                'comment_gis_data_' +
+                                                                referral.id
+                                                            "
+                                                            >Referral Comment by
+                                                            <span
+                                                                class="fw-bold"
+                                                                >{{
+                                                                    referral
+                                                                        .referral_obj
+                                                                        .fullname
+                                                                }}</span
+                                                            ></label
+                                                        >
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </AssessmentComments>
+                            </template>
+
+                            <template #slot_categorisation_assessment_comments>
+                                <AssessmentComments
+                                    ref="collapsible_categorisation_comments"
+                                    :collapsed="collapseAssessmentComments"
+                                    component_title="Categorisation Assessment Comments"
+                                    class="mb-2"
+                                    @created="
+                                        collapsible_categorisation_comments_component_mounted
+                                    "
+                                >
+                                    <div class="container px-3">
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea
+                                                        id="assessor_comment_categorisation"
+                                                        v-model="
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_categorisation
+                                                        "
+                                                        class="form-control"
+                                                        :disabled="
+                                                            !canEditComments
+                                                        "
+                                                    />
+                                                    <label
+                                                        for="assessor_comment_categorisation"
+                                                        >Assessor
+                                                        Comments</label
+                                                    >
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3 mt-3">
+                                            <div class="col">
+                                                <div class="form-floating">
+                                                    <textarea
+                                                        id="assessor_comment_categorisation"
+                                                        v-model="
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_categorisation
+                                                        "
+                                                        class="form-control"
+                                                        :disabled="
+                                                            !canEditComments
+                                                        "
+                                                    />
+                                                    <label
+                                                        for="assessor_comment_categorisation"
+                                                        >Deficiency
+                                                        Comments</label
+                                                    >
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <template
+                                            v-for="referral in proposal.referrals"
+                                        >
+                                            <div
+                                                v-if="
+                                                    referral.processing_status !=
+                                                    constants.REFERRAL_STATUS
+                                                        .PROCESSING_STATUS_RECALLED
+                                                        .TEXT
+                                                "
+                                                :key="referral.id"
+                                                class="row mb-3 mt-3"
+                                            >
+                                                <div class="col">
+                                                    <div class="form-floating">
+                                                        <textarea
+                                                            :id="
+                                                                'comment_gis_data_' +
+                                                                referral.id
+                                                            "
+                                                            v-model="
+                                                                referral.comment_gis_data
+                                                            "
+                                                            class="form-control referral-comment"
+                                                            :disabled="
+                                                                referral.referral !==
+                                                                profile.id
+                                                            "
+                                                        />
+                                                        <label
+                                                            :for="
+                                                                'comment_gis_data_' +
                                                                 referral.id
                                                             "
                                                             >Referral Comment by
@@ -806,7 +937,9 @@
                                                     <textarea
                                                         id="assessor_comment_deed_poll"
                                                         v-model="
-                                                            assessment.assessor_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_deed_poll
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -827,7 +960,9 @@
                                                     <textarea
                                                         id="deficiency_comment_deed_poll"
                                                         v-model="
-                                                            assessment.deficiency_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_deed_poll
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -913,7 +1048,9 @@
                                                     <textarea
                                                         id="assessor_comment_additional_documents"
                                                         v-model="
-                                                            assessment.assessor_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .assessor_comment_additional_documents
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -934,7 +1071,9 @@
                                                     <textarea
                                                         id="deficiency_comment_additional_documents"
                                                         v-model="
-                                                            assessment.deficiency_comment_map
+                                                            proposal
+                                                                .assessor_assessment
+                                                                .deficiency_comment_additional_documents
                                                         "
                                                         class="form-control"
                                                         :disabled="
@@ -1108,43 +1247,37 @@
         <div v-if="displaySaveBtns" class="navbar fixed-bottom bg-navbar">
             <div class="container">
                 <div class="col-md-12 text-end">
-                    <button
+                    <BootstrapButtonSpinner
                         v-if="savingProposal"
-                        type="button"
-                        class="btn btn-primary"
-                        disabled
-                    >
-                        Save and Exit&nbsp;<i
-                            class="fa-solid fa-spinner fa-spin"
-                        ></i>
-                    </button>
-                    <input
-                        v-else
-                        type="button"
                         class="btn btn-primary me-2"
-                        value="Save and Exit"
+                        :is-loading="true"
+                        :small="true"
+                        :center-of-screen="false"
+                    />
+                    <button
+                        v-else
+                        class="btn btn-primary me-2"
                         :disabled="disableSaveAndExitBtn"
                         @click.prevent="save_and_exit"
-                    />
-
-                    <button
-                        v-if="savingProposal"
-                        type="button"
-                        class="btn btn-primary"
-                        disabled
                     >
-                        Save and Continue&nbsp;<i
-                            class="fa-solid fa-spinner fa-spin"
-                        ></i>
+                        Save and Exit
                     </button>
-                    <input
+
+                    <BootstrapButtonSpinner
+                        v-if="savingProposal"
+                        class="btn btn-primary me-1"
+                        :is-loading="true"
+                        :small="true"
+                        :center-of-screen="false"
+                    />
+                    <button
                         v-else
-                        type="button"
                         class="btn btn-primary"
-                        value="Save and Continue"
                         :disabled="disableSaveAndContinueBtn"
                         @click.prevent="save_and_continue"
-                    />
+                    >
+                        Save and Continue
+                    </button>
                 </div>
             </div>
         </div>
@@ -1769,7 +1902,7 @@ export default {
                 if (res.ok) {
                     swal.fire({
                         title: 'Saved',
-                        text: 'Your proposal has been saved',
+                        text: 'The application has been saved',
                         icon: 'success',
                     });
                     let data = await res.json();
@@ -1862,8 +1995,13 @@ export default {
                 false
             );
         },
-        collapsible_other_comments_component_mounted: function () {
-            this.$refs.collapsible_other_comments.show_warning_icon(false);
+        collapsible_gis_data_comments_component_mounted: function () {
+            this.$refs.collapsible_gis_data_comments.show_warning_icon(false);
+        },
+        collapsible_categorisation_comments_component_mounted: function () {
+            this.$refs.collapsible_categorisation_comments.show_warning_icon(
+                false
+            );
         },
         collapsible_deed_poll_comments_component_mounted: function () {
             this.$refs.collapsible_deed_poll_comments.show_warning_icon(false);
