@@ -60,6 +60,8 @@ def month_string_from_month(month):
 
 
 def financial_year_from_date(date):
+    if not isinstance(date, datetime.date):
+        raise ValueError("Date must be a datetime.date object")
     month = date.month
     year = date.year
     if month < 7:
@@ -117,10 +119,8 @@ def end_of_next_financial_year(date):
 
 def end_of_next_financial_quarter(date, start_month=3):
     """Return the last day of the financial quarter after the date provided"""
-    quarter = financial_quarter_from_date(date)
-    if quarter == 4:
-        return end_of_next_financial_year(date)
     quarters = quarters_from_start_month(start_month)
+
     for quarter in quarters:
         end_of_quarter = datetime.datetime(
             date.year,
@@ -132,9 +132,10 @@ def end_of_next_financial_quarter(date, start_month=3):
             return end_of_quarter
     year = date.year + 1
     quarter = quarters[0]
-    return datetime.datetime(
+    end_of_quarter = datetime.datetime(
         year, quarter, calendar.monthrange(year, quarter)[1]
     ).date()
+    return end_of_quarter
 
 
 def end_of_month(date):

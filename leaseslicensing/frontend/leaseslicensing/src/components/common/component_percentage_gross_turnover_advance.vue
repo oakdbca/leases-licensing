@@ -3,7 +3,7 @@
     <div class="row mb-3">
         <div class="col">
             <template
-                v-for="year in grossTurnoverPercentagesComputed"
+                v-for="(year, index) in grossTurnoverPercentagesComputed"
                 :key="year.year"
             >
                 <div class="card mb-2">
@@ -41,8 +41,38 @@
                                     <span class="input-group-text">%</span>
                                 </div>
                             </label>
-                            <div class="pe-3">Gross Turnover</div>
-                            <div class="col-sm-3">
+                        </div>
+                    </div>
+                    <div class="card-body py-3">
+                        <div class="div d-flex align-items-center">
+                            <div class="pe-3">Gross Turnover Estimate</div>
+                            <div class="col-sm-4 pe-3">
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input
+                                        v-model="year.estimated_gross_turnover"
+                                        type="number"
+                                        class="form-control"
+                                        :readonly="year.locked"
+                                        :required="index == 0"
+                                        @change="
+                                            $emit(
+                                                'onChangeGrossTurnoverEstimate',
+                                                year.estimated_gross_turnover
+                                            )
+                                        "
+                                        @keyup="
+                                            $emit(
+                                                'onChangeGrossTurnoverEstimate',
+                                                year.estimated_gross_turnover
+                                            )
+                                        "
+                                    />
+                                    <span class="input-group-text">AUD</span>
+                                </div>
+                            </div>
+                            <div class="pe-4">Gross Turnover Actual</div>
+                            <div class="col-sm-4">
                                 <div class="input-group">
                                     <span class="input-group-text">$</span>
                                     <input
@@ -92,69 +122,6 @@
                             </template>
                         </BootstrapAlert>
                     </div>
-                    <div class="card-body py-3">
-                        <div
-                            v-for="quarter in year.quarters"
-                            :key="year.year + quarter.quarter"
-                            class="div d-flex align-items-center pb-1"
-                        >
-                            <div class="col-sm-4 pe-3">&nbsp;</div>
-                            <div class="pe-3 quarter">
-                                <div class="input-group">
-                                    <input
-                                        type="text"
-                                        readonly
-                                        class="form-control form-control-quarter"
-                                        :value="`Q${
-                                            quarter.quarter
-                                        } ${getFinancialQuarterLabel(
-                                            quarter.quarter
-                                        )}`"
-                                    />
-                                </div>
-                            </div>
-                            <div class="pe-3">Gross Turnover</div>
-                            <div class="col-sm-3">
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input
-                                        v-model="quarter.gross_turnover"
-                                        type="number"
-                                        class="form-control"
-                                        :readonly="
-                                            grossQuarterlyTurnoverReadonly(
-                                                year.financial_year,
-                                                quarter.quarter
-                                            ) || year.locked
-                                        "
-                                    />
-                                    <span class="input-group-text">AUD</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div
-                            v-if="quartersTotal(year) > 0"
-                            class="div d-flex align-items-center pb-1 pt-2"
-                        >
-                            <div class="col-sm-4 pe-3">&nbsp;</div>
-                            <div class="pe-3 quarter">
-                                <div class="input-group"></div>
-                            </div>
-                            <div class="pe-3">Quarters Total&nbsp;&nbsp;</div>
-                            <div class="col-sm-3">
-                                <div class="input-group">
-                                    <span class="input-group-text">$</span>
-                                    <input
-                                        type="text"
-                                        readonly
-                                        class="form-control"
-                                        :value="quartersTotal(year)"
-                                    />
-                                    <span class="input-group-text">AUD</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </template>
         </div>
@@ -163,7 +130,7 @@
         <div class="col">
             <BootstrapAlert v-if="context == 'Proposal'" class="py-2 mb-0">
                 The system will generate compliances to ask for an audited
-                financial statement for each financial quarter and year
+                financial statement for each financial year
             </BootstrapAlert>
         </div>
     </div>
@@ -188,6 +155,10 @@ export default {
             type: Array,
             required: true,
         },
+        invoicingRepetitionType: {
+            type: Number,
+            required: true,
+        },
         proposalProcessingStatusId: {
             type: String,
             required: true,
@@ -197,7 +168,11 @@ export default {
             required: true,
         },
     },
-    emits: ['updateGrossTurnoverPercentages', 'onChangePercentage'],
+    emits: [
+        'updateGrossTurnoverPercentages',
+        'onChangePercentage',
+        'onChangeGrossTurnoverEstimate',
+    ],
     data: function () {
         return {
             originalAnnualTurnover: null,
@@ -253,6 +228,13 @@ export default {
                     this.proposalProcessingStatusId
             );
         },
+        grossMonthlyTurnoverReadonly: function (year, month) {
+            // Gross turnover is readonly if the month hasn't passed
+            // or if the proposal is being edited from the proposal details page
+            return (
+                new Date() < moment(new Date(year, month - 1, 1)).endOf('month')
+            );
+        },
         allQuartersEntered: function (grossTurnoverPercentage) {
             // Returns true if all the quarterly figures have been entered
 
@@ -267,28 +249,13 @@ export default {
             }
             return true;
         },
-        quartersTotal: function (grossTurnoverPercentage) {
-            return grossTurnoverPercentage.quarters.reduce(
-                (total, quarter) =>
-                    total + parseFloat(quarter.gross_turnover || 0),
-                0
-            );
+        grossAnnualTurnoverEstimateChanged: function (event, year) {
+            // Todo populate the next years estimate with this years actual
+            console.log('grossAnnualTurnoverEstimateChanged', event, year);
         },
         grossAnnualTurnoverChanged: function (event, year) {
-            var total_of_quarters = year.quarters.reduce(
-                (total, quarter) =>
-                    total + parseFloat(quarter.gross_turnover || 0),
-                0
-            );
-            console.log('total_of_quarters', total_of_quarters);
-            if (event.target.value != total_of_quarters) {
-                year.discrepency = currency(
-                    (event.target.value * year.percentage) / 100 -
-                        (total_of_quarters * year.percentage) / 100
-                );
-            } else {
-                year.discrepency = 0;
-            }
+            // Todo populate the next years estimate with this years actual
+            console.log('grossAnnualTurnoverChanged', event, year);
         },
         hasGrossTurnoverEntries: function (year) {
             for (let i = 0; i < year.quarters.length; i++) {
@@ -318,31 +285,9 @@ export default {
                         percentage: 0.0,
                         gross_turnover: null,
                         quarters: [],
+                        months: [],
                     };
                     financialYears.push(financialYear);
-                }
-                for (let j = 0; j < 4; j++) {
-                    console.log(j);
-                    let grossTurnoverPercentage = this
-                        .grossTurnoverPercentagesComputed[i]
-                        ? this.grossTurnoverPercentagesComputed[i]
-                        : financialYear;
-                    if (
-                        !helpers.financialQuarterIncluded(
-                            this.startDate,
-                            this.expiryDate,
-                            grossTurnoverPercentage.financial_year,
-                            j + 1
-                        )
-                    ) {
-                        continue;
-                    }
-                    if (!grossTurnoverPercentage.quarters[j]) {
-                        grossTurnoverPercentage.quarters.push({
-                            quarter: j + 1,
-                            gross_turnover: null,
-                        });
-                    }
                 }
             }
             financialYears = this.grossTurnoverPercentagesComputed.concat(

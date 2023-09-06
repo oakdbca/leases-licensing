@@ -7,16 +7,16 @@ div#app .container h3 {
     margin-bottom: 22px;
 }
 
-.btn-primary{
-    color: #fff  !important;
+.btn-primary {
+    color: #fff !important;
     background-color: #226fbb !important;
     border-color: #226fbb !important;
 }
 
 .btn-primary:hover {
-    color: #fff  !important;
+    color: #fff !important;
     background-color: #5393d2 !important;
-    border-color:#5393d2 !important;
+    border-color: #5393d2 !important;
 }
 
 .btn-horizontal-align {
@@ -24,11 +24,11 @@ div#app .container h3 {
     margin-right: 2px;
 }
 
-.bg-primary{
+.bg-primary {
     background-color: #226fbb !important;
 }
 
-.page-item > .page-link {
+.page-item>.page-link {
     color: #226fbb;
 }
 
@@ -37,28 +37,28 @@ div#app .container h3 {
 }
 
 .dt-buttons {
-    margin-left:8px;
+    margin-left: 8px;
 }
 
-.page-item.active > .page-link {
-    color:#fff;
+.page-item.active>.page-link {
+    color: #fff;
     background-color: #226fbb !important;
 
 }
 
-.text-primary{
+.text-primary {
     color: #226fbb !important;
 }
 
 
 .btn-licensing {
-    min-width:150px;
+    min-width: 150px;
 }
 
 .licensing-btn-primary {
     color: #fff;
     background-color: #226fbb;
-    min-width:150px;
+    min-width: 150px;
 }
 
 .licensing-btn-primary:hover {
@@ -68,7 +68,7 @@ div#app .container h3 {
 
 
 .navbar button {
-    width:160px;
+    width: 160px;
 }
 
 .topmast {
@@ -221,30 +221,42 @@ div#app .container h3 {
 
 /* Sweet alert 2 styles */
 
-.swal-wide{
-    width:650px !important;
+.swal-wide {
+    width: 650px !important;
 }
 
-.swal-extra-wide{
-    width:850px !important;
+.swal-extra-wide {
+    width: 850px !important;
 }
 
-.swal-extra-wide .swal2-title{
+.swal-extra-wide .swal2-title {
     text-align: left;
     margin-top: 0 !important;
 }
+
 .swal-extra-wide .swal2-text {
     display: block;
     text-align: left;
 }
+
 .swal-extra-wide .swal2-container {
     text-align: left;
 }
-.swal-extra-wide .swal2-html-container{
+
+.swal-extra-wide .swal2-html-container {
     text-align: left !important;
     margin-left: 40px !important;
     justify-content: left;
 }
+
+.swal2-confirm {
+    background-color: #226fbb !important;
+}
+
+.swal2-popup .swal2-styled:focus {
+    box-shadow: none !important;
+}
+
 /* Vue3 Multiselect styles */
 
 .multiselect__spinner::after {

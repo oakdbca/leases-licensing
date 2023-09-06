@@ -26,6 +26,7 @@ from leaseslicensing.components.proposals.models import (
     AmendmentRequest,
     ProposalAdditionalDocumentType,
     ProposalApplicant,
+    ProposalAssessment,
     ProposalAssessmentAnswer,
     ProposalDeclinedDetails,
     ProposalGeometry,
@@ -34,6 +35,7 @@ from leaseslicensing.components.proposals.models import (
 )
 from leaseslicensing.components.proposals.serializers import (
     ProposalAssessmentAnswerSerializer,
+    ProposalAssessmentSerializer,
     ProposalGeometrySerializer,
     ProposalMapFeatureInfoSerializer,
     SaveLeaseLicenceSerializer,
@@ -523,7 +525,8 @@ def save_referral_data(proposal, request):
                 comment_map=referral["comment_map"],
                 comment_proposal_details=referral["comment_proposal_details"],
                 comment_proposal_impact=referral["comment_proposal_impact"],
-                comment_other=referral["comment_other"],
+                comment_gis_data=referral["comment_gis_data"],
+                comment_categorisation=referral["comment_categorisation"],
                 comment_deed_poll=referral["comment_deed_poll"],
                 comment_additional_documents=referral["comment_additional_documents"],
             )
@@ -534,7 +537,8 @@ def save_referral_data(proposal, request):
                     "comment_map",
                     "comment_proposal_details",
                     "comment_proposal_impact",
-                    "comment_other",
+                    "comment_gis_data",
+                    "comment_categorisation",
                     "comment_deed_poll",
                     "comment_additional_documents",
                 ]
@@ -563,18 +567,18 @@ def save_assessor_data(proposal, request, viewset):
 
     # Save checklist answers
     if is_assessor(request):
-        # When this assessment is for the accessing user
         if (
             "assessor_assessment" in proposal_data
             and proposal_data["assessor_assessment"]
         ):
-            for section, answers in proposal_data["assessor_assessment"][
-                "section_answers"
-            ].items():
-                for answer_dict in answers:
-                    answer_obj = _save_answer_dict(answer_dict)
-                    # Not yet sure what the intention for answer_ob is but just printing as it wasn't accessed.
-                    logger.debug(answer_obj)
+            proposal_assessment = ProposalAssessment.objects.get(
+                id=proposal_data["assessor_assessment"]["id"]
+            )
+            serializer = ProposalAssessmentSerializer(
+                proposal_assessment, data=proposal_data["assessor_assessment"]
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
     # Save geometry
     geometry_data = request.data.get("proposalgeometry", None)

@@ -3390,7 +3390,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
             == invoicing_details.charge_method.key
         ):
-            # Generate requirements for the proponent to submit quarterly and annual financial statements
+            # Generate requirements for the proponent to submit quarterly (or monthly) and annual financial statements
             self.generate_gross_turnover_requirements(approval, request)
 
             # Generate compliances from the requirements
@@ -3400,6 +3400,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         # For all other charge methods, there may be one or more invoice records that need to be
         # generated immediately (any past periods and any current period i.e. that has started but not yet finished)
         invoicing_details.generate_immediate_invoices()
+
+        # Generate the invoice schdule for any future invoices
+        invoicing_details.generate_invoice_schedule()
 
     def finance_cancel_editing(self, request, action):
         self.processing_status = Proposal.PROCESSING_STATUS_CURRENT
@@ -4337,7 +4340,8 @@ class Referral(RevisionedMixin):
     comment_map = models.TextField(blank=True)
     comment_proposal_details = models.TextField(blank=True)
     comment_proposal_impact = models.TextField(blank=True)
-    comment_other = models.TextField(blank=True)
+    comment_gis_data = models.TextField(blank=True)
+    comment_categorisation = models.TextField(blank=True)
     comment_deed_poll = models.TextField(blank=True)
     comment_additional_documents = models.TextField(blank=True)
 
@@ -5117,7 +5121,8 @@ class ProposalAssessment(RevisionedMixin):
     assessor_comment_map = models.TextField(blank=True)
     assessor_comment_proposal_details = models.TextField(blank=True)
     assessor_comment_proposal_impact = models.TextField(blank=True)
-    assessor_comment_other = models.TextField(blank=True)
+    assessor_comment_gis_data = models.TextField(blank=True)
+    assessor_comment_categorisation = models.TextField(blank=True)
     assessor_comment_deed_poll = models.TextField(blank=True)
     assessor_comment_additional_documents = models.TextField(blank=True)
 
@@ -5129,7 +5134,8 @@ class ProposalAssessment(RevisionedMixin):
     deficiency_comment_map = models.TextField(blank=True)
     deficiency_comment_proposal_details = models.TextField(blank=True)
     deficiency_comment_proposal_impact = models.TextField(blank=True)
-    deficiency_comment_other = models.TextField(blank=True)
+    deficiency_comment_gis_data = models.TextField(blank=True)
+    deficiency_comment_categorisation = models.TextField(blank=True)
     deficiency_comment_deed_poll = models.TextField(blank=True)
     deficiency_comment_additional_documents = models.TextField(blank=True)
 

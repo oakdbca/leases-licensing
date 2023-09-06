@@ -413,6 +413,9 @@ CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE = (
 CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI = "base_fee_plus_annual_cpi"
 CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM = "base_fee_plus_annual_cpi_custom"
 CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER = "percentage_of_gross_turnover"
+CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE = (
+    "percentage_of_gross_turnover_in_advance"
+)
 CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE = "no_rent_or_licence_charge"
 CHARGE_METHODS = (
     (CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE, "No Charge"),
@@ -430,7 +433,14 @@ CHARGE_METHODS = (
         "Base Fee Plus Annual CPI (Custom)",
     ),
     (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base Fee Plus Annual CPI (ABS)"),
-    (CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER, "Percentage of Gross Turnover"),
+    (
+        CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER,
+        "Percentage of Gross Turnover (Arrears)",
+    ),
+    (
+        CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
+        "Percentage of Gross Turnover (Advance)",
+    ),
 )
 
 CHARGE_METHODS_REQUIRING_CROWN_LAND_RENT_REVIEW = [

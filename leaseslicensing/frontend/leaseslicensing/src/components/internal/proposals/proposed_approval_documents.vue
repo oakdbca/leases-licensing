@@ -59,7 +59,7 @@
                                 class="border rounded mb-3 p-3"
                                 :value="docType.id"
                             >
-                                <div class="row mb-3">
+                                <div class="row">
                                     <div class="col fw-bold">
                                         {{ docType.name }}
                                     </div>
@@ -81,10 +81,7 @@
                                         ></i>
                                     </div>
                                 </div>
-                                <div
-                                    v-if="hasTemplate(docType)"
-                                    class="row mb-3"
-                                >
+                                <div v-if="hasTemplate(docType)" class="row">
                                     <div class="col col-form-label">
                                         <span
                                             class="fa-solid fa-file-pdf"
@@ -100,7 +97,7 @@
                                         >
                                     </div>
                                 </div>
-                                <div v-else class="row mb-3">
+                                <div v-else class="row">
                                     <div class="col">
                                         <FileField
                                             :id="

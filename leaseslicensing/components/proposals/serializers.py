@@ -299,6 +299,7 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         model = ProposalAssessment
         fields = (
             "id",
+            "proposal",
             "completed",
             "submitter",
             "referral_assessment",
@@ -311,7 +312,8 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
             "assessor_comment_general_proposal_details",
             "assessor_comment_proposal_details",
             "assessor_comment_proposal_impact",
-            "assessor_comment_other",
+            "assessor_comment_gis_data",
+            "assessor_comment_categorisation",
             "assessor_comment_deed_poll",
             "assessor_comment_additional_documents",
             "deficiency_comment_map",
@@ -319,7 +321,8 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
             "deficiency_comment_general_proposal_details",
             "deficiency_comment_proposal_details",
             "deficiency_comment_proposal_impact",
-            "deficiency_comment_other",
+            "deficiency_comment_gis_data",
+            "deficiency_comment_categorisation",
             "deficiency_comment_deed_poll",
             "deficiency_comment_additional_documents",
         )
@@ -1095,29 +1098,6 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
             "site_name",
         )
         read_only_fields = ("id",)
-
-
-# class InternalSaveProposalSerializer(BaseProposalSerializer):
-#
-#    class Meta:
-#        model = Proposal
-#        fields = (
-#            "assessor_comment_map",
-#            "deficiency_comment_map",
-#            "assessor_comment_proposal_details",
-#            "deficiency_comment_proposal_details",
-#            "assessor_comment_proposal_impact",
-#            "deficiency_comment_proposal_impact",
-#            "assessor_comment_other",
-#            "deficiency_comment_other",
-#            "assessor_comment_deed_poll",
-#            "deficiency_comment_deed_poll",
-#            "assessor_comment_additional_documents",
-#            "deficiency_comment_additional_documents",
-#            "assessor_comment_proposal_details",
-#            "deficiency_comment_proposal_details",
-#
-#        )
 
 
 class SaveProposalSerializer(BaseProposalSerializer):

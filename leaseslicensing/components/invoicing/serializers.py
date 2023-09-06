@@ -104,9 +104,11 @@ class FixedAnnualIncrementPercentageSerializer(serializers.ModelSerializer):
 
 
 class FinancialMonthSerializer(serializers.ModelSerializer):
+    label = serializers.CharField(source="month_name", read_only=True)
+
     class Meta:
         model = FinancialMonth
-        fields = ["year", "month", "gross_turnover", "locked"]
+        fields = ["year", "month", "label", "gross_turnover", "locked"]
 
 
 class FinancialQuarterSerializer(serializers.ModelSerializer):
@@ -127,6 +129,7 @@ class PercentageOfGrossTurnoverSerializer(serializers.ModelSerializer):
             "year",
             "financial_year",
             "percentage",
+            "estimated_gross_turnover",
             "gross_turnover",
             "locked",
             "to_be_deleted",
@@ -257,6 +260,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "invoicing_repetition_type",  # FK
             "invoicing_month_of_year",
             "invoicing_day_of_month",
+            "invoicing_quarters_start_month",
             "annual_increment_amounts",  # ReverseFK
             "annual_increment_percentages",  # ReverseFK
             "gross_turnover_percentages",  # ReverseFK
@@ -452,7 +456,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         instance.invoicing_month_of_year = validated_data.get(
             "invoicing_month_of_year", instance.invoicing_month_of_year
         )
-
+        instance.invoicing_quarters_start_month = validated_data.get(
+            "invoicing_quarters_start_month", instance.invoicing_quarters_start_month
+        )
         # FK fields
         instance.charge_method = validated_data.get(
             "charge_method", instance.charge_method
