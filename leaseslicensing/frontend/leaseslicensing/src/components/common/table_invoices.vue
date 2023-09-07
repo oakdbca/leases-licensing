@@ -710,7 +710,6 @@ export default {
             vm.$refs.invoice_raise_ad_hoc.isModalOpen = true;
         },
         adHocInvoiceRecordGenerated: function () {
-            alert('Ad Hoc Invoice Record Generated');
             let vm = this;
             vm.$refs.invoice_raise_ad_hoc.isModalOpen = false;
             vm.$refs.invoices_datatable.vmDataTable.draw();
