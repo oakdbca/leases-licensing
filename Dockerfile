@@ -18,7 +18,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SITE_DOMAIN='dbca.wa.gov.au' \
     OSCAR_SHOP_NAME='Parks & Wildlife' \
     BPAY_ALLOWED=False \
-    POETRY_VERSION=1.5.1 \
+    POETRY_VERSION=1.6.1 \
     POETRY_CACHE_DIR='/tmp/poetry_cache'
 
 # Use Australian Mirrors
@@ -95,7 +95,7 @@ USER oim
 ENV PATH=/app/.local/bin:$PATH
 COPY --chown=oim:oim gunicorn.ini manage.py manage.sh startup.sh pyproject.toml poetry.lock ./
 RUN pip install "poetry==$POETRY_VERSION"
-RUN --mount=type=cache,target=$POETRY_CACHE_DIR poetry install --only main --no-interaction --no-ansi
+RUN --mount=type=cache,target=~/.cache/pypoetry/cache poetry install --only main --no-interaction --no-ansi
 
 COPY --chown=oim:oim leaseslicensing ./leaseslicensing
 COPY --chown=oim:oim .git ./.git
