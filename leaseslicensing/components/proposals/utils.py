@@ -589,77 +589,62 @@ def check_geometry(instance):
             )
 
 
+@transaction.atomic
 def proposal_submit(proposal, request):
-    # import ipdb; ipdb.set_trace()
-    with transaction.atomic():
-        if proposal.can_user_edit:
-            proposal.submitter = request.user.id
-            proposal.lodgement_date = timezone.now()
-            proposal.training_completed = True
-            reasons = []
-            if proposal.amendment_requests:
-                qs = proposal.amendment_requests.filter(status="requested")
-                if qs:
-                    for q in qs:
-                        if q.reason is not None:
-                            reasons.append(q.reason)
-                        q.status = "amended"
-                        q.save()
+    if not proposal.can_user_edit:
+        raise ValidationError("You can't edit this proposal at this moment")
 
-            # Create a log entry for the proposal
-            proposal.log_user_action(
-                ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id), request
-            )
-            # Create a log entry for the organisation
-            # proposal.applicant.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
-            # applicant_field = getattr(proposal, proposal.applicant_field)
-            # 20220128 Ledger to handle EmailUser logging?
-            # applicant_field.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
-            # 20220128 - update ProposalAssessorGroup, ProposalApproverGroup as SystemGroups
-            ret1 = send_submit_email_notification(request, proposal)
-            ret2 = send_external_submit_email_notification(request, proposal)
+    proposal.submitter = request.user.id
+    proposal.lodgement_date = timezone.now()
+    proposal.training_completed = True
+    reasons = []
+    if proposal.amendment_requests:
+        qs = proposal.amendment_requests.filter(status="requested")
+        if qs:
+            for q in qs:
+                if q.reason is not None:
+                    reasons.append(q.reason)
+                q.status = "amended"
+                q.save()
 
-            # proposal.save_form_tabs(request)
-            if (settings.WORKING_FROM_HOME and settings.DEBUG) or ret1 and ret2:
-                proposal.processing_status = "with_assessor"
-                # TODO: do we need the following 2?
-                # proposal.documents.all().update(can_delete=False)
-                # proposal.required_documents.all().update(can_delete=False)
+    # Create a log entry for the proposal
+    proposal.log_user_action(
+        ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id), request
+    )
+    # Create a log entry for the organisation
+    # proposal.applicant.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
+    # applicant_field = getattr(proposal, proposal.applicant_field)
+    # 20220128 Ledger to handle EmailUser logging?
+    # applicant_field.log_user_action(ProposalUserAction.ACTION_LODGE_APPLICATION.format(proposal.id),request)
+    # 20220128 - update ProposalAssessorGroup, ProposalApproverGroup as SystemGroups
+    ret1 = send_submit_email_notification(request, proposal)
+    ret2 = send_external_submit_email_notification(request, proposal)
 
-                # Reason can be an object, e.g. `AmendmentReason`
-                reasons = [r.reason if hasattr(r, "reason") else r for r in reasons]
-                reason = ",".join(reasons)
-                proposal.save(
-                    version_comment=f"Requested proposal amendments done {reason}"
-                )
-            else:
-                raise ValidationError(
-                    "An error occurred while submitting proposal (Submit email notifications failed)"
-                )
-            # Create assessor checklist with the current assessor_list type questions
-            # Assessment instance already exits then skip.
-            # TODO: fix ProposalAssessment if still required
-            proposal.make_questions_ready()
-            # try:
-            #    assessor_assessment=ProposalAssessment.objects.get
-            # (proposal=proposal,referral_group=None, referral_assessment=False)
-            # except ProposalAssessment.DoesNotExist:
-            #    assessor_assessment=ProposalAssessment.objects.create
-            # (proposal=proposal,referral_group=None, referral_assessment=False)
-            #    checklist=ChecklistQuestion.objects.filter
-            # (list_type='assessor_list', application_type=proposal.application_type, obsolete=False)
-            #    for chk in checklist:
-            #        try:
-            #            chk_instance=ProposalAssessmentAnswer.objects.get
-            # (question=chk, assessment=assessor_assessment)
-            #        except ProposalAssessmentAnswer.DoesNotExist:
-            #            chk_instance=ProposalAssessmentAnswer.objects.create
-            # (question=chk, assessment=assessor_assessment)
+    # proposal.save_form_tabs(request)
+    if (settings.WORKING_FROM_HOME and settings.DEBUG) or ret1 and ret2:
+        proposal.processing_status = "with_assessor"
 
-            return proposal
+        # The model returned by proposal.documents is a proposallogdocument model
+        # that doesn't even have the can_delete field however Todo: We must check if there are
+        # related documents fields on proposal that do have this field as we should
+        # set their can_delete field as false like below as once the application is submitted they
+        # should not be able to be deleted.
+        # proposal.documents.all().update(can_delete=False)
 
-        else:
-            raise ValidationError("You can't edit this proposal at this moment")
+        # Reason can be an object, e.g. `AmendmentReason`
+        reasons = [r.reason if hasattr(r, "reason") else r for r in reasons]
+        reason = ",".join(reasons)
+        proposal.save(version_comment=f"Requested proposal amendments done {reason}")
+    else:
+        raise ValidationError(
+            "An error occurred while submitting proposal (Submit email notifications failed)"
+        )
+
+    proposal_assessment, created = ProposalAssessment.objects.get_or_create(
+        proposal=proposal
+    )
+
+    return proposal
 
 
 def is_payment_officer(user):
