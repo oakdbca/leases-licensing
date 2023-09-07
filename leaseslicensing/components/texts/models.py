@@ -1,10 +1,10 @@
+from ckeditor.fields import RichTextField
 from django.db import models
 
-from ckeditor.fields import RichTextField
 
 class DetailsText(models.Model):
     body = RichTextField(blank=False, null=False)
-    target = models.CharField("Target", max_length=128) # HTML target
+    target = models.CharField("Target", max_length=128)  # HTML target
 
     class Meta:
         app_label = "leaseslicensing"

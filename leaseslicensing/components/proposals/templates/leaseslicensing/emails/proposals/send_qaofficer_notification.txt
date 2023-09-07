@@ -4,7 +4,7 @@
     {% if reminder %}
         This is a reminder for QA for Application <strong>{{proposal.lodgement_number}}</strong> that has been sent to you
     {% else %}
-        A QA for Application A{{proposal.id}} has been sent to you: 
+        A QA for Application A{{proposal.id}} has been sent to you:
         Comments: {{comments}}
     {% endif %}
 

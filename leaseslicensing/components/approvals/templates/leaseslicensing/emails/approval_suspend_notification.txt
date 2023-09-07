@@ -5,7 +5,7 @@
 
     Licence : {{ approval.lodgement_number}}
 
-    Suspension Details : {{details}}    
+    Suspension Details : {{details}}
 
     From Date : {{from_date}}
 

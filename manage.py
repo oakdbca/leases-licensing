@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-import confy
 import os
 import sys
+
+import confy
 
 # confy.read_environment_file()
 

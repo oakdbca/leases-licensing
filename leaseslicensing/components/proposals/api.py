@@ -60,7 +60,6 @@ from leaseslicensing.components.proposals.models import (
     Referral,
     ReferralRecipientGroup,
     RequirementDocument,
-    searchKeyWords,
 )
 from leaseslicensing.components.proposals.serializers import (  # InternalSaveProposalSerializer,
     AdditionalDocumentTypeSerializer,
@@ -87,7 +86,6 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     ProposedApprovalSerializer,
     ReferralSerializer,
     SaveProposalSerializer,
-    SearchKeywordSerializer,
     SendReferralSerializer,
 )
 from leaseslicensing.components.proposals.utils import (
@@ -2463,26 +2461,6 @@ class AmendmentRequestReasonChoicesView(views.APIView):
                 # choices_list.append({'key': c[0],'value': c[1]})
                 choices_list.append({"key": c.id, "value": c.reason})
         return Response(choices_list)
-
-
-class SearchKeywordsView(views.APIView):
-    renderer_classes = [
-        JSONRenderer,
-    ]
-
-    def post(self, request, format=None):
-        qs = []
-        searchWords = request.data.get("searchKeywords")
-        searchProposal = request.data.get("searchProposal")
-        searchApproval = request.data.get("searchApproval")
-        searchCompliance = request.data.get("searchCompliance")
-        if searchWords:
-            qs = searchKeyWords(
-                searchWords, searchProposal, searchApproval, searchCompliance
-            )
-        # queryset = list(set(qs))
-        serializer = SearchKeywordSerializer(qs, many=True)
-        return Response(serializer.data)
 
 
 class SearchReferenceView(views.APIView):

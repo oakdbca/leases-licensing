@@ -28,7 +28,7 @@ def basic_exception_handler(func):
                     "user message (settings.API_EXCEPTION_MESSAGE)": settings.API_EXCEPTION_MESSAGE,
                     "type": type(e),
                     "error": str(e),
-                    "stacktrace": traceback.format_exc()
+                    "stacktrace": traceback.format_exc(),
                 }
                 raise APIException(code=500, detail=detail)
             # Don't send complex exeption messages to the client when in production

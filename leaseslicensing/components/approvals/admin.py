@@ -1,6 +1,7 @@
-from django.contrib import admin
 from django import forms as forms
+from django.contrib import admin
 from django.core.exceptions import ValidationError
+
 from leaseslicensing.components.approvals import models
 
 

@@ -1,13 +1,12 @@
+from datetime import timedelta
 
 import pytz
-from datetime import timedelta
+from django.conf import settings
 from django.template import Library
 from django.utils import timezone
-from django.conf import settings
 
 from leaseslicensing import helpers as leaseslicensing_helpers
 from leaseslicensing.components.main.models import SystemMaintenance
-
 
 register = Library()
 
@@ -28,14 +27,15 @@ def is_internal(context):
 
 @register.simple_tag(takes_context=True)
 def is_model_backend(context):
-    # Return True if user logged in via single sign-on (or False via social_auth i.e. an external user signing in with a login-token)
+    # Return True if user logged in via single sign-on (or False via social_auth
+    # i.e. an external user signing in with a login-token)
     request = context["request"]
     return leaseslicensing_helpers.is_model_backend(request)
 
 
 @register.simple_tag(takes_context=True)
 def is_payment_officer(context):
-    #request = context["request"]
+    # request = context["request"]
     # TODO: fix this
     return False  # is_payment_admin(request.user)
 
@@ -52,7 +52,7 @@ def system_maintenance_due():
             hours=settings.SYSTEM_MAINTENANCE_WARNING
         ) and now <= obj.start_date + timedelta(minutes=1):
             # display time in local timezone
-            return "{0} - {1} (Duration: {2} mins)".format(
+            return "{} - {} (Duration: {} mins)".format(
                 obj.start_date.astimezone(tz=tz).ctime(),
                 obj.end_date.astimezone(tz=tz).ctime(),
                 obj.duration(),

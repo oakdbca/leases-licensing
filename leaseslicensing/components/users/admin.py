@@ -1,4 +1,1 @@
-from django.contrib import admin
-from leaseslicensing.components.users import models
-
-# Register your models here.
+# Not sure this file is needed if there is nothing in here?

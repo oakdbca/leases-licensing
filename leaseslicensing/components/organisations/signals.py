@@ -1,15 +1,14 @@
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
-from django.db.models.signals import post_delete, pre_save, post_save
-from django.conf import settings
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationContact,
 )
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 
-class OrganisationListener(object):
+class OrganisationListener:
     """
     Event listener for Organisation
     """
@@ -32,7 +31,7 @@ class OrganisationListener(object):
             instance.user_pin_two = instance._generate_pin()
 
 
-class EmailUserUpdateContactListener(object):
+class EmailUserUpdateContactListener:
     @staticmethod
     @receiver(post_save, sender=EmailUser)
     def _post_save(sender, instance, **kwargs):

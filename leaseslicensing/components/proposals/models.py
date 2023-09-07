@@ -1815,7 +1815,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                 # Todo: maybe axe this at some point as we are convering the shapefile into a proposalgeometry
                 # which is more useful in this application. Why store it in two places?
-                if type(shp_json) == str:
+                if isinstance(shp_json, str):
                     self.shapefile_json = json.loads(shp_json)
                 else:
                     self.shapefile_json = shp_json
@@ -5385,70 +5385,6 @@ def duplicate_object(self):
         )
 
     return self
-
-
-def searchKeyWords(
-    searchWords, searchProposal, searchApproval, searchCompliance, is_internal=True
-):
-    from leaseslicensing.components.approvals.models import Approval
-    from leaseslicensing.components.compliances.models import Compliance
-    from leaseslicensing.utils import search, search_approval, search_compliance
-
-    qs = []
-    if is_internal:
-        proposal_list = Proposal.objects.exclude(
-            processing_status__in=["discarded", "draft"]
-        )
-        approval_list = (
-            Approval.objects.all()
-            .order_by("lodgement_number", "-issue_date")
-            .distinct("lodgement_number")
-        )
-        compliance_list = Compliance.objects.all()
-    if searchWords:
-        if searchProposal:
-            for p in proposal_list:
-                # if p.data:
-                if p.search_data:
-                    try:
-                        # results = search(p.data[0], searchWords)
-                        results = search(p.search_data, searchWords)
-                        final_results = {}
-                        if results:
-                            for r in results:
-                                for key, value in r.items():
-                                    final_results.update({"key": key, "value": value})
-                            res = {
-                                "number": p.lodgement_number,
-                                "id": p.id,
-                                "type": "Proposal",
-                                "applicant": p.applicant,
-                                "text": final_results,
-                            }
-                            qs.append(res)
-                    except Exception as e:
-                        logger.exception(e)
-                        raise e
-
-        if searchApproval:
-            for a in approval_list:
-                try:
-                    results = search_approval(a, searchWords)
-                    qs.extend(results)
-                except Exception as e:
-                    logger.exception(e)
-                    raise e
-
-        if searchCompliance:
-            for c in compliance_list:
-                try:
-                    results = search_compliance(c, searchWords)
-                    qs.extend(results)
-                except Exception as e:
-                    logger.exception(e)
-                    raise e
-
-    return qs
 
 
 def search_reference(reference_number):

@@ -1,10 +1,15 @@
-from leaseslicensing.components.competitive_processes.models import CompetitiveProcessGeometry
-from leaseslicensing.components.competitive_processes.serializers import CompetitiveProcessGeometrySaveSerializer, CompetitiveProcessMapFeatureInfoSerializer
+from leaseslicensing.components.competitive_processes.models import (
+    CompetitiveProcessGeometry,
+)
+from leaseslicensing.components.competitive_processes.serializers import (
+    CompetitiveProcessGeometrySaveSerializer,
+    CompetitiveProcessMapFeatureInfoSerializer,
+)
+
 
 def get_competitive_process_geometries_for_map_component(
     competitive_process, context, feature_collection
 ):
-
     if not feature_collection:
         feature_collection = {"type": "FeatureCollection", "features": []}
 

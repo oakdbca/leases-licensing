@@ -31,7 +31,7 @@
                                         <label for="proposed_decline_documents">File</label>
                                     </div>
                                     <div class="col-sm-9">
-                                        <FileField 
+                                        <FileField
                                             ref="proposed_decline_documents"
                                             name="proposed_decline_documents"
                                             id="proposed_decline_documents"

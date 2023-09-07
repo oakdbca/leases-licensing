@@ -1,7 +1,7 @@
 {%  extends 'leaseslicensing/emails/base_email.txt' %}
 
 {%  block content %}
-    
+
     Your request to link your account to a company has been approved. Details are as follows:
     Company : {{ organisation.name }}
     ABN/ ACN : {{ organisation.abn}}

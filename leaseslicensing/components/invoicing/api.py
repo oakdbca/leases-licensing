@@ -295,7 +295,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             f"Setting basket parameters: {basket_params} for Invoice: {instance.lodgement_number}"
         )
 
-        if type(approval.applicant) == Organisation:
+        if isinstance(approval.applicant, Organisation):
             organisation = approval.applicant
             basket_params["organisation"] = organisation.ledger_organisation_id
             admin_contact = organisation.contacts.filter(
