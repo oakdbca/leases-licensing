@@ -1,3 +1,1 @@
-from __future__ import unicode_literals
-
-from django.db import models
+# Don't delete this file. Django uses it for app model discovery
