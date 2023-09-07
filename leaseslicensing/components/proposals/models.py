@@ -3383,7 +3383,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoice.save()
 
             # send to the finance group so they can take action
-            send_new_invoice_raised_internal_notification(self.approval, invoice)
+            send_new_invoice_raised_internal_notification(invoice)
             return
 
         if (

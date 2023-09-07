@@ -710,7 +710,7 @@ class InvoicingDetails(BaseModel):
             )
 
             # send to the finance group so they can take action
-            send_new_invoice_raised_internal_notification(self.approval, invoice)
+            send_new_invoice_raised_internal_notification(invoice)
 
     def get_first_issue_date(self):
         first_issue_date = self.approval.start_date
