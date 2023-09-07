@@ -1833,36 +1833,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         return valid_geometry_saved
 
-    def make_questions_ready(self, referral=None):
-        """
-        Create checklist answers
-        Assessment instance already exits then skip.
-        """
-        proposal_assessment, created = ProposalAssessment.objects.get_or_create(
-            proposal=self, referral=referral
-        )
-        if created:
-            for_referral_or_assessor = (
-                SectionChecklist.LIST_TYPE_REFERRAL
-                if referral
-                else SectionChecklist.LIST_TYPE_ASSESSOR
-            )
-            section_checklists = SectionChecklist.objects.filter(
-                application_type=self.application_type,
-                list_type=for_referral_or_assessor,
-                enabled=True,
-            )
-            for section_checklist in section_checklists:
-                for checklist_question in section_checklist.questions.filter(
-                    enabled=True
-                ):
-                    answer = ProposalAssessmentAnswer.objects.create(
-                        proposal_assessment=proposal_assessment,
-                        checklist_question=checklist_question,
-                    )
-                    # Not sure what this is for but logging answer for now
-                    logger.info(answer)
-
     def update(self, request, viewset):
         from leaseslicensing.components.proposals.utils import save_proponent_data
 
@@ -1919,10 +1889,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         text=referral_text,
                         assigned_officer=request.user.id,
                     )
-                    # Create answers for this referral
-                    # Commenting the following line out as we are not using checklist questions for referrals
-                    # so I don't think we need this anymore Todo: Delete if I was correct
-                    # self.make_questions_ready(referral)
 
                 # Create a log entry for the proposal
                 self.log_user_action(
