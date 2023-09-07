@@ -166,11 +166,6 @@ api_patterns = [
         name="amendment_request_reason_choices",
     ),
     url(
-        r"^api/search_keywords",
-        proposal_api.SearchKeywordsView.as_view(),
-        name="search_keywords",
-    ),
-    url(
         r"^api/search_reference",
         proposal_api.SearchReferenceView.as_view(),
         name="search_reference",
