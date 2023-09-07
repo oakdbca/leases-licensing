@@ -248,6 +248,16 @@ export default {
                 .toISOString()
                 .split('T')[0];
         },
+        resetInvoice: function () {
+            this.invoice = {
+                approval: null,
+                amount: null,
+                description: null,
+                date_issued: null,
+                date_due: null,
+                oracle_invoice_number: null,
+            };
+        },
         close: function () {
             var form = document.getElementById(
                 'generate-ad-hoc-invoice-record-form'
@@ -348,6 +358,7 @@ export default {
                         return;
                     }
                     vm.$emit('adHocInvoiceRecordGenerated', data);
+                    vm.resetInvoice();
                     Swal.fire({
                         title: 'Ad Hoc Invoice Record Generated',
                         text: `The ad hoc invoice record has been generated.`,
