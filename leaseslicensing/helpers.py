@@ -132,7 +132,6 @@ def get_leaseslicensing_organisation_ids():
             Organisation.objects.all().values_list("organisation", flat=True).distinct()
         )
         cache.set(cache_key, organisation_ids, settings.CACHE_TIMEOUT_2_HOURS)
-    logger.debug(f"{cache_key}:{organisation_ids}")
     return organisation_ids
 
 
@@ -150,7 +149,6 @@ def get_leaseslicensing_organisations():
             if org["organisation_id"] in leases_organisation_ids:
                 organisations.append(org)
     cache.set(cache_key, organisations, settings.CACHE_TIMEOUT_2_HOURS)
-    logger.debug(f"{cache_key}:{organisations}")
     return organisations
 
 
@@ -183,7 +181,6 @@ def get_leaseslicensing_external_emailuser_ids():
         # combine lists and remove duplicates
         user_ids = list(set(submitters + approval_submitters + compliance_submitters))
         cache.set(cache_key, user_ids, settings.CACHE_TIMEOUT_2_HOURS)
-    logger.debug(f"{cache_key}:{user_ids}")
     return user_ids
 
 

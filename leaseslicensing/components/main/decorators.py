@@ -92,7 +92,7 @@ def timeit(method):
             name = kw.get("log_name", method.__name__.upper())
             kw["log_time"][name] = int((te - ts) * 1000)
         else:
-            logger.debug(f"{method.__name__!r}  {(te - ts) * 1000:2.2f} ms")
+            logger.info(f"{method.__name__!r}  {(te - ts) * 1000:2.2f} ms")
         return result
 
     return timed
@@ -110,9 +110,9 @@ def query_debugger(func):
         function_name = f"Function : {func.__name__}"
         number_of_queries = f"Number of Queries : {end_queries - start_queries}"
         time_taken = f"Finished in : {(end - start):.2f}s"
-        logger.debug(function_name)
-        logger.debug(number_of_queries)
-        logger.debug(time_taken)
+        logger.info(function_name)
+        logger.info(number_of_queries)
+        logger.info(time_taken)
         return result
 
     return inner_func

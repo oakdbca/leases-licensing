@@ -159,10 +159,11 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
 
         if filter_approval_type:
             filter_approval_type = int(filter_approval_type)
-            logger.debug(f"filter_approval_type: {filter_approval_type}")
             queryset = queryset.filter(approval_type__id=filter_approval_type)
+
         if filter_approval_status:
             queryset = queryset.filter(status=filter_approval_status)
+
         if filter_approval_expiry_date_from:
             filter_approval_expiry_date_from = datetime.strptime(
                 filter_approval_expiry_date_from, "%Y-%m-%d"
@@ -170,6 +171,7 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
             queryset = queryset.filter(
                 expiry_date__gte=filter_approval_expiry_date_from
             )
+
         if filter_approval_expiry_date_to:
             filter_approval_expiry_date_to = datetime.strptime(
                 filter_approval_expiry_date_to, "%Y-%m-%d"
@@ -178,27 +180,22 @@ class ApprovalFilterBackend(LedgerDatatablesFilterBackend):
 
         if filter_approval_organisation:
             filter_approval_organisation = int(filter_approval_organisation)
-            logger.debug(
-                f"filter_approval_organisation: {filter_approval_organisation}"
-            )
             queryset = queryset.filter(
                 current_proposal__org_applicant_id=filter_approval_organisation
             )
+
         if filter_approval_region:
             filter_approval_region = int(filter_approval_region)
-            logger.debug(f"filter_approval_region: {filter_approval_region}")
             queryset = queryset.filter(
                 current_proposal__regions__region_id=filter_approval_region
             )
         if filter_approval_district:
             filter_approval_district = int(filter_approval_district)
-            logger.debug(f"filter_approval_district: {filter_approval_district}")
             queryset = queryset.filter(
                 current_proposal__districts__district_id=filter_approval_district
             )
         if filter_approval_group:
             filter_approval_group = int(filter_approval_group)
-            logger.debug(f"filter_approval_group: {filter_approval_group}")
             queryset = queryset.filter(
                 current_proposal__groups__group_id=filter_approval_group
             )
@@ -250,7 +247,6 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             and target_email_user_id.isnumeric()
             and int(target_email_user_id) > 0
         ):
-            logger.debug(f"target_email_user_id: {target_email_user_id}")
             target_email_user_id = int(target_email_user_id)
             # TODO: Do we need to exclude org applications here? Would lead to no results
             # when the query is parametrized for user id and org id
@@ -265,7 +261,6 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             and target_organisation_id.isnumeric()
             and int(target_organisation_id) > 0
         ):
-            logger.debug(f"target_organisation_id: {target_organisation_id}")
             target_organisation_id = int(target_organisation_id)
             qs = qs.exclude(current_proposal__org_applicant__isnull=True).filter(
                 current_proposal__org_applicant__id=target_organisation_id
@@ -720,11 +715,9 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
 
         # page = self.paginate_queryset(queryset)
         # if page is not None:
-        #     logger.debug(f"page = {page}")
         #     serializer = RelatedItemSerializer(page, many=True)
         #     return self.get_paginated_response(serializer.data)
 
-        logger.debug(f"paginated_queryset query: {queryset}")
         serializer = RelatedItemSerializer(queryset, many=True)
         data = {}
         # Add the fields that the datatables renderer expects

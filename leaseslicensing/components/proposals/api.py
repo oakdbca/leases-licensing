@@ -386,7 +386,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             and target_organisation_id.isnumeric()
             and int(target_organisation_id) > 0
         ):
-            logger.debug(f"target_organisation_id: {target_organisation_id}")
             target_organisation_id = int(target_organisation_id)
             qs = qs.exclude(org_applicant__isnull=True).filter(
                 org_applicant__id=target_organisation_id
@@ -620,10 +619,8 @@ class ProposalViewSet(UserActionLoggingViewset):
                 .prefetch_related("proposalgeometry")
             )
             cache.set(cache_key, qs, settings.CACHE_TIMEOUT_2_HOURS)
-        logger.debug(f"{cache_key}:{qs}")
 
         if len(proposal_ids) > 0:
-            logger.debug(f"Filtering by proposal_ids: {proposal_ids}")
             qs = qs.filter(id__in=proposal_ids)
 
         if (
@@ -631,11 +628,9 @@ class ProposalViewSet(UserActionLoggingViewset):
             and application_type.isnumeric()
             and int(application_type) > 0
         ):
-            logger.debug(f"Filtering by application_type: {application_type}")
             qs = qs.filter(application_type_id=application_type)
 
         if processing_status:
-            logger.debug(f"Filtering by processing_status: {processing_status}")
             qs = qs.filter(processing_status=processing_status)
 
         # qs = self.filter_queryset(qs)
@@ -1502,21 +1497,17 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     @basic_exception_handler
     def reissue_approval(self, request, *args, **kwargs):
-        logger.debug("reissue_approval()")
         instance = self.get_object()
         if not is_assessor(request):
             raise PermissionDenied(
                 "Assessor permissions are required to reissue approval"
             )
 
-        logger.debug("instance.reissue_approval()")
         instance.reissue_approval()
-        logger.debug("instance.log_user_action()")
         instance.log_user_action(
             ProposalUserAction.ACTION_REISSUE_APPROVAL.format(instance.id), request
         )
         serializer = InternalProposalSerializer(instance, context={"request": request})
-        logger.debug("return Response(serializer.data)")
         return Response(serializer.data)
 
     @detail_route(
@@ -1709,7 +1700,6 @@ class ProposalViewSet(UserActionLoggingViewset):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def draft(self, request, *args, **kwargs):
-        logger.debug("proposal draft()")
         instance = self.get_object()
         save_proponent_data(instance, request, self)
         # return redirect(reverse('external'))
@@ -2193,7 +2183,6 @@ class ReferralViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def remind(self, request, *args, **kwargs):
         instance = self.get_object()
-        logger.debug(f"instance: {instance}")
         instance.remind(request)
         serializer = InternalProposalSerializer(
             instance.proposal, context={"request": request}
@@ -2387,7 +2376,6 @@ class ProposalRequirementViewSet(LicensingViewset):
 
     @basic_exception_handler
     def create(self, request, *args, **kwargs):
-        logger.debug("ProposalRequirementViewSet.create()")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 

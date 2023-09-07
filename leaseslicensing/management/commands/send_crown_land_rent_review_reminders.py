@@ -36,7 +36,7 @@ class Command(BaseCommand):
         }
         approvals = Approval.objects.filter(**filters)
         for approval in approvals:
-            logger.debug(f"Checking approval: {approval}")
+            logger.info(f"Checking approval: {approval}")
             months_due_in = None
             if approval.crown_land_rent_review_reminder_due_in(months=12):
                 months_due_in = 12
@@ -49,7 +49,7 @@ class Command(BaseCommand):
 
             if months_due_in is not None:
                 if options["test"]:
-                    logger.debug(
+                    logger.info(
                         f"Test: Would have sent crown land rent reivew reminder for approval: {approval}"
                     )
                     continue

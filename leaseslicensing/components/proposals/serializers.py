@@ -360,8 +360,6 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
 
     def get_belongs_to_accessing_user(self, proposal_assessment):
         request = self.context.get("request")
-        logger.debug(f"type proposal_assessment: {type(proposal_assessment)}")
-        logger.debug(f"proposal_assessment: {proposal_assessment}")
         assessment_belongs_to_accessing_user = False
         if proposal_assessment.referral:
             # This assessment is for referrals

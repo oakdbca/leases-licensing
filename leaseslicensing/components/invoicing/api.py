@@ -340,8 +340,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             )
             return
 
-        logger.debug(f"Future invoice created for Invoice: {instance}")
-
         data = future_invoice["data"]
         instance.order_number = data["order"]
         instance.basket_id = data["basket_id"]

@@ -1648,7 +1648,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             try:
                 referral = Referral.objects.get(proposal=self, referral=user.id)
             except Referral.DoesNotExist:
-                logger.debug("Referral does not exist")
+                logger.warn(
+                    f"Referral with Proposal: {self} and referral user id: {user.id} does not exist"
+                )
                 return False
 
             if referral.processing_status in [
@@ -1777,8 +1779,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         geometries.crs.srs
                     ).srid  # spatial reference identifier
 
-                    logger.debug(f"geom.srid = {srid}")
-
                     polygon = GEOSGeometry(geom.wkt, srid=srid)
 
                     # Add the file name as identifier to the geojson for use in the frontend
@@ -1801,7 +1801,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         intersects=True,
                         drawn_by=request.user.id,
                     )
-                    logger.debug(f"{self.shapefile_json}")
 
                 shp_gdfs.append(gdf_transform)
 
@@ -3341,7 +3340,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         serializer.is_valid(raise_exception=True)
 
         instance = serializer.save()
-        logger.debug(type(instance))
         return instance
 
     @transaction.atomic
@@ -3364,7 +3362,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         ):
             # Generate a single once off change invoice
             invoice_amount = invoicing_details.once_off_charge_amount
-            logger.debug(f"invoice_amount: {invoice_amount}")
             if not invoice_amount or invoice_amount <= Decimal("0.00"):
                 raise serializers.ValidationError(
                     _(f"Invalid invoice amount: {invoice_amount}", code="invalid")
@@ -4564,9 +4561,6 @@ class Referral(RevisionedMixin):
                 request,
             )
 
-            logger.debug("\n\n\n -------------->")
-            logger.debug(str(self.applicant))
-
             # log applicant_field
             self.applicant.log_user_action(
                 ProposalUserAction.CONCLUDE_REFERRAL.format(
@@ -4911,13 +4905,7 @@ class ProposalRequirement(RevisionedMixin):
 
     def swap(self, other):
         new_self_position = other.req_order
-        logger.debug(self.id)
-        logger.debug("new_self_position")
-        logger.debug(new_self_position)
         new_other_position = self.req_order
-        logger.debug(other.id)
-        logger.debug("new_other_position")
-        logger.debug(new_other_position)
         # null out both values to prevent a db constraint error on save()
         self.req_order = None
         self.save()
@@ -5289,102 +5277,6 @@ def _clone_documents(proposal, original_proposal, media_prefix):
         ),
         shell=True,
     )
-
-
-def duplicate_object(self):
-    """
-    Duplicate a model instance, making copies of all foreign keys pointing to it.
-    There are 3 steps that need to occur in order:
-
-        1.  Enumerate the related child objects and m2m relations, saving in lists/dicts
-        2.  Copy the parent object per django docs (doesn't copy relations)
-        3a. Copy the child objects, relating to the copied parent object
-        3b. Re-create the m2m relations on the copied parent object
-
-    """
-    related_objects_to_copy = []
-    relations_to_set = {}
-    # Iterate through all the fields in the parent object looking for related fields
-    for field in self._meta.get_fields():
-        if field.name in ["proposal", "approval"]:
-            logger.debug("Continuing ...")
-            pass
-        elif field.one_to_many:
-            # One to many fields are backward relationships where many child objects are related to the
-            # parent (i.e. SelectedPhrases). Enumerate them and save a list so we can copy them after
-            # duplicating our parent object.
-            logger.debug(f"Found a one-to-many field: {field.name}")
-
-            # 'field' is a ManyToOneRel which is not iterable, we need to get the object attribute itself
-            related_object_manager = getattr(self, field.name)
-            related_objects = list(related_object_manager.all())
-            if related_objects:
-                logger.debug(" - {len(related_objects)} related objects to copy")
-                related_objects_to_copy += related_objects
-
-        elif field.many_to_one:
-            # In testing so far, these relationships are preserved when the parent object is copied,
-            # so they don't need to be copied separately.
-            logger.debug(f"Found a many-to-one field: {field.name}")
-
-        elif field.many_to_many:
-            # Many to many fields are relationships where many parent objects can be related to many
-            # child objects. Because of this the child objects don't need to be copied when we copy
-            # the parent, we just need to re-create the relationship to them on the copied parent.
-            logger.debug(f"Found a many-to-many field: {field.name}")
-            related_object_manager = getattr(self, field.name)
-            relations = list(related_object_manager.all())
-            if relations:
-                logger.debug(f" - {len(relations)} relations to set")
-                relations_to_set[field.name] = relations
-
-    # Duplicate the parent object
-    self.pk = None
-    self.lodgement_number = ""
-    self.save()
-    logger.debug(f"Copied parent object {str(self)}")
-
-    # Copy the one-to-many child objects and relate them to the copied parent
-    for related_object in related_objects_to_copy:
-        # Iterate through the fields in the related object to find the one that relates to the
-        # parent model (I feel like there might be an easier way to get at this).
-        for related_object_field in related_object._meta.fields:
-            if related_object_field.related_model == self.__class__:
-                # If the related_model on this field matches the parent object's class, perform the
-                # copy of the child object and set this field to the parent object, creating the
-                # new child -> parent relationship.
-                related_object.pk = None
-                # if related_object_field.name=='approvals':
-                #    related_object.lodgement_number = None
-                # if isinstance(related_object, Approval):
-                #    related_object.lodgement_number = ''
-
-                setattr(related_object, related_object_field.name, self)
-                logger.debug(related_object_field)
-                try:
-                    related_object.save()
-                except Exception as e:
-                    logger.warn(e)
-
-                text = str(related_object)
-                text = (text[:40] + "..") if len(text) > 40 else text
-                logger.debug(f"|- Copied child object {text}")
-
-    # Set the many-to-many relations on the copied parent
-    for field_name, relations in relations_to_set.items():
-        # Get the field by name and set the relations, creating the new relationships
-        field = getattr(self, field_name)
-        field.set(relations)
-        text_relations = []
-        for relation in relations:
-            text_relations.append(str(relation))
-        logger.debug(
-            "|- Set {} many-to-many relations on {} {}".format(
-                len(relations), field_name, text_relations
-            )
-        )
-
-    return self
 
 
 def search_reference(reference_number):

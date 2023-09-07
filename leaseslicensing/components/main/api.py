@@ -392,9 +392,6 @@ class SecureDocumentsAPIView(views.APIView):
             documents = instance.documents
             related_name = "documents"
 
-        for d in documents.all():
-            logger.debug(d)
-
         data = self.serializer_class(
             documents.all(),
             many=True,

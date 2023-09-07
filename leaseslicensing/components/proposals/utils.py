@@ -425,7 +425,6 @@ class SpecialFieldsSearch:
 
 
 def save_proponent_data(instance, request, viewset):
-    logger.debug("save_proponent_data")
     if (
         instance.application_type.name
         == settings.APPLICATION_TYPE_REGISTRATION_OF_INTEREST
@@ -436,9 +435,7 @@ def save_proponent_data(instance, request, viewset):
 
 
 def save_proponent_data_registration_of_interest(proposal, request, viewset):
-    # proposal
     proposal_data = request.data.get("proposal") if request.data.get("proposal") else {}
-    logger.debug("proposal_data = " + str(proposal_data))
     serializer = SaveRegistrationOfInterestSerializer(
         proposal,
         data=proposal_data,
@@ -446,11 +443,9 @@ def save_proponent_data_registration_of_interest(proposal, request, viewset):
             "action": viewset.action,
         },
     )
-    logger.debug("Validating SaveRegistrationOfInterestSerializer")
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
-    logger.debug("Saving groups data.")
     save_groups_data(proposal, proposal_data["groups"])
 
     geometry_data = request.data.get("proposalgeometry", None)
@@ -466,7 +461,6 @@ def save_proponent_data_registration_of_interest(proposal, request, viewset):
 def save_proponent_data_lease_licence(proposal, request, viewset):
     # proposal
     proposal_data = request.data.get("proposal") if request.data.get("proposal") else {}
-    logger.debug(f"proposal_data = {proposal_data}")
 
     serializer = SaveLeaseLicenceSerializer(
         proposal,
@@ -547,7 +541,6 @@ def save_referral_data(proposal, request):
 
 @transaction.atomic
 def save_assessor_data(proposal, request, viewset):
-    logger.debug("save_assessor_data")
     proposal_data = {}
     if request.data.get("proposal"):
         # request.data is like {'proposal': {'id': ..., ...}}

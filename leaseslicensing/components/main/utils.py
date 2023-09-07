@@ -168,11 +168,11 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         "propertyName": properties,
         "CQL_FILTER": f"INTERSECTS(wkb_geometry, {multipolygon.wkt})",
     }
-    logger.debug(
+    logger.info(
         f"Requesting features from {settings.KMI_SERVER_URL}{server_path} with params: {params}"
     )
     if "public" != namespace:
-        logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
+        logger.info("Using Basic HTTP Auth to access namespace: %s", namespace)
         response = requests.get(
             f"{settings.KMI_SERVER_URL}{server_path}",
             params=params,
@@ -185,8 +185,7 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
     if not response.ok:
         logger.error(f"Error getting features from KMI: {response.text}")
 
-    logger.debug(f"Request took: {response.elapsed.total_seconds()}")
-    logger.debug(f"Raw response: {response.text}")
+    logger.info(f"Request took: {response.elapsed.total_seconds()}")
     return response.json()
 
 
@@ -202,7 +201,7 @@ def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, prop
     geometries = getattr(instance, geometries_attribute)
 
     if not geometries.exists():
-        logger.debug(
+        logger.warn(
             f"No Geometries found for {instance._meta.model.__name__} {instance.lodgement_number}"
         )
         return None
@@ -214,13 +213,13 @@ def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, prop
         from shapely import wkt
         from shapely.validation import explain_validity, make_valid
 
-        logger.debug(
+        logger.warn(
             "Invalid multipolygon for"
             f"{instance._meta.model.__name__} {instance.lodgement_number}: {multipolygon.valid_reason}"
         )
 
         multipolygon = make_valid(wkt.loads(multipolygon.wkt))
-        logger.debug(
+        logger.warn(
             f"Running MakeValid. New validity: {explain_validity(multipolygon)}"
         )
 
@@ -242,7 +241,7 @@ def get_gis_data_for_geometries(instance, geometries_attribute, layer_name, prop
     )
     data = {}
     for prop in properties:
-        logger.debug("Getting unique values for property: %s", prop)
+        logger.info("Getting unique values for property: %s", prop)
         data[prop] = set()
 
     for feature in features["features"]:
@@ -286,10 +285,10 @@ def multipolygon_intersects_with_layer(multipolygon, layer_name):
 
 def save_geometry(request, instance, component, geometry_data, foreign_key_field=None):
     instance_name = instance._meta.model.__name__
-    logger.debug(f"\n\n\nSaving {instance_name} geometry")
+    logger.info(f"\n\n\nSaving {instance_name} geometry")
 
     if not geometry_data:
-        logger.debug(f"No {instance_name} geometry to save")
+        logger.warn(f"No {instance_name} geometry to save")
         return
 
     if not foreign_key_field:
@@ -306,14 +305,13 @@ def save_geometry(request, instance, component, geometry_data, foreign_key_field
         == InstanceGeometry.objects.filter(**{foreign_key_field: instance}).count()
     ):
         # No feature to save and no feature to delete
-        logger.debug(f"{instance_name} geometry has no features to save or delete")
+        logger.warn(f"{instance_name} geometry has no features to save or delete")
         return
 
     action = request.data.get("action", None)
 
     geometry_ids = []
     for feature in geometry.get("features"):
-        logger.debug("feature = " + str(feature))
         # check if feature is a polygon, continue if not
         if feature.get("geometry").get("type") != "Polygon":
             logger.warn(
@@ -370,7 +368,7 @@ def save_geometry(request, instance, component, geometry_data, foreign_key_field
 
         serializer.is_valid(raise_exception=True)
         proposalgeometry_instance = serializer.save()
-        logger.debug(f"Saved {instance_name} geometry: {proposalgeometry_instance}")
+        logger.info(f"Saved {instance_name} geometry: {proposalgeometry_instance}")
         geometry_ids.append(proposalgeometry_instance.id)
 
     # Remove any proposal geometries from the db that are no longer in the proposal_geometry that was submitted
@@ -381,7 +379,10 @@ def save_geometry(request, instance, component, geometry_data, foreign_key_field
         .exclude(Q(id__in=geometry_ids) | Q(locked=True) | ~Q(drawn_by=request.user.id))
         .delete()
     )
-    logger.debug(f"Deleted {instance_name} geometries: {deleted_geometries}\n\n\n")
+    if deleted_geometries[0] > 0:
+        logger.info(
+            f"Deleted {instance_name} geometries: {deleted_geometries} for {instance}"
+        )
 
 
 def populate_gis_data(instance, geometries_attribute, foreign_key_field=None):
@@ -389,8 +390,8 @@ def populate_gis_data(instance, geometries_attribute, foreign_key_field=None):
     Todo: Will need to update this to use the new KB GIS modernisation API"""
     instance_name = instance._meta.model.__name__
 
-    logger.debug(
-        "-> Populating GIS data for %s: %s", instance_name, instance.lodgement_number
+    logger.info(
+        "Populating GIS data for %s: %s", instance_name, instance.lodgement_number
     )
 
     if not foreign_key_field:
@@ -402,7 +403,7 @@ def populate_gis_data(instance, geometries_attribute, foreign_key_field=None):
     populate_gis_data_regions(instance, geometries_attribute, foreign_key_field)
     populate_gis_data_districts(instance, geometries_attribute, foreign_key_field)
     populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field)
-    logger.debug(
+    logger.info(
         "-> Finished populating GIS data for %s: %s",
         instance_name,
         instance.lodgement_number,
@@ -439,8 +440,6 @@ def populate_gis_data_lands_and_waters(
         # Delete all the GIS data for this proposal
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
         return
-
-    logger.debug("gis_data_lands_and_waters = " + str(gis_data_lands_and_waters))
 
     # This part could be refactored to be more generic
     index = 0
@@ -565,8 +564,6 @@ def populate_gis_data_regions(instance, geometries_attribute, foreign_key_field)
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
         return
 
-    logger.debug("gis_data_regions = " + str(gis_data_regions))
-
     if gis_data_regions[properties[0]]:
         for region_name in gis_data_regions[properties[0]]:
             region, created = Region.objects.get_or_create(name=region_name)
@@ -599,8 +596,6 @@ def populate_gis_data_districts(instance, geometries_attribute, foreign_key_fiel
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
         return
 
-    logger.debug("gis_data_districts = " + str(gis_data_districts))
-
     if gis_data_districts[properties[0]]:
         for district_name in gis_data_districts[properties[0]]:
             district, created = District.objects.get_or_create(name=district_name)
@@ -630,8 +625,6 @@ def populate_gis_data_lgas(instance, geometries_attribute, foreign_key_field):
         logger.warn("No GIS LGA data found for instance %s", instance.lodgement_number)
         delete_gis_data(instance, foreign_key_field, ids_to_delete=object_ids)
         return
-
-    logger.debug("gis_data_lgas = " + str(gis_data_lgas))
 
     if gis_data_lgas[properties[0]]:
         for lga_name in gis_data_lgas[properties[0]]:
@@ -676,9 +669,11 @@ def delete_gis_data(instance, foreign_key_field, ids_to_delete=[]):
         deleted = class_class.objects.filter(
             Q(**{foreign_key_field: instance}) & Q(id__in=ids_to_delete[key])
         ).delete()
-        logger.debug(
-            f"Deleted {class_class.__name__} {deleted} from {instance._meta.model.__name__} {instance.lodgement_number}"
-        )
+        if deleted[0] > 0:
+            logger.info(
+                f"Deleted {class_class.__name__} {deleted} from "
+                f"{instance._meta.model.__name__} {instance.lodgement_number}"
+            )
 
 
 def gis_property_to_model_ids(instance, properties, foreign_key_field):
@@ -751,14 +746,12 @@ def save_site_name(instance, site_name):
         return
     site_name, created = SiteName.objects.get_or_create(name=site_name)
     if created:
-        logger.info(f"New Site Name created from GIS Data: {site_name}")
+        logger.info(f"New Site Name created: {site_name}")
     instance.site_name = site_name
     instance.save()
-    logger.debug("Created new site name: " + str(site_name))
 
 
 def save_groups_data(instance, groups_data, foreign_key_field=None):
-    logger.debug("groups_data = " + str(groups_data))
     instance_name = instance.__class__.__name__
     if not foreign_key_field:
         foreign_key_field = instance_name.lower()
@@ -767,7 +760,6 @@ def save_groups_data(instance, groups_data, foreign_key_field=None):
         return
     group_ids = []
     for group in groups_data:
-        logger.debug("group: %s", group)
         InstanceGroup = apps.get_model("leaseslicensing", f"{instance_name}Group")
         instance_group, created = InstanceGroup.objects.get_or_create(
             **{foreign_key_field: instance}, group_id=group["id"]
