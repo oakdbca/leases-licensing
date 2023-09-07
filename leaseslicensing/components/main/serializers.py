@@ -13,7 +13,6 @@ from leaseslicensing.components.main.models import (
     MapColumn,
     MapLayer,
     Question,
-    RequiredDocument,
     TemporaryDocumentCollection,
 )
 from leaseslicensing.components.main.utils import get_secure_document_url
@@ -83,12 +82,6 @@ class GlobalSettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = GlobalSettings
         fields = ("key", "value")
-
-
-class RequiredDocumentSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = RequiredDocument
-        fields = ("id", "park", "activity", "question")
 
 
 class QuestionSerializer(serializers.ModelSerializer):

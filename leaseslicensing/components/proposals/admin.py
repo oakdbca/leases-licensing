@@ -8,7 +8,6 @@ from leaseslicensing.components.main.models import (
     ApplicationType,
     GlobalSettings,
     OracleCode,
-    RequiredDocument,
     SystemMaintenance,
 )
 from leaseslicensing.components.proposals import forms, models
@@ -189,11 +188,6 @@ class OracleCodeInline(admin.TabularInline):
     extra = 3
     max_num = 3
     can_delete = False
-
-
-@admin.register(RequiredDocument)
-class RequiredDocumentAdmin(admin.ModelAdmin):
-    pass
 
 
 @admin.register(GlobalSettings)

@@ -23,7 +23,6 @@ from leaseslicensing.components.main.models import (
     GlobalSettings,
     MapLayer,
     Question,
-    RequiredDocument,
     TemporaryDocumentCollection,
 )
 from leaseslicensing.components.main.process_document import (
@@ -37,7 +36,6 @@ from leaseslicensing.components.main.serializers import (
     GlobalSettingsSerializer,
     MapLayerSerializer,
     QuestionSerializer,
-    RequiredDocumentSerializer,
     SecureDocumentSerializer,
     TemporaryDocumentCollectionSerializer,
 )
@@ -50,11 +48,6 @@ logger = logging.getLogger(__name__)
 class GlobalSettingsViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = GlobalSettings.objects.all().order_by("id")
     serializer_class = GlobalSettingsSerializer
-
-
-class RequiredDocumentViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = RequiredDocument.objects.all()
-    serializer_class = RequiredDocumentSerializer
 
 
 class QuestionViewSet(viewsets.ReadOnlyModelViewSet):

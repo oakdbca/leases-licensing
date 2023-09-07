@@ -1,12 +1,9 @@
 import logging
-import os
 from collections import OrderedDict
 from datetime import datetime
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import CharField, F, Func, Q, Value
 from django.urls import reverse
@@ -34,7 +31,7 @@ from leaseslicensing.components.main.api import (
 )
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
-from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
+from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
@@ -1284,98 +1281,6 @@ class ProposalViewSet(UserActionLoggingViewset):
             result_page, context={"request": request}, many=True
         )
         return paginator.get_paginated_response(serializer.data)
-
-    # Documents on Activities(land)and Activities(Marine) tab for T-Class related to required document questions
-    @detail_route(methods=["POST"], detail=True)
-    @renderer_classes((JSONRenderer,))
-    @basic_exception_handler
-    def process_required_document(self, request, *args, **kwargs):
-        instance = self.get_object()
-        action = request.POST.get("action")
-        section = request.POST.get("input_name")
-        required_doc_id = request.POST.get("required_doc_id")
-        if action == "list" and "required_doc_id" in request.POST:
-            pass
-
-        elif action == "delete" and "document_id" in request.POST:
-            document_id = request.POST.get("document_id")
-            document = instance.required_documents.get(id=document_id)
-
-            if (
-                document._file
-                and os.path.isfile(document._file.path)
-                and document.can_delete
-            ):
-                os.remove(document._file.path)
-
-            document.delete()
-            instance.save(
-                version_comment="Required document File Deleted: {}".format(
-                    document.name
-                )
-            )  # to allow revision to be added to reversion history
-            # instance.current_proposal.save(version_comment='File Deleted:
-            # {}'.format(document.name)) # to allow revision to be added to reversion history
-
-        elif action == "hide" and "document_id" in request.POST:
-            document_id = request.POST.get("document_id")
-            document = instance.required_documents.get(id=document_id)
-
-            document.hidden = True
-            document.save()
-            instance.save(
-                version_comment=f"File hidden: {document.name}"
-            )  # to allow revision to be added to reversion history
-
-        elif (
-            action == "save"
-            and "input_name"
-            and "required_doc_id" in request.POST
-            and "filename" in request.POST
-        ):
-            proposal_id = request.POST.get("proposal_id")
-            filename = request.POST.get("filename")
-            _file = request.POST.get("_file")
-            if not _file:
-                _file = request.FILES.get("_file")
-
-            required_doc_instance = RequiredDocument.objects.get(id=required_doc_id)
-            document = instance.required_documents.get_or_create(
-                input_name=section,
-                name=filename,
-                required_doc=required_doc_instance,
-            )[0]
-            path = default_storage.save(
-                "{}/proposals/{}/required_documents/{}".format(
-                    settings.MEDIA_APP_DIR, proposal_id, filename
-                ),
-                ContentFile(_file.read()),
-            )
-
-            document._file = path
-            document.save()
-            instance.save(
-                version_comment=f"File Added: {filename}"
-            )  # to allow revision to be added to reversion history
-            # instance.current_proposal.save(version_comment='File Added: {}'
-            # .format(filename)) # to allow revision to be added to reversion history
-
-        return Response(
-            [
-                dict(
-                    input_name=d.input_name,
-                    name=d.name,
-                    file=d._file.url,
-                    id=d.id,
-                    can_delete=d.can_delete,
-                    can_hide=d.can_hide,
-                )
-                for d in instance.required_documents.filter(
-                    required_doc=required_doc_id, hidden=False
-                )
-                if d._file
-            ]
-        )
 
     @detail_route(
         methods=["GET", "POST"],

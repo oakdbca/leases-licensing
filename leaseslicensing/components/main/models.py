@@ -155,16 +155,6 @@ class RevisionedMixin(models.Model):
         abstract = True
 
 
-class RequiredDocument(models.Model):
-    question = models.TextField(blank=False)
-
-    class Meta:
-        app_label = "leaseslicensing"
-
-    def __str__(self):
-        return self.question
-
-
 class ApplicationType(models.Model):
     name = models.CharField(
         max_length=64, unique=True, choices=settings.APPLICATION_TYPES

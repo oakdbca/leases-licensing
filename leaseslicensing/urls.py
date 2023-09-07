@@ -99,7 +99,6 @@ router.register(
 router.register(r"global_settings", main_api.GlobalSettingsViewSet)
 router.register(r"application_types", main_api.ApplicationTypeViewSet)
 router.register(r"assessments", proposal_api.ProposalAssessmentViewSet)
-router.register(r"required_documents", main_api.RequiredDocumentViewSet)
 router.register(r"questions", main_api.QuestionViewSet)
 router.register(r"map_layers", main_api.MapLayerViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
