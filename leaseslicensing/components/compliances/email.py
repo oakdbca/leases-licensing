@@ -304,6 +304,7 @@ def send_pending_referrals_complete_email_notification(referral, request):
     context = {
         "referral": referral,
         "compliance": referral.compliance,
+        "proposal": proposal,
         "url": url,
     }
     recipients = proposal.assessor_recipients
