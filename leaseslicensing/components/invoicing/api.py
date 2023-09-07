@@ -185,6 +185,18 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["POST"])
+    def generate_ad_hoc_invoice(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        instance.ad_hoc = True
+        instance.gst_free = instance.approval.approval_type.gst_free
+        instance.save()
+        # Todo: Send oracle invoice and oracle invoice number to ledger
+        # send emails etc.
+        return Response(serializer.data)
+
     @action(detail=True, methods=["PATCH"])
     @transaction.atomic
     def upload_oracle_invoice(self, request, *args, **kwargs):
