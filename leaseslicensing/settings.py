@@ -93,7 +93,6 @@ REST_FRAMEWORK = {
 
 MIDDLEWARE_CLASSES += [
     # 'leaseslicensing.middleware.FirstTimeNagScreenMiddleware',
-    # 'leaseslicensing.middleware.RevisionOverrideMiddleware',
     "leaseslicensing.middleware.CacheControlMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]

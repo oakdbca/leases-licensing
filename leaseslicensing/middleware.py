@@ -3,8 +3,6 @@ import re
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.http import urlquote_plus
-from reversion.middleware import RevisionMiddleware
-from reversion.views import _request_creates_revision
 
 CHECKOUT_PATH = re.compile("^/ledger/checkout/checkout")
 
@@ -31,23 +29,6 @@ class FirstTimeNagScreenMiddleware:
                         + "?next="
                         + urlquote_plus(request.get_full_path())
                     )
-
-
-class RevisionOverrideMiddleware(RevisionMiddleware):
-
-    """
-    Wraps the entire request in a revision.
-
-    override venv/lib/python2.7/site-packages/reversion/middleware.py
-    """
-
-    # exclude ledger payments/checkout from revision - hack
-    # to overcome basket (lagging status) issue/conflict with reversion
-    def request_creates_revision(self, request):
-        return (
-            _request_creates_revision(request)
-            and "checkout" not in request.get_full_path()
-        )
 
 
 class CacheControlMiddleware:
