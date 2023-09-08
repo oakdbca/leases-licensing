@@ -18,7 +18,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     SITE_DOMAIN='dbca.wa.gov.au' \
     OSCAR_SHOP_NAME='Parks & Wildlife' \
     BPAY_ALLOWED=False \
-    POETRY_VERSION=1.6.1
+    POETRY_VERSION=1.6.1 \
+    NODE_MAJOR=20
 
 # Use Australian Mirrors
 RUN sed 's/archive.ubuntu.com/au.archive.ubuntu.com/g' /etc/apt/sources.list > /etc/apt/sourcesau.list && \
@@ -33,6 +34,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     cron \
     curl \
     gdal-bin \
+    gnupg \
     gcc \
     git \
     gunicorn \
@@ -58,10 +60,12 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     update-ca-certificates
 
-# install node 16
-RUN touch install_node.sh && \
-    curl -fsSL https://deb.nodesource.com/setup_16.x -o install_node.sh && \
-    chmod +x install_node.sh && ./install_node.sh && \
+# install node 20
+RUN mkdir -p /etc/apt/keyrings && \
+    curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" \
+    | sudo tee /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
     apt-get install -y nodejs && \
     ln -s /usr/bin/python3 /usr/bin/python && \
     pip install --upgrade pip
