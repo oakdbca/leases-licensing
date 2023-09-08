@@ -30,7 +30,7 @@ class FirstTimeNagScreenMiddleware:
             return self.get_response(request)
 
         path_ft = reverse("account-firstime")
-        if request.path in (path_ft, reverse("logout")):
+        if request.path in ("/sso/setting", path_ft, reverse("logout")):
             return self.get_response(request)
 
         return redirect(path_ft + "?next=" + urlquote_plus(request.get_full_path()))
