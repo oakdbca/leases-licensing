@@ -94,6 +94,7 @@
                             class="form-control"
                             :readonly="crown_land_rent_review_readonly"
                             required
+                            @change="saveInvoicingDetails"
                         />
                     </div>
                     <div class="">
@@ -975,6 +976,18 @@ export default {
             this.previewInvoices = await utils.fetchUrl(
                 api_endpoints.invoicing_details +
                     `${this.invoicingDetails.id}/preview_invoices/`
+            );
+        },
+        saveInvoicingDetails: async function () {
+            const requestOptions = {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.invoicingDetailsComputed),
+            };
+            await utils.fetchUrl(
+                api_endpoints.invoicing_details +
+                    `${this.invoicingDetails.id}/`,
+                requestOptions
             );
         },
         updatePreviewInvoices: async function () {
