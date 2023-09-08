@@ -91,7 +91,24 @@ export default {
                     "<'d-flex align-items-center'<'me-auto'l>fB>" +
                     "<'row'<'col-sm-12'tr>>" +
                     "<'d-flex align-items-center'<'me-auto'i>p>",
-                buttons: ['excel', 'csv'],
+                buttons: [
+                    {
+                        extend: 'excel',
+                        text: '<i class="fa-solid fa-download"></i> Excel',
+                        className: 'btn btn-primary rounded me-2',
+                        exportOptions: {
+                            columns: ':visible',
+                        },
+                    },
+                    {
+                        extend: 'csv',
+                        text: '<i class="fa-solid fa-download"></i> CSV',
+                        className: 'btn btn-primary rounded',
+                        exportOptions: {
+                            columns: ':visible',
+                        },
+                    },
+                ],
                 columns: [
                     {
                         data: 'requirement',
