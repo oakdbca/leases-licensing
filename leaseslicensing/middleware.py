@@ -13,22 +13,27 @@ class FirstTimeNagScreenMiddleware:
 
     def __call__(self, request):
         if (
-            request.user.is_authenticated()
-            and request.method == "GET"
-            and "api" not in request.path
-            and "admin" not in request.path
+            not request.user.is_authenticated
+            or not request.method == "GET"
+            or "api" in request.path
+            or "admin" in request.path
+            or "static" in request.path
         ):
-            if (not request.user.first_name) or (
-                not request.user.last_name
-            ):  # or (not request.user.dob):
-                path_ft = reverse("first_time")
-                path_logout = reverse("accounts:logout")
-                if request.path not in (path_ft, path_logout):
-                    return redirect(
-                        reverse("first_time")
-                        + "?next="
-                        + urlquote_plus(request.get_full_path())
-                    )
+            return self.get_response(request)
+
+        if (
+            request.user.first_name
+            and request.user.last_name
+            and request.user.residential_address_id
+            and request.user.postal_address_id
+        ):
+            return self.get_response(request)
+
+        path_ft = reverse("account-firstime")
+        if request.path in (path_ft, reverse("logout")):
+            return self.get_response(request)
+
+        return redirect(path_ft + "?next=" + urlquote_plus(request.get_full_path()))
 
 
 class CacheControlMiddleware:
