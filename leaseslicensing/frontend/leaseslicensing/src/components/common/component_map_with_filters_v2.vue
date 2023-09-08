@@ -389,10 +389,25 @@
                                         </td>
                                     </tr>
                                     <tr v-if="selectedModel.area_sqm">
-                                        <th scope="row">Area (m&#178;)</th>
-                                        <td>
-                                            {{ selectedModel.area_sqm }}
-                                        </td>
+                                        <template
+                                            v-if="
+                                                selectedModel.area_sqm > 10000
+                                            "
+                                        >
+                                            <th scope="row">Area (hm&#178;)</th>
+                                            <td>
+                                                {{
+                                                    selectedModel.area_sqm /
+                                                    10000
+                                                }}
+                                            </td>
+                                        </template>
+                                        <template v-else>
+                                            <th scope="row">Area (m&#178;)</th>
+                                            <td>
+                                                {{ selectedModel.area_sqm }}
+                                            </td>
+                                        </template>
                                     </tr>
                                 </tbody>
                             </table>
