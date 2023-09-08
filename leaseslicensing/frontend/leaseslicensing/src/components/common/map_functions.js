@@ -164,7 +164,17 @@ export function set_mode(mode) {
         this.informing = true;
     } else {
         console.error(`Cannot set mode ${mode}`);
+        return false;
     }
+    // Call back to the map so selected features can adept their style to the new mode
+    this.select.dispatchEvent({
+        type: 'map:modeChanged',
+        details: {
+            new_mode: this.mode,
+        },
+    });
+
+    return true;
 }
 
 /**

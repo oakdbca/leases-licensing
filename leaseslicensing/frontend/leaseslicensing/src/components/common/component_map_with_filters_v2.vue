@@ -578,7 +578,7 @@ import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { FullScreen as FullScreenControl } from 'ol/control';
-import { LineString, Point, Polygon } from 'ol/geom';
+import { LineString, Point, MultiPoint, Polygon } from 'ol/geom';
 import GeoJSON from 'ol/format/GeoJSON';
 import Overlay from 'ol/Overlay.js';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js';
@@ -1578,12 +1578,16 @@ export default {
 
             let selected = null;
             vm.map.on('pointermove', function (evt) {
+                function isSelectedFeature(selected) {
+                    if (!selected) {
+                        return false;
+                    }
+                    return vm.selectedFeatureIds.includes(
+                        selected.getProperties().id
+                    );
+                }
                 if (selected !== null) {
-                    if (
-                        vm.selectedFeatureIds.includes(
-                            selected.getProperties().id
-                        )
-                    ) {
+                    if (isSelectedFeature(selected)) {
                         // Don't alter style of click-selected features
                         console.log('ignoring hover on selected feature');
                         if (vm.drawing) {
@@ -1619,7 +1623,9 @@ export default {
                             model.area_sqm = selected.getProperties().area_sqm;
                         }
                         vm.selectedModel = model;
-                        selected.setStyle(hoverSelect);
+                        if (!isSelectedFeature(selected)) {
+                            selected.setStyle(hoverSelect);
+                        }
 
                         return true;
                     },
@@ -1751,24 +1757,49 @@ export default {
             if (!vm.selectable) {
                 return;
             }
-
-            const clickSelectStyle = new Style({
-                fill: new Fill({
-                    color: '#000000',
-                }),
-                stroke: vm.clickSelectStroke,
-            });
-
-            function clickSelect(feature) {
-                // Keep feature fill color but change stroke color
-                const color = feature.get('color') || vm.defaultColor;
-                clickSelectStyle.getFill().setColor(color);
-                return clickSelectStyle;
-            }
+            // A basic style for selected polygons
+            let basicSelectStyle = function (feature) {
+                var color = feature.get('color') || vm.defaultColor;
+                return [
+                    new Style({
+                        stroke: vm.clickSelectStroke,
+                        fill: new Fill({
+                            color: color,
+                        }),
+                    }),
+                ];
+            };
+            // Basic style plus extra circles for vertices to help with modifying
+            // See: https://github.com/openlayers/openlayers/issues/3165#issuecomment-71432465
+            let modifySelectStyle = function (feature) {
+                var image = new CircleStyle({
+                    radius: 5,
+                    fill: null,
+                    stroke: new Stroke({ color: 'orange', width: 2 }),
+                });
+                var color = feature.get('color') || vm.defaultColor;
+                return [
+                    new Style({
+                        image: image,
+                        geometry: function (feature) {
+                            var coordinates = feature
+                                .getGeometry()
+                                .getCoordinates()[0];
+                            return new MultiPoint(coordinates);
+                        },
+                    }),
+                    new Style({
+                        stroke: vm.clickSelectStroke,
+                        fill: new Fill({
+                            color: color,
+                        }),
+                    }),
+                ];
+            };
 
             // select interaction working on "singleclick"
             const selectSingleClick = new Select({
-                style: clickSelect,
+                style: basicSelectStyle,
                 layers: [vm.modelQueryLayer],
                 wrapX: false,
             });
@@ -1779,7 +1810,7 @@ export default {
                         `Selected feature ${feature.getProperties().id}`,
                         toRaw(feature)
                     );
-                    feature.setStyle(clickSelect);
+                    feature.setStyle(basicSelectStyle);
                     vm.selectedFeatureIds.push(feature.getProperties().id);
                 });
 
@@ -1792,6 +1823,31 @@ export default {
                         (id) => id != feature.getProperties().id
                     );
                 });
+            });
+            // When the map mode changes between draw and anything else, update the style of the selected features
+            selectSingleClick.addEventListener('map:modeChanged', (evt) => {
+                console.log('map mode changed', evt);
+                if (evt.details.new_mode === 'draw') {
+                    vm.modelQuerySource.getFeatures().filter((feature) => {
+                        if (
+                            vm.selectedFeatureIds.includes(
+                                feature.getProperties().id
+                            )
+                        ) {
+                            feature.setStyle(modifySelectStyle);
+                        }
+                    });
+                } else {
+                    vm.modelQuerySource.getFeatures().filter((feature) => {
+                        if (
+                            vm.selectedFeatureIds.includes(
+                                feature.getProperties().id
+                            )
+                        ) {
+                            feature.setStyle(basicSelectStyle);
+                        }
+                    });
+                }
             });
 
             return selectSingleClick;
