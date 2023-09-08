@@ -856,6 +856,8 @@ class InvoicingDetails(BaseModel):
                         self.annual_increment_percentages.all()[year_sequence_index - 1]
                     )
                     percentage = annual_increment_percentage.increment_percentage
+                    if not percentage:
+                        percentage = Decimal("0.00")
                     base_fee_amount = base_fee_amount * (1 + percentage / 100)
                     suffix = ""
                 except IndexError:
@@ -948,9 +950,13 @@ class InvoicingDetails(BaseModel):
                 .estimated_gross_turnover
             )
 
-        invoice_amount = Decimal(
-            estimated_gross_turnover * gross_turnover_percentage.percentage / 100
-        ).quantize(Decimal("0.01"))
+        percentage = gross_turnover_percentage.percentage
+        if not percentage:
+            percentage = Decimal("0.00")
+
+        invoice_amount = Decimal(estimated_gross_turnover * percentage / 100).quantize(
+            Decimal("0.01")
+        )
 
         amount_object["prefix"] = "$"
 
