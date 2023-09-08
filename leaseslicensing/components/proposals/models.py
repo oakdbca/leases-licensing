@@ -10,6 +10,7 @@ import pandas as pd
 from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
+from django.apps import apps
 from django.conf import settings
 from django.contrib.gis.db.models.fields import PolygonField
 from django.contrib.gis.db.models.functions import Area
@@ -74,6 +75,7 @@ from leaseslicensing.components.proposals.email import (
     send_referral_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
+    GIS_DATA_MODEL_NAMES,
     LGA,
     Act,
     Category,
@@ -2652,7 +2654,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         lease_licence = (
                             self.create_lease_licence_from_registration_of_interest()
                         )
+
                         self.generated_proposal = lease_licence
+
+                        # Copy over previous groups
+                        copy_groups(self, self.generated_proposal)
+
+                        # Copy over previous gis data
+                        copy_gis_data(self, self.generated_proposal)
+
                         self.processing_status = (
                             Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
                         )
@@ -3045,11 +3055,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     setattr(proposal, field, getattr(previous_proposal, field))
 
                 # Copy over previous groups
-                for group in previous_proposal.groups.all():
-                    new_group = deepcopy(group)
-                    new_group.proposal = proposal
-                    new_group.id = None
-                    new_group.save()
+                copy_groups(previous_proposal, proposal)
+
+                # Copy over previous gis data
+                copy_gis_data(previous_proposal, proposal)
 
                 req = self.requirements.all().exclude(is_deleted=True)
 
@@ -5301,3 +5310,18 @@ class HelpPage(models.Model):
     class Meta:
         app_label = "leaseslicensing"
         unique_together = ("application_type", "help_type", "version")
+
+
+def copy_groups(proposalFrom, proposalTo):
+    for group in proposalFrom.groups.all():
+        ProposalGroup.objects.get_or_create(proposal=proposalTo, group=group.group)
+
+
+def copy_gis_data(proposalFrom, proposalTo):
+    for gis_model in GIS_DATA_MODEL_NAMES:
+        model_class = apps.get_model("leaseslicensing", f"proposal{gis_model}")
+        models = model_class.objects.filter(proposal=proposalFrom)
+        for model in models:
+            model_class.objects.get_or_create(
+                proposal=proposalTo, **{f"{gis_model}": getattr(model, f"{gis_model}")}
+            )
