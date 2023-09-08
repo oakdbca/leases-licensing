@@ -564,9 +564,13 @@ def save_assessor_data(proposal, request, viewset):
             "assessor_assessment" in proposal_data
             and proposal_data["assessor_assessment"]
         ):
-            proposal_assessment = ProposalAssessment.objects.get_or_create(
+            proposal_assessment, created = ProposalAssessment.objects.get_or_create(
                 proposal=proposal
             )
+            if created:
+                logger.info(
+                    f"Created Proposal Assessment {proposal_assessment} for {proposal}"
+                )
             serializer = ProposalAssessmentSerializer(
                 proposal_assessment, data=proposal_data["assessor_assessment"]
             )
