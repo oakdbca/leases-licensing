@@ -572,7 +572,7 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
-import { Draw, Select } from 'ol/interaction';
+import { Draw, Select, Modify, Snap } from 'ol/interaction';
 import Feature from 'ol/Feature';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -1377,7 +1377,14 @@ export default {
             vm.map.on('rendercomplete', vm.displayAllFeatures());
 
             vm.initialisePointerMoveEvent();
-            vm.initialiseSelectFeatureEvent();
+            vm.select = vm.initialiseSelectFeatureEvent();
+            vm.modify = vm.initialiseModifyFeatureEvent();
+            vm.map.getInteractions().extend([vm.select, vm.modify]);
+            vm.snap = new Snap({ source: vm.modelQuerySource });
+            vm.map.addInteraction(vm.snap);
+            // Init modify polygon as inactive
+            vm.modifySetActive(false);
+
             vm.initialiseSingleClickEvent();
             vm.initialiseDoubleClickEvent();
         },
@@ -1506,10 +1513,9 @@ export default {
                 vm.errorMessage = null;
                 vm.lastPoint = null;
             });
-            vm.drawForModel.on('click'),
-                function (evt) {
-                    console.log(evt);
-                };
+            vm.drawForModel.on('click', function (evt) {
+                console.log('Draw: click event', evt);
+            });
             vm.drawForModel.on('drawend', function (evt) {
                 console.log(evt);
                 console.log(evt.feature.values_.geometry.flatCoordinates);
@@ -1572,10 +1578,6 @@ export default {
 
             let selected = null;
             vm.map.on('pointermove', function (evt) {
-                if (vm.measuring || vm.drawing) {
-                    // Don't highlight features when measuring or drawing
-                    return;
-                }
                 if (selected !== null) {
                     if (
                         vm.selectedFeatureIds.includes(
@@ -1584,11 +1586,21 @@ export default {
                     ) {
                         // Don't alter style of click-selected features
                         console.log('ignoring hover on selected feature');
+                        if (vm.drawing) {
+                            // Enable modify polygon the hovered polygon is selected and drawing mode is active
+                            vm.modifySetActive(true);
+                        } else {
+                            // Disable modify polygon when drawing mode is not active
+                            vm.modifySetActive(false);
+                        }
                     } else {
-                        selected.setStyle(undefined);
-                        selected.setStyle(
-                            vm.createStyle(selected.values_.color)
-                        );
+                        if (!(vm.measuring || vm.drawing)) {
+                            // Don't highlight features when measuring or drawing
+                            selected.setStyle(undefined);
+                            selected.setStyle(
+                                vm.createStyle(selected.values_.color)
+                            );
+                        }
                     }
                     selected = null;
                 }
@@ -1758,8 +1770,9 @@ export default {
             const selectSingleClick = new Select({
                 style: clickSelect,
                 layers: [vm.modelQueryLayer],
+                wrapX: false,
             });
-            vm.map.addInteraction(selectSingleClick);
+
             selectSingleClick.on('select', (evt) => {
                 $.each(evt.selected, function (idx, feature) {
                     console.log(
@@ -1780,6 +1793,29 @@ export default {
                     );
                 });
             });
+
+            return selectSingleClick;
+        },
+        initialiseModifyFeatureEvent: function () {
+            let vm = this;
+            const modify = new Modify({
+                source: vm.modelQuerySource, // Same source as the draw interaction
+                // features: vm.select.getFeatures(), // Either need to provide source or features, but features doesn't seem to work
+            });
+            modify.on('modifystart', function (evt) {
+                console.log(
+                    'modifystart',
+                    evt.features,
+                    vm.select.getFeatures()
+                );
+            });
+            modify.on('modifyend', function (evt) {
+                console.log('modifyend', evt.features);
+            });
+            modify.on('change', function (evt) {
+                console.log('change', evt);
+            });
+            return modify;
         },
         undoLeaseLicensePoint: function () {
             let vm = this;
@@ -2268,6 +2304,15 @@ export default {
                 .finally(() => {
                     vm.isValidating = false;
                 });
+        },
+        /**
+         * Sets interactions for modify to active or inactive
+         * @param {boolean} active
+         */
+        modifySetActive(active) {
+            let vm = this;
+            vm.modify.setActive(active);
+            vm.snap.setActive(active);
         },
     },
 };
