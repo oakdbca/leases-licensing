@@ -121,7 +121,6 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     def contacts(self, request, *args, **kwargs):
         instance = self.get_object()
         admin_count = instance.contacts.filter(user_role="organisation_admin").count()
-        logger.debug("admin_count = " + str(admin_count))
         queryset = instance.contacts.exclude(user_status="pending")
         queryset = queryset.annotate(
             admin_count=Value(admin_count, output_field=IntegerField())
@@ -163,7 +162,6 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @basic_exception_handler
     def validate_pins(self, request, *args, **kwargs):
         instance = self.get_object()
-        logger.debug("request.data = " + str(request.data))
         serializer = OrganisationPinCheckSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         ret = instance.validate_pins(
@@ -454,7 +452,6 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
                 instance.ledger_organisation_id
             )
         )
-        logger.debug(f"request.data: {request.data}")
         serializer = OrganisationDetailsSerializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
@@ -517,7 +514,6 @@ class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
         filter_status = request.GET.get("filter_status", None)
 
         if filter_organisation:
-            logger.debug("filter_organisation: %s", filter_organisation)
             filter_organisation = int(filter_organisation)
             queryset = queryset.filter(organisation_id=filter_organisation)
 

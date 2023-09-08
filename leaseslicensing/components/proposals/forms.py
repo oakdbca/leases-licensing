@@ -1,13 +1,13 @@
-from django import forms
-from django.db import models
-from django.forms import Textarea
-from django.utils.safestring import mark_safe
-from leaseslicensing.components.proposals.models import HelpPage, SectionChecklist
-from leaseslicensing.components.main.models import SystemMaintenance
-from ckeditor.widgets import CKEditorWidget
-from django.conf import settings
-import pytz
 from datetime import datetime, timedelta
+
+import pytz
+from ckeditor.widgets import CKEditorWidget
+from django import forms
+from django.conf import settings
+from django.utils.safestring import mark_safe
+
+from leaseslicensing.components.main.models import SystemMaintenance
+from leaseslicensing.components.proposals.models import HelpPage, SectionChecklist
 
 
 class LeasesLicensingHelpPageAdminForm(forms.ModelForm):
@@ -24,7 +24,7 @@ class SectionChecklistForm(forms.ModelForm):
         fields = "__all__"
 
     def clean(self):
-        cleaned_data = super(SectionChecklistForm, self).clean()
+        cleaned_data = super().clean()
         if cleaned_data["enabled"] is False:
             # We don't mind any disabled record
             return cleaned_data
@@ -39,7 +39,6 @@ class SectionChecklistForm(forms.ModelForm):
         cleaned_application_type = cleaned_data.get("application_type", None)
         cleaned_section = cleaned_data.get("section", None)
         cleaned_list_type = cleaned_data.get("list_type", None)
-        cleaned_enabled = cleaned_data.get("enabled", None)
 
         # Check if there is alreay a set of questions for the section
         existings = SectionChecklist.objects.filter(
@@ -54,7 +53,8 @@ class SectionChecklistForm(forms.ModelForm):
             raise forms.ValidationError(
                 [
                     mark_safe(
-                        "There is already an enabled 'Section Questions' for the Application Type:{}, Section:{} and Checklist type:{}"
+                        "There is already an enabled 'Section Questions' for the "
+                        "Application Type:{}, Section:{} and Checklist type:{}"
                     ).format(
                         existing.application_type.get_name_display(),
                         existing.get_section_display(),
@@ -78,10 +78,9 @@ class SystemMaintenanceAdminForm(forms.ModelForm):
             latest_obj = SystemMaintenance.objects.exclude(id=self.instance.id).latest(
                 "start_date"
             )
-        except:
+        except SystemMaintenance.DoesNotExist:
             latest_obj = SystemMaintenance.objects.none()
         tz_local = pytz.timezone(settings.TIME_ZONE)  # start_date.tzinfo
-        tz_utc = pytz.timezone("utc")  # latest_obj.start_date.tzinfo
 
         if latest_obj:
             latest_end_date = latest_obj.end_date.astimezone(tz=tz_local)
@@ -91,16 +90,14 @@ class SystemMaintenanceAdminForm(forms.ModelForm):
                     and start_date < self.instance.start_date.astimezone(tz_local)
                 ):
                     raise forms.ValidationError(
-                        "Start date cannot be before an existing records latest end_date. Start Date must be after {}".format(
-                            latest_end_date.ctime()
-                        )
+                        "Start date cannot be before an existing records latest end_date. "
+                        "Start Date must be after {}".format(latest_end_date.ctime())
                     )
             else:
                 if start_date < latest_end_date:
                     raise forms.ValidationError(
-                        "Start date cannot be before an existing records latest end_date. Start Date must be after {}".format(
-                            latest_end_date.ctime()
-                        )
+                        "Start date cannot be before an existing records latest end_date. "
+                        "Start Date must be after {}".format(latest_end_date.ctime())
                     )
 
         if self.instance.id:
@@ -117,5 +114,5 @@ class SystemMaintenanceAdminForm(forms.ModelForm):
         if end_date < start_date:
             raise forms.ValidationError("End date cannot be before start date")
 
-        super(SystemMaintenanceAdminForm, self).clean()
+        super().clean()
         return cleaned_data

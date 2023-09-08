@@ -2,19 +2,16 @@ import logging
 
 from rest_framework import viewsets
 
-from leaseslicensing.components.texts.models import (
-    DetailsText,
-)
+from leaseslicensing.components.main.api import KeyValueListMixin
+from leaseslicensing.components.texts.models import DetailsText
 from leaseslicensing.components.texts.serializers import DetailsTextSerializer
-
-from leaseslicensing.components.main.api import (
-    KeyValueListMixin,
-)
 
 logger = logging.getLogger(__name__)
 
+
 class DetailsTextViewSet(
-    viewsets.ModelViewSet, KeyValueListMixin, #NoPaginationListMixin, Select2ListMixin
+    viewsets.ModelViewSet,
+    KeyValueListMixin,  # NoPaginationListMixin, Select2ListMixin
 ):
     model = DetailsText
     serializer_class = DetailsTextSerializer

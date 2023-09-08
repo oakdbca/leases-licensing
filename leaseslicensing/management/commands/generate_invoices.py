@@ -91,7 +91,7 @@ class Command(BaseCommand):
         invoice.save()
 
         # send to the applicant and cc finance officer
-        send_new_invoice_raised_notification(approval, invoice)
+        send_new_invoice_raised_notification(invoice)
 
         logger.info(
             self.style.SUCCESS(f"\tGenerated Invoice: {invoice.lodgement_number}\n")

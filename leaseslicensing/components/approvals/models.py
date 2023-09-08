@@ -888,6 +888,9 @@ class ApprovalUserAction(UserAction):
     ACTION_SURRENDER_APPROVAL = "Surrender Lease/License {}"
     ACTION_RENEW_APPROVAL = "Create Renewal Application for Lease/License {}"
     ACTION_AMEND_APPROVAL = "Create Amendment Application for Lease/License {}"
+    ACTION_AD_HOC_INVOICE_GENERATED_APPROVAL = (
+        "Ad-hoc Invoice {} generated for Lease/License {}"
+    )
 
     class Meta:
         app_label = "leaseslicensing"

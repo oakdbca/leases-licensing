@@ -144,7 +144,6 @@ class GetProfile(views.APIView):
     ]
 
     def get(self, request, format=None):
-        logger.debug(request.user)
         serializer = UserSerializer(request.user, context={"request": request})
         return Response(serializer.data)
 
@@ -473,7 +472,6 @@ class UserViewSet(UserActionLoggingViewset):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def add_comms_log(self, request, *args, **kwargs):
-        logger.debug("add_comms_log")
         with transaction.atomic():
             instance = self.get_object()
             mutable = request.data._mutable

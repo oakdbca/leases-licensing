@@ -41,7 +41,7 @@ Then, run `npm run build` to build the software and move the output files to `le
 
 The build files are made available to the Django app by running `./collectstatic.sh`.
 
-If the `DEV_APP_BUILD_URL` is not set, the Django app will serve static Javascript from `staticfiles_ll/leaseslicensing_vue/js.app.js`, 
+If the `DEV_APP_BUILD_URL` is not set, the Django app will serve static Javascript from `staticfiles_ll/leaseslicensing_vue/js.app.js`,
 else the Vue app will be served from the url provided.  Start the dev server with `npm run serve`.
 
 # Environment variables

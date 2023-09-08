@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 SYSTEM_NAME = settings.SYSTEM_NAME_SHORT + " Automated Message"
 
 
-def send_new_invoice_raised_notification(approval, invoice):
+def send_new_invoice_raised_notification(invoice):
+    approval = invoice.approval
     email = TemplateEmailBase(
         subject=f"New Invoice Ready for {approval.approval_type} {approval.lodgement_number}",
         html_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_notification.html",
@@ -59,7 +60,8 @@ def send_new_invoice_raised_notification(approval, invoice):
     _log_approval_email(msg, approval, sender=sender_user)
 
 
-def send_new_invoice_raised_internal_notification(approval, invoice):
+def send_new_invoice_raised_internal_notification(invoice):
+    approval = invoice.approval
     email = TemplateEmailBase(
         subject=f"New Invoice Record Generated for {approval.approval_type} {approval.lodgement_number}",
         html_template="leaseslicensing/emails/invoicing/send_new_invoice_raised_internal_notification.html",

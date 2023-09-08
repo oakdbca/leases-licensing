@@ -590,7 +590,6 @@ class InvoicingDetails(BaseModel):
             )
 
         custom_cpi_year = self.get_custom_cpi_year_for_next_invoicing_period
-        logger.debug(f"custom_cpi_year: {custom_cpi_year}")
         custom_cpi_percentage = None
         try:
             custom_cpi_percentage = self.custom_cpi_years.all()[
@@ -702,15 +701,16 @@ class InvoicingDetails(BaseModel):
         gst_free = self.approval.approval_type.gst_free
 
         for invoice_record in immediate_invoices:
-            logger.debug(f"Generating immediate invoice record for {invoice_record}")
-            invoice = Invoice.objects.create(
+            invoice, created = Invoice.objects.get_or_create(
                 approval=self.approval,
                 amount=invoice_record["amount_object"]["amount"],
                 gst_free=gst_free,
             )
+            if created:
+                logger.info(f"Immediate invoice created: {invoice}")
 
             # send to the finance group so they can take action
-            send_new_invoice_raised_internal_notification(self.approval, invoice)
+            send_new_invoice_raised_internal_notification(invoice)
 
     def get_first_issue_date(self):
         first_issue_date = self.approval.start_date
@@ -722,8 +722,6 @@ class InvoicingDetails(BaseModel):
             first_issue_date = first_issue_date - relativedelta(
                 days=settings.DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD
             )
-
-        logger.debug(f"first_issue_date: {first_issue_date}")
 
         return first_issue_date
 
@@ -1317,11 +1315,11 @@ class Invoice(LicensingModel):
     )
     amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     gst_free = models.BooleanField(default=False)
-    date_created = models.DateTimeField(auto_now_add=True, null=False)
-    date_updated = models.DateTimeField(auto_now=True, null=False)
-    date_paid = models.DateTimeField(null=True, blank=False)
-    date_issued = models.DateTimeField(null=True, blank=False)
-    date_due = models.DateTimeField(null=True, blank=False)
+    datetime_created = models.DateTimeField(auto_now_add=True, null=False)
+    datetime_updated = models.DateTimeField(auto_now=True, null=False)
+    date_paid = models.DateField(null=True, blank=False)
+    date_issued = models.DateField(null=True, blank=False)
+    date_due = models.DateField(null=True, blank=False)
     proponent_reference_number = models.CharField(null=True, blank=True, max_length=50)
 
     # Fields that will match those in the ledger system
@@ -1339,8 +1337,11 @@ class Invoice(LicensingModel):
     invoice_pdf = SecureFileField(
         upload_to=invoice_pdf_upload_path, null=True, blank=True
     )
-    oracle_invoice_number = models.CharField(max_length=50, null=True, blank=True)
+    oracle_invoice_number = models.CharField(
+        unique=True, max_length=50, null=True, blank=True
+    )
     description = models.TextField(null=True, blank=True)
+    ad_hoc = models.BooleanField(default=False)
 
     class Meta:
         app_label = "leaseslicensing"

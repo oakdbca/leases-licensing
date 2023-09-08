@@ -1,16 +1,14 @@
-from io import BytesIO
+import logging
 import os
 import re
-import logging
-from django.core.files import File
-from django.conf import settings
-from django.db import IntegrityError, transaction
+from io import BytesIO
 
+from django.conf import settings
+from django.core.files import File
+from django.db import IntegrityError, transaction
 from docx import Document
 
-from leaseslicensing.components.approvals.models import (
-    ApprovalDocument,
-)
+from leaseslicensing.components.approvals.models import ApprovalDocument
 from leaseslicensing.components.main.decorators import basic_exception_handler
 
 logger = logging.getLogger(__name__)
@@ -96,7 +94,7 @@ class ApprovalDocumentGenerator:
         try:
             with open(filepath, "rb") as f:
                 buffer = f.read()
-        except IOError as e:
+        except OSError as e:
             logger.exception(f"Can not open file {filepath}")
             raise e
         else:
@@ -159,7 +157,7 @@ class ApprovalDocumentGenerator:
 
         try:
             os.stat(temp_directory)
-        except:
+        except OSError:
             os.mkdir(temp_directory)
         new_doc_file = f"{temp_directory}/licence_{str(approval.lodgement_number)}.docx"
         new_pdf_file = f"{temp_directory}/licence_{str(approval.lodgement_number)}.pdf"
@@ -309,7 +307,8 @@ class ApprovalDocumentGenerator:
             buffer = self._example_approval_document_from_template(approval, template)
         else:
             raise NotImplementedError(
-                f"Approval document generation from template for approval type {approval_type_name} is not implemented yet."
+                f"Approval document generation from template for approval type {approval_type_name} "
+                "is not implemented yet."
             )
 
         document = self.update_approval_document_file(

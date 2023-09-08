@@ -519,9 +519,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                 year=annual_increment_amount_data.get("year"),
             )
 
-            logger.debug(f"annual_increment_amount: {annual_increment_amount}")
-            logger.debug(f"created: {created}")
-
             serializer = FixedAnnualIncrementAmountSerializer(
                 annual_increment_amount,
                 data=annual_increment_amount_data,

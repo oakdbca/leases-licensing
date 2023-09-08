@@ -1,16 +1,14 @@
 import logging
-
-from django.conf import settings
-from leaseslicensing.components.proposals.models import (
-    Proposal,
-    ProposalType,
-    HelpPage,
-    ApplicationType,
-)
+import sys
 from collections import OrderedDict
 from copy import deepcopy
-import sys
 
+from leaseslicensing.components.proposals.models import (
+    ApplicationType,
+    HelpPage,
+    Proposal,
+    ProposalType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +26,6 @@ def are_migrations_running():
     )
 
 
-def search_all(search_list, application_type="T Class"):
-    """
-    To run:
-            from leaseslicensing.utils import search_all
-            search_all(['BRM', 'JM 1'])
-    """
-    result = {}
-    for p in Proposal.objects.filter(application_type__name=application_type):
-        try:
-            if p.data:
-                ret = search(p.data[0], search_list)
-                if ret:
-                    result.update({p.lodgement_number: ret})
-        except:
-            pass
-
-    return result
-
-
 def search(dictionary, search_list):
     """
     To run:
@@ -61,97 +40,6 @@ def search(dictionary, search_list):
             result.append({k: v})
 
     return result
-
-
-def search_approval(approval, searchWords):
-    qs = []
-    a = approval
-    if a.surrender_details:
-        try:
-            results = search(a.surrender_details, searchWords)
-            if results:
-                res = {
-                    "number": a.lodgement_number,
-                    "id": a.id,
-                    "type": "Approval",
-                    "applicant": a.applicant,
-                    "text": results,
-                }
-                qs.append(res)
-        except:
-            raise
-    if a.suspension_details:
-        try:
-            results = search(a.suspension_details, searchWords)
-            if results:
-                res = {
-                    "number": a.lodgement_number,
-                    "id": a.id,
-                    "type": "Approval",
-                    "applicant": a.applicant,
-                    "text": results,
-                }
-                qs.append(res)
-        except:
-            raise
-    if a.cancellation_details:
-        try:
-            found = False
-            for s in searchWords:
-                if s.lower() in a.cancellation_details.lower():
-                    found = True
-            if found:
-                res = {
-                    "number": a.lodgement_number,
-                    "id": a.id,
-                    "type": "Approval",
-                    "applicant": a.applicant,
-                    "text": a.cancellation_details,
-                }
-                qs.append(res)
-        except:
-            raise
-    return qs
-
-
-def search_compliance(compliance, searchWords):
-    qs = []
-    c = compliance
-    if c.text:
-        try:
-            found = False
-            for s in searchWords:
-                if s.lower() in c.text.lower():
-                    found = True
-            if found:
-                res = {
-                    "number": c.reference,
-                    "id": c.id,
-                    "type": "Compliance",
-                    "applicant": c.proposal.applicant,
-                    "text": c.text,
-                }
-                qs.append(res)
-        except:
-            raise
-    if c.requirement:
-        try:
-            found = False
-            for s in searchWords:
-                if s.lower() in c.requirement.requirement.lower():
-                    found = True
-            if found:
-                res = {
-                    "number": c.reference,
-                    "id": c.id,
-                    "type": "Compliance",
-                    "applicant": c.proposal.applicant,
-                    "text": c.requirement.requirement,
-                }
-                qs.append(res)
-        except:
-            raise
-    return qs
 
 
 def test_compare_data():
@@ -220,23 +108,23 @@ def create_helppage_object(
     """
     try:
         application_type_id = ApplicationType.objects.get(name=application_type).id
-    except Exception as e:
-        logger.exception("application type: {} does not exist, maybe!".format(application_type, e))
+    except ApplicationType.DoesNotExist:
+        logger.exception(f"application type: {application_type} does not exist, maybe!")
 
     try:
         help_page = HelpPage.objects.filter(
             application_type_id=application_type_id, help_type=help_type
         ).latest("version")
         next_version = help_page.version + 1
-    except Exception as e:
+    except HelpPage.DoesNotExist:
         next_version = 1
 
     try:
         proposal_type = ProposalType.objects.filter(name=application_type).latest(
             "version"
         )
-    except Exception as e:
-        logger.exception("proposal type: {} does not exist, maybe!".format(application_type, e))
+    except ProposalType.DoesNotExist:
+        logger.exception(f"proposal type: {application_type} does not exist, maybe!")
     help_text = (
         "help_text_url"
         if help_type == HelpPage.HELP_TEXT_EXTERNAL
@@ -254,7 +142,6 @@ def create_helppage_object(
 
 
 def create_richtext_help(help_list=None, help_text="help_text"):
-
     # for testing
     # if not help_list:
     # 	pt = ProposalType.objects.all()[4]
@@ -357,7 +244,8 @@ def search_multiple_keys(
     [
             {'isRequired': {'label': u'Enter the title of this proposal','name': u'Section0-0'}},
             {'isRequired': {'label': u'Enter the purpose of this proposal', 'name': u'Section0-1'}},
-            {'isRequired': {'label': u'In which Local Government Authority (LAG) is this proposal located?','name': u'Section0-2'}},
+            {'isRequired': {'label': u'In which Local Government Authority (LAG) is this proposal located?'
+                ,'name': u'Section0-2'}},
             {'isRequired': {'label': u'Describe where this proposal is located', 'name': u'Section0-3'}}
     ]
     """
@@ -371,7 +259,8 @@ def search_multiple_keys(
         if any(x in k for x in all_search_list):
             result.append({k: v})
 
-    # iterate through the schema and get the search items corresponding to each primary_search item (at the same level/section)
+    # iterate through the schema and get the search items corresponding
+    # to each primary_search item (at the same level/section)
     help_list = []
     for i in result:
         try:
@@ -429,7 +318,7 @@ def flatten(old_data, new_data=None, parent_key="", sep=".", width=4):
         if parent_key not in new_data:
             new_data[parent_key] = old_data
         else:
-            raise AttributeError("key {} is already used".format(parent_key))
+            raise AttributeError(f"key {parent_key} is already used")
 
     return new_data
 

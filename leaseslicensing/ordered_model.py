@@ -1,10 +1,8 @@
 import warnings
-from django.contrib.contenttypes.models import ContentType
-from django.db import models
-from django.db.models import Max, Min, F
-from django.utils.translation import ugettext as _
-import six
 
+from django.db import models
+from django.db.models import F, Max, Min
+from django.utils.translation import ugettext as _
 
 """
 Convert a string containing module.submodule.classname to a Class.
@@ -46,12 +44,12 @@ class OrderedModelBase(models.Model):
         return self.__class__
 
     def _get_order_with_respect_to(self):
-        if isinstance(self.order_with_respect_to, six.string_types):
+        if isinstance(self.order_with_respect_to, str):
             self.order_with_respect_to = (self.order_with_respect_to,)
         if self.order_with_respect_to is None:
             raise AssertionError(
                 (
-                    'ordered model admin "{0}" has not specified "order_with_respect_to"; note that this '
+                    'ordered model admin "{}" has not specified "order_with_respect_to"; note that this '
                     "should go in the model body, and is not to be confused with the Meta property of the same name, "
                     "which is independent Django functionality"
                 ).format(self)
@@ -79,7 +77,7 @@ class OrderedModelBase(models.Model):
                 .get(self.order_field_name + "__max")
             )
             setattr(self, self.order_field_name, 0 if c is None else c + 1)
-        super(OrderedModelBase, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         qs = self.get_ordering_queryset()
@@ -90,7 +88,7 @@ class OrderedModelBase(models.Model):
         qs.filter(
             **{self.order_field_name + "__gt": getattr(self, self.order_field_name)}
         ).update(**update_kwargs)
-        super(OrderedModelBase, self).delete(*args, **kwargs)
+        super().delete(*args, **kwargs)
 
     def _move(self, up, qs=None):
         qs = self.get_ordering_queryset(qs)
@@ -134,7 +132,8 @@ class OrderedModelBase(models.Model):
         """
         warnings.warn(
             _(
-                "The method move_down() is deprecated and will be removed in the next release. Please use down() instead!"
+                "The method move_down() is deprecated and will be removed in the next release. "
+                "Please use down() instead!"
             ),
             DeprecationWarning,
         )
@@ -163,11 +162,11 @@ class OrderedModelBase(models.Model):
             return
         if not self._valid_ordering_reference(replacement):
             raise ValueError(
-                "{0!r} can only be swapped with instances of {1!r} with equal {2!s} fields.".format(
+                "{!r} can only be swapped with instances of {!r} with equal {!s} fields.".format(
                     self,
                     self._get_class_for_ordering_queryset(),
                     " and ".join(
-                        ["'{}'".format(o[0]) for o in self._get_order_with_respect_to()]
+                        [f"'{o[0]}'" for o in self._get_order_with_respect_to()]
                     ),
                 )
             )
@@ -240,11 +239,11 @@ class OrderedModelBase(models.Model):
         """
         if not self._valid_ordering_reference(ref):
             raise ValueError(
-                "{0!r} can only be swapped with instances of {1!r} with equal {2!s} fields.".format(
+                "{!r} can only be swapped with instances of {!r} with equal {!s} fields.".format(
                     self,
                     self._get_class_for_ordering_queryset(),
                     " and ".join(
-                        ["'{}'".format(o[0]) for o in self._get_order_with_respect_to()]
+                        [f"'{o[0]}'" for o in self._get_order_with_respect_to()]
                     ),
                 )
             )
@@ -273,11 +272,11 @@ class OrderedModelBase(models.Model):
         """
         if not self._valid_ordering_reference(ref):
             raise ValueError(
-                "{0!r} can only be swapped with instances of {1!r} with equal {2!s} fields.".format(
+                "{!r} can only be swapped with instances of {!r} with equal {!s} fields.".format(
                     self,
                     self._get_class_for_ordering_queryset(),
                     " and ".join(
-                        ["'{}'".format(o[0]) for o in self._get_order_with_respect_to()]
+                        [f"'{o[0]}'" for o in self._get_order_with_respect_to()]
                     ),
                 )
             )

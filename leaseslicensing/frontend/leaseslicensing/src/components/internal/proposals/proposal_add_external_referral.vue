@@ -139,10 +139,9 @@
 </template>
 
 <script>
-/*globals swal */
-import modal from '@vue-utils/bootstrap-modal.vue'
-import ErrorRenderer from '@common-utils/ErrorRenderer.vue'
-import { api_endpoints } from '@/utils/hooks.js'
+import modal from '@vue-utils/bootstrap-modal.vue';
+import ErrorRenderer from '@common-utils/ErrorRenderer.vue';
+import { api_endpoints } from '@/utils/hooks.js';
 
 export default {
     name: 'AddExternalReferral',
@@ -166,76 +165,76 @@ export default {
             isModalOpen: false,
             external_referee_invite: {},
             errors: null,
-        }
+        };
     },
     watch: {
         isModalOpen: function (val) {
             if (val) {
                 this.$nextTick(() => {
-                    this.$refs.Email.focus()
-                })
+                    this.$refs.Email.focus();
+                });
             }
         },
         email: function (val) {
-            this.external_referee_invite.email = val
+            this.external_referee_invite.email = val;
         },
     },
     methods: {
         title: function () {
-            return 'Invite External Referee'
+            return 'Invite External Referee';
         },
         close: function () {
-            this.isModalOpen = false
-            this.errors = null
+            this.isModalOpen = false;
+            this.errors = null;
             document
                 .getElementById('addExternalReferralForm')
-                .classList.remove('was-validated')
+                .classList.remove('was-validated');
         },
         validateForm: function () {
-            let vm = this
-            var form = document.getElementById('addExternalReferralForm')
+            let vm = this;
+            var form = document.getElementById('addExternalReferralForm');
             if (form.checkValidity()) {
-                vm.sendData()
+                vm.sendData();
             } else {
-                form.classList.add('was-validated')
-                $('#addExternalReferralForm').find(':invalid').first().focus()
+                form.classList.add('was-validated');
+                $('#addExternalReferralForm').find(':invalid').first().focus();
             }
-            return false
+            return false;
         },
         sendData: async function () {
-            let vm = this
-            vm.errors = false
+            let vm = this;
+            vm.errors = false;
             const url =
                 api_endpoints.proposal +
-                `${vm.proposalId}/external_referee_invite/`
+                `${vm.proposalId}/external_referee_invite/`;
             const requestOptions = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(vm.external_referee_invite),
-            }
+            };
 
             fetch(url, requestOptions)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
-                        vm.errors = data || response.statusText
-                        return
+                        vm.errors = data || response.statusText;
+                        return;
                     }
-                    console.log(data)
+                    console.log(data);
                     swal.fire({
                         title: 'Success',
                         text: 'External referee invite sent',
                         icon: 'success',
                         confirmButtonText: 'OK',
-                    })
-                    vm.$emit('externalRefereeInviteSent', data)
-                    vm.close()
+                    });
+                    vm.$emit('externalRefereeInviteSent', data);
+                    vm.close();
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    vm.errors = error
-                })
+                    console.error('There was an error!', error);
+                    vm.errors = error;
+                });
         },
     },
-}
+};
 </script>

@@ -2,14 +2,14 @@ from rest_framework import serializers
 
 
 class RelatedItem:
-    def __init__(self, model_name='', identifier='', descriptor='',
-            action_url='', type=''):
+    def __init__(
+        self, model_name="", identifier="", descriptor="", action_url="", type=""
+    ):
         self.model_name = model_name
         self.identifier = identifier
         self.descriptor = descriptor
         self.action_url = action_url
         self.type = type
-
 
 
 class RelatedItemsSerializer(serializers.Serializer):

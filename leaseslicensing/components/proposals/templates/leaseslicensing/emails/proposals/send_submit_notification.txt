@@ -4,7 +4,7 @@
     The Application {{ proposal.lodgement_number }} has been submitted and can be assessed.
 
     You can access this Application using the following link:
-  
+
     {{url}}
 
 

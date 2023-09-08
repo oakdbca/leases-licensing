@@ -76,7 +76,7 @@ module.exports = {
     },
     transpileDependencies: [/ckeditor5-[^/\\]+[/\\]src[/\\].+\.js$/],
     configureWebpack: {
-        devtool: 'eval',
+        devtool: 'eval-source-map',
         plugins: [
             new webpack.ProvidePlugin({
                 $: 'jquery',

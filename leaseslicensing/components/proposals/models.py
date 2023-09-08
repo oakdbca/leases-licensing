@@ -10,6 +10,7 @@ import pandas as pd
 from ckeditor.fields import RichTextField
 from dateutil.relativedelta import relativedelta
 from dirtyfields import DirtyFieldsMixin
+from django.apps import apps
 from django.conf import settings
 from django.contrib.gis.db.models.fields import PolygonField
 from django.contrib.gis.db.models.functions import Area
@@ -74,6 +75,7 @@ from leaseslicensing.components.proposals.email import (
     send_referral_email_notification,
 )
 from leaseslicensing.components.tenure.models import (
+    GIS_DATA_MODEL_NAMES,
     LGA,
     Act,
     Category,
@@ -1648,7 +1650,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             try:
                 referral = Referral.objects.get(proposal=self, referral=user.id)
             except Referral.DoesNotExist:
-                logger.debug("Referral does not exist")
+                logger.warn(
+                    f"Referral with Proposal: {self} and referral user id: {user.id} does not exist"
+                )
                 return False
 
             if referral.processing_status in [
@@ -1777,8 +1781,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         geometries.crs.srs
                     ).srid  # spatial reference identifier
 
-                    logger.debug(f"geom.srid = {srid}")
-
                     polygon = GEOSGeometry(geom.wkt, srid=srid)
 
                     # Add the file name as identifier to the geojson for use in the frontend
@@ -1801,7 +1803,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         intersects=True,
                         drawn_by=request.user.id,
                     )
-                    logger.debug(f"{self.shapefile_json}")
 
                 shp_gdfs.append(gdf_transform)
 
@@ -1815,7 +1816,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                 # Todo: maybe axe this at some point as we are convering the shapefile into a proposalgeometry
                 # which is more useful in this application. Why store it in two places?
-                if type(shp_json) == str:
+                if isinstance(shp_json, str):
                     self.shapefile_json = json.loads(shp_json)
                 else:
                     self.shapefile_json = shp_json
@@ -1833,36 +1834,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             raise ValidationError("Please upload a valid shapefile")
 
         return valid_geometry_saved
-
-    def make_questions_ready(self, referral=None):
-        """
-        Create checklist answers
-        Assessment instance already exits then skip.
-        """
-        proposal_assessment, created = ProposalAssessment.objects.get_or_create(
-            proposal=self, referral=referral
-        )
-        if created:
-            for_referral_or_assessor = (
-                SectionChecklist.LIST_TYPE_REFERRAL
-                if referral
-                else SectionChecklist.LIST_TYPE_ASSESSOR
-            )
-            section_checklists = SectionChecklist.objects.filter(
-                application_type=self.application_type,
-                list_type=for_referral_or_assessor,
-                enabled=True,
-            )
-            for section_checklist in section_checklists:
-                for checklist_question in section_checklist.questions.filter(
-                    enabled=True
-                ):
-                    answer = ProposalAssessmentAnswer.objects.create(
-                        proposal_assessment=proposal_assessment,
-                        checklist_question=checklist_question,
-                    )
-                    # Not sure what this is for but logging answer for now
-                    logger.info(answer)
 
     def update(self, request, viewset):
         from leaseslicensing.components.proposals.utils import save_proponent_data
@@ -1920,10 +1891,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         text=referral_text,
                         assigned_officer=request.user.id,
                     )
-                    # Create answers for this referral
-                    # Commenting the following line out as we are not using checklist questions for referrals
-                    # so I don't think we need this anymore Todo: Delete if I was correct
-                    # self.make_questions_ready(referral)
 
                 # Create a log entry for the proposal
                 self.log_user_action(
@@ -2687,7 +2654,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         lease_licence = (
                             self.create_lease_licence_from_registration_of_interest()
                         )
+
                         self.generated_proposal = lease_licence
+
+                        # Copy over previous groups
+                        copy_groups(self, self.generated_proposal)
+
+                        # Copy over previous gis data
+                        copy_gis_data(self, self.generated_proposal)
+
                         self.processing_status = (
                             Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
                         )
@@ -3080,11 +3055,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     setattr(proposal, field, getattr(previous_proposal, field))
 
                 # Copy over previous groups
-                for group in previous_proposal.groups.all():
-                    new_group = deepcopy(group)
-                    new_group.proposal = proposal
-                    new_group.id = None
-                    new_group.save()
+                copy_groups(previous_proposal, proposal)
+
+                # Copy over previous gis data
+                copy_gis_data(previous_proposal, proposal)
 
                 req = self.requirements.all().exclude(is_deleted=True)
 
@@ -3341,7 +3315,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         serializer.is_valid(raise_exception=True)
 
         instance = serializer.save()
-        logger.debug(type(instance))
         return instance
 
     @transaction.atomic
@@ -3364,7 +3337,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         ):
             # Generate a single once off change invoice
             invoice_amount = invoicing_details.once_off_charge_amount
-            logger.debug(f"invoice_amount: {invoice_amount}")
             if not invoice_amount or invoice_amount <= Decimal("0.00"):
                 raise serializers.ValidationError(
                     _(f"Invalid invoice amount: {invoice_amount}", code="invalid")
@@ -3383,7 +3355,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoice.save()
 
             # send to the finance group so they can take action
-            send_new_invoice_raised_internal_notification(self.approval, invoice)
+            send_new_invoice_raised_internal_notification(invoice)
             return
 
         if (
@@ -3879,7 +3851,7 @@ class ProposalGeometry(models.Model):
         if not self.area:
             logger.warn(f"ProposalGeometry: {self.id} has no area")
             return None
-        return self.area.sq_m / 1000
+        return self.area.sq_m / 10000
 
 
 class ProposalLogDocument(Document):
@@ -4564,9 +4536,6 @@ class Referral(RevisionedMixin):
                 request,
             )
 
-            logger.debug("\n\n\n -------------->")
-            logger.debug(str(self.applicant))
-
             # log applicant_field
             self.applicant.log_user_action(
                 ProposalUserAction.CONCLUDE_REFERRAL.format(
@@ -4911,13 +4880,7 @@ class ProposalRequirement(RevisionedMixin):
 
     def swap(self, other):
         new_self_position = other.req_order
-        logger.debug(self.id)
-        logger.debug("new_self_position")
-        logger.debug(new_self_position)
         new_other_position = self.req_order
-        logger.debug(other.id)
-        logger.debug("new_other_position")
-        logger.debug(new_other_position)
         # null out both values to prevent a db constraint error on save()
         self.req_order = None
         self.save()
@@ -5291,166 +5254,6 @@ def _clone_documents(proposal, original_proposal, media_prefix):
     )
 
 
-def duplicate_object(self):
-    """
-    Duplicate a model instance, making copies of all foreign keys pointing to it.
-    There are 3 steps that need to occur in order:
-
-        1.  Enumerate the related child objects and m2m relations, saving in lists/dicts
-        2.  Copy the parent object per django docs (doesn't copy relations)
-        3a. Copy the child objects, relating to the copied parent object
-        3b. Re-create the m2m relations on the copied parent object
-
-    """
-    related_objects_to_copy = []
-    relations_to_set = {}
-    # Iterate through all the fields in the parent object looking for related fields
-    for field in self._meta.get_fields():
-        if field.name in ["proposal", "approval"]:
-            logger.debug("Continuing ...")
-            pass
-        elif field.one_to_many:
-            # One to many fields are backward relationships where many child objects are related to the
-            # parent (i.e. SelectedPhrases). Enumerate them and save a list so we can copy them after
-            # duplicating our parent object.
-            logger.debug(f"Found a one-to-many field: {field.name}")
-
-            # 'field' is a ManyToOneRel which is not iterable, we need to get the object attribute itself
-            related_object_manager = getattr(self, field.name)
-            related_objects = list(related_object_manager.all())
-            if related_objects:
-                logger.debug(" - {len(related_objects)} related objects to copy")
-                related_objects_to_copy += related_objects
-
-        elif field.many_to_one:
-            # In testing so far, these relationships are preserved when the parent object is copied,
-            # so they don't need to be copied separately.
-            logger.debug(f"Found a many-to-one field: {field.name}")
-
-        elif field.many_to_many:
-            # Many to many fields are relationships where many parent objects can be related to many
-            # child objects. Because of this the child objects don't need to be copied when we copy
-            # the parent, we just need to re-create the relationship to them on the copied parent.
-            logger.debug(f"Found a many-to-many field: {field.name}")
-            related_object_manager = getattr(self, field.name)
-            relations = list(related_object_manager.all())
-            if relations:
-                logger.debug(f" - {len(relations)} relations to set")
-                relations_to_set[field.name] = relations
-
-    # Duplicate the parent object
-    self.pk = None
-    self.lodgement_number = ""
-    self.save()
-    logger.debug(f"Copied parent object {str(self)}")
-
-    # Copy the one-to-many child objects and relate them to the copied parent
-    for related_object in related_objects_to_copy:
-        # Iterate through the fields in the related object to find the one that relates to the
-        # parent model (I feel like there might be an easier way to get at this).
-        for related_object_field in related_object._meta.fields:
-            if related_object_field.related_model == self.__class__:
-                # If the related_model on this field matches the parent object's class, perform the
-                # copy of the child object and set this field to the parent object, creating the
-                # new child -> parent relationship.
-                related_object.pk = None
-                # if related_object_field.name=='approvals':
-                #    related_object.lodgement_number = None
-                # if isinstance(related_object, Approval):
-                #    related_object.lodgement_number = ''
-
-                setattr(related_object, related_object_field.name, self)
-                logger.debug(related_object_field)
-                try:
-                    related_object.save()
-                except Exception as e:
-                    logger.warn(e)
-
-                text = str(related_object)
-                text = (text[:40] + "..") if len(text) > 40 else text
-                logger.debug(f"|- Copied child object {text}")
-
-    # Set the many-to-many relations on the copied parent
-    for field_name, relations in relations_to_set.items():
-        # Get the field by name and set the relations, creating the new relationships
-        field = getattr(self, field_name)
-        field.set(relations)
-        text_relations = []
-        for relation in relations:
-            text_relations.append(str(relation))
-        logger.debug(
-            "|- Set {} many-to-many relations on {} {}".format(
-                len(relations), field_name, text_relations
-            )
-        )
-
-    return self
-
-
-def searchKeyWords(
-    searchWords, searchProposal, searchApproval, searchCompliance, is_internal=True
-):
-    from leaseslicensing.components.approvals.models import Approval
-    from leaseslicensing.components.compliances.models import Compliance
-    from leaseslicensing.utils import search, search_approval, search_compliance
-
-    qs = []
-    if is_internal:
-        proposal_list = Proposal.objects.exclude(
-            processing_status__in=["discarded", "draft"]
-        )
-        approval_list = (
-            Approval.objects.all()
-            .order_by("lodgement_number", "-issue_date")
-            .distinct("lodgement_number")
-        )
-        compliance_list = Compliance.objects.all()
-    if searchWords:
-        if searchProposal:
-            for p in proposal_list:
-                # if p.data:
-                if p.search_data:
-                    try:
-                        # results = search(p.data[0], searchWords)
-                        results = search(p.search_data, searchWords)
-                        final_results = {}
-                        if results:
-                            for r in results:
-                                for key, value in r.items():
-                                    final_results.update({"key": key, "value": value})
-                            res = {
-                                "number": p.lodgement_number,
-                                "id": p.id,
-                                "type": "Proposal",
-                                "applicant": p.applicant,
-                                "text": final_results,
-                            }
-                            qs.append(res)
-                    except Exception as e:
-                        logger.exception(e)
-                        raise e
-
-        if searchApproval:
-            for a in approval_list:
-                try:
-                    results = search_approval(a, searchWords)
-                    qs.extend(results)
-                except Exception as e:
-                    logger.exception(e)
-                    raise e
-
-        if searchCompliance:
-            for c in compliance_list:
-                try:
-                    results = search_compliance(c, searchWords)
-                    qs.extend(results)
-                except Exception as e:
-                    logger.exception(e)
-                    raise e
-
-    return qs
-
-
 def search_reference(reference_number):
     from leaseslicensing.components.approvals.models import Approval
     from leaseslicensing.components.compliances.models import Compliance
@@ -5507,3 +5310,18 @@ class HelpPage(models.Model):
     class Meta:
         app_label = "leaseslicensing"
         unique_together = ("application_type", "help_type", "version")
+
+
+def copy_groups(proposalFrom, proposalTo):
+    for group in proposalFrom.groups.all():
+        ProposalGroup.objects.get_or_create(proposal=proposalTo, group=group.group)
+
+
+def copy_gis_data(proposalFrom, proposalTo):
+    for gis_model in GIS_DATA_MODEL_NAMES:
+        model_class = apps.get_model("leaseslicensing", f"proposal{gis_model}")
+        models = model_class.objects.filter(proposal=proposalFrom)
+        for model in models:
+            model_class.objects.get_or_create(
+                proposal=proposalTo, **{f"{gis_model}": getattr(model, f"{gis_model}")}
+            )

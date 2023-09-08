@@ -19,6 +19,7 @@ from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_datatables.filters import DatatablesFilterBackend
 
+from leaseslicensing.components.approvals.models import ApprovalUserAction
 from leaseslicensing.components.approvals.serializers import ApprovalSerializer
 from leaseslicensing.components.invoicing.email import (
     send_invoice_paid_external_notification,
@@ -185,6 +186,30 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["POST"])
+    @transaction.atomic
+    def generate_ad_hoc_invoice(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        instance.ad_hoc = True
+        instance.gst_free = instance.approval.approval_type.gst_free
+        instance.save()
+        # Todo: Send oracle invoice and oracle invoice number to ledger
+        # send emails etc.
+
+        send_new_invoice_raised_notification(instance)
+
+        # Log the creation of the invoice against the approval
+        instance.approval.log_user_action(
+            ApprovalUserAction.ACTION_AD_HOC_INVOICE_GENERATED_APPROVAL.format(
+                instance.lodgement_number, instance.approval.lodgement_number
+            ),
+            request,
+        )
+
+        return Response(serializer.data)
+
     @action(detail=True, methods=["PATCH"])
     @transaction.atomic
     def upload_oracle_invoice(self, request, *args, **kwargs):
@@ -270,7 +295,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             f"Setting basket parameters: {basket_params} for Invoice: {instance.lodgement_number}"
         )
 
-        if type(approval.applicant) == Organisation:
+        if isinstance(approval.applicant, Organisation):
             organisation = approval.applicant
             basket_params["organisation"] = organisation.ledger_organisation_id
             admin_contact = organisation.contacts.filter(
@@ -315,8 +340,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
             )
             return
 
-        logger.debug(f"Future invoice created for Invoice: {instance}")
-
         data = future_invoice["data"]
         instance.order_number = data["order"]
         instance.basket_id = data["basket_id"]
@@ -324,7 +347,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         instance.save()
 
         # Send request for payment to proponent
-        send_new_invoice_raised_notification(approval, instance)
+        send_new_invoice_raised_notification(instance)
 
         return Response(serializer.data)
 
@@ -509,7 +532,7 @@ class InvoicingDetailsViewSet(LicensingViewset):
             )
 
             # Send email to notify finance group users
-            send_new_invoice_raised_internal_notification(instance.approval, invoice)
+            send_new_invoice_raised_internal_notification(invoice)
 
         # For annual gross turnover amounts, check if there is a discrepancy between the
         # total of the quarters and the annual amount. If there is, raise an invoice for the difference
@@ -530,6 +553,4 @@ class InvoicingDetailsViewSet(LicensingViewset):
                 )
 
                 # Send email to notify finance group users
-                send_new_invoice_raised_internal_notification(
-                    instance.approval, invoice
-                )
+                send_new_invoice_raised_internal_notification(invoice)

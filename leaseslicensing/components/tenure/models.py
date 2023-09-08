@@ -1,5 +1,17 @@
 from django.db import models
 
+GIS_DATA_MODEL_NAMES = [
+    "identifier",
+    "vesting",
+    "name",
+    "act",
+    "tenure",
+    "category",
+    "region",
+    "district",
+    "lga",
+]
+
 
 class Identifier(models.Model):
     """A class to represent the identifier for a land parcel Eg: R 30490, R 34607 etc."""

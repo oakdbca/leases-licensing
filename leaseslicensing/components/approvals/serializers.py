@@ -1,9 +1,8 @@
 import logging
 
 from django.conf import settings
-from django.utils import timezone
-from django.db.models import Q
 from django.urls import reverse
+from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
@@ -293,6 +292,12 @@ class ApprovalSerializer(serializers.ModelSerializer):
             return "Approver not assigned"
         user = EmailUser.objects.get(id=approved_by_id)
         return user.get_full_name()
+
+
+class ApprovalKeyValueSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Approval
+        fields = ("id", "lodgement_number")
 
 
 class ApprovalExtendSerializer(serializers.Serializer):

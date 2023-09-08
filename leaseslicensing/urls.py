@@ -99,7 +99,6 @@ router.register(
 router.register(r"global_settings", main_api.GlobalSettingsViewSet)
 router.register(r"application_types", main_api.ApplicationTypeViewSet)
 router.register(r"assessments", proposal_api.ProposalAssessmentViewSet)
-router.register(r"required_documents", main_api.RequiredDocumentViewSet)
 router.register(r"questions", main_api.QuestionViewSet)
 router.register(r"map_layers", main_api.MapLayerViewSet)
 router.register(r"temporary_document", main_api.TemporaryDocumentCollectionViewSet)
@@ -164,11 +163,6 @@ api_patterns = [
         r"^api/compliance_amendment_reason_choices",
         compliances_api.ComplianceAmendmentReasonChoicesView.as_view(),
         name="amendment_request_reason_choices",
-    ),
-    url(
-        r"^api/search_keywords",
-        proposal_api.SearchKeywordsView.as_view(),
-        name="search_keywords",
     ),
     url(
         r"^api/search_reference",

@@ -74,7 +74,6 @@ class IsAsignedAssessor(BasePermission):
 
 class IsAssignedReferee(BasePermission):
     def has_permission(self, request, view):
-        logger.debug(f"IsAssignedReferee: {request.user.id}")
         if not request.user.is_authenticated:
             return False
 
@@ -90,13 +89,11 @@ class IsAssignedReferee(BasePermission):
         if request.user.is_superuser:
             return True
 
-        logger.debug(f"Referee: {request.user.id} Referral: {obj.referral}")
         return request.user.id == obj.referral
 
 
 class IsAssignedComplianceReferee(BasePermission):
     def has_permission(self, request, view):
-        logger.debug(f"IsAssignedReferee: {request.user.id}")
         if not request.user.is_authenticated:
             return False
 
@@ -112,7 +109,6 @@ class IsAssignedComplianceReferee(BasePermission):
         if request.user.is_superuser:
             return True
 
-        logger.debug(f"Referee: {request.user.id} Referral: {obj.referral}")
         return request.user.id == obj.referral
 
 

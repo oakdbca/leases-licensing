@@ -115,7 +115,6 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def complete(self, request, *args, **kwargs):
-        logger.debug("CompetitiveProcessViewSet.complete")
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -165,7 +164,6 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def perform_update(self, serializer):
         instance = serializer.save()
-        logger.debug(f"\n\n\nSite comments: {instance.site_comments}\n\n\n")
         request = self.request
         competitive_process_data = request.data
         # Pop "geometry" data to handle it independently of the "competitive process"
@@ -305,7 +303,6 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
                 .filter(id__in=instance.generated_proposal.values_list("id", flat=True))
                 .values("id", "lodgement_number", "description", "type")
             )
-        logger.debug(f"{queryset.query}")
         serializer = RelatedItemSerializer(queryset, many=True)
         data = {}
         # Add the fields that the datatables renderer expects

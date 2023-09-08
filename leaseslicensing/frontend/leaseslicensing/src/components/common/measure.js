@@ -84,4 +84,3 @@ export function formatLength(line) {
 }
 
 export default MeasureStyles;
-

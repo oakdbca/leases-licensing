@@ -1,12 +1,9 @@
 import logging
-import os
 from collections import OrderedDict
 from datetime import datetime
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import CharField, F, Func, Q, Value
 from django.urls import reverse
@@ -34,7 +31,7 @@ from leaseslicensing.components.main.api import (
 )
 from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
-from leaseslicensing.components.main.models import ApplicationType, RequiredDocument
+from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
@@ -60,7 +57,6 @@ from leaseslicensing.components.proposals.models import (
     Referral,
     ReferralRecipientGroup,
     RequirementDocument,
-    searchKeyWords,
 )
 from leaseslicensing.components.proposals.serializers import (  # InternalSaveProposalSerializer,
     AdditionalDocumentTypeSerializer,
@@ -87,7 +83,6 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     ProposedApprovalSerializer,
     ReferralSerializer,
     SaveProposalSerializer,
-    SearchKeywordSerializer,
     SendReferralSerializer,
 )
 from leaseslicensing.components.proposals.utils import (
@@ -388,7 +383,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             and target_organisation_id.isnumeric()
             and int(target_organisation_id) > 0
         ):
-            logger.debug(f"target_organisation_id: {target_organisation_id}")
             target_organisation_id = int(target_organisation_id)
             qs = qs.exclude(org_applicant__isnull=True).filter(
                 org_applicant__id=target_organisation_id
@@ -622,10 +616,8 @@ class ProposalViewSet(UserActionLoggingViewset):
                 .prefetch_related("proposalgeometry")
             )
             cache.set(cache_key, qs, settings.CACHE_TIMEOUT_2_HOURS)
-        logger.debug(f"{cache_key}:{qs}")
 
         if len(proposal_ids) > 0:
-            logger.debug(f"Filtering by proposal_ids: {proposal_ids}")
             qs = qs.filter(id__in=proposal_ids)
 
         if (
@@ -633,11 +625,9 @@ class ProposalViewSet(UserActionLoggingViewset):
             and application_type.isnumeric()
             and int(application_type) > 0
         ):
-            logger.debug(f"Filtering by application_type: {application_type}")
             qs = qs.filter(application_type_id=application_type)
 
         if processing_status:
-            logger.debug(f"Filtering by processing_status: {processing_status}")
             qs = qs.filter(processing_status=processing_status)
 
         # qs = self.filter_queryset(qs)
@@ -1292,98 +1282,6 @@ class ProposalViewSet(UserActionLoggingViewset):
         )
         return paginator.get_paginated_response(serializer.data)
 
-    # Documents on Activities(land)and Activities(Marine) tab for T-Class related to required document questions
-    @detail_route(methods=["POST"], detail=True)
-    @renderer_classes((JSONRenderer,))
-    @basic_exception_handler
-    def process_required_document(self, request, *args, **kwargs):
-        instance = self.get_object()
-        action = request.POST.get("action")
-        section = request.POST.get("input_name")
-        required_doc_id = request.POST.get("required_doc_id")
-        if action == "list" and "required_doc_id" in request.POST:
-            pass
-
-        elif action == "delete" and "document_id" in request.POST:
-            document_id = request.POST.get("document_id")
-            document = instance.required_documents.get(id=document_id)
-
-            if (
-                document._file
-                and os.path.isfile(document._file.path)
-                and document.can_delete
-            ):
-                os.remove(document._file.path)
-
-            document.delete()
-            instance.save(
-                version_comment="Required document File Deleted: {}".format(
-                    document.name
-                )
-            )  # to allow revision to be added to reversion history
-            # instance.current_proposal.save(version_comment='File Deleted:
-            # {}'.format(document.name)) # to allow revision to be added to reversion history
-
-        elif action == "hide" and "document_id" in request.POST:
-            document_id = request.POST.get("document_id")
-            document = instance.required_documents.get(id=document_id)
-
-            document.hidden = True
-            document.save()
-            instance.save(
-                version_comment=f"File hidden: {document.name}"
-            )  # to allow revision to be added to reversion history
-
-        elif (
-            action == "save"
-            and "input_name"
-            and "required_doc_id" in request.POST
-            and "filename" in request.POST
-        ):
-            proposal_id = request.POST.get("proposal_id")
-            filename = request.POST.get("filename")
-            _file = request.POST.get("_file")
-            if not _file:
-                _file = request.FILES.get("_file")
-
-            required_doc_instance = RequiredDocument.objects.get(id=required_doc_id)
-            document = instance.required_documents.get_or_create(
-                input_name=section,
-                name=filename,
-                required_doc=required_doc_instance,
-            )[0]
-            path = default_storage.save(
-                "{}/proposals/{}/required_documents/{}".format(
-                    settings.MEDIA_APP_DIR, proposal_id, filename
-                ),
-                ContentFile(_file.read()),
-            )
-
-            document._file = path
-            document.save()
-            instance.save(
-                version_comment=f"File Added: {filename}"
-            )  # to allow revision to be added to reversion history
-            # instance.current_proposal.save(version_comment='File Added: {}'
-            # .format(filename)) # to allow revision to be added to reversion history
-
-        return Response(
-            [
-                dict(
-                    input_name=d.input_name,
-                    name=d.name,
-                    file=d._file.url,
-                    id=d.id,
-                    can_delete=d.can_delete,
-                    can_hide=d.can_hide,
-                )
-                for d in instance.required_documents.filter(
-                    required_doc=required_doc_id, hidden=False
-                )
-                if d._file
-            ]
-        )
-
     @detail_route(
         methods=["GET", "POST"],
         detail=True,
@@ -1504,21 +1402,17 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     @basic_exception_handler
     def reissue_approval(self, request, *args, **kwargs):
-        logger.debug("reissue_approval()")
         instance = self.get_object()
         if not is_assessor(request):
             raise PermissionDenied(
                 "Assessor permissions are required to reissue approval"
             )
 
-        logger.debug("instance.reissue_approval()")
         instance.reissue_approval()
-        logger.debug("instance.log_user_action()")
         instance.log_user_action(
             ProposalUserAction.ACTION_REISSUE_APPROVAL.format(instance.id), request
         )
         serializer = InternalProposalSerializer(instance, context={"request": request})
-        logger.debug("return Response(serializer.data)")
         return Response(serializer.data)
 
     @detail_route(
@@ -1711,7 +1605,6 @@ class ProposalViewSet(UserActionLoggingViewset):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def draft(self, request, *args, **kwargs):
-        logger.debug("proposal draft()")
         instance = self.get_object()
         save_proponent_data(instance, request, self)
         # return redirect(reverse('external'))
@@ -2195,7 +2088,6 @@ class ReferralViewSet(viewsets.ModelViewSet):
     @basic_exception_handler
     def remind(self, request, *args, **kwargs):
         instance = self.get_object()
-        logger.debug(f"instance: {instance}")
         instance.remind(request)
         serializer = InternalProposalSerializer(
             instance.proposal, context={"request": request}
@@ -2389,7 +2281,6 @@ class ProposalRequirementViewSet(LicensingViewset):
 
     @basic_exception_handler
     def create(self, request, *args, **kwargs):
-        logger.debug("ProposalRequirementViewSet.create()")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -2463,26 +2354,6 @@ class AmendmentRequestReasonChoicesView(views.APIView):
                 # choices_list.append({'key': c[0],'value': c[1]})
                 choices_list.append({"key": c.id, "value": c.reason})
         return Response(choices_list)
-
-
-class SearchKeywordsView(views.APIView):
-    renderer_classes = [
-        JSONRenderer,
-    ]
-
-    def post(self, request, format=None):
-        qs = []
-        searchWords = request.data.get("searchKeywords")
-        searchProposal = request.data.get("searchProposal")
-        searchApproval = request.data.get("searchApproval")
-        searchCompliance = request.data.get("searchCompliance")
-        if searchWords:
-            qs = searchKeyWords(
-                searchWords, searchProposal, searchApproval, searchCompliance
-            )
-        # queryset = list(set(qs))
-        serializer = SearchKeywordSerializer(qs, many=True)
-        return Response(serializer.data)
 
 
 class SearchReferenceView(views.APIView):

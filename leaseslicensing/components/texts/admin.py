@@ -1,15 +1,12 @@
-from django.contrib import admin
-from django import forms
-
 from ckeditor.widgets import CKEditorWidget
+from django import forms
+from django.contrib import admin
 
-from leaseslicensing.components.texts.models import (
-    DetailsText,
-)
+from leaseslicensing.components.texts.models import DetailsText
 
 
 class DetailsTextForm(forms.ModelForm):
-    body = forms.CharField(widget=CKEditorWidget(config_name='toolbar_minimal'))
+    body = forms.CharField(widget=CKEditorWidget(config_name="toolbar_minimal"))
     target = forms.CharField(widget=forms.TextInput(attrs={"readonly": True}))
 
     def __init__(self, *args, **kwargs):

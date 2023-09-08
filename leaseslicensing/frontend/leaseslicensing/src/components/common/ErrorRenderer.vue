@@ -3,10 +3,12 @@
         {{ errors }}
     </template>
     <template v-else>
-        <template v-if="Array.isArray(this.errors)">
-            <template v-if="this.errors.length > 1">
+        <template v-if="Array.isArray(errors)">
+            <template v-if="errors.length > 1">
                 <ul class="errors-list">
-                    <li v-for="error in errors">{{ error }}</li>
+                    <li v-for="(error, index) in errors" :key="index">
+                        {{ error }}
+                    </li>
                 </ul>
             </template>
             <template v-else>
@@ -14,13 +16,17 @@
             </template>
         </template>
         <template v-else-if="typeof errors === 'object'">
-            <template v-if="Object.keys(this.errors).length > 1">
+            <template v-if="Object.keys(errors).length > 1">
                 <ul class="errors-list">
-                    <li v-for="(error, key) in errors"><span class="fw-bold">{{ key }}</span>: {{ error }}</li>
+                    <li v-for="(error, key) in errors" :key="key">
+                        <span class="fw-bold">{{ key }}</span
+                        >: {{ error }}
+                    </li>
                 </ul>
             </template>
             <template v-else>
-                <span class="fw-bold">{{ Object.keys(errors)[0] }}</span>: {{ Object.values(errors)[0] }}
+                <span class="fw-bold">{{ Object.keys(errors)[0] }}</span
+                >: {{ Object.values(errors)[0] }}
             </template>
         </template>
     </template>
@@ -31,10 +37,10 @@ export default {
     props: {
         errors: {
             type: [Object, String, Array],
-            required: true
+            required: true,
         },
     },
-}
+};
 </script>
 <style scoped>
 .errors-list {

@@ -42,9 +42,9 @@ class Command(BaseCommand):
         }
         approvals = Approval.objects.filter(**filters)
         for approval in approvals:
-            logger.debug(f"Checking approval: {approval}")
+            logger.info(f"Checking approval: {approval}")
             invoicing_details = approval.current_proposal.invoicing_details
-            logger.debug(
+            logger.info(
                 f"Found invoicing details: {invoicing_details.has_future_invoicing_periods}"
             )
             # Just in case
@@ -71,7 +71,7 @@ class Command(BaseCommand):
 
             if days_due_in is not None:
                 if options["test"]:
-                    logger.debug(
+                    logger.info(
                         f"Test: Would have sent custom cpi entry reminder for approval: {approval}"
                     )
                     continue

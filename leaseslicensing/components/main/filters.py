@@ -1,21 +1,24 @@
-from django.db.models import Case, When, Q, CharField, Value
-from django.db.models.functions import Concat
-from django.core.cache import cache
-from django.core.exceptions import FieldError
-from django.conf import settings
-
-from rest_framework_datatables.filters import DatatablesFilterBackend
-from rest_framework import serializers
-from rest_framework.exceptions import APIException
-
-from ledger_api_client.ledger_models import EmailUserRO as EmailUser
-
-from leaseslicensing.components.main.decorators import basic_exception_handler
-import logging
 import functools
 import itertools
+import logging
+
+from django.conf import settings
+from django.core.cache import cache
+from django.core.exceptions import FieldError
+from django.db.models import Case, CharField, Q, Value, When
+from django.db.models.functions import Concat
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from rest_framework import serializers
+from rest_framework.exceptions import APIException
+from rest_framework_datatables.filters import DatatablesFilterBackend
+
+from leaseslicensing.components.main.decorators import basic_exception_handler
 
 logger = logging.getLogger(__name__)
+
+
+# If you are a developer that is depressed... l_l
+# Go to https://www.beyondblue.org.au/ for help and never give up hope.
 
 
 class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
@@ -79,7 +82,7 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
 
         # The ledger key for this list of dot-notation fields
         applicable_ledger_keys = [
-            k for k in ledger_keys if any([k in l for l in list_to_split])
+            k for k in ledger_keys if any([k in l_l for l_l in list_to_split])
         ]
         if len(applicable_ledger_keys) == 0:
             return result_dict
@@ -123,7 +126,10 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         for field, dir_ in self.get_ordering_fields(request, view, fields):
             ordering.append(
                 ",".join(
-                    ["%s%s" % ("-" if dir_ == "desc" else "", f) for f in field["name"]]
+                    [
+                        "{}{}".format("-" if dir_ == "desc" else "", f)
+                        for f in field["name"]
+                    ]
                 )
             )
         self.append_additional_ordering(ordering, view)
@@ -239,7 +245,7 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
             search_value = datatables_query["search_value"].lower().strip()
 
         datatables_search_query = [
-            q for q in datatables_query["fields"] if q["searchable"] == True
+            q for q in datatables_query["fields"] if q["searchable"] is True
         ]
         # Fields to search / order for
         datatables_search_attributes = [
@@ -273,7 +279,8 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                 )
             except FieldError:
                 raise FieldError(
-                    f"Error filtering queryset. Consider adding any of {model_attrs} to `ledger_lookup_fields`: {ledger_lookup_fields}"
+                    f"Error filtering queryset. Consider adding any of {model_attrs} "
+                    f"to `ledger_lookup_fields`: {ledger_lookup_fields}"
                 )
 
             # Add filtered model results to list
@@ -297,13 +304,11 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
             for attribute in ledger_attrs:
                 # Ledger foreign keys
                 _fks = list(
-                    set(
-                        [
-                            self.rgetattr(m, k.replace("__", "."))
-                            for m in list(queryset)
-                            for k in _ledger_fields_undscr
-                        ]
-                    )
+                    {
+                        self.rgetattr(m, k.replace("__", "."))
+                        for m in list(queryset)
+                        for k in _ledger_fields_undscr
+                    }
                 )
 
                 # A dictionary of search fields and values
@@ -382,7 +387,7 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                 )
 
                 # Get a list of pkeys
-                pk_list = [l.pk for l in query_model_list]
+                pk_list = [l_l.pk for l_l in query_model_list]
                 # Preserve the order of the pkey list
                 fpk_attr = list(ord_dict.keys())[0].replace("-", "").replace(".", "__")
                 preserved_order = Case(
@@ -399,7 +404,7 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                     reverse=reverse,
                 )
                 # Get a list of keys
-                pk_list = [l.pk for l in query_model_list]
+                pk_list = [l_l.pk for l_l in query_model_list]
                 # Preserve the order of the list of keys
                 preserved_order = Case(
                     *[When(pk=pk, then=pos) for pos, pk in enumerate(pk_list)]
@@ -413,13 +418,16 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
             )
         else:
             # Convert back to Model Queryset
-            pk_list = [l.pk for l in query_model_list]
+            pk_list = [l_l.pk for l_l in query_model_list]
             queryset = model.objects.filter(pk__in=pk_list).distinct()
             if len(orderings):
                 try:
                     queryset = queryset.order_by(*orderings[0].split(","))
-                except:
-                    logger.exception(f"Could not order queryset by {orderings}")
+                except (KeyError, FieldError) as e:
+                    logger.exception(
+                        f"Could not order queryset by {orderings} due to exception: {e}"
+                    )
+
                     raise APIException(
                         code=500, detail=f"Could not order queryset by {orderings}"
                     )
@@ -461,10 +469,10 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         # Filter and sort ledger
         # ledger = EmailUser.objects.filter(pk__in=ledger_pks).order_by(*ledger_orderings)
         ledger = ledger.filter(pk__in=ledger_pks).order_by(
-            *[f"-{l}" if reverse else l for l in ledger_orderings]
+            *[f"-{l_l}" if reverse else l_l for l_l in ledger_orderings]
         )
         # List of ordered keys in ledger
-        ledger_pk_list = [l.pk for l in list(ledger)]
+        ledger_pk_list = [l_l.pk for l_l in list(ledger)]
         # Dictionary of counted ledger "foreign keys" in model
         model_fpks_cnt = {pk: model_fpks.count(pk) for pk in ledger_pks}
         # An expanded list of ledger "foreign keys"
@@ -543,7 +551,7 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                     _model_part, _ledger_part = "__".join(
                         _attr_parts[:attr_idx]
                     ), ".".join(_attr_parts[attr_idx:])
-                    if not _model_part in ledger_attrs[attr]:
+                    if _model_part not in ledger_attrs[attr]:
                         ledger_attrs[attr][_model_part] = []
                     ledger_attrs[attr][_model_part].append(_ledger_part)
 
@@ -575,7 +583,8 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
         else:
             raise serializers.ValidationError(
                 f"Requested empty field from ledger attribute `{attribute}` in `{self.__class__.__name__}`.\
-                This could stem from the frontend requesting just `{attribute}` as a search field instead of `{attribute}__a_field_name`."
+                This could stem from the frontend requesting just `{attribute}` "
+                f"as a search field instead of `{attribute}__a_field_name`."
             )
 
     def search_term_queryset(self, queryset, request):

@@ -150,7 +150,6 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             and target_organisation_id.isnumeric()
             and int(target_organisation_id) > 0
         ):
-            logger.debug(f"target_organisation_id: {target_organisation_id}")
             target_organisation_id = int(target_organisation_id)
             qs = qs.exclude(approval__org_applicant__isnull=True).filter(
                 approval__org_applicant__id=target_organisation_id
@@ -331,8 +330,6 @@ class ComplianceViewSet(viewsets.ModelViewSet):
                 filename = request.data.get("name" + str(i))
                 _file = request.data.get("file" + str(i))
 
-                logger.debug(f" ----> {type(_file)}")
-
                 if not isinstance(_file, InMemoryUploadedFile) and not isinstance(
                     _file, TemporaryUploadedFile
                 ):
@@ -363,11 +360,9 @@ class ComplianceViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         num_files = request.data.get("num_files")
-        logger.debug(f"num_files: {num_files}")
         for i in range(int(num_files)):
             filename = request.data.get("name" + str(i))
             _file = request.data.get("file" + str(i))
-            logger.debug(f"file: {filename} {_file}")
 
             if not isinstance(_file, InMemoryUploadedFile):
                 raise serializers.ValidationError("No files attached")
@@ -438,7 +433,6 @@ class ComplianceViewSet(viewsets.ModelViewSet):
     )
     @basic_exception_handler
     def unassign(self, request, *args, **kwargs):
-        logger.debug("unassign")
         instance = self.get_object()
         instance.unassign(request)
         serializer = InternalComplianceSerializer(
@@ -690,7 +684,6 @@ class ComplianceReferralViewSet(viewsets.ModelViewSet):
     )
     @basic_exception_handler
     def complete(self, request, *args, **kwargs):
-        logger.debug("complete compliance referral")
         instance = self.get_object()
         instance.complete(request)
         serializer = InternalComplianceSerializer(
