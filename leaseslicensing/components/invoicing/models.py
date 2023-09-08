@@ -376,7 +376,7 @@ class InvoicingDetails(BaseModel):
         max_digits=10, decimal_places=2, null=True, blank=True
     )
     review_once_every = models.PositiveSmallIntegerField(
-        null=True, blank=True, default=1
+        null=True, blank=True, default=5
     )
     review_repetition_type = models.ForeignKey(
         RepetitionType,
