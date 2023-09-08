@@ -14,7 +14,11 @@ from leaseslicensing.components.invoicing.models import (
     RepetitionType,
 )
 from leaseslicensing.components.main.models import ApplicationType, GlobalSettings
-from leaseslicensing.components.proposals.models import ProposalType
+from leaseslicensing.components.proposals.models import (
+    Proposal,
+    ProposalAssessment,
+    ProposalType,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -121,3 +125,8 @@ class DefaultDataManager:
                     invoicing_date_annually=date(year, 1, 1),
                     review_date_annually=date(year, 1, 1),
                 )
+
+        # Make sure every proposal has an associated ProposalAssessment object
+        for proposal in Proposal.objects.all():
+            if not proposal.assessor_assessment:
+                ProposalAssessment.objects.get_or_create(proposal=proposal)
