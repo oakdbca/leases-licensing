@@ -3851,7 +3851,7 @@ class ProposalGeometry(models.Model):
         if not self.area:
             logger.warn(f"ProposalGeometry: {self.id} has no area")
             return None
-        return self.area.sq_m / 1000
+        return self.area.sq_m / 10000
 
 
 class ProposalLogDocument(Document):
