@@ -89,7 +89,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework_datatables.pagination.DatatablesPageNumberPagination",
     "PAGE_SIZE": 20,
-    "EXCEPTION_HANDLER": "drf_standardized_errors.handlers.exception_handler",
+    "EXCEPTION_HANDLER": "drf_standardized_errors.handler.exception_handler",
 }
 
 
