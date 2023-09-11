@@ -40,6 +40,7 @@ from leaseslicensing.components.proposals.serializers import (
     ProposalMapFeatureInfoSerializer,
     SaveLeaseLicenceSerializer,
     SaveRegistrationOfInterestSerializer,
+    SubmitRegistrationOfInterestSerializer,
 )
 from leaseslicensing.helpers import is_assessor
 
@@ -443,6 +444,16 @@ def save_proponent_data_registration_of_interest(proposal, request, viewset):
             "action": viewset.action,
         },
     )
+    if viewset.action == "submit":
+        # Apply extra validation for submit
+        serializer = SubmitRegistrationOfInterestSerializer(
+            proposal,
+            data=proposal_data,
+            context={
+                "action": viewset.action,
+            },
+        )
+
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
