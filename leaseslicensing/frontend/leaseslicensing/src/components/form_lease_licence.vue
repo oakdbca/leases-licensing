@@ -317,11 +317,13 @@
             <slot
                 name="slot_proposal_general_details_assessment_comments"
             ></slot>
-
-            <div class="row mb-3 pt-3">
+            <div class="row mb-2">
+                <div class="fw-bold">Key Personnel</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
-                    <label for="key_personnel_text" class="form-label"
-                        >Provide details of the key personnel and their
+                    <label for="key_personnel_text" class="form-label">
+                        Provide details of the key personnel and their
                         qualifications and experience that is appropriate to
                         developing and operating the venture under the proposed
                         tourism lease. Include bios of the proposed board and
@@ -361,7 +363,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Key Milestones</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="key_milestones_text" class="form-label"
                         >Provide details regarding key milestones</label
@@ -399,7 +404,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Risk Factors</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="risk_factors_text" class="form-label"
                         >Identify specific risk factors and likely impacts to
@@ -441,7 +449,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Legislative Requirements</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label
                         for="legislative_requirements_text"
