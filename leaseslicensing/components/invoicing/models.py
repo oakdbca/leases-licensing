@@ -376,7 +376,7 @@ class InvoicingDetails(BaseModel):
         max_digits=10, decimal_places=2, null=True, blank=True
     )
     review_once_every = models.PositiveSmallIntegerField(
-        null=True, blank=True, default=1
+        null=True, blank=True, default=5
     )
     review_repetition_type = models.ForeignKey(
         RepetitionType,
@@ -618,7 +618,13 @@ class InvoicingDetails(BaseModel):
             # Net 30 payment terms
             due_date = issue_date + relativedelta(days=30)
             days_running_total += invoicing_period["days"]
+
+            issue_date_now_or_future = issue_date
+            if issue_date < helpers.today():
+                issue_date_now_or_future = helpers.today()
+
             amount_object = self.get_amount_for_invoice(
+                issue_date_now_or_future,
                 invoicing_period["start_date"],
                 invoicing_period["end_date"],
                 invoicing_period["days"],
@@ -628,9 +634,6 @@ class InvoicingDetails(BaseModel):
                 amount_running_total = amount_running_total + amount_object["amount"]
             else:
                 amount_running_total = amount_running_total + Decimal("0.00")
-            issue_date_now_or_future = issue_date
-            if issue_date < helpers.today():
-                issue_date_now_or_future = helpers.today()
 
             invoices.append(
                 {
@@ -756,9 +759,9 @@ class InvoicingDetails(BaseModel):
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
             return math.floor(index / 4)
         if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
-            return math.floor(index / self.invoicing_once_every)
+            return math.floor(index / 12)
 
-    def get_amount_for_invoice(self, start_date, end_date, days, index):
+    def get_amount_for_invoice(self, issue_date, start_date, end_date, days, index):
         amount_object = {
             "prefix": "$",
             "amount": Decimal("0.00"),
@@ -801,12 +804,12 @@ class InvoicingDetails(BaseModel):
         base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
-            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
-            if start_date > helpers.today():
+            if issue_date > helpers.today():
                 amount_object["amount"] = base_fee_amount
                 amount_object["suffix"] = " + CPI (NYA)"
                 return amount_object
 
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
             cpi = ConsumerPriceIndex.get_most_recent_quarter_by_date(
                 start_date, self.cpi_calculation_method.quarter
             )
@@ -853,6 +856,8 @@ class InvoicingDetails(BaseModel):
                         self.annual_increment_percentages.all()[year_sequence_index - 1]
                     )
                     percentage = annual_increment_percentage.increment_percentage
+                    if not percentage:
+                        percentage = Decimal("0.00")
                     base_fee_amount = base_fee_amount * (1 + percentage / 100)
                     suffix = ""
                 except IndexError:
@@ -945,9 +950,13 @@ class InvoicingDetails(BaseModel):
                 .estimated_gross_turnover
             )
 
-        invoice_amount = Decimal(
-            estimated_gross_turnover * gross_turnover_percentage.percentage / 100
-        ).quantize(Decimal("0.01"))
+        percentage = gross_turnover_percentage.percentage
+        if not percentage:
+            percentage = Decimal("0.00")
+
+        invoice_amount = Decimal(estimated_gross_turnover * percentage / 100).quantize(
+            Decimal("0.01")
+        )
 
         amount_object["prefix"] = "$"
 

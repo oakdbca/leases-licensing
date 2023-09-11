@@ -92,8 +92,7 @@ REST_FRAMEWORK = {
 
 
 MIDDLEWARE_CLASSES += [
-    # 'leaseslicensing.middleware.FirstTimeNagScreenMiddleware',
-    # 'leaseslicensing.middleware.RevisionOverrideMiddleware',
+    "leaseslicensing.middleware.FirstTimeNagScreenMiddleware",
     "leaseslicensing.middleware.CacheControlMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
 ]
@@ -382,6 +381,7 @@ LEDGER_UI_ACCOUNTS_MANAGEMENT = [
     {"first_name": {"options": {"view": True, "edit": True}}},
     {"last_name": {"options": {"view": True, "edit": True}}},
     {"residential_address": {"options": {"view": True, "edit": True}}},
+    {"postal_address": {"options": {"view": True, "edit": True}}},
     {"phone_number": {"options": {"view": True, "edit": True}}},
     {"mobile_number": {"options": {"view": True, "edit": True}}},
 ]
