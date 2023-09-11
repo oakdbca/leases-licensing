@@ -4,6 +4,7 @@ import logging
 from django.conf import settings
 from django.db.models import Q
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
@@ -970,6 +971,7 @@ class ProposalSerializer(BaseProposalSerializer):
         model = Proposal
         fields = "__all__"
         extra_fields = [
+            "details_text",
             "model_name",
             "assessor_mode",
             "lodgement_versions",
@@ -1015,6 +1017,9 @@ class ProposalSerializer(BaseProposalSerializer):
 
     def get_processing_status_id(self, obj):
         return obj.processing_status
+
+    def validate(self, attrs):
+        return super().validate(attrs)
 
 
 class CreateProposalSerializer(BaseProposalSerializer):
@@ -1096,6 +1101,64 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
             "site_name",
         )
         read_only_fields = ("id",)
+
+
+class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerializer):
+    """Whilst we may want to allow the user to save their ROI application with fields empty,
+    we want to be able to request that they are filled out when submitting to avoid wasting time.
+    """
+
+    details_text = serializers.CharField(
+        required=True,
+        allow_null=False,
+        error_messages={"blank": "Please provide a description of your proposal"},
+    )
+
+    def update(self, instance, validated_data):
+        errors = []
+        if not instance.deed_poll_documents.count():
+            errors.append(_("Please upload a deed poll document"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().update(instance, validated_data)
+
+    def validate(self, attrs):
+        errors = []
+
+        question_fields = [
+            "exclusive_use",
+            "long_term_use",
+            "consistent_purpose",
+            "consistent_plan",
+            "clearing_vegetation",
+            "ground_disturbing_works",
+            "heritage_site",
+            "environmentally_sensitive",
+            "consistent_plan",
+            "wetlands_impact",
+            "building_required",
+            "significant_change",
+            "aboriginal_site",
+            "native_title_consultation",
+            "mining_tenement",
+        ]
+
+        for question_field in question_fields:
+            if attrs[question_field] and not attrs.get(f"{question_field}_text", None):
+                errors.append(
+                    _(
+                        "Please provide details for {}".format(
+                            question_field.replace("_", " ")
+                        )
+                    )
+                )
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().validate(attrs)
 
 
 class SaveProposalSerializer(BaseProposalSerializer):
