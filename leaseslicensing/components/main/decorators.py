@@ -21,7 +21,7 @@ def basic_exception_handler(func):
         try:
             return func(*args, **kwargs)
         except (serializers.ValidationError, ValidationError) as e:
-            raise serializers.ValidationError(e)
+            raise e
         except Exception as e:
             if settings.DEBUG:
                 detail = {
