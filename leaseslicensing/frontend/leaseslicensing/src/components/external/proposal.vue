@@ -37,6 +37,19 @@
             </div>
         </div>
 
+        <div v-if="errors">
+            <BootstrapAlert
+                v-if="errors"
+                id="errors"
+                ref="errors"
+                class="d-flex align-items-center"
+                type="danger"
+                icon="exclamation-triangle-fill"
+            >
+                <ErrorRenderer :errors="errors" />
+            </BootstrapAlert>
+        </div>
+
         <div
             v-if="missing_fields.length > 0"
             id="error"
@@ -213,6 +226,7 @@
 import ApplicationForm from '../form.vue';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import FormSection from '@/components/forms/section_toggle.vue';
+import ErrorRenderer from '@common-utils/ErrorRenderer.vue';
 
 import { api_endpoints, helpers } from '@/utils/hooks';
 
@@ -220,6 +234,7 @@ export default {
     name: 'ExternalProposal',
     components: {
         ApplicationForm,
+        ErrorRenderer,
         FileField,
         FormSection,
     },
@@ -244,6 +259,7 @@ export default {
             paySubmitting: false,
             newText: '',
             pBody: 'pBody',
+            errors: null,
             missing_fields: [],
             proposal_parks: null,
             terms_and_conditions_checked: false,
@@ -602,14 +618,13 @@ export default {
                 });
                 return resData;
             } else {
-                const err = await res.json();
-                await swal.fire({
-                    title: 'Please fix following errors before saving',
-                    text: JSON.stringify(err),
-                    icon: 'error',
-                });
+                const responseJSON = await res.json();
+                vm.errors = responseJSON.errors;
                 vm.savingProposal = false;
-                throw new Error(err);
+
+                if (vm.submitting) {
+                    throw new Error(responseJSON);
+                }
             }
         },
         save_exit: function () {
@@ -696,6 +711,14 @@ export default {
                             vm.submitting = false;
                             vm.savingProposal = false;
                             vm.paySubmitting = false;
+                            // For some reason the scroll was not working with nexttick so am using a short timeout
+                            setTimeout(() => {
+                                window.scroll({
+                                    top: 0,
+                                    left: 0,
+                                    behavior: 'smooth',
+                                });
+                            }, 200);
                         }
                     }
                 },
