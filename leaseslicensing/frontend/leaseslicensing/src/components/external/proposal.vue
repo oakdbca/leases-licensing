@@ -50,23 +50,6 @@
             </BootstrapAlert>
         </div>
 
-        <div
-            v-if="missing_fields.length > 0"
-            id="error"
-            style="
-                margin: 10px;
-                padding: 5px;
-                color: red;
-                border: 1px solid red;
-            "
-        >
-            <b>Please answer the following mandatory question(s):</b>
-            <ul>
-                <li v-for="error in missing_fields" :key="error.label">
-                    {{ error.label }}
-                </li>
-            </ul>
-        </div>
         <ApplicationForm
             v-if="proposal"
             ref="application_form"
