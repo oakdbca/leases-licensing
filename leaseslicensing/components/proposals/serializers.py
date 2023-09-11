@@ -1018,9 +1018,6 @@ class ProposalSerializer(BaseProposalSerializer):
     def get_processing_status_id(self, obj):
         return obj.processing_status
 
-    def validate(self, attrs):
-        return super().validate(attrs)
-
 
 class CreateProposalSerializer(BaseProposalSerializer):
     application_type_id = serializers.IntegerField(write_only=True, required=False)
@@ -1060,6 +1057,38 @@ class SaveLeaseLicenceSerializer(BaseProposalSerializer):
             "proponent_reference_number",
         )
         read_only_fields = ("id",)
+
+
+class SubmitLeaseLicenceSerializer(SaveLeaseLicenceSerializer):
+    def update(self, instance, validated_data):
+        errors = []
+
+        logger.debug(validated_data)
+
+        mandatory_fields = [
+            "key_personnel_text",
+            "key_milestones_text",
+            "risk_factors_text",
+            "legislative_requirements_text",
+        ]
+
+        for mandatory_field in mandatory_fields:
+            if not validated_data[mandatory_field]:
+                errors.append(
+                    _(
+                        "Please provide details for {}".format(
+                            mandatory_field.replace("_", " ").replace("text", "")
+                        )
+                    )
+                )
+
+        if not instance.deed_poll_documents.count():
+            errors.append(_("Please upload a deed poll document"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().update(instance, validated_data)
 
 
 class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
@@ -1108,14 +1137,11 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
     we want to be able to request that they are filled out when submitting to avoid wasting time.
     """
 
-    details_text = serializers.CharField(
-        required=True,
-        allow_null=False,
-        error_messages={"blank": "Please provide a description of your proposal"},
-    )
-
     def update(self, instance, validated_data):
         errors = []
+        if not validated_data["details_text"]:
+            errors.append(_("Please provide a description of your proposal"))
+
         if not instance.deed_poll_documents.count():
             errors.append(_("Please upload a deed poll document"))
 
@@ -1125,6 +1151,7 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
         return super().update(instance, validated_data)
 
     def validate(self, attrs):
+        """If the user has selected yes for any of the questions, they must provide details"""
         errors = []
 
         question_fields = [
