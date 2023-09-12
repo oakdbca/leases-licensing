@@ -6,77 +6,167 @@
             </div-->
             <div :id="elem_id" ref="map-root" class="map">
                 <div class="basemap-button">
-                    <img v-if="showSatIcon" id="basemap_sat" src="../../assets/satellite_icon.jpg"
-                        @click="setBaseLayer('sat')" />
-                    <img v-if="!showSatIcon" id="basemap_osm" src="../../assets/map_icon.png"
-                        @click="setBaseLayer('osm')" />
+                    <img
+                        v-if="showSatIcon"
+                        id="basemap_sat"
+                        src="../../assets/satellite_icon.jpg"
+                        @click="setBaseLayer('sat')"
+                    />
+                    <img
+                        v-if="!showSatIcon"
+                        id="basemap_osm"
+                        src="../../assets/map_icon.png"
+                        @click="setBaseLayer('osm')"
+                    />
                 </div>
                 <div class="optional-layers-wrapper">
                     <div class="optional-layers-button-wrapper">
-                        <div :class="[
-                            mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
-                        ]" @click="set_mode.bind(this)('measure')">
-                            <img class="svg-icon" src="../../assets/ruler.svg" />
+                        <div
+                            :class="[
+                                mode == 'measure'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('measure')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/ruler.svg"
+                            />
                         </div>
                     </div>
                     <div class="optional-layers-button-wrapper">
-                        <div :class="[
-                            mode == 'draw' ? 'optional-layers-button-active' : 'optional-layers-button'
-                        ]" @click="set_mode.bind(this)('draw')">
-                            <img class="svg-icon" src="../../assets/pen-icon.svg" />
+                        <div
+                            :class="[
+                                mode == 'draw'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('draw')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/pen-icon.svg"
+                            />
                         </div>
                     </div>
-                    <div style="position:relative">
+                    <div style="position: relative">
                         <transition v-if="optionalLayers.length">
                             <div class="optional-layers-button-wrapper">
-                                <div class="optional-layers-button" @mouseover="hover = true">
+                                <div
+                                    class="optional-layers-button"
+                                    @mouseover="hover = true"
+                                >
                                     <img src="../../assets/layers.svg" />
                                 </div>
                             </div>
                         </transition>
                         <transition v-if="optionalLayers.length">
-                            <div div class="layer_options layer_menu" v-show="hover" @mouseleave="hover = false">
+                            <div
+                                v-show="hover"
+                                div
+                                class="layer_options layer_menu"
+                                @mouseleave="hover = false"
+                            >
                                 <template v-for="layer in optionalLayers">
                                     <div class="row">
-                                        <input type="checkbox" :id="layer.ol_uid" :checked="layer.values_.visible"
-                                            @change="changeLayerVisibility(layer)" class="layer_option col-md-1" />
-                                        <label :for="layer.ol_uid" class="layer_option col-md-6">{{ layer.get('title')
-                                        }}</label>
-                                        <RangeSlider class="col-md-5" @valueChanged='valueChanged($event, layer)' />
+                                        <input
+                                            :id="layer.ol_uid"
+                                            type="checkbox"
+                                            :checked="layer.values_.visible"
+                                            class="layer_option col-md-1"
+                                            @change="
+                                                changeLayerVisibility(layer)
+                                            "
+                                        />
+                                        <label
+                                            :for="layer.ol_uid"
+                                            class="layer_option col-md-6"
+                                            >{{ layer.get('title') }}</label
+                                        >
+                                        <RangeSlider
+                                            class="col-md-5"
+                                            @valueChanged="
+                                                valueChanged($event, layer)
+                                            "
+                                        />
                                     </div>
                                 </template>
                             </div>
                         </transition>
                     </div>
-                    <div v-if="selectedFeatureId" class="optional-layers-button-wrapper">
+                    <div
+                        v-if="selectedFeatureId"
+                        class="optional-layers-button-wrapper"
+                    >
                         <div class="optional-layers-button">
-                            <i id="delete_feature" class="svg-icon bi bi-trash3 ll-trash"
-                                @click="removeLeaselicenceFeature()" />
+                            <i
+                                id="delete_feature"
+                                class="svg-icon bi bi-trash3 ll-trash"
+                                @click="removeLeaselicenceFeature()"
+                            />
                         </div>
                     </div>
-                    <div v-if="showUndoButton" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button" @click="undoLeaseLicensePoint()">
-                            <img class="svg-icon" src="../../assets/map-undo.svg" />
+                    <div
+                        v-if="showUndoButton"
+                        class="optional-layers-button-wrapper"
+                    >
+                        <div
+                            class="optional-layers-button"
+                            @click="undoLeaseLicensePoint()"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/map-undo.svg"
+                            />
                         </div>
                     </div>
-                    <div v-if="showRedoButton" class="optional-layers-button-wrapper">
-                        <div class="optional-layers-button" @click="redoLeaseLicensePoint()">
-                            <img class="svg-icon" src="../../assets/map-redo.svg" />
+                    <div
+                        v-if="showRedoButton"
+                        class="optional-layers-button-wrapper"
+                    >
+                        <div
+                            class="optional-layers-button"
+                            @click="redoLeaseLicensePoint()"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/map-redo.svg"
+                            />
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div :id="popup_id" class="ol-popup">
-            <a href="#" :id="popup_closer_id" class="ol-popup-closer">
-                <svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='20' width='20' class="close-icon">
-                    <g transform='scale(3)'>
+            <a :id="popup_closer_id" href="#" class="ol-popup-closer">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    version="1.1"
+                    height="20"
+                    width="20"
+                    class="close-icon"
+                >
+                    <g transform="scale(3)">
                         <path
+                            id="path846"
                             d="M 5.2916667,2.6458333 A 2.6458333,2.6458333 0 0 1 2.6458335,5.2916667 2.6458333,2.6458333 0 0 1 0,2.6458333 2.6458333,2.6458333 0 0 1 2.6458335,0 2.6458333,2.6458333 0 0 1 5.2916667,2.6458333 Z"
-                            style="fill:#ffffff;fill-opacity:1;stroke-width:0.182031" id="path846" />
+                            style="
+                                fill: #ffffff;
+                                fill-opacity: 1;
+                                stroke-width: 0.182031;
+                            "
+                        />
                         <path
+                            id="path2740-3"
                             d="M 1.5581546,0.94474048 2.6457566,2.0324189 3.7334348,0.94474048 4.3469265,1.5581547 3.2592475,2.6458334 4.3469265,3.7334353 3.7334348,4.3469261 2.6457566,3.2593243 1.5581546,4.3469261 0.9447402,3.7334353 2.0323422,2.6458334 0.9447402,1.5581547 Z"
-                            style="fill:#f46464;fill-opacity:1;stroke:none;stroke-width:0.0512157" id="path2740-3" />
+                            style="
+                                fill: #f46464;
+                                fill-opacity: 1;
+                                stroke: none;
+                                stroke-width: 0.0512157;
+                            "
+                        />
                     </g>
                 </svg>
             </a>
@@ -97,34 +187,67 @@
         <div class="row shapefile-row">
             <div class="col-sm-6 border p-2">
                 <div class="row mb-2">
-                    <div class="col"><label for="shapefile_document" class="fw-bold">Upload Shapefile </label></div>
                     <div class="col">
-                        <FileField :readonly="false" ref="shapefile_document" name="shapefile_document"
-                            id="shapefile_document_document" :isRepeatable="true" :documentActionUrl="shapefileDocumentUrl"
-                            :replace_button_by_text="true" fileTypes=".dbf, .prj, .shp, .shx" text_string="Attach File (.prj .dbf .shp
-                                .shx)" />
+                        <label for="shapefile_document" class="fw-bold"
+                            >Upload Shapefile
+                        </label>
+                    </div>
+                    <div class="col">
+                        <FileField
+                            id="shapefile_document_document"
+                            ref="shapefile_document"
+                            :readonly="false"
+                            name="shapefile_document"
+                            :is-repeatable="true"
+                            :document-action-url="shapefileDocumentUrl"
+                            :replace_button_by_text="true"
+                            file-types=".dbf, .prj, .shp, .shx"
+                            text_string="Attach File (.prj .dbf .shp
+                                .shx)"
+                        />
                     </div>
                 </div>
                 <div class="row">
                     <div class="col">
-                        <BootstrapAlert>If you do not upload a .prj file, we will use <a
-                                href="https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84" target="_blank">WGS 84</a>
+                        <BootstrapAlert
+                            >If you do not upload a .prj file, we will use
+                            <a
+                                href="https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84"
+                                target="_blank"
+                                >WGS 84</a
+                            >
                             / 'EPSG:4326'
                         </BootstrapAlert>
                     </div>
-
                 </div>
                 <div class="row">
                     <div class="col">
-                        <button type="button" v-if="is_validating" disabled class="btn btn-primary">
+                        <button
+                            v-if="is_validating"
+                            type="button"
+                            disabled
+                            class="btn btn-primary"
+                        >
                             <div class="row">
-                                <div class="col-sm-12 text-nowrap text-truncate"><i class="fa fa-spinner fa-spin"></i>
+                                <div
+                                    class="col-sm-12 text-nowrap text-truncate"
+                                >
+                                    <i class="fa fa-spinner fa-spin"></i>
                                 </div>
                             </div>
                         </button>
-                        <button type="button" v-else class="btn btn-primary" @click="validate_map_docs">
+                        <button
+                            v-else
+                            type="button"
+                            class="btn btn-primary"
+                            @click="validate_map_docs"
+                        >
                             <div class="row">
-                                <div class="col-sm-12 text-nowrap text-truncate">Process Files</div>
+                                <div
+                                    class="col-sm-12 text-nowrap text-truncate"
+                                >
+                                    Process Files
+                                </div>
                             </div>
                         </button>
                     </div>
@@ -137,8 +260,12 @@
                 </div>
             </div>
         </div>
-        <VueAlert v-if="errorString && errorString.length" type="danger" style="color: red"><strong>{{ errorString
-        }}</strong></VueAlert>
+        <VueAlert
+            v-if="errorString && errorString.length"
+            type="danger"
+            style="color: red"
+            ><strong>{{ errorString }}</strong></VueAlert
+        >
     </div>
 </template>
 
@@ -155,23 +282,48 @@ import TileWMS from 'ol/source/TileWMS';
 import WMTS, { optionsFromCapabilities } from 'ol/source/WMTS';
 import GeoJSON from 'ol/format/GeoJSON';
 import Overlay from 'ol/Overlay';
-import { FullScreen, MousePosition, defaults as olDefaults, OverviewMap, ScaleLine, ZoomSlider, ZoomToExtent } from 'ol/control';
+import {
+    FullScreen,
+    MousePosition,
+    defaults as olDefaults,
+    OverviewMap,
+    ScaleLine,
+    ZoomSlider,
+    ZoomToExtent,
+} from 'ol/control';
 import { Draw, Modify, Snap, Select } from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import MeasureStyles, { formatLength } from '@/components/common/measure.js'
+import MeasureStyles, { formatLength } from '@/components/common/measure.js';
 import { LineString, Point, Polygon } from 'ol/geom';
-import { Circle as CircleStyle, Fill, Stroke, Style, Text, RegularShape } from 'ol/style';
-import FileField from '@/components/forms/filefield_immediate.vue'
-import VueAlert from '@vue-utils/alert.vue'
-import { api_endpoints, helpers } from '@/utils/hooks'
-import RangeSlider from '@/components/forms/range_slider.vue'
-import { addOptionalLayers, set_mode, baselayer_name, polygon_style } from '@/components/common/map_functions.js'
-import Swal from 'sweetalert2'
+import {
+    Circle as CircleStyle,
+    Fill,
+    Stroke,
+    Style,
+    Text,
+    RegularShape,
+} from 'ol/style';
+import FileField from '@/components/forms/filefield_immediate.vue';
+import VueAlert from '@vue-utils/alert.vue';
+import { api_endpoints, helpers } from '@/utils/hooks';
+import RangeSlider from '@/components/forms/range_slider.vue';
+import {
+    addOptionalLayers,
+    set_mode,
+    baselayer_name,
+    polygon_style,
+} from '@/components/common/map_functions.js';
+import Swal from 'sweetalert2';
 
 export default {
     name: 'ComponentMap',
-    emits: ['refreshFromResponse'],
+
+    components: {
+        FileField,
+        VueAlert,
+        RangeSlider,
+    },
     props: {
         proposal: {
             type: Object,
@@ -186,6 +338,7 @@ export default {
             default: true,
         },
     },
+    emits: ['refreshFromResponse'],
     data: function () {
         return {
             showSatIcon: true,
@@ -219,33 +372,28 @@ export default {
             lastPoint: null,
             sketchCoordinates: [[]],
             sketchCoordinatesHistory: [[]],
-        }
-    },
-
-    components: {
-        FileField,
-        VueAlert,
-        RangeSlider,
+        };
     },
     computed: {
         shapefileDocumentUrl: function () {
-            let endpoint = ''
-            let obj_id = 0
+            let endpoint = '';
+            let obj_id = 0;
             if (this.proposal) {
-                endpoint = api_endpoints.proposal
-                obj_id = this.proposal.id
+                endpoint = api_endpoints.proposal;
+                obj_id = this.proposal.id;
             } else if (this.competitive_process) {
-                endpoint = api_endpoints.competitive_process
-                obj_id = this.competitive_process.id
+                endpoint = api_endpoints.competitive_process;
+                obj_id = this.competitive_process.id;
             } else {
-                return ''  // Should not reach here.  Either this.proposal or this.competitive process should have an object.
+                return ''; // Should not reach here.  Either this.proposal or this.competitive process should have an object.
             }
             let url = helpers.add_endpoint_join(
                 // api_endpoints.proposal,
-                endpoint, '/' + obj_id + '/process_shapefile_document/'
-            )
-            console.log({ url })
-            return url
+                endpoint,
+                '/' + obj_id + '/process_shapefile_document/'
+            );
+            console.log({ url });
+            return url;
         },
         valid_button_disabled: function () {
             return false;
@@ -257,82 +405,115 @@ export default {
             */
         },
         showUndoButton: function () {
-            return this.mode == 'draw' &&
+            return (
+                this.mode == 'draw' &&
                 this.drawForLeaselicence &&
                 this.drawForLeaselicence.getActive() &&
                 this.sketchCoordinates.length > 1
+            );
         },
         showRedoButton: function () {
             return false;
             // Todo: The redo button is partially implemented so it is disabled for now.
-            return this.mode == 'draw' &&
+            return (
+                this.mode == 'draw' &&
                 this.drawForLeaselicence &&
                 this.drawForLeaselicence.getActive() &&
-                this.sketchCoordinatesHistory.length > this.sketchCoordinates.length
+                this.sketchCoordinatesHistory.length >
+                    this.sketchCoordinates.length
+            );
         },
+    },
+    created() {
+        /*
+        this.$nextTick(() => {
+            this.loadLeaseLicenceGeometry();
+            //this.displayAllFeatures();
+        });
+        */
+    },
+    mounted() {
+        this.initMap();
+        //vm.setBaseLayer('osm')
+        set_mode.bind(this)('layer');
+        addOptionalLayers(this);
+        this.$nextTick(() => {
+            this.loadLeaseLicenceGeometry();
+        });
     },
     methods: {
         valueChanged: function (value, tileLayer) {
             //tileLayer.setOpacity((100 - value)/100)
-            tileLayer.setOpacity(value / 100)
+            tileLayer.setOpacity(value / 100);
         },
         /**
          * Adds uploaded shapefiles as layers to the map
          */
         updateShape: function () {
-            let vm = this
+            let vm = this;
             vm.shapeVectorSource = null;
             vm.shapeVectorLayer = null;
             // Polygon styling
             let fill = new Fill({
                 color: 'rgba(255, 255, 255, 0.66)',
-            })
+            });
             let style_valid = new Style({
                 fill: fill,
                 stroke: new Stroke({
                     color: 'white',
                 }),
-            })
+            });
             let style_inv = new Style({
                 fill: fill,
                 stroke: new Stroke({
                     color: 'red',
                 }),
-            })
+            });
 
-            if (vm.shapefile_json && Object.keys(vm.shapefile_json).length > 0) {
+            if (
+                vm.shapefile_json &&
+                Object.keys(vm.shapefile_json).length > 0
+            ) {
                 // console.log(vm.shapefile_json);
 
-                let invalid_files = []
+                let invalid_files = [];
                 // Add polygons uploaded by the user that already have been added as layer to a list
-                let added_layer = []
-                vm.map.getLayers().getArray()
-                    .filter(layer => typeof (layer.get('source_')) !== 'undefined')
-                    .forEach(layer => added_layer.push(layer));
+                let added_layer = [];
+                vm.map
+                    .getLayers()
+                    .getArray()
+                    .filter(
+                        (layer) => typeof layer.get('source_') !== 'undefined'
+                    )
+                    .forEach((layer) => added_layer.push(layer));
 
                 // Remove all layer where the respective previously uploaded file has been removed
-                if (added_layer.length > vm.shapefile_json["features"].length) {
-                    let shapefile_sources = []
-                    vm.shapefile_json["features"].forEach(json => {
-                        shapefile_sources.push(json["properties"]["source_"])
+                if (added_layer.length > vm.shapefile_json['features'].length) {
+                    let shapefile_sources = [];
+                    vm.shapefile_json['features'].forEach((json) => {
+                        shapefile_sources.push(json['properties']['source_']);
                     });
 
-                    added_layer.forEach(layer => {
+                    added_layer.forEach((layer) => {
                         if (!shapefile_sources.includes(layer.get('source_'))) {
-                            console.log(`Layer ${layer.get('source_')} seems to have been removed`)
-                            vm.map.removeLayer(layer)
-                        };
+                            console.log(
+                                `Layer ${layer.get(
+                                    'source_'
+                                )} seems to have been removed`
+                            );
+                            vm.map.removeLayer(layer);
+                        }
                     });
                 }
 
                 // Iterate over every feature in the feature collection from the shapefiles
-                for (let i in vm.shapefile_json["features"]) {
-                    let feature = vm.shapefile_json["features"][i];
+                for (let i in vm.shapefile_json['features']) {
+                    let feature = vm.shapefile_json['features'][i];
 
                     // Check whether the feature has already been added to the map
                     let _found = false;
-                    let source_ = feature["properties"]["source_"]
-                    added_layer.every(layer => {
+                    let source_ = feature['properties']['source_'];
+                    added_layer.every((layer) => {
                         if (layer.get('source_') === source_) {
                             _found = true;
                             return false;
@@ -351,7 +532,7 @@ export default {
                                 const name = feature.get('valid');
                                 return name == true ? style_valid : style_inv;
                             },
-                        })
+                        });
                         shapeVectorLayer.set('source_', source_);
                         vm.map.addLayer(shapeVectorLayer);
                     } else {
@@ -359,39 +540,49 @@ export default {
                     }
 
                     // Check whether there is an invalid feature polygon (e.g. does not intersect with DBCA geometries)
-                    if (feature["properties"]['valid'] == false) {
-                        invalid_files.push(source_)
-                    };
+                    if (feature['properties']['valid'] == false) {
+                        invalid_files.push(source_);
+                    }
                 }
                 swal.fire({
-                    title: "Validation",
-                    text: invalid_files.length == 0 ? 'Polygons are valid' : `${invalid_files.join(', ')} are not valid`,
-                    icon: invalid_files.length == 0 ? 'success' : 'warning'
-                })
+                    title: 'Validation',
+                    text:
+                        invalid_files.length == 0
+                            ? 'Polygons are valid'
+                            : `${invalid_files.join(', ')} are not valid`,
+                    icon: invalid_files.length == 0 ? 'success' : 'warning',
+                });
 
-                vm.displayAllFeatures() //.displayAllFeaturesShape();
+                vm.displayAllFeatures(); //.displayAllFeaturesShape();
             }
         },
         validate_map_docs: function () {
             let vm = this;
             vm.is_validating = true;
             vm.errorString = '';
-            let endpoint = api_endpoints.proposals
+            let endpoint = api_endpoints.proposals;
             const options = {
-                'method': 'POST',
-                'content-type': 'application/json'
+                method: 'POST',
+                'content-type': 'application/json',
             };
             // fetch(helpers.add_endpoint_json(endpoint,vm.proposal.id+'/validate_map_files'), options).then(response => response.json())
             // .then(data => {
-            fetch(helpers.add_endpoint_json(api_endpoints.proposals, vm.proposal.id + '/validate_map_files'), options).then(async response => {
-                if (!response.ok) {
-                    const text = await response.json();
-                    throw new Error(text);
-                } else {
-                    return response.json();
-                }
-            })
-                .then(data => {
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.proposals,
+                    vm.proposal.id + '/validate_map_files'
+                ),
+                options
+            )
+                .then(async (response) => {
+                    if (!response.ok) {
+                        const text = await response.json();
+                        throw new Error(text);
+                    } else {
+                        return response.json();
+                    }
+                })
+                .then((data) => {
                     vm.$emit('refreshFromResponse', data);
                     vm.$nextTick(() => {
                         vm.loadLeaseLicenceGeometry();
@@ -400,21 +591,21 @@ export default {
                             'Success',
                             'Shapefile processed successfully',
                             'success'
-                        )
+                        );
                     });
                     // vm.shapefile_json = data.shapefile_json;
                     // vm.updateShape();
                     vm.is_validating = false;
                 })
-                .catch(error => {
+                .catch((error) => {
                     console.log(error);
                     vm.errorString = helpers.apiVueResourceError(error);
                     vm.is_validating = false;
                     swal.fire({
-                        title: "Validation",
+                        title: 'Validation',
                         text: error,
-                        icon: 'error'
-                    })
+                        icon: 'error',
+                    });
                 });
         },
 
@@ -429,32 +620,44 @@ export default {
                 }),
             });
 
-            let geometries = { "type": "FeatureCollection", "features": [] }
+            let geometries = { type: 'FeatureCollection', features: [] };
             if (this.proposal && this.proposal.proposalgeometry) {
-                geometries = this.proposal.proposalgeometry
-                Object.keys(geometries["features"]).forEach(function (key, _) {
-                    geometries["features"][key]["properties"]["source"] = "registration_of_interest";
+                geometries = this.proposal.proposalgeometry;
+                Object.keys(geometries['features']).forEach(function (key, _) {
+                    geometries['features'][key]['properties']['source'] =
+                        'registration_of_interest';
                 });
-            } else if (this.competitive_process && this.competitive_process.competitive_process_geometries) {
+            } else if (
+                this.competitive_process &&
+                this.competitive_process.competitive_process_geometries
+            ) {
                 let proposalgeometries = null;
-                geometries = this.competitive_process.competitive_process_geometries
-                Object.keys(geometries["features"]).forEach(function (key, _) {
-                    geometries["features"][key]["properties"]["source"] = "competitive_process";
+                geometries =
+                    this.competitive_process.competitive_process_geometries;
+                Object.keys(geometries['features']).forEach(function (key, _) {
+                    geometries['features'][key]['properties']['source'] =
+                        'competitive_process';
                 });
                 // Append proposal geometries to competitive process geometries
                 if (this.competitive_process.registration_of_interest) {
-                    proposalgeometries = this.competitive_process.registration_of_interest.proposalgeometry;
-                    Object.keys(proposalgeometries["features"]).forEach(function (key, _) {
-                        proposalgeometries["features"][key]["properties"]["source"] = "registration_of_interest";
-                    });
-                    for (let feature of proposalgeometries["features"]) {
-                        geometries["features"].push(feature);
+                    proposalgeometries =
+                        this.competitive_process.registration_of_interest
+                            .proposalgeometry;
+                    Object.keys(proposalgeometries['features']).forEach(
+                        function (key, _) {
+                            proposalgeometries['features'][key]['properties'][
+                                'source'
+                            ] = 'registration_of_interest';
+                        }
+                    );
+                    for (let feature of proposalgeometries['features']) {
+                        geometries['features'].push(feature);
                     }
                 }
             }
             if (geometries) {
                 for (let poly of geometries.features) {
-                    const feature = (new GeoJSON).readFeature(poly);
+                    const feature = new GeoJSON().readFeature(poly);
                     //console.log(feature)
                     if (!feature.getProperties().intersects) {
                         feature.setStyle(nonIntersectingStyle);
@@ -469,10 +672,10 @@ export default {
                         //     }),
                         // }))
                     }
-                    feature.setProperties({ "id": this.newFeatureId });
+                    feature.setProperties({ id: this.newFeatureId });
                     this.leaselicenceQuerySource.addFeature(feature);
                     this.newFeatureId++;
-                };
+                }
             }
             this.forceToRefreshMap();
         },
@@ -497,7 +700,9 @@ export default {
         fitToLayer: function () {
             const extent = this.leaselicenceQuerySource.getExtent();
             if (!(extent[0] === Infinity)) {
-                this.map.getView().fit(this.leaselicenceQuerySource.getExtent());
+                this.map
+                    .getView()
+                    .fit(this.leaselicenceQuerySource.getExtent());
             }
             this.unlistenFitToLayer();
         },
@@ -511,7 +716,7 @@ export default {
             // Show mouse coordinates
             const mousePositionControl = new MousePosition({
                 coordinateFormat: function (coords) {
-                    let message = vm.getDegrees(coords) + "\n";
+                    let message = vm.getDegrees(coords) + '\n';
                     return message;
                 },
                 target: document.getElementById('mouse-position'),
@@ -528,23 +733,23 @@ export default {
             let satelliteTileWms = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
-                    'FORMAT': 'image/png',
-                    'VERSION': '1.1.1',
+                    FORMAT: 'image/png',
+                    VERSION: '1.1.1',
                     tiled: true,
                     STYLES: '',
                     LAYERS: 'public:mapbox-satellite',
-                }
+                },
             });
 
             let streetsTileWMS = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
-                    'FORMAT': 'image/png',
-                    'VERSION': '1.1.1',
+                    FORMAT: 'image/png',
+                    VERSION: '1.1.1',
                     tiled: true,
                     STYLES: '',
-                    LAYERS: `public:${baselayer_name}`
-                }
+                    LAYERS: `public:${baselayer_name}`,
+                },
             });
             vm.tileLayerMapbox = new TileLayer({
                 title: 'StreetsMap',
@@ -557,7 +762,7 @@ export default {
                 type: 'base',
                 visible: false,
                 source: satelliteTileWms,
-            })
+            });
 
             vm.map = new Map({
                 controls: olDefaults().extend([
@@ -570,10 +775,7 @@ export default {
                     scaleLineControl,
                     */
                 ]),
-                layers: [
-                    vm.tileLayerMapbox,
-                    vm.tileLayerSat,
-                ],
+                layers: [vm.tileLayerMapbox, vm.tileLayerSat],
                 target: vm.elem_id,
                 view: new View({
                     center: [115.95, -31.95],
@@ -583,7 +785,7 @@ export default {
                     maxZoom: 12,
                     minZoom: 3,
                     */
-                })
+                }),
             });
 
             vm.drawForLeaselicence = new Draw({
@@ -602,12 +804,17 @@ export default {
                         } else {
                             geometry.setCoordinates([], this.geometryLayout_);
                         }
-
                     } else {
-                        geometry = new Polygon(coordinates, this.geometryLayout_);
+                        geometry = new Polygon(
+                            coordinates,
+                            this.geometryLayout_
+                        );
                     }
                     vm.sketchCoordinates = coordinates[0].slice();
-                    if (coordinates[0].length > vm.sketchCoordinatesHistory.length) {
+                    if (
+                        coordinates[0].length >
+                        vm.sketchCoordinatesHistory.length
+                    ) {
                         // Only reassign the sketchCoordinatesHistory if the new coordinates are longer than the previous
                         // so we don't lose the history when the user undoes a point
                         vm.sketchCoordinatesHistory = coordinates[0].slice();
@@ -615,27 +822,27 @@ export default {
 
                     return geometry;
                 },
-            })
+            });
             vm.drawForLeaselicence.on('drawstart', function (evt) {
                 vm.lastPoint = null;
             });
-            vm.drawForLeaselicence.on('click'), function (evt) {
-                console.log(evt);
-            }
+            vm.drawForLeaselicence.on('click'),
+                function (evt) {
+                    console.log(evt);
+                };
             vm.drawForLeaselicence.on('drawend', function (evt) {
                 console.log(evt);
                 console.log(evt.feature.values_.geometry.flatCoordinates);
                 //evt.feature.setId(vm.newFeatureId)
-                evt.feature.setProperties({ "id": vm.newFeatureId })
+                evt.feature.setProperties({ id: vm.newFeatureId });
                 vm.newFeatureId++;
                 console.log('newFeatureId = ' + vm.newFeatureId);
                 vm.lastPoint = evt.feature;
                 vm.sketchCoordinates = [[]];
                 vm.sketchCoordinatesHistory = [[]];
-
             });
             vm.leaselicenceQueryLayer = new VectorLayer({
-                title: "Application Area of Interest",
+                title: 'Proposal Area of Interest',
                 source: vm.leaselicenceQuerySource,
                 style: polygon_style,
             });
@@ -648,55 +855,54 @@ export default {
             // Set zIndex to some layers to be rendered over the other layers
             vm.leaselicenceQueryLayer.setZIndex(10);
 
-
             // Measure tool
-            let draw_source = new VectorSource({ wrapX: false })
+            let draw_source = new VectorSource({ wrapX: false });
             vm.drawForMeasure = new Draw({
                 source: draw_source,
                 type: 'LineString',
                 style: vm.styleFunctionForMeasurement,
-            })
+            });
             // Set a custom listener to the Measure tool
-            vm.drawForMeasure.set('escKey', '')
+            vm.drawForMeasure.set('escKey', '');
             vm.drawForMeasure.on('change:escKey', function (evt) {
                 //vm.drawForMeasure.finishDrawing()
-            })
+            });
             vm.drawForMeasure.on('drawstart', function (evt) {
-                vm.measuring = true
-            })
+                vm.measuring = true;
+            });
             vm.drawForMeasure.on('drawend', function (evt) {
-                vm.measuring = false
-            })
+                vm.measuring = false;
+            });
 
             // Create a layer to retain the measurement
             vm.measurementLayer = new VectorLayer({
                 title: 'Measurement Layer',
                 source: draw_source,
                 style: function (feature, resolution) {
-                    feature.set('for_layer', true)
-                    return vm.styleFunctionForMeasurement(feature, resolution)
+                    feature.set('for_layer', true);
+                    return vm.styleFunctionForMeasurement(feature, resolution);
                 },
             });
-            vm.map.addInteraction(vm.drawForMeasure)
-            vm.map.addLayer(vm.measurementLayer)
+            vm.map.addInteraction(vm.drawForMeasure);
+            vm.map.addLayer(vm.measurementLayer);
 
-            let container = document.getElementById(vm.popup_id)
-            vm.content_element = document.getElementById(vm.popup_content_id)
-            let closer = document.getElementById(vm.popup_closer_id)
+            let container = document.getElementById(vm.popup_id);
+            vm.content_element = document.getElementById(vm.popup_content_id);
+            let closer = document.getElementById(vm.popup_closer_id);
 
             vm.overlay = new Overlay({
                 element: container,
                 autoPan: false,
-                offest: [0, -10]
-            })
+                offest: [0, -10],
+            });
 
             closer.onclick = function () {
-                vm.closePopup()
-                closer.blur()
-                return false
-            }
+                vm.closePopup();
+                closer.blur();
+                return false;
+            };
 
-            vm.map.addOverlay(vm.overlay)
+            vm.map.addOverlay(vm.overlay);
 
             // select and delete polygons
             const selected = new Style({
@@ -718,7 +924,7 @@ export default {
             // select interaction working on "singleclick"
             const selectSingleClick = new Select({
                 style: selectStyle,
-                layers: [vm.leaselicenceQueryLayer,],
+                layers: [vm.leaselicenceQueryLayer],
             });
             vm.map.addInteraction(selectSingleClick);
             selectSingleClick.on('select', (e) => {
@@ -731,72 +937,99 @@ export default {
             });
             vm.map.on('singleclick', function (evt) {
                 if (vm.mode === 'layer') {
-                    vm.closePopup()
-                    let view = vm.map.getView()
-                    let viewResolution = view.getResolution()
+                    vm.closePopup();
+                    let view = vm.map.getView();
+                    let viewResolution = view.getResolution();
 
                     // Add click event popup to drawn polygons
-                    vm.map.forEachFeatureAtPixel(evt.pixel,
+                    vm.map.forEachFeatureAtPixel(
+                        evt.pixel,
                         (feature, layer) => {
                             let feature_format = new GeoJSON();
                             let geojson_str = feature_format.writeFeature(
                                 feature,
-                                { dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857' });
+                                {
+                                    dataProjection: 'EPSG:4326',
+                                    featureProjection: 'EPSG:3857',
+                                }
+                            );
                             if (geojson_str.length > 0) {
-                                let geojson = { "type": "FeatureCollection", "features": [] }
-                                geojson["features"].push(JSON.parse(geojson_str));
+                                let geojson = {
+                                    type: 'FeatureCollection',
+                                    features: [],
+                                };
+                                geojson['features'].push(
+                                    JSON.parse(geojson_str)
+                                );
                                 vm.showPopupForLayersJson(
                                     geojson,
                                     evt.coordinate,
-                                    ["source"],
+                                    ['source'],
                                     true,
-                                    vm.leaselicenceQueryLayer);
+                                    vm.leaselicenceQueryLayer
+                                );
                             }
                         }
-                    )
+                    );
 
                     // Retrieve active layers' sources
                     for (let i = 0; i < vm.optionalLayers.length; i++) {
-                        let visibility = vm.optionalLayers[i].getVisible()
+                        let visibility = vm.optionalLayers[i].getVisible();
                         if (visibility) {
                             // Retrieve column names to be displayed
-                            let column_names = vm.optionalLayers[i].get('columns')
+                            let column_names =
+                                vm.optionalLayers[i].get('columns');
                             column_names = column_names.map(function (col) {
                                 // Convert array of dictionaries to simple array
                                 if (vm.is_internal && col.option_for_internal) {
-                                    return col.name
+                                    return col.name;
                                 }
                                 if (vm.is_external && col.option_for_external) {
-                                    return col.name
+                                    return col.name;
                                 }
-                            })
+                            });
                             // Retrieve the value of display_all_columns boolean flag
-                            let display_all_columns = vm.optionalLayers[i].get('display_all_columns')
+                            let display_all_columns = vm.optionalLayers[i].get(
+                                'display_all_columns'
+                            );
 
                             // Retrieve the URL to query the attributes
-                            let source = vm.optionalLayers[i].getSource()
+                            let source = vm.optionalLayers[i].getSource();
                             let url = source.getFeatureInfoUrl(
-                                evt.coordinate, viewResolution, view.getProjection(),
+                                evt.coordinate,
+                                viewResolution,
+                                view.getProjection(),
                                 //{'INFO_FORMAT': 'text/html'}
-                                { 'INFO_FORMAT': 'application/json' }
-                            )
+                                { INFO_FORMAT: 'application/json' }
+                            );
 
-                            fetch(url).then(async response => {
-                                if (!response.ok) {
-                                    return await response.json().then(json => { throw new Error(json); });
-                                } else {
-                                    return await response.json();
-                                }
-                            })
-                                .then(data => {
-                                    if (data.features.length > 0) {
-                                        console.log(data);
-                                        vm.showPopupForLayersJson(data, evt.coordinate, column_names, display_all_columns, vm.optionalLayers[i]);
+                            fetch(url)
+                                .then(async (response) => {
+                                    if (!response.ok) {
+                                        return await response
+                                            .json()
+                                            .then((json) => {
+                                                throw new Error(json);
+                                            });
+                                    } else {
+                                        return await response.json();
                                     }
                                 })
-                                .catch(error => {
-                                    console.log(error);
+                                .then((data) => {
+                                    if (data.features.length > 0) {
+                                        console.log(data);
+                                        vm.showPopupForLayersJson(
+                                            data,
+                                            evt.coordinate,
+                                            column_names,
+                                            display_all_columns,
+                                            vm.optionalLayers[i]
+                                        );
+                                    }
                                 })
+                                .catch((error) => {
+                                    console.log(error);
+                                });
 
                             /*
                             // Query
@@ -817,12 +1050,12 @@ export default {
         },
         undoLeaseLicensePoint: function () {
             let vm = this;
-            console.log(vm.drawForLeaselicence.sketchCoords_)
+            console.log(vm.drawForLeaselicence.sketchCoords_);
             if (vm.lastPoint) {
                 vm.leaselicenceQuerySource.removeFeature(vm.lastPoint);
                 vm.lastPoint = null;
-                vm.sketchCoordinates = [[]]
-                vm.sketchCoordinatesHistory = [[]]
+                vm.sketchCoordinates = [[]];
+                vm.sketchCoordinatesHistory = [[]];
                 this.selectedFeatureId = null;
             } else {
                 vm.drawForLeaselicence.removeLastPoint();
@@ -830,20 +1063,27 @@ export default {
         },
         redoLeaseLicensePoint: function () {
             let vm = this;
-            if (vm.sketchCoordinatesHistory.length > vm.sketchCoordinates.length) {
-                let nextCoordinate = vm.sketchCoordinatesHistory.slice(vm.sketchCoordinates.length, vm.sketchCoordinates.length + 1);
+            if (
+                vm.sketchCoordinatesHistory.length > vm.sketchCoordinates.length
+            ) {
+                let nextCoordinate = vm.sketchCoordinatesHistory.slice(
+                    vm.sketchCoordinates.length,
+                    vm.sketchCoordinates.length + 1
+                );
                 vm.drawForLeaselicence.appendCoordinates([nextCoordinate[0]]);
             }
         },
         removeLeaselicenceFeature: function () {
             //const feature = this.leaselicenceQuerySource.getFeatureById(this.selectedFeatureId);
-            const feature = this.leaselicenceQuerySource.forEachFeature((feat) => {
-                if (feat.getProperties().id === this.selectedFeatureId) {
-                    return feat;
+            const feature = this.leaselicenceQuerySource.forEachFeature(
+                (feat) => {
+                    if (feat.getProperties().id === this.selectedFeatureId) {
+                        return feat;
+                    }
+                    console.log(feat.getProperties());
                 }
-                console.log(feat.getProperties())
-            });
-            console.log(feature)
+            );
+            console.log(feature);
             this.leaselicenceQuerySource.removeFeature(feature);
             this.selectedFeatureId = null;
         },
@@ -854,99 +1094,143 @@ export default {
         },
         */
         showPopup: function (feature) {
-            console.log("showPopup");
+            console.log('showPopup');
             if (feature) {
                 let geometry = feature.getGeometry();
                 let coord = geometry.getCoordinates();
-                let svg_hexa = "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='20' width='15'>" +
-                    '<g transform="translate(0, 4) scale(0.9)"><path d="M 14.3395,12.64426 7.5609998,16.557828 0.78249996,12.64426 0.7825,4.8171222 7.5609999,0.90355349 14.3395,4.8171223 Z" id="path837" style="fill:none;stroke:#ffffff;stroke-width:1.565;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" /></g></svg>'
+                let svg_hexa =
+                    "<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='20' width='15'>" +
+                    '<g transform="translate(0, 4) scale(0.9)"><path d="M 14.3395,12.64426 7.5609998,16.557828 0.78249996,12.64426 0.7825,4.8171222 7.5609999,0.90355349 14.3395,4.8171223 Z" id="path837" style="fill:none;stroke:#ffffff;stroke-width:1.565;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" /></g></svg>';
                 //let status_str = feature.get('is_vacant') ? getDisplayNameFromStatus(feature.get('status')) + ' (vacant)' : getDisplayNameFromStatus(feature.get('status'))
-                let status_str = getDisplayNameFromStatus(getStatusForColour(feature, false, this.display_at_time_of_submitted))
-                let content = '<div style="padding: 0.25em;">' +
-                    '<div style="background: darkgray; color: white; text-align: center;" class="align-middle">' + svg_hexa + ' site: ' + feature.id_ + '</div>' +
-                    '<div style="font-size: 0.8em;">' +
-                    '<div>' + status_str + '</div>' +
-                    '<div>' + getDisplayNameOfCategory(feature.get('site_category')) + '</div>' +
-                    '<div>' + feature['values_']['geometry']['flatCoordinates'] + '</div>' +
+                let status_str = getDisplayNameFromStatus(
+                    getStatusForColour(
+                        feature,
+                        false,
+                        this.display_at_time_of_submitted
+                    )
+                );
+                let content =
+                    '<div style="padding: 0.25em;">' +
+                    '<div style="background: darkgray; color: white; text-align: center;" class="align-middle">' +
+                    svg_hexa +
+                    ' site: ' +
+                    feature.id_ +
                     '</div>' +
-                    '</div>'
+                    '<div style="font-size: 0.8em;">' +
+                    '<div>' +
+                    status_str +
+                    '</div>' +
+                    '<div>' +
+                    getDisplayNameOfCategory(feature.get('site_category')) +
+                    '</div>' +
+                    '<div>' +
+                    feature['values_']['geometry']['flatCoordinates'] +
+                    '</div>' +
+                    '</div>' +
+                    '</div>';
                 this.content_element.innerHTML = content;
                 this.overlay.setPosition(coord);
             }
         },
-        showPopupForLayersJson: function (geojson, coord, column_names, display_all_columns, target_layer) {
-            console.log("popup opt layers")
-            let wrapper = $('<div>')  // Add wrapper element because html() used at the end exports only the contents of the jquery object
-            let caption = $('<div style="text-align:center; font-weight: bold;">').text(target_layer.get('title'))
-            let table = $('<table style="margin-bottom: 1em;">') //.addClass('table')
-            let tbody = $('<tbody>')
-            let outer = $('<div style="overflow-y:scroll; overflow-x:auto; max-height:300px; max-width:600px;">')
-            wrapper.append(caption)
-            wrapper.append(table.append(tbody))
+        showPopupForLayersJson: function (
+            geojson,
+            coord,
+            column_names,
+            display_all_columns,
+            target_layer
+        ) {
+            console.log('popup opt layers');
+            let wrapper = $('<div>'); // Add wrapper element because html() used at the end exports only the contents of the jquery object
+            let caption = $(
+                '<div style="text-align:center; font-weight: bold;">'
+            ).text(target_layer.get('title'));
+            let table = $('<table style="margin-bottom: 1em;">'); //.addClass('table')
+            let tbody = $('<tbody>');
+            let outer = $(
+                '<div style="overflow-y:scroll; overflow-x:auto; max-height:300px; max-width:600px;">'
+            );
+            wrapper.append(caption);
+            wrapper.append(table.append(tbody));
 
             for (let feature of geojson.features) {
                 for (let key in feature.properties) {
                     if (display_all_columns || column_names.includes(key)) {
-                        let tr = $('<tr style="border-bottom:1px solid lightgray;">')
-                        let th = $('<th style="padding:0 0.5em;">').text(key)
-                        let td = $('<td>').addClass('text-nowrap').text(feature.properties[key])
-                        tr.append(th)
-                        tr.append(td)
-                        tbody.append(tr)
+                        let tr = $(
+                            '<tr style="border-bottom:1px solid lightgray;">'
+                        );
+                        let th = $('<th style="padding:0 0.5em;">').text(key);
+                        let td = $('<td>')
+                            .addClass('text-nowrap')
+                            .text(feature.properties[key]);
+                        tr.append(th);
+                        tr.append(td);
+                        tbody.append(tr);
                     }
                 }
             }
-            outer = $('<div>').wrapInner(outer.wrapInner(wrapper.html()))
-            this.content_element.innerHTML += outer.html() //wrapper.html()  // Export contents as HTML string
+            outer = $('<div>').wrapInner(outer.wrapInner(wrapper.html()));
+            this.content_element.innerHTML += outer.html(); //wrapper.html()  // Export contents as HTML string
             this.overlay.setPosition(coord);
         },
-        showPopupForLayersHTML: function (html_str, coord, column_names, display_all_columns) {
+        showPopupForLayersHTML: function (
+            html_str,
+            coord,
+            column_names,
+            display_all_columns
+        ) {
             // Generate jquery object from html_str
-            let html_obj = $('<div>').html(html_str)
+            let html_obj = $('<div>').html(html_str);
 
             // Retrieve tables as jquery object
-            let tables = html_obj.find("table")
+            let tables = html_obj.find('table');
 
             if (!display_all_columns) {
                 // Hide all columns
-                tables.find('th,td').css('display', 'none')
+                tables.find('th,td').css('display', 'none');
 
                 // Make a certain column visible
                 for (let i = 0; i < column_names.length; i++) {
-                    let index = tables.find('th').filter(function () {
-                        // <th> element whoose text is exactly same as column_names[i]
-                        return $(this).text() === column_names[i]
-                    }).css('display', '').index()
+                    let index = tables
+                        .find('th')
+                        .filter(function () {
+                            // <th> element whoose text is exactly same as column_names[i]
+                            return $(this).text() === column_names[i];
+                        })
+                        .css('display', '')
+                        .index();
 
-                    let idx = index + 1
+                    let idx = index + 1;
 
                     // Display <td> in the same column
-                    let td = tables.find('td:nth-child(' + idx + ')')
-                    td.css('display', '')
+                    let td = tables.find('td:nth-child(' + idx + ')');
+                    td.css('display', '');
                 }
             }
 
             if (tables.length) {
-                this.content_element.innerHTML += html_obj.html()
+                this.content_element.innerHTML += html_obj.html();
                 this.overlay.setPosition(coord);
             }
         },
 
         closePopup: function () {
-            this.content_element.innerHTML = null
-            this.overlay.setPosition(undefined)
-            this.$emit('popupClosed')
+            this.content_element.innerHTML = null;
+            this.overlay.setPosition(undefined);
+            this.$emit('popupClosed');
         },
         displayAllFeatures: function () {
             if (this.map) {
                 if (this.leaselicenceQuerySource.getFeatures().length > 0) {
-                    let view = this.map.getView()
+                    let view = this.map.getView();
 
-                    let ext = this.leaselicenceQuerySource.getExtent()
-                    let centre = [(ext[0] + ext[2]) / 2.0, (ext[1] + ext[3]) / 2.0]
+                    let ext = this.leaselicenceQuerySource.getExtent();
+                    let centre = [
+                        (ext[0] + ext[2]) / 2.0,
+                        (ext[1] + ext[3]) / 2.0,
+                    ];
                     let resolution = view.getResolutionForExtent(ext);
-                    let z = view.getZoomForResolution(resolution) - 1
-                    view.animate({ zoom: z, center: centre })
+                    let z = view.getZoomForResolution(resolution) - 1;
+                    view.animate({ zoom: z, center: centre });
                 }
             }
         },
@@ -955,22 +1239,22 @@ export default {
                 image: new CircleStyle({
                     radius: 2,
                     fill: new Fill({
-                        color: '#3399cc'
+                        color: '#3399cc',
                     }),
                 }),
-            })
-            s.setGeometry(point)
-            styles.push(s)
+            });
+            s.setGeometry(point);
+            styles.push(s);
 
-            return styles
+            return styles;
         },
         styleFunctionForMeasurement: function (feature, resolution) {
-            let vm = this
-            let for_layer = feature.get('for_layer', false)
+            let vm = this;
+            let for_layer = feature.get('for_layer', false);
 
-            const styles = []
-            styles.push(vm.style)  // This style is for the feature itself
-            styles.push(vm.segmentStyle)
+            const styles = [];
+            styles.push(vm.style); // This style is for the feature itself
+            styles.push(vm.segmentStyle);
 
             ///////
             // From here, adding labels and tiny circles at the end points of the linestring
@@ -981,22 +1265,24 @@ export default {
                 geometry.forEachSegment(function (a, b) {
                     const segment = new LineString([a, b]);
                     const label = formatLength(segment);
-                    const segmentPoint = new Point(segment.getCoordinateAt(0.5));
+                    const segmentPoint = new Point(
+                        segment.getCoordinateAt(0.5)
+                    );
 
                     // Add a style for this segment
-                    let segment_style = vm.segmentStyle.clone() // Because there could be multilpe segments, we should copy the style per segment
-                    segment_style.setGeometry(segmentPoint)
-                    segment_style.getText().setText(label)
-                    styles.push(segment_style)
+                    let segment_style = vm.segmentStyle.clone(); // Because there could be multilpe segments, we should copy the style per segment
+                    segment_style.setGeometry(segmentPoint);
+                    segment_style.getText().setText(label);
+                    styles.push(segment_style);
 
                     if (segment_count == 0) {
                         // Add a tiny circle to the very first coordinate of the linestring
-                        let p = new Point(a)
-                        vm.addJoint(p, styles)
+                        let p = new Point(a);
+                        vm.addJoint(p, styles);
                     }
                     // Add tiny circles to the end of the linestring
-                    let p = new Point(b)
-                    vm.addJoint(p, styles)
+                    let p = new Point(b);
+                    vm.addJoint(p, styles);
 
                     segment_count++;
                 });
@@ -1004,79 +1290,66 @@ export default {
 
             if (!for_layer) {
                 // We don't need the last label when draw on the layer.
-                let label_on_mouse = formatLength(geometry);  // Total length of the linestring
+                let label_on_mouse = formatLength(geometry); // Total length of the linestring
                 let point = new Point(geometry.getLastCoordinate());
                 vm.labelStyle.setGeometry(point);
                 vm.labelStyle.getText().setText(label_on_mouse);
                 styles.push(vm.labelStyle);
             }
 
-            return styles
+            return styles;
         },
         forceToRefreshMap: function () {
-            let vm = this
+            let vm = this;
             setTimeout(function () {
                 vm.map.updateSize();
-            }, 700)
+            }, 700);
             // console.log(document.getElementById(this.elem_id))
         },
         setBaseLayer: function (selected_layer_name) {
-            console.log('in setBaseLayer')
+            console.log('in setBaseLayer');
             if (selected_layer_name == 'sat') {
                 this.toggleSatIcon('sat');
-                this.tileLayerMapbox.setVisible(false)
-                this.tileLayerSat.setVisible(true)
+                this.tileLayerMapbox.setVisible(false);
+                this.tileLayerSat.setVisible(true);
             } else {
                 this.toggleSatIcon('osm');
-                this.tileLayerMapbox.setVisible(true)
-                this.tileLayerSat.setVisible(false)
+                this.tileLayerMapbox.setVisible(true);
+                this.tileLayerSat.setVisible(false);
             }
         },
         getDegrees: function (coords) {
             return coords[0].toFixed(6) + ', ' + coords[1].toFixed(6);
         },
         clearMeasurementLayer: function () {
-            let vm = this
-            let features = vm.measurementLayer.getSource().getFeatures()
+            let vm = this;
+            let features = vm.measurementLayer.getSource().getFeatures();
             features.forEach((feature) => {
-                vm.measurementLayer.getSource().removeFeature(feature)
-            })
+                vm.measurementLayer.getSource().removeFeature(feature);
+            });
         },
         changeLayerVisibility: function (targetLayer) {
             if (!targetLayer.getVisible()) {
                 // add
                 targetLayer.setVisible(true);
-                sessionStorage.setItem('optionalLayer_' + targetLayer.getProperties().id, true);
+                sessionStorage.setItem(
+                    'optionalLayer_' + targetLayer.getProperties().id,
+                    true
+                );
             } else {
                 // remove
                 targetLayer.setVisible(false);
-                sessionStorage.removeItem('optionalLayer_' + targetLayer.getProperties().id);
+                sessionStorage.removeItem(
+                    'optionalLayer_' + targetLayer.getProperties().id
+                );
             }
         },
     },
-    created() {
-        /*
-        this.$nextTick(() => {
-            this.loadLeaseLicenceGeometry();
-            //this.displayAllFeatures();
-        });
-        */
-    },
-    mounted() {
-        this.initMap();
-        //vm.setBaseLayer('osm')
-        set_mode.bind(this)('layer')
-        addOptionalLayers(this)
-        this.$nextTick(() => {
-            this.loadLeaseLicenceGeometry();
-        });
-    },
-}
+};
 </script>
 
 <style lang="css" scoped>
 @import '../../../../../static/leaseslicensing/css/map.css';
-
 
 .shapefile-row {
     margin-left: 1px;
