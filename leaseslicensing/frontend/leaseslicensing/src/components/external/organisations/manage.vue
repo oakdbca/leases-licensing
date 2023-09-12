@@ -46,7 +46,7 @@
                                 <div class="col-sm-12">
                                     <BootstrapLoadingButton text="Update" :isLoading="updatingDetails"
                                         @click="validateForm('organisation-details')"
-                                        class="btn licensing-btn-primary float-end" />
+                                        class="btn btn-primary float-end" />
                                 </div>
                             </div>
                         </form>
@@ -201,7 +201,7 @@
                             </fieldset>
 
                             <BootstrapLoadingButton text="Update" :isLoading="updatingAddress"
-                                @click="validateForm('address-details')" class="btn licensing-btn-primary float-end" />
+                                @click="validateForm('address-details')" class="btn btn-primary float-end" />
                         </form>
                     </FormSection>
 
