@@ -60,18 +60,6 @@ div#app .container h3 {
     min-width: 150px;
 }
 
-.licensing-btn-primary {
-    color: #fff;
-    background-color: #226fbb;
-    min-width: 150px;
-}
-
-.licensing-btn-primary:hover {
-    color: #fff;
-    background-color: #5393d2;
-}
-
-
 .navbar button {
     width: 160px;
 }
