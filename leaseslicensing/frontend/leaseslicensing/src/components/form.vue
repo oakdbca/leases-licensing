@@ -192,13 +192,21 @@
                         />
                     </FormSection>
 
-                    <FormSection label="Categorisation" index="categorisation">
+                    <FormSection
+                        v-if="
+                            is_internal ||
+                            proposal.site_name ||
+                            proposal.groups.length > 0
+                        "
+                        label="Categorisation"
+                        index="categorisation"
+                    >
                         <slot
                             name="slot_categorisation_assessment_comments"
                         ></slot>
 
                         <div
-                            v-if="proposal.site_name || is_internal"
+                            v-if="is_internal || proposal.site_name"
                             class="row mb-3"
                         >
                             <div class="col-sm-3">
@@ -215,7 +223,10 @@
                                 />
                             </div>
                         </div>
-                        <div class="row mb-3">
+                        <div
+                            v-if="is_internal || proposal.groups.length > 0"
+                            class="row mb-3"
+                        >
                             <div class="col-sm-3">
                                 <label class="col-form-label">Groups</label>
                             </div>
@@ -230,7 +241,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
-                                    :disabled="is_external && leaseLicence"
+                                    :disabled="is_external"
                                 />
                             </div>
                         </div>
