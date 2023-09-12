@@ -118,7 +118,8 @@
                             ref="component_map"
                             :key="componentMapKey"
                             :context="proposal"
-                            :proposal-ids="[proposal.id]"
+                            :proposal-ids="[-1]"
+                            :feature-collection="geometriesToFeatureCollection"
                             :ows-query="owsQuery"
                             style-by="assessor"
                             :filterable="false"
@@ -352,6 +353,7 @@ import RegistrationOfInterest from './form_registration_of_interest.vue';
 import LeaseLicence from './form_lease_licence.vue';
 import Multiselect from 'vue-multiselect';
 import GisDataDetails from '@/components/common/gis_data_details.vue';
+import { v4 as uuid } from 'uuid';
 
 import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import {
@@ -438,13 +440,13 @@ export default {
         return {
             can_modify: true,
             show_col_status_when_submitted: true,
-            componentMapKey: 0,
+
             /*
             componentMapOn: false,
             */
             values: null,
             profile: {},
-            uuid: 0,
+            uuid: null,
             keep_current_vessel: true,
             showPaymentTab: false,
             detailsText: null,
@@ -529,11 +531,51 @@ export default {
                 return {};
             }
         },
+        componentMapKey: function () {
+            return `component-map-${this.uuid}`;
+        },
+        /**
+         * Returns proposal geometries as a FeatureCollection
+         */
+        geometriesToFeatureCollection: function () {
+            let vm = this;
+
+            let featureCollection = {
+                type: 'FeatureCollection',
+                features: [],
+            };
+
+            let proposalgeometries = {
+                ...vm.proposal.proposalgeometry,
+            };
+
+            for (let feature of proposalgeometries['features']) {
+                feature['properties']['source'] = 'registration_of_interest';
+                console.log('feature', feature);
+                let model = {
+                    id: vm.proposal.id,
+                    details_url: vm.proposal.details_url,
+                    application_type_name_display:
+                        vm.proposal.application_type.name_display,
+                    lodgement_number: vm.proposal.lodgement_number,
+                    lodgement_date_display: moment(
+                        vm.proposal.lodgement_date
+                    ).format('DD/MM/YYYY'),
+                    processing_status_display: vm.proposal.processing_status,
+                };
+
+                feature['model'] = model;
+                featureCollection['features'].push(feature);
+            }
+
+            return featureCollection;
+        },
     },
     created: function () {
         utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
             this.groups = data;
         });
+        this.uuid = uuid();
     },
     mounted: function () {
         this.$emit('formMounted');
