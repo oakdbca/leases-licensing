@@ -1139,16 +1139,16 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
 
     def update(self, instance, validated_data):
         errors = []
-        if not validated_data["details_text"]:
-            errors.append(_("Please provide a description of your proposal"))
-
-        if not instance.deed_poll_documents.count():
-            errors.append(_("Please upload a deed poll document"))
 
         if not instance.proposalgeometry.filter(polygon__isnull=False).count():
             errors.append(
-                _("Please either draw a polygon on the map or upload a shapefile")
+                _(
+                    "Please either draw a polygon on the map or upload and process a shapefile"
+                )
             )
+
+        if not instance.deed_poll_documents.count():
+            errors.append(_("Please upload a deed poll document"))
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -1158,6 +1158,11 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
     def validate(self, attrs):
         """If the user has selected yes for any of the questions, they must provide details"""
         errors = []
+
+        logger.debug(attrs)
+
+        if not attrs["details_text"]:
+            errors.append(_("Please provide a description of your proposal"))
 
         question_fields = [
             "exclusive_use",
