@@ -43,7 +43,7 @@
                                 v-if="okText"
                                 id="okBtn"
                                 type="button"
-                                class="licensing-btn-primary mb-1"
+                                class="btn-primary mb-1"
                                 :class="okClass"
                                 :disabled="okDisabled"
                                 @click="ok"
