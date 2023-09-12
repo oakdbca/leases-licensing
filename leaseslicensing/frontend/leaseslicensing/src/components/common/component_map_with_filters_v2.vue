@@ -328,7 +328,10 @@
                                 >{{
                                     selectedModel.label ||
                                     selectedModel.application_type_name_display ||
-                                    selectedModel.application_type.name_display
+                                    (selectedModel.application_type
+                                        ? selectedModel.application_type
+                                              .name_display
+                                        : undefined)
                                 }}: {{ selectedModel.lodgement_number }}</strong
                             >
                         </div>
