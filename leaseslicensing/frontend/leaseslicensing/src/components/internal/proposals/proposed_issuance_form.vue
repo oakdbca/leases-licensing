@@ -502,7 +502,7 @@ export default {
             issuingApproval: false,
             approvalDecisionText: {
                 approve_lease_licence:
-                    'Invite Proponent to Apply for a Lease or Licence',
+                    'Invite Applicant to Apply for a Lease or Licence',
                 approve_competitive_process: 'Start Competitive process',
                 decline_application: 'Decline Proposal',
             },

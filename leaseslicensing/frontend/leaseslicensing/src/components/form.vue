@@ -26,9 +26,9 @@
                     >
                         <template v-if="is_external"
                             ><span class="fw-bold">Step 1:</span> Provide
-                            Proponent Information</template
+                            Applicant Information</template
                         >
-                        <template v-else>Proponent</template>
+                        <template v-else>Applicant</template>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -141,50 +141,6 @@
                     role="tabpanel"
                     aria-labelledby="pills-details-tab"
                 >
-                    <FormSection label="Categorisation" index="categorisation">
-                        <slot
-                            name="slot_categorisation_assessment_comments"
-                        ></slot>
-
-                        <div
-                            v-if="proposal.site_name || is_internal"
-                            class="row mb-3"
-                        >
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Site Name</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <input
-                                    id="site_name"
-                                    v-model="proposal.site_name"
-                                    class="form-control"
-                                    type="text"
-                                    name="site_name"
-                                    :disabled="is_external"
-                                />
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-sm-3">
-                                <label class="col-form-label">Groups</label>
-                            </div>
-                            <div class="col-sm-9">
-                                <Multiselect
-                                    v-model="proposal.groups"
-                                    label="name"
-                                    track-by="id"
-                                    placeholder="Select Groups"
-                                    :options="groups"
-                                    :hide-selected="true"
-                                    :multiple="true"
-                                    :searchable="true"
-                                    :loading="loadingGroups"
-                                    :disabled="is_external && leaseLicence"
-                                />
-                            </div>
-                        </div>
-                    </FormSection>
-
                     <RegistrationOfInterest
                         v-if="registrationOfInterest"
                         ref="registration_of_interest"
@@ -234,6 +190,50 @@
                             :selected-data="gis_data"
                             :readonly="is_external && leaseLicence"
                         />
+                    </FormSection>
+
+                    <FormSection label="Categorisation" index="categorisation">
+                        <slot
+                            name="slot_categorisation_assessment_comments"
+                        ></slot>
+
+                        <div
+                            v-if="proposal.site_name || is_internal"
+                            class="row mb-3"
+                        >
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Site Name</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <input
+                                    id="site_name"
+                                    v-model="proposal.site_name"
+                                    class="form-control"
+                                    type="text"
+                                    name="site_name"
+                                    :disabled="is_external"
+                                />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <label class="col-form-label">Groups</label>
+                            </div>
+                            <div class="col-sm-9">
+                                <Multiselect
+                                    v-model="proposal.groups"
+                                    label="name"
+                                    track-by="id"
+                                    placeholder="Select Groups"
+                                    :options="groups"
+                                    :hide-selected="true"
+                                    :multiple="true"
+                                    :searchable="true"
+                                    :loading="loadingGroups"
+                                    :disabled="is_external && leaseLicence"
+                                />
+                            </div>
+                        </div>
                     </FormSection>
 
                     <FormSection label="Deed Poll" index="deed_poll">

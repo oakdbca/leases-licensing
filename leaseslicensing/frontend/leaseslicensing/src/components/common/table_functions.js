@@ -128,7 +128,7 @@ export function expandToggleCP(vm, obj) {
         let elem_applicant = ''
         if (full_data.registration_of_interest) {
             elem_applicant =
-                '<div>Proponent: ' +
+                '<div>Applicant: ' +
                 full_data.registration_of_interest.relevant_applicant_name +
                 '</div>'
         }
