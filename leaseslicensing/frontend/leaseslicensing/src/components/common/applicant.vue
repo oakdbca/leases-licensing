@@ -539,7 +539,7 @@ export default {
     },
     computed: {
         customerLabel: function () {
-            let label = 'Applicant';
+            let label = 'Proponent';
             if (this.customerType && this.customerType === 'holder') {
                 label = 'Holder';
             }
