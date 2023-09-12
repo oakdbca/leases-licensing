@@ -26,7 +26,7 @@
                 />
 
                 <Submission
-                    v-if="canSeeSubmission"
+                    v-if="canSeeSubmission || debug"
                     :can-see-submission="canSeeSubmission"
                     :showing-proposal="showingProposal"
                     :proposal="proposal"
@@ -2668,11 +2668,9 @@ export default {
             };
 
             await fetch(
-                helpers.add_endpoint_json(
-                    api_endpoints.proposal,
-                    vm.proposal.id + '/revision_version'
-                ),
-                { body: JSON.stringify(payload), method: 'POST' }
+                `/api/proposal/${
+                    this.$route.params.proposal_id
+                }/revision_version?${new URLSearchParams(payload)}`
             )
                 .then(async (response) => {
                     if (!response.ok) {
