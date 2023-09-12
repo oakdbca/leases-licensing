@@ -210,7 +210,7 @@ export default {
                     ) {
                         return '';
                     }
-                    return `<button class="btn btn-sm btn-primary remove-contact" data-email='${full.email}' data-id='${full.id}' data-name='${full.full_name}'><i class="fa-solid fa-remove"></i> Remove</button>`;
+                    return `<button class="btn btn-sm btn-danger remove-contact" data-email='${full.email}' data-id='${full.id}' data-name='${full.full_name}'><i class="fa-solid fa-trash pe-1"></i> Remove</button>`;
                 },
             };
         },
