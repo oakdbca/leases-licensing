@@ -26,9 +26,9 @@
                     >
                         <template v-if="is_external"
                             ><span class="fw-bold">Step 1:</span> Provide
-                            Applicant Information</template
+                            Proponent Information</template
                         >
-                        <template v-else>Applicant</template>
+                        <template v-else>Proponent</template>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
