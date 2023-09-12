@@ -1145,6 +1145,11 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
         if not instance.deed_poll_documents.count():
             errors.append(_("Please upload a deed poll document"))
 
+        if not instance.proposalgeometry.filter(polygon__isnull=False).count():
+            errors.append(
+                _("Please either draw a polygon on the map or upload a shapefile")
+            )
+
         if errors:
             raise serializers.ValidationError(errors)
 
