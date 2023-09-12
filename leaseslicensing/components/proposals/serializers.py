@@ -1072,6 +1072,18 @@ class SubmitLeaseLicenceSerializer(SaveLeaseLicenceSerializer):
             "legislative_requirements_text",
         ]
 
+        if instance.groups.filter(group__name__iexact="tourism").exists():
+            tourism_mandatory_fields = [
+                "profit_and_loss_text",
+                "cash_flow_text",
+                "capital_investment_text",
+                "financial_capacity_text",
+                "available_activities_text",
+                "market_analysis_text",
+                "staffing_text",
+            ]
+            mandatory_fields = tourism_mandatory_fields + mandatory_fields
+
         for mandatory_field in mandatory_fields:
             if not validated_data[mandatory_field]:
                 errors.append(
