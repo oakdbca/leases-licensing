@@ -7,7 +7,7 @@
             class=""
         >
             <h3>
-                {{ applicationTypeText }} Application:
+                {{ applicationTypeText }} Proposal:
                 {{ proposal.lodgement_number }}
             </h3>
         </div>
@@ -17,14 +17,18 @@
                 <li class="nav-item mr-1" role="presentation">
                     <button
                         id="pills-applicant-tab"
-                        class="nav-link"
+                        class="nav-link active"
                         data-bs-toggle="pill"
                         data-bs-target="#pills-applicant"
                         role="tab"
                         aria-controls="pills-applicant"
                         aria-selected="true"
                     >
-                        Applicant
+                        <template v-if="is_external"
+                            ><span class="fw-bold">Step 1:</span> Provide
+                            Applicant Information</template
+                        >
+                        <template v-else>Applicant</template>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -38,20 +42,28 @@
                         aria-selected="false"
                         @click="toggleComponentMapOn"
                     >
-                        Map
+                        <template v-if="is_external"
+                            ><span class="fw-bold">Step 2:</span> Indicate Land
+                            Area (Map)
+                        </template>
+                        <template v-else>Map</template>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button
                         id="pills-details-tab"
-                        class="nav-link active"
+                        class="nav-link"
                         data-bs-toggle="pill"
                         data-bs-target="#pills-details"
                         role="tab"
                         aria-controls="pills-details"
                         aria-selected="false"
                     >
-                        Details
+                        <template v-if="is_external"
+                            ><span class="fw-bold">Step 3:</span> Provide
+                            Further Details
+                        </template>
+                        <template v-else>Details</template>
                     </button>
                 </li>
                 <template v-if="show_related_items_tab">
@@ -73,7 +85,7 @@
             <div id="pills-tabContent" class="tab-content">
                 <div
                     id="pills-applicant"
-                    class="tab-pane fade"
+                    class="tab-pane fade show active"
                     role="tabpanel"
                     aria-labelledby="pills-applicant-tab"
                 >
@@ -125,7 +137,7 @@
                 </div>
                 <div
                     id="pills-details"
-                    class="tab-pane fade show active"
+                    class="tab-pane fade"
                     role="tabpanel"
                     aria-labelledby="pills-details-tab"
                 >
@@ -310,7 +322,7 @@ import {
 import Confirmation from '@/components/common/confirmation.vue'
 */
 export default {
-    name: 'ApplicationForm',
+    name: 'ProposalForm',
     components: {
         RegistrationOfInterest,
         LeaseLicence,

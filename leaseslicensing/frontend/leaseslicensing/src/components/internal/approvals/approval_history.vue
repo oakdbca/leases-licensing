@@ -81,7 +81,7 @@ export default {
                 'Number',
                 'Type',
                 'Holder',
-                'Application',
+                'Proposal',
                 'Reason',
                 'Expiry Date',
                 'Document',

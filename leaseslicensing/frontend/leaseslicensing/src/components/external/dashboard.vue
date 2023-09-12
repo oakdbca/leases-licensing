@@ -3,7 +3,7 @@
         <FormSection
             v-if="accessing_user && accessing_user.is_referee"
             :form-collapse="false"
-            label="Applications Referred to Me"
+            label="Proposals Referred to Me"
             index="leases_and_licences"
         >
             <ApplicationsReferredToMeTable
@@ -19,8 +19,8 @@
 
         <FormSection
             :form-collapse="false"
-            label="Applications"
-            subtitle="- View existing applications and lodge new ones"
+            label="Proposals"
+            subtitle="- View existing proposals and lodge new ones"
             index="applications"
         >
             <ApplicationsTable level="external" />

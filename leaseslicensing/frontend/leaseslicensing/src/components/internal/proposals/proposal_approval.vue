@@ -15,7 +15,7 @@
             icon="exclamation-triangle-fill"
         >
             <p>
-                This Application was declined. The decision was emailed to
+                This Proposal was declined. The decision was emailed to
                 {{ proposal.submitter.email }}
             </p>
         </BootstrapAlert>

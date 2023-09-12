@@ -81,18 +81,18 @@
             </div>
             <div v-if="show_toggle_proposal" class="card-body border-top">
                 <div class="col-sm-12">
-                    <div class="fw-bold">Application Visibility</div>
+                    <div class="fw-bold">Proposal Visibility</div>
                     <a
                         v-if="!showingProposal"
                         class="actionBtn"
                         @click.prevent="toggleProposal()"
-                        >Show Application</a
+                        >Show Proposal</a
                     >
                     <a
                         v-else
                         class="actionBtn"
                         @click.prevent="toggleProposal()"
-                        >Hide Application</a
+                        >Hide Proposal</a
                     >
                 </div>
             </div>
@@ -635,7 +635,7 @@ export default {
                 },
                 {
                     key: 'back_to_application',
-                    button_title: 'Back to Application',
+                    button_title: 'Back to Proposal',
                     function_when_clicked: function () {
                         if (
                             vm.proposal.processing_status_id ===
@@ -663,7 +663,7 @@ export default {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
                                 // If either the assessor or referrer changes the status to `With Assessor/Referral (Conditions)`
-                                // both assessor and referrer should be able to return back to the Application
+                                // both assessor and referrer should be able to return back to the Proposal
                                 [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
                                     ROLES.REFERRAL.ID,

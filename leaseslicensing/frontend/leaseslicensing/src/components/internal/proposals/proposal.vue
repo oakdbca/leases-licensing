@@ -103,7 +103,7 @@
                 >
                     <FormSection
                         :form-collapse="false"
-                        label="Application"
+                        label="Proposal"
                         index="application"
                     >
                         <ApplicationForm

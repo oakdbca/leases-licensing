@@ -504,7 +504,7 @@ export default {
                 approve_lease_licence:
                     'Invite Applicant to Apply for a Lease or Licence',
                 approve_competitive_process: 'Start Competitive process',
-                decline_application: 'Decline Application',
+                decline_application: 'Decline Proposal',
             },
             validation_form: null,
             errors: false,

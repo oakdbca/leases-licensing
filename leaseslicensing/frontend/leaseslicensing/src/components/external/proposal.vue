@@ -4,7 +4,7 @@
             <div v-if="amendment_request && amendment_request.length > 0">
                 <FormSection
                     custom-color="red"
-                    label="This Application Requires One or More Amendments"
+                    label="This Proposal Requires One or More Amendments"
                     index="amendments_requested"
                 >
                     <div class="row">
@@ -657,7 +657,7 @@ export default {
             vm.paySubmitting = true;
 
             swal.fire({
-                title: vm.submitText + ' Application',
+                title: vm.submitText + ' Proposal',
                 text:
                     'Are you sure you want to ' +
                     vm.submitText.toLowerCase() +
