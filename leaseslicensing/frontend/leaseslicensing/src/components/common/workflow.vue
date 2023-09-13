@@ -655,7 +655,7 @@ export default {
                                 constants.PROPOSAL_STATUS.WITH_REFERRAL.ID
                             );
                         } else {
-                            console.log.error(
+                            console.error(
                                 `Can not switch back from status ${vm.proposal.processing_status}`
                             );
                         }
