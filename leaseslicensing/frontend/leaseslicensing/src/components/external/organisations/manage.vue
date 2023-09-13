@@ -1,197 +1,382 @@
 <template>
-    <div class="container" id="externalOrgInfo">
+    <div id="externalOrgInfo" class="container">
         <div class="row">
             <div v-if="org" class="col">
                 <div class="row">
-                    <FormSection index="organisation-details" label="Organisation Details" :formCollapse="false">
-                        <form @submit.prevent="" id="organisation-details" class="mb-2 needs-validation" novalidate>
-
+                    <FormSection
+                        index="organisation-details"
+                        label="Organisation Details"
+                        :form-collapse="false"
+                    >
+                        <form
+                            id="organisation-details"
+                            class="mb-2 needs-validation"
+                            novalidate
+                            @submit.prevent=""
+                        >
                             <div class="row mb-3">
-                                <label for="ledger_organisation_name" class="col-sm-3 control-label">Organisation
-                                    Name</label>
+                                <label
+                                    for="ledger_organisation_name"
+                                    class="col-sm-3 control-label"
+                                    >Organisation Name</label
+                                >
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="ledger_organisation_name"
-                                        v-model="org.ledger_organisation_name" required>
+                                    <input
+                                        v-model="org.ledger_organisation_name"
+                                        type="text"
+                                        class="form-control"
+                                        name="ledger_organisation_name"
+                                        required
+                                    />
                                 </div>
                             </div>
 
                             <div class="row mb-3">
-                                <label for="ledger_organisation_trading_name" class="col-sm-3 control-label">Trading
-                                    Name</label>
+                                <label
+                                    for="ledger_organisation_trading_name"
+                                    class="col-sm-3 control-label"
+                                    >Trading Name</label
+                                >
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="ledger_organisation_trading_name"
-                                        v-model="org.ledger_organisation_trading_name">
+                                    <input
+                                        v-model="
+                                            org.ledger_organisation_trading_name
+                                        "
+                                        type="text"
+                                        class="form-control"
+                                        name="ledger_organisation_trading_name"
+                                    />
                                 </div>
                             </div>
 
                             <div class="row mb-3">
-                                <label for="ledger_organisation_abn" class="col-sm-3 control-label">ABN
+                                <label
+                                    for="ledger_organisation_abn"
+                                    class="col-sm-3 control-label"
+                                    >ABN
                                 </label>
                                 <div class="col-sm-4">
-                                    <input type="text" class="form-control" name="ledger_organisation_abn"
-                                        v-model="org.ledger_organisation_abn" disabled>
+                                    <input
+                                        v-model="org.ledger_organisation_abn"
+                                        type="text"
+                                        class="form-control"
+                                        name="ledger_organisation_abn"
+                                        disabled
+                                    />
                                 </div>
                             </div>
 
                             <div class="row mb-3">
-                                <label for="ledger_organisation_email" class="col-sm-3 control-label">Email
+                                <label
+                                    for="ledger_organisation_email"
+                                    class="col-sm-3 control-label"
+                                    >Email
                                 </label>
                                 <div class="col-sm-4">
-                                    <input type="email" class="form-control" name="ledger_organisation_email"
-                                        v-model="org.ledger_organisation_email">
+                                    <input
+                                        v-model="org.ledger_organisation_email"
+                                        type="email"
+                                        class="form-control"
+                                        name="ledger_organisation_email"
+                                    />
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <div class="col-sm-12">
-                                    <BootstrapLoadingButton text="Update" :isLoading="updatingDetails"
-                                        @click="validateForm('organisation-details')"
-                                        class="btn licensing-btn-primary float-end" />
+                                    <BootstrapLoadingButton
+                                        text="Update"
+                                        :is-loading="updatingDetails"
+                                        class="btn btn-primary float-end"
+                                        @click="
+                                            validateForm('organisation-details')
+                                        "
+                                    />
                                 </div>
                             </div>
                         </form>
                     </FormSection>
 
-                    <FormSection v-if="org" index="address-details" label="Address Details" :formCollapse="false">
-                        <form @submit.prevent="" id="address-details" class="mb-2 needs-validation" novalidate>
+                    <FormSection
+                        v-if="org"
+                        index="address-details"
+                        label="Address Details"
+                        :form-collapse="false"
+                    >
+                        <form
+                            id="address-details"
+                            class="mb-2 needs-validation"
+                            novalidate
+                            @submit.prevent=""
+                        >
                             <fieldset class="mb-3">
                                 <legend>Postal Address</legend>
                                 <div class="address-box">
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="postalAddressLine1" class="form-label">Street</label>
+                                            <label
+                                                for="postalAddressLine1"
+                                                class="form-label"
+                                                >Street</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" class="form-control" id="postalAddressLine1"
-                                                name="postalAddressLine1" v-model="org.postal_address
-                                                    .postal_line1
-                                                    " required />
+                                            <input
+                                                id="postalAddressLine1"
+                                                v-model="
+                                                    org.postal_address
+                                                        .postal_line1
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="postalAddressLine1"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="postalLocality" class="form-label">Town/Suburb</label>
+                                            <label
+                                                for="postalLocality"
+                                                class="form-label"
+                                                >Town/Suburb</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" class="form-control" id="postalLocality"
-                                                name="postalLocality" v-model="org.postal_address
-                                                    .postal_locality
-                                                    " required />
+                                            <input
+                                                id="postalLocality"
+                                                v-model="
+                                                    org.postal_address
+                                                        .postal_locality
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="postalLocality"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="postalState" class="form-label">State</label>
+                                            <label
+                                                for="postalState"
+                                                class="form-label"
+                                                >State</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" class="form-control" id="postalState" name="postalState"
-                                                v-model="org.postal_address
-                                                    .postal_state
-                                                    " required />
+                                            <input
+                                                id="postalState"
+                                                v-model="
+                                                    org.postal_address
+                                                        .postal_state
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="postalState"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="postalPostcode" class="form-label">Postcode</label>
+                                            <label
+                                                for="postalPostcode"
+                                                class="form-label"
+                                                >Postcode</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" class="form-control" id="postalPostcode"
-                                                name="postalPostcode" v-model="org.postal_address
-                                                    .postal_postcode
-                                                    " maxlength="10" required />
+                                            <input
+                                                id="postalPostcode"
+                                                v-model="
+                                                    org.postal_address
+                                                        .postal_postcode
+                                                "
+                                                type="text"
+                                                class="form-control"
+                                                name="postalPostcode"
+                                                maxlength="10"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="postalPostcode" class="form-label">Country</label>
+                                            <label
+                                                for="postalPostcode"
+                                                class="form-label"
+                                                >Country</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <select class="form-select" id="country" name="Country" v-model="org.postal_address
-                                                .postal_country
-                                                " required>
-                                                <option v-for="c in countries" :value="c.code">
+                                            <select
+                                                id="country"
+                                                v-model="
+                                                    org.postal_address
+                                                        .postal_country
+                                                "
+                                                class="form-select"
+                                                name="Country"
+                                                required
+                                            >
+                                                <option
+                                                    v-for="c in countries"
+                                                    :value="c.code"
+                                                >
                                                     {{ c.name }}
                                                 </option>
                                             </select>
                                         </div>
                                     </div>
                                     <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            &nbsp;
-                                        </div>
+                                        <div class="col-md-2">&nbsp;</div>
                                         <div class="col-md-6">
                                             <div class="form-check form-switch">
-                                                <label for="billingPostcodeSame" class="form-label">
-                                                    Billing Address same as Postal Address</label>
-                                                <input @change="toggleBillingAddressFieldsDisabled" class="form-check-input"
-                                                    type="checkbox" v-model="org.billing_same_as_postal"
-                                                    id="toggleBillingAddressFieldsDisabled">
+                                                <label
+                                                    for="billingPostcodeSame"
+                                                    class="form-label"
+                                                >
+                                                    Billing Address same as
+                                                    Postal Address</label
+                                                >
+                                                <input
+                                                    id="toggleBillingAddressFieldsDisabled"
+                                                    v-model="
+                                                        org.billing_same_as_postal
+                                                    "
+                                                    class="form-check-input"
+                                                    type="checkbox"
+                                                    @change="
+                                                        toggleBillingAddressFieldsDisabled
+                                                    "
+                                                />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </fieldset>
 
-                            <fieldset class="mb-3" :disabled="org.billing_same_as_postal">
+                            <fieldset
+                                class="mb-3"
+                                :disabled="org.billing_same_as_postal"
+                            >
                                 <legend>Billing Address</legend>
                                 <div class="address-box">
-
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="billingAddressLine1" class="form-label">Street</label>
+                                            <label
+                                                for="billingAddressLine1"
+                                                class="form-label"
+                                                >Street</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" class="form-control billing-address" id="billingAddressLine1"
-                                                name="billingAddressLine1" v-model="org.billing_address
-                                                    .billing_line1
-                                                    " required />
-                                        </div>
-                                    </div>
-
-
-                                    <div class="row mb-2">
-                                        <div class="col-md-2">
-                                            <label for="billingLocality" class="form-label">Town/Suburb</label>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <input type="text" class="form-control billing-address" id="billingLocality"
-                                                name="billingLocality" v-model="org.billing_address
-                                                    .billing_locality
-                                                    " required />
+                                            <input
+                                                id="billingAddressLine1"
+                                                v-model="
+                                                    org.billing_address
+                                                        .billing_line1
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billingAddressLine1"
+                                                required
+                                            />
                                         </div>
                                     </div>
 
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="billingState" class="form-label">State</label>
+                                            <label
+                                                for="billingLocality"
+                                                class="form-label"
+                                                >Town/Suburb</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" class="form-control billing-address" id="billingState"
-                                                name="billingState" v-model="org.billing_address
-                                                    .billing_state
-                                                    " required />
+                                            <input
+                                                id="billingLocality"
+                                                v-model="
+                                                    org.billing_address
+                                                        .billing_locality
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billingLocality"
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div class="row mb-2">
+                                        <div class="col-md-2">
+                                            <label
+                                                for="billingState"
+                                                class="form-label"
+                                                >State</label
+                                            >
+                                        </div>
+                                        <div class="col-md-4">
+                                            <input
+                                                id="billingState"
+                                                v-model="
+                                                    org.billing_address
+                                                        .billing_state
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billingState"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-2">
                                         <div class="col-md-2">
-                                            <label for="billingPostcode" class="form-label">Postcode</label>
+                                            <label
+                                                for="billingPostcode"
+                                                class="form-label"
+                                                >Postcode</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <input type="text" class="form-control billing-address" id="billingPostcode"
-                                                name="billingPostcode" v-model="org.billing_address
-                                                    .billing_postcode
-                                                    " maxlength="10" required />
+                                            <input
+                                                id="billingPostcode"
+                                                v-model="
+                                                    org.billing_address
+                                                        .billing_postcode
+                                                "
+                                                type="text"
+                                                class="form-control billing-address"
+                                                name="billingPostcode"
+                                                maxlength="10"
+                                                required
+                                            />
                                         </div>
                                     </div>
                                     <div class="row mb-4">
                                         <div class="col-md-2">
-                                            <label for="billingPostcode" class="form-label">Country</label>
+                                            <label
+                                                for="billingPostcode"
+                                                class="form-label"
+                                                >Country</label
+                                            >
                                         </div>
                                         <div class="col-md-4">
-                                            <select class="form-select billing-address" id="country" name="Country" v-model="org.billing_address
-                                                .billing_country
-                                                " required>
-                                                <option v-for="c in countries" :value="c.code">
+                                            <select
+                                                id="country"
+                                                v-model="
+                                                    org.billing_address
+                                                        .billing_country
+                                                "
+                                                class="form-select billing-address"
+                                                name="Country"
+                                                required
+                                            >
+                                                <option
+                                                    v-for="c in countries"
+                                                    :value="c.code"
+                                                >
                                                     {{ c.name }}
                                                 </option>
                                             </select>
@@ -200,39 +385,66 @@
                                 </div>
                             </fieldset>
 
-                            <BootstrapLoadingButton text="Update" :isLoading="updatingAddress"
-                                @click="validateForm('address-details')" class="btn licensing-btn-primary float-end" />
+                            <BootstrapLoadingButton
+                                text="Update"
+                                :is-loading="updatingAddress"
+                                class="btn btn-primary float-end"
+                                @click="validateForm('address-details')"
+                            />
                         </form>
                     </FormSection>
 
-                    <FormSection :formCollapse="true" label="Contact Details" index="contact-details">
+                    <FormSection
+                        :form-collapse="true"
+                        label="Contact Details"
+                        index="contact-details"
+                    >
                         <div class="row">
                             <div class="col">
-                                <button @click.prevent="addContact()" style="margin-bottom:10px;"
-                                    class="btn btn-primary float-end">Add Contact</button>
+                                <button
+                                    style="margin-bottom: 10px"
+                                    class="btn btn-primary float-end"
+                                    @click.prevent="addContact()"
+                                >
+                                    Add Contact
+                                </button>
                             </div>
                         </div>
 
-                        <datatable ref="contacts_datatable" id="organisation_contacts_datatable"
-                            :dtOptions="contacts_options" :dtHeaders="contacts_headers" />
-
+                        <datatable
+                            id="organisation_contacts_datatable"
+                            ref="contacts_datatable"
+                            :dt-options="contacts_options"
+                            :dt-headers="contacts_headers"
+                        />
                     </FormSection>
 
-                    <FormSection :formCollapse="false" label="Account Pins" index="account-pins">
-
-                        <BootstrapAlert type="warning" icon="exclamation-triangle-fill" class="ms-1">
+                    <FormSection
+                        :form-collapse="false"
+                        label="Account Pins"
+                        index="account-pins"
+                    >
+                        <BootstrapAlert
+                            type="warning"
+                            icon="exclamation-triangle-fill"
+                            class="ms-1"
+                        >
                             <ul class="list-group">
                                 <li class="list-group-item">
-                                    You and your organisation are responsible for managing the
-                                    distribution of pin codes.
+                                    You and your organisation are responsible
+                                    for managing the distribution of pin codes.
                                 </li>
                                 <li class="list-group-item">
-                                    If you are not sure which pin code to give to a staff member please call
-                                    the Tourism and Concessions Branch on (08) 9219 9978.</li>
+                                    If you are not sure which pin code to give
+                                    to a staff member please call the Tourism
+                                    and Concessions Branch on (08) 9219 9978.
+                                </li>
                                 <li class="list-group-item">
-                                    Never provide these pin codes to people that are not
-                                    authorised
-                                    to apply/cancel/surrender/pay fees on behalf of this organisation.</li>
+                                    Never provide these pin codes to people that
+                                    are not authorised to
+                                    apply/cancel/surrender/pay fees on behalf of
+                                    this organisation.
+                                </li>
                             </ul>
                         </BootstrapAlert>
 
@@ -240,30 +452,56 @@
 
                         <BootstrapAlert class="ms-1">
                             <ul class="list-group">
-                                <li class="list-group-item">Provide the new user these pin codes if you want the
-                                    them to have administrator privileges.</li>
+                                <li class="list-group-item">
+                                    Provide the new user these pin codes if you
+                                    want the them to have administrator
+                                    privileges.
+                                </li>
                                 <li class="list-group-item">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="input-group mb-2 mt-1">
-                                                <span class="input-group-text pin-label" id="basic-addon1">Admin Pin
-                                                    1</span>
-                                                <input type="text" class="form-control" :value="org.pins.one"
-                                                    aria-label="Username" aria-describedby="basic-addon1" readonly>
-                                                <span class="input-group-text">copy</span>
+                                                <span
+                                                    id="basic-addon1"
+                                                    class="input-group-text pin-label"
+                                                    >Admin Pin 1</span
+                                                >
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    :value="org.pins.one"
+                                                    aria-label="Username"
+                                                    aria-describedby="basic-addon1"
+                                                    readonly
+                                                />
+                                                <span class="input-group-text"
+                                                    >copy</span
+                                                >
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="input-group mb-2 mt-1">
-                                                <span class="input-group-text pin-label" id="basic-addon1">Admin Pin
-                                                    2</span>
-                                                <input type="text" class="form-control" :value="org.pins.two"
-                                                    aria-label="Username" aria-describedby="basic-addon1" readonly>
-                                                <button class="btn-copy input-group-text">copy</button>
+                                                <span
+                                                    id="basic-addon1"
+                                                    class="input-group-text pin-label"
+                                                    >Admin Pin 2</span
+                                                >
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    :value="org.pins.two"
+                                                    aria-label="Username"
+                                                    aria-describedby="basic-addon1"
+                                                    readonly
+                                                />
+                                                <button
+                                                    class="btn-copy input-group-text"
+                                                >
+                                                    copy
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
-
                                 </li>
                             </ul>
                         </BootstrapAlert>
@@ -272,75 +510,166 @@
 
                         <BootstrapAlert class="ms-1">
                             <ul class="list-group">
-                                <li class="list-group-item">Provide the new user these pin codes if you want the
-                                    new user to be a regular user.</li>
+                                <li class="list-group-item">
+                                    Provide the new user these pin codes if you
+                                    want the new user to be a regular user.
+                                </li>
                                 <li class="list-group-item">
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="input-group mb-2 mt-1">
-                                                <span class="input-group-text pin-label" id="user-pin-1">User Pin 1</span>
-                                                <input type="text" class="form-control" :value="org.pins.three"
-                                                    aria-label="Username" aria-describedby="user-pin-1" readonly>
-                                                <span class="input-group-text">copy</span>
+                                                <span
+                                                    id="user-pin-1"
+                                                    class="input-group-text pin-label"
+                                                    >User Pin 1</span
+                                                >
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    :value="org.pins.three"
+                                                    aria-label="Username"
+                                                    aria-describedby="user-pin-1"
+                                                    readonly
+                                                />
+                                                <span class="input-group-text"
+                                                    >copy</span
+                                                >
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="input-group mb-2 mt-1">
-                                                <span class="input-group-text pin-label" id="basic-addon1">User Pin
-                                                    2</span>
-                                                <input type="text" class="form-control" :value="org.pins.four"
-                                                    aria-label="Username" aria-describedby="basic-addon1" readonly>
-                                                <span class="input-group-text">copy</span>
+                                                <span
+                                                    id="basic-addon1"
+                                                    class="input-group-text pin-label"
+                                                    >User Pin 2</span
+                                                >
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    :value="org.pins.four"
+                                                    aria-label="Username"
+                                                    aria-describedby="basic-addon1"
+                                                    readonly
+                                                />
+                                                <span class="input-group-text"
+                                                    >copy</span
+                                                >
                                             </div>
                                         </div>
                                     </div>
-
                                 </li>
                             </ul>
                         </BootstrapAlert>
                     </FormSection>
 
-                    <FormSection :formCollapse="false" label="Linked User Accounts" index="linked-user-accounts">
-
-                        <BootstrapAlert type="warning" icon="exclamation-triangle-fill" class="ms-1">
-                            The list of users linked to your organisation is controlled by you and your
-                            organisation. The Department cannot manage this list.
+                    <FormSection
+                        :form-collapse="false"
+                        label="Linked User Accounts"
+                        index="linked-user-accounts"
+                    >
+                        <BootstrapAlert
+                            type="warning"
+                            icon="exclamation-triangle-fill"
+                            class="ms-1"
+                        >
+                            The list of users linked to your organisation is
+                            controlled by you and your organisation. The
+                            Department cannot manage this list.
                         </BootstrapAlert>
 
                         <div>
-                            <datatable ref="contacts_datatable_user" id="organisation_contacts_datatable_ref"
-                                :dtOptions="contacts_options_ref" :dtHeaders="contacts_headers_ref" />
+                            <datatable
+                                id="organisation_contacts_datatable_ref"
+                                ref="contacts_datatable_user"
+                                :dt-options="contacts_options_ref"
+                                :dt-headers="contacts_headers_ref"
+                            />
                         </div>
                     </FormSection>
-
                 </div>
                 <AddContact ref="add_contact" :org_id="org.id" />
             </div>
             <div v-else>
-                <BootstrapSpinner class="text-primary" :isLoading="true" />
+                <BootstrapSpinner class="text-primary" :is-loading="true" />
             </div>
         </div>
     </div>
 </template>
 
 <script>
-import Vue from 'vue'
-import { api_endpoints, constants, helpers, utils } from '@/utils/hooks'
-import datatable from '@vue-utils/datatable.vue'
-import AddContact from '@common-utils/add_contact.vue'
+import Vue from 'vue';
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
+import datatable from '@vue-utils/datatable.vue';
+import AddContact from '@common-utils/add_contact.vue';
 import BootstrapLoadingButton from '../../../utils/vue/BootstrapLoadingButton.vue';
 import swal from 'sweetalert2';
 
 export default {
     name: 'Organisation',
+    components: {
+        datatable,
+        AddContact,
+        BootstrapLoadingButton,
+    },
+    beforeRouteEnter: function (to, from, next) {
+        let initialisers = [
+            utils.fetchCountries(),
+            utils.fetchOrganisation(to.params.org_id),
+            utils.fetchOrganisationAddress(to.params.org_id),
+            utils.fetchOrganisationPermissions(to.params.org_id),
+        ];
+        Promise.all(initialisers).then((data) => {
+            next((vm) => {
+                vm.countries = data[0];
+                vm.org = Object.assign({}, data[1], data[2]);
+                vm.myorgperms = data[3];
+                vm.org.postal_address =
+                    vm.org.postal_address != null ? vm.org.postal_address : {};
+                vm.org.billing_address =
+                    vm.org.billing_address != null
+                        ? vm.org.billing_address
+                        : {};
+                vm.org.billing_same_as_postal =
+                    vm.isBillingAddressSame != null
+                        ? vm.isBillingAddressSame
+                        : {};
+                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
+            });
+        });
+    },
+    beforeRouteUpdate: function (to, from, next) {
+        let initialisers = [
+            utils.fetchOrganisation(to.params.org_id),
+            utils.fetchOrganisationPermissions(to.params.org_id),
+            utils.fetchOrganisationAddress(to.params.org_id),
+        ];
+        Promise.all(initialisers).then((data) => {
+            next((vm) => {
+                vm.org = Object.assign({}, data[0], data[2]);
+                vm.myorgperms = data[1];
+                vm.org.postal_address =
+                    vm.org.postal_address != null ? vm.org.postal_address : {};
+                vm.org.billing_address =
+                    vm.org.billing_address != null
+                        ? vm.org.billing_address
+                        : {};
+                vm.org.billing_same_as_postal =
+                    vm.isBillingAddressSame != null
+                        ? vm.isBillingAddressSame
+                        : {};
+                // vm.org.address = vm.org.address != null ? vm.org.address : {};
+                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
+            });
+        });
+    },
     props: {
         org_id: {
             type: Number,
-            default: null
+            default: null,
         },
         isApplication: {
             type: Boolean,
-            default: false
+            default: false,
         },
     },
     data() {
@@ -358,7 +687,7 @@ export default {
                 last_name: null,
                 email: null,
                 mobile_number: null,
-                phone_number: null
+                phone_number: null,
             },
             updatingDetails: false,
             updatingAddress: false,
@@ -380,23 +709,26 @@ export default {
                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 processing: true,
                 ajax: {
-                    "url": helpers.add_endpoint_json(api_endpoints.organisations, vm.$route.params.org_id + '/action_log'),
-                    "dataSrc": '',
+                    url: helpers.add_endpoint_json(
+                        api_endpoints.organisations,
+                        vm.$route.params.org_id + '/action_log'
+                    ),
+                    dataSrc: '',
                 },
                 columns: [
                     {
-                        data: "who",
+                        data: 'who',
                     },
                     {
-                        data: "what",
+                        data: 'what',
                     },
                     {
-                        data: "when",
+                        data: 'when',
                         mRender: function (data, type, full) {
-                            return moment(data).format(vm.DATE_TIME_FORMAT)
-                        }
+                            return moment(data).format(vm.DATE_TIME_FORMAT);
+                        },
                     },
-                ]
+                ],
             },
             commsDtOptions: {
                 language: {
@@ -408,8 +740,11 @@ export default {
                 order: [[0, 'desc']],
                 processing: true,
                 ajax: {
-                    "url": helpers.add_endpoint_json(api_endpoints.organisations, vm.$route.params.org_id + '/comms_log'),
-                    "dataSrc": '',
+                    url: helpers.add_endpoint_json(
+                        api_endpoints.organisations,
+                        vm.$route.params.org_id + '/comms_log'
+                    ),
+                    dataSrc: '',
                 },
                 columns: [
                     {
@@ -417,72 +752,74 @@ export default {
                         data: 'created',
                         render: function (date) {
                             return moment(date).format(vm.DATE_TIME_FORMAT);
-                        }
+                        },
                     },
                     {
                         title: 'Type',
-                        data: 'type'
+                        data: 'type',
                     },
                     {
                         title: 'Reference',
-                        data: 'reference'
+                        data: 'reference',
                     },
                     {
                         title: 'To',
                         data: 'to',
-                        render: vm.commaToNewline
+                        render: vm.commaToNewline,
                     },
                     {
                         title: 'CC',
                         data: 'cc',
-                        render: vm.commaToNewline
+                        render: vm.commaToNewline,
                     },
                     {
                         title: 'From',
                         data: 'fromm',
-                        render: vm.commaToNewline
+                        render: vm.commaToNewline,
                     },
                     {
                         title: 'Subject/Desc.',
-                        data: 'subject'
+                        data: 'subject',
                     },
                     {
                         title: 'Text',
                         data: 'text',
-                        'render': function (value) {
+                        render: function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
                                     length: 100,
                                     omission: ellipsis,
-                                    separator: ' '
+                                    separator: ' ',
                                 }),
                                 result = '<span>' + truncated + '</span>',
-                                popTemplate = _.template('<a href="#" ' +
-                                    'role="button" ' +
-                                    'data-toggle="popover" ' +
-                                    'data-trigger="click" ' +
-                                    'data-placement="top auto"' +
-                                    'data-html="true" ' +
-                                    'data-content="<%= text %>" ' +
-                                    '>more</a>');
+                                popTemplate = _.template(
+                                    '<a href="#" ' +
+                                        'role="button" ' +
+                                        'data-toggle="popover" ' +
+                                        'data-trigger="click" ' +
+                                        'data-placement="top auto"' +
+                                        'data-html="true" ' +
+                                        'data-content="<%= text %>" ' +
+                                        '>more</a>'
+                                );
                             if (_.endsWith(truncated, ellipsis)) {
                                 result += popTemplate({
-                                    text: value
+                                    text: value,
                                 });
                             }
 
                             return result;
                         },
-                        'createdCell': function (cell) {
+                        createdCell: function (cell) {
                             //TODO why this is not working?
                             // the call to popover is done in the 'draw' event
                             $(cell).popover();
-                        }
+                        },
                     },
                     {
                         title: 'Documents',
                         data: 'documents',
-                        'render': function (values) {
+                        render: function (values) {
                             var result = '';
                             _.forEach(values, function (value) {
                                 // We expect an array [docName, url]
@@ -500,39 +837,50 @@ export default {
                                     docName = _.truncate(docName, {
                                         length: 18,
                                         omission: '...',
-                                        separator: ' '
+                                        separator: ' ',
                                     });
                                 }
-                                result += '<a href="' + url + '" target="_blank"><p>' + docName + '</p></a><br>';
+                                result +=
+                                    '<a href="' +
+                                    url +
+                                    '" target="_blank"><p>' +
+                                    docName +
+                                    '</p></a><br>';
                             });
                             return result;
-                        }
-                    }
-                ]
+                        },
+                    },
+                ],
             },
             commsTable: null,
 
-
-
-
-
-            contacts_headers: ["Name", "Phone", "Mobile", "Fax", "Email", "Action"],
+            contacts_headers: [
+                'Name',
+                'Phone',
+                'Mobile',
+                'Fax',
+                'Email',
+                'Action',
+            ],
             contacts_options: {
                 language: {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 ajax: {
-                    "url": helpers.add_endpoint_json(api_endpoints.organisations, vm.$route.params.org_id + '/contacts'),
+                    url: helpers.add_endpoint_json(
+                        api_endpoints.organisations,
+                        vm.$route.params.org_id + '/contacts'
+                    ),
                     //"url": helpers.add_endpoint_json(api_endpoints.organisations,vm.org_id+'/contacts'),
-                    "dataSrc": ''
+                    dataSrc: '',
                 },
                 columns: [
                     {
                         data: 'id',
                         mRender: function (data, type, full) {
-                            return full.first_name + " " + full.last_name;
-                        }
+                            return full.first_name + ' ' + full.last_name;
+                        },
                     },
                     { data: 'phone_number' },
                     { data: 'mobile_number' },
@@ -545,28 +893,31 @@ export default {
                             let name = full.first_name + ' ' + full.last_name;
                             links += `<a data-email='${full.email}' data-name='${name}' data-id='${full.id}' class="remove-contact">Remove</a><br/>`;
                             return links;
-                        }
-                    }
+                        },
+                    },
                 ],
-                processing: true
+                processing: true,
             },
 
-            contacts_headers_ref: ["Name", "Role", "Email", "Status", "Action"],
+            contacts_headers_ref: ['Name', 'Role', 'Email', 'Status', 'Action'],
             contacts_options_ref: {
                 language: {
                     processing: constants.DATATABLE_PROCESSING_HTML,
                 },
                 responsive: true,
                 ajax: {
-                    "url": helpers.add_endpoint_json(api_endpoints.organisations, vm.$route.params.org_id + '/contacts_exclude'),
-                    "dataSrc": ''
+                    url: helpers.add_endpoint_json(
+                        api_endpoints.organisations,
+                        vm.$route.params.org_id + '/contacts_exclude'
+                    ),
+                    dataSrc: '',
                 },
                 columns: [
                     {
                         data: 'id',
                         mRender: function (data, type, full) {
-                            return full.first_name + " " + full.last_name;
-                        }
+                            return full.first_name + ' ' + full.last_name;
+                        },
                     },
                     { data: 'user_role' },
                     { data: 'email' },
@@ -596,63 +947,62 @@ export default {
                                 }
                             }
                             return links;
-                        }
-                    }
+                        },
+                    },
                 ],
                 processing: true,
-
-            }
-
-        }
-    },
-    components: {
-        datatable,
-        AddContact,
-        BootstrapLoadingButton
+            },
+        };
     },
     computed: {
         classCompute: function () {
             return this.isApplication ? 'row' : 'container';
         },
         isBillingAddressSame: function () {
-            return Object.values(this.org.postal_address).toString() == Object.values(this.org.billing_address).toString();
+            return (
+                Object.values(this.org.postal_address).toString() ==
+                Object.values(this.org.billing_address).toString()
+            );
         },
     },
-    beforeRouteEnter: function (to, from, next) {
+    created: function () {
+        let vm = this;
+        this.personal_form = document.forms.personal_form;
         let initialisers = [
             utils.fetchCountries(),
-            utils.fetchOrganisation(to.params.org_id),
-            utils.fetchOrganisationAddress(to.params.org_id),
-            utils.fetchOrganisationPermissions(to.params.org_id)
-        ]
-        Promise.all(initialisers).then(data => {
-            next(vm => {
-                vm.countries = data[0];
-                vm.org = Object.assign({}, data[1], data[2]);
-                vm.myorgperms = data[3];
-                vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
-                vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
-                vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
-                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
-            });
+            utils.fetchOrganisation(vm.$route.params.org_id),
+            // Todo: It shouldn't be necessary to do an additional fetch to get the address details
+            // Ledger gw api has been updated to return the address details in the fetchOrganisation call
+            utils.fetchOrganisationAddress(vm.$route.params.org_id),
+            utils.fetchOrganisationPermissions(vm.$route.params.org_id),
+        ];
+        Promise.all(initialisers).then((data) => {
+            vm.countries = data[0];
+            vm.org = Object.assign({}, data[1], data[2]);
+            vm.myorgperms = data[3];
+            vm.org.postal_address =
+                vm.org.postal_address != null ? vm.org.postal_address : {};
+            vm.org.billing_address =
+                vm.org.billing_address != null ? vm.org.billing_address : {};
+            vm.org.billing_same_as_postal =
+                vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
         });
     },
-    beforeRouteUpdate: function (to, from, next) {
-        let initialisers = [
-            utils.fetchOrganisation(to.params.org_id),
-            utils.fetchOrganisationPermissions(to.params.org_id),
-            utils.fetchOrganisationAddress(to.params.org_id),
-        ]
-        Promise.all(initialisers).then(data => {
-            next(vm => {
-                vm.org = Object.assign({}, data[0], data[2]);
-                vm.myorgperms = data[1];
-                vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
-                vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
-                vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
-                // vm.org.address = vm.org.address != null ? vm.org.address : {};
-                // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
-            });
+    mounted: function () {
+        this.personal_form = document.forms.personal_form;
+    },
+    updated: function () {
+        let vm = this;
+        $('.panelClicker[data-toggle="collapse"]').on('click', function () {
+            var chev = $(this).children()[0];
+            window.setTimeout(function () {
+                $(chev).toggleClass(
+                    'glyphicon-chevron-down glyphicon-chevron-up'
+                );
+            }, 100);
+        });
+        this.$nextTick(() => {
+            this.eventListeners();
         });
     },
     methods: {
@@ -662,414 +1012,747 @@ export default {
         toggleBillingAddressFieldsDisabled: function () {
             if (!this.org.billing_same_as_postal) {
                 $('.billing-address').first().focus();
-            }
-            else {
-                this.org.billing_address.billing_line1 = this.org.postal_address.postal_line1;
-                this.org.billing_address.billing_locality = this.org.postal_address.postal_locality;
-                this.org.billing_address.billing_state = this.org.postal_address.postal_state;
-                this.org.billing_address.billing_postcode = this.org.postal_address.postal_postcode;
-                this.org.billing_address.billing_country = this.org.postal_address.postal_country;
+            } else {
+                this.org.billing_address.billing_line1 =
+                    this.org.postal_address.postal_line1;
+                this.org.billing_address.billing_locality =
+                    this.org.postal_address.postal_locality;
+                this.org.billing_address.billing_state =
+                    this.org.postal_address.postal_state;
+                this.org.billing_address.billing_postcode =
+                    this.org.postal_address.postal_postcode;
+                this.org.billing_address.billing_country =
+                    this.org.postal_address.postal_country;
             }
         },
         eventListeners: function () {
             let vm = this;
             if (typeof vm.$refs.contacts_datatable !== 'undefined') {
+                vm.$refs.contacts_datatable.vmDataTable.on(
+                    'click',
+                    '.remove-contact',
+                    (e) => {
+                        e.preventDefault();
 
-                vm.$refs.contacts_datatable.vmDataTable.on('click', '.remove-contact', (e) => {
-                    e.preventDefault();
+                        let name = $(e.target).data('name');
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        swal({
+                            title: 'Delete Contact',
+                            text:
+                                'Are you sure you want to remove ' +
+                                name +
+                                '(' +
+                                email +
+                                ') as a contact  ?',
+                            type: 'error',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            () => {
+                                vm.deleteContact(id);
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
 
-                    let name = $(e.target).data('name');
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    swal({
-                        title: "Delete Contact",
-                        text: "Are you sure you want to remove " + name + "(" + email + ") as a contact  ?",
-                        type: "error",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then(() => {
-                        vm.deleteContact(id);
-                    }, (error) => {
-                    });
-                });
-
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.accept_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Contact Accept",
-                        text: "Are you sure you want to accept contact request " + name + " (" + email + ")?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/accept_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Contact Accept',
-                                    text: 'You have successfully accepted ' + name + '.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                swal('Contact Accept', 'There was an error accepting ' + name + '.', 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.accept_declined_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Contact Accept (Previously Declined)",
-                        text: "Are you sure you want to accept the previously declined contact request for " + name + " (" + email + ")?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result.value) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/accept_declined_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Contact Accept (Previously Declined)',
-                                    text: 'You have successfully accepted ' + name + '.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                swal('Contact Accept (Previously Declined)', 'There was an error accepting ' + name + '.', 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.decline_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    // console.log(vm.contact_user)
-                    swal({
-                        title: "Contact Decline",
-                        text: "Are you sure you want to decline the contact request for " + name + " (" + email + ")?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/decline_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Contact Decline',
-                                    text: 'You have successfully declined ' + name + '.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                swal('Contact Decline', 'There was an error declining ' + name + '.', 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.unlink_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Unlink",
-                        text: "Are you sure you want to unlink " + name + " (" + email + ")?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/unlink_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Unlink',
-                                    text: 'You have successfully unlinked ' + name + '.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                if (error.status == 500) {
-                                    swal('Unlink', 'Last Organisation Admin can not be unlinked.', 'error');
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.accept_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Contact Accept',
+                            text:
+                                'Are you sure you want to accept contact request ' +
+                                name +
+                                ' (' +
+                                email +
+                                ')?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/accept_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Contact Accept',
+                                                    text:
+                                                        'You have successfully accepted ' +
+                                                        name +
+                                                        '.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                swal(
+                                                    'Contact Accept',
+                                                    'There was an error accepting ' +
+                                                        name +
+                                                        '.',
+                                                    'error'
+                                                );
+                                            }
+                                        );
                                 }
-                                else {
-                                    swal('Unlink', 'There was an error unlinking this user ' + error, 'error');
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.accept_declined_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Contact Accept (Previously Declined)',
+                            text:
+                                'Are you sure you want to accept the previously declined contact request for ' +
+                                name +
+                                ' (' +
+                                email +
+                                ')?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result.value) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id +
+                                                    '/accept_declined_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Contact Accept (Previously Declined)',
+                                                    text:
+                                                        'You have successfully accepted ' +
+                                                        name +
+                                                        '.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                swal(
+                                                    'Contact Accept (Previously Declined)',
+                                                    'There was an error accepting ' +
+                                                        name +
+                                                        '.',
+                                                    'error'
+                                                );
+                                            }
+                                        );
                                 }
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.make_admin_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Organisation Admin",
-                        text: "Are you sure you want to make " + name + " (" + email + ") an Organisation Admin?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/make_admin_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Organisation Admin',
-                                    text: 'You have successfully made ' + name + ' an Organisation Admin.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                swal('Organisation Admin', 'There was an error making ' + name + ' an Organisation Admin.', 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.make_user_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Organisation User",
-                        text: "Are you sure you want to make " + name + " (" + email + ") an Organisation User?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        console.log(result);
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/make_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Organisation User',
-                                    text: 'You have successfully made ' + name + ' an Organisation User.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                console.log(error);
-                                var text = helpers.apiVueResourceError(error);
-                                swal('Company Admin', 'There was an error making ' + name + ' an Organisation User. ' + text, 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.suspend_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Suspend User",
-                        text: "Are you sure you want to Suspend  " + name + " (" + email + ")?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/suspend_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Suspend User',
-                                    text: 'You have successfully suspended ' + name + ' as a User.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                swal('Suspend User', 'There was an error suspending ' + name + ' as a User.', 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.reinstate_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Reinstate User",
-                        text: "Are you sure you want to Reinstate  " + name + " (" + email + ")?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/reinstate_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Reinstate User',
-                                    text: 'You have successfully reinstated ' + name + '.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                swal('Reinstate User', 'There was an error reinstating ' + name + '.', 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
-                vm.$refs.contacts_datatable_user.vmDataTable.on('click', '.relink_contact', (e) => {
-                    e.preventDefault();
-                    let firstname = $(e.target).data('firstname');
-                    let lastname = $(e.target).data('lastname');
-                    let name = firstname + ' ' + lastname;
-                    let email = $(e.target).data('email');
-                    let id = $(e.target).data('id');
-                    let mobile = $(e.target).data('mobile');
-                    let phone = $(e.target).data('phone');
-                    vm.contact_user.first_name = firstname
-                    vm.contact_user.last_name = lastname
-                    vm.contact_user.email = email
-                    vm.contact_user.mobile_number = mobile
-                    vm.contact_user.phone_number = phone
-                    swal({
-                        title: "Relink User",
-                        text: "Are you sure you want to Relink  " + name + " (" + email + ")?",
-                        showCancelButton: true,
-                        confirmButtonText: 'Accept'
-                    }).then((result) => {
-                        if (result) {
-                            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, vm.org.id + '/relink_user'), JSON.stringify(vm.contact_user), {
-                                emulateJSON: true
-                            }).then((response) => {
-                                swal({
-                                    title: 'Relink User',
-                                    text: 'You have successfully relinked ' + name + '.',
-                                    type: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
-                                }, (error) => {
-                                });
-                            }, (error) => {
-                                swal('Relink User', 'There was an error relink ' + name + '.', 'error')
-                            });
-                        }
-                    }, (error) => {
-                    });
-                });
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.decline_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        // console.log(vm.contact_user)
+                        swal({
+                            title: 'Contact Decline',
+                            text:
+                                'Are you sure you want to decline the contact request for ' +
+                                name +
+                                ' (' +
+                                email +
+                                ')?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/decline_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Contact Decline',
+                                                    text:
+                                                        'You have successfully declined ' +
+                                                        name +
+                                                        '.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                swal(
+                                                    'Contact Decline',
+                                                    'There was an error declining ' +
+                                                        name +
+                                                        '.',
+                                                    'error'
+                                                );
+                                            }
+                                        );
+                                }
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.unlink_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Unlink',
+                            text:
+                                'Are you sure you want to unlink ' +
+                                name +
+                                ' (' +
+                                email +
+                                ')?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/unlink_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Unlink',
+                                                    text:
+                                                        'You have successfully unlinked ' +
+                                                        name +
+                                                        '.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                if (error.status == 500) {
+                                                    swal(
+                                                        'Unlink',
+                                                        'Last Organisation Admin can not be unlinked.',
+                                                        'error'
+                                                    );
+                                                } else {
+                                                    swal(
+                                                        'Unlink',
+                                                        'There was an error unlinking this user ' +
+                                                            error,
+                                                        'error'
+                                                    );
+                                                }
+                                            }
+                                        );
+                                }
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.make_admin_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Organisation Admin',
+                            text:
+                                'Are you sure you want to make ' +
+                                name +
+                                ' (' +
+                                email +
+                                ') an Organisation Admin?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/make_admin_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Organisation Admin',
+                                                    text:
+                                                        'You have successfully made ' +
+                                                        name +
+                                                        ' an Organisation Admin.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                swal(
+                                                    'Organisation Admin',
+                                                    'There was an error making ' +
+                                                        name +
+                                                        ' an Organisation Admin.',
+                                                    'error'
+                                                );
+                                            }
+                                        );
+                                }
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.make_user_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Organisation User',
+                            text:
+                                'Are you sure you want to make ' +
+                                name +
+                                ' (' +
+                                email +
+                                ') an Organisation User?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                console.log(result);
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/make_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Organisation User',
+                                                    text:
+                                                        'You have successfully made ' +
+                                                        name +
+                                                        ' an Organisation User.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                console.log(error);
+                                                var text =
+                                                    helpers.apiVueResourceError(
+                                                        error
+                                                    );
+                                                swal(
+                                                    'Company Admin',
+                                                    'There was an error making ' +
+                                                        name +
+                                                        ' an Organisation User. ' +
+                                                        text,
+                                                    'error'
+                                                );
+                                            }
+                                        );
+                                }
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.suspend_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Suspend User',
+                            text:
+                                'Are you sure you want to Suspend  ' +
+                                name +
+                                ' (' +
+                                email +
+                                ')?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/suspend_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Suspend User',
+                                                    text:
+                                                        'You have successfully suspended ' +
+                                                        name +
+                                                        ' as a User.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                swal(
+                                                    'Suspend User',
+                                                    'There was an error suspending ' +
+                                                        name +
+                                                        ' as a User.',
+                                                    'error'
+                                                );
+                                            }
+                                        );
+                                }
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.reinstate_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Reinstate User',
+                            text:
+                                'Are you sure you want to Reinstate  ' +
+                                name +
+                                ' (' +
+                                email +
+                                ')?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/reinstate_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Reinstate User',
+                                                    text:
+                                                        'You have successfully reinstated ' +
+                                                        name +
+                                                        '.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                swal(
+                                                    'Reinstate User',
+                                                    'There was an error reinstating ' +
+                                                        name +
+                                                        '.',
+                                                    'error'
+                                                );
+                                            }
+                                        );
+                                }
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
+                vm.$refs.contacts_datatable_user.vmDataTable.on(
+                    'click',
+                    '.relink_contact',
+                    (e) => {
+                        e.preventDefault();
+                        let firstname = $(e.target).data('firstname');
+                        let lastname = $(e.target).data('lastname');
+                        let name = firstname + ' ' + lastname;
+                        let email = $(e.target).data('email');
+                        let id = $(e.target).data('id');
+                        let mobile = $(e.target).data('mobile');
+                        let phone = $(e.target).data('phone');
+                        vm.contact_user.first_name = firstname;
+                        vm.contact_user.last_name = lastname;
+                        vm.contact_user.email = email;
+                        vm.contact_user.mobile_number = mobile;
+                        vm.contact_user.phone_number = phone;
+                        swal({
+                            title: 'Relink User',
+                            text:
+                                'Are you sure you want to Relink  ' +
+                                name +
+                                ' (' +
+                                email +
+                                ')?',
+                            showCancelButton: true,
+                            confirmButtonText: 'Accept',
+                        }).then(
+                            (result) => {
+                                if (result) {
+                                    vm.$http
+                                        .post(
+                                            helpers.add_endpoint_json(
+                                                api_endpoints.organisations,
+                                                vm.org.id + '/relink_user'
+                                            ),
+                                            JSON.stringify(vm.contact_user),
+                                            {
+                                                emulateJSON: true,
+                                            }
+                                        )
+                                        .then(
+                                            (response) => {
+                                                swal({
+                                                    title: 'Relink User',
+                                                    text:
+                                                        'You have successfully relinked ' +
+                                                        name +
+                                                        '.',
+                                                    type: 'success',
+                                                    confirmButtonText: 'OK',
+                                                }).then(
+                                                    () => {
+                                                        vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
+                                                    },
+                                                    (error) => {}
+                                                );
+                                            },
+                                            (error) => {
+                                                swal(
+                                                    'Relink User',
+                                                    'There was an error relink ' +
+                                                        name +
+                                                        '.',
+                                                    'error'
+                                                );
+                                            }
+                                        );
+                                }
+                            },
+                            (error) => {}
+                        );
+                    }
+                );
             } // endif
-
         },
         updateDetails_noconfirm: function () {
             let vm = this;
-            vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_details')), JSON.stringify(vm.org), {
-                emulateJSON: true
-            })
+            vm.$http.post(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisations,
+                    vm.org.id + '/update_details'
+                ),
+                JSON.stringify(vm.org),
+                {
+                    emulateJSON: true,
+                }
+            );
         },
         validateForm: function (formId) {
             let vm = this;
@@ -1080,23 +1763,24 @@ export default {
                 if (formId == 'address-details') {
                     const code1 = vm.org.postal_address.postal_postcode;
                     const code2 = vm.org.billing_address.billing_postcode;
-                    if (isNaN(Number.parseInt(code1)) || isNaN(Number.parseInt(code2))) {
+                    if (
+                        isNaN(Number.parseInt(code1)) ||
+                        isNaN(Number.parseInt(code2))
+                    ) {
                         swal.fire(
-                            "Failure updating organisation details.",
-                            "Postcode should only contain numeric value.",
-                            "error"
+                            'Failure updating organisation details.',
+                            'Postcode should only contain numeric value.',
+                            'error'
                         );
-                    }
-                    else {
+                    } else {
                         vm.updateAddress();
                     }
-                }
-                else if (formId == 'organisation-details') {
+                } else if (formId == 'organisation-details') {
                     vm.updateDetails();
                 }
             } else {
                 form.classList.add('was-validated');
-                $(form).find("input:invalid").first().focus();
+                $(form).find('input:invalid').first().focus();
             }
             return false;
         },
@@ -1104,17 +1788,26 @@ export default {
             let vm = this;
             vm.updatingDetails = true;
             let payload = JSON.stringify({
-                'organisation_id': vm.org.ledger_organisation_id,
-                'organisation_name': vm.org.ledger_organisation_name ? vm.org.ledger_organisation_name : null,
-                'organisation_abn': vm.org.ledger_organisation_abn,
-                'organisation_email': vm.org.ledger_organisation_email,
-                'organisation_trading_name': vm.org.ledger_organisation_trading_name,
+                organisation_id: vm.org.ledger_organisation_id,
+                organisation_name: vm.org.ledger_organisation_name
+                    ? vm.org.ledger_organisation_name
+                    : null,
+                organisation_abn: vm.org.ledger_organisation_abn,
+                organisation_email: vm.org.ledger_organisation_email,
+                organisation_trading_name:
+                    vm.org.ledger_organisation_trading_name,
             });
-            console.log(payload)
-            fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_details')), {
-                method: 'PUT',
-                body: payload,
-            })
+            console.log(payload);
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisations,
+                    vm.org.id + '/update_details'
+                ),
+                {
+                    method: 'PUT',
+                    body: payload,
+                }
+            )
                 .then(async (response) => {
                     const data = await response.json();
                     if (!response.ok) {
@@ -1131,12 +1824,13 @@ export default {
                 })
                 .catch((error) => {
                     swal.fire(
-                        "Failure updating organisation details.",
-                        "Something went wrong! Please try again.",
-                        "error"
+                        'Failure updating organisation details.',
+                        'Something went wrong! Please try again.',
+                        'error'
                     );
                     console.log(error);
-                }).finally(() => {
+                })
+                .finally(() => {
                     vm.updatingDetails = false;
                 });
         },
@@ -1146,57 +1840,73 @@ export default {
                 'Added',
                 'The contact has been successfully added.',
                 'success'
-            )
+            );
             vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
         },
         deleteContact: function (id) {
             let vm = this;
 
-            vm.$http.delete(helpers.add_endpoint_json(api_endpoints.organisation_contacts, id), {
-                emulateJSON: true
-            }).then((response) => {
-                swal(
-                    'Contact Deleted',
-                    'The contact was successfully deleted',
-                    'success'
+            vm.$http
+                .delete(
+                    helpers.add_endpoint_json(
+                        api_endpoints.organisation_contacts,
+                        id
+                    ),
+                    {
+                        emulateJSON: true,
+                    }
                 )
-                vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
-            }, (error) => {
-                console.log(error);
-                swal(
-                    'Contact Deleted',
-                    'The contact could not be deleted because of the following error ' + error,
-                    'error'
-                )
-            });
+                .then(
+                    (response) => {
+                        swal(
+                            'Contact Deleted',
+                            'The contact was successfully deleted',
+                            'success'
+                        );
+                        vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
+                    },
+                    (error) => {
+                        console.log(error);
+                        swal(
+                            'Contact Deleted',
+                            'The contact could not be deleted because of the following error ' +
+                                error,
+                            'error'
+                        );
+                    }
+                );
         },
         updateAddress: function () {
             let vm = this;
             vm.updatingAddress = true;
             let payload = JSON.stringify({
-                'organisation_id': vm.org.ledger_organisation_id,
-                'postal_address':
-                {
-                    "postal_line1": vm.org.postal_address.postal_line1,
-                    "postal_locality": vm.org.postal_address.postal_locality,
-                    "postal_state": vm.org.postal_address.postal_state,
-                    "postal_postcode": vm.org.postal_address.postal_postcode,
-                    "postal_country": vm.org.postal_address.postal_country
+                organisation_id: vm.org.ledger_organisation_id,
+                postal_address: {
+                    postal_line1: vm.org.postal_address.postal_line1,
+                    postal_locality: vm.org.postal_address.postal_locality,
+                    postal_state: vm.org.postal_address.postal_state,
+                    postal_postcode: vm.org.postal_address.postal_postcode,
+                    postal_country: vm.org.postal_address.postal_country,
                 },
-                "billing_address":
-                {
-                    "billing_line1": vm.org.billing_address.billing_line1,
-                    "billing_locality": vm.org.billing_address.billing_locality,
-                    "billing_state": vm.org.billing_address.billing_state,
-                    "billing_postcode": vm.org.billing_address.billing_postcode,
-                    "billing_country": vm.org.billing_address.billing_country,
-                }
+                billing_address: {
+                    billing_line1: vm.org.billing_address.billing_line1,
+                    billing_locality: vm.org.billing_address.billing_locality,
+                    billing_state: vm.org.billing_address.billing_state,
+                    billing_postcode: vm.org.billing_address.billing_postcode,
+                    billing_country: vm.org.billing_address.billing_country,
+                },
             });
 
-            fetch(helpers.add_endpoint_json(api_endpoints.organisations, (vm.org.id + '/update_address')), {
-                method: 'POST',
-                body: payload,
-            })
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisations,
+                    vm.org.id + '/update_address'
+                ),
+                {
+                    method: 'POST',
+                    body: payload,
+                }
+            )
                 .then(async (response) => {
                     const data = await response.json();
                     if (!response.ok) {
@@ -1205,7 +1915,10 @@ export default {
                         console.log(error);
                         return Promise.reject(error);
                     }
-                    vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
+                    vm.org.billing_same_as_postal =
+                        vm.isBillingAddressSame != null
+                            ? vm.isBillingAddressSame
+                            : {};
                     swal.fire(
                         'Success',
                         'Organisation address updated successfully',
@@ -1214,12 +1927,13 @@ export default {
                 })
                 .catch((error) => {
                     swal.fire(
-                        "Failure updating organisation address.",
-                        "Something went wrong! Please try again.",
-                        "error"
+                        'Failure updating organisation address.',
+                        'Something went wrong! Please try again.',
+                        'error'
                     );
                     console.log(error);
-                }).finally(() => {
+                })
+                .finally(() => {
                     vm.updatingAddress = false;
                 });
         },
@@ -1229,70 +1943,69 @@ export default {
             let org_name = org.name;
             let person = helpers.copyObject(d);
             swal({
-                title: "Unlink From Organisation",
-                text: "Are you sure you want to unlink " + person.name + " " + person.id + " from " + org.name + " ?",
-                type: "question",
+                title: 'Unlink From Organisation',
+                text:
+                    'Are you sure you want to unlink ' +
+                    person.name +
+                    ' ' +
+                    person.id +
+                    ' from ' +
+                    org.name +
+                    ' ?',
+                type: 'question',
                 showCancelButton: true,
-                confirmButtonText: 'Accept'
-            }).then(() => {
-                vm.$http.post(helpers.add_endpoint_json(api_endpoints.organisations, org.id + '/unlink_user'), { 'user': person.id }, {
-                    emulateJSON: true
-                }).then((response) => {
-                    vm.org = response.body;
-                    if (vm.org.postal_address == null) { vm.org.postal_address = {}; }
-                    if (vm.org.billing_address == null) { vm.org.billing_address = {}; }
-                    swal(
-                        'Unlink',
-                        'You have successfully unlinked ' + person.name + ' from ' + org_name + '.',
-                        'success'
-                    )
-                }, (error) => {
-                    swal(
-                        'Unlink',
-                        'There was an error unlinking ' + person.name + ' from ' + org_name + '. ' + error.body,
-                        'error'
-                    )
-                });
-            }, (error) => {
-            });
-        }
+                confirmButtonText: 'Accept',
+            }).then(
+                () => {
+                    vm.$http
+                        .post(
+                            helpers.add_endpoint_json(
+                                api_endpoints.organisations,
+                                org.id + '/unlink_user'
+                            ),
+                            { user: person.id },
+                            {
+                                emulateJSON: true,
+                            }
+                        )
+                        .then(
+                            (response) => {
+                                vm.org = response.body;
+                                if (vm.org.postal_address == null) {
+                                    vm.org.postal_address = {};
+                                }
+                                if (vm.org.billing_address == null) {
+                                    vm.org.billing_address = {};
+                                }
+                                swal(
+                                    'Unlink',
+                                    'You have successfully unlinked ' +
+                                        person.name +
+                                        ' from ' +
+                                        org_name +
+                                        '.',
+                                    'success'
+                                );
+                            },
+                            (error) => {
+                                swal(
+                                    'Unlink',
+                                    'There was an error unlinking ' +
+                                        person.name +
+                                        ' from ' +
+                                        org_name +
+                                        '. ' +
+                                        error.body,
+                                    'error'
+                                );
+                            }
+                        );
+                },
+                (error) => {}
+            );
+        },
     },
-    created: function () {
-        let vm = this;
-        this.personal_form = document.forms.personal_form;
-        let initialisers = [
-            utils.fetchCountries(),
-            utils.fetchOrganisation(vm.$route.params.org_id),
-            // Todo: It shouldn't be necessary to do an additional fetch to get the address details
-            // Ledger gw api has been updated to return the address details in the fetchOrganisation call
-            utils.fetchOrganisationAddress(vm.$route.params.org_id),
-            utils.fetchOrganisationPermissions(vm.$route.params.org_id)
-        ]
-        Promise.all(initialisers).then(data => {
-            vm.countries = data[0];
-            vm.org = Object.assign({}, data[1], data[2]);
-            vm.myorgperms = data[3];
-            vm.org.postal_address = vm.org.postal_address != null ? vm.org.postal_address : {};
-            vm.org.billing_address = vm.org.billing_address != null ? vm.org.billing_address : {};
-            vm.org.billing_same_as_postal = vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
-        });
-    },
-    mounted: function () {
-        this.personal_form = document.forms.personal_form;
-    },
-    updated: function () {
-        let vm = this;
-        $('.panelClicker[data-toggle="collapse"]').on('click', function () {
-            var chev = $(this).children()[0];
-            window.setTimeout(function () {
-                $(chev).toggleClass("glyphicon-chevron-down glyphicon-chevron-up");
-            }, 100);
-        });
-        this.$nextTick(() => {
-            this.eventListeners();
-        });
-    }
-}
+};
 </script>
 
 <style scoped>
@@ -1315,7 +2028,6 @@ export default {
 input[readonly] {
     background-color: white;
 }
-
 
 fieldset,
 legend {
@@ -1341,7 +2053,7 @@ input::-webkit-inner-spin-button {
 }
 
 /* Firefox */
-input[type=number] {
+input[type='number'] {
     -moz-appearance: textfield;
 }
 </style>

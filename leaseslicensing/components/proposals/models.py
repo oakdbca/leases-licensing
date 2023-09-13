@@ -957,7 +957,7 @@ class ProposalManager(models.Manager):
 class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     objects = ProposalManager()
 
-    MODEL_PREFIX = "A"
+    MODEL_PREFIX = "P"
 
     APPLICANT_TYPE_ORGANISATION = "ORG"
     APPLICANT_TYPE_INDIVIDUAL = "IND"

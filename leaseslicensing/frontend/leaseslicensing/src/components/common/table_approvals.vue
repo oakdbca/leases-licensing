@@ -392,7 +392,7 @@ export default {
                     'Number',
                     'Type',
                     'Holder',
-                    'Application',
+                    'Proposal',
                     'Status',
                     'Expiry Date',
                     'Document',
@@ -923,19 +923,6 @@ export default {
         },
         refreshFromResponseApprovalModify: function () {
             this.$refs.approvals_datatable.vmDataTable.ajax.reload();
-        },
-        refreshFromResponse: async function (lodgementNumber) {
-            // FIXME: Is this function needed anymore?
-            console.log('refreshFromResponse');
-            await swal({
-                title: 'Saved',
-                text:
-                    'Mooring Licence Application ' +
-                    lodgementNumber +
-                    ' has been created',
-                type: 'success',
-            });
-            await this.$refs.approvals_datatable.vmDataTable.ajax.reload();
         },
         addEventListeners: function () {
             let vm = this;

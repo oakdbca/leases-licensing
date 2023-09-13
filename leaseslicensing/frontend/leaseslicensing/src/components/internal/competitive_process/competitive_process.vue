@@ -513,7 +513,7 @@ export default {
             );
         },
         winnerApplicationApproved: function () {
-            /** Returns whether the winner's lease/license Application has been approved
+            /** Returns whether the winner's lease/license Proposal has been approved
              *  or false when the winner is different from the originating proposal's
              *  applicant.
              */
@@ -550,12 +550,12 @@ export default {
             );
             if (!winner_applications || winner_applications.length == 0) {
                 console.log(
-                    `No related Application found for winner ID ${winner_party_id}.`
+                    `No related Proposal found for winner ID ${winner_party_id}.`
                 );
                 return false;
             }
 
-            // Statuses that indicate an Application has been approved
+            // Statuses that indicate an Proposal has been approved
             let status_approved = [
                 constants.PROPOSAL_STATUS.APPROVED_APPLICATION.TEXT,
                 constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS.TEXT,
@@ -563,7 +563,7 @@ export default {
                 constants.PROPOSAL_STATUS.DISCARDED.TEXT,
             ];
 
-            // The winner's lease/license Applications that have not been approved
+            // The winner's lease/license Proposals that have not been approved
             let open_applications = winner_applications.filter(
                 (proposal) =>
                     !status_approved.includes(proposal.processing_status)
@@ -576,7 +576,7 @@ export default {
                 return true;
             } else if (open_applications.length == 1) {
                 console.log(
-                    `An open Application found for winner ID ${winner_party_id}.`
+                    `An open Proposal found for winner ID ${winner_party_id}.`
                 );
                 return false;
             } else {
@@ -594,7 +594,7 @@ export default {
         finalised: function () {
             /** Returns whether this competitive process is finalized.
              *  A CP is finalized when it is completed or discarded (TODO is that true?),
-             *  when a winner has been selected and when the winner's license Application has
+             *  when a winner has been selected and when the winner's license Proposal has
              *  been approved.
              *  A finalized CP can not be unlocked anymore.
              */

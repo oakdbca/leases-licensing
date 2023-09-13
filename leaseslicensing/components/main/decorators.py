@@ -20,8 +20,10 @@ def basic_exception_handler(func):
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
-        except (serializers.ValidationError, ValidationError) as e:
+        except ValidationError as e:
             raise serializers.ValidationError(e)
+        except serializers.ValidationError as e:
+            raise e
         except Exception as e:
             if settings.DEBUG:
                 detail = {

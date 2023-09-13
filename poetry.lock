@@ -585,6 +585,28 @@ files = [
 djangorestframework = "*"
 
 [[package]]
+name = "drf-standardized-errors"
+version = "0.12.5"
+description = "Standardize your API error responses."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "drf-standardized-errors-0.12.5.tar.gz", hash = "sha256:20db40c4f4288c36046ee6e0e3727539fbe3306d60f6f1aa88326629022f69c4"},
+    {file = "drf_standardized_errors-0.12.5-py3-none-any.whl", hash = "sha256:46eda8c7442730a7d0069f6213ea588e5c386dc2858a14b9a3ae08e78fd8975d"},
+]
+
+[package.dependencies]
+django = ">=3.2"
+djangorestframework = ">=3.12"
+
+[package.extras]
+dev = ["pre-commit"]
+doc = ["myst-parser", "sphinx (!=5.2.0.post0)", "sphinx-autobuild", "sphinx-rtd-theme (>=1.1.0)"]
+openapi = ["drf-spectacular", "inflection"]
+release = ["flit", "keyring", "tbump"]
+test = ["tox", "tox-gh-actions"]
+
+[[package]]
 name = "et-xmlfile"
 version = "1.1.0"
 description = "An implementation of lxml.xmlfile for the standard library"
@@ -1965,4 +1987,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "faa73becf2d0d17e7e67f906881c034895da3dd68be1c22b9a24c3354e035892"
+content-hash = "e0f303cb11910c19227e19d4895a752b0d0321ba0b6f0e3339439f452bf6e04c"

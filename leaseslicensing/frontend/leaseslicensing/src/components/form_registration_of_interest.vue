@@ -12,7 +12,7 @@
             <div class="row mb-3">
                 <div class="col-12">
                     <label for="details_text" class="form-label"
-                        >Provide a Description of Your Proposal</label
+                        >Provide a description of your proposal</label
                     >
                 </div>
                 <div class="col-12">

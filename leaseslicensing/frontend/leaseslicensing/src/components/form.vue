@@ -7,7 +7,7 @@
             class=""
         >
             <h3>
-                {{ applicationTypeText }} Application:
+                {{ applicationTypeText }} Proposal:
                 {{ proposal.lodgement_number }}
             </h3>
         </div>
@@ -17,14 +17,18 @@
                 <li class="nav-item mr-1" role="presentation">
                     <button
                         id="pills-applicant-tab"
-                        class="nav-link"
+                        class="nav-link active"
                         data-bs-toggle="pill"
                         data-bs-target="#pills-applicant"
                         role="tab"
                         aria-controls="pills-applicant"
                         aria-selected="true"
                     >
-                        Applicant
+                        <template v-if="is_external"
+                            ><span class="fw-bold">Step 1:</span> Provide
+                            Proponent Information</template
+                        >
+                        <template v-else>Proponent</template>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -38,20 +42,28 @@
                         aria-selected="false"
                         @click="toggleComponentMapOn"
                     >
-                        Map
+                        <template v-if="is_external"
+                            ><span class="fw-bold">Step 2:</span> Indicate Land
+                            Area (Map)
+                        </template>
+                        <template v-else>Map</template>
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button
                         id="pills-details-tab"
-                        class="nav-link active"
+                        class="nav-link"
                         data-bs-toggle="pill"
                         data-bs-target="#pills-details"
                         role="tab"
                         aria-controls="pills-details"
                         aria-selected="false"
                     >
-                        Details
+                        <template v-if="is_external"
+                            ><span class="fw-bold">Step 3:</span> Provide
+                            Further Details
+                        </template>
+                        <template v-else>Details</template>
                     </button>
                 </li>
                 <template v-if="show_related_items_tab">
@@ -73,7 +85,7 @@
             <div id="pills-tabContent" class="tab-content">
                 <div
                     id="pills-applicant"
-                    class="tab-pane fade"
+                    class="tab-pane fade show active"
                     role="tabpanel"
                     aria-labelledby="pills-applicant-tab"
                 >
@@ -125,7 +137,7 @@
                 </div>
                 <div
                     id="pills-details"
-                    class="tab-pane fade show active"
+                    class="tab-pane fade"
                     role="tabpanel"
                     aria-labelledby="pills-details-tab"
                 >
@@ -172,7 +184,11 @@
                         </template>
                     </LeaseLicence>
 
-                    <FormSection label="Geospatial Data" index="other_section">
+                    <FormSection
+                        v-if="is_internal"
+                        label="Geospatial Data"
+                        index="other_section"
+                    >
                         <slot name="slot_gis_data_assessment_comments"></slot>
                         <GisDataDetails
                             :selected-data="gis_data"
@@ -180,13 +196,21 @@
                         />
                     </FormSection>
 
-                    <FormSection label="Categorisation" index="categorisation">
+                    <FormSection
+                        v-if="
+                            is_internal ||
+                            proposal.site_name ||
+                            proposal.groups.length > 0
+                        "
+                        label="Categorisation"
+                        index="categorisation"
+                    >
                         <slot
                             name="slot_categorisation_assessment_comments"
                         ></slot>
 
                         <div
-                            v-if="proposal.site_name || is_internal"
+                            v-if="is_internal || proposal.site_name"
                             class="row mb-3"
                         >
                             <div class="col-sm-3">
@@ -195,20 +219,23 @@
                             <div class="col-sm-9">
                                 <input
                                     id="site_name"
+                                    ref="site_name"
                                     v-model="proposal.site_name"
                                     class="form-control"
                                     type="text"
                                     name="site_name"
-                                    :disabled="is_external"
+                                    :disabled="readonly || is_external"
                                 />
                             </div>
                         </div>
-                        <div class="row mb-3">
+                        <div v-if="is_internal" class="row mb-3">
                             <div class="col-sm-3">
                                 <label class="col-form-label">Groups</label>
                             </div>
                             <div class="col-sm-9">
                                 <Multiselect
+                                    id="groups"
+                                    ref="groups"
                                     v-model="proposal.groups"
                                     label="name"
                                     track-by="id"
@@ -218,7 +245,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
-                                    :disabled="is_external && leaseLicence"
+                                    :disabled="leaseLicence || is_external"
                                 />
                             </div>
                         </div>
@@ -310,7 +337,7 @@ import {
 import Confirmation from '@/components/common/confirmation.vue'
 */
 export default {
-    name: 'ApplicationForm',
+    name: 'ProposalForm',
     components: {
         RegistrationOfInterest,
         LeaseLicence,

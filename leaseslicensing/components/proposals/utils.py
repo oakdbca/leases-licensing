@@ -27,19 +27,19 @@ from leaseslicensing.components.proposals.models import (
     ProposalAdditionalDocumentType,
     ProposalApplicant,
     ProposalAssessment,
-    ProposalAssessmentAnswer,
     ProposalDeclinedDetails,
     ProposalGeometry,
     ProposalUserAction,
     Referral,
 )
 from leaseslicensing.components.proposals.serializers import (
-    ProposalAssessmentAnswerSerializer,
     ProposalAssessmentSerializer,
     ProposalGeometrySerializer,
     ProposalMapFeatureInfoSerializer,
     SaveLeaseLicenceSerializer,
     SaveRegistrationOfInterestSerializer,
+    SubmitLeaseLicenceSerializer,
+    SubmitRegistrationOfInterestSerializer,
 )
 from leaseslicensing.helpers import is_assessor
 
@@ -443,6 +443,16 @@ def save_proponent_data_registration_of_interest(proposal, request, viewset):
             "action": viewset.action,
         },
     )
+    if viewset.action == "submit":
+        # Apply extra validation for submit
+        serializer = SubmitRegistrationOfInterestSerializer(
+            proposal,
+            data=proposal_data,
+            context={
+                "action": viewset.action,
+            },
+        )
+
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
@@ -469,6 +479,15 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
             "action": viewset.action,
         },
     )
+    if viewset.action == "submit":
+        # Apply extra validation for submit
+        serializer = SubmitLeaseLicenceSerializer(
+            proposal,
+            data=proposal_data,
+            context={
+                "action": viewset.action,
+            },
+        )
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
@@ -486,14 +505,6 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
 
     if viewset.action == "submit":
         check_geometry(proposal)
-
-
-def _save_answer_dict(answer_dict):
-    answer_obj = ProposalAssessmentAnswer.objects.get(id=int(answer_dict["id"]))
-    serializer = ProposalAssessmentAnswerSerializer(answer_obj, answer_dict)
-    serializer.is_valid(raise_exception=True)
-    answer_obj = serializer.save()
-    return answer_obj
 
 
 def save_referral_data(proposal, request):
@@ -552,7 +563,7 @@ def save_assessor_data(proposal, request, viewset):
     site_name = proposal_data.get("site_name", None)
     save_site_name(proposal, site_name)
 
-    groups = proposal_data.get("groups", None)
+    groups = proposal_data.get("groups", [])
     save_groups_data(proposal, groups)
 
     additional_document_types = proposal_data.get("additional_document_types", None)

@@ -11,7 +11,10 @@
                 name="slot_proposal_tourism_details_assessment_comments"
             ></slot>
 
-            <div class="row mb-3 pt-3">
+            <div class="row mb-2">
+                <div class="fw-bold">Profit and Loss</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="profit_and_loss_text" class="form-label"
                         >Provide five-year integrated profit and loss, balance
@@ -54,7 +57,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Cashflow</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="cash_flow_text" class="form-label"
                         >Provide cash flow projections to demonstrate time to
@@ -92,7 +98,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Capital Investment</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="capital_investment_text" class="form-label"
                         >Include proposed capital investment showing costing
@@ -133,7 +142,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Financial Capacity</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="financial_capacity_text" class="form-label"
                         >Demonstrate that you and/or the nominated operator have
@@ -179,7 +191,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Available Activities</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="available_activities_text" class="form-label"
                         >Specify the full range of recreational, educational,
@@ -223,7 +238,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Market Analysis</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="market_analysis_text" class="form-label"
                         >Outline a market analysis that identifies the target
@@ -267,7 +285,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Staffing</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="staffing_text" class="form-label"
                         >Provide details of staffing, workforce management.
@@ -317,11 +338,13 @@
             <slot
                 name="slot_proposal_general_details_assessment_comments"
             ></slot>
-
-            <div class="row mb-3 pt-3">
+            <div class="row mb-2">
+                <div class="fw-bold">Key Personnel</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
-                    <label for="key_personnel_text" class="form-label"
-                        >Provide details of the key personnel and their
+                    <label for="key_personnel_text" class="form-label">
+                        Provide details of the key personnel and their
                         qualifications and experience that is appropriate to
                         developing and operating the venture under the proposed
                         tourism lease. Include bios of the proposed board and
@@ -361,7 +384,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Key Milestones</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="key_milestones_text" class="form-label"
                         >Provide details regarding key milestones</label
@@ -399,7 +425,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Risk Factors</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label for="risk_factors_text" class="form-label"
                         >Identify specific risk factors and likely impacts to
@@ -441,7 +470,10 @@
                 </div>
             </div>
 
-            <div class="row mb-3 pt-3 border-top">
+            <div class="row mb-2 pt-3 border-top">
+                <div class="fw-bold">Legislative Requirements</div>
+            </div>
+            <div class="row mb-3">
                 <div class="col">
                     <label
                         for="legislative_requirements_text"

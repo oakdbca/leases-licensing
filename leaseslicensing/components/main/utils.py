@@ -756,20 +756,34 @@ def save_groups_data(instance, groups_data, foreign_key_field=None):
     if not foreign_key_field:
         foreign_key_field = instance_name.lower()
 
+    InstanceGroup = apps.get_model("leaseslicensing", f"{instance_name}Group")
+
+    if not groups_data:
+        delete_results = (
+            InstanceGroup.objects.filter(**{foreign_key_field: instance})
+            .exclude()
+            .delete()
+        )
+        if delete_results[0] > 0:
+            logger.info(f"Deleted {delete_results} groups for {instance}")
+
     if not groups_data or 0 == len(groups_data):
         return
     group_ids = []
     for group in groups_data:
-        InstanceGroup = apps.get_model("leaseslicensing", f"{instance_name}Group")
         instance_group, created = InstanceGroup.objects.get_or_create(
             **{foreign_key_field: instance}, group_id=group["id"]
         )
         if created:
             logger.info(f"Added Application: {instance} to Group: {instance_group}")
         group_ids.append(group["id"])
-    InstanceGroup.objects.filter(**{foreign_key_field: instance}).exclude(
-        group_id__in=group_ids
-    ).delete()
+    delete_results = (
+        InstanceGroup.objects.filter(**{foreign_key_field: instance})
+        .exclude(group_id__in=group_ids)
+        .delete()
+    )
+    if delete_results[0] > 0:
+        logger.info(f"Deleted {delete_results} groups for {instance}")
 
 
 def get_secure_file_url(instance, file_field_name, revision_id=None):

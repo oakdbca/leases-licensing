@@ -29,6 +29,10 @@ div#app .container h3 {
     margin-right: 2px;
 }
 
+.form-check-input:checked {
+    background-color:#226fbb !important;
+}
+
 .bg-primary {
     background-color: #226fbb !important;
 }

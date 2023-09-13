@@ -4,7 +4,7 @@
             <div v-if="amendment_request && amendment_request.length > 0">
                 <FormSection
                     custom-color="red"
-                    label="This Application Requires One or More Amendments"
+                    label="This Proposal Requires One or More Amendments"
                     index="amendments_requested"
                 >
                     <div class="row">
@@ -37,23 +37,19 @@
             </div>
         </div>
 
-        <div
-            v-if="missing_fields.length > 0"
-            id="error"
-            style="
-                margin: 10px;
-                padding: 5px;
-                color: red;
-                border: 1px solid red;
-            "
-        >
-            <b>Please answer the following mandatory question(s):</b>
-            <ul>
-                <li v-for="error in missing_fields" :key="error.label">
-                    {{ error.label }}
-                </li>
-            </ul>
+        <div v-if="errors">
+            <BootstrapAlert
+                v-if="errors"
+                id="errors"
+                ref="errors"
+                class="d-flex align-items-center"
+                type="danger"
+                icon="exclamation-triangle-fill"
+            >
+                <ErrorRenderer :errors="errors" />
+            </BootstrapAlert>
         </div>
+
         <ApplicationForm
             v-if="proposal"
             ref="application_form"
@@ -213,6 +209,7 @@
 import ApplicationForm from '../form.vue';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import FormSection from '@/components/forms/section_toggle.vue';
+import ErrorRenderer from '@common-utils/ErrorRenderer.vue';
 
 import { api_endpoints, helpers } from '@/utils/hooks';
 
@@ -220,6 +217,7 @@ export default {
     name: 'ExternalProposal',
     components: {
         ApplicationForm,
+        ErrorRenderer,
         FileField,
         FormSection,
     },
@@ -244,6 +242,7 @@ export default {
             paySubmitting: false,
             newText: '',
             pBody: 'pBody',
+            errors: null,
             missing_fields: [],
             proposal_parks: null,
             terms_and_conditions_checked: false,
@@ -602,14 +601,13 @@ export default {
                 });
                 return resData;
             } else {
-                const err = await res.json();
-                await swal.fire({
-                    title: 'Please fix following errors before saving',
-                    text: JSON.stringify(err),
-                    icon: 'error',
-                });
+                const responseJSON = await res.json();
+                vm.errors = responseJSON.errors;
                 vm.savingProposal = false;
-                throw new Error(err);
+
+                if (vm.submitting) {
+                    throw new Error(responseJSON);
+                }
             }
         },
         save_exit: function () {
@@ -659,7 +657,7 @@ export default {
             vm.paySubmitting = true;
 
             swal.fire({
-                title: vm.submitText + ' Application',
+                title: vm.submitText + ' Proposal',
                 text:
                     'Are you sure you want to ' +
                     vm.submitText.toLowerCase() +
@@ -696,6 +694,14 @@ export default {
                             vm.submitting = false;
                             vm.savingProposal = false;
                             vm.paySubmitting = false;
+                            // For some reason the scroll was not working with nexttick so am using a short timeout
+                            setTimeout(() => {
+                                window.scroll({
+                                    top: 0,
+                                    left: 0,
+                                    behavior: 'smooth',
+                                });
+                            }, 200);
                         }
                     }
                 },

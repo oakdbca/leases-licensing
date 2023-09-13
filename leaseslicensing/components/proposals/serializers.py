@@ -4,6 +4,7 @@ import logging
 from django.conf import settings
 from django.db.models import Q
 from django.urls import reverse
+from django.utils.translation import gettext as _
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
@@ -970,6 +971,7 @@ class ProposalSerializer(BaseProposalSerializer):
         model = Proposal
         fields = "__all__"
         extra_fields = [
+            "details_text",
             "model_name",
             "assessor_mode",
             "lodgement_versions",
@@ -1057,6 +1059,50 @@ class SaveLeaseLicenceSerializer(BaseProposalSerializer):
         read_only_fields = ("id",)
 
 
+class SubmitLeaseLicenceSerializer(SaveLeaseLicenceSerializer):
+    def update(self, instance, validated_data):
+        errors = []
+
+        logger.debug(validated_data)
+
+        mandatory_fields = [
+            "key_personnel_text",
+            "key_milestones_text",
+            "risk_factors_text",
+            "legislative_requirements_text",
+        ]
+
+        if instance.groups.filter(group__name__iexact="tourism").exists():
+            tourism_mandatory_fields = [
+                "profit_and_loss_text",
+                "cash_flow_text",
+                "capital_investment_text",
+                "financial_capacity_text",
+                "available_activities_text",
+                "market_analysis_text",
+                "staffing_text",
+            ]
+            mandatory_fields = tourism_mandatory_fields + mandatory_fields
+
+        for mandatory_field in mandatory_fields:
+            if not validated_data[mandatory_field]:
+                errors.append(
+                    _(
+                        "Please provide details for {}".format(
+                            mandatory_field.replace("_", " ").replace("text", "")
+                        )
+                    )
+                )
+
+        if not instance.deed_poll_documents.count():
+            errors.append(_("Please upload a deed poll document"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().update(instance, validated_data)
+
+
 class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
     class Meta:
         model = Proposal
@@ -1096,6 +1142,72 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
             "site_name",
         )
         read_only_fields = ("id",)
+
+
+class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerializer):
+    """Whilst we may want to allow the user to save their ROI application with fields empty,
+    we want to be able to request that they are filled out when submitting to avoid wasting time.
+    """
+
+    def update(self, instance, validated_data):
+        errors = []
+
+        if not instance.proposalgeometry.filter(polygon__isnull=False).count():
+            errors.append(
+                _(
+                    "Please either draw a polygon on the map or upload and process a shapefile"
+                )
+            )
+
+        if not instance.deed_poll_documents.count():
+            errors.append(_("Please upload a deed poll document"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().update(instance, validated_data)
+
+    def validate(self, attrs):
+        """If the user has selected yes for any of the questions, they must provide details"""
+        errors = []
+
+        logger.debug(attrs)
+
+        if not attrs["details_text"]:
+            errors.append(_("Please provide a description of your proposal"))
+
+        question_fields = [
+            "exclusive_use",
+            "long_term_use",
+            "consistent_purpose",
+            "consistent_plan",
+            "clearing_vegetation",
+            "ground_disturbing_works",
+            "heritage_site",
+            "environmentally_sensitive",
+            "consistent_plan",
+            "wetlands_impact",
+            "building_required",
+            "significant_change",
+            "aboriginal_site",
+            "native_title_consultation",
+            "mining_tenement",
+        ]
+
+        for question_field in question_fields:
+            if attrs[question_field] and not attrs.get(f"{question_field}_text", None):
+                errors.append(
+                    _(
+                        "Please provide details for {}".format(
+                            question_field.replace("_", " ")
+                        )
+                    )
+                )
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().validate(attrs)
 
 
 class SaveProposalSerializer(BaseProposalSerializer):
