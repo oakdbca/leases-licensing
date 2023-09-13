@@ -224,10 +224,7 @@
                                 />
                             </div>
                         </div>
-                        <div
-                            v-if="is_internal || proposal.groups.length > 0"
-                            class="row mb-3"
-                        >
+                        <div v-if="is_internal" class="row mb-3">
                             <div class="col-sm-3">
                                 <label class="col-form-label">Groups</label>
                             </div>
