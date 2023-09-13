@@ -184,7 +184,11 @@
                         </template>
                     </LeaseLicence>
 
-                    <FormSection label="Geospatial Data" index="other_section">
+                    <FormSection
+                        v-if="is_internal"
+                        label="Geospatial Data"
+                        index="other_section"
+                    >
                         <slot name="slot_gis_data_assessment_comments"></slot>
                         <GisDataDetails
                             :selected-data="gis_data"
@@ -220,7 +224,7 @@
                                     class="form-control"
                                     type="text"
                                     name="site_name"
-                                    :disabled="is_external"
+                                    :disabled="readonly || is_external"
                                 />
                             </div>
                         </div>
@@ -241,7 +245,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
-                                    :disabled="is_external"
+                                    :disabled="leaseLicence || is_external"
                                 />
                             </div>
                         </div>
