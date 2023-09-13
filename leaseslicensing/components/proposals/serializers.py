@@ -1159,7 +1159,11 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
                 )
             )
 
-        if not instance.deed_poll_documents.count():
+        #
+        if (
+            instance.application_type.name == settings.APPLICATION_TYPE_LEASE_LICENCE
+            and not instance.deed_poll_documents.count()
+        ):
             errors.append(_("Please upload a deed poll document"))
 
         if errors:
@@ -1185,7 +1189,6 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
             "ground_disturbing_works",
             "heritage_site",
             "environmentally_sensitive",
-            "consistent_plan",
             "wetlands_impact",
             "building_required",
             "significant_change",
