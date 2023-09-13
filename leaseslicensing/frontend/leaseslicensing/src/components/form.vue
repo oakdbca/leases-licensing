@@ -593,7 +593,7 @@ export default {
         },
 
         incrementComponentMapKey: function () {
-            this.componentMapKey++;
+            this.uuid = uuid();
         },
         toggleComponentMapOn: function () {
             //this.incrementComponentMapKey()
