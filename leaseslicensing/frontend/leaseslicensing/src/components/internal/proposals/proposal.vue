@@ -2166,10 +2166,61 @@ export default {
             });
         },
         proposedApproval: function () {
-            this.proposedApprovalState = 'proposed_approval';
+            let vm = this;
+            vm.proposedApprovalState = 'proposed_approval';
+            let someTabTriggerEl = document.querySelector('#pills-details-tab');
+            let tab = new bootstrap.Tab(someTabTriggerEl);
+
+            if (vm.proposal.groups.length == 0) {
+                tab.show();
+                swal.fire({
+                    title: 'No Group Selected',
+                    text: 'You must select one or more groups before proposing to approve.',
+                    icon: 'warning',
+                    didClose: () => {
+                        $([document.documentElement, document.body]).animate(
+                            {
+                                scrollTop: $(
+                                    '#section_body_categorisation'
+                                ).offset().top,
+                            },
+                            0,
+                            () => {
+                                vm.$refs.application_form.$refs.groups.$el.focus();
+                            }
+                        );
+                    },
+                });
+
+                return;
+            }
+            if (!vm.proposal.site_name) {
+                tab.show();
+                swal.fire({
+                    title: 'No Site Name Entered',
+                    text: 'You must enter a site name before proposing to approve.',
+                    icon: 'warning',
+                    didClose: () => {
+                        $([document.documentElement, document.body]).animate(
+                            {
+                                scrollTop: $(
+                                    '#section_body_categorisation'
+                                ).offset().top,
+                            },
+                            0,
+                            () => {
+                                tab.show();
+                                vm.$refs.application_form.$refs.site_name.focus();
+                            }
+                        );
+                    },
+                });
+
+                return;
+            }
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
-                this.$refs.proposed_approval.isModalOpen = true;
+                vm.$refs.proposed_approval.isModalOpen = true;
             });
         },
         issueApproval: function () {

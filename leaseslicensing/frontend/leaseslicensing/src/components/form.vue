@@ -215,6 +215,7 @@
                             <div class="col-sm-9">
                                 <input
                                     id="site_name"
+                                    ref="site_name"
                                     v-model="proposal.site_name"
                                     class="form-control"
                                     type="text"
@@ -232,6 +233,8 @@
                             </div>
                             <div class="col-sm-9">
                                 <Multiselect
+                                    id="groups"
+                                    ref="groups"
                                     v-model="proposal.groups"
                                     label="name"
                                     track-by="id"
