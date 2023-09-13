@@ -563,7 +563,7 @@ def save_assessor_data(proposal, request, viewset):
     site_name = proposal_data.get("site_name", None)
     save_site_name(proposal, site_name)
 
-    groups = proposal_data.get("groups", None)
+    groups = proposal_data.get("groups", [])
     save_groups_data(proposal, groups)
 
     additional_document_types = proposal_data.get("additional_document_types", None)
