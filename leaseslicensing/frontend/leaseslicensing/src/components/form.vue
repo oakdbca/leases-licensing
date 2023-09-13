@@ -224,7 +224,7 @@
                                     class="form-control"
                                     type="text"
                                     name="site_name"
-                                    :disabled="readonly || is_external"
+                                    :disabled="is_external"
                                 />
                             </div>
                         </div>
