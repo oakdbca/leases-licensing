@@ -1219,6 +1219,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def save(self, *args, **kwargs):
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
+        if not hasattr(self, "assessment"):
+            # Make sure every proposal has an assessment object
+            ProposalAssessment.objects.get_or_create(proposal=self)
+
         super().save(*args, **kwargs)
 
     @property
@@ -2658,10 +2662,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         self.generated_proposal = lease_licence
 
                         # Copy over previous groups
-                        copy_groups(self, self.generated_proposal)
+                        copy_groups(self, lease_licence)
 
                         # Copy over previous gis data
-                        copy_gis_data(self, self.generated_proposal)
+                        copy_gis_data(self, lease_licence)
 
                         self.processing_status = (
                             Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
