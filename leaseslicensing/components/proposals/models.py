@@ -3310,7 +3310,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         serializer = InvoicingDetailsSerializer(
             invoicing_details,
             data=invoicing_details_data,
-            context={"action": action},
+            context={"request": request, "action": action},
         )
         serializer.is_valid(raise_exception=True)
 
