@@ -311,13 +311,31 @@
                             class="form-select"
                             @change="updatePreviewInvoices"
                         >
-                            <option :value="1">
+                            <option
+                                :value="1"
+                                :selected="
+                                    invoicingDetailsComputed.invoicing_quarters_start_month ==
+                                    1
+                                "
+                            >
                                 NOV-JAN, FEB-APR, MAY-JUL, AUG-OCT
                             </option>
-                            <option :value="2">
+                            <option
+                                :value="2"
+                                :selected="
+                                    invoicingDetailsComputed.invoicing_quarters_start_month ==
+                                    2
+                                "
+                            >
                                 DEC-FEB, MAR-MAY, JUN-AUG, SEP-NOV
                             </option>
-                            <option :value="3" selected>
+                            <option
+                                :value="3"
+                                :selected="
+                                    invoicingDetailsComputed.invoicing_quarters_start_month ==
+                                    3
+                                "
+                            >
                                 JAN-MAR, APR-JUN, JUL-SEP, OCT-DEC
                             </option>
                         </select>
@@ -647,7 +665,7 @@ export default {
             return this.context != 'Proposal';
         },
         invoicing_repetition_type_disabled: function () {
-            return this.context != 'Proposal';
+            return false; // this.context != 'Proposal';
         },
         invoicing_schedule_disabled: function () {
             return this.context != 'Proposal';
