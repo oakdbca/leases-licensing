@@ -684,7 +684,7 @@ class InvoicingDetails(BaseModel):
                 date_to_generate=date_to_generate,
                 period_start_date=start_date,
                 period_end_date=end_date,
-                generated_from=self,
+                invoicing_details=self,
             )
             if created:
                 logger.info(f"Scheduled invoice created: {scheduled_invoice}")
@@ -1034,7 +1034,7 @@ class ScheduledInvoice(BaseModel):
     invoice_has_been_generated = models.BooleanField(default=False)
     attempts_to_send_notification_email = models.PositiveSmallIntegerField(default=0)
     notification_email_sent = models.BooleanField(default=False)
-    generated_from = models.ForeignKey(
+    invoicing_details = models.ForeignKey(
         InvoicingDetails,
         on_delete=models.CASCADE,
         related_name="scheduled_invoices",
