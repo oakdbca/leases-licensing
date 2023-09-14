@@ -777,6 +777,24 @@ export default {
             required: false,
             default: false,
         },
+        /**
+         * Tolerance for considering the pointer close enough to a segment or vertex for editing
+         * See: https://openlayers.org/en/latest/apidoc/module-ol_interaction_Modify-Modify.html
+         */
+        pixelTolerance: {
+            type: Number,
+            required: false,
+            default: 5,
+        },
+        /**
+         * Consider features within some distance of a provided pixel
+         * See: https://openlayers.org/en/latest/examples/hit-tolerance.html
+         */
+        hitTolerance: {
+            type: Number,
+            required: false,
+            default: 4,
+        },
     },
     emits: ['filter-appied', 'validate-feature', 'refreshFromResponse'],
     data() {
@@ -1088,6 +1106,16 @@ export default {
                       )
                     : '';
             });
+        },
+        /**
+         * Returns the euclidean distance between two pixel coordinates
+         * @param {Array} p1 a pixel coordinate pair in the form [x1, y1]
+         * @param {Array} p2 a pixel coordinate pair in the form [x2, y2]
+         */
+        pixelDistance(p1, p2) {
+            return Math.sqrt(
+                Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2)
+            );
         },
         applyFiltersFrontEnd: function () {
             this.filteredProposals = [...this.proposals];
@@ -1866,20 +1894,59 @@ export default {
             const modify = new Modify({
                 source: vm.modelQuerySource, // Same source as the draw interaction
                 // features: vm.select.getFeatures(), // Either need to provide source or features, but features doesn't seem to work
+                pixelTolerance: vm.pixelTolerance,
+                deleteCondition: function (evt) {
+                    if (
+                        evt.type !== 'pointerdown' ||
+                        evt.originalEvent.button !== 2 // Remove vertex on right click
+                    ) {
+                        return false;
+                    }
+                    evt.stopPropagation();
+
+                    let f = vm.map.getFeaturesAtPixel(evt.pixel, {
+                        hitTolerance: vm.hitTolerance,
+                    });
+                    if (!f) {
+                        return false;
+                    }
+
+                    console.log('deleteCondition', evt);
+                    let features = vm.modelQuerySource.getFeatures();
+                    features = features.filter((feature) => {
+                        return vm.selectedFeatureIds.includes(
+                            feature.getProperties().id
+                        );
+                    });
+
+                    features.forEach((feature) => {
+                        let coords = feature.getGeometry().getCoordinates();
+                        for (let j = 0; j < coords.length; j++) {
+                            let coord = coords[j];
+                            for (let k = 0; k < coord.length; k++) {
+                                let pxl1 = evt.pixel; // clicked pixel coordinates
+                                let pxl2 = vm.map.getPixelFromCoordinate(
+                                    coord[k]
+                                ); // calculated pixel coordinates
+
+                                // Distance between pixel1 and pixel2
+                                let distance = vm.pixelDistance(pxl1, pxl2);
+                                if (distance <= vm.pixelTolerance) {
+                                    let selectedCoord = coord[k];
+                                    coord.splice(k, 1);
+                                    if (selectedCoord == null) {
+                                        return;
+                                    }
+                                    feature
+                                        .getGeometry()
+                                        .setCoordinates([coord]);
+                                }
+                            }
+                        }
+                    });
+                },
             });
-            modify.on('modifystart', function (evt) {
-                console.log(
-                    'modifystart',
-                    evt.features,
-                    vm.select.getFeatures()
-                );
-            });
-            modify.on('modifyend', function (evt) {
-                console.log('modifyend', evt.features);
-            });
-            modify.on('change', function (evt) {
-                console.log('change', evt);
-            });
+
             return modify;
         },
         undoLeaseLicensePoint: function () {

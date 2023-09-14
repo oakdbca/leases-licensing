@@ -40,7 +40,7 @@
                 <Workflow
                     ref="workflow"
                     :proposal="proposal"
-                    :on-current-revision="on_current_revision"
+                    :on-current-revision="onCurrentRevision"
                     :is-finalised="isFinalised"
                     :can-action="canAction"
                     :can-limited-action="canLimitedAction"
@@ -1712,7 +1712,7 @@ export default {
         },
         canLimitedAction: function () {
             // For now returning true when viewing the current version of the Proposal
-            return this.on_current_revision; // TODO: implement this.  This is just temporary solution
+            return this.onCurrentRevision; // TODO: implement this.  This is just temporary solution
 
             //    if (this.proposal.processing_status == 'With Approver'){
             //        return
@@ -1753,7 +1753,7 @@ export default {
                 ].includes(this.proposal.processing_status)
             );
         },
-        on_current_revision: function () {
+        onCurrentRevision: function () {
             // Returns whether the currently displayed version is the latest one
             return (
                 this.latest_revision.revision_id === this.current_revision_id
