@@ -1920,8 +1920,14 @@ export default {
 
                     features.forEach((feature) => {
                         let coords = feature.getGeometry().getCoordinates();
+                        console.log('delete coord length', coords.length);
+
                         for (let j = 0; j < coords.length; j++) {
                             let coord = coords[j];
+                            if (coord.length <= 4) {
+                                // Needs three vertices to form a polygon, four because the first and last are the same
+                                return false;
+                            }
                             for (let k = 0; k < coord.length; k++) {
                                 let pxl1 = evt.pixel; // clicked pixel coordinates
                                 let pxl2 = vm.map.getPixelFromCoordinate(
