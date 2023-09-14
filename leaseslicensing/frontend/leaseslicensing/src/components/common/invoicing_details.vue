@@ -224,8 +224,10 @@
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
-                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
-                @onChangePercentage="updatePreviewInvoices"
+                @update-gross-turnover-percentages="
+                    updateGrossTurnoverPercentages
+                "
+                @on-change-percentage="updatePreviewInvoices"
             />
         </div>
         <div v-if="show_percentage_of_gross_turnover_advance">
@@ -238,9 +240,11 @@
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
-                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
-                @onChangePercentage="updatePreviewInvoices"
-                @onChangeGrossTurnoverEstimate="updatePreviewInvoices"
+                @update-gross-turnover-percentages="
+                    updateGrossTurnoverPercentages
+                "
+                @on-change-percentage="updatePreviewInvoices"
+                @on-change-gross-turnover-estimate="updatePreviewInvoices"
             />
         </div>
         <div
@@ -328,8 +332,8 @@
                 :years-array="invoicingDetailsComputed.annual_increment_amounts"
                 :approval-duration-years="approvalDurationYears"
                 :start-date="startDate"
-                @updateYearsArray="updateYearsArray"
-                @onChangeIncrement="updatePreviewInvoices"
+                @update-years-array="updateYearsArray"
+                @on-change-increment="updatePreviewInvoices"
             />
         </div>
         <div v-if="show_fixed_annual_percentage">
@@ -341,8 +345,8 @@
                 "
                 :start-date="startDate"
                 :approval-duration-years="approvalDurationYears"
-                @updateYearsArray="updateYearsArray"
-                @onChangeIncrement="updatePreviewInvoices"
+                @update-years-array="updateYearsArray"
+                @on-change-increment="updatePreviewInvoices"
             />
         </div>
         <div
@@ -366,7 +370,7 @@
                 "
                 :show-past-invoices="context == 'Proposal'"
                 :loading-preview-invoices="loadingPreviewInvoices"
-                @updateDefaultInvoicingDate="updateDefaultInvoicingDate"
+                @update-default-invoicing-date="updateDefaultInvoicingDate"
             />
         </div>
         <template v-if="show_ad_hoc_invoicing">
@@ -991,9 +995,6 @@ export default {
             );
         },
         updatePreviewInvoices: async function () {
-            if (!this.show_invoice_previewer) {
-                return;
-            }
             const requestOptions = {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
