@@ -958,6 +958,12 @@ export default {
             let vm = this;
             return vm.errorMessage !== null;
         },
+        debug: function () {
+            if (this.$route.query.debug) {
+                return this.$route.query.debug === 'true';
+            }
+            return false;
+        },
     },
     watch: {
         filterApplicationsMapApplicationType: function () {
@@ -1912,7 +1918,10 @@ export default {
                             feature.getProperties().id
                         )
                     ) {
-                        if (feature.getProperties().locked === false) {
+                        if (
+                            feature.getProperties().locked === false ||
+                            vm.debug // Allow deletion of locked features if debug mode is enabled
+                        ) {
                             return feature;
                         } else {
                             console.warn(
