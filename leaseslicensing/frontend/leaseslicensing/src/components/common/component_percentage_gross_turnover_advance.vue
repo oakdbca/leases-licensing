@@ -161,10 +161,6 @@ export default {
             type: Array,
             required: true,
         },
-        invoicingRepetitionType: {
-            type: Number,
-            required: true,
-        },
         proposalProcessingStatusId: {
             type: String,
             required: true,
