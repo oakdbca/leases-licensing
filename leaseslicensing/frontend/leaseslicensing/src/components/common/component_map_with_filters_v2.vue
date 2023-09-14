@@ -124,75 +124,6 @@
                     />
                 </div>
                 <div class="optional-layers-wrapper">
-                    <!-- Toggle measure tool between active and not active -->
-                    <div class="optional-layers-button-wrapper">
-                        <div
-                            :title="
-                                mode == 'measure'
-                                    ? 'Deactivate measure tool'
-                                    : 'Activate measure tool'
-                            "
-                            :class="[
-                                mode == 'measure'
-                                    ? 'optional-layers-button-active'
-                                    : 'optional-layers-button',
-                            ]"
-                            @click="set_mode.bind(this)('measure')"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/ruler.svg"
-                            />
-                        </div>
-                    </div>
-                    <div v-if="drawable" class="optional-layers-button-wrapper">
-                        <div
-                            :title="
-                                mode == 'draw'
-                                    ? 'Deactivate draw tool'
-                                    : 'Activate draw tool'
-                            "
-                            :class="[
-                                mode == 'draw'
-                                    ? 'optional-layers-button-active'
-                                    : 'optional-layers-button',
-                            ]"
-                            @click="set_mode.bind(this)('draw')"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/pen-icon.svg"
-                            />
-                        </div>
-                    </div>
-                    <div
-                        v-if="polygonCount"
-                        class="optional-layers-button-wrapper"
-                    >
-                        <div
-                            title="Zoom map to layer(s)"
-                            class="optional-layers-button"
-                            @click="displayAllFeatures"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/map-zoom.svg"
-                            />
-                        </div>
-                    </div>
-                    <div class="optional-layers-button-wrapper">
-                        <div
-                            title="Download layers as GeoJSON"
-                            class="optional-layers-button"
-                            @click="geoJsonButtonClicked"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/download.svg"
-                            />
-                        </div>
-                    </div>
-
                     <div style="position: relative">
                         <transition v-if="optionalLayers.length">
                             <div class="optional-layers-button-wrapper">
@@ -244,6 +175,76 @@
                             </div>
                         </transition>
                     </div>
+                    <!-- Toggle measure tool between active and not active -->
+                    <div class="optional-layers-button-wrapper">
+                        <div
+                            :title="
+                                mode == 'measure'
+                                    ? 'Deactivate measure tool'
+                                    : 'Activate measure tool'
+                            "
+                            class="btn"
+                            :class="[
+                                mode == 'measure'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('measure')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/ruler.svg"
+                            />
+                        </div>
+                    </div>
+                    <div v-if="drawable" class="optional-layers-button-wrapper">
+                        <div
+                            :title="
+                                mode == 'draw'
+                                    ? 'Deactivate draw tool'
+                                    : 'Activate draw tool'
+                            "
+                            class="btn"
+                            :class="[
+                                mode == 'draw'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('draw')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/pen-icon.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        v-if="polygonCount"
+                        class="optional-layers-button-wrapper"
+                    >
+                        <div
+                            title="Zoom map to layer(s)"
+                            class="optional-layers-button btn"
+                            @click="displayAllFeatures"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/map-zoom.svg"
+                            />
+                        </div>
+                    </div>
+                    <div class="optional-layers-button-wrapper">
+                        <div
+                            title="Download layers as GeoJSON"
+                            class="optional-layers-button btn"
+                            @click="geoJsonButtonClicked"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/download.svg"
+                            />
+                        </div>
+                    </div>
                     <div
                         v-if="optionalLayersActive"
                         class="optional-layers-button-wrapper"
@@ -254,6 +255,7 @@
                                     ? 'Deactivate info tool'
                                     : 'Activate info tool'
                             "
+                            class="btn"
                             :class="[
                                 mode == 'info'
                                     ? 'optional-layers-button-active'
@@ -272,7 +274,7 @@
                         class="optional-layers-button-wrapper"
                     >
                         <div
-                            class="optional-layers-button"
+                            class="optional-layers-button btn btn-danger"
                             title="Delete selected features"
                             @click="removeModelFeatures()"
                         >
@@ -287,14 +289,24 @@
                             >
                         </div>
                     </div>
-                    <div
-                        v-if="showUndoButton"
-                        class="optional-layers-button-wrapper"
-                    >
+                    <div class="optional-layers-button-wrapper">
                         <div
-                            class="optional-layers-button"
-                            title="Undo last point"
-                            @click="undoLeaseLicensePoint()"
+                            class="optional-layers-button btn"
+                            :class="hasUndo ? '' : 'disabled'"
+                            :title="
+                                'Undo ' +
+                                (showUndoButton
+                                    ? 'last point'
+                                    : undoStack.length > 0
+                                    ? (undoStack.slice(-1)[0] || []).name ||
+                                      (undoStack.slice(-1)[0] || []).type
+                                    : 'last action')
+                            "
+                            @click="
+                                showUndoButton
+                                    ? undoLeaseLicensePoint()
+                                    : undoredo.undo()
+                            "
                         >
                             <img
                                 class="svg-icon"
@@ -302,14 +314,21 @@
                             />
                         </div>
                     </div>
-                    <div
-                        v-if="showRedoButton"
-                        class="optional-layers-button-wrapper"
-                    >
+                    <div class="optional-layers-button-wrapper">
                         <div
-                            class="optional-layers-button"
-                            title="Redo last point"
-                            @click="redoLeaseLicensePoint()"
+                            class="optional-layers-button btn"
+                            :class="hasRedo ? '' : 'disabled'"
+                            :title="
+                                'Redo ' +
+                                (showRedoButton
+                                    ? 'last point'
+                                    : (undoStack.slice(-1)[0] || []).name)
+                            "
+                            @click="
+                                showRedoButton
+                                    ? redoLeaseLicensePoint()
+                                    : undoredo.redo()
+                            "
                         >
                             <img
                                 class="svg-icon"
@@ -575,7 +594,9 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
-import { Draw, Select, Modify, Snap } from 'ol/interaction';
+import { Draw, Select, Snap } from 'ol/interaction';
+import ModifyFeature from 'ol-ext/interaction/ModifyFeature';
+import UndoRedo from 'ol-ext/interaction/UndoRedo';
 import Feature from 'ol/Feature';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -885,6 +906,7 @@ export default {
             errorMessage: null,
             overlayFeatureInfo: {},
             deletedFeatures: [], // keep track of deleted features
+            undoredo: null,
         };
     },
     computed: {
@@ -981,6 +1003,30 @@ export default {
                 return this.$route.query.debug === 'true';
             }
             return false;
+        },
+        undoStack: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return [];
+            } else {
+                return vm.undoredo.getStack();
+            }
+        },
+        hasUndo: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return false;
+            } else {
+                return vm.undoredo.hasUndo();
+            }
+        },
+        hasRedo: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return false;
+            } else {
+                return vm.undoredo.hasRedo();
+            }
         },
     },
     watch: {
@@ -1412,6 +1458,17 @@ export default {
 
             // update map extent when new features added
             vm.map.on('rendercomplete', vm.displayAllFeatures());
+            vm.map.on('features-loaded', function (evt) {
+                if (evt.details.loaded == true) {
+                    // Add undo/redo AFTER proposal geometries have been added to the map
+                    vm.undoredo = new UndoRedo();
+
+                    vm.map.on('event:undo', function (evt) {
+                        console.log('change:remove', evt);
+                    });
+                    vm.map.addInteraction(vm.undoredo);
+                }
+            });
 
             vm.initialisePointerMoveEvent();
             vm.select = vm.initialiseSelectFeatureEvent();
@@ -1891,7 +1948,7 @@ export default {
         },
         initialiseModifyFeatureEvent: function () {
             let vm = this;
-            const modify = new Modify({
+            const modify = new ModifyFeature({
                 source: vm.modelQuerySource, // Same source as the draw interaction
                 // features: vm.select.getFeatures(), // Either need to provide source or features, but features doesn't seem to work
                 pixelTolerance: vm.pixelTolerance,
@@ -2181,6 +2238,12 @@ export default {
                 }
             });
             vm.addFeatureCollectionToMap();
+            vm.map.dispatchEvent({
+                type: 'features-loaded',
+                details: {
+                    loaded: true,
+                },
+            });
         },
         /**
          * Creates a styled feature object from a feature dictionary
