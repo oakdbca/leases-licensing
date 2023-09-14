@@ -24,8 +24,8 @@ class Command(BaseCommand):
             "--test",
             action="store_true",
             help=(
-                "Adding the test flag will process annual, quarterly and monthly invoices regardless of the date "
-                "and will output what invoices would be generated without actually generating anything."
+                "Adding the test flag will prevent database objects being saved "
+                "and emails being sent and will instead just output messages."
             ),
         )
         parser.add_argument(
@@ -46,7 +46,7 @@ class Command(BaseCommand):
             Approval.APPROVAL_STATUS_CURRENT_EDITING_INVOICING,
         ]
 
-        current_proposal_statuses = [
+        approved_proposal_statuses = [
             Proposal.PROCESSING_STATUS_APPROVED_APPLICATION,
             Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
             Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
@@ -65,7 +65,7 @@ class Command(BaseCommand):
                 & Q(attempts_to_send_notification_email__lte=4)
             ),
             invoicing_details__proposal__approval__status__in=current_approval_statuses,
-            invoicing_details__proposal__processing_status__in=current_proposal_statuses,
+            invoicing_details__proposal__processing_status__in=approved_proposal_statuses,
             date_to_generate__lte=today,
         )
 
