@@ -440,7 +440,7 @@ class InvoicingDetails(BaseModel):
 
     def __str__(self):
         proposal = self.approval.current_proposal if self.approval else None
-        return f"Invoicing Details for Approval: {self.approval} (Current Proposal: {proposal})"
+        return f"Invoicing Details {self.id} for Approval: {self.approval} (Current Proposal: {proposal})"
 
     @property
     def approval(self):
@@ -517,6 +517,12 @@ class InvoicingDetails(BaseModel):
     @property
     def preview_invoices_issue_dates(self):
         return [period["issue_date"] for period in self.preview_invoices]
+
+    def preview_invoice_by_date(self, date):
+        for invoice in self.preview_invoices:
+            if invoice["issue_date"] == datetime.strftime(date, "%d/%m/%Y"):
+                return invoice
+        return None
 
     @property
     def invoices_due_for_issue_today(self):
@@ -768,9 +774,11 @@ class InvoicingDetails(BaseModel):
             "suffix": "",
         }
         if self.charge_method.key == settings.CHARGE_METHOD_ONCE_OFF_CHARGE:
-            raise Exception(
+            logger.warning(
                 "To get the amount for a once off charge, simply access the once_off_charge_amount field"
             )
+            amount_object["amount"] = self.once_off_charge_amount
+            return amount_object
 
         if (
             self.charge_method.key
@@ -1031,7 +1039,6 @@ class ScheduledInvoice(BaseModel):
     date_to_generate = models.DateField(null=False, blank=False)
     period_start_date = models.DateField(null=False, blank=False)
     period_end_date = models.DateField(null=False, blank=False)
-    invoice_has_been_generated = models.BooleanField(default=False)
     attempts_to_send_notification_email = models.PositiveSmallIntegerField(default=0)
     notification_email_sent = models.BooleanField(default=False)
     invoicing_details = models.ForeignKey(
@@ -1045,6 +1052,22 @@ class ScheduledInvoice(BaseModel):
         ordering = [
             "date_to_generate",
         ]
+
+    def __str__(self):
+        if hasattr(self, "invoice"):
+            return (
+                f"Scheduled Invoice: {self.id} for Approval {self.invoicing_details.proposal.approval} "
+                f"generated Invoice: {self.invoice.lodgement_number} on {self.date_to_generate}"
+            )
+        if self.date_to_generate > helpers.today():
+            return (
+                f"Scheduled Invoice: {self.id} for Approval {self.invoicing_details.proposal.approval} "
+                f"due to generate invoice on {self.date_to_generate}"
+            )
+        return (
+            f"Scheduled Invoice: {self.id} for Approval {self.invoicing_details__proposal__approval} "
+            f"tried to generate invoice on {self.date_to_generate} (will try again)"
+        )
 
 
 class FixedAnnualIncrementAmount(BaseModel):
@@ -1349,6 +1372,13 @@ class Invoice(LicensingModel):
     )
     description = models.TextField(null=True, blank=True)
     ad_hoc = models.BooleanField(default=False)
+    scheduled_invoice = models.OneToOneField(
+        ScheduledInvoice,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="invoice",
+    )
 
     class Meta:
         app_label = "leaseslicensing"
