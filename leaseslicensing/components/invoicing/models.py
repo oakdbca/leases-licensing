@@ -1032,10 +1032,8 @@ class ScheduledInvoice(BaseModel):
     period_start_date = models.DateField(null=False, blank=False)
     period_end_date = models.DateField(null=False, blank=False)
     invoice_has_been_generated = models.BooleanField(default=False)
-    attempts_to_send_internal_email = models.PositiveSmallIntegerField(default=0)
-    internal_email_sent = models.BooleanField(default=False)
-    attempts_to_send_external_email = models.PositiveSmallIntegerField(default=0)
-    external_email_sent = models.BooleanField(default=False)
+    attempts_to_send_notification_email = models.PositiveSmallIntegerField(default=0)
+    notification_email_sent = models.BooleanField(default=False)
     generated_from = models.ForeignKey(
         InvoicingDetails,
         on_delete=models.CASCADE,
