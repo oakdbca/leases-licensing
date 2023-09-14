@@ -1911,7 +1911,6 @@ export default {
                         return false;
                     }
 
-                    console.log('deleteCondition', evt);
                     let features = vm.modelQuerySource.getFeatures();
                     features = features.filter((feature) => {
                         return vm.selectedFeatureIds.includes(
