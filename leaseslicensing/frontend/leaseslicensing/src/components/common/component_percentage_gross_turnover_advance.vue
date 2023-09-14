@@ -53,8 +53,14 @@
                                         v-model="year.estimated_gross_turnover"
                                         type="number"
                                         class="form-control"
-                                        :readonly="year.locked"
-                                        :required="index == 0"
+                                        :readonly="
+                                            year.locked ||
+                                            (context == 'Approval' &&
+                                                index == 0)
+                                        "
+                                        :required="
+                                            context == 'Proposal' && index == 0
+                                        "
                                         @change="
                                             $emit(
                                                 'onChangeGrossTurnoverEstimate',
