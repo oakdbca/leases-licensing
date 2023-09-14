@@ -1174,14 +1174,15 @@ class ProposalViewSet(UserActionLoggingViewset):
             )
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
-
-        versions = Version.objects.get_for_object(instance)
-        versions = versions.filter(Q(revision_id=int(revision_id)))
-        if not versions.exists():
+        
+        try:
+            # This model's version for `revision_id`
+            version = self.get_object().revision_version(revision_id)
+        except IndexError:
             raise serializers.ValidationError(f"Revision {revision_id} does not exist")
 
-        # This model's version for `revision_id`
-        version = self.get_object().revision_version(revision_id)
+        version.revision.version_set.all()
+
         # An instance of the model version
         instance = model_class(**version.field_dict)
         # Serialize the instance
