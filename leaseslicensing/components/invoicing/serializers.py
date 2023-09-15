@@ -19,6 +19,7 @@ from leaseslicensing.components.invoicing.models import (
     InvoicingDetails,
     PercentageOfGrossTurnover,
     RepetitionType,
+    ScheduledInvoice,
 )
 from leaseslicensing.helpers import is_customer, is_finance_officer, today
 
@@ -245,6 +246,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
     )
     custom_cpi_years = CustomCPIYearSerializer(many=True, required=False)
     comment_text = serializers.CharField(required=False)
+    context = serializers.CharField(required=False)
 
     class Meta:
         model = InvoicingDetails
@@ -267,6 +269,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "custom_cpi_years",  # ReverseFK
             "cpi_calculation_method",
             "comment_text",
+            "context",
         )
 
     def set_default_values(self, attrs, fields_excluded):
@@ -372,7 +375,8 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
                     ],
                 )
             elif (
-                charge_method.key == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+                charge_method.key
+                == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
             ):
                 self.set_default_values(
                     attrs,
@@ -460,12 +464,22 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             "invoicing_quarters_start_month", instance.invoicing_quarters_start_month
         )
         # FK fields
+        charge_method_changed = False
+        if instance.charge_method != validated_data.get("charge_method"):
+            charge_method_changed = True
+
         instance.charge_method = validated_data.get(
             "charge_method", instance.charge_method
         )
         instance.review_repetition_type = validated_data.get(
             "review_repetition_type", instance.review_repetition_type
         )
+        invoicing_repetition_type_changed = False
+        if instance.invoicing_repetition_type != validated_data.get(
+            "invoicing_repetition_type"
+        ):
+            invoicing_repetition_type_changed = True
+
         instance.invoicing_repetition_type = validated_data.get(
             "invoicing_repetition_type", instance.invoicing_repetition_type
         )
@@ -475,6 +489,17 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
 
         # Update local and FK fields
         instance.save()
+
+        context = validated_data.get("context")
+
+        # If the user is editing the invoicing details from the approval details page
+        # update the invoicing schedule as required
+        if (
+            context == "Approval"
+            and charge_method_changed
+            or invoicing_repetition_type_changed
+        ):
+            self.update_invoice_schedule(instance)
 
         # Reverse FKs
         annual_increment_amounts_data = validated_data.pop("annual_increment_amounts")
@@ -494,6 +519,25 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         )
         self.update_custom_cpi_years(custom_cpi_years_data, instance)
         return instance
+
+    def update_invoice_schedule(self, instance):
+        # Delete any future scheduled invoices
+        ScheduledInvoice.objects.filter(
+            invoicing_details=instance,
+            invoice__isnull=True,
+            date_to_generate__gt=today(),
+        ).delete()
+
+        # Get the date we have already invoiced up to
+        invoiced_up_to = instance.invoiced_up_to
+
+        # Generate new future scheduled invoices
+        # Gross turnover in arrears are generated on receipt of audited financial statements so don't need generating
+        if (
+            not instance.charge_method.key
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
+        ):
+            instance.generate_invoice_schedule(invoiced_up_to=invoiced_up_to)
 
     @staticmethod
     def _to_be_deleted(a_data, initial_data):
