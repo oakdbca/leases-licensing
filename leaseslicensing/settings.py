@@ -465,11 +465,14 @@ LATEST_REFERRAL_COUNT = 5
 
 # ---------- Standard Requirements ----------
 
-INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUAL = (
-    "invoicing_percentage_gross_turnover_annual"
+INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY = (
+    "invoicing_percentage_gross_turnover_annually"
 )
-INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTER = (
-    "invoicing_percentage_gross_turnover_quarter"
+INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY = (
+    "invoicing_percentage_gross_turnover_quarterly"
+)
+INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY = (
+    "invoicing_percentage_gross_turnover_monthly"
 )
 
 # ---------- CPI Calculation Methods ----------
