@@ -252,7 +252,7 @@
                         <FormSection
                             class="mb-3"
                             :form-collapse="false"
-                            label="Invoices"
+                            label="Invoice Records"
                             index="invoicing_details"
                         >
                             <InvoicesTable
