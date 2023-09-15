@@ -605,6 +605,7 @@ import {
     addOptionalLayers,
     set_mode,
     baselayer_name,
+    validateFeature,
 } from '@/components/common/map_functions.js';
 
 export default {
@@ -2002,6 +2003,13 @@ export default {
                         }
                     });
                 },
+            });
+
+            modify.addEventListener('modifyend', function (evt) {
+                console.log('Modify end', evt.features);
+                let feature = evt.features[0];
+                let wkt = vm.featureToWKT(feature);
+                validateFeature(wkt, vm);
             });
 
             return modify;

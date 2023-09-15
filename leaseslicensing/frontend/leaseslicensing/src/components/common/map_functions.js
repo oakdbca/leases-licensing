@@ -209,27 +209,32 @@ export function polygon_style(feature) {
  * Validate feature callback function. Calls `finnishDrawing` on the map component
  * when the feature is valid. A feature is condidered valid when it intersects with
  * the DBCS legislated land-water layer.
+ * @param {string} feature_wkt The feature in WKT format
+ * @param {Proxy} component_map The map component
  */
-export function validateFeature() {
+export function validateFeature(feature_wkt, component_map) {
     let vm = this;
     console.log('Validate feature');
-    // Get the WKT representation of the drawn polygon
-    let polygon_wkt = vm.$refs.component_map.featureToWKT();
-    let query = _helper.geoserverQuery.bind(vm)(polygon_wkt);
+    if (feature_wkt === undefined) {
+        // Get the WKT representation of the currently drawn polygon sketch
+        feature_wkt = vm.$refs.component_map.featureToWKT();
+    }
+    if (component_map === undefined) {
+        component_map = vm.$refs.component_map;
+    }
+    let query = _helper.geoserverQuery(feature_wkt, component_map);
 
-    vm.$refs.component_map
-        .validateFeatureQuery(query)
-        .then(async (features) => {
-            if (features.length === 0) {
-                console.warn('New feature is not valid');
-                vm.$refs.component_map.errorMessageProperty(
-                    'The polygon you have drawn does not intersect with any DBCA lands or water.'
-                );
-            } else {
-                console.log('New feature is valid', features);
-                vm.$refs.component_map.finishDrawing();
-            }
-        });
+    component_map.validateFeatureQuery(query).then(async (features) => {
+        if (features.length === 0) {
+            console.warn('New feature is not valid');
+            component_map.errorMessageProperty(
+                'The polygon you have drawn does not intersect with any DBCA lands or water.'
+            );
+        } else {
+            console.log('New feature is valid', features);
+            component_map.finishDrawing();
+        }
+    });
 }
 
 export let owsQuery = {
