@@ -387,6 +387,7 @@
                 "
                 :show-past-invoices="context == 'Proposal'"
                 :loading-preview-invoices="loadingPreviewInvoices"
+                :context="context"
                 @update-default-invoicing-date="updateDefaultInvoicingDate"
             />
         </div>
@@ -697,7 +698,7 @@ export default {
             return false;
         },
         show_invoice_previewer: function () {
-            return true;
+            return this.show_invoicing_frequency;
         },
         show_invoicing_quarters: function () {
             console.log(this.invoicingDetails);
