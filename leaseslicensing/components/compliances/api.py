@@ -131,7 +131,9 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             return Compliance.objects.none()
 
         if is_internal(self.request):
-            qs = Compliance.objects.all().exclude(processing_status="discarded")
+            qs = Compliance.objects.all().exclude(
+                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
+            )
 
         elif is_customer(self.request):
             # TODO: fix EmailUserRO issue here
@@ -140,7 +142,7 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             # Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
             qs = Compliance.objects.filter(
                 Q(proposal__submitter=self.request.user.id)
-            ).exclude(processing_status="discarded")
+            ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
 
         target_organisation_id = self.request.query_params.get(
             "target_organisation_id", None
@@ -202,7 +204,9 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
             http://localhost:8000/api/compliance_paginated/compliances_external/?format=datatables&draw=1&length=2
         """
 
-        qs = self.get_queryset().exclude(processing_status="future")
+        qs = self.get_queryset().exclude(
+            processing_status=Compliance.PROCESSING_STATUS_FUTURE
+        )
         # qs = ProposalFilterBackend().filter_queryset(self.request, qs, self)
         qs = self.filter_queryset(qs)
         # qs = qs.order_by('lodgement_number', '-issue_date').distinct('lodgement_number')
@@ -230,7 +234,9 @@ class ComplianceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         if is_internal(self.request):
-            return Compliance.objects.all().exclude(processing_status="discarded")
+            return Compliance.objects.all().exclude(
+                processing_status=Compliance.PROCESSING_STATUS_DISCARDED
+            )
         elif is_customer(self.request):
             # TODO: fix EmailUserRO issue here
             # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
@@ -238,7 +244,7 @@ class ComplianceViewSet(viewsets.ModelViewSet):
             # Q(proposal__submitter = self.request.user) ).exclude(processing_status='discarded')
             queryset = Compliance.objects.filter(
                 Q(proposal__submitter=self.request.user.id)
-            ).exclude(processing_status="discarded")
+            ).exclude(processing_status=Compliance.PROCESSING_STATUS_DISCARDED)
             return queryset
         return Compliance.objects.none()
 
