@@ -19,7 +19,6 @@
                             class="form-check-input me-2"
                             name="charge_method"
                             :value="charge_method.id"
-                            :disabled="chargeMethodDisabled(charge_method)"
                             required
                             @change="onChargeMethodChange"
                         />
@@ -698,40 +697,7 @@ export default {
             return false;
         },
         show_invoice_previewer: function () {
-            if (
-                this.context != 'Proposal' &&
-                (this.getChargeMethodIdByKey('percentage_of_gross_turnover') ||
-                    this.getChargeMethodIdByKey(
-                        'percentage_of_gross_turnover_in_advance'
-                    ))
-            ) {
-                return false;
-            }
-            if (this.invoicingDetails) {
-                if (
-                    [
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_fixed_annual_increment'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_fixed_annual_percentage'
-                        ),
-                        this.getChargeMethodIdByKey('base_fee_plus_annual_cpi'),
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_annual_cpi_custom'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover_in_advance'
-                        ),
-                    ].includes(this.invoicingDetails.charge_method)
-                )
-                    return true;
-                return false;
-            }
-            return false;
+            return true;
         },
         show_invoicing_quarters: function () {
             console.log(this.invoicingDetails);
@@ -787,6 +753,7 @@ export default {
             // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
             this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
         }
+        this.invoicingDetailsComputed.context = this.context;
     },
     mounted: function () {
         this.$nextTick(function () {
