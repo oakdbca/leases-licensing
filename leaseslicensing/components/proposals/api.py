@@ -1207,7 +1207,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def requirements(self, request, *args, **kwargs):
         instance = self.get_object()
-        qs = instance.requirements.all().exclude(is_deleted=True)
+        qs = instance.requirements.exclude(is_deleted=True)
         serializer = ProposalRequirementSerializer(
             qs, many=True, context={"request": request}
         )
