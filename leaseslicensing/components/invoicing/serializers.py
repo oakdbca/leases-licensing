@@ -19,7 +19,6 @@ from leaseslicensing.components.invoicing.models import (
     InvoicingDetails,
     PercentageOfGrossTurnover,
     RepetitionType,
-    ScheduledInvoice,
 )
 from leaseslicensing.helpers import is_customer, is_finance_officer, today
 
@@ -499,7 +498,8 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
             and charge_method_changed
             or invoicing_repetition_type_changed
         ):
-            self.update_invoice_schedule(instance)
+            instance.update_invoice_schedule()
+            instance.proposal.update_gross_turnover_requirements()
 
         # Reverse FKs
         annual_increment_amounts_data = validated_data.pop("annual_increment_amounts")
@@ -519,28 +519,6 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         )
         self.update_custom_cpi_years(custom_cpi_years_data, instance)
         return instance
-
-    def update_invoice_schedule(self, instance):
-        # Delete any future scheduled invoices
-        ScheduledInvoice.objects.filter(
-            invoicing_details=instance,
-            invoice__isnull=True,
-            date_to_generate__gte=today(),
-        ).delete()
-
-        # Get the date we have already invoiced up to
-        invoiced_up_to = instance.invoiced_up_to
-
-        # Generate new future scheduled invoices
-
-        if instance.charge_method.key not in [
-            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
-            settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
-            # Gross turnover in arrears are generated on receipt of
-            # audited financial statements so don't need generating
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
-        ]:
-            instance.generate_invoice_schedule(invoiced_up_to=invoiced_up_to)
 
     @staticmethod
     def _to_be_deleted(a_data, initial_data):
