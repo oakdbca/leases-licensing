@@ -1388,6 +1388,26 @@ export default {
 
             return styles;
         },
+        setStyleForUnAndSelectedFeatures: function (style) {
+            let vm = this;
+            if (style === undefined) {
+                if (this.mode == 'draw') {
+                    style = vm.modifySelectStyle;
+                } else {
+                    style = vm.basicSelectStyle;
+                }
+            }
+            let features = vm.modelQuerySource.getFeatures();
+            features.forEach((feature) => {
+                if (
+                    vm.selectedFeatureIds.includes(feature.getProperties().id)
+                ) {
+                    feature.setStyle(style);
+                } else {
+                    feature.setStyle(undefined);
+                }
+            });
+        },
         initialiseMap: function () {
             let vm = this;
 
@@ -1463,6 +1483,22 @@ export default {
                         layers: [vm.modelQueryLayer],
                     });
                     vm.map.addInteraction(vm.undoredo);
+                    // Define a custom undo/redo for selected features
+                    vm.undoredo.define(
+                        'select feature',
+                        function (s) {
+                            // Undo fn: set to the previous id list and styles
+                            console.log('undo selected', s.before, s.after);
+                            vm.selectedFeatureIds = s.before;
+                            vm.setStyleForUnAndSelectedFeatures();
+                        },
+                        function (s) {
+                            // Redo fn: reset the ids list and styles
+                            console.log('redo selected', s.before, s.after);
+                            vm.selectedFeatureIds = s.after;
+                            vm.setStyleForUnAndSelectedFeatures();
+                        }
+                    );
                 }
             });
 
@@ -1848,7 +1884,7 @@ export default {
                 return;
             }
             // A basic style for selected polygons
-            let basicSelectStyle = function (feature) {
+            vm.basicSelectStyle = function (feature) {
                 var color = feature.get('color') || vm.defaultColor;
                 return [
                     new Style({
@@ -1861,7 +1897,7 @@ export default {
             };
             // Basic style plus extra circles for vertices to help with modifying
             // See: https://github.com/openlayers/openlayers/issues/3165#issuecomment-71432465
-            let modifySelectStyle = function (feature) {
+            vm.modifySelectStyle = function (feature) {
                 var image = new CircleStyle({
                     radius: 5,
                     fill: null,
@@ -1889,7 +1925,7 @@ export default {
 
             // select interaction working on "singleclick"
             const selectSingleClick = new Select({
-                style: basicSelectStyle,
+                style: vm.basicSelectStyle,
                 layers: [vm.modelQueryLayer],
                 wrapX: false,
             });
@@ -1900,43 +1936,41 @@ export default {
                         `Selected feature ${feature.getProperties().id}`,
                         toRaw(feature)
                     );
-                    feature.setStyle(basicSelectStyle);
+                    // Current feature id list for undo stack
+                    let before = [...vm.selectedFeatureIds];
+                    feature.setStyle(vm.basicSelectStyle);
                     vm.selectedFeatureIds.push(feature.getProperties().id);
+                    // Add to undo stack
+                    vm.undoredo.push('select feature', {
+                        before: before,
+                        after: vm.selectedFeatureIds,
+                    });
                 });
 
                 $.each(evt.deselected, function (idx, feature) {
                     console.log(
                         `Unselected feature ${feature.getProperties().id}`
                     );
+                    // Current feature id list for undo stack
+                    let before = [...vm.selectedFeatureIds];
                     feature.setStyle(undefined);
                     vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
                         (id) => id != feature.getProperties().id
                     );
+                    // Add to undo stack
+                    vm.undoredo.push('select feature', {
+                        before: before,
+                        after: vm.selectedFeatureIds,
+                    });
                 });
             });
             // When the map mode changes between draw and anything else, update the style of the selected features
             selectSingleClick.addEventListener('map:modeChanged', (evt) => {
                 console.log('map mode changed', evt);
                 if (evt.details.new_mode === 'draw') {
-                    vm.modelQuerySource.getFeatures().filter((feature) => {
-                        if (
-                            vm.selectedFeatureIds.includes(
-                                feature.getProperties().id
-                            )
-                        ) {
-                            feature.setStyle(modifySelectStyle);
-                        }
-                    });
+                    vm.setStyleForUnAndSelectedFeatures(vm.modifySelectStyle);
                 } else {
-                    vm.modelQuerySource.getFeatures().filter((feature) => {
-                        if (
-                            vm.selectedFeatureIds.includes(
-                                feature.getProperties().id
-                            )
-                        ) {
-                            feature.setStyle(basicSelectStyle);
-                        }
-                    });
+                    vm.setStyleForUnAndSelectedFeatures();
                 }
             });
 
