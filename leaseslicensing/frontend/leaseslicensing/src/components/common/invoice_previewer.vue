@@ -6,6 +6,13 @@
             generated</BootstrapAlert
         >
         <BootstrapAlert
+            v-if="context == 'Approval'"
+            type="warning"
+            icon="exclamation-triangle-fill"
+            >Invoices with the issue date as today's date will usually be
+            generated the next day.</BootstrapAlert
+        >
+        <BootstrapAlert
             v-if="chargeMethodKey == 'percentage_of_gross_turnover'"
             type="warning"
             icon="exclamation-triangle-fill"
@@ -98,6 +105,10 @@ export default {
         showPastInvoices: {
             type: Boolean,
             default: true,
+        },
+        context: {
+            type: String,
+            required: true,
         },
     },
     emits: ['updateDefaultInvoicingDate'],
