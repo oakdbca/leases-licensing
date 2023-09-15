@@ -720,6 +720,24 @@ class InvoicingDetails(BaseModel):
             if created:
                 logger.info(f"Scheduled invoice created: {scheduled_invoice}")
 
+    def update_invoice_schedule(self):
+        # Delete any future scheduled invoices
+        ScheduledInvoice.objects.filter(
+            invoicing_details=self,
+            invoice__isnull=True,
+            date_to_generate__gte=helpers.today(),
+        ).delete()
+
+        # Generate new future scheduled invoices
+        if self.charge_method.key not in [
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+            # Gross turnover in arrears are generated on receipt of
+            # audited financial statements so don't need generating
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+        ]:
+            self.generate_invoice_schedule(invoiced_up_to=self.invoiced_up_to)
+
     def generate_immediate_invoices(self):
         """Generate invoices for the next invoicing period and any invoicing periods that have already passed
         This should only be run once when the finance officer has just finished "editing invoicing" on the
