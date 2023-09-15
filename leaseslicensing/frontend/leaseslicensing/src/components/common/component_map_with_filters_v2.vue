@@ -292,10 +292,12 @@
                     <div class="optional-layers-button-wrapper" title="Undo">
                         <div
                             class="optional-layers-button btn"
-                            :class="hasUndo ? '' : 'disabled'"
+                            :class="
+                                hasUndo || canUndoDrawnVertex ? '' : 'disabled'
+                            "
                             :title="
                                 'Undo ' +
-                                (showUndoButton
+                                (canUndoDrawnVertex
                                     ? 'last point'
                                     : undoStackTopInteractionName())
                             "
@@ -310,10 +312,12 @@
                     <div class="optional-layers-button-wrapper" title="Redo">
                         <div
                             class="optional-layers-button btn"
-                            :class="hasRedo ? '' : 'disabled'"
+                            :class="
+                                hasRedo || canRedoDrawnVertex ? '' : 'disabled'
+                            "
                             :title="
                                 'Redo ' +
-                                (showRedoButton
+                                (canRedoDrawnVertex
                                     ? 'last point'
                                     : redoStackTopInteractionName())
                             "
@@ -949,7 +953,7 @@ export default {
                 return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`;
             }
         },
-        showUndoButton: function () {
+        canUndoDrawnVertex: function () {
             return (
                 this.mode == 'draw' &&
                 this.drawForModel &&
@@ -957,7 +961,7 @@ export default {
                 this.sketchCoordinates.length > 1
             );
         },
-        showRedoButton: function () {
+        canRedoDrawnVertex: function () {
             return false;
             /* Todo: The redo button is partially implemented so it is disabled for now.
             return (
@@ -1574,7 +1578,7 @@ export default {
                         return true;
                     } else if (evt.originalEvent.buttons === 2) {
                         // If the right mouse button is pressed, undo the last point
-                        if (vm.showUndoButton) {
+                        if (vm.canUndoDrawnVertex) {
                             vm.undoLeaseLicensePoint();
                         } else {
                             vm.set_mode('layer');
@@ -2513,7 +2517,7 @@ export default {
          */
         undo: function () {
             let vm = this;
-            if (vm.showUndoButton) {
+            if (vm.canUndoDrawnVertex) {
                 vm.undoLeaseLicensePoint();
             } else {
                 vm.redoStack.push(vm.undoStackTopInteractionName());
@@ -2525,7 +2529,7 @@ export default {
          */
         redo: function () {
             let vm = this;
-            if (vm.showRedoButton) {
+            if (vm.canRedoDrawnVertex) {
                 vm.redoLeaseLicensePoint();
             } else {
                 vm.redoStack.pop();
