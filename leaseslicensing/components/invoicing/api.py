@@ -482,7 +482,9 @@ class InvoicingDetailsViewSet(LicensingViewset):
 
     def process_gross_turnover_changes(self, instance, data):
         """When the finance group user enters amounts for financial quarters and years
-        the system"""
+        the system
+
+        Todo: Modify this to support monthly invoicing"""
         annual_gross_turnover_changes = []
         quarterly_gross_turnover_changes = []
         new_gross_turnover = None
