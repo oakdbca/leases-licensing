@@ -155,7 +155,7 @@ class SectionChecklistAdmin(admin.ModelAdmin):
         return obj.get_section_display()
 
     # Configure column titles
-    application_type_name.short_description = "Application Type"
+    application_type_name.short_description = "Proposal Type"
     list_type_name.short_description = "List Type"
 
 
