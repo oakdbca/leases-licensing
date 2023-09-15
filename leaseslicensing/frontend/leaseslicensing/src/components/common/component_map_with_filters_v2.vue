@@ -289,7 +289,7 @@
                             >
                         </div>
                     </div>
-                    <div class="optional-layers-button-wrapper">
+                    <div class="optional-layers-button-wrapper" title="Undo">
                         <div
                             class="optional-layers-button btn"
                             :class="hasUndo ? '' : 'disabled'"
@@ -297,16 +297,9 @@
                                 'Undo ' +
                                 (showUndoButton
                                     ? 'last point'
-                                    : undoStack.length > 0
-                                    ? (undoStack.slice(-1)[0] || []).name ||
-                                      (undoStack.slice(-1)[0] || []).type
-                                    : 'last action')
+                                    : undoStackTopInteractionName())
                             "
-                            @click="
-                                showUndoButton
-                                    ? undoLeaseLicensePoint()
-                                    : undoredo.undo()
-                            "
+                            @click="undo()"
                         >
                             <img
                                 class="svg-icon"
@@ -314,7 +307,7 @@
                             />
                         </div>
                     </div>
-                    <div class="optional-layers-button-wrapper">
+                    <div class="optional-layers-button-wrapper" title="Redo">
                         <div
                             class="optional-layers-button btn"
                             :class="hasRedo ? '' : 'disabled'"
@@ -322,13 +315,9 @@
                                 'Redo ' +
                                 (showRedoButton
                                     ? 'last point'
-                                    : (undoStack.slice(-1)[0] || []).name)
+                                    : redoStackTopInteractionName())
                             "
-                            @click="
-                                showRedoButton
-                                    ? redoLeaseLicensePoint()
-                                    : undoredo.redo()
-                            "
+                            @click="redo()"
                         >
                             <img
                                 class="svg-icon"
@@ -907,6 +896,7 @@ export default {
             overlayFeatureInfo: {},
             deletedFeatures: [], // keep track of deleted features
             undoredo: null,
+            redoStack: [], // Just the description names of redoable actions
         };
     },
     computed: {
@@ -1004,6 +994,9 @@ export default {
             }
             return false;
         },
+        /**
+         * Returns the stack of undoable actions
+         */
         undoStack: function () {
             let vm = this;
             if (!vm.undoredo) {
@@ -1461,10 +1454,8 @@ export default {
             vm.map.on('features-loaded', function (evt) {
                 if (evt.details.loaded == true) {
                     // Add undo/redo AFTER proposal geometries have been added to the map
-                    vm.undoredo = new UndoRedo();
-
-                    vm.map.on('event:undo', function (evt) {
-                        console.log('change:remove', evt);
+                    vm.undoredo = new UndoRedo({
+                        layers: [vm.modelQueryLayer],
                     });
                     vm.map.addInteraction(vm.undoredo);
                 }
@@ -2516,6 +2507,55 @@ export default {
             let vm = this;
             vm.modify.setActive(active);
             vm.snap.setActive(active);
+        },
+        /**
+         * Undoes the last map interaction
+         */
+        undo: function () {
+            let vm = this;
+            if (vm.showUndoButton) {
+                vm.undoLeaseLicensePoint();
+            } else {
+                vm.redoStack.push(vm.undoStackTopInteractionName());
+                vm.undoredo.undo();
+            }
+        },
+        /**
+         * Redoes the last map interaction
+         */
+        redo: function () {
+            let vm = this;
+            if (vm.showRedoButton) {
+                vm.redoLeaseLicensePoint();
+            } else {
+                vm.redoStack.pop();
+                vm.undoredo.redo();
+            }
+        },
+        /**
+         * Returns a description for the top action in the undo stack
+         */
+        undoStackTopInteractionName: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return;
+            }
+            let stack = vm.undoredo.getStack();
+
+            if (stack && stack.length > 0) {
+                return (
+                    (stack.slice(-1)[0] || []).name ||
+                    (stack.slice(-1)[0] || []).type
+                );
+            }
+            return 'last action';
+        },
+        redoStackTopInteractionName: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return;
+            }
+            return vm.redoStack.slice(-1)[0] || 'last action';
         },
     },
 };
