@@ -3363,7 +3363,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             return
 
         if (
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
             == invoicing_details.charge_method.key
         ):
             # Generate requirements for the proponent to submit quarterly (or monthly) and annual financial statements

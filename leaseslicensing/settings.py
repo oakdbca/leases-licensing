@@ -414,7 +414,7 @@ CHARGE_METHOD_BASE_FEE_PLUS_FIXED_ANNUAL_PERCENTAGE = (
 )
 CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI = "base_fee_plus_annual_cpi"
 CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI_CUSTOM = "base_fee_plus_annual_cpi_custom"
-CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER = "percentage_of_gross_turnover"
+CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS = "percentage_of_gross_turnover"
 CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE = (
     "percentage_of_gross_turnover_in_advance"
 )
@@ -436,7 +436,7 @@ CHARGE_METHODS = (
     ),
     (CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI, "Base Fee Plus Annual CPI (ABS)"),
     (
-        CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER,
+        CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
         "Percentage of Gross Turnover (Arrears)",
     ),
     (
