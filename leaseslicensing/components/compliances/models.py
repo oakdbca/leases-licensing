@@ -165,8 +165,8 @@ class Compliance(LicensingModelVersioned):
         :return: True if the compliance is not in the editable status for external user.
         """
         return (
-            self.customer_status == "with_assessor"
-            or self.customer_status == "approved"
+            self.customer_status == Compliance.PROCESSING_STATUS_WITH_ASSESSOR
+            or self.customer_status == Compliance.PROCESSING_STATUS_APPROVED
         )
 
     def is_referee(self, user_id):
@@ -181,7 +181,7 @@ class Compliance(LicensingModelVersioned):
         """
         :return: True if the compliance is readtruey for assessment.
         """
-        return self.processing_status == "with_assessor"
+        return self.processing_status == Compliance.PROCESSING_STATUS_WITH_ASSESSOR
 
     @property
     def amendment_requests(self):
@@ -236,13 +236,16 @@ class Compliance(LicensingModelVersioned):
 
     def submit(self, request):
         with transaction.atomic():
-            if self.processing_status == "discarded":
+            if self.processing_status == Compliance.PROCESSING_STATUS_DISCARDED:
                 raise ValidationError(
                     "You cannot submit this compliance with requirements as it has been discarded."
                 )
-            if self.processing_status == "future" or "due":
-                self.processing_status = "with_assessor"
-                self.customer_status = "with_assessor"
+            if (
+                self.processing_status == Compliance.PROCESSING_STATUS_FUTURE
+                or Compliance.PROCESSING_STATUS_DUE
+            ):
+                self.processing_status = Compliance.PROCESSING_STATUS_WITH_ASSESSOR
+                self.customer_status = Compliance.PROCESSING_STATUS_WITH_ASSESSOR
                 self.submitter = request.user.id
 
                 # Removing the below as the uploaded files are processed in the submit action in the api
@@ -303,8 +306,8 @@ class Compliance(LicensingModelVersioned):
 
     def accept(self, request):
         with transaction.atomic():
-            self.processing_status = "approved"
-            self.customer_status = "approved"
+            self.processing_status = Compliance.PROCESSING_STATUS_APPROVED
+            self.customer_status = Compliance.PROCESSING_STATUS_APPROVED
             self.save()
             self.log_user_action(
                 ComplianceUserAction.ACTION_CONCLUDE_REQUEST.format(self.id), request
@@ -586,9 +589,9 @@ class ComplianceAmendmentRequest(CompRequest):
         with transaction.atomic():
             if self.status == "requested":
                 compliance = self.compliance
-                if compliance.processing_status != "due":
-                    compliance.processing_status = "due"
-                    compliance.customer_status = "due"
+                if compliance.processing_status != Compliance.PROCESSING_STATUS_DUE:
+                    compliance.processing_status = Compliance.PROCESSING_STATUS_DUE
+                    compliance.customer_status = Compliance.PROCESSING_STATUS_DUE
                     compliance.save()
                 # Create a log entry for the proposal
                 compliance.log_user_action(
