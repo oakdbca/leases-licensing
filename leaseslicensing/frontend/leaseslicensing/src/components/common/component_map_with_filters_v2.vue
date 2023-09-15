@@ -245,36 +245,14 @@
                             />
                         </div>
                     </div>
-                    <div
-                        v-if="optionalLayersActive"
-                        class="optional-layers-button-wrapper"
-                    >
+                    <div class="optional-layers-button-wrapper" title="Delete">
                         <div
-                            :title="
-                                mode == 'info'
-                                    ? 'Deactivate info tool'
-                                    : 'Activate info tool'
+                            class="optional-layers-button btn"
+                            :class="
+                                selectedFeatureIds.length == 0
+                                    ? 'disabled'
+                                    : 'btn-danger'
                             "
-                            class="btn"
-                            :class="[
-                                mode == 'info'
-                                    ? 'optional-layers-button-active'
-                                    : 'optional-layers-button',
-                            ]"
-                            @click="set_mode.bind(this)('info')"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/info-query.svg"
-                            />
-                        </div>
-                    </div>
-                    <div
-                        v-if="selectedFeatureIds.length > 0"
-                        class="optional-layers-button-wrapper"
-                    >
-                        <div
-                            class="optional-layers-button btn btn-danger"
                             title="Delete selected features"
                             @click="removeModelFeatures()"
                         >
@@ -283,6 +261,7 @@
                                 src="../../assets/trash-bin.svg"
                             />
                             <span
+                                v-if="selectedFeatureIds.length"
                                 id="selectedFeatureCount"
                                 class="badge badge-warning"
                                 >{{ selectedFeatureIds.length }}</span
@@ -326,6 +305,30 @@
                             <img
                                 class="svg-icon"
                                 src="../../assets/map-redo.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        v-if="optionalLayersActive"
+                        class="optional-layers-button-wrapper"
+                    >
+                        <div
+                            :title="
+                                mode == 'info'
+                                    ? 'Deactivate info tool'
+                                    : 'Activate info tool'
+                            "
+                            class="btn"
+                            :class="[
+                                mode == 'info'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('info')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/info-query.svg"
                             />
                         </div>
                     </div>
