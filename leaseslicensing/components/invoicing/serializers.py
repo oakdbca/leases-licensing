@@ -525,18 +525,21 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         ScheduledInvoice.objects.filter(
             invoicing_details=instance,
             invoice__isnull=True,
-            date_to_generate__gt=today(),
+            date_to_generate__gte=today(),
         ).delete()
 
         # Get the date we have already invoiced up to
         invoiced_up_to = instance.invoiced_up_to
 
         # Generate new future scheduled invoices
-        # Gross turnover in arrears are generated on receipt of audited financial statements so don't need generating
-        if (
-            not instance.charge_method.key
-            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
-        ):
+
+        if instance.charge_method.key not in [
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+            # Gross turnover in arrears are generated on receipt of
+            # audited financial statements so don't need generating
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+        ]:
             instance.generate_invoice_schedule(invoiced_up_to=invoiced_up_to)
 
     @staticmethod
