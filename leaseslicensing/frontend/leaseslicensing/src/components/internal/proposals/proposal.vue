@@ -138,6 +138,7 @@
                             :registration-of-interest="isRegistrationOfInterest"
                             :lease-licence="isLeaseLicence"
                             @formMounted="applicationFormMounted"
+                            @update:GisData="updateGisData"
                         >
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
                             <template #slot_map_assessment_comments>
@@ -2757,6 +2758,26 @@ export default {
         updateInvoicingDetails: function (value) {
             console.log('updateInvoicingDetails', value);
             Object.assign(this.proposal.invoicing_details, value);
+        },
+        updateGisData: function (property, value) {
+            if (!Object.hasOwn(this.proposal, property)) {
+                console.log(`Property ${property} does not exist on proposal`);
+                return;
+            }
+            console.log('updateGisData', property, value);
+
+            this.proposal[property];
+
+            if (this.proposal[property].find((item) => item.id == value.id)) {
+                this.proposal[property] = this.proposal[property].filter(
+                    (item) => item.id != value.id
+                );
+            } else {
+                this.proposal[property].push({
+                    id: value.id,
+                    name: value.name,
+                });
+            }
         },
     },
 };

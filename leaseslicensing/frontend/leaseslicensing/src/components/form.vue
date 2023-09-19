@@ -194,6 +194,11 @@
                         <GisDataDetails
                             :selected-data="gis_data"
                             :readonly="is_external && leaseLicence"
+                            @update:selectedData="
+                                (property, value) => {
+                                    $emit('update:GisData', property, value);
+                                }
+                            "
                         />
                     </FormSection>
 
@@ -435,7 +440,7 @@ export default {
             default: true,
         },
     },
-    emits: ['refreshFromResponse', 'formMounted'],
+    emits: ['refreshFromResponse', 'formMounted', 'update:GisData'],
     data: function () {
         return {
             can_modify: true,

@@ -959,6 +959,8 @@ export default {
             deletedFeatures: [], // keep track of deleted features
             undoredo: null,
             redoStack: [], // Just the description names of redoable actions
+            drawing: false, // Whether the map is in draw (pencil icon) mode
+            transforming: false, // Whether the map is in transform (resize, scale, rotate) mode
         };
     },
     computed: {
