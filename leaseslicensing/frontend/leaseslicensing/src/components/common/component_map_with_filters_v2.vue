@@ -3,8 +3,8 @@
         TODO tasks (and ideas):
         - populate tenure, locality, and categorisation from geoserver response (see: map_functions::validateFeature for response values and owsQuery prop for query paramerters)
         - [DONE] prevent polygon delete after save (or save + status change)
-        - polygon redo button
-        - polygon edit button (move and add/remove vertices)
+        - [DONE] polygon redo button
+        - [DONE] polygon edit button (move and add/remove vertices)
         - pass in map tab filterable proposals as prop (see: prop featureCollection)
         - standardise feature tooltip fields (lodgement_date formatting, application_type, processing_status, etc.) across models
         - hide feature tooltip on save as it might overlap the save response modal
@@ -1801,6 +1801,9 @@ export default {
                 let hit = vm.map.forEachLayerAtPixel(
                     evt.pixel,
                     function (layer) {
+                        if (!vm.informing) {
+                            return false;
+                        }
                         layer.get('name'); //dbca_legislated_lands_and_waters
                         let optional_layer_names = vm.optionalLayers.map(
                             (layer) => {
@@ -1808,12 +1811,7 @@ export default {
                             }
                         );
 
-                        if (vm.informing) {
-                            return optional_layer_names.includes(
-                                layer.get('name')
-                            );
-                        }
-                        return false;
+                        return optional_layer_names.includes(layer.get('name'));
                     }
                 );
                 vm.map.getTargetElement().style.cursor = hit
