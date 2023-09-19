@@ -181,7 +181,7 @@
                             :title="
                                 mode == 'measure'
                                     ? 'Deactivate measure tool'
-                                    : 'Activate measure tool'
+                                    : 'Measure distances on the map'
                             "
                             class="btn"
                             :class="[
@@ -202,7 +202,7 @@
                             :title="
                                 mode == 'draw'
                                     ? 'Deactivate draw tool'
-                                    : 'Activate draw tool'
+                                    : 'Draw a new feature or edit a selected one'
                             "
                             class="btn"
                             :class="[
@@ -215,6 +215,30 @@
                             <img
                                 class="svg-icon"
                                 src="../../assets/pen-icon.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        v-if="drawable && polygonCount"
+                        class="optional-layers-button-wrapper"
+                    >
+                        <div
+                            :title="
+                                mode == 'transform'
+                                    ? 'Deactivate transform tool'
+                                    : 'Transform an existing feature'
+                            "
+                            class="btn"
+                            :class="[
+                                mode == 'transform'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('transform')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/transform-polygon.svg"
                             />
                         </div>
                     </div>
@@ -245,7 +269,10 @@
                             />
                         </div>
                     </div>
-                    <div class="optional-layers-button-wrapper" title="Delete">
+                    <div
+                        class="optional-layers-button-wrapper"
+                        title="Select a feature to delete"
+                    >
                         <div
                             class="optional-layers-button btn"
                             :class="
@@ -593,6 +620,7 @@ import TileWMS from 'ol/source/TileWMS';
 import { Draw, Select, Snap } from 'ol/interaction';
 import ModifyFeature from 'ol-ext/interaction/ModifyFeature';
 import UndoRedo from 'ol-ext/interaction/UndoRedo';
+import Transform from 'ol-ext/interaction/Transform';
 import Feature from 'ol/Feature';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
@@ -1506,12 +1534,15 @@ export default {
             });
 
             vm.initialisePointerMoveEvent();
+            vm.snap = new Snap({ source: vm.modelQuerySource });
             vm.select = vm.initialiseSelectFeatureEvent();
             vm.modify = vm.initialiseModifyFeatureEvent();
-            vm.map.getInteractions().extend([vm.select, vm.modify]);
-            vm.snap = new Snap({ source: vm.modelQuerySource });
-            vm.map.addInteraction(vm.snap);
-            // Init modify polygon as inactive
+            vm.transform = vm.initialiseTransform();
+
+            vm.map
+                .getInteractions()
+                .extend([vm.snap, vm.select, vm.modify, vm.transform]);
+
             vm.modifySetActive(false);
 
             vm.initialiseSingleClickEvent();
@@ -1722,6 +1753,7 @@ export default {
                         if (vm.drawing) {
                             // Enable modify polygon the hovered polygon is selected and drawing mode is active
                             vm.modifySetActive(true);
+                            vm.transformSetActive(false);
                         } else {
                             // Disable modify polygon when drawing mode is not active
                             vm.modifySetActive(false);
@@ -1934,6 +1966,9 @@ export default {
             });
 
             selectSingleClick.on('select', (evt) => {
+                if (vm.transforming) {
+                    return;
+                }
                 $.each(evt.selected, function (idx, feature) {
                     console.log(
                         `Selected feature ${feature.getProperties().id}`,
@@ -2001,12 +2036,7 @@ export default {
                         return false;
                     }
 
-                    let features = vm.modelQuerySource.getFeatures();
-                    features = features.filter((feature) => {
-                        return vm.selectedFeatureIds.includes(
-                            feature.getProperties().id
-                        );
-                    });
+                    let features = vm.selectedFeatures();
 
                     features.forEach((feature) => {
                         let coords = feature.getGeometry().getCoordinates();
@@ -2050,6 +2080,26 @@ export default {
             });
 
             return modify;
+        },
+        initialiseTransform: function () {
+            let vm = this;
+
+            const transform = new Transform({
+                source: vm.modelQuerySource,
+                hitTolerance: vm.hitTolerance,
+                // eslint-disable-next-line no-unused-vars
+                condition: function (evt, feature) {
+                    if (evt.type === 'pointermove') {
+                        return false;
+                    }
+                    if (vm.mode === 'transform') {
+                        return true;
+                    }
+                    return false;
+                },
+            });
+
+            return transform;
         },
         undoLeaseLicensePoint: function () {
             let vm = this;
@@ -2549,6 +2599,18 @@ export default {
                 });
         },
         /**
+         * Returns the selected features
+         */
+        selectedFeatures: function () {
+            let vm = this;
+            let features = vm.modelQuerySource.getFeatures();
+            return features.filter((feature) => {
+                return vm.selectedFeatureIds.includes(
+                    feature.getProperties().id
+                );
+            });
+        },
+        /**
          * Sets interactions for modify to active or inactive
          * @param {boolean} active
          */
@@ -2556,6 +2618,14 @@ export default {
             let vm = this;
             vm.modify.setActive(active);
             vm.snap.setActive(active);
+        },
+        /**
+         * Sets interactions for modify to active or inactive
+         */
+        transformSetActive(active) {
+            let vm = this;
+            vm.select.setActive(!active);
+            vm.transform.setActive(active);
         },
         /**
          * Undoes the last map interaction

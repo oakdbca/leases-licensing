@@ -143,9 +143,11 @@ export function set_mode(mode) {
     this.drawing = false;
     this.measuring = false;
     this.informing = false;
+    this.transforming = false;
     this.errorMessageProperty(null);
     this.overlay(undefined);
     this.map.getTargetElement().style.cursor = 'default';
+    this.transformSetActive(false);
 
     if (this.mode === 'layer') {
         this.clearMeasurementLayer();
@@ -156,6 +158,11 @@ export function set_mode(mode) {
         this.sketchCoordinatesHistory = [[]];
         _helper.toggle_draw_measure_license.bind(this)(false, true);
         this.drawing = true;
+    } else if (this.mode === 'transform') {
+        this.clearMeasurementLayer();
+        this.transformSetActive(true);
+        _helper.toggle_draw_measure_license.bind(this)(false, false);
+        this.transforming = true;
     } else if (this.mode === 'measure') {
         _helper.toggle_draw_measure_license.bind(this)(true, false);
         this.measuring = true;
