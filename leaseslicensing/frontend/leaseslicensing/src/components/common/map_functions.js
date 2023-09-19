@@ -1,7 +1,9 @@
 import WMSCapabilities from 'ol/format/WMSCapabilities';
 import TileWMS from 'ol/source/TileWMS';
 import TileLayer from 'ol/layer/Tile';
+import GeoJSON from 'ol/format/GeoJSON';
 import { Style, Fill, Stroke } from 'ol/style';
+import { utils } from '@/utils/hooks';
 
 // Tile server url
 // eslint-disable-next-line no-undef
@@ -101,7 +103,8 @@ export function addOptionalLayers(map_component) {
                                 let query_str = _helper.geoserverQuery.bind(
                                     this
                                 )(point, map_component);
-                                map_component
+
+                                _helper
                                     .validateFeatureQuery(query_str)
                                     .then(async (features) => {
                                         if (features.length === 0) {
@@ -231,7 +234,7 @@ export function validateFeature(feature_wkt, component_map) {
     }
     let query = _helper.geoserverQuery(feature_wkt, component_map);
 
-    component_map.validateFeatureQuery(query).then(async (features) => {
+    _helper.validateFeatureQuery(query).then(async (features) => {
         if (features.length === 0) {
             console.warn('New feature is not valid');
             component_map.errorMessageProperty(
@@ -300,5 +303,32 @@ const _helper = {
         let query = `${owsUrl}${params}`;
 
         return query;
+    },
+    /**
+     * Validates an openlayers feature against a geoserver `url`.
+     * @param {Feature} feature A feature to validate
+     * @returns {Promise} A promise that resolves to a list of intersected features
+     */
+    validateFeatureQuery: async function (query) {
+        let vm = this;
+
+        let features = [];
+        // Query the WFS
+        vm.queryingGeoserver = true;
+        let urls = [query];
+
+        let requests = urls.map((url) =>
+            utils.fetchUrl(url).then((response) => response)
+        );
+        await Promise.all(requests)
+            .then((data) => {
+                features = new GeoJSON().readFeatures(data[0]);
+            })
+            .catch((error) => {
+                console.log(error.message);
+                vm.errorMessage = error.message;
+            });
+
+        return features;
     },
 };

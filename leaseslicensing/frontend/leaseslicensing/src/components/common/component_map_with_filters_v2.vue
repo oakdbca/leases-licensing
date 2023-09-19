@@ -607,7 +607,7 @@
 
 <script>
 import { v4 as uuid } from 'uuid';
-import { api_endpoints, helpers, utils } from '@/utils/hooks';
+import { api_endpoints, helpers } from '@/utils/hooks';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 import VueAlert from '@vue-utils/alert.vue';
 
@@ -2466,34 +2466,6 @@ export default {
 
             // Create a Well-Known-Text polygon string from the coordinate pairs
             return `POLYGON ((${flatCoordinateStringPairs.join(', ')}))`;
-        },
-        /**
-         * Validates an openlayers feature against a geoserver `url`.
-         * @param {Feature} feature A feature to validate
-         * @returns {Promise} A promise that resolves to a list of intersected features
-         */
-        validateFeatureQuery: async function (query) {
-            let vm = this;
-
-            let features = [];
-            // Query the WFS
-            vm.queryingGeoserver = true;
-            // var urls = [`${url}${params}`];
-            let urls = [query];
-
-            let requests = urls.map((url) =>
-                utils.fetchUrl(url).then((response) => response)
-            );
-            await Promise.all(requests)
-                .then((data) => {
-                    features = new GeoJSON().readFeatures(data[0]);
-                })
-                .catch((error) => {
-                    console.log(error.message);
-                    vm.errorMessage = error.message;
-                });
-
-            return features;
         },
         /**
          * Finish drawing of the current feature sketch.
