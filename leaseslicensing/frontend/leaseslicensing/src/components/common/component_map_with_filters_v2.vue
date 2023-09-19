@@ -2114,16 +2114,6 @@ export default {
             const transform = new Transform({
                 source: vm.modelQuerySource,
                 hitTolerance: vm.hitTolerance,
-                // eslint-disable-next-line no-unused-vars
-                condition: function (evt, feature) {
-                    if (evt.type === 'pointermove') {
-                        return false;
-                    }
-                    if (vm.mode === 'transform') {
-                        return true;
-                    }
-                    return false;
-                },
             });
 
             let transformCallback = function (evt) {
