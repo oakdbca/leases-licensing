@@ -2,6 +2,8 @@ import WMSCapabilities from 'ol/format/WMSCapabilities';
 import TileWMS from 'ol/source/TileWMS';
 import TileLayer from 'ol/layer/Tile';
 import GeoJSON from 'ol/format/GeoJSON';
+import Feature from 'ol/Feature';
+import { Polygon } from 'ol/geom';
 import { Style, Fill, Stroke } from 'ol/style';
 import { utils } from '@/utils/hooks';
 
@@ -219,19 +221,25 @@ export function polygon_style(feature) {
  * Validate feature callback function. Calls `finnishDrawing` on the map component
  * when the feature is valid. A feature is condidered valid when it intersects with
  * the DBCS legislated land-water layer.
- * @param {string} feature_wkt The feature in WKT format
+ * @param {string} feature The feature
  * @param {Proxy} component_map The map component
  */
-export function validateFeature(feature_wkt, component_map) {
+export function validateFeature(feature, component_map) {
     let vm = this;
-    console.log('Validate feature');
-    if (feature_wkt === undefined) {
+    let feature_wkt = undefined;
+    console.log('Validate feature', feature);
+    if (feature === undefined) {
         // Get the WKT representation of the currently drawn polygon sketch
-        feature_wkt = vm.$refs.component_map.featureToWKT();
+        feature_wkt = _helper.featureToWKT.bind(vm)();
+    } else {
+        // Get the WKT representation of the provided feature
+        feature_wkt = _helper.featureToWKT(feature);
     }
+
     if (component_map === undefined) {
         component_map = vm.$refs.component_map;
     }
+
     let query = _helper.geoserverQuery(feature_wkt, component_map);
 
     _helper.validateFeatureQuery(query).then(async (features) => {
@@ -274,6 +282,44 @@ const _helper = {
         if (this.drawForModel) {
             this.drawForModel.setActive(drawForModel);
         }
+    },
+    /**
+     * Returns a Well-known-text (WKT) representation of a feature
+     * @param {Feature} feature A feature to validate
+     */
+    featureToWKT: function (feature) {
+        let vm = this;
+
+        if (feature === undefined) {
+            // If no feature is provided, create a feature from the current sketch
+            let coordinates = vm.$refs.component_map.sketchCoordinates.slice();
+            coordinates.push(coordinates[0]);
+            feature = new Feature({
+                id: -1,
+                geometry: new Polygon([coordinates]),
+                label: 'validation',
+                color: vm.defaultColor,
+                polygon_source: 'validation',
+            });
+        }
+
+        // Prepare a WFS feature intersection request
+        let flatCoordinates = feature.values_.geometry.flatCoordinates;
+
+        // Transform list of flat coordinates into a list of coordinate pairs,
+        // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
+        let flatCoordinateStringPairs = flatCoordinates
+            .map((coord, index) =>
+                index % 2 == 0
+                    ? [flatCoordinates[index], flatCoordinates[index + 1]].join(
+                          ' '
+                      )
+                    : ''
+            )
+            .filter((item) => item != '');
+
+        // Create a Well-Known-Text polygon string from the coordinate pairs
+        return `POLYGON ((${flatCoordinateStringPairs.join(', ')}))`;
     },
     /**
      * Builds a query string for the geoserver based on the provided WKT

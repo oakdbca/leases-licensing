@@ -2066,10 +2066,7 @@ export default {
                                         .getGeometry()
                                         .setCoordinates([coord]);
 
-                                    validateFeature(
-                                        vm.featureToWKT(feature),
-                                        vm
-                                    );
+                                    validateFeature(feature, vm);
                                 }
                             }
                         }
@@ -2080,8 +2077,7 @@ export default {
             modify.addEventListener('modifyend', function (evt) {
                 console.log('Modify end', evt.features);
                 let feature = evt.features[0];
-                let wkt = vm.featureToWKT(feature);
-                validateFeature(wkt, vm);
+                validateFeature(feature, vm);
             });
 
             return modify;
@@ -2106,8 +2102,7 @@ export default {
 
             let transformCallback = function (evt) {
                 evt.features.forEach((feature) => {
-                    let wkt = vm.featureToWKT(feature);
-                    validateFeature(wkt, vm);
+                    validateFeature(feature, vm);
                 });
             };
 
@@ -2444,48 +2439,6 @@ export default {
                     vm.owsQuery[layerStr].propertyName || 'wkb_geometry',
             };
         },
-        /**
-         * Returns a Well-known-text (WKT) representation of a feature
-         * @param {Feature} feature A feature to validate
-         */
-        featureToWKT: function (feature) {
-            let vm = this;
-
-            if (feature === undefined) {
-                // If no feature is provided, create a feature from the current sketch
-                let coordinates = vm.sketchCoordinates.slice();
-                coordinates.push(coordinates[0]);
-                feature = new Feature({
-                    id: -1,
-                    geometry: new Polygon([coordinates]),
-                    label: 'validation',
-                    color: vm.defaultColor,
-                    polygon_source: 'validation',
-                });
-            }
-
-            // Prepare a WFS feature intersection request
-            let flatCoordinates = feature.values_.geometry.flatCoordinates;
-
-            // Transform list of flat coordinates into a list of coordinate pairs,
-            // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
-            let flatCoordinateStringPairs = flatCoordinates
-                .map((coord, index) =>
-                    index % 2 == 0
-                        ? [
-                              flatCoordinates[index],
-                              flatCoordinates[index + 1],
-                          ].join(' ')
-                        : ''
-                )
-                .filter((item) => item != '');
-
-            // Create a Well-Known-Text polygon string from the coordinate pairs
-            return `POLYGON ((${flatCoordinateStringPairs.join(', ')}))`;
-        },
-        /**
-         * Finish drawing of the current feature sketch.
-         */
         finishDrawing: function () {
             let vm = this;
             vm.queryingGeoserver = false;
