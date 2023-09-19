@@ -2065,6 +2065,11 @@ export default {
                                     feature
                                         .getGeometry()
                                         .setCoordinates([coord]);
+
+                                    validateFeature(
+                                        vm.featureToWKT(feature),
+                                        vm
+                                    );
                                 }
                             }
                         }
@@ -2098,6 +2103,17 @@ export default {
                     return false;
                 },
             });
+
+            let transformCallback = function (evt) {
+                evt.features.forEach((feature) => {
+                    let wkt = vm.featureToWKT(feature);
+                    validateFeature(wkt, vm);
+                });
+            };
+
+            for (let eventName of ['translateend', 'rotateend', 'scaleend']) {
+                transform.addEventListener(eventName, transformCallback);
+            }
 
             return transform;
         },
