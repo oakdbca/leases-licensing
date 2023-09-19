@@ -97,6 +97,26 @@
                 </div>
             </div>
         </div>
+        <div class="justify-content-end align-items-center mb-2">
+            <div
+                v-if="
+                    transforming || (drawing && selectedFeatureIds.length > 0)
+                "
+                class="row"
+            >
+                <div class="col-md-12">
+                    <BootstrapAlert class="mb-0">
+                        <p>
+                            <span
+                                >Drawing or modifying a feature will cause any
+                                existing geospatial data to be
+                                re-evaluated</span
+                            >
+                        </p>
+                    </BootstrapAlert>
+                </div>
+            </div>
+        </div>
 
         <VueAlert
             v-model:show="hasErrorMessage"
@@ -295,7 +315,10 @@
                             >
                         </div>
                     </div>
-                    <div class="optional-layers-button-wrapper" title="Undo">
+                    <div
+                        class="optional-layers-button-wrapper"
+                        title="Undo last action"
+                    >
                         <div
                             class="optional-layers-button btn"
                             :class="
@@ -315,7 +338,10 @@
                             />
                         </div>
                     </div>
-                    <div class="optional-layers-button-wrapper" title="Redo">
+                    <div
+                        class="optional-layers-button-wrapper"
+                        title="Redo last action"
+                    >
                         <div
                             class="optional-layers-button btn"
                             :class="
@@ -343,7 +369,7 @@
                             :title="
                                 mode == 'info'
                                     ? 'Deactivate info tool'
-                                    : 'Activate info tool'
+                                    : 'Click a data set feature for more information'
                             "
                             class="btn"
                             :class="[
