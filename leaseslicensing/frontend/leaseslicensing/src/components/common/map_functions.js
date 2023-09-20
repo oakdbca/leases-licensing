@@ -18,10 +18,10 @@ export var baselayer_name = 'mapbox-emerald';
  * Queries the WMS server for its capabilities and adds optional layers to a map
  * @param {Proxy} map_component A map component instance
  */
-export function addOptionalLayers(map_component) {
+export async function addOptionalLayers(map_component) {
     let parser = new WMSCapabilities();
 
-    fetch(url)
+    await fetch(url)
         .then(function (response) {
             return response.text();
         })
@@ -130,6 +130,9 @@ export function addOptionalLayers(map_component) {
                     );
                 });
             }
+        })
+        .catch((error) => {
+            console.error('There was an error fetching addional layers', error);
         });
 }
 
@@ -261,7 +264,7 @@ export let owsQuery = {
         typeName: 'public:dbca_legislated_lands_and_waters',
         srsName: 'EPSG:4326',
         propertyName:
-            'objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting',
+            'objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting,shape_area,leg_poly_area',
         geometry: 'wkb_geometry',
     },
 };

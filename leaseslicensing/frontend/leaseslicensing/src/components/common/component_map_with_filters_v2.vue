@@ -145,17 +145,23 @@
                 </div>
                 <div class="optional-layers-wrapper">
                     <div style="position: relative">
-                        <transition v-if="optionalLayers.length">
-                            <div class="optional-layers-button-wrapper">
+                        <transition>
+                            <div
+                                class="optional-layers-button-wrapper"
+                                :title="`There are ${optionalLayers.length} optional layers available}`"
+                            >
                                 <div
-                                    class="optional-layers-button"
+                                    class="optional-layers-button btn"
+                                    :class="
+                                        optionalLayers.length ? '' : 'disabled'
+                                    "
                                     @mouseover="hover = true"
                                 >
                                     <img src="../../assets/layers.svg" />
                                 </div>
                             </div>
                         </transition>
-                        <transition v-if="optionalLayers.length">
+                        <transition>
                             <div
                                 v-show="hover"
                                 div
@@ -465,18 +471,22 @@
                                                 selectedModel.area_sqm > 10000
                                             "
                                         >
-                                            <th scope="row">Area (hm&#178;)</th>
+                                            <th scope="row">Area (ha)</th>
                                             <td>
                                                 {{
-                                                    selectedModel.area_sqm /
-                                                    10000
+                                                    (
+                                                        selectedModel.area_sqm /
+                                                        10000
+                                                    ).toFixed(1)
                                                 }}
                                             </td>
                                         </template>
                                         <template v-else>
                                             <th scope="row">Area (m&#178;)</th>
                                             <td>
-                                                {{ selectedModel.area_sqm }}
+                                                {{
+                                                    selectedModel.area_sqm.round()
+                                                }}
                                             </td>
                                         </template>
                                     </tr>
@@ -531,6 +541,17 @@
                                         <th scope="row">Category</th>
                                         <td>
                                             {{ overlayFeatureInfo.category }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th scope="row">Area (ha)</th>
+                                        <td>
+                                            {{
+                                                (
+                                                    overlayFeatureInfo.leg_poly_area +
+                                                    Number.EPSILON
+                                                ).toFixed(1)
+                                            }}
                                         </td>
                                     </tr>
                                 </tbody>
@@ -653,6 +674,7 @@ import VectorSource from 'ol/source/Vector';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { FullScreen as FullScreenControl } from 'ol/control';
 import { LineString, Point, MultiPoint, Polygon } from 'ol/geom';
+import { getArea } from 'ol/sphere.js';
 import GeoJSON from 'ol/format/GeoJSON';
 import Overlay from 'ol/Overlay.js';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js';
@@ -1809,7 +1831,11 @@ export default {
                                 selected.getProperties().polygon_source;
                             model.copied_from =
                                 selected.getProperties().copied_from;
-                            model.area_sqm = selected.getProperties().area_sqm;
+                            model.area_sqm = Math.round(
+                                getArea(selected.getGeometry(), {
+                                    projection: 'EPSG:4326',
+                                })
+                            );
                         }
                         vm.selectedModel = model;
                         if (!isSelectedFeature(selected)) {
@@ -2633,6 +2659,10 @@ export default {
             }
             return vm.redoStack.slice(-1)[0] || 'last action';
         },
+        // featureArea: function () {
+        //     let vm = this;
+        //     vm.selectedModel.
+        // },
     },
 };
 </script>
