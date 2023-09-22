@@ -88,42 +88,37 @@
 
         <div class="justify-content-end align-items-center mb-2">
             <div v-if="mapInfoText.length > 0" class="row">
-                <div class="col-md-12">
+                <div class="col-md-6">
                     <BootstrapAlert class="mb-0">
                         <!-- eslint-disable vue/no-v-html -->
                         <p><span v-html="mapInfoText"></span></p>
                         <!--eslint-enable-->
                     </BootstrapAlert>
                 </div>
-            </div>
-        </div>
-        <div class="justify-content-end align-items-center mb-2">
-            <div
-                v-if="
-                    transforming || (drawing && selectedFeatureIds.length > 0)
-                "
-                class="row"
-            >
-                <div class="col-md-12">
-                    <BootstrapAlert class="mb-0">
-                        <p>
-                            <span
-                                >Drawing or modifying a feature will cause any
-                                existing geospatial data to be
-                                re-evaluated</span
-                            >
-                        </p>
-                    </BootstrapAlert>
+                <div class="col-md-6">
+                    <div class="row">
+                        <VueAlert
+                            v-model:show="hasErrorMessage"
+                            class="mb-1"
+                            type="danger"
+                            style="color: red"
+                            ><strong> {{ errorMessage }} </strong>
+                        </VueAlert>
+                    </div>
+                    <div class="row">
+                        <VueAlert
+                            v-model:show="hasModifiedFeatures"
+                            class="mb-0"
+                            type="warning"
+                        >
+                            Adding a new or modifying an existing feature will
+                            cause any existing geospatial data to be
+                            re-evaluated on save and possibly be changed.
+                        </VueAlert>
+                    </div>
                 </div>
             </div>
         </div>
-
-        <VueAlert
-            v-model:show="hasErrorMessage"
-            type="danger"
-            style="color: red"
-            ><strong> {{ errorMessage }} </strong>
-        </VueAlert>
 
         <div
             :id="map_container_id"
@@ -245,8 +240,8 @@
                         </div>
                     </div>
                     <div
-                        v-if="drawable && polygonCount"
                         class="optional-layers-button-wrapper"
+                        title="Transform a drawn feature"
                     >
                         <div
                             :title="
@@ -259,6 +254,7 @@
                                 mode == 'transform'
                                     ? 'optional-layers-button-active'
                                     : 'optional-layers-button',
+                                drawable && polygonCount ? '' : 'disabled',
                             ]"
                             @click="set_mode.bind(this)('transform')"
                         >
@@ -297,7 +293,11 @@
                     </div>
                     <div
                         class="optional-layers-button-wrapper"
-                        title="Select a feature to delete"
+                        :title="
+                            polygonCount
+                                ? 'Select a feature to delete'
+                                : 'No features to delete'
+                        "
                     >
                         <div
                             class="optional-layers-button btn"
@@ -322,6 +322,7 @@
                         </div>
                     </div>
                     <div
+                        v-if="canUndoAction || canUndoDrawnVertex"
                         class="optional-layers-button-wrapper"
                         title="Undo last action"
                     >
@@ -345,6 +346,7 @@
                         </div>
                     </div>
                     <div
+                        v-if="canRedoAction || canRedoDrawnVertex"
                         class="optional-layers-button-wrapper"
                         title="Redo last action"
                     >
@@ -889,6 +891,14 @@ export default {
             required: false,
             default: 4,
         },
+        /**
+         * The maximum length of the undo/redo stacks
+         */
+        undoStackMaxLength: {
+            type: Number,
+            required: false,
+            default: 1, // As of now, Undo/Redo gets very clunky with more than one action stacked. Having the undo stack limited to 1 is still useful for undoing the last action.
+        },
     },
     emits: ['filter-appied', 'validate-feature', 'refreshFromResponse'],
     data() {
@@ -981,6 +991,7 @@ export default {
             deletedFeatures: [], // keep track of deleted features
             undoredo: null,
             redoStack: [], // Just the description names of redoable actions
+            modifiedFeaturesStack: [], // A stack of only those undoable actions that modified a feature
             drawing: false, // Whether the map is in draw (pencil icon) mode
             transforming: false, // Whether the map is in transform (resize, scale, rotate) mode
         };
@@ -1035,6 +1046,14 @@ export default {
                 return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`;
             }
         },
+        canUndoAction: function () {
+            // The ol-ext undo/redo module states it is still experimental, might want to disable undo/redo at all
+            return true;
+        },
+        canRedoAction: function () {
+            // The ol-ext undo/redo module states it is still experimental, might want to disable undo/redo at all
+            return true;
+        },
         canUndoDrawnVertex: function () {
             return (
                 this.mode == 'draw' &&
@@ -1073,6 +1092,10 @@ export default {
         hasErrorMessage: function () {
             let vm = this;
             return vm.errorMessage !== null;
+        },
+        hasModifiedFeatures: function () {
+            let vm = this;
+            return vm.modifiedFeaturesStack.length > 0;
         },
         debug: function () {
             if (this.$route.query.debug) {
@@ -1153,11 +1176,11 @@ export default {
                 );
             }
         },
-        selectedFeatureIds: function () {
-            if (this.selectedFeatureIds.length == 0) {
-                this.errorMessageProperty(null);
-            }
-        },
+        // selectedFeatureIds: function () {
+        //     if (this.selectedFeatureIds.length == 0) {
+        //         this.errorMessageProperty(null);
+        //     }
+        // },
     },
     created: function () {
         console.log('created()');
@@ -1560,12 +1583,14 @@ export default {
             vm.map.on('features-loaded', function (evt) {
                 if (evt.details.loaded == true) {
                     // Add undo/redo AFTER proposal geometries have been added to the map
-                    vm.undoredo = new UndoRedo({
+                    let undoredo = new UndoRedo({
                         layers: [vm.modelQueryLayer],
+                        maxLength: vm.undoStackMaxLength,
                     });
-                    vm.map.addInteraction(vm.undoredo);
+                    // Somehow passing the parameter has no effect, so we set it here
+                    undoredo.setMaxLength(vm.undoStackMaxLength);
                     // Define a custom undo/redo for selected features
-                    vm.undoredo.define(
+                    undoredo.define(
                         'select feature',
                         function (s) {
                             // Undo fn: set to the previous id list and styles
@@ -1580,6 +1605,40 @@ export default {
                             vm.setStyleForUnAndSelectedFeatures();
                         }
                     );
+                    vm.undoredo = Object.assign(undoredo, {});
+                    for (let eventName of ['stack:add', 'stack:remove']) {
+                        undoredo.addEventListener(eventName, function () {
+                            let undo_stack = vm.undoredo.getStack('undo');
+                            // eslint-disable-next-line no-unused-vars
+                            let undo_actions = undo_stack.map((item) => {
+                                return item.name || item.type;
+                            });
+                            let redo_stack = vm.undoredo.getStack('redo');
+                            // eslint-disable-next-line no-unused-vars
+                            let redo_actions = redo_stack.map((item) => {
+                                return item.name || item.type;
+                            });
+                            // console.log(
+                            //     'Undo actions',
+                            //     undo_actions,
+                            //     'Redo actions',
+                            //     redo_actions
+                            // );
+
+                            let stack = undo_stack.filter((item) => {
+                                // Filter out the actions that modify an existing or add a feature
+                                return (
+                                    (['addfeature'].includes(item.type) &&
+                                        item.feature.getProperties()
+                                            .polygon_source === 'New') ||
+                                    ['translate'].includes(item.name)
+                                );
+                            });
+
+                            vm.modifiedFeaturesStack = Object.assign(stack, {});
+                        });
+                    }
+                    vm.map.addInteraction(vm.undoredo);
                 }
             });
 
@@ -2031,10 +2090,12 @@ export default {
                     feature.setStyle(vm.basicSelectStyle);
                     vm.selectedFeatureIds.push(feature.getProperties().id);
                     // Add to undo stack
+                    vm.undoredo.blockStart('select feature');
                     vm.undoredo.push('select feature', {
                         before: before,
                         after: vm.selectedFeatureIds,
                     });
+                    vm.undoredo.blockEnd();
                 });
 
                 $.each(evt.deselected, function (idx, feature) {
@@ -2617,9 +2678,24 @@ export default {
             let vm = this;
             if (vm.canUndoDrawnVertex) {
                 vm.undoLeaseLicensePoint();
-            } else {
-                vm.redoStack.push(vm.undoStackTopInteractionName());
+            } else if (vm.canUndoAction) {
+                let name = vm.undoStackTopInteractionName();
+                vm.redoStack.push(name);
                 vm.undoredo.undo();
+                // Find the last feature in the redo stack and validate it
+                let item = vm.undoredo._redoStack
+                    .getArray()
+                    .reverse()
+                    .find((item) => {
+                        if (item.feature) {
+                            return item;
+                        }
+                    });
+                if (item && item.feature) {
+                    validateFeature(item.feature, vm);
+                }
+            } else {
+                // Nothing
             }
         },
         /**
@@ -2629,9 +2705,23 @@ export default {
             let vm = this;
             if (vm.canRedoDrawnVertex) {
                 vm.redoLeaseLicensePoint();
-            } else {
-                vm.redoStack.pop();
+            } else if (vm.canRedoAction) {
                 vm.undoredo.redo();
+                vm.redoStack.pop();
+                // Find the last feature in the undo stack and validate it
+                let item = vm.undoredo._undoStack
+                    .getArray()
+                    .reverse()
+                    .find((item) => {
+                        if (item.feature) {
+                            return item;
+                        }
+                    });
+                if (item && item.feature) {
+                    validateFeature(item.feature, vm);
+                }
+            } else {
+                // Nothing
             }
         },
         /**
@@ -2659,10 +2749,6 @@ export default {
             }
             return vm.redoStack.slice(-1)[0] || 'last action';
         },
-        // featureArea: function () {
-        //     let vm = this;
-        //     vm.selectedModel.
-        // },
     },
 };
 </script>
