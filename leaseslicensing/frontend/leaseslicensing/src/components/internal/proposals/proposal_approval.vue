@@ -327,7 +327,7 @@ export default {
                 ) {
                     return `The ${this.proposal.application_type.name_display}`;
                 } else {
-                    return `This application for a ${this.proposal.application_type.name_display}`;
+                    return `This proposal for a ${this.proposal.application_type.name_display}`;
                 }
             }
             return '';

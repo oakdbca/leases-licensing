@@ -642,7 +642,7 @@ def proposal_submit(proposal, request):
         # The model returned by proposal.documents is a proposallogdocument model
         # that doesn't even have the can_delete field however Todo: We must check if there are
         # related documents fields on proposal that do have this field as we should
-        # set their can_delete field as false like below as once the application is submitted they
+        # set their can_delete field as false like below as once the proposal is submitted they
         # should not be able to be deleted.
         # proposal.documents.all().update(can_delete=False)
 

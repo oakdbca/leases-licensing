@@ -1145,7 +1145,7 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
 
 
 class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerializer):
-    """Whilst we may want to allow the user to save their ROI application with fields empty,
+    """Whilst we may want to allow the user to save their ROI proposal with fields empty,
     we want to be able to request that they are filled out when submitting to avoid wasting time.
     """
 

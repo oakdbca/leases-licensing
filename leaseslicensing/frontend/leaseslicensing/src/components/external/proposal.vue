@@ -368,10 +368,6 @@ export default {
         application_fee_url: function () {
             return this.proposal ? `/application_fee/${this.proposal.id}/` : '';
         },
-        confirmation_url: function () {
-            // For authorised user application and mooring licence application
-            return this.proposal ? `/confirmation/${this.proposal.id}/` : '';
-        },
         proposal_submit_url: function () {
             return this.proposal
                 ? `/api/proposal/${this.proposal.id}/submit.json`
@@ -589,7 +585,7 @@ export default {
                 if (withConfirm) {
                     await swal.fire({
                         title: 'Saved',
-                        text: 'Your application has been saved',
+                        text: 'Your proposal has been saved',
                         icon: 'success',
                     });
                 }

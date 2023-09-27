@@ -1902,7 +1902,7 @@ export default {
                 if (res.ok) {
                     swal.fire({
                         title: 'Saved',
-                        text: 'The application has been saved',
+                        text: 'The proposal has been saved',
                         icon: 'success',
                     });
                     let data = await res.json();
@@ -2284,7 +2284,7 @@ export default {
                         vm.uuid++;
                         swal.fire({
                             title: 'Discarded',
-                            text: 'The application has been discarded',
+                            text: 'The proposal has been discarded',
                             icon: 'success',
                         });
                     }

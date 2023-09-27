@@ -11,16 +11,16 @@
 
     We sent the original referral request to this email address on {{external_referee_invite.datetime_sent|date:'d/m/Y'}}.
     {% else %}
-    You have been invited to complete referral for DBCA {{proposal.application_type.name_display}} Application: <strong>{{proposal.lodgement_number}}</strong>.
+    You have been invited to complete referral for DBCA {{proposal.application_type.name_display}} Proposal: <strong>{{proposal.lodgement_number}}</strong>.
     {% endif %}
 
 
     Comments: {{external_referee_invite.invite_text}}
 
-    In order to submit your comments regarding the application you will need to create an account with
+    In order to submit your comments regarding the proposal you will need to create an account with
     our system. (If you already have an account with us you can simply log in as usual).
 
-    When you register and log in you will be able to see any applications that have been referred to you.
+    When you register and log in you will be able to see any proposals that have been referred to you.
 
     To register and log in use the following link:
 

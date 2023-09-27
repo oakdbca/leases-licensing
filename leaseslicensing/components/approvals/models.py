@@ -801,7 +801,7 @@ class ApprovalLogEntry(CommunicationsLogEntry):
         app_label = "leaseslicensing"
 
     def save(self, **kwargs):
-        # save the application reference if the reference not provided
+        # save the reference if the reference not provided
         if not self.reference:
             self.reference = self.approval.id
         super().save(**kwargs)

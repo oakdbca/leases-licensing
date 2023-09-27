@@ -995,13 +995,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         (PROCESSING_STATUS_DISCARDED, "Discarded"),
     )
 
-    # List of statuses from above that allow a customer to edit an application.
+    # List of statuses from above that allow a customer to edit a proposal.
     CUSTOMER_EDITABLE_STATE = [
         PROCESSING_STATUS_DRAFT,
         PROCESSING_STATUS_AMENDMENT_REQUIRED,
     ]
 
-    # List of statuses from above that allow a customer to view an application (read-only)
+    # List of statuses from above that allow a customer to view a proposal (read-only)
     CUSTOMER_VIEWABLE_STATE = [
         PROCESSING_STATUS_WITH_ASSESSOR,
         PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
@@ -1419,14 +1419,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def can_user_edit(self):
         """
-        :return: True if the application is in one of the editable status.
+        :return: True if the proposal is in one of the editable status.
         """
         return self.processing_status in self.CUSTOMER_EDITABLE_STATE
 
     @property
     def can_user_view(self):
         """
-        :return: True if the application is in one of the approved status.
+        :return: True if the proposal is in one of the approved status.
         """
         return self.processing_status in self.CUSTOMER_VIEWABLE_STATE
 
@@ -1451,7 +1451,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     @property
     def is_deletable(self):
         """
-        An application can be deleted only if it is a draft and it hasn't been lodged yet
+        An proposal can be deleted only if it is a draft and it hasn't been lodged yet
         :return:
         """
         return self.processing_status == "draft" and not self.lodgement_number
@@ -1519,7 +1519,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     @property
     def can_officer_process(self):
-        """:return: True if the application is in one of the processable status for Assessor role."""
+        """:return: True if the proposal is in one of the processable status for Assessor role."""
         return (
             True
             if self.processing_status in Proposal.OFFICER_PROCESSABLE_STATE
@@ -4070,7 +4070,7 @@ class ProposalLogEntry(CommunicationsLogEntry):
         app_label = "leaseslicensing"
 
     def save(self, **kwargs):
-        # save the application reference if the reference not provided
+        # save the proposal reference if the reference not provided
         if not self.reference:
             self.reference = self.proposal.reference
         super().save(**kwargs)
@@ -4312,11 +4312,11 @@ class ProposalStandardRequirement(RevisionedMixin):
 class ProposalUserAction(UserAction):
     ACTION_CREATE_CUSTOMER_ = "Create customer {}"
     ACTION_CREATE_PROFILE_ = "Create profile {}"
-    ACTION_LODGE_APPLICATION = "Lodge application {}"
-    ACTION_ASSIGN_TO_ASSESSOR = "Assign application {} to {} as the assessor"
-    ACTION_UNASSIGN_ASSESSOR = "Unassign assessor from application {}"
-    ACTION_ASSIGN_TO_APPROVER = "Assign application {} to {} as the approver"
-    ACTION_UNASSIGN_APPROVER = "Unassign approver from application {}"
+    ACTION_LODGE_APPLICATION = "Lodge proposal {}"
+    ACTION_ASSIGN_TO_ASSESSOR = "Assign proposal {} to {} as the assessor"
+    ACTION_UNASSIGN_ASSESSOR = "Unassign assessor from proposal {}"
+    ACTION_ASSIGN_TO_APPROVER = "Assign proposal {} to {} as the approver"
+    ACTION_UNASSIGN_APPROVER = "Unassign approver from proposal {}"
     ACTION_ACCEPT_ID = "Accept ID"
     ACTION_RESET_ID = "Reset ID"
     ACTION_ID_REQUEST_UPDATE = "Request ID update"
@@ -4327,14 +4327,14 @@ class ProposalUserAction(UserAction):
     ACTION_ID_REQUEST_AMENDMENTS = "Request amendments"
     ACTION_SEND_FOR_ASSESSMENT_TO_ = "Send for assessment to {}"
     ACTION_SEND_ASSESSMENT_REMINDER_TO_ = "Send assessment reminder to {}"
-    ACTION_DECLINE = "Decline application {}"
+    ACTION_DECLINE = "Decline proposal {}"
     ACTION_ENTER_CONDITIONS = "Enter requirement"
     ACTION_CREATE_CONDITION_ = "Create requirement {}"
-    ACTION_ISSUE_APPROVAL_ = "Issue Licence for application {}"
-    ACTION_AWAITING_PAYMENT_APPROVAL_ = "Awaiting Payment for application {}"
-    ACTION_UPDATE_APPROVAL_ = "Update Licence for application {}"
+    ACTION_ISSUE_APPROVAL_ = "Issue Licence for proposal {}"
+    ACTION_AWAITING_PAYMENT_APPROVAL_ = "Awaiting Payment for proposal {}"
+    ACTION_UPDATE_APPROVAL_ = "Update Licence for proposal {}"
     ACTION_EXPIRED_APPROVAL_ = "Expire Approval for proposal {}"
-    ACTION_DISCARD_PROPOSAL = "Discard application {}"
+    ACTION_DISCARD_PROPOSAL = "Discard proposal {}"
     ACTION_APPROVAL_LEVEL_DOCUMENT = "Assign Approval level document {}"
 
     # Assessors
@@ -4345,40 +4345,40 @@ class ProposalUserAction(UserAction):
     ACTION_REQUESTED_AMENDMENT = "Amendment requested for Application: {}"
 
     # Referrals
-    ACTION_SEND_REFERRAL_TO = "Send referral {} for application {} to {}"
-    ACTION_RESEND_REFERRAL_TO = "Resend referral {} for application {} to {}"
-    ACTION_REMIND_REFERRAL = "Send reminder for referral {} for application {} to {}"
-    ACTION_ENTER_REQUIREMENTS = "Enter Requirements for application {}"
-    ACTION_BACK_TO_PROCESSING = "Back to processing for application {}"
-    RECALL_REFERRAL = "Referral {} for application {} has been recalled"
-    CONCLUDE_REFERRAL = "{}: Referral {} for application {} has been concluded"
+    ACTION_SEND_REFERRAL_TO = "Send referral {} for proposal {} to {}"
+    ACTION_RESEND_REFERRAL_TO = "Resend referral {} for proposal {} to {}"
+    ACTION_REMIND_REFERRAL = "Send reminder for referral {} for proposal {} to {}"
+    ACTION_ENTER_REQUIREMENTS = "Enter Requirements for proposal {}"
+    ACTION_BACK_TO_PROCESSING = "Back to processing for proposal {}"
+    RECALL_REFERRAL = "Referral {} for proposal {} has been recalled"
+    CONCLUDE_REFERRAL = "{}: Referral {} for proposal {} has been concluded"
     ACTION_REFERRAL_DOCUMENT = "Assign Referral document {}"
     ACTION_REFERRAL_ASSIGN_TO_ASSESSOR = (
-        "Assign Referral  {} of application {} to {} as the assessor"
+        "Assign Referral  {} of proposal {} to {} as the assessor"
     )
     ACTION_REFERRAL_UNASSIGN_ASSESSOR = (
-        "Unassign assessor from Referral {} of application {}"
+        "Unassign assessor from Referral {} of proposal {}"
     )
 
     # Approval
-    ACTION_REISSUE_APPROVAL = "Reissue licence for application {}"
-    ACTION_CANCEL_APPROVAL = "Cancel licence for application {}"
+    ACTION_REISSUE_APPROVAL = "Reissue licence for proposal {}"
+    ACTION_CANCEL_APPROVAL = "Cancel licence for proposal {}"
     ACTION_EXTEND_APPROVAL = "Extend licence"
-    ACTION_SUSPEND_APPROVAL = "Suspend licence for application {}"
-    ACTION_REINSTATE_APPROVAL = "Reinstate licence for application {}"
-    ACTION_SURRENDER_APPROVAL = "Surrender licence for application {}"
-    ACTION_RENEW_PROPOSAL = "Create Renewal application for application {}"
-    ACTION_AMEND_PROPOSAL = "Create Amendment application for application {}"
+    ACTION_SUSPEND_APPROVAL = "Suspend licence for proposal {}"
+    ACTION_REINSTATE_APPROVAL = "Reinstate licence for proposal {}"
+    ACTION_SURRENDER_APPROVAL = "Surrender licence for proposal {}"
+    ACTION_RENEW_PROPOSAL = "Create Renewal proposal for proposal {}"
+    ACTION_AMEND_PROPOSAL = "Create Amendment proposal for proposal {}"
     ACTION_QA_OFFICER_COMPLETED = "QA Officer Assessment Completed {}"
 
     # monthly invoicing by cron
-    ACTION_SEND_BPAY_INVOICE = "Send BPAY invoice {} for application {} to {}"
-    ACTION_SEND_MONTHLY_INVOICE = "Send monthly invoice {} for application {} to {}"
+    ACTION_SEND_BPAY_INVOICE = "Send BPAY invoice {} for proposal {} to {}"
+    ACTION_SEND_MONTHLY_INVOICE = "Send monthly invoice {} for proposal {} to {}"
     ACTION_SEND_MONTHLY_CONFIRMATION = (
-        "Send monthly confirmation for booking ID {}, for application {} to {}"
+        "Send monthly confirmation for booking ID {}, for proposal {} to {}"
     )
     ACTION_SEND_PAYMENT_DUE_NOTIFICATION = (
-        "Send monthly invoice/BPAY payment due notification {} for application {} to {}"
+        "Send monthly invoice/BPAY payment due notification {} for proposal {} to {}"
     )
 
     class Meta:
@@ -4556,7 +4556,7 @@ class Referral(RevisionedMixin):
 
     def can_process(self, user):
         referral_user = retrieve_email_user(self.referral)
-        # True if the request user is the referrer and the application is in referral status
+        # True if the request user is the referrer and the proposal is in referral status
         return referral_user.id == user.id and self.processing_status in [
             "with_referral",
             "with_referral_conditions",

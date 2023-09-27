@@ -248,7 +248,7 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
             and int(target_email_user_id) > 0
         ):
             target_email_user_id = int(target_email_user_id)
-            # TODO: Do we need to exclude org applications here? Would lead to no results
+            # TODO: Do we need to exclude org proposals here? Would lead to no results
             # when the query is parametrized for user id and org id
             # qs = qs.exclude(org_applicant__isnull=False)
             qs = qs.filter(current_proposal__submitter=target_email_user_id)

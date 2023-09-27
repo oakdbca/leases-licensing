@@ -457,7 +457,7 @@ def send_proposal_roi_approval_email_notification(roi_proposal, lease_license_pr
 def send_license_ready_for_invoicing_notification(proposal, request):
     application_type = proposal.application_type.name_display
     email = TemplateEmailBase(
-        subject=f"{application_type} application ready for invoicing data.",
+        subject=f"{application_type} proposal ready for invoicing data.",
         html_template="leaseslicensing/emails/proposals/send_license_ready_for_invoicing_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_license_ready_for_invoicing_notification.txt",
     )

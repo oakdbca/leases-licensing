@@ -128,7 +128,7 @@
                             :map-info-text="
                                 is_internal
                                     ? ''
-                                    : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the application and continue at a later time.'
+                                    : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the proposal and continue at a later time.'
                             "
                             @validate-feature="validateFeature.bind(this)()"
                             @refreshFromResponse="refreshFromResponse"

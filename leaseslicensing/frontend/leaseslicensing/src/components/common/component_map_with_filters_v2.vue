@@ -12,8 +12,8 @@
         - prevent referrals from creating/editing polygons in the frontend (does not save in backend anyway)
         - disable draw tool for external when model is not in draft status
         - disable draw tool for referral when model is not in with referral status
-        - [] display polygons of approved application on new license application (external 017, internal 041)
-        - [] display polygons from the competitive process of an application that proceeded to a competitive process on the application page
+        - [] display polygons of approved proposal on new license proposal (external 017, internal 041)
+        - [] display polygons from the competitive process of an proposal that proceeded to a competitive process on the proposal page
         - implement map on approval details page and map tab
         - keyboard input (del to delete a feature, ctrl+z to undo, ctrl+y to redo, d to draw, etc.)
         - delete old map files
@@ -1961,20 +1961,22 @@ export default {
             // Remove all features from the layer
             vm.modelQuerySource.clear();
             proposals.forEach(function (proposal) {
-                proposal.proposalgeometry.features.forEach(function (
-                    featureData
-                ) {
-                    let feature = vm.featureFromDict(featureData, proposal);
+                proposal.proposalgeometry.features.forEach(
+                    function (featureData) {
+                        let feature = vm.featureFromDict(featureData, proposal);
 
-                    if (vm.modelQuerySource.getFeatureById(feature.getId())) {
-                        console.warn(
-                            `Feature ${feature.getId()} already exists in the source. Skipping...`
-                        );
-                        return;
+                        if (
+                            vm.modelQuerySource.getFeatureById(feature.getId())
+                        ) {
+                            console.warn(
+                                `Feature ${feature.getId()} already exists in the source. Skipping...`
+                            );
+                            return;
+                        }
+                        vm.modelQuerySource.addFeature(feature);
+                        vm.newFeatureId++;
                     }
-                    vm.modelQuerySource.addFeature(feature);
-                    vm.newFeatureId++;
-                });
+                );
                 if (proposal.competitive_process) {
                     proposal.competitive_process.competitive_process_geometries.features.forEach(
                         function (featureData) {

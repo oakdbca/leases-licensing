@@ -1067,7 +1067,7 @@ export default {
             swal.fire({
                 title: 'Unlock this competitive process',
                 text: "Unlocking this competitive process will change the status to 'In Progress'\
-                            and discard the application of the previous winner.\
+                            and discard the proposal of the previous winner.\
                             Are you sure you want to unlock this competitive process?",
                 icon: 'warning',
                 showCancelButton: true,
