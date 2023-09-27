@@ -140,7 +140,6 @@
                                     class="btn btn-primary"
                                     @click="validatePinsForm"
                                 />
-                                />
                             </div>
                         </div>
                     </form>
