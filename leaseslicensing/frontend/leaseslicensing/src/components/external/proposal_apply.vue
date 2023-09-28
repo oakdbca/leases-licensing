@@ -8,7 +8,7 @@
                     method="post"
                 >
                     <FormSection label="Apply for a" index="propsal_apply_for">
-                        <div class="col-sm-6">
+                        <div class="col">
                             <div
                                 v-if="
                                     application_types &&
@@ -21,6 +21,7 @@
                                         v-for="(
                                             application_type, index
                                         ) in application_types"
+                                        :key="application_type.code"
                                         class="list-group-item"
                                     >
                                         <input
@@ -53,7 +54,7 @@
                         label="on behalf of"
                         index="proposal_apply_on_behalf_of"
                     >
-                        <div class="col-sm-6">
+                        <div class="col">
                             <ul class="list-group">
                                 <li class="list-group-item">
                                     <input
@@ -75,9 +76,8 @@
                                     "
                                 >
                                     <li
-                                        v-for="(
-                                            linkedOrganisation, index
-                                        ) in linkedOrganisations"
+                                        v-for="linkedOrganisation in linkedOrganisations"
+                                        :key="linkedOrganisation.id"
                                         class="list-group-item"
                                     >
                                         <input
@@ -128,6 +128,12 @@
                                     </li>
                                 </template>
                             </ul>
+                            <BootstrapAlert class="mt-3">
+                                If the organisation you want to apply on behalf
+                                of is not listed here. Please navigate to the
+                                <a href="/ledger-ui/accounts">manage account</a>
+                                page and click on the 'organisations' tab
+                            </BootstrapAlert>
                         </div>
                     </FormSection>
                     <div class="col-sm-12">
@@ -159,13 +165,12 @@
 </template>
 <script>
 import FormSection from '@/components/forms/section_toggle.vue';
-import { api_endpoints, helpers } from '@/utils/hooks';
+import { api_endpoints } from '@/utils/hooks';
 export default {
     components: {
         FormSection,
     },
     data: function () {
-        let vm = this;
         return {
             applicationsLoading: false,
             loadingOrganisations: false,
@@ -260,7 +265,6 @@ export default {
                     console.log(error);
                     await swal.fire({
                         title: 'Create Proposal',
-                        text: error.body,
                         icon: 'error',
                         text: 'There was an error attempting to create your application. Please try again later.',
                     });
@@ -268,7 +272,7 @@ export default {
                 }
             });
         },
-        fetchLinkedOrganisations: function (id) {
+        fetchLinkedOrganisations: function () {
             let vm = this;
             vm.loadingOrganisations = true;
             fetch(api_endpoints.organisations)
