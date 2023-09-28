@@ -2833,11 +2833,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 logger.exception(e)
                 raise e
 
-        # requirement_set= self.requirements.filter(copied_from__isnull=True).exclude(is_deleted=True)
-        requirement_set = self.requirements.all().exclude(is_deleted=True)
-
-        # for req in self.requirements.all():
-        for req in requirement_set:
+        for req in self.requirements.exclude(is_deleted=True):
             if req.due_date and req.due_date >= today:
                 current_date = req.due_date
                 # create a first Compliance
