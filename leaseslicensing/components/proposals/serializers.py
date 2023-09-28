@@ -1744,10 +1744,18 @@ class RequirementDocumentSerializer(serializers.ModelSerializer):
         # fields = '__all__'
 
 
+class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProposalStandardRequirement
+        fields = ("id", "code", "text", "gross_turnover_required")
+
+
 class ProposalRequirementSerializer(serializers.ModelSerializer):
     can_referral_edit = serializers.SerializerMethodField()
     requirement_documents = RequirementDocumentSerializer(many=True, read_only=True)
     source = serializers.SerializerMethodField(read_only=True)
+    standard_requirement = ProposalStandardRequirementSerializer(read_only=True)
+    standard_requirement_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = ProposalRequirement
@@ -1757,6 +1765,7 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             "reminder_date",
             "free_requirement",
             "standard_requirement",
+            "standard_requirement_id",
             "standard",
             "req_order",
             "proposal",
@@ -1793,12 +1802,6 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             return EmailUserSerializer(email_user).data
         else:
             return None
-
-
-class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProposalStandardRequirement
-        fields = ("id", "code", "text")
 
 
 class ProposedApprovalROISerializer(serializers.Serializer):
