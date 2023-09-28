@@ -267,6 +267,7 @@ export default {
     methods: {
         addRequirement() {
             this.uuid++;
+            this.selectedRequirement = null;
             this.$nextTick(() => {
                 this.$refs.requirement_detail.isModalOpen = true;
             });
@@ -327,8 +328,9 @@ export default {
             if (response.ok) {
                 const resData = await response.json();
                 this.selectedRequirement = Object.assign({}, resData);
+                this.uuid++;
                 this.$nextTick(() => {
-                    this.addRequirement();
+                    this.$refs.requirement_detail.isModalOpen = true;
                 });
             } else {
                 console.log('error');
