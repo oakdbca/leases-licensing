@@ -1445,7 +1445,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             is_approver(request)
             and self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER
             or is_customer(request)
-            and request.user.id == self.submitter
+            and self.processing_status == Proposal.PROCESSING_STATUS_DRAFT
+            and self.user_has_object_permission(request.user.id)
         )
 
     @property
