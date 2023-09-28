@@ -2315,6 +2315,10 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = ProposalStandardRequirement.objects.filter(
             application_type__id=application_type_id
         )
+        # Don't show gross turnover related requirement on the front end
+        # as they are managed by the system automatically based on the invoicing
+        # method that is selected
+        queryset.exclude(gross_turnover_required=True)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
