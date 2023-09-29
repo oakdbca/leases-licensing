@@ -2661,6 +2661,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                         self.generated_proposal = lease_licence
 
+                        # Copy over previous site name
+                        copy_site_name(self, lease_licence)
+
                         # Copy over previous groups
                         copy_groups(self, lease_licence)
 
@@ -3241,6 +3244,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                 for field in ["proponent_reference_number", "site_name_id"]:
                     setattr(proposal, field, getattr(previous_proposal, field))
+
+                # Copy over previous site name
+                copy_site_name(previous_proposal, proposal)
 
                 # Copy over previous groups
                 copy_groups(previous_proposal, proposal)
@@ -5510,6 +5516,11 @@ class HelpPage(models.Model):
     class Meta:
         app_label = "leaseslicensing"
         unique_together = ("application_type", "help_type", "version")
+
+
+def copy_site_name(proposalFrom, proposalTo):
+    proposalTo.site_name = proposalFrom.site_name
+    proposalTo.save()
 
 
 def copy_groups(proposalFrom, proposalTo):
