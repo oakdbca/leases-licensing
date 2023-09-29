@@ -500,6 +500,9 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         ):
             instance.update_invoice_schedule()
             instance.proposal.update_gross_turnover_requirements()
+            instance.proposal.generate_compliances(
+                instance.approval, self.context["request"]
+            )
 
         # Reverse FKs
         annual_increment_amounts_data = validated_data.pop("annual_increment_amounts")
