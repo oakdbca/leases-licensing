@@ -46,10 +46,13 @@
                         <td>{{ invoice.issue_date }}</td>
                         <td>{{ invoice.time_period }}</td>
                         <td>
-                            {{ invoice.amount_object.prefix }}
-                            <span v-if="invoice.amount_object.amount != null">{{
-                                currency(invoice.amount_object.amount)
-                            }}</span>
+                            {{ invoice.amount_object.prefix
+                            }}<span
+                                v-if="invoice.amount_object.amount != null"
+                                >{{
+                                    currency(invoice.amount_object.amount)
+                                }}</span
+                            >
                             {{ invoice.amount_object.suffix }}
                         </td>
                     </tr>
@@ -184,7 +187,7 @@ export default {
                 this.previewInvoices[this.previewInvoices.length - 1]
                     .amount_running_total;
 
-            return `$${totalAmount}`;
+            return `$${currency(totalAmount)}`;
         },
         billingCycle: function () {
             if (this.invoicingDetails.invoicing_repetition_type == 1) {
