@@ -492,7 +492,7 @@ class InvoicingDetailsSerializer(serializers.ModelSerializer):
         context = validated_data.get("context")
 
         # If the user is editing the invoicing details from the approval details page
-        # update the invoicing schedule as required
+        # update the invoicing schedule and compliances as required
         if (
             context == "Approval"
             and charge_method_changed
