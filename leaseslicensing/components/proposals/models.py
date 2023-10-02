@@ -88,7 +88,7 @@ from leaseslicensing.components.tenure.models import (
     Tenure,
     Vesting,
 )
-from leaseslicensing.helpers import is_approver, is_customer, today, user_ids_in_group
+from leaseslicensing.helpers import is_approver, is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import (
     APPLICATION_TYPE_LEASE_LICENCE,
@@ -2811,32 +2811,33 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         # For amendment type of Proposal, check for copied requirements from previous proposal
         if self.proposal_type == PROPOSAL_TYPE_AMENDMENT:
-            try:
-                for r in self.requirements.filter(copied_from__isnull=False):
-                    cs = []
-                    cs = Compliance.objects.filter(
-                        requirement=r.copied_from,
-                        proposal=self.previous_application,
-                        processing_status="due",
-                    )
-                    if cs:
-                        if r.is_deleted:
-                            for c in cs:
-                                c.processing_status = "discarded"
-                                c.reminder_sent = True
-                                c.post_reminder_sent = True
-                                c.save()
-                        if not r.is_deleted:
-                            for c in cs:
-                                c.proposal = self
-                                c.approval = approval
-                                c.requirement = r
-                                c.save()
-            except Exception as e:
-                logger.exception(e)
-                raise e
+            for r in self.requirements.filter(copied_from__isnull=False):
+                cs = []
+                cs = Compliance.objects.filter(
+                    requirement=r.copied_from,
+                    proposal=self.previous_application,
+                    processing_status=Compliance.PROCESSING_STATUS_DUE,
+                )
+                if cs:
+                    if r.is_deleted:
+                        for c in cs:
+                            c.processing_status = Compliance.PROCESSING_STATUS_DISCARDED
+                            c.reminder_sent = True
+                            c.post_reminder_sent = True
+                            c.save()
+                    if not r.is_deleted:
+                        for c in cs:
+                            c.proposal = self
+                            c.approval = approval
+                            c.requirement = r
+                            c.save()
 
-        for req in self.requirements.exclude(is_deleted=True):
+        requirements = self.requirements.exclude(is_deleted=True).exclude(
+            standard_requirement__gross_turnover_required=True
+        )
+
+        # First, process all the requirements that are not related to gross turnover
+        for req in requirements:
             if req.due_date and req.due_date >= today:
                 current_date = req.due_date
                 # create a first Compliance
@@ -2890,52 +2891,172 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                     request,
                                 )
 
-    def update_gross_turnover_compliances(self):
+        self.generate_gross_turnover_compliances()
+
+    def generate_gross_turnover_compliances(self):
         from leaseslicensing.components.compliances.models import Compliance
 
-        requirements = self.requirements.filter(
-            standard_requirement__code__in=[
-                settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY,
-                settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
-                settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
-            ]
-        ).exclude(is_deleted=True)
-        for requirement in requirements:
-            if requirement.due_date < today():
-                continue
-            due_date = requirement.due_date
+        # Check if this proposal has any gross turnover based requirements
+        if (
+            not self.requirements.exclude(is_deleted=True)
+            .filter(standard_requirement__gross_turnover_required=True)
+            .exists()
+        ):
+            return
+
+        # All proposal that have gross turnover requirements require annual financial statements
+        try:
+            annual_gross_turnover_requirement = ProposalRequirement.objects.get(
+                proposal=self,
+                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY,
+                is_deleted=False,
+            )
+        except ProposalRequirement.DoesNotExist:
+            logger.warning(
+                f"Annual gross turnover requirement not found for Proposal: {self}"
+            )
+
+        financial_years_included = invoicing_utils.financial_years_included_in_range(
+            self.approval.start_date, self.approval.expiry_date
+        )
+        for financial_year in financial_years_included:
+            due_date = datetime.date(int(financial_year.split("-")[1]), 10, 31)
             compliance, created = Compliance.objects.get_or_create(
-                requirement=requirement, due_date=requirement.due_date
+                proposal=self,
+                approval=self.approval,
+                requirement=annual_gross_turnover_requirement,
+                due_date=due_date,
+                processing_status=Compliance.PROCESSING_STATUS_FUTURE,
             )
             if created:
                 logger.info(f"Compliance created: {compliance} for Proposal: {self}")
-            compliance.processing_status = Compliance.PROCESSING_STATUS_FUTURE
-            compliance.save()
-            while due_date < self.approval.expiry_date:
-                for x in range(requirement.recurrence_schedule):
-                    if requirement.recurrence_pattern == 1:
-                        due_date += relativedelta(weeks=1)
-                    elif requirement.recurrence_pattern == 2:
-                        due_date += relativedelta(month=1)
-                    elif requirement.recurrence_pattern == 3:
-                        due_date += relativedelta(years=1)
-                    if due_date <= self.approval.expiry_date:
-                        compliance, created = Compliance.objects.get_or_create(
-                            requirement=requirement, due_date=due_date
+                compliance.text = (
+                    "Please enter the gross turnover and upload an audited "
+                    f"financial statement for the financial year {financial_year}"
+                )
+                compliance.save()
+
+        invoicing_details = self.approval.current_proposal.invoicing_details
+
+        # If invoicing quarterly, generate quarterly financial statement compliances
+        if (
+            invoicing_details.invoicing_repetition_type.key
+            == settings.REPETITION_TYPE_QUARTERLY
+        ):
+            try:
+                quarterly_gross_turnover_requirement = ProposalRequirement.objects.get(
+                    proposal=self,
+                    standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+                    is_deleted=False,
+                )
+                financial_quarters_included = (
+                    invoicing_utils.financial_quarters_included_in_range(
+                        self.approval.start_date, self.approval.expiry_date
+                    )
+                )
+                logger.debug(
+                    f"Financial Quarters Included: {financial_quarters_included}"
+                )
+                for financial_quarter in financial_quarters_included:
+                    year = int(financial_quarter[3].split("-")[1])
+                    quarter = int(financial_quarter[0])
+                    month = invoicing_utils.month_from_quarter(quarter)
+                    due_date = datetime.date(year, month, 1) + relativedelta(months=4)
+                    compliance, created = Compliance.objects.get_or_create(
+                        proposal=self,
+                        approval=self.approval,
+                        requirement=quarterly_gross_turnover_requirement,
+                        due_date=due_date,
+                        processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+                    )
+                    if created:
+                        logger.info(
+                            f"Compliance created: {compliance} for Proposal: {self}"
                         )
-                        if created:
-                            logger.info(
-                                f"Compliance created: {compliance} for Proposal: {self}"
-                            )
-                        compliance.processing_status = (
-                            Compliance.PROCESSING_STATUS_FUTURE
+                        compliance.text = (
+                            "Please enter the gross turnover and upload an audited "
+                            f"financial statement for {financial_quarter[1]} {financial_quarter[3]}"
                         )
                         compliance.save()
-            # For gross turnover compliances, we must create a final compliance to cover
-            # the period from the expiry date to the end of the next financial period (year/quarter/month)
-            due_date = requirement.get_next_due_date(due_date)
 
-    def generate_gross_turnover_requirements(self, approval):
+            except ProposalRequirement.DoesNotExist:
+                logger.warning(
+                    f"Quarterly gross turnover requirement not found for Proposal: {self}"
+                )
+
+            # Delete any future monthly gross turnvoer compliances
+            deleted = Compliance.objects.filter(
+                proposal=self,
+                requirement__standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
+                due_date__gt=timezone.now().date(),
+                processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+            ).delete()
+            if deleted[0] > 0:
+                logger.info(
+                    f"Deleted {deleted[0]} future monthly gross turnover compliances for Proposal: {self}"
+                )
+
+        # If invoicing monthly, generate monthly financial statement compliances
+        if (
+            invoicing_details.invoicing_repetition_type.key
+            == settings.REPETITION_TYPE_MONTHLY
+        ):
+            try:
+                monthly_gross_turnover_requirement = ProposalRequirement.objects.get(
+                    proposal=self,
+                    standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
+                    is_deleted=False,
+                )
+                logger.debug(
+                    f"Monthly Gross Turnover Requirement: {monthly_gross_turnover_requirement}"
+                )
+                financial_months_included = (
+                    invoicing_utils.financial_months_included_in_range(
+                        self.approval.start_date, self.approval.expiry_date
+                    )
+                )
+                for financial_month in financial_months_included:
+                    logger.debug(f"Financial Month: {financial_month}")
+                    month = financial_month[0]
+                    year = int(financial_month[2].split("-")[1])
+                    due_date = datetime.date(year, month, 1) + relativedelta(months=2)
+                    logger.debug(f"Date date: {due_date}")
+                    compliance, created = Compliance.objects.get_or_create(
+                        proposal=self,
+                        approval=self.approval,
+                        requirement=monthly_gross_turnover_requirement,
+                        due_date=due_date,
+                        processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+                    )
+                    logger.debug(f"Compliance: {compliance}")
+                    if created:
+                        logger.info(
+                            f"Compliance created: {compliance} for Proposal: {self}"
+                        )
+                        compliance.text = (
+                            "Please enter the gross turnover and upload an audited "
+                            f"financial statement for {financial_month[1]} {financial_month[2]}"
+                        )
+                        compliance.save()
+            except ProposalRequirement.DoesNotExist:
+                logger.warning(
+                    f"Quarterly gross turnover requirement not found for Proposal: {self}"
+                )
+
+            # Delete any future quarterly gross turnover compliances
+            deleted = Compliance.objects.filter(
+                proposal=self,
+                requirement__standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+                due_date__gt=timezone.now().date(),
+                processing_status=Compliance.PROCESSING_STATUS_FUTURE,
+            ).delete()
+            if deleted[0] > 0:
+                logger.info(
+                    f"Deleted {deleted[0]} future quarterly gross turnover compliances for Proposal: {self}"
+                )
+
+    def generate_gross_turnover_requirements(self):
+        approval = self.approval
         invoicing_details = approval.current_proposal.invoicing_details
         end_of_first_financial_year = invoicing_utils.end_of_next_financial_year(
             approval.start_date
@@ -3019,6 +3140,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"{quarterly_financial_statement_requirement} created for {self}"
                 )
 
+            # Remove any monthly gross turnover requirements as they are not needed when
+            # invoicing quarterly
+            ProposalRequirement.objects.filter(
+                proposal=self,
+                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
+            ).update(is_deleted=True)
+
         if (
             invoicing_details.invoicing_repetition_type.key
             == settings.REPETITION_TYPE_MONTHLY
@@ -3054,9 +3182,24 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"{monthly_financial_statement_requirement} created for {self}"
                 )
 
+            # Remove any quarterly gross turnover requirements as they are not needed when
+            # invoicing monthly
+            ProposalRequirement.objects.filter(
+                proposal=self,
+                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
+            ).update(is_deleted=True)
+
     def update_gross_turnover_requirements(self):
+        """Called when the finance user is editing the invoicing details from the approval details page
+        and changes the charge method or invoicing repetition type.
+
+        This method ensures the necessary proposal requirements are created or deleted based on the
+        invoicing details.
+        """
         invoicing_details = self.invoicing_details
-        # Delete any future gross turnover compliances
+
+        # If the user has selected a non gross turnover based invoicing method then
+        # delete any future gross turnover requirements and compliances
         if invoicing_details.charge_method.key not in [
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
@@ -3066,15 +3209,17 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
             ProposalRequirement.objects.filter(
                 standard_requirement__in=gross_turnover_requirements,
-                proposal=invoicing_details.approval.proposal,
+                proposal=invoicing_details.approval.current_proposal,
             ).update(is_deleted=True)
+
             return
 
         if (
             invoicing_details.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE
         ):
-            # Remove any quarterly and monthly gross turnover requirements
+            # Remove any quarterly and monthly gross turnover requirements as they are not needed when
+            # invoicing in advance
             ProposalRequirement.objects.filter(
                 standard_requirement__code__in=[
                     settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
@@ -3086,33 +3231,62 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             invoicing_details.charge_method.key
             == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
         ):
-            # Make sure there are annual gross turnover requirements
-            # and either quarterly or monthly gross turnover requirements (depeneding on the invoicing repetition type)
-            (
-                proposal_standard_requirement,
-                created,
-            ) = ProposalRequirement.objects.get_or_create(
-                standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY,
-                proposal=invoicing_details.approval.proposal,
-            )
-
             # Delete any proposal requirements of the wrong type
             if (
                 invoicing_details.invoicing_repetition_type.key
                 == settings.REPETITION_TYPE_QUARTERLY
             ):
+                # When invoicing quarterly, delete any monthly gross turnover requirements
                 ProposalRequirement.objects.filter(
                     standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY,
-                    proposal=invoicing_details.approval.proposal,
+                    proposal=invoicing_details.approval.current_proposal,
+                    is_deleted=False,
                 ).update(is_deleted=True)
+
+                # Make sure there are quarterly gross turnover requirements
+                quarterly_turnover_requirement = (
+                    ProposalStandardRequirement.objects.get(
+                        code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY
+                    )
+                )
+
+                (
+                    annual_financial_statement_requirement,
+                    created,
+                ) = ProposalRequirement.objects.get_or_create(
+                    proposal=self,
+                    standard_requirement=quarterly_turnover_requirement,
+                )
+                if not created:
+                    annual_financial_statement_requirement.is_deleted = False
+                    annual_financial_statement_requirement.save()
+
             elif (
                 invoicing_details.invoicing_repetition_type.key
                 == settings.REPETITION_TYPE_MONTHLY
             ):
+                # When invoicing monthly, delete any quarterly gross turnover requirements
                 ProposalRequirement.objects.filter(
                     standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_QUARTERLY,
-                    proposal=invoicing_details.approval.proposal,
+                    proposal=invoicing_details.approval.current_proposal,
+                    is_deleted=False,
                 ).update(is_deleted=True)
+
+                # Make sure there are monthly gross turnover requirements
+                monthly_turnover_requirement = ProposalStandardRequirement.objects.get(
+                    code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_MONTHLY
+                )
+
+                (
+                    annual_financial_statement_requirement,
+                    created,
+                ) = ProposalRequirement.objects.get_or_create(
+                    proposal=self,
+                    standard_requirement=monthly_turnover_requirement,
+                )
+                if not created:
+                    annual_financial_statement_requirement.is_deleted = False
+                    annual_financial_statement_requirement.save()
 
         end_of_first_financial_year = invoicing_utils.end_of_next_financial_year(
             invoicing_details.proposal.approval.start_date
@@ -3120,13 +3294,19 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         first_annual_due_date = end_of_first_financial_year.replace(month=10).replace(
             day=31
         )
+
         # Make sure there are annual gross turnover requirements
+        annual_turnover_requirement = ProposalStandardRequirement.objects.get(
+            code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY
+        )
+
         (
             annual_financial_statement_requirement,
             created,
         ) = ProposalRequirement.objects.get_or_create(
             proposal=self,
-            standard_requirement__code=settings.INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY,
+            standard_requirement=annual_turnover_requirement,
+            is_deleted=False,
         )
 
         if created:
@@ -3136,15 +3316,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
         # Update the details
-        annual_financial_statement_requirement.due_date = (first_annual_due_date,)
-        annual_financial_statement_requirement.reminder_date = (
-            end_of_first_financial_year + relativedelta(days=1),
-        )
-        annual_financial_statement_requirement.recurrence = (True,)
-        annual_financial_statement_requirement.recurrence_pattern = (3,)  # Annualy
-        annual_financial_statement_requirement.recurrence_schedule = (
-            1,
-        )  # Every 1 year
+        annual_financial_statement_requirement.due_date = first_annual_due_date
+        reminder_date = end_of_first_financial_year + relativedelta(days=1)
+        logger.debug(f"reminder_date: {reminder_date}")
+        annual_financial_statement_requirement.reminder_date = reminder_date
+        annual_financial_statement_requirement.recurrence = True
+        annual_financial_statement_requirement.recurrence_pattern = 3  # Annualy
+        annual_financial_statement_requirement.recurrence_schedule = 1  # Every 1 year
         annual_financial_statement_requirement.save()
 
     @property
@@ -5008,6 +5186,14 @@ class ProposalRequirement(RevisionedMixin):
             )
         ]
 
+    def __str__(self):
+        if self.free_requirement:
+            return f"Proposal {self.proposal}: {self.free_requirement}"
+        elif self.standard_requirement:
+            return f"Proposal {self.proposal}: {self.standard_requirement.text}"
+        else:
+            return f"Proposal {self.proposal}: {self.id}"
+
     def save(self, **kwargs):
         # import ipdb; ipdb.set_trace()
         # set the req_order if saving for the first time
@@ -5021,6 +5207,13 @@ class ProposalRequirement(RevisionedMixin):
                 self.req_order = 1
             else:
                 self.req_order = max_req_order + 1
+
+        # Make sure proposal requirements have either a free requirement or a standard requirement
+        if not self.free_requirement and not self.standard_requirement:
+            raise ValueError(
+                "You must enter either a free requirement or a standard requirement"
+            )
+
         super().save(**kwargs)
 
     def get_next_due_date(self, due_date):
@@ -5462,7 +5655,9 @@ def search_reference(reference_number):
     from leaseslicensing.components.approvals.models import Approval
     from leaseslicensing.components.compliances.models import Compliance
 
-    proposal_list = Proposal.objects.all().exclude(processing_status__in=["discarded"])
+    proposal_list = Proposal.objects.all().exclude(
+        processing_status=Proposal.PROCESSING_STATUS_DISCARDED
+    )
     approval_list = (
         Approval.objects.all()
         .order_by("lodgement_number", "-issue_date")
