@@ -1159,13 +1159,6 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
                 )
             )
 
-        #
-        if (
-            instance.application_type.name == settings.APPLICATION_TYPE_LEASE_LICENCE
-            and not instance.deed_poll_documents.count()
-        ):
-            errors.append(_("Please upload a deed poll document"))
-
         if errors:
             raise serializers.ValidationError(errors)
 
