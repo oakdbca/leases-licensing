@@ -3211,7 +3211,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 standard_requirement__in=gross_turnover_requirements,
                 proposal=invoicing_details.approval.current_proposal,
             ).update(is_deleted=True)
-
+            # Todo: Delete any future gross turnover compliances except for the first upcoming
+            # compliances ???
             return
 
         if (
