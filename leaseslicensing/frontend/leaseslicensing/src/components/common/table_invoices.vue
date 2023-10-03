@@ -7,7 +7,7 @@
             @created="collapsible_component_mounted"
         >
             <div class="row mt-1 p-2">
-                <div class="col-md-3">
+                <div v-if="!approvalId" class="col-md-3">
                     <div class="form-group">
                         <label for="">Organisation</label>
                         <select
@@ -84,7 +84,7 @@
             </div>
         </CollapsibleFilters>
 
-        <div class="row mb-2">
+        <div v-if="level == 'internal'" class="row mb-2">
             <div class="col">
                 <button
                     class="btn btn-primary float-end"
