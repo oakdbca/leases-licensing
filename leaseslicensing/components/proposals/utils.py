@@ -453,14 +453,14 @@ def save_proponent_data_registration_of_interest(proposal, request, viewset):
             },
         )
 
+    geometry_data = request.data.get("proposalgeometry", None)
+    if geometry_data:
+        save_geometry(request, proposal, "proposals", geometry_data)
+
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
     save_groups_data(proposal, proposal_data["groups"])
-
-    geometry_data = request.data.get("proposalgeometry", None)
-    if geometry_data:
-        save_geometry(request, proposal, "proposals", geometry_data)
 
     populate_gis_data(proposal, "proposalgeometry")
 
@@ -488,6 +488,11 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
                 "action": viewset.action,
             },
         )
+
+    geometry_data = request.data.get("proposalgeometry", None)
+    if geometry_data:
+        save_geometry(request, proposal, "proposals", geometry_data)
+
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
@@ -496,10 +501,6 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
     if proposal.groups.filter(group__name__iexact="tourism").exists():
         # Todo: If we need to do any specific validation of the tourism proposal details
         pass
-
-    geometry_data = request.data.get("proposalgeometry", None)
-    if geometry_data:
-        save_geometry(request, proposal, "proposals", geometry_data)
 
     populate_gis_data(proposal, "proposalgeometry")
 
