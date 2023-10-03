@@ -77,6 +77,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
     can_renew = serializers.SerializerMethodField()
+    can_transfer = serializers.BooleanField(read_only=True)
     is_assessor = serializers.SerializerMethodField()
     is_approver = serializers.SerializerMethodField()
     requirement_docs = serializers.SerializerMethodField()
@@ -140,6 +141,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_renew",
             "can_amend",
             "can_reinstate",
+            "can_transfer",
             "application_type",
             "original_leaselicense_number",
             "migrated",
@@ -177,6 +179,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_reinstate",
             "can_amend",
             "can_renew",
+            "can_transfer",
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
