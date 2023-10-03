@@ -77,8 +77,9 @@
                             index="fs-details-invoice"
                         >
                             <InvoicesTable
+                                v-if="approval.id"
                                 ref="invoice_table"
-                                :approval_id="approval.id"
+                                :approval-id="approval.id"
                                 level="external"
                             />
                         </FormSection>

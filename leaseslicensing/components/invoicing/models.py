@@ -440,7 +440,7 @@ class InvoicingDetails(BaseModel):
 
     def __str__(self):
         proposal = self.approval.current_proposal if self.approval else None
-        return f"Invoicing Details for Approval: {self.approval} (Current Proposal: {proposal})"
+        return f"Invoicing Details {self.id} for Approval: {self.approval} (Current Proposal: {proposal})"
 
     @property
     def approval(self):
@@ -458,7 +458,7 @@ class InvoicingDetails(BaseModel):
     @property
     def invoices_created(self):
         return (
-            Invoice.objects.filter(invoicing_details=self)
+            Invoice.objects.filter(approval=self.proposal.approval)
             .exclude(status=Invoice.INVOICE_STATUS_VOID)
             .count()
         )
@@ -518,6 +518,12 @@ class InvoicingDetails(BaseModel):
     def preview_invoices_issue_dates(self):
         return [period["issue_date"] for period in self.preview_invoices]
 
+    def preview_invoice_by_date(self, date):
+        for invoice in self.preview_invoices:
+            if invoice["issue_date"] == datetime.strftime(date, "%d/%m/%Y"):
+                return invoice
+        return None
+
     @property
     def invoices_due_for_issue_today(self):
         invoices_due_today = [
@@ -552,6 +558,24 @@ class InvoicingDetails(BaseModel):
     @property
     def has_future_invoicing_periods(self):
         return self.invoicing_periods_next_start_date is not None
+
+    @property
+    def invoiced_up_to(self):
+        # We return this if no invoices have been generated yet
+        day_before_start_date = self.proposal.approval.start_date - relativedelta(
+            days=1
+        )
+        if self.invoices_created == 0:
+            return day_before_start_date
+
+        # Most recent scheduled invoice that an invoice record has already been generated for
+        most_recent_scheduled_invoice = ScheduledInvoice.objects.filter(
+            invoicing_details=self, invoice__isnull=False
+        ).last()
+        if not most_recent_scheduled_invoice:
+            return day_before_start_date
+
+        return most_recent_scheduled_invoice.period_end_date
 
     @property
     def invoicing_periods_next_reminder_date(self):
@@ -665,12 +689,19 @@ class InvoicingDetails(BaseModel):
 
         return invoices
 
-    def generate_invoice_schedule(self):
+    def generate_invoice_schedule(self, invoiced_up_to=None):
         """Generate scheduled invoices for any invoicing periods"""
         future_invoices = []
         for preview_invoice in self.preview_invoices:
-            if not preview_invoice["start_date_has_passed"]:
+            start_date = datetime.strptime(
+                preview_invoice["start_date"], "%Y-%m-%d"
+            ).date()
+            if invoiced_up_to and start_date > invoiced_up_to:
                 future_invoices.append(preview_invoice)
+
+            elif not preview_invoice["start_date_has_passed"]:
+                future_invoices.append(preview_invoice)
+
         if len(future_invoices) == 0:
             return
 
@@ -684,10 +715,28 @@ class InvoicingDetails(BaseModel):
                 date_to_generate=date_to_generate,
                 period_start_date=start_date,
                 period_end_date=end_date,
-                generated_from=self,
+                invoicing_details=self,
             )
             if created:
                 logger.info(f"Scheduled invoice created: {scheduled_invoice}")
+
+    def update_invoice_schedule(self):
+        # Delete any future scheduled invoices
+        ScheduledInvoice.objects.filter(
+            invoicing_details=self,
+            invoice__isnull=True,
+            date_to_generate__gte=helpers.today(),
+        ).delete()
+
+        # Generate new future scheduled invoices
+        if self.charge_method.key not in [
+            settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE,
+            settings.CHARGE_METHOD_ONCE_OFF_CHARGE,
+            # Gross turnover in arrears are generated on receipt of
+            # audited financial statements so don't need generating
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
+        ]:
+            self.generate_invoice_schedule(invoiced_up_to=self.invoiced_up_to)
 
     def generate_immediate_invoices(self):
         """Generate invoices for the next invoicing period and any invoicing periods that have already passed
@@ -720,7 +769,7 @@ class InvoicingDetails(BaseModel):
 
         if (
             self.charge_method.key
-            != settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER  # (Arrears)
+            != settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS  # (Arrears)
         ):
             first_issue_date = first_issue_date - relativedelta(
                 days=settings.DAYS_BEFORE_NEXT_INVOICING_PERIOD_TO_GENERATE_INVOICE_RECORD
@@ -731,7 +780,7 @@ class InvoicingDetails(BaseModel):
     def get_issue_date(self, issue_date, end_date):
         if (
             self.charge_method.key
-            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
         ):
             end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
             q = utils.financial_quarter_from_date(end_date)
@@ -748,7 +797,7 @@ class InvoicingDetails(BaseModel):
     def get_due_date(self, due_date):
         if (
             self.charge_method.key
-            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
         ):
             return "30 Days after issue"
         return due_date.strftime("%d/%m/%Y")
@@ -768,13 +817,15 @@ class InvoicingDetails(BaseModel):
             "suffix": "",
         }
         if self.charge_method.key == settings.CHARGE_METHOD_ONCE_OFF_CHARGE:
-            raise Exception(
+            logger.warning(
                 "To get the amount for a once off charge, simply access the once_off_charge_amount field"
             )
+            amount_object["amount"] = self.once_off_charge_amount
+            return amount_object
 
         if (
             self.charge_method.key
-            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER
+            == settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS
         ):
             return self.get_amount_for_gross_turnover_invoice(end_date, amount_object)
 
@@ -974,7 +1025,7 @@ class InvoicingDetails(BaseModel):
 
     def get_end_of_next_interval(self, start_date):
         if self.charge_method.key in [
-            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER,
+            settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ADVANCE,
         ]:
             return self.get_end_of_next_interval_gross_turnover(start_date)
@@ -1031,12 +1082,9 @@ class ScheduledInvoice(BaseModel):
     date_to_generate = models.DateField(null=False, blank=False)
     period_start_date = models.DateField(null=False, blank=False)
     period_end_date = models.DateField(null=False, blank=False)
-    invoice_has_been_generated = models.BooleanField(default=False)
-    attempts_to_send_internal_email = models.PositiveSmallIntegerField(default=0)
-    internal_email_sent = models.BooleanField(default=False)
-    attempts_to_send_external_email = models.PositiveSmallIntegerField(default=0)
-    external_email_sent = models.BooleanField(default=False)
-    generated_from = models.ForeignKey(
+    attempts_to_send_notification_email = models.PositiveSmallIntegerField(default=0)
+    notification_email_sent = models.BooleanField(default=False)
+    invoicing_details = models.ForeignKey(
         InvoicingDetails,
         on_delete=models.CASCADE,
         related_name="scheduled_invoices",
@@ -1047,6 +1095,22 @@ class ScheduledInvoice(BaseModel):
         ordering = [
             "date_to_generate",
         ]
+
+    def __str__(self):
+        if hasattr(self, "invoice"):
+            return (
+                f"Scheduled Invoice: {self.id} for Approval {self.invoicing_details.proposal.approval} "
+                f"generated Invoice: {self.invoice.lodgement_number} on {self.date_to_generate}"
+            )
+        if self.date_to_generate > helpers.today():
+            return (
+                f"Scheduled Invoice: {self.id} for Approval {self.invoicing_details.proposal.approval} "
+                f"scheduled to generate invoice on {self.date_to_generate}"
+            )
+        return (
+            f"Scheduled Invoice: {self.id} for Approval {self.invoicing_details.proposal.approval} "
+            f"was scheduled to generate invoice on {self.date_to_generate} (next attempt tomorrow)"
+        )
 
 
 class FixedAnnualIncrementAmount(BaseModel):
@@ -1351,6 +1415,13 @@ class Invoice(LicensingModel):
     )
     description = models.TextField(null=True, blank=True)
     ad_hoc = models.BooleanField(default=False)
+    scheduled_invoice = models.OneToOneField(
+        ScheduledInvoice,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="invoice",
+    )
 
     class Meta:
         app_label = "leaseslicensing"

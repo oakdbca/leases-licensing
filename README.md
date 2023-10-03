@@ -1,6 +1,6 @@
 # Leases Licensing System
 
-The Leases and Licensing System is used by customers to submit a Registration of Interest or a Lease/Licence application in case they want to commercially use land managed by the Department and pay for annual fees for issued leases or licences. The system is used by Department staff to process the applications and to manage issued leases and licences, manage the annual fees and manage the outcomes of competitive processes.
+The Leases and Licensing System is used by customers to submit a Registration of Interest or a Lease/Licence proposal in case they want to commercially use land managed by the Department and pay for annual fees for issued leases or licences. The system is used by Department staff to process the proposals and to manage issued leases and licences, manage the annual fees and manage the outcomes of competitive processes.
 
 It is a database-backed Django application, using REST API with Vue.js as the client side app and integrates into the Ledger system.
 

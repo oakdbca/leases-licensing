@@ -436,26 +436,24 @@ export default {
         compliancesOptions: function () {
             let vm = this;
             let buttons = [];
-            if (this.level === 'internal') {
-                buttons = [
-                    {
-                        extend: 'excel',
-                        text: '<i class="fa-solid fa-download"></i> Excel',
-                        className: 'btn btn-primary rounded me-2',
-                        exportOptions: {
-                            columns: ':visible',
-                        },
+            buttons = [
+                {
+                    extend: 'excel',
+                    text: '<i class="fa-solid fa-download"></i> Excel',
+                    className: 'btn btn-primary rounded me-2',
+                    exportOptions: {
+                        columns: ':visible',
                     },
-                    {
-                        extend: 'csv',
-                        text: '<i class="fa-solid fa-download"></i> CSV',
-                        className: 'btn btn-primary rounded',
-                        exportOptions: {
-                            columns: ':visible',
-                        },
+                },
+                {
+                    extend: 'csv',
+                    text: '<i class="fa-solid fa-download"></i> CSV',
+                    className: 'btn btn-primary rounded',
+                    exportOptions: {
+                        columns: ':visible',
                     },
-                ];
-            }
+                },
+            ];
 
             return {
                 autoWidth: false,

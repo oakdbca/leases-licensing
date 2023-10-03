@@ -569,7 +569,7 @@ export default {
                     function_to_show_hide: () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
-                                // When application type is 'lease_licence'
+                                // When proposal type is 'lease_licence'
                                 // When proposal status is 'with_assessor', 'assessor'/'referral' can see this button
                                 [PROPOSAL_STATUS.WITH_ASSESSOR.ID]: [
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
@@ -1560,11 +1560,11 @@ export default {
                 document.querySelectorAll('[data-bs-toggle="popover"]')
             );
             // eslint-disable-next-line no-unused-vars
-            var popoverList = popoverTriggerList.map(function (
-                popoverTriggerEl
-            ) {
-                return new bootstrap.Popover(popoverTriggerEl);
-            });
+            var popoverList = popoverTriggerList.map(
+                function (popoverTriggerEl) {
+                    return new bootstrap.Popover(popoverTriggerEl);
+                }
+            );
         },
     },
 };

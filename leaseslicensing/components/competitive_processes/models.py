@@ -137,7 +137,7 @@ class CompetitiveProcess(LicensingModelVersioned):
         if self.winner:
             self.status = CompetitiveProcess.STATUS_COMPLETED_APPLICATION
 
-            # 1. Create application for the winner
+            # 1. Create proposal for the winner
             lease_licence = self.create_lease_licence_from_competitive_process()
 
             self.generated_proposal.add(lease_licence)
@@ -152,9 +152,9 @@ class CompetitiveProcess(LicensingModelVersioned):
         """Unlock the competitive process and make it available for editing again.
         Unlock action changes status back to In Progress, allowing to change the
         Outcome.
-        The outcome can only be changes if the application from the prvious winner
+        The outcome can only be changed if the proposal from the previous winner
         has not been approved yet.
-        TODO Changing the outcome will discard the application of the previous winner
+        TODO Changing the outcome will discard the proposal of the previous winner
         and allow the user to select another winner (or no winner).
 
         """
@@ -190,7 +190,7 @@ class CompetitiveProcess(LicensingModelVersioned):
         if winning_party and len(generated_proposals) == 0:
             logger.warn("No generated proposals found for the winning party.")
 
-        # Get the generated lease/license application / generated proposal
+        # Get the generated lease/license proposal / generated proposal
         # that is still active (not discarded)
         generated_proposal = generated_proposals.filter(
             ~Q(processing_status=Proposal.PROCESSING_STATUS_DISCARDED)
@@ -206,7 +206,7 @@ class CompetitiveProcess(LicensingModelVersioned):
         else:
             generated_proposal = generated_proposal.first()
 
-        # Cannot unlock if the application has been approved
+        # Cannot unlock if the proposal has been approved
         if generated_proposal and generated_proposal.processing_status in [
             Proposal.PROCESSING_STATUS_APPROVED_APPLICATION,
             Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
@@ -215,7 +215,7 @@ class CompetitiveProcess(LicensingModelVersioned):
 
         with transaction.atomic():
             # Set the generated proposal's processing status to discarded
-            # TODO: Disarding the previous winnner's application should be
+            # TODO: Disarding the previous winnner's proposal should be
             # done when saving the competitive process only after unlocking
             # and changing the outcome.
             if generated_proposal:

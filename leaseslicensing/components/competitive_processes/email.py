@@ -12,7 +12,7 @@ from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 def send_winner_notification(request, competitive_process):
     email = TemplateEmailBase(
-        subject="Winning, Leases and Licence application is ready",
+        subject="Winning, Leases and Licence proposal is ready",
         html_template="leaseslicensing/emails/competitive_processes/send_winner_notification.html",
         # html_template="leaseslicensing/emails/proposals/send_referral_notification.html",
         txt_template="leaseslicensing/emails/competitive_processes/send_winner_notification.txt",
@@ -64,7 +64,7 @@ def send_competitive_process_create_notification(
     )
     context = {"competitive_process": competitive_process, "url": url}
 
-    # Once a competitive process is created (either as result of a registration of interest application or from
+    # Once a competitive process is created (either as result of a registration of interest proposal or from
     # the competitive process dashboard page) the assessor group for competitive processes will receive a
     # notification email from the system, including the link to access the competitive process.
     group = SystemGroup.objects.get(name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR)

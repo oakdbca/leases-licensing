@@ -1902,7 +1902,7 @@ export default {
                 if (res.ok) {
                     swal.fire({
                         title: 'Saved',
-                        text: 'The application has been saved',
+                        text: 'The proposal has been saved',
                         icon: 'success',
                     });
                     let data = await res.json();
@@ -2165,14 +2165,25 @@ export default {
                 this.$refs.proposed_decline.isModalOpen = true;
             });
         },
-        proposedApproval: function () {
+        proposedApproval: async function () {
             let vm = this;
+            let tab = null;
             vm.proposedApprovalState = 'proposed_approval';
-            let someTabTriggerEl = document.querySelector('#pills-details-tab');
-            let tab = new bootstrap.Tab(someTabTriggerEl);
+
+            if (vm.proposal.groups.length == 0 || !vm.proposal.site_name) {
+                // When status is with assessor conditions, the proposal may be hidden
+                // Therefore we need to show it before we can validate the groups and site name
+                vm.$refs.workflow.showingProposal = true;
+                vm.showingProposal = true;
+                setTimeout(() => {
+                    let someTabTriggerEl =
+                        document.querySelector('#pills-details-tab');
+                    tab = new bootstrap.Tab(someTabTriggerEl);
+                    tab.show();
+                }, 200);
+            }
 
             if (vm.proposal.groups.length == 0) {
-                tab.show();
                 swal.fire({
                     title: 'No Group Selected',
                     text: 'You must select one or more groups before proposing to approve.',
@@ -2195,7 +2206,6 @@ export default {
                 return;
             }
             if (!vm.proposal.site_name) {
-                tab.show();
                 swal.fire({
                     title: 'No Site Name Entered',
                     text: 'You must enter a site name before proposing to approve.',
@@ -2284,7 +2294,7 @@ export default {
                         vm.uuid++;
                         swal.fire({
                             title: 'Discarded',
-                            text: 'The application has been discarded',
+                            text: 'The proposal has been discarded',
                             icon: 'success',
                         });
                     }

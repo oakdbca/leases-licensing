@@ -38,6 +38,11 @@ def financial_quarter_from_date(date):
         return 2
 
 
+def month_from_quarter(quarter):
+    """Returns the month number for the start of the quarter provided (0 indexed)"""
+    return [10, 1, 4, 7][quarter - 1]
+
+
 def month_string_from_date(date):
     return month_string_from_month(date.month)
 
@@ -103,6 +108,50 @@ def financial_years_included_in_range(start_date, end_date):
     for year in range(start_date.year, end_date.year + 1):
         financial_years.append(f"{year}-{year + 1}")
     return financial_years
+
+
+def financial_quarters_included_in_range(start_date, end_date):
+    """Returns a list of financial quarters included in the date range provided.
+    The date range is inclusive of the start date and end date.
+    """
+    financial_quarters = []
+    for year in range(start_date.year, end_date.year + 1):
+        for quarter in range(1, 5):
+            financial_year = f"{year}-{year + 1}"
+            month_for_quarter = month_from_quarter(quarter - 1)  # 0 indexed
+            if quarter in [1, 2]:
+                calendar_year = year
+            else:
+                calendar_year = year + 1
+            if (
+                not datetime.date(calendar_year, month_for_quarter, start_date.day)
+                >= start_date
+                or not datetime.date(calendar_year, month_for_quarter, end_date.day)
+                <= end_date
+            ):
+                continue
+            financial_quarters.append(
+                (quarter, f"Q{quarter}", calendar_year, financial_year)
+            )
+    return financial_quarters
+
+
+def financial_months_included_in_range(start_date, end_date):
+    """Returns a list of months included in the date range provided.
+    The date range is inclusive of the start date and end date.
+    """
+    months = []
+    for year in range(start_date.year, end_date.year + 1):
+        for month_index in range(1, 13):
+            month_name = month_string_from_month(month_index)
+            if (
+                not datetime.date(year, month_index, start_date.day) >= start_date
+                or not datetime.date(year, month_index, end_date.day) <= end_date
+            ):
+                continue
+
+            months.append((month_index, f"{month_name}", f"{year}-{year + 1}"))
+    return months
 
 
 def end_of_next_financial_year(date):

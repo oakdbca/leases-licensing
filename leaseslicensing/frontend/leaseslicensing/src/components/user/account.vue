@@ -17,6 +17,11 @@
                 index="organisation-details"
                 :label="linkOrganisationTitle"
             >
+                <BootstrapAlert>
+                    To link an organisation to your account, please start by
+                    clicking the drop down below and then search for the
+                    organisation by name or abn
+                </BootstrapAlert>
                 <OrganisationSearch
                     v-if="!selectedOrganisation && !newOrganisation"
                     label="Organisations"
@@ -140,7 +145,6 @@
                                     class="btn btn-primary"
                                     @click="validatePinsForm"
                                 />
-                                />
                             </div>
                         </div>
                     </form>
@@ -246,7 +250,6 @@
                                     :is-loading="loadingOrganisationRequest"
                                     class="btn btn-primary"
                                     @click="validateOrganisationRequest"
-                                />
                                 />
                             </div>
                         </div>

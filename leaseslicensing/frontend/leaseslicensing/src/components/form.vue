@@ -128,7 +128,7 @@
                             :map-info-text="
                                 is_internal
                                     ? ''
-                                    : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the application and continue at a later time.'
+                                    : 'Use the <b>draw</b> tool to draw the area of the proposal you are interested in on the map.</br>Display layers to check attributes of polygons with the <b>info</b> tool.</br>You can <b>save</b> the proposal and continue at a later time.'
                             "
                             @validate-feature="validateFeature.bind(this)()"
                             @refreshFromResponse="refreshFromResponse"
@@ -224,7 +224,7 @@
                                     class="form-control"
                                     type="text"
                                     name="site_name"
-                                    :disabled="readonly || is_external"
+                                    :disabled="is_external"
                                 />
                             </div>
                         </div>
@@ -251,23 +251,48 @@
                         </div>
                     </FormSection>
 
-                    <FormSection label="Deed Poll" index="deed_poll">
+                    <FormSection
+                        label="Deed Poll"
+                        :subtitle="leaseLicence ? 'Mandatory' : 'Optional'"
+                        index="deed_poll"
+                    >
                         <slot name="slot_deed_poll_assessment_comments"></slot>
                         <div class="col-sm-12 section-style">
-                            <p>
-                                <strong
-                                    >It is a requirement of all lease and
-                                    licence holders to sign a deed poll to
-                                    release and indemnify the State of Western
-                                    Australia. Please note: electronic or
-                                    digital signatures cannot be accepted.
-                                    <p></p>
-                                    The deed poll must be signed and have a
-                                    witness signature and be dated. Once signed
-                                    and dated, please scan and attach the deed
-                                    poll below.
-                                </strong>
-                            </p>
+                            <BootstrapAlert
+                                :type="leaseLicence ? 'warning' : 'primary'"
+                                :icon="
+                                    leaseLicence
+                                        ? 'exclamation-triangle-fill'
+                                        : 'info-fill'
+                                "
+                            >
+                                <ul class="list-group">
+                                    <li class="list-group-item">
+                                        <template v-if="leaseLicence">
+                                            It is a requirement of all
+                                            proponents
+                                        </template>
+                                        <template v-else>You may wish</template>
+                                        to sign a deed poll to release and
+                                        indemnify the State of Western
+                                        Australia.
+                                    </li>
+                                    <li class="list-group-item">
+                                        The deed poll must be signed, dated and
+                                        have a witness signature.
+                                    </li>
+                                    <li class="list-group-item">
+                                        Once signed, dated and witnessed, please
+                                        scan and attach the deed poll below.
+                                    </li>
+                                </ul>
+                            </BootstrapAlert>
+
+                            <BootstrapAlert type="danger">
+                                <span class="fw-bold">Please note:</span>
+                                electronic or digital signatures cannot be
+                                accepted.
+                            </BootstrapAlert>
 
                             <label for="deed_poll_document" class="mb-3"
                                 >Deed poll:</label

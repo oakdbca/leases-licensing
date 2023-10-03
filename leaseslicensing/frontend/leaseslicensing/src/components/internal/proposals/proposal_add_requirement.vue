@@ -89,9 +89,9 @@
                                                 <option
                                                     v-for="r in requirements"
                                                     :key="r.id"
-                                                    :value="r.id"
+                                                    :value="r"
                                                 >
-                                                    {{ r.code }} {{ r.text }}
+                                                    {{ r.text }}
                                                 </option>
                                             </select>
                                         </div>
@@ -109,7 +109,10 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div
+                                v-show="showDatesAndRecurring"
+                                class="form-group"
+                            >
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -132,7 +135,10 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="form-group">
+                            <div
+                                v-show="showDatesAndRecurring"
+                                class="form-group"
+                            >
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -150,7 +156,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <template v-if="validDueDate">
+                            <template
+                                v-if="showDatesAndRecurring && validDueDate"
+                            >
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -304,6 +312,12 @@ export default {
             }
             return false;
         },
+        showDatesAndRecurring: function () {
+            return (
+                this.requirement.standard_requirement &&
+                !this.requirement.standard_requirement.gross_turnover_required
+            );
+        },
     },
     mounted: function () {
         this.form = document.forms.requirementForm;
@@ -313,7 +327,7 @@ export default {
                 this.requirement = Object.assign({}, this.selectedRequirement);
             } else {
                 console.log(this.requirements);
-                this.requirement.standard_requirement = this.requirements[0].id;
+                this.requirement.standard_requirement = this.requirements[0];
                 this.requirement.due_date = moment().format('YYYY-MM-DD');
                 this.requirement.reminder_date = moment().format('YYYY-MM-DD');
             }
@@ -329,6 +343,15 @@ export default {
             this.sendData();
         },
         close: function () {
+            this.requirement = {
+                due_date: '',
+                reminder_date: '',
+                standard: true,
+                recurrence: false,
+                recurrence_pattern: '1',
+                proposal: this.proposal_id,
+                standard_requirement: this.requirements[0],
+            };
             this.isModalOpen = false;
         },
         fetchContact: async function (id) {
@@ -346,7 +369,7 @@ export default {
                 this.requirement.standard_requirement = null;
                 this.$refs.free_req.focus();
             } else {
-                this.requirement.standard_requirement = this.requirements[0].id;
+                this.requirement.standard_requirement = this.requirements[0];
                 this.$refs.standard_req.focus();
             }
             form.classList.remove('was-validated');
@@ -379,6 +402,8 @@ export default {
         sendData: async function () {
             this.errors = false;
             if (this.requirement.standard) {
+                this.requirement.standard_requirement_id =
+                    this.requirement.standard_requirement.id;
                 this.requirement.free_requirement = '';
             } else {
                 this.requirement.standard_requirement = '';

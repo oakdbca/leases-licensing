@@ -6,6 +6,13 @@
             generated</BootstrapAlert
         >
         <BootstrapAlert
+            v-if="context == 'Approval'"
+            type="warning"
+            icon="exclamation-triangle-fill"
+            >Invoices with the issue date as today's date will usually be
+            generated the next day.</BootstrapAlert
+        >
+        <BootstrapAlert
             v-if="chargeMethodKey == 'percentage_of_gross_turnover'"
             type="warning"
             icon="exclamation-triangle-fill"
@@ -39,10 +46,13 @@
                         <td>{{ invoice.issue_date }}</td>
                         <td>{{ invoice.time_period }}</td>
                         <td>
-                            {{ invoice.amount_object.prefix }}
-                            <span v-if="invoice.amount_object.amount != null">{{
-                                currency(invoice.amount_object.amount)
-                            }}</span>
+                            {{ invoice.amount_object.prefix
+                            }}<span
+                                v-if="invoice.amount_object.amount != null"
+                                >{{
+                                    currency(invoice.amount_object.amount)
+                                }}</span
+                            >
                             {{ invoice.amount_object.suffix }}
                         </td>
                     </tr>
@@ -98,6 +108,10 @@ export default {
         showPastInvoices: {
             type: Boolean,
             default: true,
+        },
+        context: {
+            type: String,
+            required: true,
         },
     },
     emits: ['updateDefaultInvoicingDate'],
@@ -173,7 +187,7 @@ export default {
                 this.previewInvoices[this.previewInvoices.length - 1]
                     .amount_running_total;
 
-            return `$${totalAmount}`;
+            return `$${currency(totalAmount)}`;
         },
         billingCycle: function () {
             if (this.invoicingDetails.invoicing_repetition_type == 1) {

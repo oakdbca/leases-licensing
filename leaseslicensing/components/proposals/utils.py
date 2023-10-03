@@ -453,14 +453,14 @@ def save_proponent_data_registration_of_interest(proposal, request, viewset):
             },
         )
 
+    geometry_data = request.data.get("proposalgeometry", None)
+    if geometry_data:
+        save_geometry(request, proposal, "proposals", geometry_data)
+
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
     save_groups_data(proposal, proposal_data["groups"])
-
-    geometry_data = request.data.get("proposalgeometry", None)
-    if geometry_data:
-        save_geometry(request, proposal, "proposals", geometry_data)
 
     populate_gis_data(proposal, "proposalgeometry")
 
@@ -488,6 +488,11 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
                 "action": viewset.action,
             },
         )
+
+    geometry_data = request.data.get("proposalgeometry", None)
+    if geometry_data:
+        save_geometry(request, proposal, "proposals", geometry_data)
+
     serializer.is_valid(raise_exception=True)
     proposal = serializer.save()
 
@@ -496,10 +501,6 @@ def save_proponent_data_lease_licence(proposal, request, viewset):
     if proposal.groups.filter(group__name__iexact="tourism").exists():
         # Todo: If we need to do any specific validation of the tourism proposal details
         pass
-
-    geometry_data = request.data.get("proposalgeometry", None)
-    if geometry_data:
-        save_geometry(request, proposal, "proposals", geometry_data)
 
     populate_gis_data(proposal, "proposalgeometry")
 
@@ -642,7 +643,7 @@ def proposal_submit(proposal, request):
         # The model returned by proposal.documents is a proposallogdocument model
         # that doesn't even have the can_delete field however Todo: We must check if there are
         # related documents fields on proposal that do have this field as we should
-        # set their can_delete field as false like below as once the application is submitted they
+        # set their can_delete field as false like below as once the proposal is submitted they
         # should not be able to be deleted.
         # proposal.documents.all().update(can_delete=False)
 

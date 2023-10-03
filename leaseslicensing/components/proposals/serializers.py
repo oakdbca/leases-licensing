@@ -1145,7 +1145,7 @@ class SaveRegistrationOfInterestSerializer(BaseProposalSerializer):
 
 
 class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerializer):
-    """Whilst we may want to allow the user to save their ROI application with fields empty,
+    """Whilst we may want to allow the user to save their ROI proposal with fields empty,
     we want to be able to request that they are filled out when submitting to avoid wasting time.
     """
 
@@ -1158,9 +1158,6 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
                     "Please either draw a polygon on the map or upload and process a shapefile"
                 )
             )
-
-        if not instance.deed_poll_documents.count():
-            errors.append(_("Please upload a deed poll document"))
 
         if errors:
             raise serializers.ValidationError(errors)
@@ -1185,7 +1182,6 @@ class SubmitRegistrationOfInterestSerializer(SaveRegistrationOfInterestSerialize
             "ground_disturbing_works",
             "heritage_site",
             "environmentally_sensitive",
-            "consistent_plan",
             "wetlands_impact",
             "building_required",
             "significant_change",
@@ -1741,10 +1737,18 @@ class RequirementDocumentSerializer(serializers.ModelSerializer):
         # fields = '__all__'
 
 
+class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProposalStandardRequirement
+        fields = ("id", "code", "text", "gross_turnover_required")
+
+
 class ProposalRequirementSerializer(serializers.ModelSerializer):
     can_referral_edit = serializers.SerializerMethodField()
     requirement_documents = RequirementDocumentSerializer(many=True, read_only=True)
     source = serializers.SerializerMethodField(read_only=True)
+    standard_requirement = ProposalStandardRequirementSerializer(read_only=True)
+    standard_requirement_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = ProposalRequirement
@@ -1754,6 +1758,7 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             "reminder_date",
             "free_requirement",
             "standard_requirement",
+            "standard_requirement_id",
             "standard",
             "req_order",
             "proposal",
@@ -1790,12 +1795,6 @@ class ProposalRequirementSerializer(serializers.ModelSerializer):
             return EmailUserSerializer(email_user).data
         else:
             return None
-
-
-class ProposalStandardRequirementSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ProposalStandardRequirement
-        fields = ("id", "code", "text")
 
 
 class ProposedApprovalROISerializer(serializers.Serializer):

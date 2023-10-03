@@ -205,7 +205,7 @@ class GetProposalType(views.APIView):
             return Response(serializer.data)
         else:
             return Response(
-                {"error": "There is currently no application type."},
+                {"error": "There is currently no proposal type."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -359,7 +359,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     referrals__in=Referral.objects.filter(referral=user.id)
                 )
         if is_customer(self.request):
-            # Queryset for applications referred to external user
+            # Queryset for proposals referred to external user
             email_user_id_assigned = int(
                 self.request.query_params.get("email_user_id_assigned", "0")
             )
@@ -1207,7 +1207,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def requirements(self, request, *args, **kwargs):
         instance = self.get_object()
-        qs = instance.requirements.all().exclude(is_deleted=True)
+        qs = instance.requirements.exclude(is_deleted=True)
         serializer = ProposalRequirementSerializer(
             qs, many=True, context={"request": request}
         )
@@ -1733,7 +1733,7 @@ class ProposalViewSet(UserActionLoggingViewset):
                 "org_applicant": org_applicant,
                 "ind_applicant": request.user.id
                 if not request.data.get("org_applicant")
-                else None,  # if no org_applicant, assume this application is for individual.
+                else None,  # if no org_applicant, assume this proposal is for individual.
                 "application_type_id": application_type.id,
                 "proposal_type_id": proposal_type.id,
             }
@@ -2315,6 +2315,10 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = ProposalStandardRequirement.objects.filter(
             application_type__id=application_type_id
         )
+        # Don't show gross turnover related requirements on the front end
+        # as they are managed by the system automatically based on the invoicing
+        # method that is selected
+        queryset.exclude(gross_turnover_required=True)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

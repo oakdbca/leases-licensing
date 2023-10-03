@@ -19,7 +19,6 @@
                             class="form-check-input me-2"
                             name="charge_method"
                             :value="charge_method.id"
-                            :disabled="chargeMethodDisabled(charge_method)"
                             required
                             @change="onChargeMethodChange"
                         />
@@ -224,8 +223,10 @@
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
-                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
-                @onChangePercentage="updatePreviewInvoices"
+                @update-gross-turnover-percentages="
+                    updateGrossTurnoverPercentages
+                "
+                @on-change-percentage="updatePreviewInvoices"
             />
         </div>
         <div v-if="show_percentage_of_gross_turnover_advance">
@@ -238,9 +239,11 @@
                 "
                 :proposal-processing-status-id="proposalProcessingStatusId"
                 :context="context"
-                @updateGrossTurnoverPercentages="updateGrossTurnoverPercentages"
-                @onChangePercentage="updatePreviewInvoices"
-                @onChangeGrossTurnoverEstimate="updatePreviewInvoices"
+                @update-gross-turnover-percentages="
+                    updateGrossTurnoverPercentages
+                "
+                @on-change-percentage="updatePreviewInvoices"
+                @on-change-gross-turnover-estimate="updatePreviewInvoices"
             />
         </div>
         <div
@@ -307,13 +310,31 @@
                             class="form-select"
                             @change="updatePreviewInvoices"
                         >
-                            <option :value="1">
+                            <option
+                                :value="1"
+                                :selected="
+                                    invoicingDetailsComputed.invoicing_quarters_start_month ==
+                                    1
+                                "
+                            >
                                 NOV-JAN, FEB-APR, MAY-JUL, AUG-OCT
                             </option>
-                            <option :value="2">
+                            <option
+                                :value="2"
+                                :selected="
+                                    invoicingDetailsComputed.invoicing_quarters_start_month ==
+                                    2
+                                "
+                            >
                                 DEC-FEB, MAR-MAY, JUN-AUG, SEP-NOV
                             </option>
-                            <option :value="3" selected>
+                            <option
+                                :value="3"
+                                :selected="
+                                    invoicingDetailsComputed.invoicing_quarters_start_month ==
+                                    3
+                                "
+                            >
                                 JAN-MAR, APR-JUN, JUL-SEP, OCT-DEC
                             </option>
                         </select>
@@ -328,8 +349,8 @@
                 :years-array="invoicingDetailsComputed.annual_increment_amounts"
                 :approval-duration-years="approvalDurationYears"
                 :start-date="startDate"
-                @updateYearsArray="updateYearsArray"
-                @onChangeIncrement="updatePreviewInvoices"
+                @update-years-array="updateYearsArray"
+                @on-change-increment="updatePreviewInvoices"
             />
         </div>
         <div v-if="show_fixed_annual_percentage">
@@ -341,8 +362,8 @@
                 "
                 :start-date="startDate"
                 :approval-duration-years="approvalDurationYears"
-                @updateYearsArray="updateYearsArray"
-                @onChangeIncrement="updatePreviewInvoices"
+                @update-years-array="updateYearsArray"
+                @on-change-increment="updatePreviewInvoices"
             />
         </div>
         <div
@@ -366,7 +387,8 @@
                 "
                 :show-past-invoices="context == 'Proposal'"
                 :loading-preview-invoices="loadingPreviewInvoices"
-                @updateDefaultInvoicingDate="updateDefaultInvoicingDate"
+                :context="context"
+                @update-default-invoicing-date="updateDefaultInvoicingDate"
             />
         </div>
         <template v-if="show_ad_hoc_invoicing">
@@ -643,7 +665,7 @@ export default {
             return this.context != 'Proposal';
         },
         invoicing_repetition_type_disabled: function () {
-            return this.context != 'Proposal';
+            return false; // this.context != 'Proposal';
         },
         invoicing_schedule_disabled: function () {
             return this.context != 'Proposal';
@@ -676,40 +698,7 @@ export default {
             return false;
         },
         show_invoice_previewer: function () {
-            if (
-                this.context != 'Proposal' &&
-                (this.getChargeMethodIdByKey('percentage_of_gross_turnover') ||
-                    this.getChargeMethodIdByKey(
-                        'percentage_of_gross_turnover_in_advance'
-                    ))
-            ) {
-                return false;
-            }
-            if (this.invoicingDetails) {
-                if (
-                    [
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_fixed_annual_increment'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_fixed_annual_percentage'
-                        ),
-                        this.getChargeMethodIdByKey('base_fee_plus_annual_cpi'),
-                        this.getChargeMethodIdByKey(
-                            'base_fee_plus_annual_cpi_custom'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover'
-                        ),
-                        this.getChargeMethodIdByKey(
-                            'percentage_of_gross_turnover_in_advance'
-                        ),
-                    ].includes(this.invoicingDetails.charge_method)
-                )
-                    return true;
-                return false;
-            }
-            return false;
+            return this.show_invoicing_frequency;
         },
         show_invoicing_quarters: function () {
             console.log(this.invoicingDetails);
@@ -765,6 +754,7 @@ export default {
             // 1 = January [JAN, APR, JUL, OCT], 2 = February [FEB, MAY, AUG, NOV], 3 = March [MAR, JUN, SEP, DEC]
             this.invoicingDetailsComputed.invoicing_quarters_start_month = 3;
         }
+        this.invoicingDetailsComputed.context = this.context;
     },
     mounted: function () {
         this.$nextTick(function () {
@@ -991,9 +981,6 @@ export default {
             );
         },
         updatePreviewInvoices: async function () {
-            if (!this.show_invoice_previewer) {
-                return;
-            }
             const requestOptions = {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
