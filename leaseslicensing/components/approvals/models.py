@@ -424,6 +424,11 @@ class Approval(LicensingModelVersioned):
         ) and self.can_action
 
     @property
+    def can_transfer(self):
+        # Todo: Define under which conditions a lease/license can be transferred
+        return self.status == self.APPROVAL_STATUS_CURRENT
+
+    @property
     def allowed_assessor_ids(self):
         return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
