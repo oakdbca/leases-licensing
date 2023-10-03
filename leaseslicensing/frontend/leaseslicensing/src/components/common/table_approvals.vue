@@ -592,19 +592,24 @@ export default {
                 visible: true,
                 render: function (row, type, full) {
                     let links = '';
-                    if (vm.debug) {
-                        links += `<a href='#${full.id}' data-request-new-sticker='${full.id}'>Request New Sticker</a><br/>`;
-                    }
 
-                    if (vm.is_external && full.can_reissue) {
-                        links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
-                        if (full.can_action || vm.debug) {
-                            if (full.amend_or_renew === 'amend' || vm.debug) {
-                                links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal}'>Amend</a><br/>`;
-                            } else if (full.can_renew) {
-                                links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
+                    if (vm.is_external) {
+                        if (full.can_reissue) {
+                            links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
+                            if (full.can_action || vm.debug) {
+                                if (
+                                    full.amend_or_renew === 'amend' ||
+                                    vm.debug
+                                ) {
+                                    links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal}'>Amend</a><br/>`;
+                                } else if (full.can_renew) {
+                                    links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
+                                }
+                                links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                             }
-                            links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
+                        }
+                        if (full.can_transfer) {
+                            links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Transfer</a><br/>`;
                         }
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
@@ -889,26 +894,6 @@ export default {
                 this.filterApplied
             );
         },
-        sendData: function (params) {
-            let vm = this;
-            fetch(
-                helpers.add_endpoint_json(
-                    api_endpoints.approvals,
-                    params.approval_id + '/request_new_stickers'
-                ),
-                { body: params, method: 'POST' }
-            ).then(
-                (res) => {
-                    helpers.post_and_redirect('/sticker_replacement_fee/', {
-                        csrfmiddlewaretoken: vm.csrf_token,
-                        data: JSON.stringify(res.body),
-                    });
-                },
-                (err) => {
-                    console.log(err);
-                }
-            );
-        },
         fetchProfile: function () {
             let vm = this;
             fetch(api_endpoints.profile).then(
@@ -1024,17 +1009,6 @@ export default {
                 }
             );
 
-            //External Request New Sticker listener
-            vm.$refs.approvals_datatable.vmDataTable.on(
-                'click',
-                'a[data-request-new-sticker]',
-                function (e) {
-                    var id = $(this).attr('data-request-new-sticker');
-                    e.preventDefault();
-                    vm.requestNewSticker(id);
-                }
-            );
-
             // External renewal listener
             vm.$refs.approvals_datatable.vmDataTable.on(
                 'click',
@@ -1057,6 +1031,19 @@ export default {
                 }
             );
 
+            // External transfer listener
+            vm.$refs.approvals_datatable.vmDataTable.on(
+                'click',
+                'a[data-transfer-approval]',
+                function (e) {
+                    var id = $(this).attr('data-transfer-approval');
+                    var lodgement_number = $(this).attr(
+                        'data-approval-lodgement-number'
+                    );
+                    e.preventDefault();
+                    vm.transferApproval(id, lodgement_number);
+                }
+            );
             // Internal history listener
             vm.$refs.approvals_datatable.vmDataTable.on(
                 'click',
@@ -1316,10 +1303,6 @@ export default {
                 ).focus();
             });
         },
-        requestNewSticker: function (approval_id) {
-            this.$refs.request_new_sticker_modal.approval_id = approval_id;
-            this.$refs.request_new_sticker_modal.isModalOpen = true;
-        },
         approvalHistory: function (id, approvalLodgementNumber) {
             this.approvalHistoryId = parseInt(id);
             this.selectedApprovalLodgementNumber = approvalLodgementNumber;
@@ -1474,6 +1457,23 @@ export default {
                     icon: 'error',
                 });
             }
+        },
+        transferApproval: async function (approval_id, lodgement_number) {
+            swal.fire({
+                title: `Transfer Lease/License`,
+                text: `Are you sure you want to transfer Lease/License ${lodgement_number}?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Transfer',
+                reverseButtons: true,
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    this.$router.push({
+                        name: 'external-approval-transfer',
+                        params: { approval_id: approval_id },
+                    });
+                }
+            });
         },
     },
 };
