@@ -10,6 +10,7 @@ from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
     ApprovalLogEntry,
+    ApprovalTransfer,
     ApprovalType,
     ApprovalUserAction,
 )
@@ -68,6 +69,12 @@ class ApprovalPaymentSerializer(serializers.ModelSerializer):
         return settings.OTHER_PAYMENT_ALLOWED
 
 
+class ApprovalTransferSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovalTransfer
+        fields = "__all__"
+
+
 class ApprovalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
@@ -78,6 +85,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
     linked_applications = serializers.SerializerMethodField(read_only=True)
     can_renew = serializers.SerializerMethodField()
     can_transfer = serializers.BooleanField(read_only=True)
+    has_active_transfer = serializers.BooleanField(read_only=True)
+    active_transfer = ApprovalTransferSerializer(read_only=True, allow_null=True)
     is_assessor = serializers.SerializerMethodField()
     is_approver = serializers.SerializerMethodField()
     requirement_docs = serializers.SerializerMethodField()
@@ -142,6 +151,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_amend",
             "can_reinstate",
             "can_transfer",
+            "has_active_transfer",
+            "active_transfer",
             "application_type",
             "original_leaselicense_number",
             "migrated",
@@ -180,6 +191,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_amend",
             "can_renew",
             "can_transfer",
+            "has_active_transfer",
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
