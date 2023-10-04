@@ -6,7 +6,11 @@
             class="row justify-content-center align-items-center g-2"
         >
             <div class="col-md-12">
-                <h3>License: {{ approval.lodgement_number }}</h3>
+                <h3>
+                    Transfer License:
+                    {{ approval.lodgement_number }} -
+                    {{ approval.approval_type }}
+                </h3>
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item" role="presentation">
                         <button
@@ -20,7 +24,8 @@
                             aria-selected="true"
                             @click="holderTabClicked"
                         >
-                            Holder
+                            <span class="fw-bold">Step 1:</span> Provide
+                            Approval Holder Details
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -33,7 +38,9 @@
                             role="tab"
                             aria-controls="transferee"
                             aria-selected="false"
+                            @click="transfereeTabClicked"
                         >
+                            <span class="fw-bold">Step 2:</span> Select
                             Transferee
                         </button>
                     </li>
@@ -48,7 +55,8 @@
                             aria-controls="details"
                             aria-selected="false"
                         >
-                            Details
+                            <span class="fw-bold">Step 3:</span> Provide
+                            Supporting Documents
                         </button>
                     </li>
                 </ul>
@@ -101,10 +109,18 @@
                                                     <div class="form-check">
                                                         <input
                                                             id=""
+                                                            v-model="
+                                                                approval
+                                                                    .active_transfer
+                                                                    .transferee_type
+                                                            "
                                                             class="form-check-input"
                                                             type="radio"
                                                             name="transferee_type"
-                                                            checked
+                                                            value="organisation"
+                                                            @change="
+                                                                transfereeTypeChanged
+                                                            "
                                                         />
                                                         <label
                                                             class="form-check-label"
@@ -118,9 +134,18 @@
                                                     <div class="form-check">
                                                         <input
                                                             id=""
+                                                            v-model="
+                                                                approval
+                                                                    .active_transfer
+                                                                    .transferee_type
+                                                            "
                                                             class="form-check-input"
                                                             type="radio"
                                                             name="transferee_type"
+                                                            value="individual"
+                                                            @change="
+                                                                transfereeTypeChanged
+                                                            "
                                                         />
                                                         <label
                                                             class="form-check-label"
@@ -133,16 +158,42 @@
                                             </ul>
                                         </div>
                                     </div>
-                                    <div class="row mb-3">
+                                    <div
+                                        v-if="
+                                            approval.active_transfer
+                                                .transferee_type ==
+                                            'organisation'
+                                        "
+                                        class="row mb-3"
+                                    >
                                         <div class="col-3">
                                             Organisation Name or ABN
                                         </div>
                                         <div class="col-5">
                                             <input
                                                 id="inputName"
+                                                ref="search"
                                                 type="text"
                                                 class="form-control"
                                                 placeholder="Start typing the name or ABN"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div
+                                        v-if="
+                                            approval.active_transfer
+                                                .transferee_type == 'individual'
+                                        "
+                                        class="row mb-3"
+                                    >
+                                        <div class="col-3">Name or Email</div>
+                                        <div class="col-5">
+                                            <input
+                                                id="inputName"
+                                                ref="search"
+                                                type="text"
+                                                class="form-control"
+                                                placeholder="Start typing the person's name or email"
                                             />
                                         </div>
                                     </div>
@@ -325,6 +376,14 @@ export default {
                     );
                 }
             }
+        },
+        transfereeTabClicked: function () {
+            setTimeout(() => {
+                this.$refs.search.focus();
+            }, 200);
+        },
+        transfereeTypeChanged: function () {
+            this.$refs.search.focus();
         },
     },
 };
