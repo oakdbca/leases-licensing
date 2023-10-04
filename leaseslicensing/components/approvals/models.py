@@ -923,7 +923,6 @@ class ApprovalTransfer(LicensingModelVersioned):
         (APPROVAL_TRANSFER_STATUS_ACCEPTED, "Accepted"),
     )
 
-    lodgement_number = models.CharField(max_length=9, unique=True)
     processing_status = models.CharField(
         max_length=40,
         choices=APPROVAL_TRANSFER_STATUS_CHOICES,
