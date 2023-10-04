@@ -939,6 +939,9 @@ class ApprovalTransfer(LicensingModelVersioned):
         related_name="transfer",
     )
     transferee = models.IntegerField(null=True, blank=True)
+    datetime_created = models.DateTimeField(auto_now_add=True)
+    datetime_updated = models.DateTimeField(auto_now=True)
+    datetime_expiry = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         app_label = "leaseslicensing"
