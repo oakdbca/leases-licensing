@@ -128,7 +128,8 @@ def process_generic_document(request, instance, document_type=None, *args, **kwa
                 documents_qs = instance.approval_suspension_documents
             elif document_type == "additional_document":
                 documents_qs = instance.additional_documents
-
+            elif document_type == "approval_transfer_supporting_document":
+                documents_qs = instance.approval_transfer_supporting_documents
             elif document_type == "lease_licence_approval_document":
                 documents_qs = instance.lease_licence_approval_documents
 
@@ -257,6 +258,10 @@ def delete_document(request, instance, comms_instance, document_type, input_name
             document = instance.approval_suspension_documents.get(id=document_id)
         elif document_type == "additional_document":
             document = instance.additional_documents.get(id=document_id)
+        elif document_type == "approval_transfer_supporting_document":
+            document = instance.approval_transfer_supporting_documents.get(
+                id=document_id
+            )
 
     # comms_log doc store delete
     elif comms_instance and "document_id" in request.data:
@@ -523,7 +528,11 @@ def save_document(request, instance, comms_instance, document_type, input_name=N
                 input_name=input_name, name=filename
             )[0]
             path_format_string = "approvals/{}/suspension_documents/{}"
-
+        elif document_type == "approval_transfer_supporting_document":
+            document = instance.approval_transfer_supporting_documents.get_or_create(
+                input_name=input_name, name=filename
+            )[0]
+            path_format_string = "approval-transfer/{}/supporting-documents/{}"
         # -------------- Competitive Process
         elif document_type == "competitive_process_document":
             document = instance.competitive_process_documents.get_or_create(
