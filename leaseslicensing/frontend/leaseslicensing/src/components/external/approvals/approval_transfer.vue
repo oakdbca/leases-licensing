@@ -204,7 +204,9 @@
                                             ref="supporting_documents"
                                             name="supporting_documents"
                                             :is-repeatable="true"
-                                            document-action-url=""
+                                            :document-action-url="
+                                                supportingDocumentsUrl
+                                            "
                                             :replace_button_by_text="true"
                                         />
                                     </div>
@@ -275,6 +277,15 @@ export default {
         return {
             approval: null,
         };
+    },
+    computed: {
+        supportingDocumentsUrl: function () {
+            return helpers.add_endpoint_join(
+                api_endpoints.approval_transfers,
+                this.approval.active_transfer.id +
+                    '/process_supporting_document/'
+            );
+        },
     },
     created() {
         this.fetchApproval();
