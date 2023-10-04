@@ -8,6 +8,7 @@ module.exports = {
     approval_types_dict: '/api/approval_types_dict',
     approvals_paginated_list: '/api/approval_paginated',
     approvals: '/api/approvals/',
+    approval_transfers: '/api/approval_transfers/',
     charge_methods: '/api/charge_methods/',
     company_names: '/api/company_names',
     competitive_process_statuses_dict: '/api/competitive_process_statuses_dict',
