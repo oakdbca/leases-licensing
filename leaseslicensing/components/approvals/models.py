@@ -21,6 +21,8 @@ from leaseslicensing.components.approvals.email import (
     send_approval_surrender_email_notification,
     send_approval_suspend_email_notification,
 )
+from leaseslicensing.components.compliances.models import Compliance
+from leaseslicensing.components.invoicing.models import Invoice
 from leaseslicensing.components.main.models import (
     CommunicationsLogEntry,
     Document,
@@ -424,8 +426,34 @@ class Approval(LicensingModelVersioned):
         ) and self.can_action
 
     @property
+    def has_outstanding_compliances(self):
+        return Compliance.objects.filter(
+            approval=self,
+            processing_status__in=[
+                Compliance.PROCESSING_STATUS_DUE,
+                Compliance.PROCESSING_STATUS_WITH_ASSESSOR,
+                Compliance.PROCESSING_STATUS_WITH_REFERRAL,
+                Compliance.PROCESSING_STATUS_OVERDUE,
+            ],
+        ).exists()
+
+    @property
+    def has_outstanding_invoices(self):
+        return Invoice.objects.filter(
+            approval=self,
+            status__in=[
+                Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                Invoice.INVOICE_STATUS_UNPAID,
+            ],
+        ).exists()
+
+    @property
     def can_transfer(self):
-        # Todo: Define under which conditions a lease/license can be transferred
+        if self.has_outstanding_compliances:
+            return False
+        if self.has_outstanding_invoices:
+            return False
+
         return self.status == self.APPROVAL_STATUS_CURRENT
 
     @property
@@ -876,6 +904,45 @@ class ApprovalSuspensionDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
+
+
+class ApprovalTransfer(LicensingModelVersioned):
+    MODEL_PREFIX = "LT"
+
+    APPROVAL_TRANSFER_STATUS_DRAFT = "draft"
+    APPROVAL_TRANSFER_STATUS_CANCELLED = "cancelled"
+    APPROVAL_TRANSFER_STATUS_PENDING = "pending"
+    APPROVAL_TRANSFER_STATUS_DECLINED = "declined"
+    APPROVAL_TRANSFER_STATUS_ACCEPTED = "accepted"
+
+    APPROVAL_TRANSFER_STATUS_CHOICES = (
+        (APPROVAL_TRANSFER_STATUS_DRAFT, "Draft"),
+        (APPROVAL_TRANSFER_STATUS_CANCELLED, "Cancelled"),
+        (APPROVAL_TRANSFER_STATUS_PENDING, "Pending"),
+        (APPROVAL_TRANSFER_STATUS_DECLINED, "Declined"),
+        (APPROVAL_TRANSFER_STATUS_ACCEPTED, "Accepted"),
+    )
+
+    lodgement_number = models.CharField(max_length=9, unique=True)
+    processing_status = models.CharField(
+        max_length=40,
+        choices=APPROVAL_TRANSFER_STATUS_CHOICES,
+        default=APPROVAL_TRANSFER_STATUS_DRAFT,
+        null=False,
+        blank=False,
+    )
+    approval = models.ForeignKey(
+        Approval,
+        null=True,
+        blank=False,
+        on_delete=models.PROTECT,
+        related_name="transfer",
+    )
+    transferee = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ("-lodgement_number",)
 
 
 class ApprovalUserAction(UserAction):
