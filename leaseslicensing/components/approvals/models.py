@@ -933,7 +933,7 @@ class ApprovalTransfer(LicensingModelVersioned):
     )
     approval = models.ForeignKey(
         Approval,
-        null=True,
+        null=False,
         blank=False,
         on_delete=models.PROTECT,
         related_name="transfer",
