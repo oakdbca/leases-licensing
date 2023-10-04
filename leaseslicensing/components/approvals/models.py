@@ -945,8 +945,16 @@ class ApprovalTransfer(LicensingModelVersioned):
         (APPROVAL_TRANSFER_STATUS_ACCEPTED, "Accepted"),
     )
 
+    TRANSFEREE_TYPE_ORGANISATION = "organisation"
+    TRANSFEREE_TYPE_INDIVIDUAL = "individual"
+
+    TRANSFEREE_TYPE_CHOICES = (
+        (TRANSFEREE_TYPE_ORGANISATION, "Organisation"),
+        (TRANSFEREE_TYPE_INDIVIDUAL, "Individual"),
+    )
+
     processing_status = models.CharField(
-        max_length=40,
+        max_length=10,
         choices=APPROVAL_TRANSFER_STATUS_CHOICES,
         default=APPROVAL_TRANSFER_STATUS_DRAFT,
         null=False,
@@ -958,6 +966,13 @@ class ApprovalTransfer(LicensingModelVersioned):
         blank=False,
         on_delete=models.PROTECT,
         related_name="transfers",
+    )
+    transferee_type = models.CharField(
+        max_length=12,
+        choices=TRANSFEREE_TYPE_CHOICES,
+        default=TRANSFEREE_TYPE_ORGANISATION,
+        null=False,
+        blank=False,
     )
     transferee = models.IntegerField(null=True, blank=True)
     datetime_created = models.DateTimeField(auto_now_add=True)
