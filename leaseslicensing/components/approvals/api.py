@@ -20,6 +20,7 @@ from leaseslicensing.components.approvals.document import ApprovalDocumentGenera
 from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
+    ApprovalTransfer,
     ApprovalType,
 )
 from leaseslicensing.components.approvals.serializers import (
@@ -30,6 +31,7 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalSerializer,
     ApprovalSurrenderSerializer,
     ApprovalSuspensionSerializer,
+    ApprovalTransferSerializer,
     ApprovalUserActionSerializer,
 )
 from leaseslicensing.components.compliances.models import Compliance
@@ -725,3 +727,120 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
         data["recordsFiltered"] = queryset.count()
         data["recordsTotal"] = queryset.count()
         return Response(data=data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def transfer(self, request, *args, **kwargs):
+        instance = self.get_object()
+        active_transfers = ApprovalTransfer.objects.filter(
+            approval=instance,
+            processing_status__in=[
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT,
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
+            ],
+        )
+        if active_transfers.exists():
+            approval_transfer = active_transfers.first()
+        else:
+            approval_transfer, created = ApprovalTransfer.objects.create(
+                approval=instance,
+            )
+            logger.info(
+                f"Created Approval Transfer: {approval_transfer} for Approval: {instance}"
+            )
+        serializer = ApprovalTransferSerializer(approval_transfer)
+        return Response(serializer.data)
+
+
+class ApprovalTransferViewSet(viewsets.ModelViewSet):
+    queryset = ApprovalTransfer.objects.all()
+    serializer_class = ApprovalTransferSerializer
+
+    def get_queryset(self):
+        if is_internal(self.request):
+            return ApprovalTransfer.objects.all()
+        elif is_customer(self.request):
+            user_orgs = (
+                [
+                    org.id
+                    for org in self.request.user.leaseslicensing_organisations.all()
+                ]
+                if hasattr(self.request.user, "leaseslicensing_organisations")
+                else []
+            )
+            queryset = ApprovalTransfer.objects.filter(
+                Q(approval__current_proposal__org_applicant_id__in=user_orgs)
+                | Q(approval__current_proposal__submitter=self.request.user.id)
+            )
+            return queryset
+        return ApprovalTransfer.objects.none()
+
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def process_supporting_document(self, request, *args, **kwargs):
+        instance = self.get_object()
+        returned_data = process_generic_document(
+            request, instance, document_type="approval_transfer_supporting_document"
+        )
+        if returned_data:
+            return Response(returned_data)
+        else:
+            return Response()
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def submit(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.submit(request)
+        serializer = ApprovalTransferSerializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def cancel(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.cancel(request)
+        serializer = ApprovalTransferSerializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def accept(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.accept(request)
+        serializer = ApprovalTransferSerializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def decline(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.decline(request)
+        serializer = ApprovalTransferSerializer(instance)
+        return Response(serializer.data)
