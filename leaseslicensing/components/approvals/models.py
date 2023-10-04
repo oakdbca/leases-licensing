@@ -457,6 +457,28 @@ class Approval(LicensingModelVersioned):
         return self.status == self.APPROVAL_STATUS_CURRENT
 
     @property
+    def has_active_transfer(self):
+        if not hasattr(self, "transfers"):
+            return False
+        if not self.transfers.filter(
+            processing_status__in=[
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT,
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
+            ]
+        ).exists():
+            return False
+        return True
+
+    @property
+    def active_transfer(self):
+        return self.transfers.filter(
+            processing_status__in=[
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT,
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
+            ]
+        ).first()
+
+    @property
     def allowed_assessor_ids(self):
         return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
@@ -935,7 +957,7 @@ class ApprovalTransfer(LicensingModelVersioned):
         null=False,
         blank=False,
         on_delete=models.PROTECT,
-        related_name="transfer",
+        related_name="transfers",
     )
     transferee = models.IntegerField(null=True, blank=True)
     datetime_created = models.DateTimeField(auto_now_add=True)
@@ -945,6 +967,36 @@ class ApprovalTransfer(LicensingModelVersioned):
     class Meta:
         app_label = "leaseslicensing"
         ordering = ("-lodgement_number",)
+
+    def user_has_object_permission(self, user):
+        return self.approval.user_has_object_permission(user)
+
+
+def supporting_documents_filename(instance, filename):
+    return f"approval-transfer/{instance.id}/documents/{filename}"
+
+
+class ApprovalTransferDocument(Document):
+    approval_transfer = models.ForeignKey(
+        ApprovalTransfer,
+        related_name="approval_transfer_supporting_documents",
+        on_delete=models.CASCADE,
+    )
+    _file = SecureFileField(upload_to=supporting_documents_filename, max_length=512)
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    can_delete = models.BooleanField(
+        default=True
+    )  # after initial submit prevent document from being deleted
+    can_hide = models.BooleanField(
+        default=False
+    )  # after initial submit, document cannot be deleted but can be hidden
+    hidden = models.BooleanField(
+        default=False
+    )  # after initial submit prevent document from being deleted
+
+    class Meta:
+        app_label = "leaseslicensing"
+        verbose_name = "Approval Transfer Supporting Document"
 
 
 class ApprovalUserAction(UserAction):
