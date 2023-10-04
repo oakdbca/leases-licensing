@@ -608,9 +608,7 @@ export default {
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                             }
                         }
-                        if (full.can_transfer) {
-                            links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Transfer</a><br/>`;
-                        }
+                        links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}" data-can-transfer="${full.can_transfer}">Transfer</a><br/>`;
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">History</a><br/>`;
@@ -1040,8 +1038,21 @@ export default {
                     var lodgement_number = $(this).attr(
                         'data-approval-lodgement-number'
                     );
+                    var can_transfer = $(this).attr('data-can-transfer');
                     e.preventDefault();
-                    vm.transferApproval(id, lodgement_number);
+                    if (can_transfer != 'true') {
+                        swal.fire({
+                            title: `Unable to Transfer Lease/License`,
+                            text: `Lease/License ${lodgement_number} can not be transfered as it has outstanding compliances or invoices. \
+                    You must submit any due compliances and pay any due invoices before applying to transfer.`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            showConfirmButton: false,
+                            cancelButtonText: 'Dismiss',
+                        });
+                        return;
+                    }
+                    vm.transferApproval(id, lodgement_number, can_transfer);
                 }
             );
             // Internal history listener
