@@ -608,7 +608,11 @@ export default {
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                             }
                         }
-                        links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}" data-can-transfer="${full.can_transfer}">Transfer</a><br/>`;
+                        let transfer_text = 'Transfer';
+                        if (full.has_active_transfer) {
+                            transfer_text = 'Continue Transfer Application';
+                        }
+                        links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}" data-can-transfer="${full.can_transfer}" data-has-active-transfer="${full.has_active_transfer}">${transfer_text}</a><br/>`;
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">History</a><br/>`;
@@ -1039,6 +1043,16 @@ export default {
                         'data-approval-lodgement-number'
                     );
                     var can_transfer = $(this).attr('data-can-transfer');
+                    var has_active_transfer = $(this).attr(
+                        'data-has-active-transfer'
+                    );
+                    if (has_active_transfer == 'true') {
+                        vm.$router.push({
+                            name: 'external-approval-transfer',
+                            params: { approval_id: id },
+                        });
+                        return;
+                    }
                     e.preventDefault();
                     if (can_transfer != 'true') {
                         swal.fire({
@@ -1473,16 +1487,33 @@ export default {
             swal.fire({
                 title: `Transfer Lease/License`,
                 text: `Are you sure you want to transfer Lease/License ${lodgement_number}?`,
-                icon: 'warning',
+                icon: 'info',
                 showCancelButton: true,
-                confirmButtonText: 'Transfer',
+                confirmButtonText: 'Apply to Transfer',
                 reverseButtons: true,
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    this.$router.push({
-                        name: 'external-approval-transfer',
-                        params: { approval_id: approval_id },
-                    });
+                    fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.approvals,
+                            approval_id + '/transfer'
+                        ),
+                        {
+                            method: 'POST',
+                        }
+                    ).then(
+                        (response) => {
+                            if (response.ok) {
+                                this.$router.push({
+                                    name: 'external-approval-transfer',
+                                    params: { approval_id: approval_id },
+                                });
+                            }
+                        },
+                        (error) => {
+                            console.error(error);
+                        }
+                    );
                 }
             });
         },
