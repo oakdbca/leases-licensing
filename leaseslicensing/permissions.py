@@ -36,7 +36,7 @@ class IsFinanceOfficer(BasePermission):
         return False
 
 
-class IsInternalOrHasObjectDocumentsPermission(BasePermission):
+class IsInternalOrHasObjectPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         if request.user.is_superuser:
             return True
