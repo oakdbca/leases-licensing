@@ -24,6 +24,8 @@ from leaseslicensing.components.approvals.email import (
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.models import Invoice
 from leaseslicensing.components.main.models import (
+    ApplicationType,
+    BaseApplicant,
     CommunicationsLogEntry,
     Document,
     LicensingModelVersioned,
@@ -426,6 +428,14 @@ class Approval(LicensingModelVersioned):
         ) and self.can_action
 
     @property
+    def has_pending_transfer(self):
+        return self.transfers.filter(
+            processing_status__in=[
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
+            ]
+        ).exists()
+
+    @property
     def has_outstanding_compliances(self):
         return Compliance.objects.filter(
             approval=self,
@@ -449,6 +459,8 @@ class Approval(LicensingModelVersioned):
 
     @property
     def can_transfer(self):
+        if self.has_pending_transfer:
+            return False
         if self.has_outstanding_compliances:
             return False
         if self.has_outstanding_invoices:
@@ -457,13 +469,12 @@ class Approval(LicensingModelVersioned):
         return self.status == self.APPROVAL_STATUS_CURRENT
 
     @property
-    def has_active_transfer(self):
+    def has_draft_transfer(self):
         if not hasattr(self, "transfers"):
             return False
         if not self.transfers.filter(
             processing_status__in=[
                 ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT,
-                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
             ]
         ).exists():
             return False
@@ -986,9 +997,119 @@ class ApprovalTransfer(LicensingModelVersioned):
     def user_has_object_permission(self, user):
         return self.approval.user_has_object_permission(user)
 
+    def cancel(self, user):
+        if self.processing_status != self.APPROVAL_TRANSFER_STATUS_DRAFT:
+            raise ValidationError(
+                "Unable to cancel approval transfer as it is not in draft status"
+            )
+
+        self.processing_status = self.APPROVAL_TRANSFER_STATUS_CANCELLED
+        self.save()
+        logger.info(f"Cancelled ApprovalTransfer {self}")
+
+    @transaction.atomic
+    def initiate(self):
+        if self.processing_status != self.APPROVAL_TRANSFER_STATUS_DRAFT:
+            raise ValidationError(
+                "Unable to initiate approval transfer as it is not in draft status"
+            )
+
+        self.processing_status = self.APPROVAL_TRANSFER_STATUS_PENDING
+        self.save()
+        ind_applicant = None
+        org_applicant = None
+        if self.transferee_type == self.TRANSFEREE_TYPE_ORGANISATION:
+            org_applicant = Organisation.objects.get(id=self.transferee)
+        else:
+            ind_applicant = self.transferee
+
+        transfer_proposal, created = Proposal.objects.get_or_create(
+            application_type=ApplicationType.objects.get(
+                name=settings.APPLICATION_TYPE_LEASE_LICENCE_TRANSFER
+            ),
+            ind_applicant=ind_applicant,
+            org_applicant=org_applicant,
+            proposal_type=ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW),
+        )
+
+        # Email the proponent to confirm the approval transfer has been initiated
+
+        # Email the transferee to inform them that the approval transfer has been initiated
+
+        logger.info(f"Initiated ApprovalTransfer {self}")
+
 
 def supporting_documents_filename(instance, filename):
     return f"approval-transfer/{instance.id}/documents/{filename}"
+
+
+class ApprovalTransferApplicant(BaseApplicant):
+    approval_transfer = models.OneToOneField(
+        ApprovalTransfer,
+        related_name="applicant",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+    @classmethod
+    def instantiate_from_request_user(cls, user, approval_transfer):
+        (
+            approval_transfer_applicant,
+            created,
+        ) = ApprovalTransferApplicant.objects.get_or_create(
+            approval_transfer=approval_transfer
+        )
+        if created:
+            logger.info(
+                f"Created ApprovalTransferApplicant {approval_transfer_applicant} from request user {user}"
+            )
+            approval_transfer_applicant.emailuser_id = user.id
+            approval_transfer_applicant.first_name = user.first_name
+            approval_transfer_applicant.last_name = user.last_name
+            approval_transfer_applicant.dob = user.dob
+
+            approval_transfer_applicant.residential_line1 = (
+                user.residential_address.line1
+            )
+            approval_transfer_applicant.residential_line2 = (
+                user.residential_address.line2
+            )
+            approval_transfer_applicant.residential_line3 = (
+                user.residential_address.line3
+            )
+            approval_transfer_applicant.residential_locality = (
+                user.residential_address.locality
+            )
+            approval_transfer_applicant.residential_state = (
+                user.residential_address.state
+            )
+            approval_transfer_applicant.residential_country = (
+                user.residential_address.country
+            )
+            approval_transfer_applicant.residential_postcode = (
+                user.residential_address.postcode
+            )
+
+            approval_transfer_applicant.postal_same_as_residential = (
+                user.postal_same_as_residential
+            )
+            approval_transfer_applicant.postal_line1 = user.postal_address.line1
+            approval_transfer_applicant.postal_line2 = user.postal_address.line2
+            approval_transfer_applicant.postal_line3 = user.postal_address.line3
+            approval_transfer_applicant.postal_locality = user.postal_address.locality
+            approval_transfer_applicant.postal_state = user.postal_address.state
+            approval_transfer_applicant.postal_country = user.postal_address.country
+            approval_transfer_applicant.postal_postcode = user.postal_address.postcode
+
+            approval_transfer_applicant.email = user.email
+            approval_transfer_applicant.phone_number = user.phone_number
+            approval_transfer_applicant.mobile_number = user.mobile_number
+
+            approval_transfer_applicant.save()
 
 
 class ApprovalTransferDocument(Document):
