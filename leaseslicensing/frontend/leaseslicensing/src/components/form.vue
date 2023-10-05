@@ -245,7 +245,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
-                                    :disabled="leaseLicence || is_external"
+                                    :disabled="is_external"
                                 />
                             </div>
                         </div>
