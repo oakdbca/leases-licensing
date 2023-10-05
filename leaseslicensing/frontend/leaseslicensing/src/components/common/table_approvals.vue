@@ -168,21 +168,21 @@
             ref="approval_cancellation"
             :approval_id="selectedApprovalId"
             :approval_lodgement_number="selectedApprovalLodgementNumber"
-            @refreshFromResponse="refreshFromResponseApprovalModify"
+            @refresh-from-response="refreshFromResponseApprovalModify"
         >
         </ApprovalCancellation>
         <ApprovalSurrender
             ref="approval_surrender"
             :approval_id="selectedApprovalId"
             :approval_lodgement_number="selectedApprovalLodgementNumber"
-            @refreshFromResponse="refreshFromResponseApprovalModify"
+            @refresh-from-response="refreshFromResponseApprovalModify"
         >
         </ApprovalSurrender>
         <ApprovalSuspension
             ref="approval_suspension"
             :approval_id="selectedApprovalId"
             :approval_lodgement_number="selectedApprovalLodgementNumber"
-            @refreshFromResponse="refreshFromResponseApprovalModify"
+            @refresh-from-response="refreshFromResponseApprovalModify"
         >
         </ApprovalSuspension>
         <div v-if="approvalHistoryId">
@@ -608,11 +608,13 @@ export default {
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                             }
                         }
-                        let transfer_text = 'Transfer';
-                        if (full.has_active_transfer) {
-                            transfer_text = 'Continue Transfer Application';
+                        if (!full.has_pending_transfer) {
+                            let transfer_text = 'Transfer';
+                            if (full.has_draft_transfer) {
+                                transfer_text = 'Continue Transfer Application';
+                            }
+                            links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}" data-can-transfer="${full.can_transfer}" data-has-active-transfer="${full.has_draft_transfer}">${transfer_text}</a><br/>`;
                         }
-                        links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}" data-can-transfer="${full.can_transfer}" data-has-active-transfer="${full.has_active_transfer}">${transfer_text}</a><br/>`;
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
                         links += `<a href='#${full.id}' data-history-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">History</a><br/>`;
@@ -1043,10 +1045,10 @@ export default {
                         'data-approval-lodgement-number'
                     );
                     var can_transfer = $(this).attr('data-can-transfer');
-                    var has_active_transfer = $(this).attr(
+                    var has_draft_transfer = $(this).attr(
                         'data-has-active-transfer'
                     );
-                    if (has_active_transfer == 'true') {
+                    if (has_draft_transfer == 'true') {
                         vm.$router.push({
                             name: 'external-approval-transfer',
                             params: { approval_id: id },
