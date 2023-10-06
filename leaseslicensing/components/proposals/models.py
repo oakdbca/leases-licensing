@@ -1219,11 +1219,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def save(self, *args, **kwargs):
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
-        if not hasattr(self, "assessment"):
-            # Make sure every proposal has an assessment object
-            ProposalAssessment.objects.get_or_create(proposal=self)
-
         super().save(*args, **kwargs)
+        if not ProposalAssessment.objects.filter(proposal=self).exists():
+            # Make sure every proposal has an assessment object
+            ProposalAssessment.objects.create(proposal=self)
 
     @property
     def submitter_obj(self):
