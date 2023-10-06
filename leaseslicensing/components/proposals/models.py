@@ -1252,13 +1252,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             return relevant_applicant.name
 
     @property
-    def can_create_final_approval(self):
-        return (
-            self.fee_paid
-            and self.processing_status == Proposal.PROCESSING_STATUS_AWAITING_PAYMENT
-        )
-
-    @property
     def reference(self):
         return f"{self.lodgement_number}-{self.lodgement_sequence}"
 
@@ -5593,7 +5586,8 @@ class HelpPage(models.Model):
         unique_together = ("application_type", "help_type", "version")
 
 
-def copy_site_name(proposalFrom, proposalTo):
+def copy_site_name(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    """Copies the site name from proposalFrom to proposalTo"""
     proposalTo.site_name = proposalFrom.site_name
     proposalTo.save()
 
