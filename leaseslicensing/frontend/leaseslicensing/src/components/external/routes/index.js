@@ -9,6 +9,7 @@ import Compliance from '../compliances/access.vue';
 import ComplianceSubmit from '../compliances/submit.vue';
 import Approval from '../approvals/approval.vue';
 import ApprovalTransfer from '../approvals/approval_transfer.vue';
+import ApprovalTransferConfirmation from '../approvals/approval_transfer_confirmation.vue';
 import InvoicesDash from '@/components/internal/invoices/dashboard.vue';
 import InvoicePaymentSuccess from '@/components/external/invoices/payment_success.vue';
 import InvoicePaymentFailure from '@/components/external/invoices/payment_failure.vue';
@@ -31,6 +32,11 @@ export default {
             path: 'approval/:approval_id/transfer',
             component: ApprovalTransfer,
             name: 'external-approval-transfer',
+        },
+        {
+            path: 'approval/:approval_id/transfer/initiated',
+            component: ApprovalTransferConfirmation,
+            name: 'external-approval-transfer-initiated',
         },
         {
             path: 'organisations/manage/:org_id',
