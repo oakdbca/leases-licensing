@@ -1743,7 +1743,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             instance = serializer.save()
 
             if not org_applicant:
-                make_proposal_applicant_ready(instance, request)
+                make_proposal_applicant_ready(instance, request.user)
 
             serializer = SaveProposalSerializer(instance)
             return Response(serializer.data)
