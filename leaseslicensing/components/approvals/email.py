@@ -87,6 +87,32 @@ class ApprovalRenewalNotificationEmail(TemplateEmailBase):
         self.txt_template = "leaseslicensing/emails/approval_renewal_notification.txt"
 
 
+class ApprovalTransferHolderNotificationEmail(TemplateEmailBase):
+    def __init__(self):
+        super().__init__()
+        self.subject = (
+            f"{settings.DEP_NAME} - Lease or Licence transfer has been initiated."
+        )
+        self.html_template = (
+            "leaseslicensing/emails/approval_transfer_holder_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/approval_transfer_holder_notification.txt"
+        )
+
+
+class ApprovalTransferTransfereeNotificationEmail(TemplateEmailBase):
+    def __init__(self):
+        super().__init__()
+        self.subject = f"{settings.DEP_NAME} - Lease or Licence transfer proposal ready for actioning."
+        self.html_template = (
+            "leaseslicensing/emails/approval_transfer_transferee_notification.html"
+        )
+        self.txt_template = (
+            "leaseslicensing/emails/approval_transfer_transferee_notification.txt"
+        )
+
+
 def send_approval_expire_email_notification(approval):
     email = ApprovalExpireNotificationEmail()
     proposal = approval.current_proposal
@@ -358,6 +384,60 @@ def send_approval_custom_cpi_entry_email_notification(approval, days_due_in):
     msg = email.send(
         finance_group_member_emails,
         cc=[settings.LEASING_FINANCE_NOTIFICATION_EMAIL],
+        context=context,
+    )
+    sender = settings.DEFAULT_FROM_EMAIL
+    try:
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+    except EmailUser.DoesNotExist:
+        EmailUser.objects.create(email=sender, password="")
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+
+    _log_approval_email(msg, approval, sender=sender_user)
+
+
+def send_approval_transfer_holder_email_notification(
+    approval, transfer_proposal, request
+):
+    email = ApprovalTransferHolderNotificationEmail()
+
+    transferee = retrieve_email_user(approval.active_transfer.transferee)
+
+    context = {
+        "approval": approval,
+        "transferee": transferee,
+    }
+
+    holder = retrieve_email_user(approval.active_transfer.initiator)
+
+    msg = email.send(
+        holder,
+        context=context,
+    )
+    sender = settings.DEFAULT_FROM_EMAIL
+    try:
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+    except EmailUser.DoesNotExist:
+        EmailUser.objects.create(email=sender, password="")
+        sender_user = EmailUser.objects.get(email__icontains=sender)
+
+    _log_approval_email(msg, approval, sender=sender_user)
+
+
+def send_approval_transfer_transferee_email_notification(
+    approval, transfer_proposal, request
+):
+    email = ApprovalTransferTransfereeNotificationEmail()
+
+    context = {
+        "approval": approval,
+        "transfer_proposal": transfer_proposal,
+    }
+
+    transferee = retrieve_email_user(approval.active_transfer.transferee)
+
+    msg = email.send(
+        transferee,
         context=context,
     )
     sender = settings.DEFAULT_FROM_EMAIL
