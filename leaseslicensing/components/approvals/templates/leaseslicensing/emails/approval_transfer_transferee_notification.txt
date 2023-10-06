@@ -1,0 +1,11 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+            A transfer request has been initiated to transfer {{approval.lodgement_number}} - {{approval.approval_type}} from {{ holder_name }} to {{transferee_name}}
+
+            To ensure a smooth transfer process, please complete the transfer proposal as soon as possible by visiting the following link:
+
+            {{url}}
+
+            If you have any questions about your lease or licence transfer please call a Licencing Officer on {{settings.DEP_PHONE}} or email {{settings.SUPPORT_EMAIL}}.
+{%  endblock %}
