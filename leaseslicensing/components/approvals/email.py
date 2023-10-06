@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils.encoding import smart_text
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
+from leaseslicensing.components.approvals.models import ApprovalTransfer
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.components.organisations.models import (
     Organisation,
@@ -396,22 +397,33 @@ def send_approval_custom_cpi_entry_email_notification(approval, days_due_in):
     _log_approval_email(msg, approval, sender=sender_user)
 
 
-def send_approval_transfer_holder_email_notification(
-    approval, transfer_proposal, request
-):
+def send_approval_transfer_holder_email_notification(approval):
     email = ApprovalTransferHolderNotificationEmail()
 
-    transferee = retrieve_email_user(approval.active_transfer.transferee)
+    initiator = retrieve_email_user(approval.active_transfer.initiator)
+
+    if (
+        approval.active_transfer.transferee_type
+        == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION
+    ):
+        transferee_organisation = Organisation.objects.get(
+            approval.active_transfer.transferee
+        )
+        transferee_name = (
+            f"{transferee_organisation.ledger_organisation_name} "
+            f"(ABN: {transferee_organisation.ledger_organisation_abn})"
+        )
+    else:
+        transferee_user = retrieve_email_user(approval.active_transfer.transferee)
+        transferee_name = f"{transferee_user.get_full_name} ({transferee_user.email})"
 
     context = {
         "approval": approval,
-        "transferee": transferee,
+        "transferee_name": transferee_name,
     }
 
-    holder = retrieve_email_user(approval.active_transfer.initiator)
-
     msg = email.send(
-        holder,
+        [initiator.email],
         context=context,
     )
     sender = settings.DEFAULT_FROM_EMAIL
@@ -424,20 +436,35 @@ def send_approval_transfer_holder_email_notification(
     _log_approval_email(msg, approval, sender=sender_user)
 
 
-def send_approval_transfer_transferee_email_notification(
-    approval, transfer_proposal, request
-):
+def send_approval_transfer_transferee_email_notification(approval, transfer_proposal):
     email = ApprovalTransferTransfereeNotificationEmail()
-
-    context = {
-        "approval": approval,
-        "transfer_proposal": transfer_proposal,
-    }
 
     transferee = retrieve_email_user(approval.active_transfer.transferee)
 
+    if (
+        approval.active_transfer.transferee_type
+        == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION
+    ):
+        transferee_organisation = Organisation.objects.get(
+            approval.active_transfer.transferee
+        )
+        transferee_name = (
+            f"{transferee_organisation.ledger_organisation_name} "
+            f"(ABN: {transferee_organisation.ledger_organisation_abn})"
+        )
+    else:
+        transferee_user = retrieve_email_user(approval.active_transfer.transferee)
+        transferee_name = f"{transferee_user.get_full_name} ({transferee_user.email})"
+
+    context = {
+        "approval": approval,
+        "holder_name": approval.holder,
+        "transferee_name": transferee_name,
+        "transfer_proposal": transfer_proposal,
+    }
+
     msg = email.send(
-        transferee,
+        [transferee.email],
         context=context,
     )
     sender = settings.DEFAULT_FROM_EMAIL
