@@ -993,6 +993,7 @@ class ApprovalTransfer(LicensingModelVersioned):
     initiator = models.IntegerField(null=True, blank=True)
     datetime_created = models.DateTimeField(auto_now_add=True)
     datetime_updated = models.DateTimeField(auto_now=True)
+    datetime_initiated = models.DateTimeField(null=True, blank=True)
     datetime_expiry = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -1025,6 +1026,7 @@ class ApprovalTransfer(LicensingModelVersioned):
 
         self.processing_status = self.APPROVAL_TRANSFER_STATUS_PENDING
         self.initiator = user_id
+        self.datetime_initiated = timezone.now()
         self.save()
 
         ind_applicant = None
@@ -1046,6 +1048,7 @@ class ApprovalTransfer(LicensingModelVersioned):
         transfer_proposal = original_proposal
         transfer_proposal.pk = None  # When saved will create a new proposal
         transfer_proposal.lodgement_number = None
+        transfer_proposal.processing_status = Proposal.PROCESSING_STATUS_DRAFT
         transfer_proposal.ind_applicant = ind_applicant
         transfer_proposal.org_applicant = org_applicant
         transfer_proposal.proposal_type = proposal_type
