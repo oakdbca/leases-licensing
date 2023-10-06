@@ -815,7 +815,7 @@ class ApprovalTransferViewSet(viewsets.ModelViewSet):
     def initiate(self, request, *args, **kwargs):
         instance = self.get_object()
         self.update(request, *args, **kwargs)
-        instance.initiate()
+        instance.initiate(request.user.id)
         serializer = ApprovalTransferSerializer(instance)
         return Response(serializer.data)
 
