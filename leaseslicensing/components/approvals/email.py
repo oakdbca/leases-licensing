@@ -6,7 +6,6 @@ from django.urls import reverse
 from django.utils.encoding import smart_text
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
-from leaseslicensing.components.approvals.models import ApprovalTransfer
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.components.organisations.models import (
     Organisation,
@@ -398,6 +397,8 @@ def send_approval_custom_cpi_entry_email_notification(approval, days_due_in):
 
 
 def send_approval_transfer_holder_email_notification(approval):
+    from leaseslicensing.components.approvals.models import ApprovalTransfer
+
     email = ApprovalTransferHolderNotificationEmail()
 
     initiator = retrieve_email_user(approval.active_transfer.initiator)
@@ -437,6 +438,8 @@ def send_approval_transfer_holder_email_notification(approval):
 
 
 def send_approval_transfer_transferee_email_notification(approval, transfer_proposal):
+    from leaseslicensing.components.approvals.models import ApprovalTransfer
+
     email = ApprovalTransferTransfereeNotificationEmail()
 
     transferee = retrieve_email_user(approval.active_transfer.transferee)
