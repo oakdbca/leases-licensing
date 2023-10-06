@@ -26,7 +26,6 @@ from leaseslicensing.components.approvals.email import (
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.models import Invoice
 from leaseslicensing.components.main.models import (
-    ApplicationType,
     BaseApplicant,
     CommunicationsLogEntry,
     Document,
@@ -47,7 +46,6 @@ from leaseslicensing.components.proposals.models import (
     copy_groups,
     copy_site_name,
 )
-from leaseslicensing.components.proposals.utils import make_proposal_applicant_ready
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
@@ -1015,41 +1013,48 @@ class ApprovalTransfer(LicensingModelVersioned):
         logger.info(f"Cancelled ApprovalTransfer {self}")
 
     @transaction.atomic
-    def initiate(self):
+    def initiate(self, user_id):
+        from leaseslicensing.components.proposals.utils import (
+            make_proposal_applicant_ready,
+        )
+
         if self.processing_status != self.APPROVAL_TRANSFER_STATUS_DRAFT:
             raise ValidationError(
                 "Unable to initiate approval transfer as it is not in draft status"
             )
 
         self.processing_status = self.APPROVAL_TRANSFER_STATUS_PENDING
+        self.initiator = user_id
         self.save()
+
         ind_applicant = None
         org_applicant = None
         if self.transferee_type == self.TRANSFEREE_TYPE_ORGANISATION:
             org_applicant = Organisation.objects.get(id=self.transferee)
         else:
             ind_applicant = self.transferee
-            applicant = retrieve_email_user(ind_applicant)
 
         original_proposal = self.approval.current_proposal
 
         # Create a transfer proposal with all the same data as the original lease licence proposal
+        proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_TRANSFER)
+
+        invoicing_details = original_proposal.invoicing_details
+        invoicing_details.pk = None
+        invoicing_details.save()
+
         transfer_proposal = original_proposal
-        transfer_proposal.pk = None
-        transfer_proposal.application_type = (
-            ApplicationType.objects.get(
-                name=settings.APPLICATION_TYPE_LEASE_LICENCE_TRANSFER
-            ),
-        )
+        transfer_proposal.pk = None  # When saved will create a new proposal
+        transfer_proposal.lodgement_number = None
         transfer_proposal.ind_applicant = ind_applicant
         transfer_proposal.org_applicant = org_applicant
-        transfer_proposal.proposal_type = (
-            ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW),
-        )
+        transfer_proposal.proposal_type = proposal_type
+        transfer_proposal.invoicing_details = invoicing_details
         transfer_proposal.save()
 
         if ind_applicant:
-            make_proposal_applicant_ready(transfer_proposal, applicant)
+            transferee_user = retrieve_email_user(ind_applicant)
+            make_proposal_applicant_ready(transfer_proposal, transferee_user)
 
         # Copy over previous site name
         copy_site_name(original_proposal, transfer_proposal)
@@ -1061,9 +1066,7 @@ class ApprovalTransfer(LicensingModelVersioned):
         copy_gis_data(original_proposal, transfer_proposal)
 
         # Email the proponent to confirm the approval transfer has been initiated
-        send_approval_transfer_holder_email_notification(
-            self.approval, transfer_proposal
-        )
+        send_approval_transfer_holder_email_notification(self.approval)
 
         # Email the transferee to inform them that the approval transfer has been initiated
         send_approval_transfer_transferee_email_notification(
