@@ -203,6 +203,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     approval_type = serializers.CharField(
         source="approval_type.name", allow_null=True, read_only=True
     )
+    approval_type__type = serializers.SerializerMethodField(read_only=True)
     gis_data = serializers.SerializerMethodField(read_only=True)
     geometry_objs = serializers.SerializerMethodField(read_only=True)
     approved_by = serializers.SerializerMethodField()
@@ -259,6 +260,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "record_management_number",
             "invoicing_details",
             "approval_type",
+            "approval_type__type",
             "gis_data",
             "geometry_objs",
             "approved_by",
@@ -400,6 +402,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
             return "Approver not assigned"
         user = EmailUser.objects.get(id=approved_by_id)
         return user.get_full_name()
+
+    def get_approval_type__type(self, obj):
+        return obj.approval_type.type.title()
 
 
 class ApprovalKeyValueSerializer(serializers.ModelSerializer):
