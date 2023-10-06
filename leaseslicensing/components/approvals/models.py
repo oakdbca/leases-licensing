@@ -20,6 +20,8 @@ from leaseslicensing.components.approvals.email import (
     send_approval_renewal_email_notification,
     send_approval_surrender_email_notification,
     send_approval_suspend_email_notification,
+    send_approval_transfer_holder_email_notification,
+    send_approval_transfer_transferee_email_notification,
 )
 from leaseslicensing.components.compliances.models import Compliance
 from leaseslicensing.components.invoicing.models import Invoice
@@ -41,7 +43,11 @@ from leaseslicensing.components.proposals.models import (
     ProposalType,
     ProposalUserAction,
     RequirementDocument,
+    copy_gis_data,
+    copy_groups,
+    copy_site_name,
 )
+from leaseslicensing.components.proposals.utils import make_proposal_applicant_ready
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.settings import PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL
@@ -986,6 +992,7 @@ class ApprovalTransfer(LicensingModelVersioned):
         blank=False,
     )
     transferee = models.IntegerField(null=True, blank=True)
+    initiator = models.IntegerField(null=True, blank=True)
     datetime_created = models.DateTimeField(auto_now_add=True)
     datetime_updated = models.DateTimeField(auto_now=True)
     datetime_expiry = models.DateTimeField(null=True, blank=True)
@@ -1022,21 +1029,49 @@ class ApprovalTransfer(LicensingModelVersioned):
             org_applicant = Organisation.objects.get(id=self.transferee)
         else:
             ind_applicant = self.transferee
+            applicant = retrieve_email_user(ind_applicant)
 
-        transfer_proposal, created = Proposal.objects.get_or_create(
-            application_type=ApplicationType.objects.get(
+        original_proposal = self.approval.current_proposal
+
+        # Create a transfer proposal with all the same data as the original lease licence proposal
+        transfer_proposal = original_proposal
+        transfer_proposal.pk = None
+        transfer_proposal.application_type = (
+            ApplicationType.objects.get(
                 name=settings.APPLICATION_TYPE_LEASE_LICENCE_TRANSFER
             ),
-            ind_applicant=ind_applicant,
-            org_applicant=org_applicant,
-            proposal_type=ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW),
         )
+        transfer_proposal.ind_applicant = ind_applicant
+        transfer_proposal.org_applicant = org_applicant
+        transfer_proposal.proposal_type = (
+            ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW),
+        )
+        transfer_proposal.save()
+
+        if ind_applicant:
+            make_proposal_applicant_ready(transfer_proposal, applicant)
+
+        # Copy over previous site name
+        copy_site_name(original_proposal, transfer_proposal)
+
+        # Copy over previous groups
+        copy_groups(original_proposal, transfer_proposal)
+
+        # Copy over previous gis data
+        copy_gis_data(original_proposal, transfer_proposal)
 
         # Email the proponent to confirm the approval transfer has been initiated
+        send_approval_transfer_holder_email_notification(
+            self.approval, transfer_proposal
+        )
 
         # Email the transferee to inform them that the approval transfer has been initiated
+        send_approval_transfer_transferee_email_notification(
+            self.approval, transfer_proposal
+        )
 
         logger.info(f"Initiated ApprovalTransfer {self}")
+        return transfer_proposal
 
 
 def supporting_documents_filename(instance, filename):
