@@ -408,7 +408,7 @@ def send_approval_transfer_holder_email_notification(approval):
         == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION
     ):
         transferee_organisation = Organisation.objects.get(
-            approval.active_transfer.transferee
+            id=approval.active_transfer.transferee
         )
         transferee_name = (
             f"{transferee_organisation.ledger_organisation_name} "
@@ -449,7 +449,7 @@ def send_approval_transfer_transferee_email_notification(approval, transfer_prop
         == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION
     ):
         transferee_organisation = Organisation.objects.get(
-            approval.active_transfer.transferee
+            id=approval.active_transfer.transferee
         )
         transferee_name = (
             f"{transferee_organisation.ledger_organisation_name} "
