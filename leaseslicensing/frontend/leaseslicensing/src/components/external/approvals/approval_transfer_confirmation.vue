@@ -28,8 +28,8 @@
                 </div>
                 <div class="mb-3">has been initiated successfully.</div>
                 <div class="mb-3">
-                    You will be notified when the transferee has completed the
-                    transfer proposal.
+                    You will be notified when the transfer proposal has been
+                    approved.
                 </div>
 
                 <table class="table table-sm mb-3">
