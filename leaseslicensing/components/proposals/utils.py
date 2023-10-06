@@ -751,30 +751,37 @@ def make_proposal_applicant_ready(proposal: Proposal, user: EmailUser) -> None:
     )
     if created:
         proposal_applicant.emailuser_id = user.id
+        proposal_applicant.email = user.email
         proposal_applicant.first_name = user.first_name
         proposal_applicant.last_name = user.last_name
         proposal_applicant.dob = user.dob
 
-        proposal_applicant.residential_line1 = user.residential_address.line1
-        proposal_applicant.residential_line2 = user.residential_address.line2
-        proposal_applicant.residential_line3 = user.residential_address.line3
-        proposal_applicant.residential_locality = user.residential_address.locality
-        proposal_applicant.residential_state = user.residential_address.state
-        proposal_applicant.residential_country = user.residential_address.country
-        proposal_applicant.residential_postcode = user.residential_address.postcode
+        if user.residential_address:
+            proposal_applicant.residential_line1 = user.residential_address.line1
+            proposal_applicant.residential_line2 = user.residential_address.line2
+            proposal_applicant.residential_line3 = user.residential_address.line3
+            proposal_applicant.residential_locality = user.residential_address.locality
+            proposal_applicant.residential_state = user.residential_address.state
+            proposal_applicant.residential_country = user.residential_address.country
+            proposal_applicant.residential_postcode = user.residential_address.postcode
 
-        proposal_applicant.postal_same_as_residential = user.postal_same_as_residential
-        proposal_applicant.postal_line1 = user.postal_address.line1
-        proposal_applicant.postal_line2 = user.postal_address.line2
-        proposal_applicant.postal_line3 = user.postal_address.line3
-        proposal_applicant.postal_locality = user.postal_address.locality
-        proposal_applicant.postal_state = user.postal_address.state
-        proposal_applicant.postal_country = user.postal_address.country
-        proposal_applicant.postal_postcode = user.postal_address.postcode
+        if user.postal_address:
+            proposal_applicant.postal_same_as_residential = (
+                user.postal_same_as_residential
+            )
+            proposal_applicant.postal_line1 = user.postal_address.line1
+            proposal_applicant.postal_line2 = user.postal_address.line2
+            proposal_applicant.postal_line3 = user.postal_address.line3
+            proposal_applicant.postal_locality = user.postal_address.locality
+            proposal_applicant.postal_state = user.postal_address.state
+            proposal_applicant.postal_country = user.postal_address.country
+            proposal_applicant.postal_postcode = user.postal_address.postcode
 
-        proposal_applicant.email = user.email
-        proposal_applicant.phone_number = user.phone_number
-        proposal_applicant.mobile_number = user.mobile_number
+        if user.phone_number:
+            proposal_applicant.phone_number = user.phone_number
+
+        if user.mobile_number:
+            proposal_applicant.mobile_number = user.mobile_number
 
         proposal_applicant.save()
 
