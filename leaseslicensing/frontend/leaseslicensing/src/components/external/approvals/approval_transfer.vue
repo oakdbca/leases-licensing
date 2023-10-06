@@ -7,7 +7,7 @@
         >
             <div class="col-md-12">
                 <h3>
-                    License Transfer:
+                    {{ approval.approval_type__type }} Transfer:
                     {{ approval.lodgement_number }} -
                     {{ approval.approval_type }}
                 </h3>
@@ -400,7 +400,6 @@ export default {
         this.fetchApproval();
     },
     mounted() {
-        this.initialiseSearch();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     methods: {
@@ -423,6 +422,9 @@ export default {
                         });
                     }
                     vm.approval_details_id = uuid();
+                    vm.$nextTick(() => {
+                        vm.setPlaceholderAndApiEndpoint();
+                    });
                 })
                 .catch((error) => {
                     console.log(
@@ -487,7 +489,7 @@ export default {
                 }
             }, 200);
         },
-        transfereeTypeChanged: function () {
+        setPlaceholderAndApiEndpoint: function () {
             if (this.approval.active_transfer.transferee_type == 'individual') {
                 this.searchPlaceholder =
                     "Start typing the Individual's Name or Email";
@@ -499,6 +501,9 @@ export default {
                 this.searchApiEndpoint = api_endpoints.organisation_lookup;
                 this.initialiseSearch();
             }
+        },
+        transfereeTypeChanged: function () {
+            this.setPlaceholderAndApiEndpoint();
             setTimeout(() => {
                 this.initialiseSearch();
                 $('#search').select2('open');
@@ -677,6 +682,9 @@ export default {
                             text: `${this.approval.lodgement_number} - ${this.approval.approval_type} Transfer to ${this.selectedTransferee} Initiated`,
                             icon: 'success',
                             confirmButtonText: 'OK',
+                        });
+                        this.$router.push({
+                            name: 'external-approval-transfer-initiated',
                         });
                     } else {
                         const responseJSON = await response.json();
