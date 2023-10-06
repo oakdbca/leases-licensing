@@ -1,7 +1,7 @@
 {%  extends 'leaseslicensing/emails/base_email.txt' %}
 
 {%  block content %}
-            This is a confirmation that you have initiated the transfer of {{approval.lodgement_number}} - {{approval.approval_type}} to {{ transferee.get_full_name }}
+            This is a confirmation that you have initiated the transfer of {{approval.lodgement_number}} - {{approval.approval_type}} to {{ transferee_name }}
 
             If any compliances become due during the transfer they must be submitted before the transfer can be completed.
 
