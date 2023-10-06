@@ -13,7 +13,7 @@
                 </div>
                 <div class="mb-3">Your application to transfer:</div>
                 <div class="mb-3">
-                    <span class="badge bg-primary me-2">
+                    <span class="badge bg-primary me-2 fs-6">
                         {{ approval.lodgement_number }} -
                         {{ approval.approval_type }}</span
                     >
@@ -22,7 +22,7 @@
                         class="fa fa-long-arrow-right text-success"
                         aria-hidden="true"
                     ></i>
-                    <span class="badge bg-primary ms-1 me-2">{{
+                    <span class="badge bg-primary ms-1 me-2 fs-6">{{
                         approval.active_transfer.transferee_name
                     }}</span>
                 </div>
@@ -31,6 +31,7 @@
                     You will be notified when the transferee has completed the
                     transfer proposal.
                 </div>
+
                 <table class="table table-sm mb-3">
                     <tbody>
                         <tr>
@@ -52,6 +53,17 @@
                         </tr>
                     </tbody>
                 </table>
+                <BootstrapAlert type="warning" icon="exclamation-triangle-fill">
+                    <div class="mb-3">
+                        If any compliances become due during the transfer
+                        process, they must be submitted before the transfer can
+                        be completed.
+                    </div>
+                    <div class="mb-3">
+                        If any invoices become due during the transfer process,
+                        they must be paid before the transfer can be completed.
+                    </div>
+                </BootstrapAlert>
                 <a
                     href="/external/"
                     class="router-link-active btn btn-primary float-end"
