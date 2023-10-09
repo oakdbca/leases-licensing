@@ -208,9 +208,9 @@
 
 <script>
 /*globals moment */
-import { helpers } from '@/utils/hooks'
-import FileField from '@/components/forms/filefield_immediate.vue'
-import { v4 as uuid } from 'uuid'
+import { helpers } from '@/utils/hooks';
+import FileField from '@/components/forms/filefield_immediate.vue';
+import { v4 as uuid } from 'uuid';
 
 export default {
     name: 'CustomRow',
@@ -221,7 +221,7 @@ export default {
         partyFullData: {
             type: Object,
             default: () => {
-                return null
+                return null;
             },
         },
         competitiveProcessId: {
@@ -231,7 +231,7 @@ export default {
         accessingUser: {
             type: Object,
             default: () => {
-                return null
+                return null;
             },
         },
         processing: {
@@ -258,29 +258,29 @@ export default {
             new_detail_text: '',
             datetimeFormat: 'DD/MM/YYYY HH:mm:ss',
             filefield_id: uuid(),
-        }
+        };
     },
     computed: {
         partyFullDataComputed: function () {
-            return this.partyFullData
+            return this.partyFullData;
         },
         readonly: function () {
-            return false
+            return false;
         },
         existingDetail: function () {
-            return false
+            return false;
         },
         detailDocumentUrl: function () {
-            let url = ''
+            let url = '';
             if (this.existingDetail) {
                 // url = helpers.add_endpoint_join(
                 //     api_endpoints.vesselownership,
                 //     this.vessel.vessel_ownership.id + '/process_vessel_registration_document/'
                 // )
             } else {
-                url = 'temporary_document'
+                url = 'temporary_document';
             }
-            return url
+            return url;
         },
         party_invited_at: function () {
             // For now use field `created_at` instead at `invited_at` for invitation date
@@ -289,13 +289,13 @@ export default {
             return this.formatDatetime(
                 this.partyFullData.created_at,
                 'YYYY-MM-DD'
-            )
+            );
         },
         removed_from_cp: function () {
             // Returns whether this party has been removed from the Competitive Process
             return moment(this.partyFullData.removed_at).isValid()
                 ? true
-                : false
+                : false;
         },
         elementDisabled: function () {
             // Returns whether an element is disabled
@@ -305,34 +305,34 @@ export default {
                 this.discarded ||
                 this.declined ||
                 this.completed
-            )
+            );
         },
     },
     created: function () {},
     methods: {
         remove_party_detail: function (item, e) {
-            let vm = this
-            let $elem = $(e.target)
+            let vm = this;
+            let $elem = $(e.target);
 
             $elem
                 .closest('.card')
-                .fadeOut(500, function () {
-                    const index = vm.partyFullData.party_details.indexOf(item)
+                .hide(0, function () {
+                    const index = vm.partyFullData.party_details.indexOf(item);
                     if (index > -1) {
-                        vm.partyFullData.party_details.splice(index, 1)
+                        vm.partyFullData.party_details.splice(index, 1);
                     }
                 })
                 .prev('hr')
-                .fadeOut(500)
+                .hide(0);
         },
         getFileIconClass: function (filepath, additional_class_names) {
-            return helpers.getFileIconClass(filepath, additional_class_names)
+            return helpers.getFileIconClass(filepath, additional_class_names);
         },
         formatDatetime: function (dt, format) {
             if (format == null) {
-                format = this.datetimeFormat
+                format = this.datetimeFormat;
             }
-            return moment(dt).format(format)
+            return moment(dt).format(format);
         },
         addDetailClicked: function () {
             /** On adding new party details emit an event to the
@@ -340,8 +340,8 @@ export default {
              *  the party's ID and a dictionary of the new details
              */
 
-            let now = new Date()
-            let new_party_data = {}
+            let now = new Date();
+            let new_party_data = {};
             let new_detail = {
                 id: 0, // Should be 0, which is used to determine this as a new entry at the backend
                 key: uuid(), // This is used only for vue for-loop
@@ -353,35 +353,35 @@ export default {
                 created_by: this.accessingUser, // added to prevent vue renderer crash
                 accessing_user: this.accessingUser,
                 party_detail_documents: this.$refs.temp_document.documents,
-            }
-            new_party_data[this.partyFullData.id] = new_detail
-            this.$emit('add-detail', new_party_data)
+            };
+            new_party_data[this.partyFullData.id] = new_detail;
+            this.$emit('add-detail', new_party_data);
         },
         addToTemporaryDocumentCollectionList(temp_doc_id) {
-            console.log({ temp_doc_id })
-            this.temporary_document_collection_id = temp_doc_id
+            console.log({ temp_doc_id });
+            this.temporary_document_collection_id = temp_doc_id;
         },
         partyDateChanged: function (e, date_field) {
             if (!(date_field in this.partyFullData)) {
-                return
+                return;
             }
-            let new_date = e.target.value
+            let new_date = e.target.value;
             if (new_date === '') {
                 // Set date to `null` if form field has been cleared
-                new_date = null
+                new_date = null;
             } else if (date_field === 'removed_at') {
                 // Clear detail text box when `removed_at` is set
-                this.new_detail_text = ''
+                this.new_detail_text = '';
             }
 
             this.$emit('update-party-date', {
                 party_id: this.partyFullData.id,
                 date_field: date_field,
                 new_date: new_date,
-            })
+            });
         },
     },
-}
+};
 </script>
 <style scoped>
 .party_detail_table th,
