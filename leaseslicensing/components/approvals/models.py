@@ -44,7 +44,7 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     copy_gis_data,
     copy_groups,
-    copy_site_name,
+    copy_proposal_geometry,
 )
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -1036,14 +1036,17 @@ class ApprovalTransfer(LicensingModelVersioned):
         else:
             ind_applicant = self.transferee
 
-        original_proposal = self.approval.current_proposal
-
         # Create a transfer proposal with all the same data as the original lease licence proposal
         proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_TRANSFER)
 
-        invoicing_details = original_proposal.invoicing_details
+        # Todo: Will have to copy over any required nested objects (gross turnover years etc.) as required
+        invoicing_details = self.approval.current_proposal.invoicing_details
         invoicing_details.pk = None
         invoicing_details.save()
+
+        # Don't use self.approval.current_proposal here as the reference
+        # would be incorrect after saving transfer_proposal
+        original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
 
         transfer_proposal = original_proposal
         transfer_proposal.pk = None  # When saved will create a new proposal
@@ -1063,11 +1066,14 @@ class ApprovalTransfer(LicensingModelVersioned):
             transferee_user = retrieve_email_user(ind_applicant)
             make_proposal_applicant_ready(transfer_proposal, transferee_user)
 
-        # Copy over previous site name
-        copy_site_name(original_proposal, transfer_proposal)
+        # Query the original proposal again so we have the correct reference
+        original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
 
         # Copy over previous groups
         copy_groups(original_proposal, transfer_proposal)
+
+        # Copy over the proposal geometry
+        copy_proposal_geometry(original_proposal, transfer_proposal)
 
         # Copy over previous gis data
         copy_gis_data(original_proposal, transfer_proposal)
