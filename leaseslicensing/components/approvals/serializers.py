@@ -174,7 +174,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
     can_renew = serializers.SerializerMethodField()
-    can_transfer = serializers.BooleanField(read_only=True)
+    can_initiate_transfer = serializers.BooleanField(read_only=True)
     has_pending_transfer = serializers.BooleanField(read_only=True)
     has_draft_transfer = serializers.BooleanField(read_only=True)
     active_transfer = ApprovalTransferSerializer(read_only=True, allow_null=True)
@@ -242,7 +242,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_renew",
             "can_amend",
             "can_reinstate",
-            "can_transfer",
+            "can_initiate_transfer",
             "has_pending_transfer",
             "has_draft_transfer",
             "active_transfer",
@@ -284,7 +284,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_reinstate",
             "can_amend",
             "can_renew",
-            "can_transfer",
+            "can_initiate_transfer",
             "has_pending_transfer",
             "has_draft_transfer",
             "set_to_cancel",
