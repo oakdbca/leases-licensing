@@ -13,7 +13,11 @@
         </div>
 
         <BootstrapAlert
-            v-if="proposal && proposal.proposal_type.code == 'transfer'"
+            v-if="
+                proposal &&
+                proposal.proposal_type.code == 'transfer' &&
+                proposal.approval
+            "
         >
             Proposal to transfer
             <span class="fw-bold"
