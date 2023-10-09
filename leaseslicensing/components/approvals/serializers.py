@@ -623,4 +623,5 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "expiry_date",
             "approval_type",
             "approval_type_name",
+            "holder",
         )

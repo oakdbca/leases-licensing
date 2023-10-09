@@ -12,6 +12,18 @@
             </h3>
         </div>
 
+        <BootstrapAlert
+            v-if="proposal && proposal.proposal_type.code == 'transfer'"
+        >
+            Proposal to transfer
+            <span class="fw-bold"
+                >{{ proposal.approval.approval_type_name }}
+                {{ proposal.approval.lodgement_number }}
+            </span>
+            from <span class="fw-bold">{{ proposal.approval.holder }}</span> to
+            <span class="fw-bold">{{ proposal.applicant }}</span>
+        </BootstrapAlert>
+
         <div class="">
             <ul id="pills-tab" class="nav nav-pills" role="tablist">
                 <li class="nav-item mr-1" role="presentation">
