@@ -430,6 +430,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     details_url = serializers.SerializerMethodField(read_only=True)
     competitive_process = serializers.SerializerMethodField(read_only=True)
     can_edit_invoicing_details = serializers.SerializerMethodField(read_only=True)
+    approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
 
     # Gis data fields
     identifiers = serializers.SerializerMethodField()
@@ -539,8 +540,21 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "details_url",
             "competitive_process",
             "proposal_applicant",
+            "approval",
         )
         read_only_fields = ("supporting_documents",)
+
+    def get_approval(self, obj):
+        from leaseslicensing.components.approvals.serializers import (
+            ApprovalBasicSerializer,
+        )
+
+        if obj.approval:
+            request = self.context["request"]
+            return ApprovalBasicSerializer(
+                obj.approval, context={"request": request}
+            ).data
+        return None
 
     def get_identifiers(self, obj):
         ids = ProposalIdentifier.objects.filter(proposal=obj).values_list(
@@ -1356,7 +1370,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     requirements = serializers.SerializerMethodField()
     can_edit_invoicing_details = serializers.SerializerMethodField()
-    approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
     additional_documents = AdditionalDocumentSerializer(many=True, read_only=True)
     additional_documents_missing = serializers.ListField(read_only=True)
 
@@ -1484,18 +1497,6 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "current_assessor",
         }
         read_only_fields = ("requirements",)
-
-    def get_approval(self, obj):
-        from leaseslicensing.components.approvals.serializers import (
-            ApprovalBasicSerializer,
-        )
-
-        if obj.approval:
-            request = self.context["request"]
-            return ApprovalBasicSerializer(
-                obj.approval, context={"request": request}
-            ).data
-        return None
 
     def get_applicant_obj(self, obj):
         if isinstance(obj.applicant, Organisation):
