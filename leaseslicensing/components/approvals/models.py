@@ -432,11 +432,15 @@ class Approval(LicensingModelVersioned):
         ) and self.can_action
 
     @property
+    def has_draft_transfer(self):
+        return self.transfers.filter(
+            processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT
+        ).exists()
+
+    @property
     def has_pending_transfer(self):
         return self.transfers.filter(
-            processing_status__in=[
-                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
-            ]
+            processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
         ).exists()
 
     @property
@@ -470,18 +474,6 @@ class Approval(LicensingModelVersioned):
             return False
 
         return self.status == self.APPROVAL_STATUS_CURRENT
-
-    @property
-    def has_draft_transfer(self):
-        if not hasattr(self, "transfers"):
-            return False
-        if not self.transfers.filter(
-            processing_status__in=[
-                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT,
-            ]
-        ).exists():
-            return False
-        return True
 
     @property
     def active_transfer(self):
@@ -633,6 +625,16 @@ class Approval(LicensingModelVersioned):
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.current_proposal.user_has_object_permission(user_id)
+
+    @classmethod
+    def get_approvals_for_emailuser(cls, emailuser_id):
+        user_orgs = get_organisation_ids_for_user(emailuser_id)
+        return cls.objects.filter(
+            Q(current_proposal__org_applicant_id__in=user_orgs)
+            | Q(current_proposal__submitter=emailuser_id)
+            | Q(current_proposal__ind_applicant=emailuser_id)
+            | Q(current_proposal__proxy_applicant=emailuser_id)
+        )
 
     def review_renewal(self, can_be_renewed):
         if not can_be_renewed:
@@ -999,6 +1001,16 @@ class ApprovalTransfer(LicensingModelVersioned):
         app_label = "leaseslicensing"
         ordering = ("-lodgement_number",)
 
+    def save(self, **kwargs):
+        # Complain when attempting to create a new approval transfer for
+        # an approval that already has a draft or pending approval transfer
+        if self.pk is None and self.approval.active_transfer:
+            raise ValidationError(
+                "Unable to create a new approval transfer as there is "
+                "already a draft or pending approval transfer for this approval"
+            )
+        super().save(**kwargs)
+
     def user_has_object_permission(self, user):
         return self.approval.user_has_object_permission(user)
 
@@ -1050,6 +1062,7 @@ class ApprovalTransfer(LicensingModelVersioned):
         transfer_proposal = original_proposal
         transfer_proposal.pk = None  # When saved will create a new proposal
         transfer_proposal.lodgement_number = None
+        transfer_proposal.submitter = None
         transfer_proposal.processing_status = Proposal.PROCESSING_STATUS_DRAFT
         transfer_proposal.ind_applicant = ind_applicant
         transfer_proposal.org_applicant = org_applicant
