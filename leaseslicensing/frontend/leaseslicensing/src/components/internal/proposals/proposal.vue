@@ -2225,13 +2225,35 @@ export default {
                         );
                     },
                 });
-
-                return;
             }
+            if (this.proposal.proposal_type.code == 'transfer') {
+                if (!vm.canProposeToApproveTransfer()) {
+                    return;
+                }
+            }
+
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
                 vm.$refs.proposed_approval.isModalOpen = true;
             });
+        },
+        canProposeToApproveTransfer() {
+            if (
+                this.proposal.approval.has_outstanding_compliances ||
+                this.proposal.approval.has_outstanding_invoices
+            ) {
+                swal.fire({
+                    title: `Unable to Transfer Lease/License`,
+                    text: `Lease/License ${this.proposal.approval.lodgement_number} can not be transferred as it has outstanding compliances or invoices. \
+                    The current holder must submit any due compliances and pay any due invoices before it can be approved.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                    cancelButtonText: 'Dismiss',
+                });
+                return false;
+            }
+            return true;
         },
         issueApproval: function () {
             //save approval level comment before opening 'issue approval' modal
@@ -2276,6 +2298,14 @@ export default {
                 );
             } else {
                 this.proposedApprovalState = 'final_approval';
+
+                if (this.proposal.proposal_type.code == 'transfer') {
+                    if (!this.canProposeToApproveTransfer()) {
+                        console.log('cannot approve transfer');
+                        return;
+                    }
+                }
+
                 // this.uuid++; Why do we need to reload the whole form when we open a modal!?
                 this.$nextTick(() => {
                     this.$refs.proposed_approval.isModalOpen = true;
