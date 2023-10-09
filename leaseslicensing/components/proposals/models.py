@@ -98,6 +98,7 @@ from leaseslicensing.settings import (
     PROPOSAL_TYPE_AMENDMENT,
     PROPOSAL_TYPE_NEW,
     PROPOSAL_TYPE_RENEWAL,
+    PROPOSAL_TYPE_TRANSFER,
 )
 
 logger = logging.getLogger(__name__)
@@ -2627,6 +2628,33 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                             "record_management_number": record_management_number,
                         },
                     )
+            elif (
+                self.proposal_type.code == PROPOSAL_TYPE_TRANSFER
+                and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+            ):
+                from leaseslicensing.components.approvals.models import ApprovalTransfer
+
+                approval = self.approval
+                if approval.has_outstanding_compliances:
+                    raise ValidationError(
+                        "Unable to transfer lease license {approval} as it has outstanding compliances."
+                    )
+                if approval.has_outstanding_invoices:
+                    raise ValidationError(
+                        "Unable to transfer lease license {approval} as it has outstanding invoices."
+                    )
+
+                # Set the current proposal for the approval to this transfer proposal
+                approval.current_proposal = self
+                approval_transfer = approval.transfers.filter(
+                    processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING
+                ).first()
+                approval_transfer.processing_status = (
+                    ApprovalTransfer.APPROVAL_TRANSFER_STATUS_APPROVED
+                )
+                approval_transfer.save()
+                approval.save()
+
             elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
                 # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
                 # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
