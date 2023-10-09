@@ -624,4 +624,7 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "approval_type",
             "approval_type_name",
             "holder",
+            "has_outstanding_compliances",
+            "has_outstanding_invoices",
+            "holder",
         )
