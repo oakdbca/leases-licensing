@@ -1438,11 +1438,15 @@ class Invoice(LicensingModel):
 
     @property
     def balance(self):
+        amount = self.amount
+        if not amount:
+            amount = Decimal("0.00")
+
         credit_debit_sums = self.transactions.aggregate(
             credit=Coalesce(models.Sum("credit"), Decimal("0.00")),
             debit=Coalesce(models.Sum("debit"), Decimal("0.00")),
         )
-        balance = self.amount + credit_debit_sums["credit"] - credit_debit_sums["debit"]
+        balance = amount + credit_debit_sums["credit"] - credit_debit_sums["debit"]
         return Decimal(balance).quantize(Decimal("0.01"))
 
     @property
