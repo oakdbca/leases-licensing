@@ -1057,9 +1057,6 @@ class ApprovalTransfer(LicensingModelVersioned):
         transfer_proposal.proposal_type = proposal_type
         transfer_proposal.invoicing_details = invoicing_details
 
-        # So we can keep track of which approval the transfer application is for
-        transfer_proposal.transfer_approval = self.approval
-
         transfer_proposal.save()
 
         if ind_applicant:
