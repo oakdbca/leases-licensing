@@ -235,13 +235,7 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             qs = Approval.objects.all()
         elif is_customer(self.request):
-            # TODO: fix EmailUserRO issue here
-            # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
-            # queryset =  Approval.objects.filter(Q(org_applicant_id__in = user_orgs)
-            # | Q(submitter = self.request.user))
-            qs = Approval.objects.filter(
-                Q(current_proposal__submitter=self.request.user.id)
-            )
+            qs = Approval.get_approvals_for_emailuser(self.request.user.id)
 
         target_email_user_id = self.request.query_params.get(
             "target_email_user_id", None
