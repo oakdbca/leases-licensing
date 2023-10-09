@@ -613,7 +613,7 @@ export default {
                             if (full.has_draft_transfer) {
                                 transfer_text = 'Continue Transfer Application';
                             }
-                            links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}" data-can-transfer="${full.can_transfer}" data-has-active-transfer="${full.has_draft_transfer}">${transfer_text}</a><br/>`;
+                            links += `<a href='#${full.id}' data-transfer-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}" data-can-initiate-transfer="${full.can_initiate_transfer}" data-has-active-transfer="${full.has_draft_transfer}">${transfer_text}</a><br/>`;
                         }
                     } else if (!vm.is_external) {
                         links += `<a href='/internal/approval/${full.id}'>View</a><br/>`;
@@ -1044,7 +1044,9 @@ export default {
                     var lodgement_number = $(this).attr(
                         'data-approval-lodgement-number'
                     );
-                    var can_transfer = $(this).attr('data-can-transfer');
+                    var can_initiate_transfer = $(this).attr(
+                        'data-can-initiate-transfer'
+                    );
                     var has_draft_transfer = $(this).attr(
                         'data-has-active-transfer'
                     );
@@ -1056,10 +1058,10 @@ export default {
                         return;
                     }
                     e.preventDefault();
-                    if (can_transfer != 'true') {
+                    if (can_initiate_transfer != 'true') {
                         swal.fire({
                             title: `Unable to Transfer Lease/License`,
-                            text: `Lease/License ${lodgement_number} can not be transfered as it has outstanding compliances or invoices. \
+                            text: `Lease/License ${lodgement_number} can not be transferred as it has outstanding compliances or invoices. \
                     You must submit any due compliances and pay any due invoices before applying to transfer.`,
                             icon: 'warning',
                             showCancelButton: true,
@@ -1068,7 +1070,7 @@ export default {
                         });
                         return;
                     }
-                    vm.transferApproval(id, lodgement_number, can_transfer);
+                    vm.transferApproval(id, lodgement_number);
                 }
             );
             // Internal history listener
