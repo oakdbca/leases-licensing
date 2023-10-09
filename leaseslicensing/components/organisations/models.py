@@ -685,7 +685,7 @@ class Organisation(models.Model):
         first_five_delegates = self.delegates.filter(
             organisation__contacts__user_status="active",
             organisation__contacts__user_role="organisation_admin",
-        )[:5]
+        ).distinct()[:5]
         return ",".join([delegate.user_full_name for delegate in first_five_delegates])
 
     @property
