@@ -441,8 +441,7 @@ class Approval(LicensingModelVersioned):
 
     @property
     def has_outstanding_compliances(self):
-        return Compliance.objects.filter(
-            approval=self,
+        return self.compliances.filter(
             processing_status__in=[
                 Compliance.PROCESSING_STATUS_DUE,
                 Compliance.PROCESSING_STATUS_WITH_ASSESSOR,
@@ -453,8 +452,8 @@ class Approval(LicensingModelVersioned):
 
     @property
     def has_outstanding_invoices(self):
-        return Invoice.objects.filter(
-            approval=self,
+        return self.invoices.filter(
+            date_due__lte=timezone.now().date(),
             status__in=[
                 Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
                 Invoice.INVOICE_STATUS_UNPAID,
@@ -462,7 +461,7 @@ class Approval(LicensingModelVersioned):
         ).exists()
 
     @property
-    def can_transfer(self):
+    def can_initiate_transfer(self):
         if self.has_pending_transfer:
             return False
         if self.has_outstanding_compliances:
