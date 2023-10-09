@@ -424,6 +424,10 @@ export default {
                     vm.approval_details_id = uuid();
                     vm.$nextTick(() => {
                         vm.setPlaceholderAndApiEndpoint();
+                        if (this.approval.active_transfer.transferee) {
+                            this.selectedTransferee =
+                                this.approval.active_transfer.transferee_name;
+                        }
                     });
                 })
                 .catch((error) => {
