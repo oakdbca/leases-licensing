@@ -2667,6 +2667,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         # Copy over previous groups
                         copy_groups(self, lease_licence)
 
+                        # Copy over previous proposal geometry
+                        copy_proposal_geometry(self, lease_licence)
+
                         # Copy over previous gis data
                         copy_gis_data(self, lease_licence)
 
@@ -3429,6 +3432,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                 # Copy over previous groups
                 copy_groups(previous_proposal, proposal)
+
+                # Copy over previous proposal geometry
+                copy_proposal_geometry(previous_proposal, proposal)
 
                 # Copy over previous gis data
                 copy_gis_data(previous_proposal, proposal)
@@ -5600,8 +5606,21 @@ def copy_site_name(proposalFrom: Proposal, proposalTo: Proposal) -> None:
 
 
 def copy_groups(proposalFrom, proposalTo):
+    logger.debug(proposalFrom.groups.values("group"))
     for group in proposalFrom.groups.all():
         ProposalGroup.objects.get_or_create(proposal=proposalTo, group=group.group)
+
+
+def copy_proposal_geometry(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    for proposal_geometry in ProposalGeometry.objects.filter(proposal=proposalFrom):
+        ProposalGeometry.objects.get_or_create(
+            proposal=proposalTo,
+            polygon=proposal_geometry.polygon,
+            intersects=True,
+            copied_from=proposal_geometry,
+            drawn_by=proposal_geometry.drawn_by,
+            locked=True,
+        )
 
 
 def copy_gis_data(proposalFrom, proposalTo):
