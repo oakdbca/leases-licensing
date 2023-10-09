@@ -1109,6 +1109,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     previous_application = models.ForeignKey(
         "self", blank=True, null=True, on_delete=models.SET_NULL
     )
+    # The approval that the transfer application is for
+    # (if approved this approval will be transferred to the new holder)
+    transfer_approval = models.OneToOneField(
+        "leaseslicensing.Approval",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+    )
     proposed_decline_status = models.BooleanField(default=False)
     # Special Fields
     title = models.CharField(max_length=255, null=True, blank=True)
