@@ -798,6 +798,7 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
+                            vm.proposal.proposed_issuance_approval &&
                             vm.proposal.assigned_approver == vm.profile.id;
                         return show;
                     },
@@ -808,7 +809,7 @@ export default {
                 },
                 {
                     key: 'discard',
-                    button_title: 'Discard',
+                    button_title: 'Decline',
                     function_when_clicked: vm.discardProposal,
                     function_to_show_hide: () => {
                         let condition_to_display = {
@@ -825,6 +826,7 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
+                            vm.proposal.proposed_decline_status &&
                             vm.proposal.assigned_approver == vm.profile.id;
                         return show;
                     },
