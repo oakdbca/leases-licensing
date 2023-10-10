@@ -162,6 +162,14 @@ class ComplianceInternalNotificationOnlyEmail(TemplateEmailBase):
         self.txt_template = "leaseslicensing/emails/compliances/send_internal_notification_only_email.txt"
 
 
+class CompliancePreventingTransferNotificationEmail(TemplateEmailBase):
+    def __init__(self):
+        super().__init__()
+        self.subject = "Due Compliance Preventing Lease/License Transfer"
+        self.html_template = "leaseslicensing/emails/compliances/send_compliance_preventing_transfer_notification.html"
+        self.txt_template = "leaseslicensing/emails/compliances/send_compliance_preventing_transfer_notification.txt"
+
+
 def send_amendment_email_notification(
     amendment_request, request, compliance, is_test=False
 ):
@@ -593,6 +601,43 @@ def send_internal_notification_only_email(compliance, is_test=False):
     context = {"compliance": compliance, "url": url}
 
     msg = email.send(compliance.proposal.assessor_recipients, context=context)
+    if is_test:
+        return
+
+    sender = retrieve_default_from_email_user()
+    _log_compliance_email(msg, compliance, sender=sender)
+
+    if compliance.proposal.org_applicant:
+        _log_org_email(
+            msg,
+            compliance.proposal.org_applicant,
+            compliance.submitter,
+            sender=sender,
+        )
+    else:
+        _log_user_email(
+            msg, compliance.proposal.submitter, compliance.submitter, sender=sender
+        )
+
+
+def send_compliance_preventing_transfer_notification_email(compliance, is_test=False):
+    email = CompliancePreventingTransferNotificationEmail()
+    url = settings.SITE_URL
+    url += reverse(
+        "external-compliance-detail", kwargs={"compliance_pk": compliance.id}
+    )
+
+    context = {"compliance": compliance, "approval": compliance.approval, "url": url}
+
+    submitter_email = compliance.submitter_email
+
+    all_ccs = []
+    if compliance.proposal.org_applicant and compliance.proposal.org_applicant.email:
+        cc_list = compliance.proposal.org_applicant.email
+        if cc_list:
+            all_ccs = [cc_list]
+
+    msg = email.send(submitter_email, cc=all_ccs, context=context)
     if is_test:
         return
 
