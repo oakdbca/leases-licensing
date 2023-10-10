@@ -2145,9 +2145,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             try:
                 if not self.can_assess(request.user):
                     raise exceptions.ProposalNotAuthorized()
-                if self.processing_status != "with_assessor":
+                if self.processing_status not in [
+                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+                ]:
                     raise ValidationError(
-                        "You cannot propose to decline if it is not with assessor"
+                        "You cannot propose to decline a proposal unless it's status is with assessor"
                     )
 
                 non_field_errors = []
@@ -2637,11 +2640,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 approval = self.approval
                 if approval.has_outstanding_compliances:
                     raise ValidationError(
-                        "Unable to transfer lease license {approval} as it has outstanding compliances."
+                        f"Unable to transfer lease license {approval} as it has outstanding compliances."
                     )
                 if approval.has_outstanding_invoices:
                     raise ValidationError(
-                        "Unable to transfer lease license {approval} as it has outstanding invoices."
+                        f"Unable to transfer lease license {approval} as it has outstanding invoices."
                     )
 
                 # Set the current proposal for the approval to this transfer proposal
