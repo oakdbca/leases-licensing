@@ -350,7 +350,7 @@ PROPOSAL_TYPE_RENEWAL = "renewal"
 PROPOSAL_TYPE_AMENDMENT = "amendment"
 PROPOSAL_TYPE_TRANSFER = "transfer"
 PROPOSAL_TYPES = [
-    (PROPOSAL_TYPE_NEW, "New Application"),
+    (PROPOSAL_TYPE_NEW, "New Proposal"),
     (PROPOSAL_TYPE_AMENDMENT, "Amendment"),
     (PROPOSAL_TYPE_RENEWAL, "Renewal"),
     (PROPOSAL_TYPE_TRANSFER, "Transfer"),

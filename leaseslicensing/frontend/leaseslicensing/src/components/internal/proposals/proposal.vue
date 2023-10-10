@@ -68,6 +68,23 @@
             </div>
 
             <div class="col-md-9">
+                <BootstrapAlert
+                    v-if="
+                        proposal &&
+                        proposal.proposal_type.code == 'transfer' &&
+                        proposal.approval
+                    "
+                >
+                    Proposal to transfer
+                    <span class="fw-bold"
+                        >{{ proposal.approval.approval_type_name }}
+                        {{ proposal.approval.lodgement_number }}
+                    </span>
+                    from
+                    <span class="fw-bold">{{ proposal.approval.holder }}</span>
+                    to
+                    <span class="fw-bold">{{ proposal.applicant }}</span>
+                </BootstrapAlert>
                 <!-- Main contents -->
                 <template v-if="display_approval_screen">
                     <ApprovalScreen
