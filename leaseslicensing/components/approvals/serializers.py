@@ -114,7 +114,7 @@ class ApprovalTransferApplicantUpdateSerializer(serializers.ModelSerializer):
 
 
 class ApprovalTransferSerializer(serializers.ModelSerializer):
-    transferee_name = serializers.SerializerMethodField(read_only=True)
+    transferee_name = serializers.CharField(read_only=True)
     applicant = ApprovalTransferApplicantSerializer(read_only=True, allow_null=True)
     applicant_for_writing = ApprovalTransferApplicantUpdateSerializer(
         write_only=True, allow_null=True
@@ -123,18 +123,6 @@ class ApprovalTransferSerializer(serializers.ModelSerializer):
     class Meta:
         model = ApprovalTransfer
         fields = "__all__"
-
-    def get_transferee_name(self, obj):
-        if not obj.transferee:
-            return None
-
-        if obj.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION:
-            organisation = Organisation.objects.get(id=obj.transferee)
-            return f"{organisation.ledger_organisation_name} ({organisation.ledger_organisation_abn})"
-
-        if obj.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL:
-            user = EmailUser.objects.get(id=obj.transferee)
-            return user.get_full_name()
 
     def validate(self, attrs):
         errors = []

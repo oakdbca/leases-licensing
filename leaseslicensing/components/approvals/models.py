@@ -1001,6 +1001,19 @@ class ApprovalTransfer(LicensingModelVersioned):
         app_label = "leaseslicensing"
         ordering = ("-lodgement_number",)
 
+    @property
+    def transferee_name(self):
+        if not self.transferee:
+            return None
+
+        if self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION:
+            organisation = Organisation.objects.get(id=self.transferee)
+            return f"{organisation.ledger_organisation_name} ({organisation.ledger_organisation_abn})"
+
+        if self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL:
+            user = EmailUser.objects.get(id=self.transferee)
+            return user.get_full_name()
+
     def save(self, **kwargs):
         # Complain when attempting to create a new approval transfer for
         # an approval that already has a draft or pending approval transfer
