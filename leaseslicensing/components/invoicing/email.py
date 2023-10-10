@@ -166,3 +166,35 @@ def send_invoice_paid_external_notification(invoice):
     sender_user = EmailUser.objects.get(email=sender)
 
     _log_approval_email(msg, approval, sender=sender_user)
+
+
+def send_invoice_preventing_transfer_notification(invoice):
+    approval = invoice.approval
+    email = TemplateEmailBase(
+        subject=("Unpaid Invoice Will Prevent Transfer of Lease/License"),
+        html_template="leaseslicensing/emails/invoicing/send_invoice_preventing_transfer_notification.html",
+        txt_template="leaseslicensing/emails/invoicing/send_invoice_preventing_transfer_notification.txt",
+    )
+    external_invoices_url = reverse(
+        "external-invoices",
+    )
+    external_invoices_url = (
+        f"{settings.LEASES_LICENSING_EXTERNAL_URL}{external_invoices_url}"
+    )
+
+    context = {
+        "invoice": invoice,
+        "approval": approval,
+        "external_invoices_url": external_invoices_url,
+    }
+
+    proposal = approval.current_proposal
+    recipients = proposal.applicant_emails
+    finance_group_member_emails = emails_list_for_group(settings.GROUP_FINANCE)
+    finance_group_member_emails.append(settings.LEASING_FINANCE_NOTIFICATION_EMAIL)
+    msg = email.send(recipients, cc=finance_group_member_emails, context=context)
+
+    sender = settings.DEFAULT_FROM_EMAIL
+    sender_user = EmailUser.objects.get(email=sender)
+
+    _log_approval_email(msg, approval, sender=sender_user)
