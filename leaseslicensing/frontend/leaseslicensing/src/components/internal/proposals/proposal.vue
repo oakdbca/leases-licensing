@@ -2331,7 +2331,6 @@ export default {
         },
         discardProposal: async function () {
             let vm = this;
-            console.log('discardProposal');
             await discardProposal(this.proposal)
                 .then((data) => {
                     if (data != null) {
@@ -2340,15 +2339,15 @@ export default {
                         vm.proposal = Object.assign({}, data);
                         vm.uuid++;
                         swal.fire({
-                            title: 'Discarded',
-                            text: 'The proposal has been discarded',
+                            title: `Proposal ${this.proposal.lodgement_number} Declined`,
+                            text: 'The proposal has been declined and the proponent has been notified by email.',
                             icon: 'success',
                         });
                     }
                 })
                 .catch((error) => {
                     swal.fire({
-                        title: 'The proposal could not be discarded',
+                        title: 'The proposal could not be declined',
                         text: error,
                         icon: 'error',
                     });
