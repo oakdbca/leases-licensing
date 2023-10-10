@@ -1776,9 +1776,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         self.perform_update(serializer)
 
         return Response(
-            ProposalSerializer(
-                Proposal.objects.get(id=instance.id), context={"request": request}
-            ).data,
+            ProposalSerializer(instance, context={"request": request}).data,
             status=http_status,
         )
 
