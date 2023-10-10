@@ -506,6 +506,19 @@
                             <strong class="me-auto">{{
                                 overlayFeatureInfo.leg_name
                             }}</strong>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-light text-nowrap"
+                                aria-label="Close Overlay"
+                                @click="overlay(undefined)"
+                            >
+                                <span style="font-size: smaller"
+                                    ><i
+                                        class="fa-fw fa-regular fa-window-close"
+                                    ></i>
+                                    Close</span
+                                >
+                            </button>
                         </div>
                         <div id="popup-content toast-body">
                             <table
@@ -687,6 +700,7 @@ import {
     set_mode,
     baselayer_name,
     validateFeature,
+    layerAtEventPixel,
 } from '@/components/common/map_functions.js';
 
 export default {
@@ -1911,22 +1925,15 @@ export default {
                 );
 
                 // Change to info cursor if hovering over an optional layer
-                let hit = vm.map.forEachLayerAtPixel(
-                    evt.pixel,
-                    function (layer) {
-                        if (!vm.informing) {
-                            return false;
-                        }
-                        layer.get('name'); //dbca_legislated_lands_and_waters
-                        let optional_layer_names = vm.optionalLayers.map(
-                            (layer) => {
-                                return layer.get('name');
-                            }
-                        );
-
-                        return optional_layer_names.includes(layer.get('name'));
-                    }
+                let layer_at_pixel = layerAtEventPixel(vm, evt);
+                // Compare layer names at pixel with optional layer names and set `hit` property accordingly
+                let optional_layer_names = vm.optionalLayers.map((layer) => {
+                    return layer.get('name');
+                });
+                let hit = layer_at_pixel.some(
+                    (lyr) => optional_layer_names.indexOf(lyr.get('name')) >= 0
                 );
+
                 vm.map.getTargetElement().style.cursor = hit
                     ? 'help'
                     : 'default';
@@ -2792,5 +2799,9 @@ export default {
     /* Works to make the Upload shapefile section fit neatly with the map
     haven't investigated why it's needed. */
     margin-left: 0px;
+}
+
+.force-parent-lh {
+    line-height: inherit !important;
 }
 </style>

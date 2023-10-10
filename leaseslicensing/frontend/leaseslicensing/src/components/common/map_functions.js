@@ -15,6 +15,30 @@ export var baselayer_name = 'mapbox-emerald';
 // export var baselayer_name = 'mapbox-dark'
 
 /**
+ * Returns layers at map event pixel coordinates
+ * @param {Proxy} map_component A map component instance
+ * @param {Event} evt An Event object
+ * @returns an array of layers
+ */
+export function layerAtEventPixel(map_component, evt) {
+    let layer_at_pixel = [];
+    map_component.map.getLayers().forEach((layer) => {
+        if (!map_component.informing) {
+            return;
+        }
+        let pixel = map_component.map.getEventPixel(evt.originalEvent);
+        let data = layer.getData(pixel);
+        // Return if no data or the alpha channel in RGBA is zero (transparent)
+        if (!data || data[3] == 0) {
+            return;
+        }
+        layer_at_pixel.push(layer);
+    });
+
+    return layer_at_pixel;
+}
+
+/**
  * Queries the WMS server for its capabilities and adds optional layers to a map
  * @param {Proxy} map_component A map component instance
  */
@@ -37,6 +61,7 @@ export async function addOptionalLayers(map_component) {
                 let l = new TileWMS({
                     // eslint-disable-next-line no-undef
                     url: `${env['kmi_server_url']}/geoserver/public/wms`,
+                    crossOrigin: 'anonymous', // Data for a image tiles can only be retrieved if the source's crossOrigin property is set (https://openlayers.org/en/latest/apidoc/module-ol_layer_Tile-TileLayer.html#getData)
                     params: {
                         FORMAT: 'image/png',
                         VERSION: '1.1.1',
@@ -51,6 +76,7 @@ export async function addOptionalLayers(map_component) {
                     abstract: layer.Abstract.trim(),
                     title: layer.Title.trim(),
                     visible: false,
+                    extent: layer.BoundingBox[0].extent,
                     source: l,
                 });
 
@@ -95,39 +121,35 @@ export async function addOptionalLayers(map_component) {
                         return;
                     }
                     let coordinate = evt.coordinate;
-                    map_component.map.forEachLayerAtPixel(
-                        evt.pixel,
-                        function (lay) {
-                            if (lay.values_.name === tileLayer.values_.name) {
-                                console.log('Clicked on tile layer', lay);
+                    layerAtEventPixel(map_component, evt).forEach((lyr) => {
+                        if (lyr.values_.name === tileLayer.values_.name) {
+                            console.log('Clicked on tile layer', lyr);
 
-                                let point = `POINT (${coordinate.join(' ')})`;
-                                let query_str = _helper.geoserverQuery.bind(
-                                    this
-                                )(point, map_component);
+                            let point = `POINT (${coordinate.join(' ')})`;
+                            let query_str = _helper.geoserverQuery.bind(this)(
+                                point,
+                                map_component
+                            );
 
-                                _helper
-                                    .validateFeatureQuery(query_str)
-                                    .then(async (features) => {
-                                        if (features.length === 0) {
-                                            console.warn(
-                                                'No features found at this location.'
-                                            );
-                                            map_component.overlay(undefined);
-                                        } else {
-                                            console.log('Feature', features);
-                                            map_component.overlay(
-                                                coordinate,
-                                                features[0]
-                                            );
-                                        }
-                                        map_component.errorMessageProperty(
-                                            null
+                            _helper
+                                .validateFeatureQuery(query_str)
+                                .then(async (features) => {
+                                    if (features.length === 0) {
+                                        console.warn(
+                                            'No features found at this location.'
                                         );
-                                    });
-                            }
+                                        map_component.overlay(undefined);
+                                    } else {
+                                        console.log('Feature', features);
+                                        map_component.overlay(
+                                            coordinate,
+                                            features[0]
+                                        );
+                                    }
+                                    map_component.errorMessageProperty(null);
+                                });
                         }
-                    );
+                    });
                 });
             }
         })
