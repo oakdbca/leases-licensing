@@ -385,7 +385,6 @@ export default {
             return decision_label;
         },
     },
-    watch: {},
     created: function () {
         let vm = this;
         let initialisers = [utils.fetchApprovalTypes()];
@@ -393,8 +392,10 @@ export default {
             for (let approvalType of data[0]) {
                 vm.approvalTypes.push(approvalType);
             }
-            vm.selectedApprovalTypeId =
-                vm.proposal.proposed_issuance_approval.approval_type;
+            if (vm.proposal.proposed_issuance_approval) {
+                vm.selectedApprovalTypeId =
+                    vm.proposal.proposed_issuance_approval.approval_type;
+            }
         });
     },
     mounted: function () {},
