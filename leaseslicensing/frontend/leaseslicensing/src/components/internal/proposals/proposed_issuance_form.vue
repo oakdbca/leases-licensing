@@ -1,5 +1,5 @@
 <template lang="html">
-    <div :id="'proposedIssuanceApproval' + uuid">
+    <div :id="'proposedIssuanceApproval' + uuid" :key="uuid">
         <div class="container-fluid">
             <form
                 :id="'proposedIssuanceForm' + uuid"
@@ -92,7 +92,10 @@
                                 />
                             </div>
                         </div>
-                        <div class="row pt-2">
+                        <div
+                            v-if="proposal.proposed_issuance_approval"
+                            class="row pt-2"
+                        >
                             <div class="col-sm-12">
                                 <BootstrapAlert
                                     v-if="
@@ -101,8 +104,8 @@
                                         submitter_email != applicant_email
                                     "
                                 >
-                                    After approving this application, the
-                                    approval will be emailed to
+                                    After approving this proposal, the approval
+                                    will be emailed to
                                     <span class="fw-bold">{{
                                         submitter_email
                                     }}</span>
@@ -112,8 +115,39 @@
                                     }}</span>
                                 </BootstrapAlert>
                                 <BootstrapAlert v-else>
-                                    After approving this application, the
-                                    approval will be emailed to
+                                    After approving this proposal, the approval
+                                    will be emailed to
+                                    <span class="fw-bold">{{
+                                        submitter_email
+                                    }}</span>
+                                </BootstrapAlert>
+                            </div>
+                        </div>
+                        <div
+                            v-if="proposal.proposed_decline_status"
+                            class="row pt-2"
+                        >
+                            <div class="col-sm-12">
+                                <BootstrapAlert
+                                    v-if="
+                                        submitter_email &&
+                                        applicant_email &&
+                                        submitter_email != applicant_email
+                                    "
+                                >
+                                    After declining this proposal, the
+                                    notification will be emailed to
+                                    <span class="fw-bold">{{
+                                        submitter_email
+                                    }}</span>
+                                    and
+                                    <span class="fw-bold">{{
+                                        applicant_email
+                                    }}</span>
+                                </BootstrapAlert>
+                                <BootstrapAlert v-else>
+                                    After declining this proposal, the
+                                    notification will be emailed to
                                     <span class="fw-bold">{{
                                         submitter_email
                                     }}</span>
@@ -491,7 +525,6 @@ export default {
         return {
             uuid: uuid(),
             selectedDecision: 'approve_lease_licence',
-            isModalOpen: false,
             form: null,
             approval: {},
             approvalTypes: [],
@@ -502,9 +535,8 @@ export default {
             issuingApproval: false,
             approvalDecisionText: {
                 approve_lease_licence:
-                    'Invite Applicant to Apply for a Lease or Licence',
+                    'Invite Proponent to Apply for a Lease or Licence',
                 approve_competitive_process: 'Start Competitive process',
-                decline_application: 'Decline Proposal',
             },
             validation_form: null,
             errors: false,
@@ -698,8 +730,6 @@ export default {
                 vm.selectedApprovalTypeId = vm.approval.approval_type;
             }
 
-            this.selectedApprovalTypeId = this.approval.approval_type;
-
             for (let detailText of data[1]) {
                 vm.detailsTexts[detailText.target] = detailText.body;
             }
@@ -866,9 +896,8 @@ export default {
                     } else {
                         this.errors = true;
                         this.issuingApproval = false;
-                        this.errorString = await helpers.parseFetchError(
-                            response
-                        );
+                        this.errorString =
+                            await helpers.parseFetchError(response);
                     }
                 } else if (this.proposedApprovalState == 'final_approval') {
                     const response = await fetch(
@@ -893,9 +922,8 @@ export default {
                     } else {
                         this.errors = true;
                         this.issuingApproval = false;
-                        this.errorString = await helpers.parseFetchError(
-                            response
-                        );
+                        this.errorString =
+                            await helpers.parseFetchError(response);
                     }
                 }
             });
