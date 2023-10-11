@@ -51,6 +51,7 @@
                     class="mt-2"
                     @toggleProposal="toggleProposal"
                     @toggleRequirements="toggleRequirements"
+                    @back-to-assessor="backToAssessor"
                     @switchStatus="switchStatus"
                     @completeReferral="completeReferral"
                     @amendmentRequest="amendmentRequest"
@@ -2518,6 +2519,37 @@ export default {
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
                     console.log(error);
+                    swal.fire({
+                        title: 'Proposal Error',
+                        text: error,
+                        icon: 'error',
+                    });
+                });
+        },
+        backToAssessor: async function () {
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.proposal,
+                    this.proposal.id + '/back_to_assessor'
+                ),
+                {
+                    method: 'PATCH',
+                }
+            )
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            throw new Error(json);
+                        });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then((data) => {
+                    this.proposedApprovalState = '';
+                    this.proposal = Object.assign({}, data);
+                })
+                .catch((error) => {
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
