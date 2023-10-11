@@ -51,6 +51,7 @@
                     class="mt-2"
                     @toggleProposal="toggleProposal"
                     @toggleRequirements="toggleRequirements"
+                    @back-to-assessor="backToAssessor"
                     @switchStatus="switchStatus"
                     @completeReferral="completeReferral"
                     @amendmentRequest="amendmentRequest"
@@ -68,6 +69,23 @@
             </div>
 
             <div class="col-md-9">
+                <BootstrapAlert
+                    v-if="
+                        proposal &&
+                        proposal.proposal_type.code == 'transfer' &&
+                        proposal.approval
+                    "
+                >
+                    Proposal to transfer
+                    <span class="fw-bold"
+                        >{{ proposal.approval.approval_type_name }}
+                        {{ proposal.approval.lodgement_number }}
+                    </span>
+                    from
+                    <span class="fw-bold">{{ proposal.approval.holder }}</span>
+                    to
+                    <span class="fw-bold">{{ proposal.applicant }}</span>
+                </BootstrapAlert>
                 <!-- Main contents -->
                 <template v-if="display_approval_screen">
                     <ApprovalScreen
@@ -2225,13 +2243,35 @@ export default {
                         );
                     },
                 });
-
-                return;
             }
+            if (this.proposal.proposal_type.code == 'transfer') {
+                if (!vm.canProposeToApproveTransfer()) {
+                    return;
+                }
+            }
+
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
                 vm.$refs.proposed_approval.isModalOpen = true;
             });
+        },
+        canProposeToApproveTransfer() {
+            if (
+                this.proposal.approval.has_outstanding_compliances ||
+                this.proposal.approval.has_outstanding_invoices
+            ) {
+                swal.fire({
+                    title: `Unable to Transfer Lease/License`,
+                    text: `Lease/License ${this.proposal.approval.lodgement_number} can not be transferred as it has outstanding compliances or invoices. \
+                    The current holder must submit any due compliances and pay any due invoices before it can be approved.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    showConfirmButton: false,
+                    cancelButtonText: 'Dismiss',
+                });
+                return false;
+            }
+            return true;
         },
         issueApproval: function () {
             //save approval level comment before opening 'issue approval' modal
@@ -2276,6 +2316,14 @@ export default {
                 );
             } else {
                 this.proposedApprovalState = 'final_approval';
+
+                if (this.proposal.proposal_type.code == 'transfer') {
+                    if (!this.canProposeToApproveTransfer()) {
+                        console.log('cannot approve transfer');
+                        return;
+                    }
+                }
+
                 // this.uuid++; Why do we need to reload the whole form when we open a modal!?
                 this.$nextTick(() => {
                     this.$refs.proposed_approval.isModalOpen = true;
@@ -2284,7 +2332,6 @@ export default {
         },
         discardProposal: async function () {
             let vm = this;
-            console.log('discardProposal');
             await discardProposal(this.proposal)
                 .then((data) => {
                     if (data != null) {
@@ -2293,15 +2340,15 @@ export default {
                         vm.proposal = Object.assign({}, data);
                         vm.uuid++;
                         swal.fire({
-                            title: 'Discarded',
-                            text: 'The proposal has been discarded',
+                            title: `Proposal ${this.proposal.lodgement_number} Declined`,
+                            text: 'The proposal has been declined and the proponent has been notified by email.',
                             icon: 'success',
                         });
                     }
                 })
                 .catch((error) => {
                     swal.fire({
-                        title: 'The proposal could not be discarded',
+                        title: 'The proposal could not be declined',
                         text: error,
                         icon: 'error',
                     });
@@ -2472,6 +2519,37 @@ export default {
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
                     console.log(error);
+                    swal.fire({
+                        title: 'Proposal Error',
+                        text: error,
+                        icon: 'error',
+                    });
+                });
+        },
+        backToAssessor: async function () {
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.proposal,
+                    this.proposal.id + '/back_to_assessor'
+                ),
+                {
+                    method: 'PATCH',
+                }
+            )
+                .then(async (response) => {
+                    if (!response.ok) {
+                        return await response.json().then((json) => {
+                            throw new Error(json);
+                        });
+                    } else {
+                        return await response.json();
+                    }
+                })
+                .then((data) => {
+                    this.proposedApprovalState = '';
+                    this.proposal = Object.assign({}, data);
+                })
+                .catch((error) => {
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,

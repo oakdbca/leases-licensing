@@ -20,8 +20,13 @@ from leaseslicensing.components.approvals.email import (
     send_approval_renewal_email_notification,
     send_approval_surrender_email_notification,
     send_approval_suspend_email_notification,
+    send_approval_transfer_holder_email_notification,
+    send_approval_transfer_transferee_email_notification,
 )
+from leaseslicensing.components.compliances.models import Compliance
+from leaseslicensing.components.invoicing.models import Invoice
 from leaseslicensing.components.main.models import (
+    BaseApplicant,
     CommunicationsLogEntry,
     Document,
     LicensingModelVersioned,
@@ -37,6 +42,9 @@ from leaseslicensing.components.proposals.models import (
     ProposalType,
     ProposalUserAction,
     RequirementDocument,
+    copy_gis_data,
+    copy_groups,
+    copy_proposal_geometry,
 )
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -424,6 +432,59 @@ class Approval(LicensingModelVersioned):
         ) and self.can_action
 
     @property
+    def has_draft_transfer(self):
+        return self.transfers.filter(
+            processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT
+        ).exists()
+
+    @property
+    def has_pending_transfer(self):
+        return self.transfers.filter(
+            processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
+        ).exists()
+
+    @property
+    def has_outstanding_compliances(self):
+        return self.compliances.filter(
+            processing_status__in=[
+                Compliance.PROCESSING_STATUS_DUE,
+                Compliance.PROCESSING_STATUS_WITH_ASSESSOR,
+                Compliance.PROCESSING_STATUS_WITH_REFERRAL,
+                Compliance.PROCESSING_STATUS_OVERDUE,
+            ],
+        ).exists()
+
+    @property
+    def has_outstanding_invoices(self):
+        return self.invoices.filter(
+            date_due__lte=timezone.now().date(),
+            status__in=[
+                Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                Invoice.INVOICE_STATUS_UNPAID,
+            ],
+        ).exists()
+
+    @property
+    def can_initiate_transfer(self):
+        if self.has_pending_transfer:
+            return False
+        if self.has_outstanding_compliances:
+            return False
+        if self.has_outstanding_invoices:
+            return False
+
+        return self.status == self.APPROVAL_STATUS_CURRENT
+
+    @property
+    def active_transfer(self):
+        return self.transfers.filter(
+            processing_status__in=[
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT,
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
+            ]
+        ).first()
+
+    @property
     def allowed_assessor_ids(self):
         return user_ids_in_group(settings.GROUP_NAME_ASSESSOR)
 
@@ -564,6 +625,16 @@ class Approval(LicensingModelVersioned):
     def user_has_object_permission(self, user_id):
         """Used by the secure documents api to determine if the user can view the instance and any attached documents"""
         return self.current_proposal.user_has_object_permission(user_id)
+
+    @classmethod
+    def get_approvals_for_emailuser(cls, emailuser_id):
+        user_orgs = get_organisation_ids_for_user(emailuser_id)
+        return cls.objects.filter(
+            Q(current_proposal__org_applicant_id__in=user_orgs)
+            | Q(current_proposal__submitter=emailuser_id)
+            | Q(current_proposal__ind_applicant=emailuser_id)
+            | Q(current_proposal__proxy_applicant=emailuser_id)
+        )
 
     def review_renewal(self, can_be_renewed):
         if not can_be_renewed:
@@ -871,6 +942,270 @@ class ApprovalSuspensionDocument(Document):
 
     class Meta:
         app_label = "leaseslicensing"
+
+
+class ApprovalTransfer(LicensingModelVersioned):
+    MODEL_PREFIX = "LT"
+
+    APPROVAL_TRANSFER_STATUS_DRAFT = "draft"
+    APPROVAL_TRANSFER_STATUS_CANCELLED = "cancelled"
+    APPROVAL_TRANSFER_STATUS_PENDING = "pending"
+    APPROVAL_TRANSFER_STATUS_DECLINED = "declined"
+    APPROVAL_TRANSFER_STATUS_ACCEPTED = "accepted"
+
+    APPROVAL_TRANSFER_STATUS_CHOICES = (
+        (APPROVAL_TRANSFER_STATUS_DRAFT, "Draft"),
+        (APPROVAL_TRANSFER_STATUS_CANCELLED, "Cancelled"),
+        (APPROVAL_TRANSFER_STATUS_PENDING, "Pending"),
+        (APPROVAL_TRANSFER_STATUS_DECLINED, "Declined"),
+        (APPROVAL_TRANSFER_STATUS_ACCEPTED, "Accepted"),
+    )
+
+    TRANSFEREE_TYPE_ORGANISATION = "organisation"
+    TRANSFEREE_TYPE_INDIVIDUAL = "individual"
+
+    TRANSFEREE_TYPE_CHOICES = (
+        (TRANSFEREE_TYPE_ORGANISATION, "Organisation"),
+        (TRANSFEREE_TYPE_INDIVIDUAL, "Individual"),
+    )
+
+    processing_status = models.CharField(
+        max_length=10,
+        choices=APPROVAL_TRANSFER_STATUS_CHOICES,
+        default=APPROVAL_TRANSFER_STATUS_DRAFT,
+        null=False,
+        blank=False,
+    )
+    approval = models.ForeignKey(
+        Approval,
+        null=False,
+        blank=False,
+        on_delete=models.PROTECT,
+        related_name="transfers",
+    )
+    transferee_type = models.CharField(
+        max_length=12,
+        choices=TRANSFEREE_TYPE_CHOICES,
+        default=TRANSFEREE_TYPE_ORGANISATION,
+        null=False,
+        blank=False,
+    )
+    transferee = models.IntegerField(null=True, blank=True)
+    initiator = models.IntegerField(null=True, blank=True)
+    datetime_created = models.DateTimeField(auto_now_add=True)
+    datetime_updated = models.DateTimeField(auto_now=True)
+    datetime_initiated = models.DateTimeField(null=True, blank=True)
+    datetime_expiry = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        app_label = "leaseslicensing"
+        ordering = ("-lodgement_number",)
+
+    @property
+    def transferee_name(self):
+        if not self.transferee:
+            return None
+
+        if self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION:
+            organisation = Organisation.objects.get(id=self.transferee)
+            return f"{organisation.ledger_organisation_name} ({organisation.ledger_organisation_abn})"
+
+        if self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL:
+            user = EmailUser.objects.get(id=self.transferee)
+            return user.get_full_name()
+
+    def save(self, **kwargs):
+        # Complain when attempting to create a new approval transfer for
+        # an approval that already has a draft or pending approval transfer
+        if self.pk is None and self.approval.active_transfer:
+            raise ValidationError(
+                "Unable to create a new approval transfer as there is "
+                "already a draft or pending approval transfer for this approval"
+            )
+        super().save(**kwargs)
+
+    def user_has_object_permission(self, user):
+        return self.approval.user_has_object_permission(user)
+
+    def cancel(self, user):
+        if self.processing_status != self.APPROVAL_TRANSFER_STATUS_DRAFT:
+            raise ValidationError(
+                "Unable to cancel approval transfer as it is not in draft status"
+            )
+
+        self.processing_status = self.APPROVAL_TRANSFER_STATUS_CANCELLED
+        self.save()
+        logger.info(f"Cancelled ApprovalTransfer {self}")
+
+    @transaction.atomic
+    def initiate(self, user_id):
+        from leaseslicensing.components.proposals.utils import (
+            make_proposal_applicant_ready,
+        )
+
+        if self.processing_status != self.APPROVAL_TRANSFER_STATUS_DRAFT:
+            raise ValidationError(
+                "Unable to initiate approval transfer as it is not in draft status"
+            )
+
+        self.processing_status = self.APPROVAL_TRANSFER_STATUS_PENDING
+        self.initiator = user_id
+        self.datetime_initiated = timezone.now()
+        self.save()
+
+        ind_applicant = None
+        org_applicant = None
+        if self.transferee_type == self.TRANSFEREE_TYPE_ORGANISATION:
+            org_applicant = Organisation.objects.get(id=self.transferee)
+        else:
+            ind_applicant = self.transferee
+
+        # Create a transfer proposal with all the same data as the original lease licence proposal
+        proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_TRANSFER)
+
+        # Todo: Will have to copy over any required nested objects (gross turnover years etc.) as required
+        invoicing_details = self.approval.current_proposal.invoicing_details
+        invoicing_details.pk = None
+        invoicing_details.save()
+
+        # Don't use self.approval.current_proposal here as the reference
+        # would be incorrect after saving transfer_proposal
+        original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
+
+        transfer_proposal = original_proposal
+        transfer_proposal.pk = None  # When saved will create a new proposal
+        transfer_proposal.lodgement_number = None
+        transfer_proposal.submitter = None
+        transfer_proposal.processing_status = Proposal.PROCESSING_STATUS_DRAFT
+        transfer_proposal.ind_applicant = ind_applicant
+        transfer_proposal.org_applicant = org_applicant
+        transfer_proposal.proposal_type = proposal_type
+        transfer_proposal.invoicing_details = invoicing_details
+
+        transfer_proposal.save()
+
+        if ind_applicant:
+            transferee_user = retrieve_email_user(ind_applicant)
+            make_proposal_applicant_ready(transfer_proposal, transferee_user)
+
+        # Query the original proposal again so we have the correct reference
+        original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
+
+        # Copy over previous groups
+        copy_groups(original_proposal, transfer_proposal)
+
+        # Copy over the proposal geometry
+        copy_proposal_geometry(original_proposal, transfer_proposal)
+
+        # Copy over previous gis data
+        copy_gis_data(original_proposal, transfer_proposal)
+
+        # Email the proponent to confirm the approval transfer has been initiated
+        send_approval_transfer_holder_email_notification(self.approval)
+
+        # Email the transferee to inform them that the approval transfer has been initiated
+        send_approval_transfer_transferee_email_notification(
+            self.approval, transfer_proposal
+        )
+
+        logger.info(f"Initiated ApprovalTransfer {self}")
+        return transfer_proposal
+
+
+def supporting_documents_filename(instance, filename):
+    return f"approval-transfer/{instance.id}/documents/{filename}"
+
+
+class ApprovalTransferApplicant(BaseApplicant):
+    approval_transfer = models.OneToOneField(
+        ApprovalTransfer,
+        related_name="applicant",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+
+    @classmethod
+    def instantiate_from_request_user(cls, user, approval_transfer):
+        (
+            approval_transfer_applicant,
+            created,
+        ) = ApprovalTransferApplicant.objects.get_or_create(
+            approval_transfer=approval_transfer
+        )
+        if created:
+            logger.info(
+                f"Created ApprovalTransferApplicant {approval_transfer_applicant} from request user {user}"
+            )
+            approval_transfer_applicant.emailuser_id = user.id
+            approval_transfer_applicant.first_name = user.first_name
+            approval_transfer_applicant.last_name = user.last_name
+            approval_transfer_applicant.dob = user.dob
+
+            approval_transfer_applicant.residential_line1 = (
+                user.residential_address.line1
+            )
+            approval_transfer_applicant.residential_line2 = (
+                user.residential_address.line2
+            )
+            approval_transfer_applicant.residential_line3 = (
+                user.residential_address.line3
+            )
+            approval_transfer_applicant.residential_locality = (
+                user.residential_address.locality
+            )
+            approval_transfer_applicant.residential_state = (
+                user.residential_address.state
+            )
+            approval_transfer_applicant.residential_country = (
+                user.residential_address.country
+            )
+            approval_transfer_applicant.residential_postcode = (
+                user.residential_address.postcode
+            )
+
+            approval_transfer_applicant.postal_same_as_residential = (
+                user.postal_same_as_residential
+            )
+            approval_transfer_applicant.postal_line1 = user.postal_address.line1
+            approval_transfer_applicant.postal_line2 = user.postal_address.line2
+            approval_transfer_applicant.postal_line3 = user.postal_address.line3
+            approval_transfer_applicant.postal_locality = user.postal_address.locality
+            approval_transfer_applicant.postal_state = user.postal_address.state
+            approval_transfer_applicant.postal_country = user.postal_address.country
+            approval_transfer_applicant.postal_postcode = user.postal_address.postcode
+
+            approval_transfer_applicant.email = user.email
+            approval_transfer_applicant.phone_number = user.phone_number
+            approval_transfer_applicant.mobile_number = user.mobile_number
+
+            approval_transfer_applicant.save()
+
+
+class ApprovalTransferDocument(Document):
+    approval_transfer = models.ForeignKey(
+        ApprovalTransfer,
+        related_name="approval_transfer_supporting_documents",
+        on_delete=models.CASCADE,
+    )
+    _file = SecureFileField(upload_to=supporting_documents_filename, max_length=512)
+    input_name = models.CharField(max_length=255, null=True, blank=True)
+    can_delete = models.BooleanField(
+        default=True
+    )  # after initial submit prevent document from being deleted
+    can_hide = models.BooleanField(
+        default=False
+    )  # after initial submit, document cannot be deleted but can be hidden
+    hidden = models.BooleanField(
+        default=False
+    )  # after initial submit prevent document from being deleted
+
+    class Meta:
+        app_label = "leaseslicensing"
+        verbose_name = "Approval Transfer Supporting Document"
 
 
 class ApprovalUserAction(UserAction):

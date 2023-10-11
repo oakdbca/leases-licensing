@@ -77,3 +77,17 @@ class ApprovalTypeAdmin(admin.ModelAdmin):
     inlines = [
         ApprovalTypeDocumentTypeOnApprovalTypeInline,
     ]
+
+
+@admin.register(models.ApprovalTransfer)
+class ApprovalTransferAdmin(admin.ModelAdmin):
+    list_display = (
+        "lodgement_number",
+        "approval",
+        "transferee_type",
+        "transferee",
+        "processing_status",
+        "datetime_created",
+        "datetime_updated",
+        "datetime_expiry",
+    )

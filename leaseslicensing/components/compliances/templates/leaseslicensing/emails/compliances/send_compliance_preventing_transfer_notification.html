@@ -1,0 +1,9 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+    <p>
+        Your request to transfer {{ approval.approval_type }} {{ approval.lodgement_number }} from {{ approval.holder }} to
+        {{ approval.active_transfer.transferee_name }} will not be able to proceed until you have submitted the following compliance:</p>
+
+ 	<p><a href="{{url}}">{{ compliance.reference }} {{compliance.requirement.requirement}}</a></p>
+{%  endblock %}

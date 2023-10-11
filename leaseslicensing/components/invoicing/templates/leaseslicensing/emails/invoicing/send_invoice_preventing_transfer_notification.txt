@@ -1,0 +1,12 @@
+{%  extends 'leaseslicensing/emails/base_email.txt' %}
+
+{%  block content %}
+            Your request to transfer {{ approval.approval_type }} {{ approval.lodgement_number }} from {{ approval.holder }} to
+            {{ approval.active_transfer.transferee_name }} will not be able to proceed until the following invoice is paid:</p>
+
+            {{invoice.lodgement_number}}
+
+            You can view your invoices using the following link:
+
+            {{external_invoices_url}}
+{%  endblock %}

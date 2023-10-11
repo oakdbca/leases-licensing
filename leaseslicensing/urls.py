@@ -73,6 +73,7 @@ router.register(r"compliance_assessments", compliances_api.ComplianceAssessmentV
 router.register(r"referrals", proposal_api.ReferralViewSet)
 router.register(r"external_referee_invites", proposal_api.ExternalRefereeInviteViewSet)
 router.register(r"approvals", approval_api.ApprovalViewSet)
+router.register(r"approval_transfers", approval_api.ApprovalTransferViewSet)
 router.register(r"compliances", compliances_api.ComplianceViewSet)
 router.register(r"proposal_requirements", proposal_api.ProposalRequirementViewSet)
 router.register(

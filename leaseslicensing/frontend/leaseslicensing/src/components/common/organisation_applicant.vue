@@ -76,6 +76,7 @@
                 <div class="col">
                     <a
                         role="button"
+                        target="_blank"
                         :href="'/external/organisations/manage/' + org.id"
                         class="btn btn-primary float-end"
                         ><i class="fa fa-external-link" aria-hidden="true"></i>

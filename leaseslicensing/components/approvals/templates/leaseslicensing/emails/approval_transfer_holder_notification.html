@@ -1,0 +1,13 @@
+{%  extends 'leaseslicensing/emails/base_email.html' %}
+
+{%  block content %}
+            <p>This is a confirmation that you have initiated the transfer of {{approval.lodgement_number}} - {{approval.approval_type}} to {{ transferee_name }}</p>
+
+            <p>If any compliances become due during the transfer they must be submitted before the transfer can be completed.</p>
+
+            <p>If any invoices become due during the transfer they must be paid before the transfer can be completed.</p>
+
+            <p>You will be notified when the transfer has been completed successfully.</p>
+
+            <p>If you have any questions about your lease or licence transfer please call a Licencing Officer on {{settings.DEP_PHONE}} or email {{settings.SUPPORT_EMAIL}}.</p>
+{%  endblock %}

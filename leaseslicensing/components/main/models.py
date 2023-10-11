@@ -5,6 +5,8 @@ from django.core.files.storage import FileSystemStorage
 from django.db import models
 from django.db.models import Q
 from django.forms import ValidationError
+from django_countries.fields import CountryField
+from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from reversion.models import Version
 
 from leaseslicensing import settings
@@ -526,3 +528,114 @@ class LicensingModelVersioned(LicensingModel, RevisionedMixin):
         """
 
         return self.revision_versions().filter(revision_id=revision_id)[0]
+
+
+class BaseApplicant(RevisionedMixin):
+    emailuser_id = models.IntegerField(null=True, blank=True)
+
+    # Name, etc
+    first_name = models.CharField(
+        max_length=128, blank=True, verbose_name="Given name(s)"
+    )
+    last_name = models.CharField(max_length=128, blank=True)
+    dob = models.DateField(
+        auto_now=False,
+        auto_now_add=False,
+        null=True,
+        blank=True,
+        verbose_name="date of birth",
+        help_text="",
+    )
+
+    # Residential address
+    residential_line1 = models.CharField("Line 1", max_length=255, blank=True)
+    residential_line2 = models.CharField("Line 2", max_length=255, blank=True)
+    residential_line3 = models.CharField("Line 3", max_length=255, blank=True)
+    residential_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
+    residential_state = models.CharField(max_length=255, default="WA", blank=True)
+    residential_country = CountryField(
+        default="AU", blank=True, blank_label="(Select a country)"
+    )
+    residential_postcode = models.CharField(max_length=10, blank=True)
+
+    # Postal address
+    postal_same_as_residential = models.BooleanField(default=False)
+    postal_line1 = models.CharField("Line 1", max_length=255, blank=True)
+    postal_line2 = models.CharField("Line 2", max_length=255, blank=True)
+    postal_line3 = models.CharField("Line 3", max_length=255, blank=True)
+    postal_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
+    postal_state = models.CharField(max_length=255, default="WA", blank=True)
+    postal_country = CountryField(
+        default="AU", blank=True, blank_label="(Select a country)"
+    )
+    postal_postcode = models.CharField(max_length=10, blank=True)
+
+    # Contact
+    email = models.EmailField(
+        null=True,
+        blank=True,
+    )
+    phone_number = models.CharField(
+        max_length=50, null=True, blank=True, verbose_name="phone number", help_text=""
+    )
+    mobile_number = models.CharField(
+        max_length=50, null=True, blank=True, verbose_name="mobile number", help_text=""
+    )
+
+    class Meta:
+        app_label = "leaseslicensing"
+        abstract = True
+
+    def __str__(self):
+        return f"{self.first_name} {self.last_name} ({self.email})"
+
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
+    @property
+    def residential_address(self):
+        # Mapping from ProposalApplicant to residential_address property
+        address_mapping = {
+            "residential_line1": "line1",
+            "residential_line2": "line2",
+            "residential_line3": "line3",
+            "residential_postcode": "postcode",
+            "residential_locality": "locality",
+            "residential_state": "state",
+            "residential_country": "country",
+        }
+        return {
+            address_mapping[k]: v
+            for k, v in self.__dict__.items()
+            if k in address_mapping.keys()
+        }
+
+    @property
+    def postal_address(self):
+        # Mapping from ProposalApplicant to postal_address property
+        address_mapping = {
+            "postal_line1": "line1",
+            "postal_line2": "line2",
+            "postal_line3": "line3",
+            "postal_postcode": "postcode",
+            "postal_locality": "locality",
+            "postal_state": "state",
+            "postal_country": "country",
+        }
+        return {
+            address_mapping[k]: v
+            for k, v in self.__dict__.items()
+            if k in address_mapping.keys()
+        }
+
+    def log_user_action(self, action, request):
+        try:
+            emailuser = retrieve_email_user(self.emailuser_id)
+        except EmailUser.DoesNotExist:
+            logger.warn(
+                f"Tried to log user action for proposal applicant {self.id} "
+                f"but couldn't find ledger user with id {self.emailuser_id}"
+            )
+            return
+        return emailuser.log_user_action(action, request)

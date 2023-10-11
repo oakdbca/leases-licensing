@@ -16,11 +16,11 @@ from leaseslicensing.components.proposals.models import ChecklistQuestion
 from leaseslicensing.utils import create_helppage_object
 
 
+@admin.register(models.ProposalType)
 class ProposalTypeAdmin(admin.ModelAdmin):
-    list_display = ["name", "description", "version"]
-    ordering = ("name", "-version")
-    list_filter = ("name",)
-    # exclude=("site",)
+    list_display = ["code", "description"]
+    ordering = ("code",)
+    list_filter = ("code",)
 
 
 class ProposalDocumentInline(admin.TabularInline):

@@ -76,7 +76,7 @@
                                                     ','
                                                 )"
                                                 :key="person"
-                                                class="badge bg-primary bg-first-five"
+                                                class="badge bg-primary bg-first-five me-2"
                                                 >{{ person }}</span
                                             >
                                         </li>

@@ -1369,6 +1369,25 @@ class ProposalViewSet(UserActionLoggingViewset):
 
     @detail_route(
         methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def back_to_assessor(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.processing_status = Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+        # Reset fields related to the propose approve / decline so that the assessor must
+        # make a new proposal to approve or deline (since the last one was rejected)
+        instance.proposed_decline_status = False
+        instance.proposed_issuance_approval = None
+        instance.save()
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(instance, context={"request": request})
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
             "POST",
         ],
         detail=True,
@@ -1743,7 +1762,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             instance = serializer.save()
 
             if not org_applicant:
-                make_proposal_applicant_ready(instance, request)
+                make_proposal_applicant_ready(instance, request.user)
 
             serializer = SaveProposalSerializer(instance)
             return Response(serializer.data)
@@ -1776,9 +1795,7 @@ class ProposalViewSet(UserActionLoggingViewset):
         self.perform_update(serializer)
 
         return Response(
-            ProposalSerializer(
-                Proposal.objects.get(id=instance.id), context={"request": request}
-            ).data,
+            ProposalSerializer(instance, context={"request": request}).data,
             status=http_status,
         )
 

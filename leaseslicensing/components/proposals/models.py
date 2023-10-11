@@ -25,7 +25,6 @@ from django.db.models.functions import Cast
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
-from django_countries.fields import CountryField
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroup
 from rest_framework import serializers
@@ -43,6 +42,7 @@ from leaseslicensing.components.invoicing.email import (
 from leaseslicensing.components.invoicing.models import Invoice, InvoicingDetails
 from leaseslicensing.components.main.models import (  # Organisation as ledger_organisation, OrganisationAddress,
     ApplicationType,
+    BaseApplicant,
     CommunicationsLogEntry,
     Document,
     LicensingModelVersioned,
@@ -98,6 +98,7 @@ from leaseslicensing.settings import (
     PROPOSAL_TYPE_AMENDMENT,
     PROPOSAL_TYPE_NEW,
     PROPOSAL_TYPE_RENEWAL,
+    PROPOSAL_TYPE_TRANSFER,
 )
 
 logger = logging.getLogger(__name__)
@@ -1219,11 +1220,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def save(self, *args, **kwargs):
         # Clear out the cached
         cache.delete(settings.CACHE_KEY_MAP_PROPOSALS)
-        if not hasattr(self, "assessment"):
-            # Make sure every proposal has an assessment object
-            ProposalAssessment.objects.get_or_create(proposal=self)
-
         super().save(*args, **kwargs)
+        if not ProposalAssessment.objects.filter(proposal=self).exists():
+            # Make sure every proposal has an assessment object
+            ProposalAssessment.objects.create(proposal=self)
 
     @property
     def submitter_obj(self):
@@ -1250,13 +1250,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         else:
             # Organisation
             return relevant_applicant.name
-
-    @property
-    def can_create_final_approval(self):
-        return (
-            self.fee_paid
-            and self.processing_status == Proposal.PROCESSING_STATUS_AWAITING_PAYMENT
-        )
 
     @property
     def reference(self):
@@ -2152,9 +2145,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             try:
                 if not self.can_assess(request.user):
                     raise exceptions.ProposalNotAuthorized()
-                if self.processing_status != "with_assessor":
+                if self.processing_status not in [
+                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+                ]:
                     raise ValidationError(
-                        "You cannot propose to decline if it is not with assessor"
+                        "You cannot propose to decline a proposal unless it's status is with assessor"
                     )
 
                 non_field_errors = []
@@ -2635,6 +2631,33 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                             "record_management_number": record_management_number,
                         },
                     )
+            elif (
+                self.proposal_type.code == PROPOSAL_TYPE_TRANSFER
+                and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+            ):
+                from leaseslicensing.components.approvals.models import ApprovalTransfer
+
+                approval = self.approval
+                if approval.has_outstanding_compliances:
+                    raise ValidationError(
+                        f"Unable to transfer lease license {approval} as it has outstanding compliances."
+                    )
+                if approval.has_outstanding_invoices:
+                    raise ValidationError(
+                        f"Unable to transfer lease license {approval} as it has outstanding invoices."
+                    )
+
+                # Set the current proposal for the approval to this transfer proposal
+                approval.current_proposal = self
+                approval_transfer = approval.transfers.filter(
+                    processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING
+                ).first()
+                approval_transfer.processing_status = (
+                    ApprovalTransfer.APPROVAL_TRANSFER_STATUS_APPROVED
+                )
+                approval_transfer.save()
+                approval.save()
+
             elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
                 # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
                 # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
@@ -2666,6 +2689,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
                         # Copy over previous groups
                         copy_groups(self, lease_licence)
+
+                        # Copy over previous proposal geometry
+                        copy_proposal_geometry(self, lease_licence)
 
                         # Copy over previous gis data
                         copy_gis_data(self, lease_licence)
@@ -3430,6 +3456,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # Copy over previous groups
                 copy_groups(previous_proposal, proposal)
 
+                # Copy over previous proposal geometry
+                copy_proposal_geometry(previous_proposal, proposal)
+
                 # Copy over previous gis data
                 copy_gis_data(previous_proposal, proposal)
 
@@ -3860,160 +3889,39 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         )
 
 
-class ProposalApplicant(RevisionedMixin):
+class ProposalApplicant(BaseApplicant):
     proposal = models.ForeignKey(
         Proposal, null=True, blank=True, on_delete=models.SET_NULL
-    )
-
-    emailuser_id = models.IntegerField(null=True, blank=True)
-
-    # Name, etc
-    first_name = models.CharField(
-        max_length=128, blank=True, verbose_name="Given name(s)"
-    )
-    last_name = models.CharField(max_length=128, blank=True)
-    dob = models.DateField(
-        auto_now=False,
-        auto_now_add=False,
-        null=True,
-        blank=True,
-        verbose_name="date of birth",
-        help_text="",
-    )
-
-    # Residential address
-    residential_line1 = models.CharField("Line 1", max_length=255, blank=True)
-    residential_line2 = models.CharField("Line 2", max_length=255, blank=True)
-    residential_line3 = models.CharField("Line 3", max_length=255, blank=True)
-    residential_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
-    residential_state = models.CharField(max_length=255, default="WA", blank=True)
-    residential_country = CountryField(
-        default="AU", blank=True, blank_label="(Select a country)"
-    )
-    residential_postcode = models.CharField(max_length=10, blank=True)
-
-    # Postal address
-    postal_same_as_residential = models.BooleanField(default=False)
-    postal_line1 = models.CharField("Line 1", max_length=255, blank=True)
-    postal_line2 = models.CharField("Line 2", max_length=255, blank=True)
-    postal_line3 = models.CharField("Line 3", max_length=255, blank=True)
-    postal_locality = models.CharField("Suburb / Town", max_length=255, blank=True)
-    postal_state = models.CharField(max_length=255, default="WA", blank=True)
-    postal_country = CountryField(
-        default="AU", blank=True, blank_label="(Select a country)"
-    )
-    postal_postcode = models.CharField(max_length=10, blank=True)
-
-    # Contact
-    email = models.EmailField(
-        null=True,
-        blank=True,
-    )
-    phone_number = models.CharField(
-        max_length=50, null=True, blank=True, verbose_name="phone number", help_text=""
-    )
-    mobile_number = models.CharField(
-        max_length=50, null=True, blank=True, verbose_name="mobile number", help_text=""
     )
 
     class Meta:
         app_label = "leaseslicensing"
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name} ({self.email})"
-
-    @transaction.atomic
     def copy_self_to_proposal(self, target_proposal):
-        try:
-            ProposalApplicant.objects.create(
-                proposal=target_proposal,
-                first_name=self.first_name,
-                last_name=self.last_name,
-                dob=self.dob,
-                residential_line1=self.residential_line1,
-                residential_line2=self.residential_line2,
-                residential_line3=self.residential_line3,
-                residential_locality=self.residential_locality,
-                residential_state=self.residential_state,
-                residential_country=self.residential_country,
-                residential_postcode=self.residential_postcode,
-                postal_same_as_residential=self.postal_same_as_residential,
-                postal_line1=self.postal_line1,
-                postal_line2=self.postal_line2,
-                postal_line3=self.postal_line3,
-                postal_locality=self.postal_locality,
-                postal_state=self.postal_state,
-                postal_country=self.postal_country,
-                postal_postcode=self.postal_postcode,
-                email=self.email,
-                phone_number=self.phone_number,
-                mobile_number=self.mobile_number,
-            )
-        except IntegrityError as e:
-            logger.exception(e)
-            raise e
-        except Exception as e:
-            logger.exception(e)
-            raise e
-
-    @property
-    def full_name(self):
-        return f"{self.first_name} {self.last_name}"
-
-    @property
-    def residential_address(self):
-        # Mapping from ProposalApplicant to residential_address property
-        address_mapping = {
-            "residential_line1": "line1",
-            "residential_line2": "line2",
-            "residential_line3": "line3",
-            "residential_postcode": "postcode",
-            "residential_locality": "locality",
-            "residential_state": "state",
-            "residential_country": "country",
-        }
-        return {
-            address_mapping[k]: v
-            for k, v in self.__dict__.items()
-            if k in address_mapping.keys()
-        }
-
-    @property
-    def postal_address(self):
-        # Mapping from ProposalApplicant to postal_address property
-        address_mapping = {
-            "postal_line1": "line1",
-            "postal_line2": "line2",
-            "postal_line3": "line3",
-            "postal_postcode": "postcode",
-            "postal_locality": "locality",
-            "postal_state": "state",
-            "postal_country": "country",
-        }
-        return {
-            address_mapping[k]: v
-            for k, v in self.__dict__.items()
-            if k in address_mapping.keys()
-        }
-
-    def log_user_action(self, action, request):
-        try:
-            emailuser = retrieve_email_user(self.emailuser_id)
-        except EmailUser.DoesNotExist:
-            logger.warn(
-                f"Tried to log user action for proposal applicant {self.id} "
-                f"but couldn't find ledger user with id {self.emailuser_id}"
-            )
-            return
-        return emailuser.log_user_action(action, request)
-
-
-def update_sticker_doc_filename(instance, filename):
-    return f"{settings.MEDIA_APP_DIR}/stickers/batch/{filename}"
-
-
-def update_sticker_response_doc_filename(instance, filename):
-    return f"{settings.MEDIA_APP_DIR}/stickers/response/{filename}"
+        ProposalApplicant.objects.create(
+            proposal=target_proposal,
+            first_name=self.first_name,
+            last_name=self.last_name,
+            dob=self.dob,
+            residential_line1=self.residential_line1,
+            residential_line2=self.residential_line2,
+            residential_line3=self.residential_line3,
+            residential_locality=self.residential_locality,
+            residential_state=self.residential_state,
+            residential_country=self.residential_country,
+            residential_postcode=self.residential_postcode,
+            postal_same_as_residential=self.postal_same_as_residential,
+            postal_line1=self.postal_line1,
+            postal_line2=self.postal_line2,
+            postal_line3=self.postal_line3,
+            postal_locality=self.postal_locality,
+            postal_state=self.postal_state,
+            postal_country=self.postal_country,
+            postal_postcode=self.postal_postcode,
+            email=self.email,
+            phone_number=self.phone_number,
+            mobile_number=self.mobile_number,
+        )
 
 
 class ProposalIdentifier(models.Model):
@@ -5714,14 +5622,28 @@ class HelpPage(models.Model):
         unique_together = ("application_type", "help_type", "version")
 
 
-def copy_site_name(proposalFrom, proposalTo):
+def copy_site_name(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    """Copies the site name from proposalFrom to proposalTo"""
     proposalTo.site_name = proposalFrom.site_name
     proposalTo.save()
 
 
 def copy_groups(proposalFrom, proposalTo):
+    logger.debug(proposalFrom.groups.values("group"))
     for group in proposalFrom.groups.all():
         ProposalGroup.objects.get_or_create(proposal=proposalTo, group=group.group)
+
+
+def copy_proposal_geometry(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    for proposal_geometry in ProposalGeometry.objects.filter(proposal=proposalFrom):
+        ProposalGeometry.objects.get_or_create(
+            proposal=proposalTo,
+            polygon=proposal_geometry.polygon,
+            intersects=True,
+            copied_from=proposal_geometry,
+            drawn_by=proposal_geometry.drawn_by,
+            locked=True,
+        )
 
 
 def copy_gis_data(proposalFrom, proposalTo):

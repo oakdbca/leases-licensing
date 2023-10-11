@@ -1,3 +1,4 @@
+""" Should be run each day after the cron task that updates the compliance status """
 import logging
 import traceback
 
@@ -5,6 +6,9 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
+from leaseslicensing.components.compliances.email import (
+    send_compliance_preventing_transfer_notification_email,
+)
 from leaseslicensing.components.compliances.models import Compliance
 
 logger = logging.getLogger(__name__)
@@ -12,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class Command(BaseCommand):
     help = (
-        "Send notification emails for compliances which has past due dates, "
+        "Send notification emails for compliances which have past their due dates, "
         "and also reminder notification emails for those that are within the daterange "
         "prior to due_date (eg. within 14 days of due date)"
     )
@@ -36,7 +40,8 @@ class Command(BaseCommand):
             try:
                 if c.send_reminder(user.id):
                     reminders_sent.append(c.lodgement_number)
-
+                if c.approval.has_pending_transfer:
+                    send_compliance_preventing_transfer_notification_email(c)
             except Exception as e:
                 err_msg = "Error sending Reminder Compliance {}\n".format(
                     c.lodgement_number

@@ -795,7 +795,7 @@ class Migration(migrations.Migration):
                     "proposal_type",
                     models.CharField(
                         choices=[
-                            ("new_proposal", "New Application"),
+                            ("new_proposal", "New Proposal"),
                             ("amendment", "Amendment"),
                             ("renewal", "Renewal"),
                             ("external", "External"),

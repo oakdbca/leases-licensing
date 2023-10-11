@@ -348,17 +348,21 @@ DEV_APP_BUILD_URL = env(
 PROPOSAL_TYPE_NEW = "new"
 PROPOSAL_TYPE_RENEWAL = "renewal"
 PROPOSAL_TYPE_AMENDMENT = "amendment"
+PROPOSAL_TYPE_TRANSFER = "transfer"
 PROPOSAL_TYPES = [
-    (PROPOSAL_TYPE_NEW, "New Application"),
+    (PROPOSAL_TYPE_NEW, "New Proposal"),
     (PROPOSAL_TYPE_AMENDMENT, "Amendment"),
     (PROPOSAL_TYPE_RENEWAL, "Renewal"),
+    (PROPOSAL_TYPE_TRANSFER, "Transfer"),
 ]
 
 APPLICATION_TYPE_REGISTRATION_OF_INTEREST = "registration_of_interest"
 APPLICATION_TYPE_LEASE_LICENCE = "lease_licence"
+APPLICATION_TYPE_LEASE_LICENCE_TRANSFER = "lease_licence_transfer"
 APPLICATION_TYPES = [
     (APPLICATION_TYPE_REGISTRATION_OF_INTEREST, "Registration of Interest"),
     (APPLICATION_TYPE_LEASE_LICENCE, "Lease Licence"),
+    (APPLICATION_TYPE_LEASE_LICENCE_TRANSFER, "Lease Licence Transfer"),
 ]
 KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
 

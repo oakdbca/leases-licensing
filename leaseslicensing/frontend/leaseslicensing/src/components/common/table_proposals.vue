@@ -332,7 +332,11 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.application_type.name_display;
+                    let text = full.application_type.name_display;
+                    if (full.proposal_type.code != 'new') {
+                        text += ` (${full.proposal_type.description})`;
+                    }
+                    return text;
                 },
                 name: 'application_type_id__name',
             };

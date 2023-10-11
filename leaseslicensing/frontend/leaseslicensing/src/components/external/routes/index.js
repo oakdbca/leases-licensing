@@ -1,16 +1,18 @@
-import { RouterView } from 'vue-router'
-import ExternalDashboard from '@/components/external/dashboard.vue'
-import Proposal from '@/components/external/proposal.vue'
-import ExternalReferralProposal from '@/components/internal/proposals/proposal.vue'
-import ProposalApply from '@/components/external/proposal_apply.vue'
-import ProposalSubmit from '@/components/external/proposal_submit.vue'
-import Organisation from '@/components/external/organisations/manage.vue'
-import Compliance from '../compliances/access.vue'
-import ComplianceSubmit from '../compliances/submit.vue'
-import Approval from '../approvals/approval.vue'
-import InvoicesDash from '@/components/internal/invoices/dashboard.vue'
-import InvoicePaymentSuccess from '@/components/external/invoices/payment_success.vue'
-import InvoicePaymentFailure from '@/components/external/invoices/payment_failure.vue'
+import { RouterView } from 'vue-router';
+import ExternalDashboard from '@/components/external/dashboard.vue';
+import Proposal from '@/components/external/proposal.vue';
+import ExternalReferralProposal from '@/components/internal/proposals/proposal.vue';
+import ProposalApply from '@/components/external/proposal_apply.vue';
+import ProposalSubmit from '@/components/external/proposal_submit.vue';
+import Organisation from '@/components/external/organisations/manage.vue';
+import Compliance from '../compliances/access.vue';
+import ComplianceSubmit from '../compliances/submit.vue';
+import Approval from '../approvals/approval.vue';
+import ApprovalTransfer from '../approvals/approval_transfer.vue';
+import ApprovalTransferConfirmation from '../approvals/approval_transfer_confirmation.vue';
+import InvoicesDash from '@/components/internal/invoices/dashboard.vue';
+import InvoicePaymentSuccess from '@/components/external/invoices/payment_success.vue';
+import InvoicePaymentFailure from '@/components/external/invoices/payment_failure.vue';
 
 export default {
     path: '/external',
@@ -25,6 +27,16 @@ export default {
             path: 'approval/:approval_id',
             component: Approval,
             name: 'external-approval-detail',
+        },
+        {
+            path: 'approval/:approval_id/transfer',
+            component: ApprovalTransfer,
+            name: 'external-approval-transfer',
+        },
+        {
+            path: 'approval/:approval_id/transfer/initiated',
+            component: ApprovalTransferConfirmation,
+            name: 'external-approval-transfer-initiated',
         },
         {
             path: 'organisations/manage/:org_id',
@@ -75,4 +87,4 @@ export default {
             name: 'external-invoice-payment-failure',
         },
     ],
-}
+};

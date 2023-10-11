@@ -3,6 +3,7 @@ import logging
 from django.conf import settings
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.translation import gettext as _
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from rest_framework import serializers
 
@@ -10,6 +11,8 @@ from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
     ApprovalLogEntry,
+    ApprovalTransfer,
+    ApprovalTransferApplicant,
     ApprovalType,
     ApprovalUserAction,
 )
@@ -68,6 +71,88 @@ class ApprovalPaymentSerializer(serializers.ModelSerializer):
         return settings.OTHER_PAYMENT_ALLOWED
 
 
+class ApprovalTransferApplicantSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovalTransferApplicant
+        fields = "__all__"
+
+
+class ApprovalTransferApplicantUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ApprovalTransferApplicant
+        exclude = ("approval_transfer",)
+
+    def validate(self, attrs):
+        errors = []
+
+        required_fields = [
+            "first_name",
+            "last_name",
+            "residential_line1",
+            "residential_locality",
+            "residential_state",
+            "residential_country",
+            "residential_postcode",
+            "postal_line1",
+            "postal_locality",
+            "postal_state",
+            "postal_country",
+            "postal_postcode",
+            "email",
+            "phone_number",
+            "mobile_number",
+        ]
+
+        for field in required_fields:
+            if not attrs.get(field):
+                errors.append(_(f"{field.replace('_', ' ').title()} is required"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().validate(attrs)
+
+
+class ApprovalTransferSerializer(serializers.ModelSerializer):
+    transferee_name = serializers.CharField(read_only=True)
+    applicant = ApprovalTransferApplicantSerializer(read_only=True, allow_null=True)
+    applicant_for_writing = ApprovalTransferApplicantUpdateSerializer(
+        write_only=True, allow_null=True
+    )
+
+    class Meta:
+        model = ApprovalTransfer
+        fields = "__all__"
+
+    def validate(self, attrs):
+        errors = []
+
+        if not attrs.get("transferee"):
+            errors.append(_("Please select a transferee"))
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return super().validate(attrs)
+
+    def update(self, instance, validated_data):
+        logger.debug(validated_data)
+        transferee_type = validated_data.get("transferee_type")
+        if (
+            transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL
+            and "applicant_for_writing" in validated_data
+        ):
+            applicant_data = validated_data.pop("applicant_for_writing")
+            applicant = instance.applicant
+            serializer = ApprovalTransferApplicantUpdateSerializer(
+                applicant, data=applicant_data
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        return super().update(instance, validated_data)
+
+
 class ApprovalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
@@ -77,6 +162,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
     can_renew = serializers.SerializerMethodField()
+    can_initiate_transfer = serializers.BooleanField(read_only=True)
+    has_pending_transfer = serializers.BooleanField(read_only=True)
+    has_draft_transfer = serializers.BooleanField(read_only=True)
+    active_transfer = ApprovalTransferSerializer(read_only=True, allow_null=True)
     is_assessor = serializers.SerializerMethodField()
     is_approver = serializers.SerializerMethodField()
     requirement_docs = serializers.SerializerMethodField()
@@ -102,6 +191,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     approval_type = serializers.CharField(
         source="approval_type.name", allow_null=True, read_only=True
     )
+    approval_type__type = serializers.SerializerMethodField(read_only=True)
     gis_data = serializers.SerializerMethodField(read_only=True)
     geometry_objs = serializers.SerializerMethodField(read_only=True)
     approved_by = serializers.SerializerMethodField()
@@ -140,6 +230,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_renew",
             "can_amend",
             "can_reinstate",
+            "can_initiate_transfer",
+            "has_pending_transfer",
+            "has_draft_transfer",
+            "active_transfer",
             "application_type",
             "original_leaselicense_number",
             "migrated",
@@ -154,6 +248,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "record_management_number",
             "invoicing_details",
             "approval_type",
+            "approval_type__type",
             "gis_data",
             "geometry_objs",
             "approved_by",
@@ -177,6 +272,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_reinstate",
             "can_amend",
             "can_renew",
+            "can_initiate_transfer",
+            "has_pending_transfer",
+            "has_draft_transfer",
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
@@ -292,6 +390,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
             return "Approver not assigned"
         user = EmailUser.objects.get(id=approved_by_id)
         return user.get_full_name()
+
+    def get_approval_type__type(self, obj):
+        return obj.approval_type.type.title()
 
 
 class ApprovalKeyValueSerializer(serializers.ModelSerializer):
@@ -510,4 +611,8 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "expiry_date",
             "approval_type",
             "approval_type_name",
+            "holder",
+            "has_outstanding_compliances",
+            "has_outstanding_invoices",
+            "holder",
         )

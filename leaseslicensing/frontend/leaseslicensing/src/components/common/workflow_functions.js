@@ -196,11 +196,11 @@ export async function discardProposal(proposal) {
 
     return swal
         .fire({
-            title: 'Discard Application',
-            text: 'Are you sure you want to discard this application?',
+            title: `Confirm Decline of Proposal ${proposal.lodgement_number}`,
+            text: 'Are you sure you want to decline this proposal?',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Discard Application',
+            confirmButtonText: 'Decline Proposal',
             confirmButtonColor: '#dc3545',
         })
         .then(async (result) => {

@@ -20,6 +20,8 @@ from leaseslicensing.components.approvals.document import ApprovalDocumentGenera
 from leaseslicensing.components.approvals.models import (
     Approval,
     ApprovalDocument,
+    ApprovalTransfer,
+    ApprovalTransferApplicant,
     ApprovalType,
 )
 from leaseslicensing.components.approvals.serializers import (
@@ -30,6 +32,7 @@ from leaseslicensing.components.approvals.serializers import (
     ApprovalSerializer,
     ApprovalSurrenderSerializer,
     ApprovalSuspensionSerializer,
+    ApprovalTransferSerializer,
     ApprovalUserActionSerializer,
 )
 from leaseslicensing.components.compliances.models import Compliance
@@ -45,6 +48,7 @@ from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
+from leaseslicensing.permissions import IsInternalOrHasObjectPermission
 
 logger = logging.getLogger(__name__)
 
@@ -231,13 +235,7 @@ class ApprovalPaginatedViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             qs = Approval.objects.all()
         elif is_customer(self.request):
-            # TODO: fix EmailUserRO issue here
-            # user_orgs = [org.id for org in self.request.user.leaseslicensing_organisations.all()]
-            # queryset =  Approval.objects.filter(Q(org_applicant_id__in = user_orgs)
-            # | Q(submitter = self.request.user))
-            qs = Approval.objects.filter(
-                Q(current_proposal__submitter=self.request.user.id)
-            )
+            qs = Approval.get_approvals_for_emailuser(self.request.user.id)
 
         target_email_user_id = self.request.query_params.get(
             "target_email_user_id", None
@@ -725,3 +723,105 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
         data["recordsFiltered"] = queryset.count()
         data["recordsTotal"] = queryset.count()
         return Response(data=data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def transfer(self, request, *args, **kwargs):
+        logger.debug(f"Transfer request: {request.data}")
+        instance = self.get_object()
+        logger.debug(f"Approval: {instance}")
+        active_transfers = ApprovalTransfer.objects.filter(
+            approval=instance,
+            processing_status__in=[
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_DRAFT,
+                ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING,
+            ],
+        )
+        if active_transfers.exists():
+            logger.debug("Found active transfer")
+            approval_transfer = active_transfers.first()
+        else:
+            logger.debug("Creating new transfer")
+            approval_transfer = ApprovalTransfer.objects.create(
+                approval=instance,
+            )
+            logger.info(
+                f"Created Approval Transfer: {approval_transfer} for Approval: {instance}"
+            )
+            if instance.current_proposal.ind_applicant:
+                ApprovalTransferApplicant.instantiate_from_request_user(
+                    request.user, approval_transfer
+                )
+
+        serializer = ApprovalTransferSerializer(approval_transfer)
+        return Response(serializer.data)
+
+
+class ApprovalTransferViewSet(viewsets.ModelViewSet):
+    queryset = ApprovalTransfer.objects.all()
+    serializer_class = ApprovalTransferSerializer
+    permission_classes = [IsInternalOrHasObjectPermission]
+
+    def get_queryset(self):
+        if is_internal(self.request):
+            return ApprovalTransfer.objects.all()
+        elif is_customer(self.request):
+            user_orgs = (
+                [
+                    org.id
+                    for org in self.request.user.leaseslicensing_organisations.all()
+                ]
+                if hasattr(self.request.user, "leaseslicensing_organisations")
+                else []
+            )
+            queryset = ApprovalTransfer.objects.filter(
+                Q(approval__current_proposal__org_applicant_id__in=user_orgs)
+                | Q(approval__current_proposal__submitter=self.request.user.id)
+            )
+            return queryset
+        return ApprovalTransfer.objects.none()
+
+    @detail_route(methods=["POST"], detail=True)
+    @renderer_classes((JSONRenderer,))
+    @basic_exception_handler
+    def process_supporting_document(self, request, *args, **kwargs):
+        instance = self.get_object()
+        returned_data = process_generic_document(
+            request, instance, document_type="approval_transfer_supporting_document"
+        )
+        if returned_data:
+            return Response(returned_data)
+        else:
+            return Response()
+
+    @detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def initiate(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.update(request, *args, **kwargs)
+        instance.initiate(request.user.id)
+        serializer = ApprovalTransferSerializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "PATCH",
+        ],
+        detail=True,
+    )
+    @basic_exception_handler
+    def cancel(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.cancel(request.user)
+        serializer = ApprovalTransferSerializer(instance)
+        return Response(serializer.data)
