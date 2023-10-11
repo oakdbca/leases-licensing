@@ -101,6 +101,13 @@ export default {
             if (newVal) {
                 this.$nextTick(() => {
                     this.$refs.proposed_approval_form.focus();
+                    if (
+                        this.proposal.proposed_issuance_approval &&
+                        this.proposal.proposed_issuance_approval.decision
+                    ) {
+                        this.$refs.proposed_approval_form.selectedDecision =
+                            this.proposal.proposed_issuance_approval.decision;
+                    }
                 });
             }
         },
