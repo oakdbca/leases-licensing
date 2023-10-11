@@ -533,6 +533,7 @@ export default {
         'updateProposalData',
         'updateAssignedApprover',
         'updateAssignedOfficer',
+        'backToAssessor',
     ],
     data: function () {
         let vm = this;
@@ -755,7 +756,7 @@ export default {
                     key: 'back_to_assessor',
                     button_title: 'Back to Assessor',
                     function_when_clicked: function () {
-                        vm.switchStatus('with_assessor');
+                        vm.backToAssessor();
                     },
                     function_to_show_hide: () => {
                         let condition_to_display = {
@@ -1532,6 +1533,9 @@ export default {
                         });
                 }
             });
+        },
+        backToAssessor: function () {
+            this.$emit('backToAssessor');
         },
         switchStatus: function (value) {
             this.$emit('switchStatus', value);
