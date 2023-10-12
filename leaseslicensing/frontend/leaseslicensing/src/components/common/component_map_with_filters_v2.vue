@@ -691,7 +691,6 @@
 import { v4 as uuid } from 'uuid';
 import { api_endpoints, helpers } from '@/utils/hooks';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
-import VueAlert from '@vue-utils/alert.vue';
 
 import { toRaw } from 'vue';
 import 'ol/ol.css';
@@ -729,7 +728,6 @@ export default {
         CollapsibleFilters,
         FileField,
         RangeSlider,
-        VueAlert,
     },
     props: {
         level: {
