@@ -2635,7 +2635,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING
                 ).first()
                 approval_transfer.processing_status = (
-                    ApprovalTransfer.APPROVAL_TRANSFER_STATUS_APPROVED
+                    ApprovalTransfer.APPROVAL_TRANSFER_STATUS_ACCEPTED
                 )
                 approval_transfer.save()
                 approval.save()
