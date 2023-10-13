@@ -4122,14 +4122,14 @@ class ProposalGeometry(models.Model):
 
     @property
     def area_sqm(self):
-        if not self.area:
+        if not hasattr(self, "area") or not self.area:
             logger.warn(f"ProposalGeometry: {self.id} has no area")
             return None
         return self.area.sq_m
 
     @property
     def area_sqhm(self):
-        if not self.area:
+        if not hasattr(self, "area") or not self.area:
             logger.warn(f"ProposalGeometry: {self.id} has no area")
             return None
         return self.area.sq_m / 10000

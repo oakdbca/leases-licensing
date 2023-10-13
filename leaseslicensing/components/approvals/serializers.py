@@ -392,6 +392,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return user.get_full_name()
 
     def get_approval_type__type(self, obj):
+        if obj.approval_type.type is None:
+            return None # Check for no type because type property is nullable
         return obj.approval_type.type.title()
 
 

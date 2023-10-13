@@ -1,7 +1,11 @@
 import WMSCapabilities from 'ol/format/WMSCapabilities';
 import TileWMS from 'ol/source/TileWMS';
 import TileLayer from 'ol/layer/Tile';
+import GeoJSON from 'ol/format/GeoJSON';
+import Feature from 'ol/Feature';
+import { Polygon } from 'ol/geom';
 import { Style, Fill, Stroke } from 'ol/style';
+import { utils } from '@/utils/hooks';
 
 // Tile server url
 // eslint-disable-next-line no-undef
@@ -11,13 +15,37 @@ export var baselayer_name = 'mapbox-emerald';
 // export var baselayer_name = 'mapbox-dark'
 
 /**
+ * Returns layers at map event pixel coordinates
+ * @param {Proxy} map_component A map component instance
+ * @param {Event} evt An Event object
+ * @returns an array of layers
+ */
+export function layerAtEventPixel(map_component, evt) {
+    let layer_at_pixel = [];
+    map_component.map.getLayers().forEach((layer) => {
+        if (!map_component.informing) {
+            return;
+        }
+        let pixel = map_component.map.getEventPixel(evt.originalEvent);
+        let data = layer.getData(pixel);
+        // Return if no data or the alpha channel in RGBA is zero (transparent)
+        if (!data || data[3] == 0) {
+            return;
+        }
+        layer_at_pixel.push(layer);
+    });
+
+    return layer_at_pixel;
+}
+
+/**
  * Queries the WMS server for its capabilities and adds optional layers to a map
  * @param {Proxy} map_component A map component instance
  */
-export function addOptionalLayers(map_component) {
+export async function addOptionalLayers(map_component) {
     let parser = new WMSCapabilities();
 
-    fetch(url)
+    await fetch(url)
         .then(function (response) {
             return response.text();
         })
@@ -33,6 +61,7 @@ export function addOptionalLayers(map_component) {
                 let l = new TileWMS({
                     // eslint-disable-next-line no-undef
                     url: `${env['kmi_server_url']}/geoserver/public/wms`,
+                    crossOrigin: 'anonymous', // Data for a image tiles can only be retrieved if the source's crossOrigin property is set (https://openlayers.org/en/latest/apidoc/module-ol_layer_Tile-TileLayer.html#getData)
                     params: {
                         FORMAT: 'image/png',
                         VERSION: '1.1.1',
@@ -47,6 +76,7 @@ export function addOptionalLayers(map_component) {
                     abstract: layer.Abstract.trim(),
                     title: layer.Title.trim(),
                     visible: false,
+                    extent: layer.BoundingBox[0].extent,
                     source: l,
                 });
 
@@ -91,40 +121,40 @@ export function addOptionalLayers(map_component) {
                         return;
                     }
                     let coordinate = evt.coordinate;
-                    map_component.map.forEachLayerAtPixel(
-                        evt.pixel,
-                        function (lay) {
-                            if (lay.values_.name === tileLayer.values_.name) {
-                                console.log('Clicked on tile layer', lay);
+                    layerAtEventPixel(map_component, evt).forEach((lyr) => {
+                        if (lyr.values_.name === tileLayer.values_.name) {
+                            console.log('Clicked on tile layer', lyr);
 
-                                let point = `POINT (${coordinate.join(' ')})`;
-                                let query_str = _helper.geoserverQuery.bind(
-                                    this
-                                )(point, map_component);
+                            let point = `POINT (${coordinate.join(' ')})`;
+                            let query_str = _helper.geoserverQuery.bind(this)(
+                                point,
                                 map_component
-                                    .validateFeatureQuery(query_str)
-                                    .then(async (features) => {
-                                        if (features.length === 0) {
-                                            console.warn(
-                                                'No features found at this location.'
-                                            );
-                                            map_component.overlay(undefined);
-                                        } else {
-                                            console.log('Feature', features);
-                                            map_component.overlay(
-                                                coordinate,
-                                                features[0]
-                                            );
-                                        }
-                                        map_component.errorMessageProperty(
-                                            null
+                            );
+
+                            _helper
+                                .validateFeatureQuery(query_str)
+                                .then(async (features) => {
+                                    if (features.length === 0) {
+                                        console.warn(
+                                            'No features found at this location.'
                                         );
-                                    });
-                            }
+                                        map_component.overlay(undefined);
+                                    } else {
+                                        console.log('Feature', features);
+                                        map_component.overlay(
+                                            coordinate,
+                                            features[0]
+                                        );
+                                    }
+                                    map_component.errorMessageProperty(null);
+                                });
                         }
-                    );
+                    });
                 });
             }
+        })
+        .catch((error) => {
+            console.error('There was an error fetching addional layers', error);
         });
 }
 
@@ -143,9 +173,11 @@ export function set_mode(mode) {
     this.drawing = false;
     this.measuring = false;
     this.informing = false;
+    this.transforming = false;
     this.errorMessageProperty(null);
     this.overlay(undefined);
     this.map.getTargetElement().style.cursor = 'default';
+    this.transformSetActive(false);
 
     if (this.mode === 'layer') {
         this.clearMeasurementLayer();
@@ -156,6 +188,11 @@ export function set_mode(mode) {
         this.sketchCoordinatesHistory = [[]];
         _helper.toggle_draw_measure_license.bind(this)(false, true);
         this.drawing = true;
+    } else if (this.mode === 'transform') {
+        this.clearMeasurementLayer();
+        this.transformSetActive(true);
+        _helper.toggle_draw_measure_license.bind(this)(false, false);
+        this.transforming = true;
     } else if (this.mode === 'measure') {
         _helper.toggle_draw_measure_license.bind(this)(true, false);
         this.measuring = true;
@@ -164,7 +201,17 @@ export function set_mode(mode) {
         this.informing = true;
     } else {
         console.error(`Cannot set mode ${mode}`);
+        return false;
     }
+    // Call back to the map so selected features can adept their style to the new mode
+    this.select.dispatchEvent({
+        type: 'map:modeChanged',
+        details: {
+            new_mode: this.mode,
+        },
+    });
+
+    return true;
 }
 
 /**
@@ -199,27 +246,38 @@ export function polygon_style(feature) {
  * Validate feature callback function. Calls `finnishDrawing` on the map component
  * when the feature is valid. A feature is condidered valid when it intersects with
  * the DBCS legislated land-water layer.
+ * @param {string} feature The feature
+ * @param {Proxy} component_map The map component
  */
-export function validateFeature() {
+export function validateFeature(feature, component_map) {
     let vm = this;
-    console.log('Validate feature');
-    // Get the WKT representation of the drawn polygon
-    let polygon_wkt = vm.$refs.component_map.featureToWKT();
-    let query = _helper.geoserverQuery.bind(vm)(polygon_wkt);
+    let feature_wkt = undefined;
+    console.log('Validate feature', feature);
+    if (feature === undefined) {
+        // Get the WKT representation of the currently drawn polygon sketch
+        feature_wkt = _helper.featureToWKT.bind(vm)();
+    } else {
+        // Get the WKT representation of the provided feature
+        feature_wkt = _helper.featureToWKT(feature);
+    }
 
-    vm.$refs.component_map
-        .validateFeatureQuery(query)
-        .then(async (features) => {
-            if (features.length === 0) {
-                console.warn('New feature is not valid');
-                vm.$refs.component_map.errorMessageProperty(
-                    'The polygon you have drawn does not intersect with any DBCA lands or water.'
-                );
-            } else {
-                console.log('New feature is valid', features);
-                vm.$refs.component_map.finishDrawing();
-            }
-        });
+    if (component_map === undefined) {
+        component_map = vm.$refs.component_map;
+    }
+
+    let query = _helper.geoserverQuery(feature_wkt, component_map);
+
+    _helper.validateFeatureQuery(query).then(async (features) => {
+        if (features.length === 0) {
+            console.warn('New feature is not valid');
+            component_map.errorMessageProperty(
+                'The polygon you have drawn does not intersect with any DBCA lands or water.'
+            );
+        } else {
+            console.log('New feature is valid', features);
+            component_map.finishDrawing();
+        }
+    });
 }
 
 export let owsQuery = {
@@ -228,7 +286,7 @@ export let owsQuery = {
         typeName: 'public:dbca_legislated_lands_and_waters',
         srsName: 'EPSG:4326',
         propertyName:
-            'objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting',
+            'objectid,wkb_geometry,category,leg_act,leg_identifier,leg_name,leg_tenure,leg_vesting,shape_area,leg_poly_area',
         geometry: 'wkb_geometry',
     },
 };
@@ -249,6 +307,44 @@ const _helper = {
         if (this.drawForModel) {
             this.drawForModel.setActive(drawForModel);
         }
+    },
+    /**
+     * Returns a Well-known-text (WKT) representation of a feature
+     * @param {Feature} feature A feature to validate
+     */
+    featureToWKT: function (feature) {
+        let vm = this;
+
+        if (feature === undefined) {
+            // If no feature is provided, create a feature from the current sketch
+            let coordinates = vm.$refs.component_map.sketchCoordinates.slice();
+            coordinates.push(coordinates[0]);
+            feature = new Feature({
+                id: -1,
+                geometry: new Polygon([coordinates]),
+                label: 'validation',
+                color: vm.defaultColor,
+                polygon_source: 'validation',
+            });
+        }
+
+        // Prepare a WFS feature intersection request
+        let flatCoordinates = feature.values_.geometry.flatCoordinates;
+
+        // Transform list of flat coordinates into a list of coordinate pairs,
+        // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
+        let flatCoordinateStringPairs = flatCoordinates
+            .map((coord, index) =>
+                index % 2 == 0
+                    ? [flatCoordinates[index], flatCoordinates[index + 1]].join(
+                          ' '
+                      )
+                    : ''
+            )
+            .filter((item) => item != '');
+
+        // Create a Well-Known-Text polygon string from the coordinate pairs
+        return `POLYGON ((${flatCoordinateStringPairs.join(', ')}))`;
     },
     /**
      * Builds a query string for the geoserver based on the provided WKT
@@ -278,5 +374,32 @@ const _helper = {
         let query = `${owsUrl}${params}`;
 
         return query;
+    },
+    /**
+     * Validates an openlayers feature against a geoserver `url`.
+     * @param {Feature} feature A feature to validate
+     * @returns {Promise} A promise that resolves to a list of intersected features
+     */
+    validateFeatureQuery: async function (query) {
+        let vm = this;
+
+        let features = [];
+        // Query the WFS
+        vm.queryingGeoserver = true;
+        let urls = [query];
+
+        let requests = urls.map((url) =>
+            utils.fetchUrl(url).then((response) => response)
+        );
+        await Promise.all(requests)
+            .then((data) => {
+                features = new GeoJSON().readFeatures(data[0]);
+            })
+            .catch((error) => {
+                console.log(error.message);
+                vm.errorMessage = error.message;
+            });
+
+        return features;
     },
 };

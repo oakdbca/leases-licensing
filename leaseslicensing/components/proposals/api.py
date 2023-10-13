@@ -1151,7 +1151,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             return Response(serializer.data)
 
     @detail_route(
-        methods=["POST"],
+        methods=["GET"],
         detail=True,
     )
     @basic_exception_handler
@@ -1161,36 +1161,54 @@ class ProposalViewSet(UserActionLoggingViewset):
         """
 
         # The django reversion revision id to return the model for
-        revision_id = request.data.get("revision_id", None)
+        revision_id = request.query_params.get("revision_id", None)
+        # The model instance
+        instance = self.get_object()
         # This model's class
-        model_class = self.get_object().__class__
+        model_class = instance.__class__
         # The serializer to apply
         serializer_class = self.get_serializer_class()
         if not revision_id:
             logger.warning(
                 f"Request does not contain revision_id. Returning {model_class.__name__}"
             )
-            instance = self.get_object()
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
+        
+        try:
+            # This model's version for `revision_id`
+            version = self.get_object().revision_version(revision_id)
+        except IndexError:
+            raise serializers.ValidationError(f"Revision {revision_id} does not exist")
 
-        # This model's version for `revision_id`
-        version = self.get_object().revision_version(revision_id)
+        version.revision.version_set.all()
+
         # An instance of the model version
         instance = model_class(**version.field_dict)
         # Serialize the instance
         serializer = serializer_class(instance, context={"request": request})
 
-        # Get associated geometries where the revision id is less than or equal `revision_id`
-        proposalgeometries_versions = instance.reverse_fk_versions(
-            "proposalgeometry", lookup_filter=Q(revision_id__lte=revision_id)
-        )
-
-        # Build geometry data structure containing only the geometry versions at `revision_id`
+        # Feature collection to return as proposal's proposalgeometry property
         geometry_data = {"type": "FeatureCollection", "features": []}
-        for pg_version in proposalgeometries_versions:
+        # Build geometry data structure containing only the geometry versions at `revision_id`
+        proposalgeometries = instance.proposalgeometry.all()
+        for geometry in proposalgeometries:
+            # Get associated proposal geometry at the time of `revision_id`
+            pg_versions = (
+                Version.objects.get_for_object(geometry)
+                .filter(Q(revision_id__lte=revision_id))
+                .order_by("-revision__date_created")
+            )
+            pg_version = pg_versions.first()
+            if not pg_version:
+                # Geometry might not have existed back then
+                continue
+            # Build a proposal geometry instance from the version
             proposalgeometry = ProposalGeometry(**pg_version.field_dict)
-            pg_serializer = ProposalGeometrySerializer(proposalgeometry)
+            pg_serializer = ProposalGeometrySerializer(
+                proposalgeometry, context={"request": request}
+            )
+            # Append the geometry to the feature collection
             geometry_data["features"].append(pg_serializer.data)
 
         revision_data = serializer.data.copy()

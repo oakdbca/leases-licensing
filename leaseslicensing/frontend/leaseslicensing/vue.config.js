@@ -9,6 +9,7 @@ const { styles } = require('@ckeditor/ckeditor5-dev-utils');
 // Useful plugin to find out what is making the bundle so big
 // const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
 const port = process.env.PORT ? parseInt(process.env.PORT) : 9072;
+const webpack_devtool = process.env.WEBPACK_DEVTOOL || 'source-map';
 
 module.exports = {
     outputDir: path.resolve(__dirname, '../../static/leaseslicensing_vue'),
@@ -76,7 +77,7 @@ module.exports = {
     },
     transpileDependencies: [/ckeditor5-[^/\\]+[/\\]src[/\\].+\.js$/],
     configureWebpack: {
-        devtool: 'eval-source-map',
+        devtool: webpack_devtool,
         plugins: [
             new webpack.ProvidePlugin({
                 $: 'jquery',

@@ -3,8 +3,8 @@
         TODO tasks (and ideas):
         - populate tenure, locality, and categorisation from geoserver response (see: map_functions::validateFeature for response values and owsQuery prop for query paramerters)
         - [DONE] prevent polygon delete after save (or save + status change)
-        - polygon redo button
-        - polygon edit button (move and add/remove vertices)
+        - [DONE] polygon redo button
+        - [DONE] polygon edit button (move and add/remove vertices)
         - pass in map tab filterable proposals as prop (see: prop featureCollection)
         - standardise feature tooltip fields (lodgement_date formatting, application_type, processing_status, etc.) across models
         - hide feature tooltip on save as it might overlap the save response modal
@@ -88,22 +88,41 @@
 
         <div class="justify-content-end align-items-center mb-2">
             <div v-if="mapInfoText.length > 0" class="row">
-                <div class="col-md-12">
+                <div class="col-md-6">
                     <BootstrapAlert class="mb-0">
                         <!-- eslint-disable vue/no-v-html -->
                         <p><span v-html="mapInfoText"></span></p>
                         <!--eslint-enable-->
                     </BootstrapAlert>
                 </div>
+                <div class="col-md-6">
+                    <div class="row" style="margin: auto">
+                        <BootstrapAlert
+                            v-if="hasErrorMessage"
+                            class="mb-1 ml-1"
+                            type="danger"
+                            icon="exclamation-triangle-fill"
+                        >
+                            <span> {{ errorMessage }} </span>
+                        </BootstrapAlert>
+                    </div>
+                    <div class="row" style="margin: auto">
+                        <BootstrapAlert
+                            v-if="hasModifiedFeatures"
+                            class="mb-0 ml-1"
+                            type="warning"
+                            icon="exclamation-triangle-fill"
+                        >
+                            <span>
+                                Adding or modifying a feature will cause any
+                                existing geospatial data to be re-evaluated on
+                                save and possibly be changed.
+                            </span>
+                        </BootstrapAlert>
+                    </div>
+                </div>
             </div>
         </div>
-
-        <VueAlert
-            v-model:show="hasErrorMessage"
-            type="danger"
-            style="color: red"
-            ><strong> {{ errorMessage }} </strong>
-        </VueAlert>
 
         <div
             :id="map_container_id"
@@ -124,87 +143,24 @@
                     />
                 </div>
                 <div class="optional-layers-wrapper">
-                    <!-- Toggle measure tool between active and not active -->
-                    <div class="optional-layers-button-wrapper">
-                        <div
-                            :title="
-                                mode == 'measure'
-                                    ? 'Deactivate measure tool'
-                                    : 'Activate measure tool'
-                            "
-                            :class="[
-                                mode == 'measure'
-                                    ? 'optional-layers-button-active'
-                                    : 'optional-layers-button',
-                            ]"
-                            @click="set_mode.bind(this)('measure')"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/ruler.svg"
-                            />
-                        </div>
-                    </div>
-                    <div v-if="drawable" class="optional-layers-button-wrapper">
-                        <div
-                            :title="
-                                mode == 'draw'
-                                    ? 'Deactivate draw tool'
-                                    : 'Activate draw tool'
-                            "
-                            :class="[
-                                mode == 'draw'
-                                    ? 'optional-layers-button-active'
-                                    : 'optional-layers-button',
-                            ]"
-                            @click="set_mode.bind(this)('draw')"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/pen-icon.svg"
-                            />
-                        </div>
-                    </div>
-                    <div
-                        v-if="polygonCount"
-                        class="optional-layers-button-wrapper"
-                    >
-                        <div
-                            title="Zoom map to layer(s)"
-                            class="optional-layers-button"
-                            @click="displayAllFeatures"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/map-zoom.svg"
-                            />
-                        </div>
-                    </div>
-                    <div class="optional-layers-button-wrapper">
-                        <div
-                            title="Download layers as GeoJSON"
-                            class="optional-layers-button"
-                            @click="geoJsonButtonClicked"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/download.svg"
-                            />
-                        </div>
-                    </div>
-
                     <div style="position: relative">
-                        <transition v-if="optionalLayers.length">
-                            <div class="optional-layers-button-wrapper">
+                        <transition>
+                            <div
+                                class="optional-layers-button-wrapper"
+                                :title="`There are ${optionalLayers.length} optional layers available}`"
+                            >
                                 <div
-                                    class="optional-layers-button"
+                                    class="optional-layers-button btn"
+                                    :class="
+                                        optionalLayers.length ? '' : 'disabled'
+                                    "
                                     @mouseover="hover = true"
                                 >
                                     <img src="../../assets/layers.svg" />
                                 </div>
                             </div>
                         </transition>
-                        <transition v-if="optionalLayers.length">
+                        <transition>
                             <div
                                 v-show="hover"
                                 div
@@ -235,7 +191,7 @@
                                         >
                                         <RangeSlider
                                             class="col-md-5"
-                                            @valueChanged="
+                                            @value-changed="
                                                 valueChanged($event, layer)
                                             "
                                         />
@@ -243,6 +199,179 @@
                                 </template>
                             </div>
                         </transition>
+                    </div>
+                    <!-- Toggle measure tool between active and not active -->
+                    <div class="optional-layers-button-wrapper">
+                        <div
+                            :title="
+                                mode == 'measure'
+                                    ? 'Deactivate measure tool'
+                                    : 'Measure distances on the map'
+                            "
+                            class="btn"
+                            :class="[
+                                mode == 'measure'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('measure')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/ruler.svg"
+                            />
+                        </div>
+                    </div>
+                    <div v-if="drawable" class="optional-layers-button-wrapper">
+                        <div
+                            :title="
+                                mode == 'draw'
+                                    ? 'Deactivate draw tool'
+                                    : 'Draw a new feature or edit a selected one'
+                            "
+                            class="btn"
+                            :class="[
+                                mode == 'draw'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('draw')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/pen-icon.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        class="optional-layers-button-wrapper"
+                        title="Transform a drawn feature"
+                    >
+                        <div
+                            :title="
+                                mode == 'transform'
+                                    ? 'Deactivate transform tool'
+                                    : 'Transform an existing feature'
+                            "
+                            class="btn"
+                            :class="[
+                                mode == 'transform'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                                drawable && polygonCount ? '' : 'disabled',
+                            ]"
+                            @click="set_mode.bind(this)('transform')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/transform-polygon.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        v-if="polygonCount"
+                        class="optional-layers-button-wrapper"
+                    >
+                        <div
+                            title="Zoom map to layer(s)"
+                            class="optional-layers-button btn"
+                            @click="displayAllFeatures"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/map-zoom.svg"
+                            />
+                        </div>
+                    </div>
+                    <div class="optional-layers-button-wrapper">
+                        <div
+                            title="Download layers as GeoJSON"
+                            class="optional-layers-button btn"
+                            @click="geoJsonButtonClicked"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/download.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        class="optional-layers-button-wrapper"
+                        :title="
+                            polygonCount
+                                ? 'Select a feature to delete'
+                                : 'No features to delete'
+                        "
+                    >
+                        <div
+                            class="optional-layers-button btn"
+                            :class="
+                                selectedFeatureIds.length == 0
+                                    ? 'disabled'
+                                    : 'btn-danger'
+                            "
+                            title="Delete selected features"
+                            @click="removeModelFeatures()"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/trash-bin.svg"
+                            />
+                            <span
+                                v-if="selectedFeatureIds.length"
+                                id="selectedFeatureCount"
+                                class="badge badge-warning"
+                                >{{ selectedFeatureIds.length }}</span
+                            >
+                        </div>
+                    </div>
+                    <div
+                        v-if="canUndoAction || canUndoDrawnVertex"
+                        class="optional-layers-button-wrapper"
+                        title="Undo last action"
+                    >
+                        <div
+                            class="optional-layers-button btn"
+                            :class="
+                                hasUndo || canUndoDrawnVertex ? '' : 'disabled'
+                            "
+                            :title="
+                                'Undo ' +
+                                (canUndoDrawnVertex
+                                    ? 'last point'
+                                    : undoRedoStackTopInteractionName('undo'))
+                            "
+                            @click="undo()"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/map-undo.svg"
+                            />
+                        </div>
+                    </div>
+                    <div
+                        v-if="canRedoAction || canRedoDrawnVertex"
+                        class="optional-layers-button-wrapper"
+                        title="Redo last action"
+                    >
+                        <div
+                            class="optional-layers-button btn"
+                            :class="
+                                hasRedo || canRedoDrawnVertex ? '' : 'disabled'
+                            "
+                            :title="
+                                'Redo ' +
+                                (canRedoDrawnVertex
+                                    ? 'last point'
+                                    : undoRedoStackTopInteractionName('redo'))
+                            "
+                            @click="redo()"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/map-redo.svg"
+                            />
+                        </div>
                     </div>
                     <div
                         v-if="optionalLayersActive"
@@ -252,8 +381,9 @@
                             :title="
                                 mode == 'info'
                                     ? 'Deactivate info tool'
-                                    : 'Activate info tool'
+                                    : 'Click a data set feature for more information'
                             "
+                            class="btn"
                             :class="[
                                 mode == 'info'
                                     ? 'optional-layers-button-active'
@@ -264,56 +394,6 @@
                             <img
                                 class="svg-icon"
                                 src="../../assets/info-query.svg"
-                            />
-                        </div>
-                    </div>
-                    <div
-                        v-if="selectedFeatureIds.length > 0"
-                        class="optional-layers-button-wrapper"
-                    >
-                        <div
-                            class="optional-layers-button"
-                            title="Delete selected features"
-                            @click="removeModelFeatures()"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/trash-bin.svg"
-                            />
-                            <span
-                                id="selectedFeatureCount"
-                                class="badge badge-warning"
-                                >{{ selectedFeatureIds.length }}</span
-                            >
-                        </div>
-                    </div>
-                    <div
-                        v-if="showUndoButton"
-                        class="optional-layers-button-wrapper"
-                    >
-                        <div
-                            class="optional-layers-button"
-                            title="Undo last point"
-                            @click="undoLeaseLicensePoint()"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/map-undo.svg"
-                            />
-                        </div>
-                    </div>
-                    <div
-                        v-if="showRedoButton"
-                        class="optional-layers-button-wrapper"
-                    >
-                        <div
-                            class="optional-layers-button"
-                            title="Redo last point"
-                            @click="redoLeaseLicensePoint()"
-                        >
-                            <img
-                                class="svg-icon"
-                                src="../../assets/map-redo.svg"
                             />
                         </div>
                     </div>
@@ -328,7 +408,10 @@
                                 >{{
                                     selectedModel.label ||
                                     selectedModel.application_type_name_display ||
-                                    selectedModel.application_type.name_display
+                                    (selectedModel.application_type
+                                        ? selectedModel.application_type
+                                              .name_display
+                                        : undefined)
                                 }}: {{ selectedModel.lodgement_number }}</strong
                             >
                         </div>
@@ -394,18 +477,24 @@
                                                 selectedModel.area_sqm > 10000
                                             "
                                         >
-                                            <th scope="row">Area (hm&#178;)</th>
+                                            <th scope="row">Area (ha)</th>
                                             <td>
                                                 {{
-                                                    selectedModel.area_sqm /
-                                                    10000
+                                                    (
+                                                        selectedModel.area_sqm /
+                                                        10000
+                                                    ).toFixed(1)
                                                 }}
                                             </td>
                                         </template>
                                         <template v-else>
                                             <th scope="row">Area (m&#178;)</th>
                                             <td>
-                                                {{ selectedModel.area_sqm }}
+                                                {{
+                                                    Math.round(
+                                                        selectedModel.area_sqm
+                                                    )
+                                                }}
                                             </td>
                                         </template>
                                     </tr>
@@ -423,6 +512,19 @@
                             <strong class="me-auto">{{
                                 overlayFeatureInfo.leg_name
                             }}</strong>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-light text-nowrap"
+                                aria-label="Close Overlay"
+                                @click="overlay(undefined)"
+                            >
+                                <span style="font-size: smaller"
+                                    ><i
+                                        class="fa-fw fa-regular fa-window-close"
+                                    ></i>
+                                    Close</span
+                                >
+                            </button>
                         </div>
                         <div id="popup-content toast-body">
                             <table
@@ -462,6 +564,17 @@
                                             {{ overlayFeatureInfo.category }}
                                         </td>
                                     </tr>
+                                    <tr>
+                                        <th scope="row">Area (ha)</th>
+                                        <td>
+                                            {{
+                                                (
+                                                    overlayFeatureInfo.leg_poly_area +
+                                                    Number.EPSILON
+                                                ).toFixed(1)
+                                            }}
+                                        </td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
@@ -480,6 +593,20 @@
             </div>
             <div id="coords"></div>
             <BootstrapSpinner v-if="!proposals" class="text-primary" />
+        </div>
+        <div v-if="debug" class="row">
+            <div class="col-sm-6">Undo Stack:</div>
+            <div class="col-sm-6">Redo Stack:</div>
+            <div class="col-sm-6">
+                <template v-for="(item, idx) in undoStack" :key="idx">
+                    <div>{{ item.name }}</div>
+                </template>
+            </div>
+            <div class="col-sm-6">
+                <template v-for="(item, idx) in redoStack" :key="idx">
+                    <div>{{ item.name }}</div>
+                </template>
+            </div>
         </div>
         <div class="row shapefile-row">
             <div class="col-sm-6 border p-2">
@@ -562,9 +689,8 @@
 
 <script>
 import { v4 as uuid } from 'uuid';
-import { api_endpoints, helpers, utils } from '@/utils/hooks';
+import { api_endpoints, helpers } from '@/utils/hooks';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
-import VueAlert from '@vue-utils/alert.vue';
 
 import { toRaw } from 'vue';
 import 'ol/ol.css';
@@ -572,13 +698,17 @@ import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
 import TileWMS from 'ol/source/TileWMS';
-import { Draw, Select } from 'ol/interaction';
+import { Draw, Select, Snap } from 'ol/interaction';
+import ModifyFeature from 'ol-ext/interaction/ModifyFeature';
+import UndoRedo from 'ol-ext/interaction/UndoRedo';
+import Transform from 'ol-ext/interaction/Transform';
 import Feature from 'ol/Feature';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
 import { FullScreen as FullScreenControl } from 'ol/control';
-import { LineString, Point, Polygon } from 'ol/geom';
+import { LineString, Point, MultiPoint, Polygon } from 'ol/geom';
+import { getArea } from 'ol/sphere.js';
 import GeoJSON from 'ol/format/GeoJSON';
 import Overlay from 'ol/Overlay.js';
 import MeasureStyles, { formatLength } from '@/components/common/measure.js';
@@ -588,6 +718,8 @@ import {
     addOptionalLayers,
     set_mode,
     baselayer_name,
+    validateFeature,
+    layerAtEventPixel,
 } from '@/components/common/map_functions.js';
 
 export default {
@@ -596,7 +728,6 @@ export default {
         CollapsibleFilters,
         FileField,
         RangeSlider,
-        VueAlert,
     },
     props: {
         level: {
@@ -774,6 +905,32 @@ export default {
             required: false,
             default: false,
         },
+        /**
+         * Tolerance for considering the pointer close enough to a segment or vertex for editing
+         * See: https://openlayers.org/en/latest/apidoc/module-ol_interaction_Modify-Modify.html
+         */
+        pixelTolerance: {
+            type: Number,
+            required: false,
+            default: 5,
+        },
+        /**
+         * Consider features within some distance of a provided pixel
+         * See: https://openlayers.org/en/latest/examples/hit-tolerance.html
+         */
+        hitTolerance: {
+            type: Number,
+            required: false,
+            default: 4,
+        },
+        /**
+         * The maximum length of the undo/redo stacks
+         */
+        undoStackMaxLength: {
+            type: Number,
+            required: false,
+            default: 0, // 0 means no limit
+        },
     },
     emits: ['filter-appied', 'validate-feature', 'refreshFromResponse'],
     data() {
@@ -864,6 +1021,10 @@ export default {
             errorMessage: null,
             overlayFeatureInfo: {},
             deletedFeatures: [], // keep track of deleted features
+            undoredo: null,
+            modifiedFeaturesStack: [], // A stack of only those undoable actions that modified a feature
+            drawing: false, // Whether the map is in draw (pencil icon) mode
+            transforming: false, // Whether the map is in transform (resize, scale, rotate) mode
         };
     },
     computed: {
@@ -916,7 +1077,15 @@ export default {
                 return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`;
             }
         },
-        showUndoButton: function () {
+        canUndoAction: function () {
+            // The ol-ext undo/redo module states it is still experimental, might want to disable undo/redo at all
+            return true;
+        },
+        canRedoAction: function () {
+            // The ol-ext undo/redo module states it is still experimental, might want to disable undo/redo at all
+            return true;
+        },
+        canUndoDrawnVertex: function () {
             return (
                 this.mode == 'draw' &&
                 this.drawForModel &&
@@ -924,7 +1093,7 @@ export default {
                 this.sketchCoordinates.length > 1
             );
         },
-        showRedoButton: function () {
+        canRedoDrawnVertex: function () {
             return false;
             /* Todo: The redo button is partially implemented so it is disabled for now.
             return (
@@ -954,6 +1123,58 @@ export default {
         hasErrorMessage: function () {
             let vm = this;
             return vm.errorMessage !== null;
+        },
+        hasModifiedFeatures: function () {
+            let vm = this;
+            return vm.modifiedFeaturesStack.length > 0;
+        },
+        debug: function () {
+            if (this.$route.query.debug) {
+                return this.$route.query.debug === 'true';
+            }
+            return false;
+        },
+        /**
+         * Returns the stack of undoable actions
+         */
+        undoStack: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return [];
+            } else {
+                return vm.undoredo.getStack('undo');
+            }
+        },
+        /**
+         * Returns the stack of undoable actions
+         */
+        redoStack: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return [];
+            } else {
+                return vm.undoredo.getStack('redo');
+            }
+        },
+        hasUndo: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return false;
+            } else {
+                vm.modifiedFeaturesStack; // Mentioned here to force update of the computed property
+                let stack = vm.undoredo.getStack('undo');
+                return stack.length > 0;
+            }
+        },
+        hasRedo: function () {
+            let vm = this;
+            if (!vm.undoredo) {
+                return false;
+            } else {
+                vm.modifiedFeaturesStack; // Mentioned here to force update of the computed property
+                let stack = vm.undoredo.getStack('redo');
+                return stack.length > 0;
+            }
         },
     },
     watch: {
@@ -1001,11 +1222,11 @@ export default {
                 );
             }
         },
-        selectedFeatureIds: function () {
-            if (this.selectedFeatureIds.length == 0) {
-                this.errorMessageProperty(null);
-            }
-        },
+        // selectedFeatureIds: function () {
+        //     if (this.selectedFeatureIds.length == 0) {
+        //         this.errorMessageProperty(null);
+        //     }
+        // },
     },
     created: function () {
         console.log('created()');
@@ -1079,6 +1300,16 @@ export default {
                       )
                     : '';
             });
+        },
+        /**
+         * Returns the euclidean distance between two pixel coordinates
+         * @param {Array} p1 a pixel coordinate pair in the form [x1, y1]
+         * @param {Array} p2 a pixel coordinate pair in the form [x2, y2]
+         */
+        pixelDistance(p1, p2) {
+            return Math.sqrt(
+                Math.pow(p1[0] - p2[0], 2) + Math.pow(p1[1] - p2[1], 2)
+            );
         },
         applyFiltersFrontEnd: function () {
             this.filteredProposals = [...this.proposals];
@@ -1307,6 +1538,26 @@ export default {
 
             return styles;
         },
+        setStyleForUnAndSelectedFeatures: function (style) {
+            let vm = this;
+            if (style === undefined) {
+                if (this.mode == 'draw') {
+                    style = vm.modifySelectStyle;
+                } else {
+                    style = vm.basicSelectStyle;
+                }
+            }
+            let features = vm.modelQuerySource.getFeatures();
+            features.forEach((feature) => {
+                if (
+                    vm.selectedFeatureIds.includes(feature.getProperties().id)
+                ) {
+                    feature.setStyle(style);
+                } else {
+                    feature.setStyle(undefined);
+                }
+            });
+        },
         initialiseMap: function () {
             let vm = this;
 
@@ -1375,9 +1626,69 @@ export default {
 
             // update map extent when new features added
             vm.map.on('rendercomplete', vm.displayAllFeatures());
+            vm.map.on('features-loaded', function (evt) {
+                if (evt.details.loaded == true) {
+                    // Add undo/redo AFTER proposal geometries have been added to the map
+                    vm.undoredo = new UndoRedo({
+                        layers: [vm.modelQueryLayer],
+                    });
+                    vm.undoredo.clear();
+
+                    // Somehow passing the parameter has no effect, so we set it here
+                    vm.undoredo.setMaxLength(vm.undoStackMaxLength);
+                    // Define a custom undo/redo for selected features
+                    vm.undoredo.define(
+                        'select feature',
+                        function (s) {
+                            // Undo fn: set to the previous id list and styles
+                            console.log('undo selected', s.before, s.after);
+                            vm.selectedFeatureIds = s.before;
+                            vm.setStyleForUnAndSelectedFeatures();
+                        },
+                        function (s) {
+                            // Redo fn: reset the ids list and styles
+                            console.log('redo selected', s.before, s.after);
+                            vm.selectedFeatureIds = s.after;
+                            vm.setStyleForUnAndSelectedFeatures();
+                        }
+                    );
+
+                    for (let eventName of ['stack:add', 'stack:remove']) {
+                        vm.undoredo.addEventListener(eventName, function () {
+                            let undo_stack = vm.undoredo.getStack('undo');
+
+                            let stack = undo_stack.filter((item) => {
+                                // Filter out the actions that modify an existing or add a feature
+                                return (
+                                    (['addfeature'].includes(item.type) &&
+                                        item.feature.getProperties()
+                                            .polygon_source === 'New') ||
+                                    ['translate', 'rotate', 'scale'].includes(
+                                        item.name
+                                    )
+                                );
+                            });
+
+                            vm.modifiedFeaturesStack = Object.assign(stack, {});
+                        });
+                    }
+
+                    vm.map.addInteraction(vm.undoredo);
+                }
+            });
 
             vm.initialisePointerMoveEvent();
-            vm.initialiseSelectFeatureEvent();
+            vm.snap = new Snap({ source: vm.modelQuerySource });
+            vm.select = vm.initialiseSelectFeatureEvent();
+            vm.modify = vm.initialiseModifyFeatureEvent();
+            vm.transform = vm.initialiseTransform();
+
+            vm.map
+                .getInteractions()
+                .extend([vm.snap, vm.select, vm.modify, vm.transform]);
+
+            vm.modifySetActive(false);
+
             vm.initialiseSingleClickEvent();
             vm.initialiseDoubleClickEvent();
         },
@@ -1482,7 +1793,7 @@ export default {
                         return true;
                     } else if (evt.originalEvent.buttons === 2) {
                         // If the right mouse button is pressed, undo the last point
-                        if (vm.showUndoButton) {
+                        if (vm.canUndoDrawnVertex) {
                             vm.undoLeaseLicensePoint();
                         } else {
                             vm.set_mode('layer');
@@ -1506,10 +1817,9 @@ export default {
                 vm.errorMessage = null;
                 vm.lastPoint = null;
             });
-            vm.drawForModel.on('click'),
-                function (evt) {
-                    console.log(evt);
-                };
+            vm.drawForModel.on('click', function (evt) {
+                console.log('Draw: click event', evt);
+            });
             vm.drawForModel.on('drawend', function (evt) {
                 console.log(evt);
                 console.log(evt.feature.values_.geometry.flatCoordinates);
@@ -1572,23 +1882,34 @@ export default {
 
             let selected = null;
             vm.map.on('pointermove', function (evt) {
-                if (vm.measuring || vm.drawing) {
-                    // Don't highlight features when measuring or drawing
-                    return;
+                function isSelectedFeature(selected) {
+                    if (!selected) {
+                        return false;
+                    }
+                    return vm.selectedFeatureIds.includes(
+                        selected.getProperties().id
+                    );
                 }
                 if (selected !== null) {
-                    if (
-                        vm.selectedFeatureIds.includes(
-                            selected.getProperties().id
-                        )
-                    ) {
+                    if (isSelectedFeature(selected)) {
                         // Don't alter style of click-selected features
                         console.log('ignoring hover on selected feature');
+                        if (vm.drawing) {
+                            // Enable modify polygon the hovered polygon is selected and drawing mode is active
+                            vm.modifySetActive(true);
+                            vm.transformSetActive(false);
+                        } else {
+                            // Disable modify polygon when drawing mode is not active
+                            vm.modifySetActive(false);
+                        }
                     } else {
-                        selected.setStyle(undefined);
-                        selected.setStyle(
-                            vm.createStyle(selected.values_.color)
-                        );
+                        if (!(vm.measuring || vm.drawing)) {
+                            // Don't highlight features when measuring or drawing
+                            selected.setStyle(undefined);
+                            selected.setStyle(
+                                vm.createStyle(selected.values_.color)
+                            );
+                        }
                     }
                     selected = null;
                 }
@@ -1604,10 +1925,16 @@ export default {
                                 selected.getProperties().polygon_source;
                             model.copied_from =
                                 selected.getProperties().copied_from;
-                            model.area_sqm = selected.getProperties().area_sqm;
+                            model.area_sqm = Math.round(
+                                getArea(selected.getGeometry(), {
+                                    projection: 'EPSG:4326',
+                                })
+                            );
                         }
                         vm.selectedModel = model;
-                        selected.setStyle(hoverSelect);
+                        if (!isSelectedFeature(selected)) {
+                            selected.setStyle(hoverSelect);
+                        }
 
                         return true;
                     },
@@ -1619,24 +1946,15 @@ export default {
                 );
 
                 // Change to info cursor if hovering over an optional layer
-                let hit = vm.map.forEachLayerAtPixel(
-                    evt.pixel,
-                    function (layer) {
-                        layer.get('name'); //dbca_legislated_lands_and_waters
-                        let optional_layer_names = vm.optionalLayers.map(
-                            (layer) => {
-                                return layer.get('name');
-                            }
-                        );
-
-                        if (vm.informing) {
-                            return optional_layer_names.includes(
-                                layer.get('name')
-                            );
-                        }
-                        return false;
-                    }
+                let layer_at_pixel = layerAtEventPixel(vm, evt);
+                // Compare layer names at pixel with optional layer names and set `hit` property accordingly
+                let optional_layer_names = vm.optionalLayers.map((layer) => {
+                    return layer.get('name');
+                });
+                let hit = layer_at_pixel.some(
+                    (lyr) => optional_layer_names.indexOf(lyr.get('name')) >= 0
                 );
+
                 vm.map.getTargetElement().style.cursor = hit
                     ? 'help'
                     : 'default';
@@ -1739,47 +2057,189 @@ export default {
             if (!vm.selectable) {
                 return;
             }
-
-            const clickSelectStyle = new Style({
-                fill: new Fill({
-                    color: '#000000',
-                }),
-                stroke: vm.clickSelectStroke,
-            });
-
-            function clickSelect(feature) {
-                // Keep feature fill color but change stroke color
-                const color = feature.get('color') || vm.defaultColor;
-                clickSelectStyle.getFill().setColor(color);
-                return clickSelectStyle;
-            }
+            // A basic style for selected polygons
+            vm.basicSelectStyle = function (feature) {
+                var color = feature.get('color') || vm.defaultColor;
+                return [
+                    new Style({
+                        stroke: vm.clickSelectStroke,
+                        fill: new Fill({
+                            color: color,
+                        }),
+                    }),
+                ];
+            };
+            // Basic style plus extra circles for vertices to help with modifying
+            // See: https://github.com/openlayers/openlayers/issues/3165#issuecomment-71432465
+            vm.modifySelectStyle = function (feature) {
+                var image = new CircleStyle({
+                    radius: 5,
+                    fill: null,
+                    stroke: new Stroke({ color: 'orange', width: 2 }),
+                });
+                var color = feature.get('color') || vm.defaultColor;
+                return [
+                    new Style({
+                        image: image,
+                        geometry: function (feature) {
+                            var coordinates = feature
+                                .getGeometry()
+                                .getCoordinates()[0];
+                            return new MultiPoint(coordinates);
+                        },
+                    }),
+                    new Style({
+                        stroke: vm.clickSelectStroke,
+                        fill: new Fill({
+                            color: color,
+                        }),
+                    }),
+                ];
+            };
 
             // select interaction working on "singleclick"
             const selectSingleClick = new Select({
-                style: clickSelect,
+                style: vm.basicSelectStyle,
                 layers: [vm.modelQueryLayer],
+                wrapX: false,
             });
-            vm.map.addInteraction(selectSingleClick);
+
             selectSingleClick.on('select', (evt) => {
+                if (vm.transforming) {
+                    return;
+                }
                 $.each(evt.selected, function (idx, feature) {
                     console.log(
                         `Selected feature ${feature.getProperties().id}`,
                         toRaw(feature)
                     );
-                    feature.setStyle(clickSelect);
+                    // Current feature id list for undo stack
+                    let before = [...vm.selectedFeatureIds];
+                    feature.setStyle(vm.basicSelectStyle);
                     vm.selectedFeatureIds.push(feature.getProperties().id);
+                    // Add to undo stack
+                    vm.undoredo.push('select feature', {
+                        before: before,
+                        after: vm.selectedFeatureIds,
+                    });
                 });
 
                 $.each(evt.deselected, function (idx, feature) {
                     console.log(
                         `Unselected feature ${feature.getProperties().id}`
                     );
+                    // Current feature id list for undo stack
+                    let before = [...vm.selectedFeatureIds];
                     feature.setStyle(undefined);
                     vm.selectedFeatureIds = vm.selectedFeatureIds.filter(
                         (id) => id != feature.getProperties().id
                     );
+                    // Add to undo stack
+                    vm.undoredo.push('select feature', {
+                        before: before,
+                        after: vm.selectedFeatureIds,
+                    });
                 });
             });
+            // When the map mode changes between draw and anything else, update the style of the selected features
+            selectSingleClick.addEventListener('map:modeChanged', (evt) => {
+                console.log('map mode changed', evt);
+                if (evt.details.new_mode === 'draw') {
+                    vm.setStyleForUnAndSelectedFeatures(vm.modifySelectStyle);
+                } else {
+                    vm.setStyleForUnAndSelectedFeatures();
+                }
+            });
+
+            return selectSingleClick;
+        },
+        initialiseModifyFeatureEvent: function () {
+            let vm = this;
+            const modify = new ModifyFeature({
+                source: vm.modelQuerySource, // Same source as the draw interaction
+                // features: vm.select.getFeatures(), // Either need to provide source or features, but features doesn't seem to work
+                pixelTolerance: vm.pixelTolerance,
+                deleteCondition: function (evt) {
+                    if (
+                        evt.type !== 'pointerdown' ||
+                        evt.originalEvent.button !== 2 // Remove vertex on right click
+                    ) {
+                        return false;
+                    }
+                    evt.stopPropagation();
+
+                    let f = vm.map.getFeaturesAtPixel(evt.pixel, {
+                        hitTolerance: vm.hitTolerance,
+                    });
+                    if (!f) {
+                        return false;
+                    }
+
+                    let features = vm.selectedFeatures();
+
+                    features.forEach((feature) => {
+                        let coords = feature.getGeometry().getCoordinates();
+                        console.log('delete coord length', coords.length);
+
+                        for (let j = 0; j < coords.length; j++) {
+                            let coord = coords[j];
+                            if (coord.length <= 4) {
+                                // Needs three vertices to form a polygon, four because the first and last are the same
+                                return false;
+                            }
+                            for (let k = 0; k < coord.length; k++) {
+                                let pxl1 = evt.pixel; // clicked pixel coordinates
+                                let pxl2 = vm.map.getPixelFromCoordinate(
+                                    coord[k]
+                                ); // calculated pixel coordinates
+
+                                // Distance between pixel1 and pixel2
+                                let distance = vm.pixelDistance(pxl1, pxl2);
+                                if (distance <= vm.pixelTolerance) {
+                                    let selectedCoord = coord[k];
+                                    coord.splice(k, 1);
+                                    if (selectedCoord == null) {
+                                        return;
+                                    }
+                                    feature
+                                        .getGeometry()
+                                        .setCoordinates([coord]);
+
+                                    validateFeature(feature, vm);
+                                }
+                            }
+                        }
+                    });
+                },
+            });
+
+            modify.addEventListener('modifyend', function (evt) {
+                console.log('Modify end', evt.features);
+                let feature = evt.features[0];
+                validateFeature(feature, vm);
+            });
+
+            return modify;
+        },
+        initialiseTransform: function () {
+            let vm = this;
+
+            const transform = new Transform({
+                source: vm.modelQuerySource,
+                hitTolerance: vm.hitTolerance,
+            });
+
+            const transformEndCallback = function (evt) {
+                evt.features.forEach((feature) => {
+                    validateFeature(feature, vm);
+                });
+            };
+
+            for (const eventName of ['translateend', 'rotateend', 'scaleend']) {
+                transform.addEventListener(eventName, transformEndCallback);
+            }
+
+            return transform;
         },
         undoLeaseLicensePoint: function () {
             let vm = this;
@@ -1817,7 +2277,10 @@ export default {
                             feature.getProperties().id
                         )
                     ) {
-                        if (feature.getProperties().locked === false) {
+                        if (
+                            feature.getProperties().locked === false ||
+                            vm.debug // Allow deletion of locked features if debug mode is enabled
+                        ) {
                             return feature;
                         } else {
                             console.warn(
@@ -2005,6 +2468,12 @@ export default {
                 }
             });
             vm.addFeatureCollectionToMap();
+            vm.map.dispatchEvent({
+                type: 'features-loaded',
+                details: {
+                    loaded: true,
+                },
+            });
         },
         /**
          * Creates a styled feature object from a feature dictionary
@@ -2099,76 +2568,6 @@ export default {
                     vm.owsQuery[layerStr].propertyName || 'wkb_geometry',
             };
         },
-        /**
-         * Returns a Well-known-text (WKT) representation of a feature
-         * @param {Feature} feature A feature to validate
-         */
-        featureToWKT: function (feature) {
-            let vm = this;
-
-            if (feature === undefined) {
-                // If no feature is provided, create a feature from the current sketch
-                let coordinates = vm.sketchCoordinates.slice();
-                coordinates.push(coordinates[0]);
-                feature = new Feature({
-                    id: -1,
-                    geometry: new Polygon([coordinates]),
-                    label: 'validation',
-                    color: vm.defaultColor,
-                    polygon_source: 'validation',
-                });
-            }
-
-            // Prepare a WFS feature intersection request
-            let flatCoordinates = feature.values_.geometry.flatCoordinates;
-
-            // Transform list of flat coordinates into a list of coordinate pairs,
-            // e.g. ['x1 y1', 'x2 y2', 'x3 y3']
-            let flatCoordinateStringPairs = flatCoordinates
-                .map((coord, index) =>
-                    index % 2 == 0
-                        ? [
-                              flatCoordinates[index],
-                              flatCoordinates[index + 1],
-                          ].join(' ')
-                        : ''
-                )
-                .filter((item) => item != '');
-
-            // Create a Well-Known-Text polygon string from the coordinate pairs
-            return `POLYGON ((${flatCoordinateStringPairs.join(', ')}))`;
-        },
-        /**
-         * Validates an openlayers feature against a geoserver `url`.
-         * @param {Feature} feature A feature to validate
-         * @returns {Promise} A promise that resolves to a list of intersected features
-         */
-        validateFeatureQuery: async function (query) {
-            let vm = this;
-
-            let features = [];
-            // Query the WFS
-            vm.queryingGeoserver = true;
-            // var urls = [`${url}${params}`];
-            let urls = [query];
-
-            let requests = urls.map((url) =>
-                utils.fetchUrl(url).then((response) => response)
-            );
-            await Promise.all(requests)
-                .then((data) => {
-                    features = new GeoJSON().readFeatures(data[0]);
-                })
-                .catch((error) => {
-                    console.log(error.message);
-                    vm.errorMessage = error.message;
-                });
-
-            return features;
-        },
-        /**
-         * Finish drawing of the current feature sketch.
-         */
         finishDrawing: function () {
             let vm = this;
             vm.queryingGeoserver = false;
@@ -2269,6 +2668,104 @@ export default {
                     vm.isValidating = false;
                 });
         },
+        /**
+         * Returns the selected features
+         */
+        selectedFeatures: function () {
+            let vm = this;
+            let features = vm.modelQuerySource.getFeatures();
+            return features.filter((feature) => {
+                return vm.selectedFeatureIds.includes(
+                    feature.getProperties().id
+                );
+            });
+        },
+        /**
+         * Sets interactions for modify to active or inactive
+         * @param {boolean} active
+         */
+        modifySetActive(active) {
+            let vm = this;
+            vm.modify.setActive(active);
+            vm.snap.setActive(active);
+        },
+        /**
+         * Sets interactions for modify to active or inactive
+         */
+        transformSetActive(active) {
+            let vm = this;
+            vm.select.setActive(!active);
+            vm.transform.setActive(active);
+        },
+        /**
+         * Undoes the last map interaction
+         */
+        undo: function () {
+            let vm = this;
+            if (vm.canUndoDrawnVertex) {
+                vm.undoLeaseLicensePoint();
+            } else if (vm.canUndoAction) {
+                vm.undoredo.undo();
+                // Find the last feature in the redo stack and validate it (the last feature doesn't necessarily need to be the last item in the stack, as the last item could e.g. be a 'blockend' object)
+                let item = vm.undoredo._redoStack
+                    .getArray()
+                    .toReversed()
+                    .find((item) => {
+                        if (item.feature) {
+                            return item;
+                        }
+                    });
+                if (item && item.feature) {
+                    validateFeature(item.feature, vm);
+                }
+            } else {
+                // Nothing
+            }
+        },
+        /**
+         * Redoes the last map interaction
+         */
+        redo: function () {
+            let vm = this;
+            if (vm.canRedoDrawnVertex) {
+                vm.redoLeaseLicensePoint();
+            } else if (vm.canRedoAction) {
+                vm.undoredo.redo();
+                // Find the last feature in the undo stack and validate it
+                let item = vm.undoredo._undoStack
+                    .getArray()
+                    .toReversed() // .reverse() mutates in-place, .toReversed() doesn't
+                    .find((item) => {
+                        if (item.feature) {
+                            return item;
+                        }
+                    });
+                if (item && item.feature) {
+                    validateFeature(item.feature, vm);
+                }
+            } else {
+                // Nothing
+            }
+        },
+        /**
+         * Returns a description for the top action in the undo or redo stack
+         * @param {String} stack_name The name of the stack to get the top action from
+         */
+        undoRedoStackTopInteractionName: function (stack_name = 'undo') {
+            let vm = this;
+            if (!vm.undoredo) {
+                return;
+            }
+            let stack = vm.undoredo.getStack(stack_name);
+
+            if (stack && stack.length > 0) {
+                return (
+                    (stack.slice(-1)[0] || []).name ||
+                    (stack.slice(-1)[0] || []).type
+                );
+            }
+            return 'last action';
+        },
     },
 };
 </script>
@@ -2312,5 +2809,9 @@ export default {
     /* Works to make the Upload shapefile section fit neatly with the map
     haven't investigated why it's needed. */
     margin-left: 0px;
+}
+
+.force-parent-lh {
+    line-height: inherit !important;
 }
 </style>
