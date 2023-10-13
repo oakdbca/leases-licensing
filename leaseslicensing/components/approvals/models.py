@@ -92,12 +92,14 @@ class ApprovalDocument(Document, RevisionedMixin):
     REASON_RENEWED = "renewed"
     REASON_REISSUED = "reissued"
     REASON_INVOICING_UPDATED = "invoicing_updated"
+    REASON_TRANSFERRED = "transferred"
     REASON_CHOICES = (
         (REASON_NEW, "New"),
         (REASON_AMENDED, "Amended"),
         (REASON_RENEWED, "Renewed"),
         (REASON_REISSUED, "Reissued"),
         (REASON_INVOICING_UPDATED, "Invoicing updated"),
+        (REASON_TRANSFERRED, "Transferred"),
     )
 
     approval = models.ForeignKey(

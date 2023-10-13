@@ -2638,7 +2638,18 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     ApprovalTransfer.APPROVAL_TRANSFER_STATUS_ACCEPTED
                 )
                 approval_transfer.save()
-                approval.save()
+
+                # Generate the approval documents
+                self.generate_license_documents(
+                    approval, reason=ApprovalDocument.REASON_TRANSFERRED
+                )
+                # Create a versioned approval save
+                proposal_type_comment_name = proposal_type_comment_names[
+                    PROPOSAL_TYPE_TRANSFER
+                ]
+                approval.save(
+                    version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
+                )
 
             elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
                 # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
