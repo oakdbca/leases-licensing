@@ -2634,6 +2634,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 approval_transfer = approval.transfers.filter(
                     processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING
                 ).first()
+                if not approval_transfer:
+                    raise ValidationError(
+                        f"Unable to transfer lease license {approval} as there is no pending transfer."
+                    )
                 approval_transfer.processing_status = (
                     ApprovalTransfer.APPROVAL_TRANSFER_STATUS_ACCEPTED
                 )
@@ -3679,143 +3683,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
         )
 
-    def copy_proposal_proposed_issuance(self, proposal, **kwargs):
-        """
-        Pre-populates assessor's proposed issuance dict to the new proposal, deleting previous
-        details, approved on, and approved by information
-        Args:
-            self: previous Proposal
-            proposal: new Proposal
-        """
-
-        is_renewal = kwargs.get("is_renewal", False)
-
-        proposed_issuance = {k: v for k, v in self.proposed_issuance_approval.items()}
-        proposed_issuance["details"] = None  # Assessor needs to fill this in
-        proposed_issuance["approved_on"] = None  # Populated by the system
-        proposed_issuance["approved_by"] = None  # Populated by the system
-
-        if is_renewal:
-            # Change start and expiry dates for renewal according to previous approval dates
-            time_format = "%Y-%m-%d"
-            original_start_date = datetime.datetime.strptime(
-                proposed_issuance["start_date"], time_format
-            )
-            original_expiry_date = datetime.datetime.strptime(
-                proposed_issuance["expiry_date"], time_format
-            )
-            proposed_issuance["start_date"] = (
-                original_expiry_date + datetime.timedelta(days=1)
-            ).strftime(
-                time_format
-            )  # Start date is the day after the expiry date of the original proposal
-            proposed_issuance["expiry_date"] = (
-                original_expiry_date + (original_expiry_date - original_start_date)
-            ).strftime(
-                time_format
-            )  # Expiry date is after the same duration as the original proposal
-
-        proposal.proposed_issuance_approval = proposed_issuance
-
-    def copy_proposal_geometries(self, proposal):
-        """
-        Copies any proposal geometry from the previous proposal
-        """
-
-        for pg in self.proposalgeometry.all():
-            ProposalGeometry.objects.create(
-                proposal=proposal,
-                polygon=pg.polygon,
-                intersects=pg.intersects,
-                copied_from=pg,
-                drawn_by=pg.drawn_by,  # EmailUser
-                locked=pg.locked,  # Should evaluate to true
-            )
-
-    def copy_proposal_details(self, proposal):
-        """
-        Copies over any tourism, general, prn str type proposal details and documents
-        """
-
-        details_fields = [
-            "profit_and_loss",
-            "cash_flow",
-            "capital_investment",
-            "financial_capacity",
-            "available_activities",
-            "market_analysis",
-            "staffing",
-            "key_personnel",
-            "key_milestones",
-            "risk_factors",
-            "legislative_requirements",
-        ]
-
-        from copy import deepcopy
-
-        for field in details_fields:
-            f_text = f"{field}_text"
-            setattr(proposal, f_text, getattr(self, f_text))
-            f_doc = f"{field}_documents"
-            for doc in getattr(self, f_doc).all():
-                new_doc = deepcopy(doc)
-                new_doc.proposal = proposal
-                new_doc.can_delete = True
-                new_doc.hidden = False
-                new_doc.id = None
-                new_doc.save()
-
-        for field in ["proponent_reference_number", "site_name_id"]:
-            setattr(proposal, field, getattr(self, field))
-
-        # Copy over previous groups
-        # for group in self.groups.all():
-        #     new_group = deepcopy(group)
-        #     new_group.proposal = proposal
-        #     new_group.id = None
-        #     new_group.save()
-
-    def copy_proposal_requirements(self, proposal, **kwargs):
-        """
-        Copies all requirements and requirement documents from previous proposal
-        """
-
-        from copy import deepcopy
-
-        is_renewal = kwargs.get("is_renewal", False)  # TODO: might not be needed
-
-        req = self.requirements.all().exclude(is_deleted=True)
-
-        if req:
-            for r in req:
-                new_r = deepcopy(r)
-                new_r.proposal = proposal
-                new_r.copied_from = r
-                new_r.copied_for_renewal = (
-                    True  # FIXME what about this field when copying for amendment?
-                )
-                if new_r.due_date:
-                    new_r.due_date = None
-                    new_r.require_due_date = True
-                new_r.id = None
-                new_r.district_proposal = None
-                new_r.save()
-
-        for requirement in proposal.requirements.all():
-            for requirement_document in RequirementDocument.objects.filter(
-                requirement=requirement.copied_from
-            ):
-                requirement_document.requirement = requirement
-                requirement_document.id = None
-                requirement_document._file.name = (
-                    "proposals/{}/requirement_documents/{}".format(
-                        proposal.id,
-                        requirement_document.name,
-                    )
-                )
-                requirement_document.can_delete = True
-                requirement_document.save()
-
     def amend_or_renew_approval(self, request, proposal_type_code):
         """
         Returns a new proposal from self that is either of type amendment or renewal
@@ -3829,13 +3696,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         proposal = clone_proposal_with_status_reset(previous_proposal)
         proposal.proposal_type = ProposalType.objects.get(code=proposal_type_code)
 
-        self.copy_proposal_proposed_issuance(proposal, is_renewal=is_renewal)
+        copy_proposal_proposed_issuance(
+            previous_proposal, proposal, is_renewal=is_renewal
+        )
 
         # Copy over previous proposal geometry
         copy_proposal_geometry(previous_proposal, proposal)
-        # self.copy_proposal_geometries(proposal)
 
-        self.copy_proposal_details(proposal)
+        copy_proposal_details(previous_proposal, proposal)
 
         # Copy over previous site name
         copy_site_name(previous_proposal, proposal)
@@ -3846,7 +3714,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         # Copy over previous gis data
         copy_gis_data(previous_proposal, proposal)
 
-        self.copy_proposal_requirements(proposal, is_renewal=is_renewal)
+        copy_proposal_requirements(previous_proposal, proposal, is_renewal=is_renewal)
 
         # Create a log entry for the proposal
         user_action = (
@@ -5644,7 +5512,7 @@ def copy_proposal_geometry(proposalFrom: Proposal, proposalTo: Proposal) -> None
         )
 
 
-def copy_gis_data(proposalFrom, proposalTo):
+def copy_gis_data(proposalFrom: Proposal, proposalTo: Proposal) -> None:
     for gis_model in GIS_DATA_MODEL_NAMES:
         model_class = apps.get_model("leaseslicensing", f"proposal{gis_model}")
         models = model_class.objects.filter(proposal=proposalFrom)
@@ -5652,3 +5520,127 @@ def copy_gis_data(proposalFrom, proposalTo):
             model_class.objects.get_or_create(
                 proposal=proposalTo, **{f"{gis_model}": getattr(model, f"{gis_model}")}
             )
+
+
+def copy_proposal_proposed_issuance(
+    proposalFrom: Proposal, proposalTo: Proposal, **kwargs
+) -> None:
+    """
+    Pre-populates assessor's proposed issuance dict to the new proposal, deleting previous
+    details, approved on, and approved by information
+    Args:
+        proposalFrom: previous Proposal
+        proposalTo: new Proposal
+    """
+
+    is_renewal = kwargs.get("is_renewal", False)
+
+    proposed_issuance = {
+        k: v for k, v in proposalFrom.proposed_issuance_approval.items()
+    }
+    proposed_issuance["details"] = None  # Assessor needs to fill this in
+    proposed_issuance["approved_on"] = None  # Populated by the system
+    proposed_issuance["approved_by"] = None  # Populated by the system
+
+    if is_renewal:
+        # Change start and expiry dates for renewal according to previous approval dates
+        time_format = "%Y-%m-%d"
+        original_start_date = datetime.datetime.strptime(
+            proposed_issuance["start_date"], time_format
+        )
+        original_expiry_date = datetime.datetime.strptime(
+            proposed_issuance["expiry_date"], time_format
+        )
+        proposed_issuance["start_date"] = (
+            original_expiry_date + datetime.timedelta(days=1)
+        ).strftime(
+            time_format
+        )  # Start date is the day after the expiry date of the original proposal
+        proposed_issuance["expiry_date"] = (
+            original_expiry_date + (original_expiry_date - original_start_date)
+        ).strftime(
+            time_format
+        )  # Expiry date is after the same duration as the original proposal
+
+    proposalTo.proposed_issuance_approval = proposed_issuance
+
+
+def copy_proposal_details(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    """
+    Copies over any tourism, general, prn str type proposal details and documents
+    """
+
+    details_fields = [
+        "profit_and_loss",
+        "cash_flow",
+        "capital_investment",
+        "financial_capacity",
+        "available_activities",
+        "market_analysis",
+        "staffing",
+        "key_personnel",
+        "key_milestones",
+        "risk_factors",
+        "legislative_requirements",
+    ]
+
+    from copy import deepcopy
+
+    for field in details_fields:
+        f_text = f"{field}_text"
+        setattr(proposalTo, f_text, getattr(proposalFrom, f_text))
+        f_doc = f"{field}_documents"
+        for doc in getattr(proposalFrom, f_doc).all():
+            new_doc = deepcopy(doc)
+            new_doc.proposal = proposalTo
+            new_doc.can_delete = True
+            new_doc.hidden = False
+            new_doc.id = None
+            new_doc.save()
+
+    for field in ["proponent_reference_number", "site_name_id"]:
+        setattr(proposalTo, field, getattr(proposalFrom, field))
+
+
+def copy_proposal_requirements(
+    proposalFrom: Proposal, proposalTo: Proposal, **kwargs
+) -> None:
+    """
+    Copies all requirements and requirement documents from previous proposal
+    """
+
+    from copy import deepcopy
+
+    is_renewal = kwargs.get("is_renewal", False)  # TODO: might not be needed
+
+    req = proposalFrom.requirements.all().exclude(is_deleted=True)
+
+    if req:
+        for r in req:
+            new_r = deepcopy(r)
+            new_r.proposal = proposalTo
+            new_r.copied_from = r
+            new_r.copied_for_renewal = (
+                True  # FIXME what about this field when copying for amendment?
+            )
+            if new_r.due_date:
+                new_r.due_date = None
+                new_r.require_due_date = True
+            new_r.id = None
+            new_r.district_proposal = None
+            new_r.save()
+
+    for requirement in proposalTo.requirements.all():
+        for requirement_document in RequirementDocument.objects.filter(
+            requirement=requirement.copied_from
+        ):
+            requirement_document.requirement = requirement
+            requirement_document.id = None
+            requirement_document._file.name = (
+                "proposals/{}/requirement_documents/{}".format(
+                    proposalTo.id,
+                    requirement_document.name,
+                )
+            )
+            requirement_document.can_delete = True
+            requirement_document.save()
