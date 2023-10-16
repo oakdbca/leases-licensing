@@ -608,7 +608,8 @@
                 </template>
             </div>
         </div>
-        <div class="row shapefile-row">
+        <!-- If no context provided, e.g. no proposal or cp, don't allow for shapefile upload -->
+        <div v-if="context" class="row shapefile-row">
             <div class="col-sm-6 border p-2">
                 <div class="row mb-2">
                     <div class="col">
@@ -880,7 +881,7 @@ export default {
             default: false,
         },
         /**
-         * Whether to enable selecting existing features (e.g. for deletion)
+         * Whether to enable selecting existing features (e.g. for deletion or transformation)
          */
         selectable: {
             type: Boolean,
@@ -1031,10 +1032,10 @@ export default {
         shapefileDocumentUrl: function () {
             let endpoint = '';
             let obj_id = 0;
-            if (this.context.model_name == 'proposal') {
+            if (this.context?.model_name == 'proposal') {
                 endpoint = api_endpoints.proposal;
                 obj_id = this.context.id;
-            } else if (this.context.model_name == 'competitiveprocess') {
+            } else if (this.context?.model_name == 'competitiveprocess') {
                 endpoint = api_endpoints.competitive_process;
                 obj_id = this.context.id;
             } else {
@@ -1679,13 +1680,17 @@ export default {
 
             vm.initialisePointerMoveEvent();
             vm.snap = new Snap({ source: vm.modelQuerySource });
-            vm.select = vm.initialiseSelectFeatureEvent();
-            vm.modify = vm.initialiseModifyFeatureEvent();
-            vm.transform = vm.initialiseTransform();
 
-            vm.map
-                .getInteractions()
-                .extend([vm.snap, vm.select, vm.modify, vm.transform]);
+            let extent_interactions = [vm.snap];
+            if (vm.selectable) {
+                // Only add these interactions if polygons are editable
+                vm.select = vm.initialiseSelectFeatureEvent();
+                vm.modify = vm.initialiseModifyFeatureEvent();
+                vm.transform = vm.initialiseTransform();
+                extent_interactions.push(vm.select, vm.modify, vm.transform);
+            }
+
+            vm.map.getInteractions().extend(extent_interactions);
 
             vm.modifySetActive(false);
 
@@ -2055,7 +2060,7 @@ export default {
         initialiseSelectFeatureEvent: function () {
             let vm = this;
             if (!vm.selectable) {
-                return;
+                return null;
             }
             // A basic style for selected polygons
             vm.basicSelectStyle = function (feature) {
@@ -2686,7 +2691,9 @@ export default {
          */
         modifySetActive(active) {
             let vm = this;
-            vm.modify.setActive(active);
+            if (vm.selectable) {
+                vm.modify.setActive(active);
+            }
             vm.snap.setActive(active);
         },
         /**
@@ -2694,6 +2701,9 @@ export default {
          */
         transformSetActive(active) {
             let vm = this;
+            if (!vm.selectable) {
+                return;
+            }
             vm.select.setActive(!active);
             vm.transform.setActive(active);
         },
