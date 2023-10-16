@@ -238,7 +238,7 @@
                             style-by="assessor"
                             :filterable="false"
                             :drawable="false"
-                            :selectable="true"
+                            :editable="true"
                             level="internal"
                         />
                     </div>
