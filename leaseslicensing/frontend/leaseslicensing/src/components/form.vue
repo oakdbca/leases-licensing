@@ -124,7 +124,7 @@
                             style-by="assessor"
                             :filterable="false"
                             :drawable="is_internal || !leaseLicence"
-                            :selectable="true"
+                            :editable="true"
                             level="internal"
                             :map-info-text="
                                 is_internal

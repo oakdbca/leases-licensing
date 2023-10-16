@@ -160,7 +160,7 @@
                                 style-by="assessor"
                                 :filterable="false"
                                 :drawable="true"
-                                :selectable="true"
+                                :editable="true"
                                 level="internal"
                                 @validate-feature="validateFeature.bind(this)()"
                             />

@@ -244,6 +244,7 @@
                         </div>
                     </div>
                     <div
+                        v-if="editable"
                         class="optional-layers-button-wrapper"
                         title="Transform a drawn feature"
                     >
@@ -296,6 +297,7 @@
                         </div>
                     </div>
                     <div
+                        v-if="editable"
                         class="optional-layers-button-wrapper"
                         :title="
                             polygonCount
@@ -881,9 +883,9 @@ export default {
             default: false,
         },
         /**
-         * Whether to enable selecting existing features (e.g. for deletion or transformation)
+         * Whether to enable editing of existing features (e.g. select for deletion or transformation)
          */
-        selectable: {
+        editable: {
             type: Boolean,
             required: false,
             default: false,
@@ -1682,7 +1684,7 @@ export default {
             vm.snap = new Snap({ source: vm.modelQuerySource });
 
             let extent_interactions = [vm.snap];
-            if (vm.selectable) {
+            if (vm.editable) {
                 // Only add these interactions if polygons are editable
                 vm.select = vm.initialiseSelectFeatureEvent();
                 vm.modify = vm.initialiseModifyFeatureEvent();
@@ -2059,7 +2061,7 @@ export default {
         },
         initialiseSelectFeatureEvent: function () {
             let vm = this;
-            if (!vm.selectable) {
+            if (!vm.editable) {
                 return null;
             }
             // A basic style for selected polygons
@@ -2691,7 +2693,7 @@ export default {
          */
         modifySetActive(active) {
             let vm = this;
-            if (vm.selectable) {
+            if (vm.editable) {
                 vm.modify.setActive(active);
             }
             vm.snap.setActive(active);
@@ -2701,7 +2703,7 @@ export default {
          */
         transformSetActive(active) {
             let vm = this;
-            if (!vm.selectable) {
+            if (!vm.editable) {
                 return;
             }
             vm.select.setActive(!active);
