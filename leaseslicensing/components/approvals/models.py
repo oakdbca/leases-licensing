@@ -448,6 +448,57 @@ class Approval(LicensingModelVersioned):
         ).exists()
 
     @property
+    def has_pending_renewal(self):
+        return self.status == self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
+
+    @property
+    def has_draft_renewal(self):
+        if self.status != self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL:
+            return False
+
+        renewal_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
+        }
+        return Proposal.objects.filter(**renewal_conditions).exists()
+
+    @property
+    def active_renewal(self):
+        renewal_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
+        }
+        renewal_proposal = Proposal.objects.filter(**renewal_conditions).first()
+        if not renewal_proposal:
+            return {}
+        return {
+            "id": renewal_proposal.id,
+            "processing_status": renewal_proposal.processing_status,
+        }
+
+    @property
+    def has_draft_amendment(self):
+        amendment_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT),
+        }
+        return Proposal.objects.filter(**amendment_conditions).exists()
+
+    @property
+    def active_amendment(self):
+        amendment_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT),
+        }
+        amendment_proposal = Proposal.objects.filter(**amendment_conditions).first()
+        if not amendment_proposal:
+            return {}
+        return {
+            "id": amendment_proposal.id,
+            "processing_status": amendment_proposal.processing_status,
+        }
+
+    @property
     def has_outstanding_compliances(self):
         return self.compliances.filter(
             processing_status__in=[
