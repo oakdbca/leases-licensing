@@ -202,7 +202,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="start_date"
-                                    class="col-sm-2 col-form-label"
+                                    class="col-sm-2 col-form-label text-nowrap"
                                     >Commencement</label
                                 >
                                 <div class="col-sm-1 col-form-label">
@@ -245,7 +245,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="due_date"
-                                    class="col-sm-2 col-form-label"
+                                    class="col-sm-2 col-form-label text-nowrap"
                                     >Expiry</label
                                 >
                                 <div class="col-sm-1 col-form-label">
@@ -288,7 +288,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="lease_licence_details"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-3 col-form-label text-nowrap"
                                     >Details</label
                                 >
                                 <div class="col-sm-9">
@@ -317,7 +317,7 @@
                             <div class="row mb-3">
                                 <label
                                     for="proposed_approval_documents"
-                                    class="col-sm-3 col-form-label"
+                                    class="col-sm-3 col-form-label text-nowrap"
                                     >File</label
                                 >
                                 <div class="col-sm-9">
