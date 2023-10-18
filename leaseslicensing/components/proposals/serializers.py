@@ -1814,7 +1814,7 @@ class ProposedApprovalSerializer(serializers.Serializer):
     record_management_number = serializers.CharField(allow_null=False)
 
 
-class PropedDeclineSerializer(serializers.Serializer):
+class ProposalDeclineSerializer(serializers.Serializer):
     reason = serializers.CharField()
     cc_email = serializers.CharField(required=False, allow_null=True)
 

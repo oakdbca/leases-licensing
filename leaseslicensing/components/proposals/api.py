@@ -69,9 +69,9 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
     ListProposalSerializer,
-    PropedDeclineSerializer,
     ProposalAssessmentAnswerSerializer,
     ProposalAssessmentSerializer,
+    ProposalDeclineSerializer,
     ProposalGeometrySerializer,
     ProposalLogEntrySerializer,
     ProposalRequirementSerializer,
@@ -1559,7 +1559,7 @@ class ProposalViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def final_decline(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = PropedDeclineSerializer(data=request.data)
+        serializer = ProposalDeclineSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         instance.final_decline(request, serializer.validated_data)
         serializer_class = self.get_serializer_class()
