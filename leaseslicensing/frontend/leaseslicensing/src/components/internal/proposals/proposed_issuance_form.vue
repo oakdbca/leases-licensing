@@ -157,7 +157,10 @@
                     </div>
                     <div v-if="leaseLicence" class="col-sm-12">
                         <div class="form-group">
-                            <div class="row mb-3">
+                            <div
+                                v-if="!proposal.proposed_decline_status"
+                                class="row mb-3"
+                            >
                                 <label
                                     for="approvalType"
                                     class="col-sm-2 col-form-label text-nowrap"
@@ -199,7 +202,10 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="row mb-3">
+                            <div
+                                v-if="!proposal.proposed_decline_status"
+                                class="row mb-3"
+                            >
                                 <label
                                     for="start_date"
                                     class="col-sm-2 col-form-label text-nowrap"
@@ -242,7 +248,10 @@
                                     ><strong>{{ startDateErrorString }}</strong>
                                 </VueAlert>
                             </div>
-                            <div class="row mb-3">
+                            <div
+                                v-if="!proposal.proposed_decline_status"
+                                class="row mb-3"
+                            >
                                 <label
                                     for="due_date"
                                     class="col-sm-2 col-form-label text-nowrap"
@@ -357,7 +366,7 @@
                                 <div class="col-sm-9">
                                     <input
                                         ref="cc_email"
-                                        v-model="approval.cc_email"
+                                        v-model="cc_email"
                                         type="text"
                                         class="form-control"
                                         name="approval_cc"
@@ -706,6 +715,17 @@ export default {
                 return null;
             }
             return this.proposal.proposed_issuance_approval.assessed_on;
+        },
+        cc_email: {
+            get: function () {
+                if (this.proposal.proposed_decline_status) {
+                    return this.proposal.proposaldeclineddetails.cc_email;
+                }
+                return this.approval.cc_email;
+            },
+            set: function (value) {
+                this.approval.cc_email = value;
+            },
         },
     },
     created: async function () {
