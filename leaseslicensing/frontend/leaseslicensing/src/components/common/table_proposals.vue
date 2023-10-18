@@ -62,9 +62,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for=""
-                            >Lodged To {{ filterProposalLodgedTo }}</label
-                        >
+                        <label for="">Lodged To</label>
                         <div
                             ref="proposalDateToPicker"
                             class="input-group date"
