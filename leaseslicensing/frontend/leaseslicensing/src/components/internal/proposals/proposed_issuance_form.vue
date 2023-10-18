@@ -63,7 +63,7 @@
                                         placeholder_text="Add some details here"
                                         :can_view_richtext_src="true"
                                         :readonly="readonly"
-                                        @textChanged="
+                                        @text-changed="
                                             updateProposedDecisionDetails
                                         "
                                     />
@@ -303,7 +303,7 @@
                                             selectedApprovalTypeDetailsPlaceholder
                                         "
                                         :readonly="readonly"
-                                        @textChanged="
+                                        @text-changed="
                                             updateProposedDecisionDetails
                                         "
                                     />
