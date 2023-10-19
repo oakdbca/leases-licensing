@@ -2656,7 +2656,6 @@ export default {
         },
         revisionToDisplay: async function (revision) {
             console.log('Displaying', revision);
-            let vm = this;
             let payload = {
                 revision_id: revision.revision_id,
                 debug: this.debug,
