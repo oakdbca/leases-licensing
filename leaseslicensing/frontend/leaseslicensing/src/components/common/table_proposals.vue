@@ -447,10 +447,7 @@ export default {
                             } else {
                                 links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
                             }
-                            // Only show the 'Discard' link after submit
-                            if (full.submitter) {
-                                links += `<a href='#${full.id}' data-discard-proposal='${full.id}'>Discard</a><br/>`;
-                            }
+                            links += `<a href='#${full.id}' data-discard-proposal='${full.id}' data-proposal-lodgement-number='${full.lodgement_number}'>Discard</a><br/>`;
                         }
                     }
                     return links;
@@ -701,8 +698,8 @@ export default {
             });
             console.log(' new application');
         },
-        discardProposal: function (proposal_id) {
-            discardProposal(proposal_id)
+        discardProposal: function (proposal_id, lodgement_number) {
+            discardProposal(proposal_id, lodgement_number)
                 .then(() => {
                     this.$refs.application_datatable.vmDataTable.draw();
                 })
@@ -739,7 +736,10 @@ export default {
                 function (e) {
                     e.preventDefault();
                     let id = $(this).attr('data-discard-proposal');
-                    vm.discardProposal(id);
+                    let lodgementNumber = $(this).attr(
+                        'data-proposal-lodgement-number'
+                    );
+                    vm.discardProposal(id, lodgementNumber);
                 }
             );
 
