@@ -43,6 +43,15 @@ class LeasesLicensingConfig(AppConfig):
                 ReferralRecipientGroup,
                 SectionChecklist,
                 ShapefileDocument,
+                ProposalRegion,
+                ProposalDistrict,
+                ProposalLGA,
+                ProposalName,
+                ProposalCategory,
+                ProposalIdentifier,
+                ProposalVesting,
+                ProposalAct,
+                ProposalTenure,
             )
             from leaseslicensing.components.users import signals  # noqa
 
@@ -114,6 +123,15 @@ class LeasesLicensingConfig(AppConfig):
                 ],
             )
             reversion.register(ProposalGeometry, follow=["proposal"])
+            reversion.register(ProposalRegion, follow=["proposal"])
+            reversion.register(ProposalDistrict, follow=["proposal"])
+            reversion.register(ProposalLGA, follow=["proposal"])
+            reversion.register(ProposalName, follow=["proposal"])
+            reversion.register(ProposalCategory, follow=["proposal"])
+            reversion.register(ProposalIdentifier, follow=["proposal"])
+            reversion.register(ProposalVesting, follow=["proposal"])
+            reversion.register(ProposalAct, follow=["proposal"])
+            reversion.register(ProposalTenure, follow=["proposal"])
 
             # compliance
             reversion.register(

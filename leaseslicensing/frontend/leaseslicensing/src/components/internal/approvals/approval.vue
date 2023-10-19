@@ -17,36 +17,13 @@
         </div>
         <div class="row">
             <div class="col-md-3">
-                <CommsLogs
-                    :comms_url="comms_url"
-                    :logs_url="logs_url"
-                    :comms_add_url="comms_add_url"
-                    :disable_add_entry="false"
-                />
-
-                <div class="row mt-2 mb-2">
-                    <div class="col">
-                        <div class="card card-default">
-                            <div class="card-header">Submission</div>
-                            <div class="card-body card-collapse">
-                                <div class="row">
-                                    <div class="col-sm-12 top-buffer-s">
-                                        <strong>Issued on</strong><br />
-                                        {{ formatDate(approval.issue_date) }}
-                                    </div>
-                                    <div class="col-sm-12 top-buffer-s">
-                                        <table class="table small-table">
-                                            <tr>
-                                                <th>Lodgement</th>
-                                                <th>Date</th>
-                                                <th>Action</th>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                <div class="row mb-2">
+                    <CommsLogs
+                        :comms_url="comms_url"
+                        :logs_url="logs_url"
+                        :comms_add_url="comms_add_url"
+                        :disable_add_entry="false"
+                    />
                 </div>
 
                 <StatusPanel :status="approval.status" />
@@ -122,7 +99,10 @@
                     <span class="fw-bold">{{ approval.approved_by }}</span> on
                     <span class="fw-bold">{{
                         new Date(approval.issue_date).toLocaleDateString()
-                    }}</span></BootstrapAlert
+                    }}</span>
+                    <span>
+                        ({{ approval.current_proposal_proposal_type }})</span
+                    ></BootstrapAlert
                 >
                 <ul id="pills-tab" class="nav nav-pills" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -238,7 +218,7 @@
                             style-by="assessor"
                             :filterable="false"
                             :drawable="false"
-                            :selectable="true"
+                            :editable="true"
                             level="internal"
                         />
                     </div>

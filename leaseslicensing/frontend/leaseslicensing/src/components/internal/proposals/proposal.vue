@@ -26,7 +26,7 @@
                 />
 
                 <Submission
-                    v-if="canSeeSubmission"
+                    v-if="canSeeSubmission || debug"
                     :can-see-submission="canSeeSubmission"
                     :showing-proposal="showingProposal"
                     :proposal="proposal"
@@ -40,7 +40,7 @@
                 <Workflow
                     ref="workflow"
                     :proposal="proposal"
-                    :on-current-revision="on_current_revision"
+                    :on-current-revision="onCurrentRevision"
                     :is-finalised="isFinalised"
                     :can-action="canAction"
                     :can-limited-action="canLimitedAction"
@@ -138,6 +138,7 @@
                             :registration-of-interest="isRegistrationOfInterest"
                             :lease-licence="isLeaseLicence"
                             @formMounted="applicationFormMounted"
+                            @update:GisData="updateGisData"
                         >
                             <!-- Inserted into the slot on the form.vue: Collapsible Assessor Questions -->
                             <template #slot_map_assessment_comments>
@@ -1712,7 +1713,7 @@ export default {
         },
         canLimitedAction: function () {
             // For now returning true when viewing the current version of the Proposal
-            return this.on_current_revision; // TODO: implement this.  This is just temporary solution
+            return this.onCurrentRevision; // TODO: implement this.  This is just temporary solution
 
             //    if (this.proposal.processing_status == 'With Approver'){
             //        return
@@ -1753,7 +1754,7 @@ export default {
                 ].includes(this.proposal.processing_status)
             );
         },
-        on_current_revision: function () {
+        onCurrentRevision: function () {
             // Returns whether the currently displayed version is the latest one
             return (
                 this.latest_revision.revision_id === this.current_revision_id
@@ -2662,11 +2663,9 @@ export default {
             };
 
             await fetch(
-                helpers.add_endpoint_json(
-                    api_endpoints.proposal,
-                    vm.proposal.id + '/revision_version'
-                ),
-                { body: JSON.stringify(payload), method: 'POST' }
+                `/api/proposal/${
+                    this.$route.params.proposal_id
+                }/revision_version?${new URLSearchParams(payload)}`
             )
                 .then(async (response) => {
                     if (!response.ok) {
@@ -2753,6 +2752,26 @@ export default {
         updateInvoicingDetails: function (value) {
             console.log('updateInvoicingDetails', value);
             Object.assign(this.proposal.invoicing_details, value);
+        },
+        updateGisData: function (property, value) {
+            if (!Object.hasOwn(this.proposal, property)) {
+                console.log(`Property ${property} does not exist on proposal`);
+                return;
+            }
+            console.log('updateGisData', property, value);
+
+            this.proposal[property];
+
+            if (this.proposal[property].find((item) => item.id == value.id)) {
+                this.proposal[property] = this.proposal[property].filter(
+                    (item) => item.id != value.id
+                );
+            } else {
+                this.proposal[property].push({
+                    id: value.id,
+                    name: value.name,
+                });
+            }
         },
     },
 };

@@ -92,12 +92,14 @@ class ApprovalDocument(Document, RevisionedMixin):
     REASON_RENEWED = "renewed"
     REASON_REISSUED = "reissued"
     REASON_INVOICING_UPDATED = "invoicing_updated"
+    REASON_TRANSFERRED = "transferred"
     REASON_CHOICES = (
         (REASON_NEW, "New"),
         (REASON_AMENDED, "Amended"),
         (REASON_RENEWED, "Renewed"),
         (REASON_REISSUED, "Reissued"),
         (REASON_INVOICING_UPDATED, "Invoicing updated"),
+        (REASON_TRANSFERRED, "Transferred"),
     )
 
     approval = models.ForeignKey(
@@ -142,7 +144,9 @@ class ApprovalType(RevisionedMixin):
     details_placeholder = models.CharField(max_length=200, blank=True)
     gst_free = models.BooleanField(default=False)
     approvaltypedocumenttypes = models.ManyToManyField(
-        "ApprovalTypeDocumentType", through="ApprovalTypeDocumentTypeOnApprovalType"
+        "ApprovalTypeDocumentType",
+        through="ApprovalTypeDocumentTypeOnApprovalType",
+        related_name="approval_type",
     )
 
     class Meta:
@@ -444,6 +448,57 @@ class Approval(LicensingModelVersioned):
         ).exists()
 
     @property
+    def has_pending_renewal(self):
+        return self.status == self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL
+
+    @property
+    def has_draft_renewal(self):
+        if self.status != self.APPROVAL_STATUS_CURRENT_PENDING_RENEWAL:
+            return False
+
+        renewal_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
+        }
+        return Proposal.objects.filter(**renewal_conditions).exists()
+
+    @property
+    def active_renewal(self):
+        renewal_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_RENEWAL),
+        }
+        renewal_proposal = Proposal.objects.filter(**renewal_conditions).first()
+        if not renewal_proposal:
+            return {}
+        return {
+            "id": renewal_proposal.id,
+            "processing_status": renewal_proposal.processing_status,
+        }
+
+    @property
+    def has_draft_amendment(self):
+        amendment_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT),
+        }
+        return Proposal.objects.filter(**amendment_conditions).exists()
+
+    @property
+    def active_amendment(self):
+        amendment_conditions = {
+            "previous_application": self.current_proposal,
+            "proposal_type": ProposalType.objects.get(code=PROPOSAL_TYPE_AMENDMENT),
+        }
+        amendment_proposal = Proposal.objects.filter(**amendment_conditions).first()
+        if not amendment_proposal:
+            return {}
+        return {
+            "id": amendment_proposal.id,
+            "processing_status": amendment_proposal.processing_status,
+        }
+
+    @property
     def has_outstanding_compliances(self):
         return self.compliances.filter(
             processing_status__in=[
@@ -531,9 +586,29 @@ class Approval(LicensingModelVersioned):
     # copy amend_renew() from ML?
     @property
     def can_amend(self):
-        # try:
-        if self.renewal_document and self.renewal_notification_sent_to_holder:
-            # amend_renew = 'renew'
+        try:
+            # FIXME: As of now there are no Renewal Documents implemented for leases. Assuming we will add them,
+            # at the time we do so, they will be implemented as a new ApprovalTypeDocumentType object
+            # with a new boolean field `is_renewal_document`. We can already check the approval for a document
+            # of that type with that field now and simply treat any approval as if it were not meant to have
+            # a renewal document. Thus any underlying logic and model definition can largely be left intact until
+            # there is more informationm on renewal documents in leases available.
+            can_provide_renewal_document = ApprovalTypeDocumentType.objects.filter(
+                approval_type=self.approval_type, is_renewal_document=True
+            ).exists()
+        except:
+            logger.warning(
+                f"{self.approval_type} {self.lodgement_number} does not allow for renewal documents"
+            )
+            can_provide_renewal_document = False
+
+        if (
+            not can_provide_renewal_document
+            and self.renewal_notification_sent_to_holder
+        ):
+            # Renewal document is not provided for this approval type. Don't need to check for it on the model.
+            return False
+        elif self.renewal_document and self.renewal_notification_sent_to_holder:
             return False
         else:
             amend_conditions = {

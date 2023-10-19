@@ -2512,28 +2512,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         )
 
         try:
-            self.proposed_decline_status = False
+            if not self.can_assess(request.user):
+                raise exceptions.ProposalNotAuthorized()
+            if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
+                raise ValidationError(
+                    "You cannot issue the approval if it is not with an approver"
+                )
+            if not self.applicant_address:
+                raise ValidationError(
+                    "The applicant needs to have set their postal address before approving this proposal."
+                )
 
+            self.proposed_decline_status = False
             record_management_number = self.proposed_issuance_approval.get(
                 "record_management_number", None
             )
-
-            if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT:
-                # for 'Awaiting Payment' approval.
-                # External/Internal user fires this method after full payment via Make/Record Payment
-                pass
-            else:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
-                    raise ValidationError(
-                        "You cannot issue the approval if it is not with an approver"
-                    )
-                if not self.applicant_address:
-                    raise ValidationError(
-                        "The applicant needs to have set their postal address before approving this proposal."
-                    )
-
             self.store_proposed_approval_data(request, details)
 
             # Log proposal action
@@ -2542,31 +2535,33 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
             checking_proposal = self
-
             proposal_type_comment_names = {t1: t2 for t1, t2 in settings.PROPOSAL_TYPES}
 
             if (
-                self.proposal_type.code == PROPOSAL_TYPE_RENEWAL
+                self.proposal_type.code
+                in [PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL]
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
             ):
-                # Lease License (Renewal)
+                # Lease License (Amendment or Renewal)
                 if self.previous_application.approval.id != self.approval.id:
                     raise ValidationError(
                         "The previous application's approval does not match the current approval."
                     )
+                proposal_type_comment_name = (
+                    proposal_type_comment_names[PROPOSAL_TYPE_AMENDMENT]
+                    if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
+                    else proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]
+                )
+                logger.info(f"Approval {proposal_type_comment_name} for {self}")
 
-                # if self.previous_application:
-                start_date = checking_proposal.proposed_issuance_approval.get(
-                    "start_date", None
-                )
-                expiry_date = checking_proposal.proposed_issuance_approval.get(
-                    "expiry_date", None
-                )
+                start_date = details.get("start_date", None)
+                expiry_date = details.get("expiry_date", None)
                 approval_type = ApprovalType.objects.get(id=details["approval_type"])
 
                 approval, created = Approval.objects.update_or_create(
                     current_proposal=self.approval.current_proposal,
                     defaults={
+                        "issue_date": timezone.now(),  # Update the issue date as the old ones can be fetched from the reversion history
                         "expiry_date": datetime.datetime.strptime(
                             expiry_date, "%Y-%m-%d"
                         ).date(),
@@ -2576,19 +2571,26 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         "status": Approval.APPROVAL_STATUS_CURRENT,
                         "current_proposal": self,
                         "renewal_review_notification_sent_to_assessors": False,
+                        "renewal_notification_sent_to_holder": False,
                         "approval_type": approval_type,
                     },
                 )
                 # Update the approval documents
-                self.generate_license_documents(
-                    approval, reason=ApprovalDocument.REASON_RENEWED
+                reason = (
+                    ApprovalDocument.REASON_AMENDED
+                    if self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
+                    else ApprovalDocument.REASON_RENEWED
                 )
+                self.generate_license_documents(approval, reason=reason)
+
+                # Create a versioned approval save
                 approval.save(
-                    version_comment=f"Confirmed Lease License - {proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]}"
+                    version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
                 )
-                # TODO: Do compliances need to be created again for renewed approvals?
+
+                # TODO: Do compliances need to be created again for amended or renewed approvals?
                 self.generate_compliances(approval, request)
-                # TODO: Do invoicing details need to be created again for renewed approvals?
+                # TODO: Do invoicing details need to be created again for amended or renewed approvals?
                 self.generate_invoicing_details()
                 self.processing_status = (
                     Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
@@ -2599,29 +2601,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 send_proposal_approval_email_notification(self, request)
                 self.save(
                     version_comment=(
-                        f"Lease License Approval: {self.approval.lodgement_number} "
-                        f"({proposal_type_comment_names[PROPOSAL_TYPE_RENEWAL]})"
+                        f"Lease License Approval: {self.approval.lodgement_number} {reason}"
                     )
                 )
-
-            elif (
-                self.proposal_type.code == PROPOSAL_TYPE_AMENDMENT
-                and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
-            ):
-                # Lease License (Amendment)
-                if self.previous_application:
-                    previous_approval = self.previous_application.approval
-                    approval, created = Approval.objects.update_or_create(
-                        current_proposal=checking_proposal,
-                        defaults={
-                            "issue_date": timezone.now(),
-                            "expiry_date": timezone.now().date()
-                            + relativedelta(years=1),
-                            "start_date": timezone.now().date(),
-                            "lodgement_number": previous_approval.lodgement_number,
-                            "record_management_number": record_management_number,
-                        },
-                    )
             elif (
                 self.proposal_type.code == PROPOSAL_TYPE_TRANSFER
                 and self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
@@ -2643,11 +2625,26 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 approval_transfer = approval.transfers.filter(
                     processing_status=ApprovalTransfer.APPROVAL_TRANSFER_STATUS_PENDING
                 ).first()
+                if not approval_transfer:
+                    raise ValidationError(
+                        f"Unable to transfer lease license {approval} as there is no pending transfer."
+                    )
                 approval_transfer.processing_status = (
-                    ApprovalTransfer.APPROVAL_TRANSFER_STATUS_APPROVED
+                    ApprovalTransfer.APPROVAL_TRANSFER_STATUS_ACCEPTED
                 )
                 approval_transfer.save()
-                approval.save()
+
+                # Generate the approval documents
+                self.generate_license_documents(
+                    approval, reason=ApprovalDocument.REASON_TRANSFERRED
+                )
+                # Create a versioned approval save
+                proposal_type_comment_name = proposal_type_comment_names[
+                    PROPOSAL_TYPE_TRANSFER
+                ]
+                approval.save(
+                    version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
+                )
 
             elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
                 # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
@@ -3348,245 +3345,43 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         proposal_applicant = ProposalApplicant.objects.get(proposal=self)
         return proposal_applicant
 
+    @transaction.atomic
     def renew_approval(self, request):
-        with transaction.atomic():
-            previous_proposal = self
-            try:
-                renew_conditions = {
-                    "previous_application": previous_proposal,
-                    "processing_status": "with_assessor",
-                }
-                proposal = Proposal.objects.get(**renew_conditions)
-                if proposal:
-                    raise ValidationError(
-                        "A renewal/ amendment for this licence has already been lodged and is awaiting review."
-                    )
-            except Proposal.DoesNotExist:
-                previous_proposal = Proposal.objects.get(id=self.id)
-                proposal = clone_proposal_with_status_reset(previous_proposal)
-                proposal.proposal_type = ProposalType.objects.get(
-                    code=PROPOSAL_TYPE_RENEWAL
+        previous_proposal = self
+        try:
+            renew_conditions = {
+                "previous_application": previous_proposal,
+                "processing_status": Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            }
+            proposal = Proposal.objects.get(**renew_conditions)
+            if proposal:
+                raise ValidationError(
+                    "A Renewal for this licence has already been lodged and is awaiting review."
                 )
-                # proposal.submitter = request.user.id # Should be set on submit
-                # proposal.previous_application = self # Is already set in fn clone_proposal_with_status_reset
+        except Proposal.DoesNotExist:
+            proposal = self.amend_or_renew_approval(request, PROPOSAL_TYPE_RENEWAL)
 
-                # Pre-populate proposed approval issuance information from previous proposal
-                proposed_issuance = {
-                    k: v
-                    for k, v in previous_proposal.proposed_issuance_approval.items()
-                }
-                proposed_issuance["details"] = None  # Assessor needs to fill this in
-                proposed_issuance["approved_on"] = None  # Populated by the system
-                proposed_issuance["approved_by"] = None  # Populated by the system
+        return proposal
 
-                time_format = "%Y-%m-%d"
-                original_start_date = datetime.datetime.strptime(
-                    proposed_issuance["start_date"], time_format
-                )
-                original_expiry_date = datetime.datetime.strptime(
-                    proposed_issuance["expiry_date"], time_format
-                )
-                proposed_issuance["start_date"] = (
-                    original_expiry_date + datetime.timedelta(days=1)
-                ).strftime(
-                    time_format
-                )  # Start date is the day after the expiry date of the original proposal
-                proposed_issuance["expiry_date"] = (
-                    original_expiry_date + (original_expiry_date - original_start_date)
-                ).strftime(
-                    time_format
-                )  # Expiry date is after the same duration as the original proposal
-                proposal.proposed_issuance_approval = proposed_issuance
-
-                # copy any proposal geometry from the previous proposal
-                for pg in previous_proposal.proposalgeometry.all():
-                    ProposalGeometry.objects.create(
-                        proposal=proposal,
-                        polygon=pg.polygon,
-                        intersects=pg.intersects,
-                        copied_from=pg,
-                        drawn_by=pg.drawn_by,  # EmailUser
-                        locked=pg.locked,  # Should evaluate to true
-                    )
-
-                # Copy over any tourism, general, prn str type proposal details and documents
-                details_fields = [
-                    "profit_and_loss",
-                    "cash_flow",
-                    "capital_investment",
-                    "financial_capacity",
-                    "available_activities",
-                    "market_analysis",
-                    "staffing",
-                    "key_personnel",
-                    "key_milestones",
-                    "risk_factors",
-                    "legislative_requirements",
-                ]
-
-                from copy import deepcopy
-
-                for field in details_fields:
-                    f_text = f"{field}_text"
-                    setattr(proposal, f_text, getattr(previous_proposal, f_text))
-                    f_doc = f"{field}_documents"
-                    for doc in getattr(previous_proposal, f_doc).all():
-                        new_doc = deepcopy(doc)
-                        new_doc.proposal = proposal
-                        new_doc.can_delete = True
-                        new_doc.hidden = False
-                        new_doc.id = None
-                        new_doc.save()
-
-                for field in ["proponent_reference_number", "site_name_id"]:
-                    setattr(proposal, field, getattr(previous_proposal, field))
-
-                # Copy over previous site name
-                copy_site_name(previous_proposal, proposal)
-
-                # Copy over previous groups
-                copy_groups(previous_proposal, proposal)
-
-                # Copy over previous proposal geometry
-                copy_proposal_geometry(previous_proposal, proposal)
-
-                # Copy over previous gis data
-                copy_gis_data(previous_proposal, proposal)
-
-                req = self.requirements.all().exclude(is_deleted=True)
-
-                if req:
-                    for r in req:
-                        new_r = deepcopy(r)
-                        new_r.proposal = proposal
-                        new_r.copied_from = r
-                        new_r.copied_for_renewal = True
-                        if new_r.due_date:
-                            new_r.due_date = None
-                            new_r.require_due_date = True
-                        new_r.id = None
-                        new_r.district_proposal = None
-                        new_r.save()
-
-                # copy all the requirement documents from previous proposal
-                for requirement in proposal.requirements.all():
-                    for requirement_document in RequirementDocument.objects.filter(
-                        requirement=requirement.copied_from
-                    ):
-                        requirement_document.requirement = requirement
-                        requirement_document.id = None
-                        requirement_document._file.name = (
-                            "proposals/{}/requirement_documents/{}".format(
-                                proposal.id,
-                                requirement_document.name,
-                            )
-                        )
-                        requirement_document.can_delete = True
-                        requirement_document.save()
-
-                # Create a log entry for the proposal
-                self.log_user_action(
-                    ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id), request
-                )
-                # Create a log entry for the organisation
-                if self.org_applicant:
-                    self.org_applicant.log_user_action(
-                        ProposalUserAction.ACTION_RENEW_PROPOSAL.format(self.id),
-                        request,
-                    )
-
-                # Log entry for approval
-                from leaseslicensing.components.approvals.models import (
-                    ApprovalUserAction,
-                )
-
-                self.approval.log_user_action(
-                    ApprovalUserAction.ACTION_RENEW_APPROVAL.format(self.approval.id),
-                    request,
-                )
-                proposal.save(
-                    version_comment="New Amendment/Renewal Application created, from origin {}".format(
-                        proposal.previous_application_id
-                    )
-                )
-                from leaseslicensing.components.proposals.utils import populate_gis_data
-
-                # fetch gis data
-                populate_gis_data(proposal, "proposalgeometry")
-
-            return proposal
-
+    @transaction.atomic
     def amend_approval(self, request):
-        with transaction.atomic():
-            previous_proposal = self
-            try:
-                amend_conditions = {
-                    "previous_application": previous_proposal,
-                    "proposal_type": "amendment",
-                }
-                proposal = Proposal.objects.get(**amend_conditions)
-                if proposal.processing_status in ("with_assessor",):
-                    raise ValidationError(
-                        "An amendment for this licence has already been lodged and is awaiting review."
-                    )
-            except Proposal.DoesNotExist:
-                previous_proposal = Proposal.objects.get(id=self.id)
-                proposal = clone_proposal_with_status_reset(previous_proposal)
-                proposal.proposal_type = "amendment"
-                proposal.training_completed = True
-                proposal.submitter = request.user
-                proposal.previous_application = self
-                req = self.requirements.all().exclude(is_deleted=True)
-                from copy import deepcopy
+        previous_proposal = self
+        try:
+            amend_conditions = {
+                "previous_application": previous_proposal,
+                "proposal_type__code": PROPOSAL_TYPE_AMENDMENT,
+            }
+            proposal = Proposal.objects.get(**amend_conditions)
+            if proposal.processing_status in (
+                Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            ):
+                raise ValidationError(
+                    "An Amendment for this license has already been lodged and is awaiting review."
+                )
+        except Proposal.DoesNotExist:
+            proposal = self.amend_or_renew_approval(request, PROPOSAL_TYPE_AMENDMENT)
 
-                if req:
-                    for r in req:
-                        old_r = deepcopy(r)
-                        r.proposal = proposal
-                        r.copied_from = old_r
-                        r.id = None
-                        r.district_proposal = None
-                        r.save()
-                # copy all the requirement documents from previous proposal
-                for requirement in proposal.requirements.all():
-                    for requirement_document in RequirementDocument.objects.filter(
-                        requirement=requirement.copied_from
-                    ):
-                        requirement_document.requirement = requirement
-                        requirement_document.id = None
-                        requirement_document._file.name = (
-                            "proposals/{}/requirement_documents/{}".format(
-                                proposal.id,
-                                requirement_document.name,
-                            )
-                        )
-                        requirement_document.can_delete = True
-                        requirement_document.save()
-                        # Create a log entry for the proposal
-                self.log_user_action(
-                    ProposalUserAction.ACTION_AMEND_PROPOSAL.format(self.id), request
-                )
-                # Create a log entry for the organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_AMEND_PROPOSAL.format(self.id), request
-                )
-                # Log entry for approval
-                from leaseslicensing.components.approvals.models import (
-                    ApprovalUserAction,
-                )
-
-                self.approval.log_user_action(
-                    ApprovalUserAction.ACTION_AMEND_APPROVAL.format(self.approval.id),
-                    request,
-                )
-                proposal.save(
-                    version_comment="New Amendment/Renewal Application created, from origin {}".format(
-                        proposal.previous_application_id
-                    )
-                )
-                # proposal.save()
-            return proposal
+        return proposal
 
     def get_related_items(self, **kwargs):
         return_list = []
@@ -3879,6 +3674,77 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
         )
 
+    def amend_or_renew_approval(self, request, proposal_type_code):
+        """
+        Returns a new proposal from self that is either of type amendment or renewal
+        """
+
+        if proposal_type_code not in [PROPOSAL_TYPE_AMENDMENT, PROPOSAL_TYPE_RENEWAL]:
+            raise ValidationError("Proposal type must be amendment or renewal")
+        is_renewal = proposal_type_code == PROPOSAL_TYPE_RENEWAL
+
+        previous_proposal = Proposal.objects.get(id=self.id)
+        proposal = clone_proposal_with_status_reset(previous_proposal)
+        proposal.proposal_type = ProposalType.objects.get(code=proposal_type_code)
+
+        copy_proposal_proposed_issuance(
+            previous_proposal, proposal, is_renewal=is_renewal
+        )
+
+        # Copy over previous proposal geometry
+        copy_proposal_geometry(previous_proposal, proposal)
+
+        copy_proposal_details(previous_proposal, proposal)
+
+        # Copy over previous site name
+        copy_site_name(previous_proposal, proposal)
+
+        # Copy over previous groups
+        copy_groups(previous_proposal, proposal)
+
+        # Copy over previous gis data
+        copy_gis_data(previous_proposal, proposal)
+
+        copy_proposal_requirements(previous_proposal, proposal, is_renewal=is_renewal)
+
+        # Create a log entry for the proposal
+        user_action = (
+            ProposalUserAction.ACTION_RENEW_PROPOSAL
+            if is_renewal
+            else ProposalUserAction.ACTION_AMEND_PROPOSAL
+        )
+        self.log_user_action(user_action.format(self.id), request)
+        # Create a log entry for the organisation
+        if self.org_applicant:
+            self.org_applicant.log_user_action(
+                user_action.format(self.id),
+                request,
+            )
+        # Log entry for approval
+        from leaseslicensing.components.approvals.models import (
+            ApprovalUserAction,
+        )
+
+        user_action = (
+            ApprovalUserAction.ACTION_RENEW_APPROVAL
+            if is_renewal
+            else ApprovalUserAction.ACTION_AMEND_APPROVAL
+        )
+        self.approval.log_user_action(
+            user_action.format(self.approval.id),
+            request,
+        )
+        proposal.save(
+            version_comment=f"New {proposal.proposal_type.description} Application created from origin {proposal.previous_application_id}"
+        )
+
+        from leaseslicensing.components.proposals.utils import populate_gis_data
+
+        # fetch gis data
+        populate_gis_data(proposal, "proposalgeometry")
+
+        return proposal
+
 
 class ProposalApplicant(BaseApplicant):
     proposal = models.ForeignKey(
@@ -4113,14 +3979,14 @@ class ProposalGeometry(models.Model):
 
     @property
     def area_sqm(self):
-        if not self.area:
+        if not hasattr(self, "area") or not self.area:
             logger.warn(f"ProposalGeometry: {self.id} has no area")
             return None
         return self.area.sq_m
 
     @property
     def area_sqhm(self):
-        if not self.area:
+        if not hasattr(self, "area") or not self.area:
             logger.warn(f"ProposalGeometry: {self.id} has no area")
             return None
         return self.area.sq_m / 10000
@@ -5637,7 +5503,7 @@ def copy_proposal_geometry(proposalFrom: Proposal, proposalTo: Proposal) -> None
         )
 
 
-def copy_gis_data(proposalFrom, proposalTo):
+def copy_gis_data(proposalFrom: Proposal, proposalTo: Proposal) -> None:
     for gis_model in GIS_DATA_MODEL_NAMES:
         model_class = apps.get_model("leaseslicensing", f"proposal{gis_model}")
         models = model_class.objects.filter(proposal=proposalFrom)
@@ -5645,3 +5511,127 @@ def copy_gis_data(proposalFrom, proposalTo):
             model_class.objects.get_or_create(
                 proposal=proposalTo, **{f"{gis_model}": getattr(model, f"{gis_model}")}
             )
+
+
+def copy_proposal_proposed_issuance(
+    proposalFrom: Proposal, proposalTo: Proposal, **kwargs
+) -> None:
+    """
+    Pre-populates assessor's proposed issuance dict to the new proposal, deleting previous
+    details, approved on, and approved by information
+    Args:
+        proposalFrom: previous Proposal
+        proposalTo: new Proposal
+    """
+
+    is_renewal = kwargs.get("is_renewal", False)
+
+    proposed_issuance = {
+        k: v for k, v in proposalFrom.proposed_issuance_approval.items()
+    }
+    proposed_issuance["details"] = None  # Assessor needs to fill this in
+    proposed_issuance["approved_on"] = None  # Populated by the system
+    proposed_issuance["approved_by"] = None  # Populated by the system
+
+    if is_renewal:
+        # Change start and expiry dates for renewal according to previous approval dates
+        time_format = "%Y-%m-%d"
+        original_start_date = datetime.datetime.strptime(
+            proposed_issuance["start_date"], time_format
+        )
+        original_expiry_date = datetime.datetime.strptime(
+            proposed_issuance["expiry_date"], time_format
+        )
+        proposed_issuance["start_date"] = (
+            original_expiry_date + datetime.timedelta(days=1)
+        ).strftime(
+            time_format
+        )  # Start date is the day after the expiry date of the original proposal
+        proposed_issuance["expiry_date"] = (
+            original_expiry_date + (original_expiry_date - original_start_date)
+        ).strftime(
+            time_format
+        )  # Expiry date is after the same duration as the original proposal
+
+    proposalTo.proposed_issuance_approval = proposed_issuance
+
+
+def copy_proposal_details(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    """
+    Copies over any tourism, general, prn str type proposal details and documents
+    """
+
+    details_fields = [
+        "profit_and_loss",
+        "cash_flow",
+        "capital_investment",
+        "financial_capacity",
+        "available_activities",
+        "market_analysis",
+        "staffing",
+        "key_personnel",
+        "key_milestones",
+        "risk_factors",
+        "legislative_requirements",
+    ]
+
+    from copy import deepcopy
+
+    for field in details_fields:
+        f_text = f"{field}_text"
+        setattr(proposalTo, f_text, getattr(proposalFrom, f_text))
+        f_doc = f"{field}_documents"
+        for doc in getattr(proposalFrom, f_doc).all():
+            new_doc = deepcopy(doc)
+            new_doc.proposal = proposalTo
+            new_doc.can_delete = True
+            new_doc.hidden = False
+            new_doc.id = None
+            new_doc.save()
+
+    for field in ["proponent_reference_number", "site_name_id"]:
+        setattr(proposalTo, field, getattr(proposalFrom, field))
+
+
+def copy_proposal_requirements(
+    proposalFrom: Proposal, proposalTo: Proposal, **kwargs
+) -> None:
+    """
+    Copies all requirements and requirement documents from previous proposal
+    """
+
+    from copy import deepcopy
+
+    is_renewal = kwargs.get("is_renewal", False)  # TODO: might not be needed
+
+    req = proposalFrom.requirements.all().exclude(is_deleted=True)
+
+    if req:
+        for r in req:
+            new_r = deepcopy(r)
+            new_r.proposal = proposalTo
+            new_r.copied_from = r
+            new_r.copied_for_renewal = (
+                True  # FIXME what about this field when copying for amendment?
+            )
+            if new_r.due_date:
+                new_r.due_date = None
+                new_r.require_due_date = True
+            new_r.id = None
+            new_r.district_proposal = None
+            new_r.save()
+
+    for requirement in proposalTo.requirements.all():
+        for requirement_document in RequirementDocument.objects.filter(
+            requirement=requirement.copied_from
+        ):
+            requirement_document.requirement = requirement
+            requirement_document.id = None
+            requirement_document._file.name = (
+                "proposals/{}/requirement_documents/{}".format(
+                    proposalTo.id,
+                    requirement_document.name,
+                )
+            )
+            requirement_document.can_delete = True
+            requirement_document.save()

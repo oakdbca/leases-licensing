@@ -345,7 +345,7 @@ export default {
         },
         debug: function () {
             if (this.$route.query.debug) {
-                return this.$route.query.debug === 'True';
+                return this.$route.query.debug === 'true';
             }
             return false;
         },
@@ -516,7 +516,49 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    return full.linked_applications.join(', ');
+                    var text = full.linked_applications.join(', ');
+                    var ellipsis = '...',
+                        truncated = _.truncate(text, {
+                            length: 25,
+                            omission: ellipsis,
+                            separator: ' ',
+                        }),
+                        isTruncated = _.endsWith(truncated, ellipsis),
+                        result =
+                            '<span>' +
+                            (isTruncated
+                                ? truncated.slice(0, -ellipsis.length)
+                                : truncated) +
+                            '</span>',
+                        popTemplate = _.template(
+                            '<a tabindex="0" ' +
+                                'data-bs-title="Applications for ' +
+                                full.lodgement_number +
+                                '" ' +
+                                'data-bs-template=\'<div class="popover" role="tooltip"><div class="arrow"></div>' +
+                                '<div class="row ps-0">' +
+                                '<div class="col-md-12 text-nowrap">' +
+                                '<h3 class="popover-header"></h3>' +
+                                '</div>' +
+                                '</div>' +
+                                '<div type="button" id="close" class="popover-close">' +
+                                '<i class="fa fa-window-close" aria-hidden="true"></i>' +
+                                '</div>' +
+                                '<div class="popover-body"></div>\' ' +
+                                'role="button" ' +
+                                'data-bs-toggle="popover" ' +
+                                'data-bs-trigger="hover click" ' +
+                                'data-bs-placement="top" ' +
+                                'data-bs-content="<%= text %>" ' +
+                                `><b>${ellipsis}</b></a>`
+                        );
+                    if (isTruncated) {
+                        result += popTemplate({
+                            text: text,
+                        });
+                    }
+
+                    return result;
                 },
             };
         },
@@ -597,13 +639,24 @@ export default {
                         if (full.can_reissue) {
                             links += `<a href='/external/approval/${full.id}'>View</a><br/>`;
                             if (full.can_action || vm.debug) {
-                                if (
-                                    full.amend_or_renew === 'amend' ||
-                                    vm.debug
-                                ) {
+                                if (full.can_amend || vm.debug) {
                                     links += `<a href='#${full.id}' data-amend-approval='${full.current_proposal}'>Amend</a><br/>`;
-                                } else if (full.can_renew) {
-                                    links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
+                                } else if (
+                                    full.has_draft_amendment &&
+                                    full.active_amendment.processing_status ==
+                                        constants.PROPOSAL_STATUS.DRAFT.ID
+                                ) {
+                                    links += `<a href='/external/proposal/${full.active_amendment.id}'>Continue Amendment Application</a><br/>`;
+                                } else if (full.has_pending_renewal) {
+                                    if (!full.has_draft_renewal) {
+                                        links += `<a href='#${full.id}' data-renew-approval='${full.current_proposal}'>Renew</a><br/>`;
+                                    } else if (
+                                        full.active_amendment
+                                            .processing_status ==
+                                        constants.PROPOSAL_STATUS.DRAFT.ID
+                                    ) {
+                                        links += `<a href='/external/proposal/${full.active_renewal.id}'>Continue Renewal Application</a><br/>`;
+                                    }
                                 }
                                 links += `<a href='#${full.id}' data-surrender-approval='${full.id}' data-approval-lodgement-number="${full.lodgement_number}">Surrender</a><br/>`;
                             }
@@ -939,15 +992,39 @@ export default {
                     }
                 })
                 .on('draw.dt', function () {
-                    var tablePopover = $(this).find('[data-toggle="popover"]');
-                    if (tablePopover.length > 0) {
-                        tablePopover.popover();
-                        // the next line prevents from scrolling up to the top after clicking on the popover.
-                        $(tablePopover).on('click', function (e) {
-                            e.preventDefault();
-                            return true;
-                        });
-                    }
+                    var popoverTriggerList = [].slice.call(
+                        document.querySelectorAll('a[data-bs-toggle="popover"]')
+                    );
+                    popoverTriggerList.map(function (popoverTriggerEl) {
+                        let popover = new bootstrap.Popover(popoverTriggerEl);
+                        // Listeners to hide popovers on 'x'-click
+                        vm.$refs.approvals_datatable.vmDataTable.on(
+                            'click',
+                            'a[data-bs-toggle="popover"]',
+                            function (e) {
+                                e.preventDefault();
+                                let attributes = e.currentTarget.attributes;
+                                let popoverId;
+                                if (attributes && attributes.length > 0) {
+                                    popoverId = attributes['10'].value;
+                                }
+
+                                if (
+                                    popover.tip &&
+                                    popover.tip.id == popoverId
+                                ) {
+                                    // Ideally the listener would only be shown on popover show, but that does work okay for now
+                                    console.log(`Toggle ${popoverId}`);
+                                    $(`#${popoverId}`)
+                                        .find('.popover-close')
+                                        .off('click')
+                                        .on('click', () => popover.hide());
+                                }
+                            }
+                        );
+
+                        return popover;
+                    });
                 });
             // Internal Reissue listener
             vm.$refs.approvals_datatable.vmDataTable.on(
@@ -1451,41 +1528,49 @@ export default {
                 }
             });
         },
-
         amendApproval: async function (proposal_id) {
             let vm = this;
-            swal.fire({
+            // eslint-disable-next-line no-unused-vars
+            let status = 'with_approver';
+            Swal.fire({
                 title: 'Amend Approval',
                 text: 'Are you sure you want to amend this approval?',
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Amend approval',
-            });
-            try {
-                fetch(
-                    helpers.add_endpoint_json(
-                        api_endpoints.proposal,
-                        proposal_id + '/renew_amend_approval_wrapper'
-                    ) +
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    let url =
+                        helpers.add_endpoint_json(
+                            api_endpoints.proposal,
+                            proposal_id + '/amend_approval'
+                        ) +
                         '?debug=' +
                         vm.debug +
-                        '&type=amend',
-                    {
-                        method: 'POST',
-                    }
-                );
-                vm.$router.push({
-                    name: 'draft_proposal',
-                    params: { proposal_id: proposal_id },
-                });
-            } catch (error) {
-                console.log(error);
-                swal.fire({
-                    title: 'Amend Approval',
-                    text: error.body,
-                    icon: 'error',
-                });
-            }
+                        '&type=amend';
+                    let requestOptions = {
+                        method: 'GET',
+                    };
+                    utils
+                        .fetchUrl(url, requestOptions)
+                        .then((response) => {
+                            console.log(
+                                `Created proposal ${response.id} to amend an approval.`
+                            );
+                            vm.$router.push({
+                                name: 'draft_proposal',
+                                params: { proposal_id: response.id },
+                            });
+                        })
+                        .catch((error) => {
+                            Swal.fire({
+                                title: 'Amend Approval',
+                                text: error,
+                                icon: 'error',
+                            });
+                        });
+                }
+            });
         },
         transferApproval: async function (approval_id, lodgement_number) {
             swal.fire({
@@ -1525,4 +1610,11 @@ export default {
 };
 </script>
 
-<style scoped></style>
+<style>
+.popover-close {
+    position: absolute;
+    top: -0.6rem;
+    right: 0.25rem;
+    font-size: 2.5em;
+}
+</style>

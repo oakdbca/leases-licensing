@@ -7,7 +7,7 @@
             class=""
         >
             <h3>
-                {{ applicationTypeText }} Proposal:
+                {{ applicationTypeText }} - {{ proposalTypeText }}:
                 {{ proposal.lodgement_number }}
             </h3>
         </div>
@@ -118,12 +118,13 @@
                             ref="component_map"
                             :key="componentMapKey"
                             :context="proposal"
-                            :proposal-ids="[proposal.id]"
+                            :proposal-ids="[-1]"
+                            :feature-collection="geometriesToFeatureCollection"
                             :ows-query="owsQuery"
                             style-by="assessor"
                             :filterable="false"
                             :drawable="is_internal || !leaseLicence"
-                            :selectable="true"
+                            :editable="true"
                             level="internal"
                             :map-info-text="
                                 is_internal
@@ -193,6 +194,11 @@
                         <GisDataDetails
                             :selected-data="gis_data"
                             :readonly="is_external && leaseLicence"
+                            @update:selectedData="
+                                (property, value) => {
+                                    $emit('update:GisData', property, value);
+                                }
+                            "
                         />
                     </FormSection>
 
@@ -352,6 +358,7 @@ import RegistrationOfInterest from './form_registration_of_interest.vue';
 import LeaseLicence from './form_lease_licence.vue';
 import Multiselect from 'vue-multiselect';
 import GisDataDetails from '@/components/common/gis_data_details.vue';
+import { v4 as uuid } from 'uuid';
 
 import { api_endpoints, helpers, utils } from '@/utils/hooks';
 import {
@@ -433,18 +440,18 @@ export default {
             default: true,
         },
     },
-    emits: ['refreshFromResponse', 'formMounted'],
+    emits: ['refreshFromResponse', 'formMounted', 'update:GisData'],
     data: function () {
         return {
             can_modify: true,
             show_col_status_when_submitted: true,
-            componentMapKey: 0,
+
             /*
             componentMapOn: false,
             */
             values: null,
             profile: {},
-            uuid: 0,
+            uuid: null,
             keep_current_vessel: true,
             showPaymentTab: false,
             detailsText: null,
@@ -512,6 +519,13 @@ export default {
             }
             return text;
         },
+        proposalTypeText: function () {
+            let text = '';
+            if (this.proposal) {
+                text = this.proposal.proposal_type.description;
+            }
+            return text;
+        },
         gis_data: function () {
             if (this.proposal) {
                 return {
@@ -529,11 +543,51 @@ export default {
                 return {};
             }
         },
+        componentMapKey: function () {
+            return `component-map-${this.uuid}`;
+        },
+        /**
+         * Returns proposal geometries as a FeatureCollection
+         */
+        geometriesToFeatureCollection: function () {
+            let vm = this;
+
+            let featureCollection = {
+                type: 'FeatureCollection',
+                features: [],
+            };
+
+            let proposalgeometries = {
+                ...vm.proposal.proposalgeometry,
+            };
+
+            for (let feature of proposalgeometries['features']) {
+                feature['properties']['source'] = 'registration_of_interest';
+                console.log('feature', feature);
+                let model = {
+                    id: vm.proposal.id,
+                    details_url: vm.proposal.details_url,
+                    application_type_name_display:
+                        vm.proposal.application_type.name_display,
+                    lodgement_number: vm.proposal.lodgement_number,
+                    lodgement_date_display: moment(
+                        vm.proposal.lodgement_date
+                    ).format('DD/MM/YYYY'),
+                    processing_status_display: vm.proposal.processing_status,
+                };
+
+                feature['model'] = model;
+                featureCollection['features'].push(feature);
+            }
+
+            return featureCollection;
+        },
     },
     created: function () {
         utils.fetchKeyValueLookup(api_endpoints.groups, '').then((data) => {
             this.groups = data;
         });
+        this.uuid = uuid();
     },
     mounted: function () {
         this.$emit('formMounted');
@@ -551,7 +605,7 @@ export default {
         },
 
         incrementComponentMapKey: function () {
-            this.componentMapKey++;
+            this.uuid = uuid();
         },
         toggleComponentMapOn: function () {
             //this.incrementComponentMapKey()

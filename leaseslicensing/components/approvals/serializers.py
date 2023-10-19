@@ -157,7 +157,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
     applicant_type = serializers.SerializerMethodField(read_only=True)
     applicant_id = serializers.SerializerMethodField(read_only=True)
     licence_document = serializers.SerializerMethodField()
-    # renewal_document = serializers.SerializerMethodField(read_only=True)
+    renewal_document = serializers.SerializerMethodField(read_only=True)
     status = serializers.CharField(source="get_status_display")
     application_type = serializers.SerializerMethodField(read_only=True)
     linked_applications = serializers.SerializerMethodField(read_only=True)
@@ -188,6 +188,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
     current_proposal_processing_status = serializers.CharField(
         source="current_proposal.processing_status", read_only=True
     )
+    current_proposal_proposal_type = serializers.CharField(
+        source="current_proposal.proposal_type", read_only=True
+    )
     approval_type = serializers.CharField(
         source="approval_type.name", allow_null=True, read_only=True
     )
@@ -203,8 +206,10 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "linked_applications",
             "licence_document",
+            "renewal_document",
             "current_proposal",
             "current_proposal_processing_status",
+            "current_proposal_proposal_type",
             "tenure",
             "renewal_notification_sent_to_holder",
             "issue_date",
@@ -234,6 +239,11 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "has_pending_transfer",
             "has_draft_transfer",
             "active_transfer",
+            "has_pending_renewal",
+            "has_draft_renewal",
+            "active_renewal",
+            "has_draft_amendment",
+            "active_amendment",
             "application_type",
             "original_leaselicense_number",
             "migrated",
@@ -275,6 +285,11 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "can_initiate_transfer",
             "has_pending_transfer",
             "has_draft_transfer",
+            "has_pending_renewal",
+            "has_draft_renewal",
+            "active_renewal",            
+            "has_draft_amendment",
+            "active_amendment",
             "set_to_cancel",
             "set_to_suspend",
             "set_to_surrender",
@@ -306,9 +321,9 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return obj.linked_applications
 
     def get_renewal_document(self, obj):
-        if obj.renewal_document and obj.renewal_document._file:
-            return obj.renewal_document._file.url
-        return None
+        if not obj.renewal_document or not obj.renewal_document._file:
+            return None
+        return obj.renewal_document._file.url
 
     def get_application_type(self, obj):
         if obj.current_proposal:
@@ -392,6 +407,8 @@ class ApprovalSerializer(serializers.ModelSerializer):
         return user.get_full_name()
 
     def get_approval_type__type(self, obj):
+        if obj.approval_type.type is None:
+            return None # Check for no type because type property is nullable
         return obj.approval_type.type.title()
 
 

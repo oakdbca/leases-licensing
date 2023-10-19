@@ -78,7 +78,7 @@
             index="proposal_invoicing_details"
         >
             <InvoicingDetails
-                v-if="proposal.approval"
+                v-if="proposal.approval && proposal.invoicing_details"
                 ref="invoicing_details"
                 context="Proposal"
                 :invoicing-details="proposal.invoicing_details"
