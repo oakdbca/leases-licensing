@@ -187,12 +187,12 @@ export function updateIdListFromAvailable(id, list, available_items, remove) {
 }
 
 /**
- * Discards a proposal.
- * @param {object} proposal A proposal object or a proposal ID
+ * Declines a proposal.
+ * @param {object} proposal A proposal object
  * @returns an api query Promise
  */
 export async function declineProposal(proposal) {
-    let proposal_id = proposal.id || proposal;
+    let proposal_id = proposal.id;
 
     return swal
         .fire({
@@ -212,6 +212,38 @@ export async function declineProposal(proposal) {
                 // // Queries the discard proposal endpoint
                 return utils.fetchUrl(
                     api_endpoints.decline_proposal(proposal_id),
+                    requestOptions
+                );
+            } else {
+                return null;
+            }
+        });
+}
+
+/**
+ * Discard a proposal.
+ * @param {object} proposal A proposal object
+ * @returns an api query Promise
+ */
+export async function discardProposal(proposal_id, lodgement_number) {
+    return swal
+        .fire({
+            title: `Confirm Discard of Proposal ${lodgement_number}`,
+            text: 'Are you sure you want to discard this proposal?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Discard Proposal',
+            confirmButtonColor: '#dc3545',
+        })
+        .then(async (result) => {
+            if (result.isConfirmed) {
+                const requestOptions = {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                };
+                // // Queries the discard proposal endpoint
+                return utils.fetchUrl(
+                    api_endpoints.discard_proposal(proposal_id),
                     requestOptions
                 );
             } else {
