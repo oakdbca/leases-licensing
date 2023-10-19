@@ -14,7 +14,10 @@
                         <!--eslint-enable-->
                     </VueAlert>
                     <div v-if="registrationOfInterest" class="col-sm-12">
-                        <div class="row mb-3">
+                        <div
+                            v-if="!proposal.proposed_decline_status"
+                            class="row mb-3"
+                        >
                             <label class="col-sm-3 col-form-label">{{
                                 decisionLabel
                             }}</label>
@@ -44,6 +47,19 @@
                                         >
                                     </li>
                                 </ul>
+                            </div>
+                        </div>
+                        <div
+                            v-if="proposal.proposed_decline_status"
+                            class="row mb-3 align-items-center"
+                        >
+                            <label class="col-sm-3 col-form-label">
+                                {{ decisionLabel }}
+                            </label>
+                            <div class="col-sm-9">
+                                <span class="badge bg-danger p-2 fs-6">
+                                    Decline</span
+                                >
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -124,7 +140,10 @@
                             </div>
                         </div>
                         <div
-                            v-if="proposal.proposed_decline_status"
+                            v-if="
+                                !proposalDeclined &&
+                                proposal.proposed_decline_status
+                            "
                             class="row pt-2"
                         >
                             <div class="col-sm-12">
@@ -560,6 +579,12 @@ export default {
         };
     },
     computed: {
+        proposalDeclined: function () {
+            return (
+                this.proposal.processing_status_id ===
+                constants.PROPOSAL_STATUS.DECLINED.ID
+            );
+        },
         selectedApprovalTypeExists: function () {
             if (this.selectedApprovalType && this.selectedApprovalType.id) {
                 return true;

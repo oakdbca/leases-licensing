@@ -71,6 +71,9 @@ module.exports = {
     lookupApprovalHistory: function (id) {
         return `/api/approvals/${id}/approval_history?format=datatables`;
     },
+    decline_proposal: function (id) {
+        return `/api/proposal/${id}/final_decline/`;
+    },
     discard_proposal: function (id) {
         return `/api/proposal/${id}/discard/`;
     },

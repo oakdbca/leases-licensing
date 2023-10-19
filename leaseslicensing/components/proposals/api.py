@@ -1552,16 +1552,15 @@ class ProposalViewSet(UserActionLoggingViewset):
 
     @detail_route(
         methods=[
-            "POST",
+            "PATCH",
         ],
         detail=True,
     )
     @basic_exception_handler
     def final_decline(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = ProposalDeclineSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        instance.final_decline(request, serializer.validated_data)
+        serializer = ProposalDeclineSerializer(instance.proposaldeclineddetails)
+        instance.final_decline(request, serializer.data)
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)

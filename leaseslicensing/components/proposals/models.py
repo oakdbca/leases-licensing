@@ -2186,44 +2186,35 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 logger.exception(e)
                 raise e
 
+    @transaction.atomic
     def final_decline(self, request, details):
-        with transaction.atomic():
-            try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.processing_status != "with_approver":
-                    raise ValidationError(
-                        "You cannot decline if it is not with approver"
-                    )
+        if not self.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
 
-                (
-                    proposal_decline,
-                    success,
-                ) = ProposalDeclinedDetails.objects.update_or_create(
-                    proposal=self,
-                    defaults={
-                        "officer": request.user.id,
-                        "reason": details.get("reason"),
-                        "cc_email": details.get("cc_email", None),
-                    },
-                )
-                self.proposed_decline_status = True
-                self.processing_status = "declined"
-                self.save()
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_DECLINE.format(self.id), request
-                )
-                # Log entry for organisation
-                # TODO: ledger must create EmailUser logs
-                # applicant_field=getattr(self, self.applicant_field)
-                # applicant_field.log_user_action(ProposalUserAction.ACTION_DECLINE.format(self.id),request)
-                send_proposal_decline_email_notification(
-                    self, request, proposal_decline
-                )
-            except Exception as e:
-                logger.exception(e)
-                raise e
+        if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
+            raise ValidationError("You cannot decline if it is not with approver")
+
+        (
+            proposal_decline,
+            success,
+        ) = ProposalDeclinedDetails.objects.update_or_create(
+            proposal=self,
+            defaults={
+                "officer": request.user.id,
+                "reason": details.get("reason"),
+                "cc_email": details.get("cc_email", None),
+            },
+        )
+        self.proposed_decline_status = True
+        self.processing_status = Proposal.PROCESSING_STATUS_DECLINED
+        self.save()
+        # Log proposal action
+        self.log_user_action(ProposalUserAction.ACTION_DECLINE.format(self.id), request)
+        # Log entry for organisation
+        # TODO: ledger must create EmailUser logs
+        # applicant_field=getattr(self, self.applicant_field)
+        # applicant_field.log_user_action(ProposalUserAction.ACTION_DECLINE.format(self.id),request)
+        send_proposal_decline_email_notification(self, request, proposal_decline)
 
     def on_hold(self, request):
         with transaction.atomic():

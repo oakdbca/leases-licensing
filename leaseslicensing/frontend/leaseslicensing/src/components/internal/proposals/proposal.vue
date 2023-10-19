@@ -58,7 +58,7 @@
                     @proposedDecline="proposedDecline"
                     @proposedApproval="proposedApproval"
                     @issueApproval="issueApproval"
-                    @discardProposal="discardProposal"
+                    @declineProposal="declineProposal"
                     @assignRequestUser="assignRequestUser"
                     @assignTo="assignTo"
                     @completeEditing="validateInvoicingForm"
@@ -1321,7 +1321,7 @@ import ApplicationForm from '@/components/form.vue';
 import FormSection from '@/components/forms/section_toggle.vue';
 import AssessmentComments from '@/components/forms/collapsible_component.vue';
 import TableRelatedItems from '@/components/common/table_related_items.vue';
-import { discardProposal } from '@/components/common/workflow_functions.js';
+import { declineProposal } from '@/components/common/workflow_functions.js';
 require('select2/dist/css/select2.min.css');
 // CSS definitions to make sure workflow swal2 popovers are placed above any open bootstrap popover
 // See: `swal.fire` `customClass` property
@@ -2330,9 +2330,9 @@ export default {
                 });
             }
         },
-        discardProposal: async function () {
+        declineProposal: async function () {
             let vm = this;
-            await discardProposal(this.proposal)
+            await declineProposal(this.proposal)
                 .then((data) => {
                     if (data != null) {
                         // Only update the proposal if the discard was successful
@@ -2353,13 +2353,6 @@ export default {
                         icon: 'error',
                     });
                 });
-        },
-        declineProposal: function () {
-            this.$refs.proposed_decline.decline =
-                this.proposal.proposaldeclineddetails != null
-                    ? helpers.copyObject(this.proposal.proposaldeclineddetails)
-                    : {};
-            this.$refs.proposed_decline.isModalOpen = true;
         },
         updateProposalData: function (proposal) {
             this.proposal = proposal;
@@ -2548,6 +2541,7 @@ export default {
                 .then((data) => {
                     this.proposedApprovalState = '';
                     this.proposal = Object.assign({}, data);
+                    this.uuid++;
                 })
                 .catch((error) => {
                     swal.fire({

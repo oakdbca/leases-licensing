@@ -191,7 +191,7 @@ export function updateIdListFromAvailable(id, list, available_items, remove) {
  * @param {object} proposal A proposal object or a proposal ID
  * @returns an api query Promise
  */
-export async function discardProposal(proposal) {
+export async function declineProposal(proposal) {
     let proposal_id = proposal.id || proposal;
 
     return swal
@@ -205,13 +205,14 @@ export async function discardProposal(proposal) {
         })
         .then(async (result) => {
             if (result.isConfirmed) {
+                const requestOptions = {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                };
                 // // Queries the discard proposal endpoint
                 return utils.fetchUrl(
-                    api_endpoints.discard_proposal(proposal_id),
-                    {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                    }
+                    api_endpoints.decline_proposal(proposal_id),
+                    requestOptions
                 );
             } else {
                 return null;
