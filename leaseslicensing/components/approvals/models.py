@@ -4,7 +4,7 @@ import re
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import FieldError, ValidationError
 from django.db import models, transaction
 from django.db.models import JSONField, Q
 from django.db.models.deletion import ProtectedError
@@ -45,6 +45,7 @@ from leaseslicensing.components.proposals.models import (
     copy_gis_data,
     copy_groups,
     copy_proposal_geometry,
+    copy_proposal_requirements,
 )
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -596,7 +597,7 @@ class Approval(LicensingModelVersioned):
             can_provide_renewal_document = ApprovalTypeDocumentType.objects.filter(
                 approval_type=self.approval_type, is_renewal_document=True
             ).exists()
-        except:
+        except FieldError:
             logger.warning(
                 f"{self.approval_type} {self.lodgement_number} does not allow for renewal documents"
             )
@@ -1174,6 +1175,9 @@ class ApprovalTransfer(LicensingModelVersioned):
 
         # Copy over previous gis data
         copy_gis_data(original_proposal, transfer_proposal)
+
+        # Copy over previous requirements
+        copy_proposal_requirements(original_proposal, transfer_proposal)
 
         # Email the proponent to confirm the approval transfer has been initiated
         send_approval_transfer_holder_email_notification(self.approval)
