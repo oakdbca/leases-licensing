@@ -1174,7 +1174,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             )
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
-        
+
         try:
             # This model's version for `revision_id`
             version = self.get_object().revision_version(revision_id)
@@ -2361,7 +2361,7 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
         # Don't show gross turnover related requirements on the front end
         # as they are managed by the system automatically based on the invoicing
         # method that is selected
-        queryset.exclude(gross_turnover_required=True)
+        queryset = queryset.exclude(gross_turnover_required=True)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
