@@ -740,8 +740,13 @@ def _gis_property_to_model(instance, property):
 
 
 def save_site_name(instance, site_name):
-    if not site_name:
+    if not site_name and not instance.site_name:
         return
+
+    if not site_name:
+        instance.site_name = None
+        instance.save()
+
     site_name, created = SiteName.objects.get_or_create(name=site_name)
     if created:
         logger.info(f"New Site Name created: {site_name}")
