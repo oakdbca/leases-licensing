@@ -2094,7 +2094,7 @@ export default {
                     });
                 });
         },
-        save: async function () {
+        save: async function (show_confirmation = true) {
             let vm = this;
             vm.checkAssessorData();
             try {
@@ -2114,18 +2114,19 @@ export default {
                 });
 
                 if (res.ok) {
-                    swal.fire({
-                        title: 'Saved',
-                        text: 'Your proposal has been saved',
-                        icon: 'success',
-                    }).then(async () => {
-                        let resData = await res.json();
-                        vm.proposal = Object.assign({}, resData);
-                        vm.$nextTick(async () => {
-                            if (vm.$refs.application_form != undefined) {
-                                vm.$refs.application_form.incrementComponentMapKey();
-                            }
+                    if (show_confirmation) {
+                        swal.fire({
+                            title: 'Saved',
+                            text: 'Your proposal has been saved',
+                            icon: 'success',
                         });
+                    }
+                    let resData = await res.json();
+                    vm.proposal = Object.assign({}, resData);
+                    vm.$nextTick(async () => {
+                        if (vm.$refs.application_form != undefined) {
+                            vm.$refs.application_form.incrementComponentMapKey();
+                        }
                     });
                 } else {
                     let err = await res.json();
@@ -2244,12 +2245,19 @@ export default {
                         );
                     },
                 });
+                return;
             }
             if (this.proposal.proposal_type.code == 'transfer') {
                 if (!vm.canProposeToApproveTransfer()) {
                     return;
                 }
             }
+
+            // Save the proposal before opening the modal
+            this.savingProposal = true;
+            await this.save(false).then(() => {
+                this.savingProposal = false;
+            });
 
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
