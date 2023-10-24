@@ -585,6 +585,7 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
+                            vm.isCurrentAssessor &&
                             !vm.proposal.additional_documents_missing.length >
                                 0;
 
