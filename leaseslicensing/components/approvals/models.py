@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 from django.db.models import JSONField, Q
 from django.db.models.deletion import ProtectedError
-from django.db.models.signals import pre_delete
+from django.db.models.signals import pre_delete, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
@@ -183,9 +183,30 @@ class ApprovalTypeDocumentType(RevisionedMixin):
     def __str__(self):
         return self.name
 
+    @property
+    def is_typed(self):
+        return (
+            self.is_license_document or self.is_cover_letter or self.is_sign_off_sheet
+        )
+
+    @property
+    def type_display(self):
+        if self.is_license_document:
+            return "License document"
+        elif self.is_cover_letter:
+            return "Cover letter"
+        elif self.is_sign_off_sheet:
+            return "Sign-off sheet"
+        else:
+            return "Other document"
+
 
 class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
-    approval_type = models.ForeignKey(ApprovalType, on_delete=models.CASCADE)
+    approval_type = models.ForeignKey(
+        ApprovalType,
+        related_name="approvaltype_approvaltypedocumenttypes",
+        on_delete=models.CASCADE,
+    )
     approval_type_document_type = models.ForeignKey(
         ApprovalTypeDocumentType, on_delete=models.CASCADE
     )
@@ -194,6 +215,10 @@ class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
     class Meta:
         app_label = "leaseslicensing"
         unique_together = ("approval_type", "approval_type_document_type")
+
+    def __str__(self):
+        mandatory = " (mandatory)" if self.mandatory else ""
+        return f"{self.approval_type} - {self.approval_type_document_type}{mandatory}"
 
 
 class Approval(LicensingModelVersioned):
@@ -1322,3 +1347,16 @@ def delete_documents(sender, instance, *args, **kwargs):
             document.delete()
         except ProtectedError:
             logger.info(f"Document: {document} is protected. Unable to delete.")
+
+
+@receiver(pre_save, sender=ApprovalTypeDocumentTypeOnApprovalType)
+def approvaltypedocumenttypes_presave(sender, instance, **kwargs):
+    if instance.mandatory is False:
+        instance.approval_type_document_type_id
+        document_type = ApprovalTypeDocumentType.objects.get(
+            id=instance.approval_type_document_type_id
+        )
+        if document_type.is_typed:
+            logger.warning("A typed document type needs to be mandatory")
+            # Force set to mandatory, though landing here should be prevented in the admin form
+            instance.mandatory = True

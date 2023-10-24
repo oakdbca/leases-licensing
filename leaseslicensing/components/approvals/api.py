@@ -77,7 +77,7 @@ class GetApprovalTypesDict(views.APIView):
                             ),
                         }
                         # for doc_type in t.approvaltypedocumenttypes.all()
-                        for doc_type_link in t.approvaltypedocumenttypeonapprovaltype_set.all()
+                        for doc_type_link in t.approvaltype_approvaltypedocumenttypes.all()
                     ],
                 }
                 for t in ApprovalType.objects.all()

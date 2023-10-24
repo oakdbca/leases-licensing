@@ -60,11 +60,30 @@ class ApprovalTypeDocumentTypeAdmin(admin.ModelAdmin):
         return form
 
 
+class ApprovalTypeDocumentTypeOnApprovalTypeForm(forms.ModelForm):
+    class Meta:
+        model = models.ApprovalType
+        fields = "__all__"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        document_type = cleaned_data.get("approval_type_document_type")
+        is_mandatory = cleaned_data.get("mandatory", False)
+
+        # Why would a specifically typed document type be anything but mandatory? We enforce this here.
+        if document_type.is_typed and not is_mandatory:
+            raise ValidationError(
+                f"{document_type.type_display} {document_type} is a typed document type and must be mandatory."
+            )
+
+
 class ApprovalTypeDocumentTypeOnApprovalTypeInline(admin.TabularInline):
     model = models.ApprovalTypeDocumentTypeOnApprovalType
     extra = 0
     verbose_name = "Document Type"
     verbose_name_plural = "Document Types"
+
+    form = ApprovalTypeDocumentTypeOnApprovalTypeForm
 
 
 @admin.register(models.ApprovalType)
