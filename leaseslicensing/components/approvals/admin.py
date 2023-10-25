@@ -67,6 +67,7 @@ class ApprovalTypeDocumentTypeOnApprovalTypeForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        approval_type = cleaned_data.get("approval_type")
         document_type = cleaned_data.get("approval_type_document_type")
         is_mandatory = cleaned_data.get("mandatory", False)
 
@@ -74,6 +75,22 @@ class ApprovalTypeDocumentTypeOnApprovalTypeForm(forms.ModelForm):
         if document_type.is_typed and not is_mandatory:
             raise ValidationError(
                 f"{document_type.type_display} {document_type} is a typed document type and must be mandatory."
+            )
+
+        query_dict = {
+            "is_license_document": document_type.is_license_document,
+            "is_cover_letter": document_type.is_cover_letter,
+            "is_sign_off_sheet": document_type.is_sign_off_sheet,
+        }
+        # Existing approval documents of this typed document type
+        existing_documents = (
+            approval_type.approvaltypedocumenttypes.all()
+            .filter(**query_dict)
+            .exclude(pk=document_type.pk)
+        )
+        if existing_documents.exists():
+            raise ValidationError(
+                f"There is already a document of the same type for this approval type: {existing_documents.first()}"
             )
 
 

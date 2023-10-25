@@ -1347,16 +1347,3 @@ def delete_documents(sender, instance, *args, **kwargs):
             document.delete()
         except ProtectedError:
             logger.info(f"Document: {document} is protected. Unable to delete.")
-
-
-@receiver(pre_save, sender=ApprovalTypeDocumentTypeOnApprovalType)
-def approvaltypedocumenttypes_presave(sender, instance, **kwargs):
-    if instance.mandatory is False:
-        instance.approval_type_document_type_id
-        document_type = ApprovalTypeDocumentType.objects.get(
-            id=instance.approval_type_document_type_id
-        )
-        if document_type.is_typed:
-            logger.warning("A typed document type needs to be mandatory")
-            # Force set to mandatory, though landing here should be prevented in the admin form
-            instance.mandatory = True
