@@ -189,6 +189,9 @@
                                         <div class="col-sm-9">
                                             <div class="row align-items-center">
                                                 <div class="col-3">
+                                                    Once every
+                                                </div>
+                                                <div class="col-3">
                                                     <input
                                                         v-model="
                                                             requirement.recurrence_schedule
@@ -198,16 +201,6 @@
                                                         name="schedule"
                                                         min="1"
                                                     />
-                                                </div>
-                                                <div class="col-auto px-0">
-                                                    time<span
-                                                        v-if="
-                                                            requirement.recurrence_schedule >
-                                                            1
-                                                        "
-                                                        >s</span
-                                                    >
-                                                    each
                                                 </div>
                                                 <div class="col-auto">
                                                     <select
@@ -222,13 +215,31 @@
                                                             value="1"
                                                             selected
                                                         >
-                                                            Week
+                                                            Week<span
+                                                                v-if="
+                                                                    requirement.recurrence_schedule >
+                                                                    1
+                                                                "
+                                                                >s</span
+                                                            >
                                                         </option>
                                                         <option value="2">
-                                                            Month
+                                                            Month<span
+                                                                v-if="
+                                                                    requirement.recurrence_schedule >
+                                                                    1
+                                                                "
+                                                                >s</span
+                                                            >
                                                         </option>
                                                         <option value="3">
-                                                            Year
+                                                            Year<span
+                                                                v-if="
+                                                                    requirement.recurrence_schedule >
+                                                                    1
+                                                                "
+                                                                >s</span
+                                                            >
                                                         </option>
                                                     </select>
                                                 </div>
