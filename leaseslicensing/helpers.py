@@ -118,6 +118,22 @@ def is_internal(request):
     return is_department_user(request)
 
 
+def convert_external_url_to_internal_url(url):
+    if settings.SITE_SUBDOMAIN_INTERNAL_SUFFIX not in url:
+        # Add the internal subdomain suffix to the url
+        url = f"{settings.SITE_SUBDOMAIN_INTERNAL_SUFFIX}.{settings.SITE_DOMAIN}".join(
+            url.split("." + settings.SITE_DOMAIN)
+        )
+    return url
+
+
+def convert_internal_url_to_external_url(url):
+    if settings.SITE_SUBDOMAIN_INTERNAL_SUFFIX in url:
+        # remove '-internal'. This email is for external submitters
+        url = "".join(url.split(settings.SITE_SUBDOMAIN_INTERNAL_SUFFIX))
+    return url
+
+
 def get_leaseslicensing_organisation_ids():
     """Since the organisations of leases and licensing are a small subset of those in ledger
     we can cache the list of organisations to improve performance.
