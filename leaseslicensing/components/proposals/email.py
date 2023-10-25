@@ -12,7 +12,11 @@ from django.utils.encoding import smart_text
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
-from leaseslicensing.helpers import emails_list_for_group
+from leaseslicensing.helpers import (
+    convert_external_url_to_internal_url,
+    convert_internal_url_to_external_url,
+    emails_list_for_group,
+)
 from leaseslicensing.ledger_api_utils import (
     retrieve_default_from_email_user,
     retrieve_email_user,
@@ -186,11 +190,7 @@ def send_submit_email_notification(request, proposal):
     url = request.build_absolute_uri(
         reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
-    if "-internal" not in url:
-        # add it. This email is for internal staff (assessors)
-        url = f"-internal.{settings.SITE_DOMAIN}".join(
-            url.split("." + settings.SITE_DOMAIN)
-        )
+    url = convert_external_url_to_internal_url(url)
 
     context = {"proposal": proposal, "url": url}
 
@@ -218,9 +218,7 @@ def send_external_submit_email_notification(request, proposal):
         reverse("external-proposal-detail", kwargs={"proposal_pk": proposal.id})
     )
 
-    if "-internal" in url:
-        # remove '-internal'. This email is for external submitters
-        url = "".join(url.split("-internal"))
+    url = convert_internal_url_to_external_url(url)
 
     context = {
         "proposal": proposal,
@@ -392,9 +390,9 @@ def send_proposal_approval_email_notification(proposal, request):
     #             attachments.append(attachment)
 
     url = request.build_absolute_uri(reverse("external"))
-    if "-internal" in url:
-        # remove '-internal'. This email is for external submitters
-        url = "".join(url.split("-internal"))
+
+    url = convert_internal_url_to_external_url(url)
+
     context = {
         "proposal": proposal,
         "url": url,
@@ -465,11 +463,6 @@ def send_license_ready_for_invoicing_notification(proposal, request):
     url = request.build_absolute_uri(
         reverse("internal-proposal-detail", kwargs={"pk": proposal.id})
     )
-    if "-internal" not in url:
-        # add it. This email is for internal staff (approver)
-        url = f"-internal.{settings.SITE_DOMAIN}".join(
-            url.split("." + settings.SITE_DOMAIN)
-        )
 
     context = {"proposal": proposal, "url": url}
 
@@ -504,11 +497,8 @@ def send_proposal_awaiting_payment_approval_email_notification(proposal, request
         all_ccs = cc_list.split(",")
 
     url = request.build_absolute_uri(reverse("external"))
-    # payment_url = request.build_absolute_uri(
-    # reverse('existing_invoice_payment', kwargs={'invoice_ref':invoice.reference}))
-    if "-internal" in url:
-        # remove '-internal'. This email is for external submitters
-        url = "".join(url.split("-internal"))
+
+    url = convert_internal_url_to_external_url(url)
 
     filename = "confirmation.pdf"
 
