@@ -380,8 +380,8 @@ export default {
                 this.requirement.recurrence_pattern = '1';
                 this.requirement.recurrence_schedule = 1;
             } else {
-                this.requirement.recurrence_pattern = null;
-                this.requirement.recurrence_schedule = null;
+                delete this.requirement.recurrence_pattern;
+                delete this.requirement.recurrence_schedule;
             }
             form.classList.remove('was-validated');
         },
