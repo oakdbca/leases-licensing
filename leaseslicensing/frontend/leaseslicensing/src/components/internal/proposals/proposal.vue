@@ -1301,7 +1301,7 @@
             </div>
         </div>
     </div>
-    <div v-else class="container">
+    <div v-if="loading" class="container">
         <div class="row">
             <BootstrapSpinner class="text-primary" />
         </div>
@@ -1360,7 +1360,7 @@ export default {
             latest_revision: {},
             current_revision_id: null,
             assessment: {},
-            loading: [],
+            loading: false,
             //selected_referral: '',
             //referral_text: '',
             approver_comment: '',
@@ -1819,6 +1819,7 @@ export default {
             return false;
         },
         completeEditing: async function () {
+            let vm = this;
             var chargeType = $(
                 'input[type=radio][name=charge_method]:checked'
             ).attr('id');
@@ -1907,6 +1908,7 @@ export default {
             }
 
             if (!cancelled) {
+                vm.loading = true;
                 const payload = { proposal: this.proposal };
                 const res = await fetch(
                     '/api/proposal/' +
@@ -1945,6 +1947,7 @@ export default {
                         });
                     });
                 }
+                vm.loading = false;
             }
         },
         cancelEditing: function () {
@@ -2695,6 +2698,7 @@ export default {
         },
         fetchProposal: async function () {
             let vm = this;
+            vm.loading = true;
             let payload = {
                 debug: this.debug,
             };
@@ -2754,6 +2758,9 @@ export default {
                 })
                 .catch((error) => {
                     console.log(error);
+                })
+                .finally(() => {
+                    vm.loading = false;
                 });
         },
         updateInvoicingDetails: function (value) {
