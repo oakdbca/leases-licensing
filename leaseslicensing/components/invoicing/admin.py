@@ -22,24 +22,6 @@ class ChargeMethodAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(models.ReviewDateAnnually)
-class ReviewDateAnnuallAdmin(admin.ModelAdmin):
-    list_display = [
-        "review_date",
-        "date_of_enforcement",
-    ]
-
-
-@admin.register(models.ReviewDateQuarterly)
-class ReviewDateQuarterlyAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.ReviewDateMonthly)
-class ReviewDateMonthlyAdmin(admin.ModelAdmin):
-    pass
-
-
 @admin.register(models.InvoicingDateAnnually)
 class InvoicingDateAnnuallAdmin(admin.ModelAdmin):
     pass
