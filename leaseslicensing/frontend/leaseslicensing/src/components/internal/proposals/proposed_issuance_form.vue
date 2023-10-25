@@ -476,6 +476,11 @@
             </ul>
             <p v-if="can_preview"></p>
         </div>
+        <div v-if="issuingApproval" class="container">
+            <div class="row">
+                <BootstrapSpinner class="text-primary" />
+            </div>
+        </div>
         <!-- eslint-disable-next-line vue/no-deprecated-slot-attribute -->
         <div slot="footer"></div>
         <!--eslint-enable-->
