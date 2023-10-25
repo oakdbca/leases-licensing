@@ -128,7 +128,7 @@ export default {
         close: function () {
             this.isModalOpen = false;
             this.approval = {};
-            this.errors = false;
+            this.$refs.proposed_approval_form.errorString = false;
         },
     },
 };
