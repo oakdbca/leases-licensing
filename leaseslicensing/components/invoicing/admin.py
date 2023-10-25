@@ -22,21 +22,6 @@ class ChargeMethodAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(models.InvoicingDateAnnually)
-class InvoicingDateAnnuallAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.InvoicingDateQuarterly)
-class InvoicingDateQuarterlyAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.InvoicingDateMonthly)
-class InvoicingDateMonthlyAdmin(admin.ModelAdmin):
-    pass
-
-
 @admin.register(models.ConsumerPriceIndex)
 class ConsumerPriceIndexAdmin(admin.ModelAdmin):
     list_display = [

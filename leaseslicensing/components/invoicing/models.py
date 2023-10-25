@@ -4,7 +4,6 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-import pytz
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
@@ -13,7 +12,6 @@ from django.db.models import F, Sum, Window
 from django.db.models.functions import Coalesce
 from django.forms import ValidationError
 from django.utils import timezone
-from ledger_api_client import settings_base
 
 from leaseslicensing import helpers
 from leaseslicensing.components.invoicing import utils
@@ -137,84 +135,6 @@ class InvoicingAndReviewDates(BaseModel):
                     "review_date_annually": f"The annual review date must be in {self.year}"
                 }
             )
-
-
-class InvoicingDateAnnually(BaseModel):
-    invoicing_date = models.DateField(null=True, blank=True)
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Invoicing Date Annually"
-
-    @staticmethod
-    def get_invoicing_date_annually_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        invoicing_date_annually = (
-            InvoicingDateAnnually.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return invoicing_date_annually
-
-
-class InvoicingDateQuarterly(BaseModel):
-    invoicing_date_q1 = models.DateField()
-    invoicing_date_q2 = models.DateField()
-    invoicing_date_q3 = models.DateField()
-    invoicing_date_q4 = models.DateField()
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Invoicing Date Quarterly"
-
-    @staticmethod
-    def get_invoicing_date_quarterly_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        invoicing_date_quarterly = (
-            InvoicingDateQuarterly.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return invoicing_date_quarterly
-
-
-class InvoicingDateMonthly(BaseModel):
-    invoicing_date = models.PositiveSmallIntegerField(null=True, blank=True)
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Invoicing Date Monthly"
-
-    @staticmethod
-    def get_invoicing_date_monthly_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        invoicing_date_monthly = (
-            InvoicingDateMonthly.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return invoicing_date_monthly
 
 
 class ConsumerPriceIndex(BaseModel):
