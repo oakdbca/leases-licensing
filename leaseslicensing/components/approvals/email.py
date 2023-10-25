@@ -11,7 +11,10 @@ from leaseslicensing.components.organisations.models import (
     Organisation,
     OrganisationLogEntry,
 )
-from leaseslicensing.helpers import emails_list_for_group
+from leaseslicensing.helpers import (
+    convert_internal_url_to_external_url,
+    emails_list_for_group,
+)
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
@@ -120,9 +123,7 @@ def send_approval_expire_email_notification(approval):
     url = settings.SITE_URL if settings.SITE_URL else ""
     url += reverse("external")
 
-    if "-internal" in url:
-        # remove '-internal'. This email is for external submitters
-        url = "".join(url.split("-internal"))
+    url = convert_internal_url_to_external_url(url)
 
     context = {"approval": approval, "proposal": proposal, "url": url}
     all_ccs = []
