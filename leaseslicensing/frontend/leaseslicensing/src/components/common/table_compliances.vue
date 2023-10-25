@@ -136,6 +136,26 @@ export default {
             type: Boolean,
             default: false,
         },
+        filterApprovalTypeCacheName: {
+            type: String,
+            required: false,
+            default: 'filterApprovalType',
+        },
+        filterComplianceStatusCacheName: {
+            type: String,
+            required: false,
+            default: 'filterComplianceStatus',
+        },
+        filterComplianceDueDateFromCacheName: {
+            type: String,
+            required: false,
+            default: 'filterComplianceDueDateFrom',
+        },
+        filterComplianceDueDateToCacheName: {
+            type: String,
+            required: false,
+            default: 'filterComplianceDueDateTo',
+        },
     },
     data() {
         let vm = this;
@@ -143,23 +163,27 @@ export default {
             datatable_id: 'compliances-datatable-' + vm._.uid,
 
             // selected values for filtering
-            filterApprovalType: sessionStorage.getItem('filterApprovalType')
-                ? sessionStorage.getItem('filterApprovalType')
+            filterApprovalType: sessionStorage.getItem(
+                vm.filterApprovalTypeCacheName
+            )
+                ? sessionStorage.getItem(vm.filterApprovalTypeCacheName)
                 : 'all',
             filterComplianceStatus: sessionStorage.getItem(
-                'filterComplianceStatus'
+                vm.filterComplianceStatusCacheName
             )
-                ? sessionStorage.getItem('filterComplianceStatus')
+                ? sessionStorage.getItem(vm.filterComplianceStatusCacheName)
                 : 'all',
             filterComplianceDueDateFrom: sessionStorage.getItem(
-                'filterComplianceDueDateFrom'
+                vm.filterComplianceDueDateFromCacheName
             )
-                ? sessionStorage.getItem('filterComplianceDueDateFrom')
+                ? sessionStorage.getItem(
+                      vm.filterComplianceDueDateFromCacheName
+                  )
                 : '',
             filterComplianceDueDateTo: sessionStorage.getItem(
-                'filterComplianceDueDateTo'
+                vm.filterComplianceDueDateToCacheName
             )
-                ? sessionStorage.getItem('filterComplianceDueDateTo')
+                ? sessionStorage.getItem(vm.filterComplianceDueDateToCacheName)
                 : '',
 
             // filtering options
@@ -495,28 +519,28 @@ export default {
         filterApprovalType: function () {
             this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                'filterApprovalType',
+                this.filterApprovalTypeCacheName,
                 this.filterApprovalType
             );
         },
         filterComplianceStatus: function () {
             this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                'filterComplianceStatus',
+                this.filterComplianceStatusCacheName,
                 this.filterComplianceStatus
             );
         },
         filterComplianceDueDateFrom: function () {
             this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                'filterComplianceDueDateFrom',
+                this.filterComplianceDueDateFromCacheName,
                 this.filterComplianceDueDateFrom
             );
         },
         filterComplianceDueDateTo: function () {
             this.$refs.compliances_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                'filterComplianceDueDateTo',
+                this.filterComplianceDueDateToCacheName,
                 this.filterComplianceDueDateTo
             );
         },
