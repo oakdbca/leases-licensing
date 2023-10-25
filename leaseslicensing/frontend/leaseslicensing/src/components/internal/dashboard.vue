@@ -12,7 +12,7 @@
                     aria-controls="pills-applications"
                     aria-selected="true"
                     @click="tabClicked('applications')"
-                    >Applications</a
+                    >Proposals</a
                 >
             </li>
             <li class="nav-item">
@@ -51,7 +51,7 @@
             >
                 <FormSection
                     :form-collapse="false"
-                    label="Applications"
+                    label="Proposals"
                     index="applications"
                 >
                     <ApplicationsTable
@@ -66,7 +66,7 @@
                 </FormSection>
                 <FormSection
                     :form-collapse="false"
-                    label="Applications Referred to Me"
+                    label="Proposals Referred to Me"
                     index="leases_and_licences"
                 >
                     <ApplicationsReferredToMeTable
