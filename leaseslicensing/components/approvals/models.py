@@ -9,7 +9,7 @@ from django.core.cache import cache
 from django.db import models, transaction
 from django.db.models import JSONField, Q
 from django.db.models.deletion import ProtectedError
-from django.db.models.signals import pre_delete, pre_save
+from django.db.models.signals import pre_delete
 from django.dispatch import receiver
 from django.utils import timezone
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
