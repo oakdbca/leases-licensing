@@ -60,7 +60,7 @@ class GetApprovalTypesDict(views.APIView):
 
     def get(self, request, format=None):
         document_generator = ApprovalDocumentGenerator()
-        approval_types_dict = cache.get("approval_types_dict")
+        approval_types_dict = cache.get(settings.CACHE_KEY_APPROVAL_TYPES_DICTIONARY)
         if not approval_types_dict:
             approval_types_dict = [
                 {
@@ -83,7 +83,7 @@ class GetApprovalTypesDict(views.APIView):
                 for t in ApprovalType.objects.all()
             ]
             cache.set(
-                "approval_types_dict",
+                settings.CACHE_KEY_APPROVAL_TYPES_DICTIONARY,
                 approval_types_dict,
                 settings.LOV_CACHE_TIMEOUT,
             )

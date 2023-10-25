@@ -5,6 +5,7 @@ import re
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
 from django.db import models, transaction
 from django.db.models import JSONField, Q
 from django.db.models.deletion import ProtectedError
@@ -154,6 +155,10 @@ class ApprovalType(RevisionedMixin):
 
     def __str__(self):
         return self.name
+
+    def save(self, **kwargs):
+        cache.delete(settings.CACHE_KEY_APPROVAL_TYPES_DICTIONARY)
+        super().save(**kwargs)
 
 
 class ApprovalTypeDocumentType(RevisionedMixin):
