@@ -148,22 +148,22 @@ export default {
             required: false,
             default: 0,
         },
-        filterApplicationType_cache_name: {
+        filterApplicationTypeCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationType',
         },
-        filterApplicationStatus_cache_name: {
+        filterApplicationStatusCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationStatus',
         },
-        filterProposalLodgedFrom_cache_name: {
+        filterProposalLodgedFromCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationLodgedFrom',
         },
-        filterProposalLodgedTo_cache_name: {
+        filterProposalLodgedToCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationLodgedTo',
@@ -177,24 +177,24 @@ export default {
 
             // selected values for filtering
             filterApplicationType: sessionStorage.getItem(
-                vm.filterApplicationType_cache_name
+                vm.filterApplicationTypeCacheName
             )
-                ? sessionStorage.getItem(vm.filterApplicationType_cache_name)
+                ? sessionStorage.getItem(vm.filterApplicationTypeCacheName)
                 : 'all',
             filterApplicationStatus: sessionStorage.getItem(
-                vm.filterApplicationStatus_cache_name
+                vm.filterApplicationStatusCacheName
             )
-                ? sessionStorage.getItem(vm.filterApplicationStatus_cache_name)
+                ? sessionStorage.getItem(vm.filterApplicationStatusCacheName)
                 : 'all',
             filterProposalLodgedFrom: sessionStorage.getItem(
-                vm.filterProposalLodgedFrom_cache_name
+                vm.filterProposalLodgedFromCacheName
             )
-                ? sessionStorage.getItem(vm.filterProposalLodgedFrom_cache_name)
+                ? sessionStorage.getItem(vm.filterProposalLodgedFromCacheName)
                 : '',
             filterProposalLodgedTo: sessionStorage.getItem(
-                vm.filterProposalLodgedTo_cache_name
+                vm.filterProposalLodgedToCacheName
             )
-                ? sessionStorage.getItem(vm.filterProposalLodgedTo_cache_name)
+                ? sessionStorage.getItem(vm.filterProposalLodgedToCacheName)
                 : '',
 
             // filtering options
@@ -573,7 +573,7 @@ export default {
         filterApplicationType: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterApplicationType_cache_name,
+                this.filterApplicationTypeCacheName,
                 this.filterApplicationType
             );
             this.$emit('filter-appied');
@@ -581,7 +581,7 @@ export default {
         filterApplicationStatus: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterApplicationStatus_cache_name,
+                this.filterApplicationStatusCacheName,
                 this.filterApplicationStatus
             );
             this.$emit('filter-appied');
@@ -589,7 +589,7 @@ export default {
         filterProposalLodgedFrom: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterProposalLodgedFrom_cache_name,
+                this.filterProposalLodgedFromCacheName,
                 this.filterProposalLodgedFrom
             );
             this.$emit('filter-appied');
@@ -597,7 +597,7 @@ export default {
         filterProposalLodgedTo: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterProposalLodgedTo_cache_name,
+                this.filterProposalLodgedToCacheName,
                 this.filterProposalLodgedTo
             );
             this.$emit('filter-appied');
@@ -624,31 +624,31 @@ export default {
         updateFilters: function () {
             this.$nextTick(() => {
                 this.filterApplicationType = sessionStorage.getItem(
-                    this.filterApplicationType_cache_name
+                    this.filterApplicationTypeCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterApplicationType_cache_name
+                          this.filterApplicationTypeCacheName
                       )
                     : 'all';
                 this.filterApplicationStatus = sessionStorage.getItem(
-                    this.filterApplicationStatus_cache_name
+                    this.filterApplicationStatusCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterApplicationStatus_cache_name
+                          this.filterApplicationStatusCacheName
                       )
                     : 'all';
                 this.filterProposalLodgedFrom = sessionStorage.getItem(
-                    this.filterProposalLodgedFrom_cache_name
+                    this.filterProposalLodgedFromCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterProposalLodgedFrom_cache_name
+                          this.filterProposalLodgedFromCacheName
                       )
                     : '';
                 this.filterProposalLodgedTo = sessionStorage.getItem(
-                    this.filterProposalLodgedTo_cache_name
+                    this.filterProposalLodgedToCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterProposalLodgedTo_cache_name
+                          this.filterProposalLodgedToCacheName
                       )
                     : '';
                 this.$refs.application_datatable.vmDataTable.draw();
