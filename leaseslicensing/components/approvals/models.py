@@ -5,6 +5,7 @@ import re
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.cache import cache
 from django.db import models, transaction
 from django.db.models import JSONField, Q
 from django.db.models.deletion import ProtectedError
@@ -155,6 +156,10 @@ class ApprovalType(RevisionedMixin):
     def __str__(self):
         return self.name
 
+    def save(self, **kwargs):
+        cache.delete(settings.CACHE_KEY_APPROVAL_TYPES_DICTIONARY)
+        super().save(**kwargs)
+
 
 class ApprovalTypeDocumentType(RevisionedMixin):
     name = models.CharField(max_length=200, unique=True)
@@ -183,9 +188,30 @@ class ApprovalTypeDocumentType(RevisionedMixin):
     def __str__(self):
         return self.name
 
+    @property
+    def is_typed(self):
+        return (
+            self.is_license_document or self.is_cover_letter or self.is_sign_off_sheet
+        )
+
+    @property
+    def type_display(self):
+        if self.is_license_document:
+            return "License document"
+        elif self.is_cover_letter:
+            return "Cover letter"
+        elif self.is_sign_off_sheet:
+            return "Sign-off sheet"
+        else:
+            return "Other document"
+
 
 class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
-    approval_type = models.ForeignKey(ApprovalType, on_delete=models.CASCADE)
+    approval_type = models.ForeignKey(
+        ApprovalType,
+        related_name="approvaltype_approvaltypedocumenttypes",
+        on_delete=models.CASCADE,
+    )
     approval_type_document_type = models.ForeignKey(
         ApprovalTypeDocumentType, on_delete=models.CASCADE
     )
@@ -194,6 +220,10 @@ class ApprovalTypeDocumentTypeOnApprovalType(RevisionedMixin):
     class Meta:
         app_label = "leaseslicensing"
         unique_together = ("approval_type", "approval_type_document_type")
+
+    def __str__(self):
+        mandatory = " (mandatory)" if self.mandatory else ""
+        return f"{self.approval_type} - {self.approval_type_document_type}{mandatory}"
 
 
 class Approval(LicensingModelVersioned):
