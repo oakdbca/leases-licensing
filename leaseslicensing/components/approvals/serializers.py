@@ -119,6 +119,7 @@ class ApprovalTransferSerializer(serializers.ModelSerializer):
     applicant_for_writing = ApprovalTransferApplicantUpdateSerializer(
         write_only=True, allow_null=True
     )
+    has_supporting_documents = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = ApprovalTransfer
@@ -619,6 +620,7 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
     approval_type_name = serializers.CharField(
         source="approval_type.name", read_only=True
     )
+    active_transfer = ApprovalTransferSerializer(read_only=True, allow_null=True)
 
     class Meta:
         model = Approval
@@ -633,4 +635,5 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "has_outstanding_compliances",
             "has_outstanding_invoices",
             "holder",
+            "active_transfer",
         )
