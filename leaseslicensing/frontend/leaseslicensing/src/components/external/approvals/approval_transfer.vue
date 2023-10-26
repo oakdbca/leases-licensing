@@ -455,6 +455,7 @@ export default {
                         vm.$router.push({
                             name: 'external-dashboard',
                         });
+                        return;
                     }
                     vm.approval_details_id = uuid();
                     vm.$nextTick(() => {
