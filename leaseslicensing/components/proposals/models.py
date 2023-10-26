@@ -1214,8 +1214,8 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     class Meta:
         app_label = "leaseslicensing"
-        verbose_name = "Application"
-        verbose_name_plural = "Applications"
+        verbose_name = "Proposal"
+        verbose_name_plural = "Proposals"
 
     def save(self, *args, **kwargs):
         # Clear out the cached
@@ -4126,8 +4126,8 @@ class AmendmentReason(models.Model):
 
     class Meta:
         app_label = "leaseslicensing"
-        verbose_name = "Application Amendment Reason"  # display name in Admin
-        verbose_name_plural = "Application Amendment Reasons"
+        verbose_name = "Proposal Amendment Reason"  # display name in Admin
+        verbose_name_plural = "Proposal Amendment Reasons"
 
     def __str__(self):
         return self.reason
@@ -4451,7 +4451,7 @@ class Referral(RevisionedMixin):
         ordering = ("-lodged_on",)
 
     def __str__(self):
-        return f"Application {self.proposal.id} - Referral {self.id}"
+        return f"Proposal {self.proposal.id} - Referral {self.id}"
 
     # Methods
     @property
