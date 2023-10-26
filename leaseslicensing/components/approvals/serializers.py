@@ -137,16 +137,17 @@ class ApprovalTransferSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         logger.debug(validated_data)
-        transferee_type = validated_data.get("transferee_type")
-        if (
-            transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL
-            and "applicant_for_writing" in validated_data
-        ):
+        applicant_for_writing = validated_data.get("applicant_for_writing", None)
+        if applicant_for_writing:
             applicant_data = validated_data.pop("applicant_for_writing")
-            applicant = instance.applicant
-            serializer = ApprovalTransferApplicantUpdateSerializer(
-                applicant, data=applicant_data
-            )
+            if hasattr(instance, "applicant"):
+                serializer = ApprovalTransferApplicantUpdateSerializer(
+                    instance.applicant, data=applicant_data
+                )
+            else:
+                serializer = ApprovalTransferApplicantUpdateSerializer(
+                    data=applicant_data
+                )
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
@@ -287,7 +288,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "has_draft_transfer",
             "has_pending_renewal",
             "has_draft_renewal",
-            "active_renewal",            
+            "active_renewal",
             "has_draft_amendment",
             "active_amendment",
             "set_to_cancel",
@@ -408,7 +409,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     def get_approval_type__type(self, obj):
         if obj.approval_type.type is None:
-            return None # Check for no type because type property is nullable
+            return None  # Check for no type because type property is nullable
         return obj.approval_type.type.title()
 
 
