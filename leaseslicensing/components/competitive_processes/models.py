@@ -208,7 +208,7 @@ class CompetitiveProcess(LicensingModelVersioned):
 
         # Cannot unlock if the proposal has been approved
         if generated_proposal and generated_proposal.processing_status in [
-            Proposal.PROCESSING_STATUS_APPROVED_APPLICATION,
+            Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
             Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
         ]:
             raise ValidationError("The generated proposal has already been approved.")

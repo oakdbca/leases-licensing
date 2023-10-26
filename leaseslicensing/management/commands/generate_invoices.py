@@ -47,7 +47,7 @@ class Command(BaseCommand):
         ]
 
         approved_proposal_statuses = [
-            Proposal.PROCESSING_STATUS_APPROVED_APPLICATION,
+            Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
             Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
             Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
             Proposal.PROCESSING_STATUS_APPROVED,

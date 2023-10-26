@@ -972,9 +972,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     PROCESSING_STATUS_WITH_APPROVER = "with_approver"
     PROCESSING_STATUS_WITH_REFERRAL = "with_referral"
     PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS = "with_referral_conditions"
-    PROCESSING_STATUS_APPROVED_APPLICATION = "approved_application"
+    # This processing status is for registration of interest proposals
+    PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST = (
+        "approved_registration_of_interest"
+    )
     PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS = "approved_competitive_process"
     PROCESSING_STATUS_APPROVED_EDITING_INVOICING = "approved_editing_invoicing"
+    # This processing status is for lease / license proposals
     PROCESSING_STATUS_APPROVED = "approved"
     PROCESSING_STATUS_DECLINED = "declined"
     PROCESSING_STATUS_DISCARDED = "discarded"
@@ -985,7 +989,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         (PROCESSING_STATUS_WITH_APPROVER, "With Approver"),
         (PROCESSING_STATUS_WITH_REFERRAL, "With Referral"),
         (PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS, "With Referral (Conditions)"),
-        (PROCESSING_STATUS_APPROVED_APPLICATION, "Approved (Application)"),
+        (
+            PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
+            "Approved (Registration of Interest)",
+        ),
         (
             PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
             "Approved (Competitive Process)",
@@ -1009,7 +1016,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         PROCESSING_STATUS_WITH_REFERRAL,
         PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         PROCESSING_STATUS_WITH_APPROVER,
-        PROCESSING_STATUS_APPROVED_APPLICATION,
+        PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
         PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
         PROCESSING_STATUS_APPROVED_EDITING_INVOICING,
         PROCESSING_STATUS_APPROVED,
@@ -1071,7 +1078,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     approved_by = models.IntegerField(null=True)  # EmailUserRO
     processing_status = models.CharField(
         "Processing Status",
-        max_length=30,
+        max_length=35,
         choices=PROCESSING_STATUS_CHOICES,
         default=PROCESSING_STATUS_CHOICES[0][0],
     )
@@ -2646,10 +2653,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
 
         elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
-            # TODO: could be PROCESSING_STATUS_APPROVED_APPLICATION or
+            # TODO: could be PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST or
             # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
             # When Registration_of_Interest
-            #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
+            #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST
             #     or
             #     self.processing_status = Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
             # When Lease Licence
@@ -2681,7 +2688,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     copy_gis_data(self, lease_licence)
 
                     self.processing_status = (
-                        Proposal.PROCESSING_STATUS_APPROVED_APPLICATION
+                        Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST
                     )
                 elif (
                     self.proposed_issuance_approval.get("decision")
