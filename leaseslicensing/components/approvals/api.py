@@ -45,6 +45,7 @@ from leaseslicensing.components.main.decorators import basic_exception_handler
 from leaseslicensing.components.main.filters import LedgerDatatablesFilterBackend
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
+from leaseslicensing.components.organisations.utils import get_organisation_ids_for_user
 from leaseslicensing.components.proposals.api import ProposalRenderer
 from leaseslicensing.components.proposals.models import ApplicationType, Proposal
 from leaseslicensing.helpers import is_assessor, is_customer, is_internal
@@ -771,18 +772,20 @@ class ApprovalTransferViewSet(viewsets.ModelViewSet):
         if is_internal(self.request):
             return ApprovalTransfer.objects.all()
         elif is_customer(self.request):
-            user_orgs = (
-                [
-                    org.id
-                    for org in self.request.user.leaseslicensing_organisations.all()
-                ]
-                if hasattr(self.request.user, "leaseslicensing_organisations")
-                else []
-            )
+            user_orgs = get_organisation_ids_for_user(self.request.user.id)
             queryset = ApprovalTransfer.objects.filter(
                 Q(approval__current_proposal__org_applicant_id__in=user_orgs)
                 | Q(approval__current_proposal__submitter=self.request.user.id)
+                | Q(
+                    transferee_type=ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION,
+                    transferee__in=user_orgs,
+                )
+                | Q(
+                    transferee_type=ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL,
+                    transferee=self.request.user.id,
+                )
             )
+            logger.debug(queryset.query)
             return queryset
         return ApprovalTransfer.objects.none()
 
@@ -790,6 +793,7 @@ class ApprovalTransferViewSet(viewsets.ModelViewSet):
     @renderer_classes((JSONRenderer,))
     @basic_exception_handler
     def process_supporting_document(self, request, *args, **kwargs):
+        logger.debug(f"{kwargs}")
         instance = self.get_object()
         returned_data = process_generic_document(
             request, instance, document_type="approval_transfer_supporting_document"
