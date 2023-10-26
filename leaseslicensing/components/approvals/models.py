@@ -1114,6 +1114,10 @@ class ApprovalTransfer(LicensingModelVersioned):
         self.save()
         logger.info(f"Cancelled ApprovalTransfer {self}")
 
+    @property
+    def has_supporting_documents(self):
+        return self.approval_transfer_supporting_documents.exists()
+
     @transaction.atomic
     def initiate(self, user_id):
         from leaseslicensing.components.proposals.utils import (
