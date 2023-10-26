@@ -807,8 +807,8 @@ class ApprovalTransferViewSet(viewsets.ModelViewSet):
     )
     @basic_exception_handler
     def initiate(self, request, *args, **kwargs):
-        instance = self.get_object()
         self.update(request, *args, **kwargs)
+        instance = self.get_object()
         instance.initiate(request.user.id)
         serializer = ApprovalTransferSerializer(instance)
         return Response(serializer.data)
