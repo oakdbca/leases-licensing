@@ -2,6 +2,28 @@
     <div>
         <div v-if="debug">components/form_lease_licence.vue</div>
         <FormSection
+            v-if="show_supporting_documents"
+            :form-collapse="false"
+            label="Supporting Documents for Transfer"
+            index="supporting_documents_for_transfer"
+        >
+            <FileField
+                v-if="
+                    proposal.approval.active_transfer.has_supporting_documents
+                "
+                id="supporting_documents"
+                ref="supporting_documents"
+                name="supporting_documents"
+                :is-repeatable="true"
+                :document-action-url="supportingDocumentsForTransferUrl"
+                :replace_button_by_text="true"
+                :readonly="true"
+            />
+            <div v-else>
+                No supporting documents were provided for this transfer.
+            </div>
+        </FormSection>
+        <FormSection
             v-if="proposal && show_tourism_proposal_details"
             :form-collapse="false"
             label="Tourism Proposal Details"
@@ -597,6 +619,20 @@ export default {
         proposalId: function () {
             return this.proposal ? this.proposal.id : null;
         },
+        supportingDocumentsForTransferUrl: function () {
+            return helpers.add_endpoint_join(
+                api_endpoints.approval_transfers,
+                this.proposal.approval.active_transfer.id +
+                    '/process_supporting_document/'
+            );
+        },
+        show_supporting_documents: function () {
+            return (
+                this.proposal &&
+                this.proposal.approval &&
+                this.proposal.approval.active_transfer
+            );
+        },
         show_tourism_proposal_details: function () {
             return (
                 this.proposal &&
@@ -671,107 +707,7 @@ export default {
                 this.proposal.id + '/process_legislative_requirements_document/'
             );
         },
-        deedPollDocumentUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_deed_poll_document/'
-            );
-        },
-        supportingDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_supporting_document/'
-            );
-        },
-        exclusiveUseDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_exclusive_use_document/'
-            );
-        },
-        longTermUseDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_long_term_use_document/'
-            );
-        },
-        consistentPurposeDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_consistent_purpose_document/'
-            );
-        },
-        consistentPlanDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_consistent_plan_document/'
-            );
-        },
-        clearingVegetationDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_clearing_vegetation_document/'
-            );
-        },
-        groundDisturbingWorksDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_ground_disturbing_works_document/'
-            );
-        },
-        heritageSiteDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_heritage_site_document/'
-            );
-        },
-        environmentallySensitiveDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id +
-                    '/process_environmentally_sensitive_document/'
-            );
-        },
-        wetlandsImpactDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_wetlands_impact_document/'
-            );
-        },
-        buildingRequiredDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_building_required_document/'
-            );
-        },
-        significantChangeDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_significant_change_document/'
-            );
-        },
-        aboriginalSiteDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_aboriginal_site_document/'
-            );
-        },
-        nativeTitleConsultationDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id +
-                    '/process_native_title_consultation_document/'
-            );
-        },
-        miningTenementDocumentsUrl: function () {
-            return helpers.add_endpoint_join(
-                api_endpoints.proposal,
-                this.proposal.id + '/process_mining_tenement_document/'
-            );
-        },
     },
-    mounted: function () {},
-    methods: {},
 };
 </script>
 
