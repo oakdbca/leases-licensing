@@ -44,6 +44,7 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     copy_gis_data,
     copy_groups,
+    copy_proposal_details,
     copy_proposal_geometry,
     copy_proposal_requirements,
 )
@@ -1167,19 +1168,13 @@ class ApprovalTransfer(LicensingModelVersioned):
         # Query the original proposal again so we have the correct reference
         original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
 
-        # Copy over previous groups
+        # Copy over data from original proposal
         copy_groups(original_proposal, transfer_proposal)
-
-        # Copy over the proposal geometry
         copy_proposal_geometry(original_proposal, transfer_proposal)
-
-        # Copy over previous gis data
+        copy_proposal_details(original_proposal, transfer_proposal)
         copy_gis_data(original_proposal, transfer_proposal)
-
-        # Copy over previous requirements
         copy_proposal_requirements(original_proposal, transfer_proposal)
 
-        # Email the proponent to confirm the approval transfer has been initiated
         send_approval_transfer_holder_email_notification(self.approval)
 
         # Email the transferee to inform them that the approval transfer has been initiated
