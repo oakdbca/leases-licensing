@@ -5477,7 +5477,6 @@ def copy_site_name(proposalFrom: Proposal, proposalTo: Proposal) -> None:
 
 
 def copy_groups(proposalFrom, proposalTo):
-    logger.debug(proposalFrom.groups.values("group"))
     for group in proposalFrom.groups.all():
         ProposalGroup.objects.get_or_create(proposal=proposalTo, group=group.group)
 
