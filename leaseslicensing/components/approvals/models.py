@@ -1101,8 +1101,25 @@ class ApprovalTransfer(LicensingModelVersioned):
             )
         super().save(**kwargs)
 
-    def user_has_object_permission(self, user):
-        return self.approval.user_has_object_permission(user)
+    def is_transferee(self, user_id):
+        return (
+            self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL
+            and self.transferee == user_id
+        )
+
+    def is_transferee_user_org(self, user_id):
+        user_orgs = get_organisation_ids_for_user(user_id)
+        return (
+            self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION
+            and self.transferee in user_orgs
+        )
+
+    def user_has_object_permission(self, user_id):
+        return (
+            self.approval.user_has_object_permission(user_id)
+            or self.is_transferee(user_id)
+            or self.is_transferee_user_org(user_id)
+        )
 
     def cancel(self, user):
         if self.processing_status != self.APPROVAL_TRANSFER_STATUS_DRAFT:
