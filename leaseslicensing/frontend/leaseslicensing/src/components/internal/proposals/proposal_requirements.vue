@@ -204,9 +204,7 @@ export default {
                                 // Assessors can edit and/or delete all proposed requirements
                                 // Referral parties can only edit or delete their own requirements
                                 if (show_action_btns) {
-                                    if (full.copied_from == null) {
-                                        links += `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
-                                    }
+                                    links += `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
                                     links += `<a href='#' class="deleteRequirement" data-id="${full.id}">Delete</a><br/>`;
                                 } else if (referral_completed) {
                                     links += 'Referral completed<br/>';
