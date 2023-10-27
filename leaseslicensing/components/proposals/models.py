@@ -4315,8 +4315,8 @@ class ProposalStandardRequirement(RevisionedMixin):
 
     class Meta:
         app_label = "leaseslicensing"
-        verbose_name = "Proposal Standard Requirement"
-        verbose_name_plural = "Proposal Standard Requirements"
+        verbose_name = "Proposal Standard Condition"
+        verbose_name_plural = "Proposal Standard Conditions"
 
 
 class ProposalUserAction(UserAction):
