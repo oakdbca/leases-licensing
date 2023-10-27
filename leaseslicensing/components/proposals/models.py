@@ -1870,7 +1870,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         raise ValidationError(
                             "The user you want to send the referral to is not a member of the department"
                         )
-                    # Check if the user is in ledger or create
+                    # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
 
                     user, created = EmailUser.objects.get_or_create(
                         email=department_user["email"].lower()
@@ -4849,7 +4849,7 @@ class Referral(RevisionedMixin):
                             raise ValidationError(
                                 "The user you want to send the referral to is not a member of the department"
                             )
-                        # Check if the user is in ledger or create
+                        # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
 
                         user, created = EmailUser.objects.get_or_create(
                             email=department_user["email"].lower()
