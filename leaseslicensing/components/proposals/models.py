@@ -5149,21 +5149,6 @@ class ProposalRequirement(RevisionedMixin):
                     return False
         return False
 
-    def can_district_assessor_edit(self, user):
-        allowed_status = [
-            "with_district_assessor",
-            "partially_approved",
-            "partially_declined",
-        ]
-        if (
-            self.district_proposal
-            and self.district_proposal.processing_status == "with_assessor_conditions"
-            and self.proposal.processing_status in allowed_status
-        ):
-            if self.district_proposal.can_process_requirements(user):
-                return True
-        return False
-
     def add_documents(self, request):
         with transaction.atomic():
             try:
@@ -5677,9 +5662,9 @@ def copy_proposal_requirements(
             )
             if new_r.due_date:
                 new_r.due_date = None
+                new_r.reminder_date = None
                 new_r.require_due_date = True
             new_r.id = None
-            new_r.district_proposal = None
             new_r.save()
 
     for requirement in proposalTo.requirements.all():
