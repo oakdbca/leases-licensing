@@ -37,8 +37,8 @@ module.exports = {
             TEXT: 'With Referral (Conditions)',
         },
         APPROVED_APPLICATION: {
-            ID: 'approved_application',
-            TEXT: 'Approved (Application)',
+            ID: 'approved_registration_of_interest',
+            TEXT: 'Approved (Registration of Interest)',
         },
         APPROVED_COMPETITIVE_PROCESS: {
             ID: 'approved_competitive_process',
