@@ -169,7 +169,7 @@ export default {
                                 if (full.recurrence_schedule > 1) {
                                     plural = 's';
                                 }
-                                return `${full.recurrence_schedule} time${plural} each ${recurrence_interval}`;
+                                return `Once every ${full.recurrence_schedule} ${recurrence_interval}${plural}`;
                             }
                             return 'N/A';
                         },
