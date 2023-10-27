@@ -3,7 +3,7 @@
         "model": "leaseslicensing.proposalstandardrequirement",
         "pk": 1,
         "fields": {
-            "text": "Standard Requirement (ROI) #1",
+            "text": "Standard Condition (ROI) #1",
             "code": "#1234",
             "obsolete": false,
             "application_type": 1,
@@ -15,7 +15,7 @@
         "model": "leaseslicensing.proposalstandardrequirement",
         "pk": 2,
         "fields": {
-            "text": "Standard Requirement (ROI) #2",
+            "text": "Standard Condition (ROI) #2",
             "code": "#2345",
             "obsolete": false,
             "application_type": 1,
@@ -27,7 +27,7 @@
         "model": "leaseslicensing.proposalstandardrequirement",
         "pk": 3,
         "fields": {
-            "text": "Standard Requirement (LL) #1",
+            "text": "Standard Condition (LL) #1",
             "code": "#3456",
             "obsolete": false,
             "application_type": 2,
@@ -39,7 +39,7 @@
         "model": "leaseslicensing.proposalstandardrequirement",
         "pk": 4,
         "fields": {
-            "text": "Standard Requirement (LL) #2",
+            "text": "Standard Condition (LL) #2",
             "code": "#4567",
             "obsolete": false,
             "application_type": 2,
