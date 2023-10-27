@@ -3601,74 +3601,54 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         from leaseslicensing.components.approvals.document import (
             ApprovalDocumentGenerator,
         )
-        from leaseslicensing.components.approvals.models import (
-            ApprovalDocument,
-            ApprovalType,
-        )
+        from leaseslicensing.components.approvals.models import ApprovalDocument
 
         reason = kwargs.get("reason", ApprovalDocument.REASON_NEW)
 
         # Get the approval type object
-        approval_type = approval.approval_type
         document_generator = ApprovalDocumentGenerator()
 
-        # Attach lease license documents as provided by the assessor to the approval
-        license_documents = []
-        cover_letter = []
-        sign_off_sheets = []
-        other_documents = []
-        for document in self.lease_licence_approval_documents.all():
-            if document.approval_type_id != approval_type.id:
-                logger.warn(
-                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} "
-                    f"document `{document}` for Approval of type `{approval_type}`."
-                )
-                continue
+        documents = self.verify_approval_documents(approval)
 
-            if document.approval_type_document_type.is_license_document:
-                license_documents.append(document)
-            elif document.approval_type_document_type.is_cover_letter:
-                cover_letter.append(document)
-            elif document.approval_type_document_type.is_sign_off_sheet:
-                sign_off_sheets.append(document)
-            else:
-                other_documents.append(document)
-        if len(license_documents) != 1:
-            raise ValidationError(
-                f"There must be exactly one license document for {approval_type}, but found {len(license_documents)}."
-            )
-        if len(cover_letter) != 1:
-            raise ValidationError(
-                f"There must be exactly one cover letter for {approval_type}, but found {len(cover_letter)}."
-            )
-        if len(sign_off_sheets) != 1:
-            raise ValidationError(
-                f"There must be exactly one sign-off sheet for {approval_type}, but found {len(sign_off_sheets)}."
-            )
+        license_documents = documents["license_documents"]
+        cover_letter = documents["cover_letter"]
+        sign_off_sheets = documents["sign_off_sheets"]
 
         approval.licence_document = (
-            document_generator.create_or_update_approval_document(
-                approval,
-                filepath=license_documents[0]._file.path,
-                filename_prefix="Approval-",
-                reason=reason,
+            (
+                document_generator.create_or_update_approval_document(
+                    approval,
+                    filepath=license_documents["documents"][0]._file.path,
+                    filename_prefix="Approval-",
+                    reason=reason,
+                )
             )
+            if license_documents["required"]
+            else None
         )
         approval.cover_letter_document = (
-            document_generator.create_or_update_approval_document(
-                approval,
-                filepath=cover_letter[0]._file.path,
-                filename_prefix="CoverLetter-",
-                reason=reason,
+            (
+                document_generator.create_or_update_approval_document(
+                    approval,
+                    filepath=cover_letter["documents"][0]._file.path,
+                    filename_prefix="CoverLetter-",
+                    reason=reason,
+                )
             )
+            if cover_letter["required"]
+            else None
         )
         approval.sign_off_sheet_document = (
-            document_generator.create_or_update_approval_document(
-                approval,
-                filepath=sign_off_sheets[0]._file.path,
-                filename_prefix="SignOffSheet-",
-                reason=reason,
+            (
+                document_generator.create_or_update_approval_document(
+                    approval,
+                    filepath=sign_off_sheets["documents"][0]._file.path,
+                    filename_prefix="SignOffSheet-",
+                    reason=reason,
+                )
             )
+            if sign_off_sheets["required"]
+            else None
         )
 
     def amend_or_renew_approval(self, request, proposal_type_code):
@@ -3742,6 +3722,92 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         populate_gis_data(proposal, "proposalgeometry")
 
         return proposal
+
+    def verify_approval_documents(self, approval):
+        """
+        Verifies the document types of the approval type document types for the approval type of the approval
+        I.e. an approval type (a license) requires a certain amount of documents to be uploaded by the assessor.
+        Typically these are a license document, a cover letter, and a sign-off sheet. For the system to be able
+        to associate these document types with the respective fields in the model they have to be check marked as
+        their respective type. That is the document type of the document type.
+        This function verifies whether for each required typed document type exactly one document of that type
+        is present.
+
+        Args:
+            approval: Approval
+
+        Returns:
+            dict: A dictionary containing the documents of each type
+        """
+
+        from leaseslicensing.components.approvals.models import ApprovalType
+
+        # Get the approval type object
+        approval_type = approval.approval_type
+
+        mandatory_documenttypes = approval_type.approvaltypedocumenttypes.filter(
+            approvaltypedocumenttypeonapprovaltype__mandatory=True
+        )
+
+        documents = {}
+        documents["license_documents"] = {
+            "documents": [],  # List of documents to check there is exactly one of
+            "required": mandatory_documenttypes.filter(
+                is_license_document=True
+            ).exists(),  # Whether a document type of this type is required,
+            # i.e. whether there must be one document of this type
+        }
+        documents["cover_letter"] = {
+            "documents": [],
+            "required": mandatory_documenttypes.filter(is_cover_letter=True).exists(),
+        }
+        documents["sign_off_sheets"] = {
+            "documents": [],
+            "required": mandatory_documenttypes.filter(is_sign_off_sheet=True).exists(),
+        }
+        documents["other_documents"] = {"documents": []}
+        for document in self.lease_licence_approval_documents.all():
+            if document.approval_type_id != approval_type.id:
+                logger.warn(
+                    f"Ignoring {ApprovalType.objects.get(id=document.approval_type.id)} "
+                    f"document `{document}` for Approval of type `{approval_type}`."
+                )
+                continue
+
+            if document.approval_type_document_type.is_license_document:
+                documents["license_documents"]["documents"].append(document)
+            elif document.approval_type_document_type.is_cover_letter:
+                documents["cover_letter"]["documents"].append(document)
+            elif document.approval_type_document_type.is_sign_off_sheet:
+                documents["sign_off_sheets"]["documents"].append(document)
+            else:
+                documents["other_documents"]["documents"].append(document)
+        if (
+            documents["license_documents"]["required"]
+            and len(documents["license_documents"]["documents"]) != 1
+        ):
+            raise ValidationError(
+                f"There must be exactly one license document for {approval_type}, "
+                f"but found {len(documents['license_documents']['documents'])}."
+            )
+        if (
+            documents["cover_letter"]["required"]
+            and len(documents["cover_letter"]["documents"]) != 1
+        ):
+            raise ValidationError(
+                f"There must be exactly one cover letter for {approval_type}, "
+                f"but found {len(documents['cover_letter']['documents'])}."
+            )
+        if (
+            documents["sign_off_sheets"]["required"]
+            and len(documents["sign_off_sheets"]["documents"]) != 1
+        ):
+            raise ValidationError(
+                f"There must be exactly one sign-off sheet for {approval_type}, "
+                f"but found {len(documents['sign_off_sheets']['documents'])}."
+            )
+
+        return documents
 
 
 class ProposalApplicant(BaseApplicant):
