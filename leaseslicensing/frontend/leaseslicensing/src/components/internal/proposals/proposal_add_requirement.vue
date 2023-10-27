@@ -82,7 +82,7 @@
                                                 v-model="
                                                     requirement.standard_requirement
                                                 "
-                                                class="form-control"
+                                                class="form-select"
                                                 name="standard_requirement"
                                                 required
                                             >
@@ -109,10 +109,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div
-                                v-show="showDatesAndRecurring"
-                                class="form-group"
-                            >
+                            <div class="form-group">
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -135,10 +132,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div
-                                v-show="showDatesAndRecurring"
-                                class="form-group"
-                            >
+                            <div class="form-group">
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -156,9 +150,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <template
-                                v-if="showDatesAndRecurring && validDueDate"
-                            >
+                            <template v-if="validDueDate">
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -323,12 +315,6 @@ export default {
             }
             return false;
         },
-        showDatesAndRecurring: function () {
-            return (
-                this.requirement.standard_requirement &&
-                !this.requirement.standard_requirement.gross_turnover_required
-            );
-        },
     },
     mounted: function () {
         this.form = document.forms.requirementForm;
@@ -337,10 +323,7 @@ export default {
             if (this.selectedRequirement && this.selectedRequirement.id) {
                 this.requirement = Object.assign({}, this.selectedRequirement);
             } else {
-                console.log(this.requirements);
                 this.requirement.standard_requirement = this.requirements[0];
-                this.requirement.due_date = moment().format('YYYY-MM-DD');
-                this.requirement.reminder_date = moment().format('YYYY-MM-DD');
             }
         });
     },
