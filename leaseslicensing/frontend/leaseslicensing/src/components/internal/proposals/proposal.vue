@@ -97,7 +97,11 @@
                 </template>
 
                 <template v-if="display_requirements">
-                    <Requirements :key="requirementsKey" :proposal="proposal" />
+                    <Requirements
+                        :key="requirementsKey"
+                        :proposal="proposal"
+                        @updateRequirement="updateRequirement"
+                    />
                 </template>
 
                 <template
@@ -1773,6 +1777,15 @@ export default {
                 ? this.proposal.applicant.email
                 : '';
         },
+        conditionsMissingDates() {
+            return (
+                this.proposal &&
+                this.proposal.requirements.filter(
+                    (condition) =>
+                        !condition.due_date || !condition.reminder_date
+                )
+            );
+        },
     },
     watch: {},
     updated: function () {
@@ -2254,6 +2267,18 @@ export default {
                 if (!vm.canProposeToApproveTransfer()) {
                     return;
                 }
+            }
+
+            if (
+                this.conditionsMissingDates &&
+                this.conditionsMissingDates.length > 0
+            ) {
+                swal.fire({
+                    title: 'Conditions Missing Dates',
+                    text: 'You must enter a due date and reminder date for each condition before proposing to approve.',
+                    icon: 'warning',
+                });
+                return;
             }
 
             // Save the proposal before opening the modal
@@ -2762,6 +2787,16 @@ export default {
                 .finally(() => {
                     vm.loading = false;
                 });
+        },
+        updateRequirement: function (newRequirement) {
+            var oldRequirement = this.proposal.requirements.find(
+                (requirement) => requirement.id == newRequirement.id
+            );
+            Object.assign(oldRequirement, newRequirement);
+            console.log(
+                'this.proposal.requirements',
+                this.proposal.requirements
+            );
         },
         updateInvoicingDetails: function (value) {
             console.log('updateInvoicingDetails', value);

@@ -38,7 +38,7 @@
                                                     toggleStandardRequirement
                                                 "
                                             /><label class="control-label"
-                                                >Standard Requirement
+                                                >Standard Condition
                                             </label>
                                         </li>
                                         <li class="list-group-item">
@@ -53,7 +53,7 @@
                                                 "
                                             />
                                             <label class="control-label"
-                                                >Free Text Requirement
+                                                >Free Text Condition
                                             </label>
                                         </li>
                                     </ul>
@@ -274,7 +274,7 @@ export default {
             default: null,
         },
     },
-    emits: ['updateRequirements'],
+    emits: ['updateRequirement'],
     data: function () {
         let vm = this;
         return {
@@ -421,11 +421,13 @@ export default {
                     {
                         body: JSON.stringify(this.requirement),
                         method: 'PUT',
+                        'Content-Type': 'application/json',
                     }
                 );
                 if (response.ok) {
                     this.updatingRequirement = false;
-                    this.$emit('updateRequirements');
+                    let data = await response.json();
+                    this.$emit('updateRequirement', data);
                     this.close();
                 } else {
                     this.errors = true;
@@ -443,8 +445,9 @@ export default {
                 );
                 if (response.ok) {
                     this.addingRequirement = false;
+                    let data = await response.json();
+                    this.$emit('updateRequirement', data);
                     this.close();
-                    this.$emit('updateRequirements');
                 } else {
                     this.errors = true;
                     this.addingRequirement = false;

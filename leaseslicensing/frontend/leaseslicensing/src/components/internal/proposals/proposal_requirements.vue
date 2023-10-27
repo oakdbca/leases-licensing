@@ -5,6 +5,15 @@
             label="Conditions"
             index="conditions"
         >
+            <BootstrapAlert
+                v-if="
+                    conditionsMissingDates && conditionsMissingDates.length > 0
+                "
+                icon="exclamation-triangle-fill"
+                type="warning"
+            >
+                A due date and reminder date are required for every condition
+            </BootstrapAlert>
             <form class="form-horizontal" action="index.html" method="post">
                 <div class="row">
                     <div class="col-sm-12">
@@ -37,7 +46,7 @@
                 :proposal_id="proposal.id"
                 :requirements="requirements"
                 :selected-requirement="selectedRequirement"
-                @updateRequirements="updatedRequirements"
+                @updateRequirement="updateRequirement"
             />
         </FormSection>
     </div>
@@ -58,6 +67,7 @@ export default {
     props: {
         proposal: { type: Object, default: null },
     },
+    emits: ['updateRequirement'],
     data: function () {
         let vm = this;
         return {
@@ -66,7 +76,7 @@ export default {
             selectedRequirement: {},
             requirements: null,
             requirement_headers: [
-                'Requirement',
+                'Condition',
                 'Due Date',
                 'Repeats',
                 'Source',
@@ -228,11 +238,16 @@ export default {
         isReferrerCanEdit() {
             return this.proposal.assessor_mode.referee_can_edit;
         },
+        conditionsMissingDates() {
+            return this.proposal.requirements.filter(
+                (condition) => !condition.due_date || !condition.reminder_date
+            );
+        },
     },
     watch: {
         hasAssessorMode() {
             // reload the table
-            this.updatedRequirements();
+            this.$refs.requirements_datatable.vmDataTable.ajax.reload();
         },
     },
     mounted: async function () {
@@ -319,7 +334,8 @@ export default {
                 console.log('error');
             }
         },
-        updatedRequirements() {
+        updateRequirement(requirement) {
+            this.$emit('updateRequirement', requirement);
             this.$refs.requirements_datatable.vmDataTable.ajax.reload();
         },
         eventListeners() {
