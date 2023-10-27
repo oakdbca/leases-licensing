@@ -114,28 +114,7 @@ export default {
                         data: 'requirement',
                         // eslint-disable-next-line no-unused-vars
                         mRender: function (data, type, full) {
-                            var ellipsis = '...',
-                                truncated = _.truncate(data, {
-                                    length: 25,
-                                    omission: ellipsis,
-                                    separator: ' ',
-                                }),
-                                result = '<span>' + truncated + '</span>',
-                                popTemplate = _.template(
-                                    '<a tabindex="0" ' +
-                                        'role="button" ' +
-                                        'data-bs-toggle="popover" ' +
-                                        'data-bs-trigger="focus" ' +
-                                        'data-bs-placement="top"' +
-                                        'data-bs-content="<%= text %>" ' +
-                                        '>more</button>'
-                                );
-                            if (_.endsWith(truncated, ellipsis)) {
-                                result += popTemplate({
-                                    text: data,
-                                });
-                            }
-
+                            let result = `<span data-bs-toggle="tooltip" data-bs-placement="top" style="max-width:220px" class="d-inline-block text-truncate" title="${data}">${data}</span>`;
                             return result;
                         },
                     },
@@ -260,6 +239,12 @@ export default {
         await this.fetchRequirements();
         this.$nextTick(() => {
             this.eventListeners();
+            let tooltipTriggerList = [].slice.call(
+                document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            );
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         });
     },
     methods: {
