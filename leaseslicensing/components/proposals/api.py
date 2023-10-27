@@ -2314,12 +2314,9 @@ class ProposalRequirementViewSet(LicensingViewset):
     @basic_exception_handler
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        # serializer = self.get_serializer(instance, data=json.loads(request.data.get('data')))
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # TODO: requirements documents in LL?
-        # instance.add_documents(request)
         return Response(serializer.data)
 
     @basic_exception_handler
