@@ -1016,7 +1016,7 @@ export default {
     mounted: function () {
         let vm = this;
         this.$nextTick(() => {
-            vm.initialiseSelects();
+            vm.initialiseRefereeSelect();
             vm.initialiseAssignedOfficerSelect();
             vm.initialisePopovers();
             this.formSectionLabels = this.getFormSectionLabels();
@@ -1163,8 +1163,15 @@ export default {
                 }
             });
         },
-        initialiseSelects: function () {
+        initialiseRefereeSelect: function (reinit = false) {
             let vm = this;
+            if (reinit) {
+                console.log('destroying existing select2s');
+                console.log($(vm.$refs.department_users).data('select2'));
+                $(vm.$refs.department_users).data('select2')
+                    ? $(vm.$refs.department_users).select2('destroy')
+                    : '';
+            }
             $(vm.$refs.department_users)
                 .select2({
                     minimumInputLength: 2,
@@ -1424,11 +1431,11 @@ export default {
                 }
             });
         },
-        assignRequestUser: function () {
+        assignRequestUser: async function () {
             this.$emit('assignRequestUser');
-            this.$nextTick(() => {
-                this.initialiseSelects();
-            });
+            setTimeout(() => {
+                this.initialiseRefereeSelect();
+            }, 500);
         },
         assignTo: function () {
             this.$emit('assignTo');
