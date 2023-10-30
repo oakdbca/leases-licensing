@@ -647,14 +647,6 @@ export default {
                             vm.switchStatus(
                                 constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID
                             );
-                        } else if (
-                            vm.proposal.processing_status_id ===
-                            constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS
-                                .ID
-                        ) {
-                            vm.switchStatus(
-                                constants.PROPOSAL_STATUS.WITH_REFERRAL.ID
-                            );
                         } else {
                             console.error(
                                 `Can not switch back from status ${vm.proposal.processing_status}`
@@ -667,10 +659,6 @@ export default {
                                 // If either the assessor or referrer changes the status to `With Assessor/Referral (Conditions)`
                                 // both assessor and referrer should be able to return back to the Proposal
                                 [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [
-                                    ROLES.GROUP_NAME_ASSESSOR.ID,
-                                    ROLES.REFERRAL.ID,
-                                ],
-                                [PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID]: [
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
                                     ROLES.REFERRAL.ID,
                                 ],
@@ -946,8 +934,6 @@ export default {
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
                 this.proposal.processing_status_id ==
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID ||
-                this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
@@ -977,7 +963,6 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
                     constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
                 ].includes(this.proposal.processing_status_id)
             );
         },
