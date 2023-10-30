@@ -32,10 +32,6 @@ module.exports = {
         },
         WITH_APPROVER: { ID: 'with_approver', TEXT: 'With Approver' },
         WITH_REFERRAL: { ID: 'with_referral', TEXT: 'With Referral' },
-        WITH_REFERRAL_CONDITIONS: {
-            ID: 'with_referral_conditions',
-            TEXT: 'With Referral (Conditions)',
-        },
         APPROVED_APPLICATION: {
             ID: 'approved_registration_of_interest',
             TEXT: 'Approved (Registration of Interest)',
