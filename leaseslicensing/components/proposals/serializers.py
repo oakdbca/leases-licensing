@@ -412,6 +412,19 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         return ret_dict
 
 
+class ProposalAdditionalDocumentTypeSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="additional_document_type.name")
+    help_text = serializers.CharField(source="additional_document_type.help_text")
+
+    class Meta:
+        model = ProposalAdditionalDocumentType
+        fields = [
+            "id",
+            "name",
+            "help_text",
+        ]
+
+
 class BaseProposalSerializer(serializers.ModelSerializer):
     model_name = serializers.CharField(read_only=True)
     readonly = serializers.SerializerMethodField(read_only=True)
@@ -431,7 +444,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     competitive_process = serializers.SerializerMethodField(read_only=True)
     can_edit_invoicing_details = serializers.SerializerMethodField(read_only=True)
     approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
-
     # Gis data fields
     identifiers = serializers.SerializerMethodField()
     vestings = serializers.SerializerMethodField()
@@ -955,19 +967,6 @@ class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ProposalAdditionalDocumentTypeSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="additional_document_type.name")
-    help_text = serializers.CharField(source="additional_document_type.help_text")
-
-    class Meta:
-        model = ProposalAdditionalDocumentType
-        fields = [
-            "id",
-            "name",
-            "help_text",
-        ]
-
-
 class ProposalSerializer(BaseProposalSerializer):
     submitter = serializers.SerializerMethodField(read_only=True)
     processing_status = serializers.SerializerMethodField(read_only=True)
@@ -991,6 +990,7 @@ class ProposalSerializer(BaseProposalSerializer):
             "lodgement_versions",
             "referrals",
             "processing_status_id",
+            "additional_document_types",
         ]
 
     def get_field_names(self, declared_fields, info):
@@ -1370,6 +1370,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     requirements = serializers.SerializerMethodField()
     can_edit_invoicing_details = serializers.SerializerMethodField()
+    additional_document_types = serializers.SerializerMethodField()
     additional_documents = AdditionalDocumentSerializer(many=True, read_only=True)
     additional_documents_missing = serializers.ListField(read_only=True)
 
@@ -1609,6 +1610,11 @@ class InternalProposalSerializer(BaseProposalSerializer):
         if user:
             email_user = retrieve_email_user(user)
             return f"{email_user.first_name} {email_user.last_name}"
+
+    def get_additional_document_types(self, obj):
+        return obj.additional_document_types.all().values_list(
+            "additional_document_type__id", flat=True
+        )
 
 
 class ProposalUserActionSerializer(serializers.ModelSerializer):
