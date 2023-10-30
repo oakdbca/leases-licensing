@@ -1436,10 +1436,9 @@ export default {
         withReferral: function () {
             return (
                 this.proposal &&
-                [
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
-                ].includes(this.proposal.processing_status_id)
+                [constants.PROPOSAL_STATUS.WITH_REFERRAL.ID].includes(
+                    this.proposal.processing_status_id
+                )
             );
         },
         collapseAssessmentComments: function () {
@@ -1572,10 +1571,9 @@ export default {
             ) {
                 return `/api/proposal/${this.proposal.id}/assessor_save.json`;
             } else if (
-                [
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
-                ].includes(this.proposal.processing_status_id)
+                [constants.PROPOSAL_STATUS.WITH_REFERRAL.ID].includes(
+                    this.proposal.processing_status_id
+                )
             ) {
                 return `/api/proposal/${this.proposal.id}/referral_save.json`;
             } else if (
@@ -1636,8 +1634,6 @@ export default {
             let ret_val =
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
-                this.proposal.processing_status_id ==
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID ||
                 ((this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                     this.isFinalised) &&
@@ -1725,7 +1721,6 @@ export default {
                 ![
                     'With Assessor (Requirements)', // FIXME What is this processing status for?
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.TEXT,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.TEXT,
                 ].includes(this.proposal.processing_status)
             );
         },
@@ -2719,11 +2714,9 @@ export default {
                         this.showingProposal = true;
                     }
                     if (
-                        [
-                            constants.PROPOSAL_STATUS.WITH_REFERRAL.TEXT,
-                            constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS
-                                .TEXT,
-                        ].includes(vm.proposal.processing_status)
+                        [constants.PROPOSAL_STATUS.WITH_REFERRAL.TEXT].includes(
+                            vm.proposal.processing_status
+                        )
                     ) {
                         $(
                             'textarea.referral-comment:enabled:visible:not([readonly="readonly"]):first'
