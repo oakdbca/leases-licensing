@@ -1178,7 +1178,7 @@
                                             proposal.additional_document_types
                                         "
                                         class="form-select"
-                                        :disabled="!canAssess"
+                                        :disabled="!canAssess || savingProposal"
                                     ></select>
                                 </div>
                                 <div class="row">
@@ -2365,7 +2365,8 @@ export default {
         updateProposalData: function (proposal) {
             this.proposal = proposal;
         },
-        amendmentRequest: function () {
+        amendmentRequest: async function () {
+            this.loading = true;
             let values = '';
             $('.deficiency').each((i, d) => {
                 values +=
@@ -2375,8 +2376,10 @@ export default {
                           )}\nDeficiency - ${$(d).val()}\n\n`
                         : '';
             });
+            await this.save(false);
             this.$refs.amendment_request.amendment.text = values;
             this.$refs.amendment_request.isModalOpen = true;
+            this.loading = false;
         },
         highlight_deficient_fields: function (deficient_fields) {
             for (let deficient_field of deficient_fields) {
