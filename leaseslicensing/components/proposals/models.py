@@ -2232,6 +2232,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         self.processing_status = Proposal.PROCESSING_STATUS_DECLINED
         self.save()
 
+        if (
+            self.proposal_type.code == PROPOSAL_TYPE_TRANSFER
+            and self.approval.active_transfer
+        ):
+            active_transfer = self.approval.active_transfer
+            active_transfer.processing_status = (
+                active_transfer.APPROVAL_TRANSFER_STATUS_DECLINED
+            )
+            active_transfer.save()
+
         # Log proposal action
         self.log_user_action(ProposalUserAction.ACTION_DECLINE.format(self.id), request)
 
