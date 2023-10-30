@@ -1483,7 +1483,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             group = self.get_approver_group()
         elif self.processing_status in [
             Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-            Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
         ]:
@@ -1610,7 +1609,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
             Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
             Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-            Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             logger.info("self.__assessor_group().get_system_group_member_ids()")
             logger.info(self.get_assessor_group().get_system_group_member_ids())
@@ -1629,7 +1627,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             self.processing_status
             in [
                 self.PROCESSING_STATUS_WITH_REFERRAL,
-                self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
             ]
             and Referral.objects.filter(proposal=self, referral=user.id).exists()
         )
@@ -2108,7 +2105,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     )
         elif status in [
             self.PROCESSING_STATUS_WITH_REFERRAL,
-            self.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             if self.processing_status == status:
                 return

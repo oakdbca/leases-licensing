@@ -502,7 +502,6 @@ class ProposalViewSet(UserActionLoggingViewset):
                 qs = qs | Proposal.objects.filter(
                     processing_status__in=[
                         Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-                        Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
                     ],
                     referrals__in=Referral.objects.filter(referral=user.id),
                 )
@@ -1379,7 +1378,6 @@ class ProposalViewSet(UserActionLoggingViewset):
                 Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
                 Proposal.PROCESSING_STATUS_WITH_APPROVER,
                 Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-                Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
             ]:
                 raise serializers.ValidationError("The status provided is not allowed")
         instance.move_to_status(request, status, approver_comment)

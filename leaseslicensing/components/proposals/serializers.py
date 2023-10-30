@@ -904,7 +904,6 @@ class ListProposalSerializer(BaseProposalSerializer):
                 accessing_user_can_process = True
         elif proposal.processing_status in [
             Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-            Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             if proposal.referrals.filter(
                 Q(referral=user.id),
