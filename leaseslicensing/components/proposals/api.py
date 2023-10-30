@@ -1375,11 +1375,11 @@ class ProposalViewSet(UserActionLoggingViewset):
             raise serializers.ValidationError("Status is required")
         else:
             if status not in [
-                "with_assessor",
-                "with_assessor_conditions",
-                "with_approver",
-                "with_referral",
-                "with_referral_conditions",
+                Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+                Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+                Proposal.PROCESSING_STATUS_WITH_APPROVER,
+                Proposal.PROCESSING_STATUS_WITH_REFERRAL,
+                Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
             ]:
                 raise serializers.ValidationError("The status provided is not allowed")
         instance.move_to_status(request, status, approver_comment)
@@ -1547,54 +1547,6 @@ class ProposalViewSet(UserActionLoggingViewset):
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    @renderer_classes((JSONRenderer,))
-    @basic_exception_handler
-    def on_hold(self, request, *args, **kwargs):
-        with transaction.atomic():
-            instance = self.get_object()
-            is_onhold = eval(request.data.get("onhold"))
-            data = {}
-            if is_onhold:
-                data["type"] = "onhold"
-                instance.on_hold(request)
-            else:
-                data["type"] = "onhold_remove"
-                instance.on_hold_remove(request)
-
-            data["proposal"] = f"{instance.id}"
-            data["staff"] = f"{request.user.id}"
-            data["text"] = request.user.get_full_name() + ": {}".format(
-                request.data["text"]
-            )
-            data["subject"] = request.user.get_full_name() + ": {}".format(
-                request.data["text"]
-            )
-            serializer = ProposalLogEntrySerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            comms = serializer.save()
-
-            # save the files
-            documents_qs = instance.onhold_documents.filter(
-                input_name="on_hold_file", visible=True
-            )
-            for f in documents_qs:
-                document = comms.documents.create(_file=f._file, name=f.name)
-                # document = comms.documents.create()
-                # document.name = f.name
-                # document._file = f._file #.strip('/media')
-                document.input_name = f.input_name
-                document.can_delete = True
-                document.save()
-            # end save documents
-
-            return Response(serializer.data)
 
     @detail_route(
         methods=[
