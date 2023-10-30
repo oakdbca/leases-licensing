@@ -108,6 +108,12 @@ module.exports = {
         },
         EXPIRED_LICENCE: { ID: 'expired_licence', TEXT: 'Expired (licence)' },
     },
+    PROPOSAL_TYPE: {
+        AMENDMENT: { code: 'amendment', description: 'Amendment' },
+        NEW: { code: 'new', description: 'New Proposal' },
+        RENEWAL: { code: 'renewal', description: 'Renewal' },
+        TRANSFER: { code: 'transfer', description: 'Transfer' },
+    },
     APPROVAL_TYPE: {
         LICENCE: { ID: 'licence', TEXT: 'Licence' },
         LEASE: { ID: 'lease', TEXT: 'Lease' },
