@@ -661,35 +661,7 @@ export default {
                 this.filterApplied
             );
         },
-        //getActionDetailTable: function(sticker){
-        //    let thead = `<thead>
-        //                    <tr>
-        //                        <th scope="col">Date</th>
-        //                        <th scope="col">User</th>
-        //                        <th scope="col">Action</th>
-        //                        <th scope="col">Date of Lost</th>
-        //                        <th scope="col">Date of Returned</th>
-        //                        <th scope="col">Reason</th>
-        //                    </tr>
-        //                <thead>`
-        //    let tbody = ''
-        //    for (let detail of sticker.sticker_action_details){
-        //        tbody += `<tr>
-        //            <td>${moment(detail.date_updated).format('DD/MM/YYYY')}</td>
-        //            <td>${detail.user_detail ? detail.user_detail.first_name : ''} ${detail.user_detail ? detail.user_detail.last_name : ''} </td>
-        //            <td>${detail.action ? detail.action : ''}</td>
-        //            <td>${detail.date_of_lost_sticker ? moment(detail.date_of_lost_sticker, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}</td>
-        //            <td>${detail.date_of_returned_sticker ? moment(detail.date_of_returned_sticker, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}</td>
-        //            <td>${detail.reason}</td>
-        //        </tr>`
-        //    }
-        //    tbody = '<tbody>' + tbody + '</tbody>'
-
-        //    let details = '<table class="table table-striped table-bordered table-sm table-sticker-details" id="table-sticker-details-' + sticker.id + '">' + thead + tbody + '</table>'
-        //    return details
-        //},
         new_application_button_clicked: async function () {
-            //await this.$router.isReady()
             console.log(this.$router);
             await this.$router.push({
                 name: 'apply_proposal',
