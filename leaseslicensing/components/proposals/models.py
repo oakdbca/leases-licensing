@@ -2189,19 +2189,45 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             raise exceptions.ProposalNotAuthorized()
 
         if self.processing_status != Proposal.PROCESSING_STATUS_WITH_APPROVER:
-            raise ValidationError("You cannot decline if it is not with approver")
+            raise ValidationError(
+                "You cannot decline this proposal as it is not with approver"
+            )
+
+        cc_email = details.get("cc_email", None)
+
+        # Add the initiator of the transfer to the cc list if appropriate
+        if self.proposal_type.code == PROPOSAL_TYPE_TRANSFER:
+            if self.approval.active_transfer:
+                initiator_id = self.approval.active_transfer.initiator
+                if initiator_id:
+                    initiator = retrieve_email_user(initiator_id)
+                    if not cc_email:
+                        cc_email = initiator.email
+                    elif initiator.email not in cc_email:
+                        cc_email += f",{initiator.email}"
+                else:
+                    logger.warning(
+                        f"Active transfer {self.approval.active_transfer} has no initiator"
+                    )
+            else:
+                logger.warning(
+                    f"Proposal of type {self.proposal_type} has no active transfer"
+                )
 
         (
             proposal_decline,
-            success,
+            created,
         ) = ProposalDeclinedDetails.objects.update_or_create(
             proposal=self,
             defaults={
                 "officer": request.user.id,
                 "reason": details.get("reason"),
-                "cc_email": details.get("cc_email", None),
+                "cc_email": cc_email,
             },
         )
+        if created:
+            logger.info(f"Created ProposalDeclinedDetails instance: {created}")
+
         self.proposed_decline_status = True
         self.processing_status = Proposal.PROCESSING_STATUS_DECLINED
         self.save()

@@ -307,21 +307,21 @@ def send_proposal_decline_email_notification(proposal, request, proposal_decline
         html_template="leaseslicensing/emails/proposals/send_decline_notification.html",
         txt_template="leaseslicensing/emails/proposals/send_decline_notification.txt",
     )
-    # email = ProposalDeclineSendNotificationEmail(proposal.application_type.name_display)
 
-    context = {
-        "proposal": proposal,
-    }
-    cc_list = proposal_decline.cc_email
+    context = {"proposal": proposal, "reason": proposal_decline.reason}
     all_ccs = []
+    cc_list = proposal_decline.cc_email
     if cc_list:
         all_ccs = cc_list.split(",")
     if proposal.org_applicant and proposal.org_applicant.email:
         all_ccs.append(proposal.org_applicant.email)
 
-    # msg = email.send(proposal.submitter.email, bcc= all_ccs, context=context)
+    all_ccs = list(filter(None, all_ccs))
+
+    logger.debug(f"all_ccs: {all_ccs}")
+
     msg = email.send(
-        retrieve_email_user(proposal.submitter).email, bcc=all_ccs, context=context
+        retrieve_email_user(proposal.submitter).email, cc=all_ccs, context=context
     )
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, proposal, sender=sender)
