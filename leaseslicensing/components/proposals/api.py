@@ -219,32 +219,6 @@ class GetEmptyList(views.APIView):
         return Response([])
 
 
-# class DatatablesFilterBackend(BaseFilterBackend):
-#
-#   def filter_queryset(self, request, queryset, view):
-#       queryset = super(DatatablesFilterBackend, self).filter_queryset(request, queryset, view)
-#       return queryset
-
-"""
-1. internal_proposal.json
-2. regions.json
-3. trails.json
-4. vehicles.json
-5. access_types.json
-6. required_documents.json
-7. land_activities.json
-8. vessels.json
-9. marine_activities.json
-10. marine_parks.json
-11. accreditation_choices.json
-12. licence_period_choices.json
-13. global_settings.json
-14. questions.json
-15. amendment_request_reason_choices.json
-16. contacts.json
-"""
-
-
 class ProposalFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
@@ -277,24 +251,9 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
                 queryset = queryset.filter(application_type_id=filter_application_type)
             if filter_application_status:
                 queryset = queryset.filter(processing_status=filter_application_status)
-        elif queryset.model is Compliance:
-            if filter_lodged_from:
-                queryset = queryset.filter(due_date__gte=filter_lodged_from)
-            if filter_lodged_to:
-                queryset = queryset.filter(due_date__lte=filter_lodged_to)
-        elif queryset.model is Referral:
-            if filter_lodged_from:
-                queryset = queryset.filter(
-                    proposal__lodgement_date__gte=filter_lodged_from
-                )
-            if filter_lodged_to:
-                queryset = queryset.filter(
-                    proposal__lodgement_date__lte=filter_lodged_to
-                )
 
         ledger_lookup_fields = [
             "submitter",
-            # "ind_applicant", # Replaced by ProposalApplicant object
         ]
         # Prevent the external user from searching for officers
         if is_internal(request):
@@ -317,8 +276,6 @@ class ProposalRenderer(DatatablesRenderer):
             renderer_context["view"], "_datatables_total_count"
         ):
             data["recordsTotal"] = renderer_context["view"]._datatables_total_count
-            # data.pop('recordsTotal')
-            # data.pop('recordsFiltered')
         return super().render(data, accepted_media_type, renderer_context)
 
 
@@ -408,7 +365,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
 
         qs = qs.distinct()
         self.paginator.page_size = qs.count()
-        # result_page = self.paginator.paginate_queryset(qs.order_by('-id'), request)
         result_page = self.paginator.paginate_queryset(qs, request)
         serializer = ListProposalSerializer(
             result_page, context={"request": request}, many=True
