@@ -1178,6 +1178,7 @@
                                             proposal.additional_document_types
                                         "
                                         class="form-select"
+                                        :disabled="!canAssess"
                                     ></select>
                                 </div>
                                 <div class="row">
@@ -1365,18 +1366,14 @@ export default {
             current_revision_id: null,
             assessment: {},
             loading: false,
-            //selected_referral: '',
-            //referral_text: '',
             approver_comment: '',
             form: null,
             members: [],
-            //department_users : [],
             contacts_table_initialised: false,
             initialisedSelects: false,
             showingProposal: false,
             showingRequirements: false,
             hasAmendmentRequest: false,
-            //requirementsComplete:true,
             state_options: ['requirements', 'processing'],
             contacts_table_id: vm._.uid + 'contacts-table',
             contacts_options: {
@@ -1416,9 +1413,6 @@ export default {
             },
             contacts_table: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
-            //comms_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/comms_log'),
-            //comms_add_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/add_comms_log'),
-            //logs_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/action_log'),
             comms_url: helpers.add_endpoint_json(
                 api_endpoints.proposal,
                 vm.$route.params.proposal_id + '/comms_log'
@@ -1432,9 +1426,7 @@ export default {
                 vm.$route.params.proposal_id + '/action_log'
             ),
             panelClickersInitialised: false,
-            //sendingReferral: false,
             uuid: 0,
-            //additional_document_types: [],
             additionalDocumentTypesSelected: [],
             select2AppliedToAdditionalDocumentTypes: false,
             proposedApprovalState: '',
@@ -1473,17 +1465,6 @@ export default {
                 if (
                     this.proposal.application_type.name ===
                     constants.APPLICATION_TYPES.LEASE_LICENCE
-                ) {
-                    if (
-                        this.proposal.accessing_user_roles.includes(
-                            constants.ROLES.GROUP_NAME_ASSESSOR.ID
-                        )
-                    ) {
-                        canEdit = true;
-                    }
-                } else if (
-                    this.proposal.application_type.name ===
-                    constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST
                 ) {
                     if (
                         this.proposal.accessing_user_roles.includes(
@@ -1662,16 +1643,6 @@ export default {
                     this.isFinalised) &&
                     this.showingRequirements);
             return ret_val;
-        },
-        showElectoralRoll: function () {
-            let show = false;
-            if (
-                this.proposal &&
-                ['wla', 'mla'].includes(this.proposal.application_type_code)
-            ) {
-                show = true;
-            }
-            return show;
         },
         readonly: function () {
             return true;
@@ -2486,15 +2457,6 @@ export default {
                     });
                 });
         },
-        /*
-        refreshFromResponse:function(response){
-            this.proposal = helpers.copyObject(response.body);
-            this.$nextTick(() => {
-                this.initialiseAssignedOfficerSelect(true);
-                this.updateAssignedOfficerSelect();
-            });
-        },
-        */
         assignTo: async function () {
             let vm = this;
             console.log('in assignTo');
