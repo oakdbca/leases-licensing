@@ -1,74 +1,138 @@
 <template>
     <div>
-        <CollapsibleFilters component_title="Filters" ref="collapsible_filters" @created="collapsible_component_mounted"
-            class="mb-2">
+        <CollapsibleFilters
+            ref="collapsible_filters"
+            component_title="Filters"
+            class="mb-2"
+            @created="collapsible_component_mounted"
+        >
             <div class="row">
                 <div class="col-md-3">
                     <label for="">Type</label>
                     {{ select2AppliedToApplicationType }}
                     <template v-show="select2AppliedToApplicationType">
-                        <select class="form-select" ref="filter_application_type"></select>
+                        <select
+                            ref="filter_application_type"
+                            class="form-select"
+                        ></select>
                     </template>
                 </div>
                 <div class="col-md-3">
                     <label for="">Status</label>
                     <template v-show="select2AppliedToApplicationStatus">
-                        <select class="form-select" ref="filter_application_status"></select>
+                        <select
+                            ref="filter_application_status"
+                            class="form-select"
+                        ></select>
                     </template>
                 </div>
                 <div class="col-md-3">
                     <label for="">Lodged From</label>
-                    <div class="input-group date" ref="proposalDateFromPicker">
-                        <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterProposalLodgedFrom">
+                    <div ref="proposalDateFromPicker" class="input-group date">
+                        <input
+                            v-model="filterProposalLodgedFrom"
+                            type="date"
+                            class="form-control"
+                            placeholder="DD/MM/YYYY"
+                        />
                     </div>
                 </div>
                 <div class="col-md-3">
                     <label for="">Lodged To</label>
-                    <div class="input-group date" ref="proposalDateToPicker">
-                        <input type="date" class="form-control" placeholder="DD/MM/YYYY" v-model="filterProposalLodgedTo">
+                    <div ref="proposalDateToPicker" class="input-group date">
+                        <input
+                            v-model="filterProposalLodgedTo"
+                            type="date"
+                            class="form-control"
+                            placeholder="DD/MM/YYYY"
+                        />
                     </div>
                 </div>
             </div>
         </CollapsibleFilters>
 
         <div class="d-flex justify-content-end align-items-center mb-2">
-            <div @click="displayAllFeatures" class="btn mr-2">Zoom to All</div>
-            <button type="button" class="btn btn-primary" @click="geoJsonButtonClicked"><i class="fa-solid fa-download"></i>
-                Get GeoJSON</button>
+            <div class="btn mr-2" @click="displayAllFeatures">Zoom to All</div>
+            <button
+                type="button"
+                class="btn btn-primary"
+                @click="geoJsonButtonClicked"
+            >
+                <i class="fa-solid fa-download"></i> Get GeoJSON
+            </button>
         </div>
 
         <div :id="map_container_id">
-            <div :id="elem_id" class="map" style="position: relative;">
+            <div :id="elem_id" class="map" style="position: relative">
                 <div class="basemap-button">
-                    <img id="basemap_sat" src="../../assets/satellite_icon.jpg" @click="setBaseLayer('sat')" />
-                    <img id="basemap_osm" src="../../assets/map_icon.png" @click="setBaseLayer('osm')" />
+                    <img
+                        id="basemap_sat"
+                        src="../../assets/satellite_icon.jpg"
+                        @click="setBaseLayer('sat')"
+                    />
+                    <img
+                        id="basemap_osm"
+                        src="../../assets/map_icon.png"
+                        @click="setBaseLayer('osm')"
+                    />
                 </div>
                 <div class="optional-layers-wrapper">
                     <!-- Toggle measure tool between active and not active -->
                     <div class="optional-layers-button-wrapper">
-                        <div :class="[
-                                mode == 'measure' ? 'optional-layers-button-active' : 'optional-layers-button'
-                            ]" @click="set_mode.bind(this)('measure')">
-                            <img class="svg-icon" src="../../assets/ruler.svg" />
+                        <div
+                            :class="[
+                                mode == 'measure'
+                                    ? 'optional-layers-button-active'
+                                    : 'optional-layers-button',
+                            ]"
+                            @click="set_mode.bind(this)('measure')"
+                        >
+                            <img
+                                class="svg-icon"
+                                src="../../assets/ruler.svg"
+                            />
                         </div>
                     </div>
-                    <div style="position:relative">
+                    <div style="position: relative">
                         <transition v-if="optionalLayers.length">
                             <div class="optional-layers-button-wrapper">
-                                <div class="optional-layers-button" @mouseover="hover = true">
+                                <div
+                                    class="optional-layers-button"
+                                    @mouseover="hover = true"
+                                >
                                     <img src="../../assets/layers.svg" />
                                 </div>
                             </div>
                         </transition>
                         <transition v-if="optionalLayers.length">
-                            <div div class="layer_options layer_menu" v-show="hover" @mouseleave="hover = false">
+                            <div
+                                v-show="hover"
+                                div
+                                class="layer_options layer_menu"
+                                @mouseleave="hover = false"
+                            >
                                 <template v-for="layer in optionalLayers">
                                     <div class="row">
-                                        <input type="checkbox" :id="layer.ol_uid" :checked="layer.values_.visible"
-                                            @change="changeLayerVisibility(layer)" class="layer_option col-md-1" />
-                                        <label :for="layer.ol_uid" class="layer_option col-md-6">{{ layer.get('title')
-                                        }}</label>
-                                        <RangeSlider class="col-md-5" @valueChanged='valueChanged($event, layer)' />
+                                        <input
+                                            :id="layer.ol_uid"
+                                            type="checkbox"
+                                            :checked="layer.values_.visible"
+                                            class="layer_option col-md-1"
+                                            @change="
+                                                changeLayerVisibility(layer)
+                                            "
+                                        />
+                                        <label
+                                            :for="layer.ol_uid"
+                                            class="layer_option col-md-6"
+                                            >{{ layer.get('title') }}</label
+                                        >
+                                        <RangeSlider
+                                            class="col-md-5"
+                                            @valueChanged="
+                                                valueChanged($event, layer)
+                                            "
+                                        />
                                     </div>
                                 </template>
                             </div>
@@ -91,8 +155,8 @@
 
 <script>
 import { v4 as uuid } from 'uuid';
-import { api_endpoints, helpers, constants } from '@/utils/hooks'
-import CollapsibleFilters from '@/components/forms/collapsible_component.vue'
+import { api_endpoints, helpers, constants } from '@/utils/hooks';
+import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 
 import 'ol/ol.css';
 //import 'ol-layerswitcher/dist/ol-layerswitcher.css'
@@ -107,28 +171,46 @@ import Collection from 'ol/Collection';
 import { Draw, Modify, Snap } from 'ol/interaction';
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
-import { Circle as CircleStyle, Fill, Stroke, Style, Text, RegularShape } from 'ol/style';
-import { FullScreen as FullScreenControl, MousePosition as MousePositionControl } from 'ol/control';
+import {
+    Circle as CircleStyle,
+    Fill,
+    Stroke,
+    Style,
+    Text,
+    RegularShape,
+} from 'ol/style';
+import {
+    FullScreen as FullScreenControl,
+    MousePosition as MousePositionControl,
+} from 'ol/control';
 import { Feature } from 'ol';
 import { LineString, Point } from 'ol/geom';
 import { getDistance } from 'ol/sphere';
 import { circular } from 'ol/geom/Polygon';
 import GeoJSON from 'ol/format/GeoJSON';
 import Overlay from 'ol/Overlay';
-import { getArea, getLength } from 'ol/sphere'
+import { getArea, getLength } from 'ol/sphere';
 import Cluster from 'ol/source/Cluster';
 /*
 import 'select2/dist/css/select2.min.css'
 import 'select2-bootstrap-theme/dist/select2-bootstrap.min.css'
 */
-import MeasureStyles, { formatLength } from '@/components/common/measure.js'
-require("select2/dist/css/select2.min.css");
+import MeasureStyles, { formatLength } from '@/components/common/measure.js';
+require('select2/dist/css/select2.min.css');
 //require("select2-bootstrap-5-theme/dist/select2-bootstrap-5-theme.css");
-import RangeSlider from '@/components/forms/range_slider.vue'
-import { addOptionalLayers, set_mode, baselayer_name } from '@/components/common/map_functions.js'
+import RangeSlider from '@/components/forms/range_slider.vue';
+import {
+    addOptionalLayers,
+    set_mode,
+    baselayer_name,
+} from '@/components/common/map_functions.js';
 
 export default {
     name: 'MapComponentWithFilters',
+    components: {
+        CollapsibleFilters,
+        RangeSlider,
+    },
     props: {
         level: {
             type: String,
@@ -136,105 +218,111 @@ export default {
             validator: function (val) {
                 let options = ['internal', 'referral', 'external'];
                 return options.indexOf(val) != -1 ? true : false;
-            }
+            },
         },
     },
     data() {
         let vm = this;
 
         // Introducing classes
-        const conf_statuses = [ // This array is used to construct styles instructions
+        const conf_statuses = [
+            // This array is used to construct styles instructions
             constants.PROPOSAL_STATUS.DRAFT,
             constants.PROPOSAL_STATUS.WITH_ASSESSOR,
             constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS,
             constants.PROPOSAL_STATUS.WITH_APPROVER,
             constants.PROPOSAL_STATUS.WITH_REFERRAL,
-            constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS,
             constants.PROPOSAL_STATUS.APPROVED_APPLICATION,
             constants.PROPOSAL_STATUS.APPROVED_COMPETITIVE_PROCESS,
             constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING,
             constants.PROPOSAL_STATUS.APPROVED,
             constants.PROPOSAL_STATUS.DECLINED,
             constants.PROPOSAL_STATUS.DISCARDED,
-        ]
+        ];
         const conf_types = [
             constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST,
             constants.APPLICATION_TYPES.LEASE_LICENCE,
-        ]
+        ];
         class MainManager {
             constructor() {
                 this._types = (function () {
-                    let types = []
-                    conf_types.forEach(myType => {
-                        types.push(new TypeFilterManager(myType))
-                    })
-                    return types
-                })()
+                    let types = [];
+                    conf_types.forEach((myType) => {
+                        types.push(new TypeFilterManager(myType));
+                    });
+                    return types;
+                })();
             }
             show_me() {
-                let me = this
-                me._types.forEach(type => {
-                    type.perform_show_hide()
-                })
+                let me = this;
+                me._types.forEach((type) => {
+                    type.perform_show_hide();
+                });
             }
         }
         class TypeFilterManager {
             constructor(id) {
-                let me = this
+                let me = this;
 
-                me._id = id
+                me._id = id;
                 me._site_statuses = (function () {
-                    let statuses = []
-                    conf_statuses.forEach(myStatus => {
-                        statuses.push(new StatusFilterManager(myStatus.ID, me))
-                    })
-                    return statuses
-                })()
+                    let statuses = [];
+                    conf_statuses.forEach((myStatus) => {
+                        statuses.push(new StatusFilterManager(myStatus.ID, me));
+                    });
+                    return statuses;
+                })();
             }
             perform_show_hide() {
-                let me = this
-                if (vm.filterApplicationTypes.length === 0 || vm.filterApplicationTypes.includes(me._id)) {
-                    me.show_me()
+                let me = this;
+                if (
+                    vm.filterApplicationTypes.length === 0 ||
+                    vm.filterApplicationTypes.includes(me._id)
+                ) {
+                    me.show_me();
                 } else {
-                    me.hide_me()
+                    me.hide_me();
                 }
             }
             show_me() {
-                let me = this
-                me._site_statuses.forEach(my_status => {
-                    my_status.perform_show_hide()
-                })
+                let me = this;
+                me._site_statuses.forEach((my_status) => {
+                    my_status.perform_show_hide();
+                });
             }
             hide_me() {
-                let me = this
-                me._site_statuses.forEach(my_status => {
-                    my_status.hide_me()
-                })
+                let me = this;
+                me._site_statuses.forEach((my_status) => {
+                    my_status.hide_me();
+                });
             }
         }
         class StatusFilterManager {
             constructor(id, parent_obj) {
-                this._id = id
-                this._loaded = false
-                this._ajax_obj = null
-                this._proposals = []
-                this._parent = parent_obj
+                this._id = id;
+                this._loaded = false;
+                this._ajax_obj = null;
+                this._proposals = [];
+                this._parent = parent_obj;
             }
             perform_show_hide() {
-                let me = this
-                if (vm.filterApplicationStatuses.length === 0 || vm.filterApplicationStatuses.includes(me._id)) {
-                    me.show_me()
+                let me = this;
+                if (
+                    vm.filterApplicationStatuses.length === 0 ||
+                    vm.filterApplicationStatuses.includes(me._id)
+                ) {
+                    me.show_me();
                 } else {
-                    me.hide_me()
+                    me.hide_me();
                 }
             }
             show_me() {
-                let me = this
+                let me = this;
                 if (me._loaded) {
                     // Data has been already loaded
-                    me._proposals.forEach(proposal_obj => {
-                        proposal_obj.perform_show_hide()
-                    })
+                    me._proposals.forEach((proposal_obj) => {
+                        proposal_obj.perform_show_hide();
+                    });
                 } else {
                     // Data has not been loaded yet.  Retrieve data form the server.
                     if (me._ajax_obj != null) {
@@ -242,91 +330,115 @@ export default {
                         me._ajax_obj.abort();
                         me._ajax_obj = null;
                     }
-                    me._ajax_obj = $.ajax('/api/proposal/?type=' + me._parent._id + '&status=' + me._id, {
-                        dataType: 'json',
-                        success: function (re, status, xhr) {
-                            for (let proposal of re) {
-                                let proposal_obj = new ProposalManager(proposal, me)
-                                me._proposals.push(proposal_obj)
-                                proposal_obj.perform_show_hide()
-                            }
-                            me._loaded = true
-                        },
-                        error: function (jqXhr, textStatus, errorMessage) { // error callback
-                            //console.log(errorMessage)
+                    me._ajax_obj = $.ajax(
+                        '/api/proposal/?type=' +
+                            me._parent._id +
+                            '&status=' +
+                            me._id,
+                        {
+                            dataType: 'json',
+                            success: function (re, status, xhr) {
+                                for (let proposal of re) {
+                                    let proposal_obj = new ProposalManager(
+                                        proposal,
+                                        me
+                                    );
+                                    me._proposals.push(proposal_obj);
+                                    proposal_obj.perform_show_hide();
+                                }
+                                me._loaded = true;
+                            },
+                            error: function (jqXhr, textStatus, errorMessage) {
+                                // error callback
+                                //console.log(errorMessage)
+                            },
                         }
-                    })
+                    );
                 }
             }
             hide_me() {
-                let me = this
-                me._proposals.forEach(proposal_obj => {
-                    proposal_obj.hide_me()
-                })
+                let me = this;
+                me._proposals.forEach((proposal_obj) => {
+                    proposal_obj.hide_me();
+                });
             }
         }
         class ProposalManager {
             constructor(proposal, parent_obj) {
-                this._id = proposal.id
-                this._show = true
-                this._shown = false
-                this._lodgement_date = proposal.lodgement_date ? moment(proposal.lodgement_date) : null
-                this._parent = parent_obj
+                this._id = proposal.id;
+                this._show = true;
+                this._shown = false;
+                this._lodgement_date = proposal.lodgement_date
+                    ? moment(proposal.lodgement_date)
+                    : null;
+                this._parent = parent_obj;
                 this._features = (function () {
                     if (proposal.proposalgeometry) {
                         try {
-                            return (new GeoJSON()).readFeatures(proposal.proposalgeometry)
+                            return new GeoJSON().readFeatures(
+                                proposal.proposalgeometry
+                            );
                         } catch (err) {
-                            console.error(err)
-                            return null
+                            console.error(err);
+                            return null;
                         }
                     } else {
-                        return null
+                        return null;
                     }
-                })()
+                })();
             }
             inside_filter_date_range() {
-                let me = this
+                let me = this;
                 if (vm.filterProposalLodgedFromMoment) {
-                    if (vm.filterProposalLodgedFromMoment.isAfter(me._lodgement_date, 'date')) {
-                        return false
+                    if (
+                        vm.filterProposalLodgedFromMoment.isAfter(
+                            me._lodgement_date,
+                            'date'
+                        )
+                    ) {
+                        return false;
                     }
                 }
                 if (vm.filterProposalLodgedToMoment) {
-                    if (vm.filterProposalLodgedToMoment.isBefore(me._lodgement_date, 'date')) {
-                        return false
+                    if (
+                        vm.filterProposalLodgedToMoment.isBefore(
+                            me._lodgement_date,
+                            'date'
+                        )
+                    ) {
+                        return false;
                     }
                 }
-                return true
+                return true;
             }
             perform_show_hide() {
-                let me = this
+                let me = this;
                 if (me.inside_filter_date_range()) {
-                    me.show_me()
+                    me.show_me();
                 } else {
-                    me.hide_me()
+                    me.hide_me();
                 }
             }
             show_me() {
-                let me = this
+                let me = this;
                 if (!me._shown) {
                     vm.proposalQuerySource.addFeatures(me._features);
-                    me._shown = true
+                    me._shown = true;
                 }
             }
             hide_me() {
-                let me = this
+                let me = this;
                 for (let feature of me._features) {
                     if (vm.proposalQuerySource.hasFeature(feature)) {
                         try {
                             // Remove the feature from the map
-                            vm.proposalQuerySource.removeFeature(feature)
+                            vm.proposalQuerySource.removeFeature(feature);
                         } catch (err) {
-                            console.log(err)
+                            console.log(err);
                         }
                     }
                 }
-                me._shown = false
+                me._shown = false;
             }
         }
         // END: Introducing classes
@@ -350,7 +462,7 @@ export default {
                 showClear: true,
                 useCurrent: false,
                 keepInvalid: true,
-                allowInputToggle: true
+                allowInputToggle: true,
             },
 
             elem_id: uuid(),
@@ -373,197 +485,271 @@ export default {
             proposalQueryLayer: null,
 
             main_manager: (function () {
-                return new MainManager()
+                return new MainManager();
             })(),
-            set_mode: set_mode
-
-        }
+            set_mode: set_mode,
+        };
     },
     computed: {
         filterApplied: function () {
-            let filter_applied = true
+            let filter_applied = true;
             if (
                 this.filterApplicationStatuses.length == 0 &&
                 this.filterApplicationTypes.length == 0 &&
                 this.filterProposalLodgedFrom.toLowerCase() === '' &&
                 this.filterProposalLodgedTo.toLowerCase() === ''
             ) {
-                filter_applied = false
+                filter_applied = false;
             }
-            return filter_applied
+            return filter_applied;
         },
         filterProposalLodgedFromMoment: function () {
-            return this.filterProposalLodgedFrom ? moment(this.filterProposalLodgedFrom) : null
+            return this.filterProposalLodgedFrom
+                ? moment(this.filterProposalLodgedFrom)
+                : null;
         },
         filterProposalLodgedToMoment: function () {
-            return this.filterProposalLodgedTo ? moment(this.filterProposalLodgedTo) : null
+            return this.filterProposalLodgedTo
+                ? moment(this.filterProposalLodgedTo)
+                : null;
         },
-    },
-    components: {
-        CollapsibleFilters,
-        RangeSlider,
     },
     watch: {
         filterProposalLodgedFrom: function () {
-            sessionStorage.setItem('filterProposalLodgedFromForMap', this.filterProposalLodgedFrom);
-            this.main_manager.show_me()
+            sessionStorage.setItem(
+                'filterProposalLodgedFromForMap',
+                this.filterProposalLodgedFrom
+            );
+            this.main_manager.show_me();
         },
         filterProposalLodgedTo: function () {
-            sessionStorage.setItem('filterProposalLodgedToForMap', this.filterProposalLodgedTo);
-            this.main_manager.show_me()
+            sessionStorage.setItem(
+                'filterProposalLodgedToForMap',
+                this.filterProposalLodgedTo
+            );
+            this.main_manager.show_me();
         },
         filterApplied: function () {
             if (this.$refs.collapsible_filters) {
                 // Collapsible component exists
-                this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+                this.$refs.collapsible_filters.show_warning_icon(
+                    this.filterApplied
+                );
             }
-        }
+        },
+    },
+    created: function () {
+        console.log('created()');
+        this.fetchFilterLists();
+    },
+    mounted: function () {
+        console.log('mounted()');
+        let vm = this;
+
+        this.$nextTick(() => {
+            vm.initMap();
+            set_mode.bind(this)('layer');
+            vm.setBaseLayer('osm');
+            addOptionalLayers(this);
+            vm.updateVariablesFromSession();
+            vm.main_manager.show_me();
+        });
     },
     methods: {
         valueChanged: function (value, tileLayer) {
             // console.log(value)
             // console.log(tileLayer)
             //tileLayer.setOpacity((100 - value)/100)
-            tileLayer.setOpacity(value / 100)
+            tileLayer.setOpacity(value / 100);
         },
         updateVariablesFromSession: function () {
-            this.filterApplicationTypes = sessionStorage.getItem('filterApplicationTypesForMap') ? JSON.parse(sessionStorage.getItem('filterApplicationTypesForMap')) : this.filterApplicationTypes
-            this.filterApplicationStatuses = sessionStorage.getItem('filterApplicationStatusesForMap') ? JSON.parse(sessionStorage.getItem('filterApplicationStatusesForMap')) : this.filterApplicationStatuses
-            this.filterProposalLodgedFrom = sessionStorage.getItem('filterProposalLodgedFromForMap') ? sessionStorage.getItem('filterProposalLodgedFromForMap') : this.filterProposalLodgedFrom
-            this.filterProposalLodgedTo = sessionStorage.getItem('filterProposalLodgedToForMap') ? sessionStorage.getItem('filterProposalLodgedToForMap') : this.filterProposalLodgedTo
+            this.filterApplicationTypes = sessionStorage.getItem(
+                'filterApplicationTypesForMap'
+            )
+                ? JSON.parse(
+                      sessionStorage.getItem('filterApplicationTypesForMap')
+                  )
+                : this.filterApplicationTypes;
+            this.filterApplicationStatuses = sessionStorage.getItem(
+                'filterApplicationStatusesForMap'
+            )
+                ? JSON.parse(
+                      sessionStorage.getItem('filterApplicationStatusesForMap')
+                  )
+                : this.filterApplicationStatuses;
+            this.filterProposalLodgedFrom = sessionStorage.getItem(
+                'filterProposalLodgedFromForMap'
+            )
+                ? sessionStorage.getItem('filterProposalLodgedFromForMap')
+                : this.filterProposalLodgedFrom;
+            this.filterProposalLodgedTo = sessionStorage.getItem(
+                'filterProposalLodgedToForMap'
+            )
+                ? sessionStorage.getItem('filterProposalLodgedToForMap')
+                : this.filterProposalLodgedTo;
         },
         updateApplicationTypeFilterCache: function () {
-            let vm = this
-            vm.filterApplicationTypes = $(vm.$refs.filter_application_type).select2('data').map(x => { return x.id })
-            sessionStorage.setItem('filterApplicationTypesForMap', JSON.stringify(vm.filterApplicationTypes));
+            let vm = this;
+            vm.filterApplicationTypes = $(vm.$refs.filter_application_type)
+                .select2('data')
+                .map((x) => {
+                    return x.id;
+                });
+            sessionStorage.setItem(
+                'filterApplicationTypesForMap',
+                JSON.stringify(vm.filterApplicationTypes)
+            );
         },
         updateApplicationStatusFilterCache: function () {
-            let vm = this
-            vm.filterApplicationStatuses = $(vm.$refs.filter_application_status).select2('data').map(x => { return x.id })
-            sessionStorage.setItem('filterApplicationStatusesForMap', JSON.stringify(vm.filterApplicationStatuses));
+            let vm = this;
+            vm.filterApplicationStatuses = $(vm.$refs.filter_application_status)
+                .select2('data')
+                .map((x) => {
+                    return x.id;
+                });
+            sessionStorage.setItem(
+                'filterApplicationStatusesForMap',
+                JSON.stringify(vm.filterApplicationStatuses)
+            );
         },
         applySelect2ToApplicationTypes: function (application_types) {
-            console.log(application_types)
-            let vm = this
+            console.log(application_types);
+            let vm = this;
             if (!vm.select2AppliedToApplicationType) {
-                $(vm.$refs.filter_application_type).select2({
-                    "theme": "bootstrap-5",
-                    allowClear: false,
-                    placeholder: "Select Type",
-                    multiple: true,
-                    data: application_types,
-                }).
-                    on('select2:select', function (e) {
-                        vm.updateApplicationTypeFilterCache()
-                        vm.main_manager.show_me()
-                    }).
-                    on('select2:unselect', function (e) {
-                        vm.updateApplicationTypeFilterCache()
-                        vm.main_manager.show_me()
+                $(vm.$refs.filter_application_type)
+                    .select2({
+                        theme: 'bootstrap-5',
+                        allowClear: false,
+                        placeholder: 'Select Type',
+                        multiple: true,
+                        data: application_types,
                     })
+                    .on('select2:select', function (e) {
+                        vm.updateApplicationTypeFilterCache();
+                        vm.main_manager.show_me();
+                    })
+                    .on('select2:unselect', function (e) {
+                        vm.updateApplicationTypeFilterCache();
+                        vm.main_manager.show_me();
+                    });
             }
-            vm.select2AppliedToApplicationType = true
-            $(vm.$refs.filter_application_type).val(vm.filterApplicationTypes).trigger('change')
+            vm.select2AppliedToApplicationType = true;
+            $(vm.$refs.filter_application_type)
+                .val(vm.filterApplicationTypes)
+                .trigger('change');
         },
         applySelect2ToApplicationStatuses: function (application_statuses) {
-            let vm = this
+            let vm = this;
             if (!vm.select2AppliedToApplicationStatus) {
-                $(vm.$refs.filter_application_status).select2({
-                    "theme": "bootstrap-5",
-                    allowClear: false,
-                    placeholder: "Select Status",
-                    multiple: true,
-                    data: application_statuses,
-                }).
-                    on('select2:select', function (e) {
-                        vm.updateApplicationStatusFilterCache()
-                        vm.main_manager.show_me()
-                    }).
-                    on('select2:unselect', function (e) {
-                        vm.updateApplicationStatusFilterCache()
-                        vm.main_manager.show_me()
+                $(vm.$refs.filter_application_status)
+                    .select2({
+                        theme: 'bootstrap-5',
+                        allowClear: false,
+                        placeholder: 'Select Status',
+                        multiple: true,
+                        data: application_statuses,
                     })
+                    .on('select2:select', function (e) {
+                        vm.updateApplicationStatusFilterCache();
+                        vm.main_manager.show_me();
+                    })
+                    .on('select2:unselect', function (e) {
+                        vm.updateApplicationStatusFilterCache();
+                        vm.main_manager.show_me();
+                    });
             }
-            vm.select2AppliedToApplicationStatus = true
-            $(vm.$refs.filter_application_status).val(vm.filterApplicationStatuses).trigger('change')
+            vm.select2AppliedToApplicationStatus = true;
+            $(vm.$refs.filter_application_status)
+                .val(vm.filterApplicationStatuses)
+                .trigger('change');
         },
         download_content: function (content, fileName, contentType) {
-            var a = document.createElement("a");
+            var a = document.createElement('a');
             var file = new Blob([content], { type: contentType });
             a.href = URL.createObjectURL(file);
             a.download = fileName;
             a.click();
         },
         geoJsonButtonClicked: function () {
-            let vm = this
-            let json = new GeoJSON().writeFeatures(vm.proposalQuerySource.getFeatures(), {})
-            vm.download_content(json, 'leases_and_licensing_layers.geojson', 'text/plain');
+            let vm = this;
+            let json = new GeoJSON().writeFeatures(
+                vm.proposalQuerySource.getFeatures(),
+                {}
+            );
+            vm.download_content(
+                json,
+                'leases_and_licensing_layers.geojson',
+                'text/plain'
+            );
         },
         displayAllFeatures: function () {
-            console.log('in displayAllFeatures()')
-            let vm = this
+            console.log('in displayAllFeatures()');
+            let vm = this;
             if (vm.map) {
                 if (vm.proposalQuerySource.getFeatures().length > 0) {
-                    let view = vm.map.getView()
-                    let ext = vm.proposalQuerySource.getExtent()
-                    let centre = [(ext[0] + ext[2]) / 2.0, (ext[1] + ext[3]) / 2.0]
+                    let view = vm.map.getView();
+                    let ext = vm.proposalQuerySource.getExtent();
+                    let centre = [
+                        (ext[0] + ext[2]) / 2.0,
+                        (ext[1] + ext[3]) / 2.0,
+                    ];
                     let resolution = view.getResolutionForExtent(ext);
-                    let z = view.getZoomForResolution(resolution) - 1
-                    view.animate({ zoom: z, center: centre })
+                    let z = view.getZoomForResolution(resolution) - 1;
+                    view.animate({ zoom: z, center: centre });
                 }
             }
         },
         setBaseLayer: function (selected_layer_name) {
-            let vm = this
+            let vm = this;
             if (selected_layer_name == 'sat') {
-                vm.tileLayerMapbox.setVisible(false)
-                vm.tileLayerSat.setVisible(true)
-                $('#basemap_sat').hide()
-                $('#basemap_osm').show()
+                vm.tileLayerMapbox.setVisible(false);
+                vm.tileLayerSat.setVisible(true);
+                $('#basemap_sat').hide();
+                $('#basemap_osm').show();
             } else {
-                vm.tileLayerMapbox.setVisible(true)
-                vm.tileLayerSat.setVisible(false)
-                $('#basemap_osm').hide()
-                $('#basemap_sat').show()
+                vm.tileLayerMapbox.setVisible(true);
+                vm.tileLayerSat.setVisible(false);
+                $('#basemap_osm').hide();
+                $('#basemap_sat').show();
             }
         },
         changeLayerVisibility: function (targetLayer) {
-            targetLayer.setVisible(!targetLayer.getVisible())
+            targetLayer.setVisible(!targetLayer.getVisible());
         },
         clearMeasurementLayer: function () {
-            let vm = this
-            let features = vm.measurementLayer.getSource().getFeatures()
+            let vm = this;
+            let features = vm.measurementLayer.getSource().getFeatures();
             features.forEach((feature) => {
-                vm.measurementLayer.getSource().removeFeature(feature)
-            })
+                vm.measurementLayer.getSource().removeFeature(feature);
+            });
         },
         forceToRefreshMap() {
-            let vm = this
+            let vm = this;
             setTimeout(function () {
                 vm.map.updateSize();
-            }, 700)
+            }, 700);
         },
         addJoint: function (point, styles) {
             let s = new Style({
                 image: new CircleStyle({
                     radius: 2,
                     fill: new Fill({
-                        color: '#3399cc'
+                        color: '#3399cc',
                     }),
                 }),
-            })
-            s.setGeometry(point)
-            styles.push(s)
+            });
+            s.setGeometry(point);
+            styles.push(s);
 
-            return styles
+            return styles;
         },
         styleFunctionForMeasurement: function (feature, resolution) {
-            let vm = this
-            let for_layer = feature.get('for_layer', false)
+            let vm = this;
+            let for_layer = feature.get('for_layer', false);
 
-            const styles = []
-            styles.push(vm.style)  // This style is for the feature itself
-            styles.push(vm.segmentStyle)
+            const styles = [];
+            styles.push(vm.style); // This style is for the feature itself
+            styles.push(vm.segmentStyle);
 
             ///////
             // From here, adding labels and tiny circles at the end points of the linestring
@@ -574,22 +760,24 @@ export default {
                 geometry.forEachSegment(function (a, b) {
                     const segment = new LineString([a, b]);
                     const label = formatLength(segment);
-                    const segmentPoint = new Point(segment.getCoordinateAt(0.5));
+                    const segmentPoint = new Point(
+                        segment.getCoordinateAt(0.5)
+                    );
 
                     // Add a style for this segment
-                    let segment_style = vm.segmentStyle.clone() // Because there could be multilpe segments, we should copy the style per segment
-                    segment_style.setGeometry(segmentPoint)
-                    segment_style.getText().setText(label)
-                    styles.push(segment_style)
+                    let segment_style = vm.segmentStyle.clone(); // Because there could be multilpe segments, we should copy the style per segment
+                    segment_style.setGeometry(segmentPoint);
+                    segment_style.getText().setText(label);
+                    styles.push(segment_style);
 
                     if (segment_count == 0) {
                         // Add a tiny circle to the very first coordinate of the linestring
-                        let p = new Point(a)
-                        vm.addJoint(p, styles)
+                        let p = new Point(a);
+                        vm.addJoint(p, styles);
                     }
                     // Add tiny circles to the end of the linestring
-                    let p = new Point(b)
-                    vm.addJoint(p, styles)
+                    let p = new Point(b);
+                    vm.addJoint(p, styles);
 
                     segment_count++;
                 });
@@ -597,14 +785,14 @@ export default {
 
             if (!for_layer) {
                 // We don't need the last label when draw on the layer.
-                let label_on_mouse = formatLength(geometry);  // Total length of the linestring
+                let label_on_mouse = formatLength(geometry); // Total length of the linestring
                 let point = new Point(geometry.getLastCoordinate());
                 vm.labelStyle.setGeometry(point);
                 vm.labelStyle.getText().setText(label_on_mouse);
                 styles.push(vm.labelStyle);
             }
 
-            return styles
+            return styles;
         },
         initMap: function () {
             let vm = this;
@@ -612,86 +800,83 @@ export default {
             let satelliteTileWms = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
-                    'FORMAT': 'image/png',
-                    'VERSION': '1.1.1',
+                    FORMAT: 'image/png',
+                    VERSION: '1.1.1',
                     tiled: true,
                     STYLES: '',
                     LAYERS: 'public:mapbox-satellite',
-                }
+                },
             });
 
             let streetsTileWMS = new TileWMS({
                 url: env['kmi_server_url'] + '/geoserver/public/wms',
                 params: {
-                    'FORMAT': 'image/png',
-                    'VERSION': '1.1.1',
+                    FORMAT: 'image/png',
+                    VERSION: '1.1.1',
                     tiled: true,
                     STYLES: '',
-                    LAYERS: `public:${baselayer_name}`
-                }
+                    LAYERS: `public:${baselayer_name}`,
+                },
             });
             vm.tileLayerMapbox = new TileLayer({
                 title: 'StreetsMap',
                 type: 'base',
                 visible: true,
                 source: streetsTileWMS,
-            })
+            });
 
             vm.tileLayerSat = new TileLayer({
                 title: 'Satellite',
                 type: 'base',
                 visible: true,
                 source: satelliteTileWms,
-            })
+            });
 
             vm.map = new Map({
-                layers: [
-                    vm.tileLayerMapbox,
-                    vm.tileLayerSat,
-                ],
+                layers: [vm.tileLayerMapbox, vm.tileLayerSat],
                 //target: 'map',
                 target: vm.elem_id,
                 view: new View({
                     center: [115.95, -31.95],
                     zoom: 7,
-                    projection: 'EPSG:4326'
-                })
+                    projection: 'EPSG:4326',
+                }),
             });
 
             // Full screen toggle
-            let fullScreenControl = new FullScreenControl()
-            vm.map.addControl(fullScreenControl)
+            let fullScreenControl = new FullScreenControl();
+            vm.map.addControl(fullScreenControl);
 
             // Measure tool
-            let draw_source = new VectorSource({ wrapX: false })
+            let draw_source = new VectorSource({ wrapX: false });
             vm.drawForMeasure = new Draw({
                 source: draw_source,
                 type: 'LineString',
                 style: vm.styleFunctionForMeasurement,
-            })
+            });
             // Set a custom listener to the Measure tool
-            vm.drawForMeasure.set('escKey', '')
+            vm.drawForMeasure.set('escKey', '');
             vm.drawForMeasure.on('change:escKey', function (evt) {
                 //vm.drawForMeasure.finishDrawing()
-            })
+            });
             vm.drawForMeasure.on('drawstart', function (evt) {
-                vm.measuring = true
-            })
+                vm.measuring = true;
+            });
             vm.drawForMeasure.on('drawend', function (evt) {
-                vm.measuring = false
-            })
+                vm.measuring = false;
+            });
 
             // Create a layer to retain the measurement
             vm.measurementLayer = new VectorLayer({
                 title: 'Measurement Layer',
                 source: draw_source,
                 style: function (feature, resolution) {
-                    feature.set('for_layer', true)
-                    return vm.styleFunctionForMeasurement(feature, resolution)
+                    feature.set('for_layer', true);
+                    return vm.styleFunctionForMeasurement(feature, resolution);
                 },
             });
-            vm.map.addInteraction(vm.drawForMeasure)
-            vm.map.addLayer(vm.measurementLayer)
+            vm.map.addInteraction(vm.drawForMeasure);
+            vm.map.addLayer(vm.measurementLayer);
 
             vm.proposalQuerySource = new VectorSource({});
             vm.proposalQueryLayer = new VectorLayer({
@@ -704,44 +889,37 @@ export default {
             vm.map.addLayer(vm.proposalQueryLayer);
         },
         collapsible_component_mounted: function () {
-            this.$refs.collapsible_filters.show_warning_icon(this.filterApplied)
+            this.$refs.collapsible_filters.show_warning_icon(
+                this.filterApplied
+            );
         },
         fetchFilterLists: function () {
             let vm = this;
 
             // Application Types
-            fetch(api_endpoints.application_types_dict + '?for_filter=true').then(async (response) => {
-                const resData = await response.json()
-                vm.applySelect2ToApplicationTypes(resData)
-            }, (error) => {
-            })
+            fetch(
+                api_endpoints.application_types_dict + '?for_filter=true'
+            ).then(
+                async (response) => {
+                    const resData = await response.json();
+                    vm.applySelect2ToApplicationTypes(resData);
+                },
+                (error) => {}
+            );
 
             // Application Statuses
-            fetch(api_endpoints.application_statuses_dict + '?for_filter=true').then(async (response) => {
-                const resData = await response.json()
-                vm.applySelect2ToApplicationStatuses(resData)
-            }, (error) => {
-            })
+            fetch(
+                api_endpoints.application_statuses_dict + '?for_filter=true'
+            ).then(
+                async (response) => {
+                    const resData = await response.json();
+                    vm.applySelect2ToApplicationStatuses(resData);
+                },
+                (error) => {}
+            );
         },
     },
-    created: function () {
-        console.log('created()')
-        this.fetchFilterLists()
-    },
-    mounted: function () {
-        console.log('mounted()')
-        let vm = this;
-
-        this.$nextTick(() => {
-            vm.initMap()
-            set_mode.bind(this)("layer")
-            vm.setBaseLayer('osm')
-            addOptionalLayers(this)
-            vm.updateVariablesFromSession()
-            vm.main_manager.show_me()
-        });
-    }
-}
+};
 </script>
 <style scoped>
 @import '../../../../../static/leaseslicensing/css/map.css';
@@ -811,7 +989,7 @@ export default {
     border-radius: 2px;
     min-width: max-content;
     padding: 0.5em;
-    border: 3px solid rgba(5, 5, 5, .1);
+    border: 3px solid rgba(5, 5, 5, 0.1);
 }
 
 .sub_option {
@@ -819,7 +997,7 @@ export default {
 }
 
 .dropdown_arrow::after {
-    content: "";
+    content: '';
     width: 7px;
     height: 7px;
     border: 0px;
