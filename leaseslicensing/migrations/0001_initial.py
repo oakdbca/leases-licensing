@@ -2144,7 +2144,6 @@ class Migration(migrations.Migration):
                     "_file",
                     models.FileField(
                         max_length=512,
-                        upload_to=leaseslicensing.components.proposals.models.update_onhold_doc_filename,
                     ),
                 ),
                 ("input_name", models.CharField(blank=True, max_length=255, null=True)),

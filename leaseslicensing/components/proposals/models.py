@@ -108,10 +108,6 @@ def update_proposal_doc_filename(instance, filename):
     return f"proposals/{instance.proposal.id}/documents/{filename}"
 
 
-def update_onhold_doc_filename(instance, filename):
-    return f"proposals/{instance.proposal.id}/on_hold/{filename}"
-
-
 def update_qaofficer_doc_filename(instance, filename):
     return f"proposals/{instance.proposal.id}/qaofficer/{filename}"
 
@@ -971,7 +967,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS = "with_assessor_conditions"
     PROCESSING_STATUS_WITH_APPROVER = "with_approver"
     PROCESSING_STATUS_WITH_REFERRAL = "with_referral"
-    PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS = "with_referral_conditions"
     # This processing status is for registration of interest proposals
     PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST = (
         "approved_registration_of_interest"
@@ -988,7 +983,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         (PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS, "With Assessor (Conditions)"),
         (PROCESSING_STATUS_WITH_APPROVER, "With Approver"),
         (PROCESSING_STATUS_WITH_REFERRAL, "With Referral"),
-        (PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS, "With Referral (Conditions)"),
         (
             PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
             "Approved (Registration of Interest)",
@@ -1014,7 +1008,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         PROCESSING_STATUS_WITH_ASSESSOR,
         PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
         PROCESSING_STATUS_WITH_REFERRAL,
-        PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         PROCESSING_STATUS_WITH_APPROVER,
         PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST,
         PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
@@ -1027,7 +1020,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         PROCESSING_STATUS_WITH_ASSESSOR,
         PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
         PROCESSING_STATUS_WITH_REFERRAL,  # <-- Be aware
-        PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,  # <-- Be aware
         PROCESSING_STATUS_WITH_APPROVER,
     ]
 
@@ -1615,12 +1607,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def can_assess(self, user):
         if self.processing_status in [
-            "on_hold",
-            "with_qa_officer",
-            "with_assessor",
-            "with_referral",
-            "with_referral_conditions",
-            "with_assessor_conditions",
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+            Proposal.PROCESSING_STATUS_WITH_REFERRAL,
+            Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             logger.info("self.__assessor_group().get_system_group_member_ids()")
             logger.info(self.get_assessor_group().get_system_group_member_ids())
@@ -1671,8 +1661,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def can_edit_period(self, user):
         if (
-            self.processing_status == "with_assessor"
-            or self.processing_status == "with_assessor_conditions"
+            self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+            or self.processing_status
+            == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
         ):
             # return self.__assessor_group() in user.proposalassessorgroup_set.all()
             return user.id in self.get_assessor_group().get_system_group_member_ids()
@@ -1681,10 +1672,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def assessor_comments_view(self, user):
         if (
-            self.processing_status == "with_assessor"
-            or self.processing_status == "with_referral"
-            or self.processing_status == "with_assessor_conditions"
-            or self.processing_status == "with_approver"
+            self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+            or self.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL
+            or self.processing_status
+            == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
+            or self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER
         ):
             try:
                 referral = Referral.objects.get(proposal=self, referral=user.id)
@@ -1703,7 +1695,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def has_assessor_mode(self, user):
         status_without_assessor = [
-            "with_approver",
+            Proposal.PROCESSING_STATUS_WITH_APPROVER,
             "approved",
             "waiting_payment",
             "declined",
@@ -1818,7 +1810,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # A FeatureCollection of uploaded shapefiles (can be handled as separate features in the frontend)
                 shp_json = gdf_merged.to_json()
 
-                # Todo: maybe axe this at some point as we are convering the shapefile into a proposalgeometry
+                # Todo: maybe axe this at some point as we are converting the shapefile into a proposalgeometry
                 # which is more useful in this application. Why store it in two places?
                 if isinstance(shp_json, str):
                     self.shapefile_json = json.loads(shp_json)
@@ -1839,216 +1831,212 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         return valid_geometry_saved
 
+    @transaction.atomic
     def update(self, request, viewset):
         from leaseslicensing.components.proposals.utils import save_proponent_data
 
-        with transaction.atomic():
-            if self.can_user_edit:
-                # Save the data first
-                save_proponent_data(self, request, viewset)
-                self.save()
-            else:
-                raise ValidationError("You can't edit this proposal at this moment")
+        if self.can_user_edit:
+            # Save the data first
+            save_proponent_data(self, request, viewset)
+            self.save()
+        else:
+            raise ValidationError("You can't edit this proposal at this moment")
+
+    transaction.atomic
 
     def send_referral(self, request, referral_email, referral_text):
-        with transaction.atomic():
-            referral_email = referral_email.lower()
-            if (
-                self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                or self.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL
-            ):
-                self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
-                self.save()
+        referral_email = referral_email.lower()
+        if (
+            self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+            or self.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL
+        ):
+            self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
+            self.save()
 
-                # Check if the user is in ledger
-                try:
-                    user = EmailUser.objects.get(email__icontains=referral_email)
-                except EmailUser.DoesNotExist:
-                    # Validate if it is a deparment user
-                    department_user = is_department_user(referral_email)
-                    if not department_user:
-                        raise ValidationError(
-                            "The user you want to send the referral to is not a member of the department"
-                        )
-                    # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
-
-                    user, created = EmailUser.objects.get_or_create(
-                        email=department_user["email"].lower()
-                    )
-                    if created:
-                        user.first_name = department_user["given_name"]
-                        user.last_name = department_user["surname"]
-                        user.save()
-
-                referral = None
-                try:
-                    referral = Referral.objects.get(referral=user.id, proposal=self)
+            # Check if the user is in ledger
+            try:
+                user = EmailUser.objects.get(email__icontains=referral_email)
+            except EmailUser.DoesNotExist:
+                # Validate if it is a deparment user
+                department_user = is_department_user(referral_email)
+                if not department_user:
                     raise ValidationError(
-                        "A referral has already been sent to this user"
+                        "The user you want to send the referral to is not a member of the department"
                     )
-                except Referral.DoesNotExist:
-                    # Create Referral
-                    referral = Referral.objects.create(
-                        proposal=self,
-                        referral=user.id,
-                        sent_by=request.user.id,
-                        text=referral_text,
-                        assigned_officer=request.user.id,
-                    )
+                # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
 
+                user, created = EmailUser.objects.get_or_create(
+                    email=department_user["email"].lower()
+                )
+                if created:
+                    user.first_name = department_user["given_name"]
+                    user.last_name = department_user["surname"]
+                    user.save()
+
+            referral = None
+            try:
+                referral = Referral.objects.get(referral=user.id, proposal=self)
+                raise ValidationError("A referral has already been sent to this user")
+            except Referral.DoesNotExist:
+                # Create Referral
+                referral = Referral.objects.create(
+                    proposal=self,
+                    referral=user.id,
+                    sent_by=request.user.id,
+                    text=referral_text,
+                    assigned_officer=request.user.id,
+                )
+
+            # Create a log entry for the proposal
+            self.log_user_action(
+                ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                    referral.id,
+                    self.lodgement_number,
+                    f"{user.get_full_name()}({user.email})",
+                ),
+                request,
+            )
+
+            # Create a log entry for the applicant
+            self.applicant.log_user_action(
+                ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                    referral.id,
+                    self.lodgement_number,
+                    f"{user.get_full_name()}({user.email})",
+                ),
+                request,
+            )
+
+            # send email
+            send_referral_email_notification(
+                referral,
+                [
+                    user.email,
+                ],
+                request,
+            )
+        else:
+            raise exceptions.ProposalReferralCannotBeSent()
+
+    @transaction.atomic
+    def assign_officer(self, request, officer):
+        if not self.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        if not self.can_assess(officer):
+            raise ValidationError(
+                "The selected person is not authorised to be assigned to this proposal"
+            )
+        if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
+            if officer.id != self.assigned_approver:
+                self.assigned_approver = officer.id
+                self.save()
                 # Create a log entry for the proposal
                 self.log_user_action(
-                    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                        referral.id,
-                        self.lodgement_number,
-                        f"{user.get_full_name()}({user.email})",
+                    ProposalUserAction.ACTION_ASSIGN_TO_APPROVER.format(
+                        self.id,
+                        f"{officer.get_full_name()}({officer.email})",
                     ),
                     request,
                 )
-                # Create a log entry for the organisation
-                if self.applicant:
-                    pass
-                    # TODO: implement logging to ledger/application???
-                    # self.applicant.log_user_action(
-                    #    ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                    #        referral.id, self.lodgement_number, '{}({})'.format(user.get_full_name(), user.email)
-                    #    ), request
-                    # )
-                # send email
-                send_referral_email_notification(
-                    referral,
-                    [
-                        user.email,
-                    ],
-                    request,
+
+                # Log entry for applicant
+                self.applicant.log_user_action(
+                    ProposalUserAction.ACTION_DECLINE.format(self.id), request
                 )
-            else:
-                raise exceptions.ProposalReferralCannotBeSent()
 
-    def assign_officer(self, request, officer):
-        with transaction.atomic():
-            try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if not self.can_assess(officer):
-                    raise ValidationError(
-                        "The selected person is not authorised to be assigned to this proposal"
-                    )
-                if self.processing_status == "with_approver":
-                    if officer.id != self.assigned_approver:
-                        self.assigned_approver = officer.id
-                        self.save()
-                        # Create a log entry for the proposal
-                        self.log_user_action(
-                            ProposalUserAction.ACTION_ASSIGN_TO_APPROVER.format(
-                                self.id,
-                                f"{officer.get_full_name()}({officer.email})",
-                            ),
-                            request,
-                        )
-                        # Create a log entry for the organisation
-                        # applicant_field=getattr(self, self.applicant_field)
-                        # applicant_field.log_user_action(ProposalUserAction.ACTION_ASSIGN_TO_APPROVER.
-                        # format(self.id,'{}({})'.format(officer.get_full_name(), officer.email)), request)
-                else:
-                    if officer.id != self.assigned_officer:
-                        self.assigned_officer = officer.id
-                        self.save()
-                        # Create a log entry for the proposal
-                        self.log_user_action(
-                            ProposalUserAction.ACTION_ASSIGN_TO_ASSESSOR.format(
-                                self.id,
-                                f"{officer.get_full_name()}({officer.email})",
-                            ),
-                            request,
-                        )
-                        # Create a log entry for the organisation
-                        # applicant_field=getattr(self, self.applicant_field)
-                        # applicant_field.log_user_action(ProposalUserAction.ACTION_ASSIGN_TO_ASSESSOR
-                        # .format(self.id,'{}({})'.format(officer.get_full_name(), officer.email)), request)
-            except Exception as e:
-                logger.exception(e)
-                raise Exception(e)
-
-    def assing_approval_level_document(self, request):
-        with transaction.atomic():
-            try:
-                approval_level_document = request.data["approval_level_document"]
-                if approval_level_document != "null":
-                    try:
-                        document = self.documents.get(
-                            input_name=str(approval_level_document)
-                        )
-                    except ProposalDocument.DoesNotExist:
-                        document = self.documents.get_or_create(
-                            input_name=str(approval_level_document),
-                            name=str(approval_level_document),
-                        )[0]
-                    document.name = str(approval_level_document)
-                    # commenting out below tow lines - we want to retain all past attachments - reversion can use them
-                    # if document._file and os.path.isfile(document._file.path):
-                    #    os.remove(document._file.path)
-                    document._file = approval_level_document
-                    document.save()
-                    d = ProposalDocument.objects.get(id=document.id)
-                    self.approval_level_document = d
-                    comment = f"Approval Level Document Added: {document.name}"
-                else:
-                    self.approval_level_document = None
-                    comment = "Approval Level Document Deleted: {}".format(
-                        request.data["approval_level_document_name"]
-                    )
-                # self.save()
-                self.save(
-                    version_comment=comment
-                )  # to allow revision to be added to reversion history
+        else:
+            if officer.id != self.assigned_officer:
+                self.assigned_officer = officer.id
+                self.save()
+                # Create a log entry for the proposal
                 self.log_user_action(
-                    ProposalUserAction.ACTION_APPROVAL_LEVEL_DOCUMENT.format(self.id),
+                    ProposalUserAction.ACTION_ASSIGN_TO_ASSESSOR.format(
+                        self.id,
+                        f"{officer.get_full_name()}({officer.email})",
+                    ),
                     request,
                 )
-                # Create a log entry for the organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_APPROVAL_LEVEL_DOCUMENT.format(self.id),
-                    request,
-                )
-                return self
-            except Exception as e:
-                logger.exception(e)
-                raise Exception(e)
 
-    def unassign(self, request):
-        with transaction.atomic():
+                # Log entry for applicant
+                self.applicant.log_user_action(
+                    ProposalUserAction.ACTION_DECLINE.format(self.id), request
+                )
+
+    @transaction.atomic
+    def assing_approval_level_document(self, request):
+        approval_level_document = request.data["approval_level_document"]
+        if approval_level_document != "null":
             try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.processing_status == "with_approver":
-                    if self.assigned_approver:
-                        self.assigned_approver = None
-                        self.save()
-                        # Create a log entry for the proposal
-                        self.log_user_action(
-                            ProposalUserAction.ACTION_UNASSIGN_APPROVER.format(self.id),
-                            request,
-                        )
-                        # Create a log entry for the organisation
-                        # applicant_field=getattr(self, self.applicant_field)
-                        # applicant_field.log_user_action(ProposalUserAction.ACTION_UNASSIGN_APPROVER.format(self.id),request)
-                else:
-                    if self.assigned_officer:
-                        self.assigned_officer = None
-                        self.save()
-                        # Create a log entry for the proposal
-                        self.log_user_action(
-                            ProposalUserAction.ACTION_UNASSIGN_ASSESSOR.format(self.id),
-                            request,
-                        )
-                        # Create a log entry for the organisation
-                        # applicant_field=getattr(self, self.applicant_field)
-                        # applicant_field.log_user_action(ProposalUserAction.ACTION_UNASSIGN_ASSESSOR.format(self.id),request)
-            except Exception as e:
-                logger.exception(e)
-                raise Exception(e)
+                document = self.documents.get(input_name=str(approval_level_document))
+            except ProposalDocument.DoesNotExist:
+                document = self.documents.get_or_create(
+                    input_name=str(approval_level_document),
+                    name=str(approval_level_document),
+                )[0]
+            document.name = str(approval_level_document)
+            # commenting out below tow lines - we want to retain all past attachments - reversion can use them
+            # if document._file and os.path.isfile(document._file.path):
+            #    os.remove(document._file.path)
+            document._file = approval_level_document
+            document.save()
+            d = ProposalDocument.objects.get(id=document.id)
+            self.approval_level_document = d
+            comment = f"Approval Level Document Added: {document.name}"
+        else:
+            self.approval_level_document = None
+            comment = "Approval Level Document Deleted: {}".format(
+                request.data["approval_level_document_name"]
+            )
+        # self.save()
+        self.save(
+            version_comment=comment
+        )  # to allow revision to be added to reversion history
+        self.log_user_action(
+            ProposalUserAction.ACTION_APPROVAL_LEVEL_DOCUMENT.format(self.id),
+            request,
+        )
+
+        # Log entry for applicant
+        self.applicant.log_user_action(
+            ProposalUserAction.ACTION_DECLINE.format(self.id), request
+        )
+
+        return self
+
+    @transaction.atomic
+    def unassign(self, request):
+        if not self.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
+            if self.assigned_approver:
+                self.assigned_approver = None
+                self.save()
+
+                # Create a log entry for the proposal
+                self.log_user_action(
+                    ProposalUserAction.ACTION_UNASSIGN_APPROVER.format(self.id),
+                    request,
+                )
+
+                # Log entry for applicant
+                self.applicant.log_user_action(
+                    ProposalUserAction.ACTION_DECLINE.format(self.id), request
+                )
+        else:
+            if self.assigned_officer:
+                self.assigned_officer = None
+                self.save()
+
+                # Create a log entry for the proposal
+                self.log_user_action(
+                    ProposalUserAction.ACTION_UNASSIGN_ASSESSOR.format(self.id),
+                    request,
+                )
+
+                # Log entry for applicant
+                self.applicant.log_user_action(
+                    ProposalUserAction.ACTION_DECLINE.format(self.id), request
+                )
 
     def add_default_requirements(self):
         # Add default standard requirements to Proposal
@@ -2069,13 +2057,20 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     def move_to_status(self, request, status, approver_comment):
         if not self.can_assess(request.user) and not self.is_referee(request.user):
             raise exceptions.ProposalNotAuthorized()
-        if status in ["with_assessor", "with_assessor_conditions", "with_approver"]:
-            if self.processing_status == "with_referral" or self.can_user_edit:
+        if status in [
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+            Proposal.PROCESSING_STATUS_WITH_APPROVER,
+        ]:
+            if (
+                self.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL
+                or self.can_user_edit
+            ):
                 raise ValidationError(
                     "You cannot change the current status at this time"
                 )
             if self.processing_status != status:
-                if self.processing_status == "with_approver":
+                if self.processing_status == Proposal.PROCESSING_STATUS_WITH_APPROVER:
                     self.approver_comment = ""
                     if approver_comment:
                         self.approver_comment = approver_comment
@@ -2087,7 +2082,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 self.save()
                 # Only add standard requirements if no requirements exist so far
                 if (
-                    status == "with_assessor_conditions"
+                    status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
                     and len(self.requirements.all()) == 0
                 ):
                     self.add_default_requirements()
@@ -2147,51 +2142,50 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
         )
 
+    @transaction.atomic
     def proposed_decline(self, request, details):
-        with transaction.atomic():
-            try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.processing_status not in [
-                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
-                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
-                ]:
-                    raise ValidationError(
-                        "You cannot propose to decline a proposal unless it's status is with assessor"
-                    )
+        if not self.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        if self.processing_status not in [
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+        ]:
+            raise ValidationError(
+                "You cannot propose to decline a proposal unless it's status is with assessor"
+            )
 
-                non_field_errors = []
-                reason = details.get("reason")
-                # Input validation check
-                if not reason:
-                    non_field_errors.append("You must add details text")
-                if non_field_errors:
-                    raise serializers.ValidationError(non_field_errors)
+        non_field_errors = []
+        reason = details.get("reason")
+        # Input validation check
+        if not reason:
+            non_field_errors.append("You must add details text")
+        if non_field_errors:
+            raise serializers.ValidationError(non_field_errors)
 
-                ProposalDeclinedDetails.objects.update_or_create(
-                    proposal=self,
-                    defaults={
-                        "officer": request.user.id,
-                        "reason": reason,
-                        "cc_email": details.get("cc_email", None),
-                    },
-                )
-                self.proposed_decline_status = True
-                approver_comment = ""
-                self.move_to_status(request, "with_approver", approver_comment)
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_PROPOSED_DECLINE.format(self.id), request
-                )
-                # Log entry for organisation
-                # TODO: ledger must create EmailUser logs
-                # applicant_field=getattr(self, self.applicant_field)
-                # applicant_field.log_user_action(ProposalUserAction.ACTION_PROPOSED_DECLINE.format(self.id),request)
+        ProposalDeclinedDetails.objects.update_or_create(
+            proposal=self,
+            defaults={
+                "officer": request.user.id,
+                "reason": reason,
+                "cc_email": details.get("cc_email", None),
+            },
+        )
+        self.proposed_decline_status = True
+        approver_comment = ""
+        self.move_to_status(
+            request, Proposal.PROCESSING_STATUS_WITH_APPROVER, approver_comment
+        )
+        # Log proposal action
+        self.log_user_action(
+            ProposalUserAction.ACTION_PROPOSED_DECLINE.format(self.id), request
+        )
 
-                send_approver_decline_email_notification(reason, request, self)
-            except Exception as e:
-                logger.exception(e)
-                raise e
+        # Log entry for applicant
+        self.applicant.log_user_action(
+            ProposalUserAction.ACTION_DECLINE.format(self.id), request
+        )
+
+        send_approver_decline_email_notification(reason, request, self)
 
     @transaction.atomic
     def final_decline(self, request, details):
@@ -2215,162 +2209,16 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         self.proposed_decline_status = True
         self.processing_status = Proposal.PROCESSING_STATUS_DECLINED
         self.save()
+
         # Log proposal action
         self.log_user_action(ProposalUserAction.ACTION_DECLINE.format(self.id), request)
-        # Log entry for organisation
-        # TODO: ledger must create EmailUser logs
-        # applicant_field=getattr(self, self.applicant_field)
-        # applicant_field.log_user_action(ProposalUserAction.ACTION_DECLINE.format(self.id),request)
+
+        # Log entry for applicant
+        self.applicant.log_user_action(
+            ProposalUserAction.ACTION_DECLINE.format(self.id), request
+        )
+
         send_proposal_decline_email_notification(self, request, proposal_decline)
-
-    def on_hold(self, request):
-        with transaction.atomic():
-            try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if not (
-                    self.processing_status == "with_assessor"
-                    or self.processing_status == "with_referral"
-                ):
-                    raise ValidationError(
-                        "You cannot put on hold if it is not with assessor or with referral"
-                    )
-
-                self.prev_processing_status = self.processing_status
-                self.processing_status = self.PROCESSING_STATUS_ONHOLD
-                self.save()
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_PUT_ONHOLD.format(self.id), request
-                )
-                # Log entry for organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_PUT_ONHOLD.format(self.id), request
-                )
-
-                # send_approver_decline_email_notification(reason, request, self)
-            except Exception as e:
-                logger.exception(e)
-                raise e
-
-    def on_hold_remove(self, request):
-        with transaction.atomic():
-            try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.processing_status != "on_hold":
-                    raise ValidationError(
-                        "You cannot remove on hold if it is not currently on hold"
-                    )
-
-                self.processing_status = self.prev_processing_status
-                self.prev_processing_status = self.PROCESSING_STATUS_ONHOLD
-                self.save()
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_REMOVE_ONHOLD.format(self.id), request
-                )
-                # Log entry for organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_REMOVE_ONHOLD.format(self.id), request
-                )
-
-                # send_approver_decline_email_notification(reason, request, self)
-            except Exception as e:
-                logger.exception(e)
-                raise e
-
-    def with_qaofficer(self, request):
-        with transaction.atomic():
-            try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if not (
-                    self.processing_status == "with_assessor"
-                    or self.processing_status == "with_referral"
-                ):
-                    raise ValidationError(
-                        "You cannot send to QA Officer if it is not with assessor or with referral"
-                    )
-
-                self.prev_processing_status = self.processing_status
-                self.processing_status = self.PROCESSING_STATUS_WITH_QA_OFFICER
-                self.qaofficer_referral = True
-                if self.qaofficer_referrals.exists():
-                    qaofficer_referral = self.qaofficer_referrals.first()
-                    qaofficer_referral.sent_by = request.user
-                    qaofficer_referral.processing_status = "with_qaofficer"
-                else:
-                    qaofficer_referral = self.qaofficer_referrals.create(
-                        sent_by=request.user
-                    )
-
-                qaofficer_referral.save()
-                self.save()
-
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_WITH_QA_OFFICER.format(self.id), request
-                )
-                # Log entry for organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_WITH_QA_OFFICER.format(self.id), request
-                )
-
-                # send_approver_decline_email_notification(reason, request, self)
-                # recipients = self.qa_officers()
-                # send_qaofficer_email_notification(self, recipients, request)
-
-            except Exception as e:
-                logger.exception(e)
-                raise e
-
-    def with_qaofficer_completed(self, request):
-        with transaction.atomic():
-            try:
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.processing_status != "with_qa_officer":
-                    raise ValidationError(
-                        "You cannot Complete QA Officer Assessment if processing status not currently With Assessor"
-                    )
-
-                self.processing_status = self.prev_processing_status
-                self.prev_processing_status = self.PROCESSING_STATUS_WITH_QA_OFFICER
-
-                qaofficer_referral = self.qaofficer_referrals.first()
-                qaofficer_referral.qaofficer = request.user
-                qaofficer_referral.qaofficer_group = QAOfficerGroup.objects.get(
-                    default=True
-                )
-                qaofficer_referral.qaofficer_text = request.data["text"]
-                qaofficer_referral.processing_status = "completed"
-
-                qaofficer_referral.save()
-                self.assigned_officer = None
-                self.save()
-
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_QA_OFFICER_COMPLETED.format(self.id),
-                    request,
-                )
-                # Log entry for organisation
-                applicant_field = getattr(self, self.applicant_field)
-                applicant_field.log_user_action(
-                    ProposalUserAction.ACTION_QA_OFFICER_COMPLETED.format(self.id),
-                    request,
-                )
-
-                # send_approver_decline_email_notification(reason, request, self)
-                # recipients = self.qa_officers()
-                # send_qaofficer_complete_email_notification(self, recipients, request)
-            except Exception as e:
-                logger.exception(e)
-                raise e
 
     def store_proposed_approval_data(self, request, details):
         # Input validation check
@@ -2455,49 +2303,45 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         self.save()
 
+    @transaction.atomic
     def proposed_approval(self, request, details):
-        with transaction.atomic():
-            try:
-                # User check
-                if not self.can_assess(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                # Processing status check
-                if not (
-                    (
-                        self.application_type.name
-                        == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
-                        and self.processing_status
-                        == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                    )
-                    or (
-                        self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
-                        and self.processing_status
-                        == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
-                    )
-                ):
-                    raise ValidationError("You cannot propose for approval")
+        # User check
+        if not self.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        # Processing status check
+        if not (
+            (
+                self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
+                and self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+            )
+            or (
+                self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE
+                and self.processing_status
+                == Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS
+            )
+        ):
+            raise ValidationError("You cannot propose for approval")
 
-                self.store_proposed_approval_data(request, details)
+        self.store_proposed_approval_data(request, details)
 
-                self.proposed_decline_status = False
-                approver_comment = ""
-                self.move_to_status(
-                    request, Proposal.PROCESSING_STATUS_WITH_APPROVER, approver_comment
-                )
-                self.assigned_officer = None
-                self.save()
-                # Log proposal action
-                self.log_user_action(
-                    ProposalUserAction.ACTION_PROPOSED_APPROVAL.format(self.id), request
-                )
-                # Log entry for organisation
-                # applicant_field = getattr(self, self.applicant_field)
-                # applicant_field.log_user_action(ProposalUserAction.ACTION_PROPOSED_APPROVAL.format(self.id),request)
+        self.proposed_decline_status = False
+        approver_comment = ""
+        self.move_to_status(
+            request, Proposal.PROCESSING_STATUS_WITH_APPROVER, approver_comment
+        )
+        self.assigned_officer = None
+        self.save()
+        # Log proposal action
+        self.log_user_action(
+            ProposalUserAction.ACTION_PROPOSED_APPROVAL.format(self.id), request
+        )
 
-                send_approver_approve_email_notification(request, self)
-            except Exception as e:
-                logger.error(e)
-                raise e
+        # Log entry for applicant
+        self.applicant.log_user_action(
+            ProposalUserAction.ACTION_DECLINE.format(self.id), request
+        )
+
+        send_approver_approve_email_notification(request, self)
 
     def preview_document(self, request, details):
         from leaseslicensing.components.approvals.document import (
@@ -4243,12 +4087,12 @@ class AmendmentRequest(ProposalRequest):
             proposal.log_user_action(
                 ProposalUserAction.ACTION_ID_REQUEST_AMENDMENTS, request
             )
-            # Create a log entry for the organisation
-            if proposal.org_applicant:
-                proposal.org_applicant.log_user_action(
-                    ProposalUserAction.ACTION_REQUESTED_AMENDMENT.format(proposal.id),
-                    request,
-                )
+
+            # Create a log entry for the applicant
+            proposal.applicant.log_user_action(
+                ProposalUserAction.ACTION_REQUESTED_AMENDMENT.format(proposal.id),
+                request,
+            )
 
             # send email
             send_amendment_email_notification(self, request, self.proposal)
@@ -4462,11 +4306,6 @@ class QAOfficerGroup(models.Model):
                 "There can only be one default proposal QA Officer group"
             )
 
-    @property
-    def current_proposals(self):
-        assessable_states = ["with_qa_officer"]
-        return Proposal.objects.filter(processing_status__in=assessable_states)
-
 
 class Referral(RevisionedMixin):
     SENT_CHOICES = ((1, "Sent From Assessor"), (2, "Sent From Referral"))
@@ -4568,358 +4407,322 @@ class Referral(RevisionedMixin):
         referral_user = retrieve_email_user(self.referral)
         # True if the request user is the referrer and the proposal is in referral status
         return referral_user.id == user.id and self.processing_status in [
-            "with_referral",
-            "with_referral_conditions",
+            Referral.PROCESSING_STATUS_WITH_REFERRAL,
         ]
 
+    @transaction.atomic
     def assign_officer(self, request, officer):
-        with transaction.atomic():
-            try:
-                if not self.can_process(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if not self.can_process(officer):
-                    raise ValidationError(
-                        "The selected person is not authorised to be assigned to this Referral"
-                    )
-                if officer != self.assigned_officer:
-                    self.assigned_officer = officer
-                    self.save()
-                    self.proposal.log_user_action(
-                        ProposalUserAction.ACTION_REFERRAL_ASSIGN_TO_ASSESSOR.format(
-                            self.id,
-                            self.proposal.id,
-                            f"{officer.get_full_name()}({officer.email})",
-                        ),
-                        request,
-                    )
-            except Exception as e:
-                logger.exception(e)
-                raise e
+        if not self.can_process(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        if not self.can_process(officer):
+            raise ValidationError(
+                "The selected person is not authorised to be assigned to this Referral"
+            )
+        if officer != self.assigned_officer:
+            self.assigned_officer = officer
+            self.save()
+            self.proposal.log_user_action(
+                ProposalUserAction.ACTION_REFERRAL_ASSIGN_TO_ASSESSOR.format(
+                    self.id,
+                    self.proposal.id,
+                    f"{officer.get_full_name()}({officer.email})",
+                ),
+                request,
+            )
+
+    transaction.atomic
 
     def unassign(self, request):
-        with transaction.atomic():
-            try:
-                if not self.can_process(request.user):
-                    raise exceptions.ProposalNotAuthorized()
-                if self.assigned_officer:
-                    self.assigned_officer = None
-                    self.save()
-                    # Create a log entry for the proposal
-                    self.proposal.log_user_action(
-                        ProposalUserAction.ACTION_REFERRAL_UNASSIGN_ASSESSOR.format(
-                            self.id, self.proposal.id
-                        ),
-                        request,
-                    )
-                    # Create a log entry for the organisation
-                    applicant_field = getattr(
-                        self.proposal, self.proposal.applicant_field
-                    )
-                    applicant_field = retrieve_email_user(applicant_field)
-                    # TODO: implement logging
-                    # applicant_field.log_user_action(ProposalUserAction.ACTION_REFERRAL_UNASSIGN_ASSESSOR
-                    # .format(self.id, self.proposal.id),request)
-            except Exception as e:
-                logger.exception(e)
-                raise e
-
-    def recall(self, request):
-        with transaction.atomic():
-            if not self.proposal.can_assess(request.user):
-                raise exceptions.ProposalNotAuthorized()
-            self.processing_status = Referral.PROCESSING_STATUS_RECALLED
+        if not self.can_process(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        if self.assigned_officer:
+            self.assigned_officer = None
             self.save()
-
-            # Log an action for the proposal
+            # Create a log entry for the proposal
             self.proposal.log_user_action(
-                ProposalUserAction.RECALL_REFERRAL.format(self.id, self.proposal.id),
+                ProposalUserAction.ACTION_REFERRAL_UNASSIGN_ASSESSOR.format(
+                    self.id, self.proposal.id
+                ),
                 request,
             )
 
-            # Log an action for the applicant
-            self.proposal.applicant.log_user_action(
-                ProposalUserAction.RECALL_REFERRAL.format(self.id, self.proposal.id),
-                request,
+            # Log entry for applicant
+            self.applicant.log_user_action(
+                ProposalUserAction.ACTION_DECLINE.format(self.id), request
             )
+
+    @transaction.atomic
+    def recall(self, request):
+        if not self.proposal.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        self.processing_status = Referral.PROCESSING_STATUS_RECALLED
+        self.save()
+
+        # Log an action for the proposal
+        self.proposal.log_user_action(
+            ProposalUserAction.RECALL_REFERRAL.format(self.id, self.proposal.id),
+            request,
+        )
+
+        # Log an action for the applicant
+        self.proposal.applicant.log_user_action(
+            ProposalUserAction.RECALL_REFERRAL.format(self.id, self.proposal.id),
+            request,
+        )
 
     @property
     def referral_as_email_user(self):
         return retrieve_email_user(self.referral)
 
+    @transaction.atomic
     def remind(self, request):
-        with transaction.atomic():
-            if not self.proposal.can_assess(request.user):
-                raise exceptions.ProposalNotAuthorized()
+        if not self.proposal.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
 
-            # Create a log entry for the proposal
-            self.proposal.log_user_action(
-                ProposalUserAction.ACTION_REMIND_REFERRAL.format(
-                    self.id,
-                    self.proposal.id,
-                    f"{self.referral_as_email_user.get_full_name()}",
-                ),
-                request,
-            )
+        # Create a log entry for the proposal
+        self.proposal.log_user_action(
+            ProposalUserAction.ACTION_REMIND_REFERRAL.format(
+                self.id,
+                self.proposal.id,
+                f"{self.referral_as_email_user.get_full_name()}",
+            ),
+            request,
+        )
 
-            # Create a log entry for the applicant
-            self.proposal.applicant.log_user_action(
-                ProposalUserAction.ACTION_REMIND_REFERRAL.format(
-                    self.id,
-                    self.proposal.id,
-                    f"{self.referral_as_email_user.get_full_name()}",
-                ),
-                request,
-            )
+        # Create a log entry for the applicant
+        self.proposal.applicant.log_user_action(
+            ProposalUserAction.ACTION_REMIND_REFERRAL.format(
+                self.id,
+                self.proposal.id,
+                f"{self.referral_as_email_user.get_full_name()}",
+            ),
+            request,
+        )
 
-            # send email
-            send_referral_email_notification(
-                self,
-                [
-                    self.referral_as_email_user.email,
-                ],
-                request,
-                reminder=True,
-            )
+        # send email
+        send_referral_email_notification(
+            self,
+            [
+                self.referral_as_email_user.email,
+            ],
+            request,
+            reminder=True,
+        )
 
+    @transaction.atomic
     def resend(self, request):
-        with transaction.atomic():
-            if not self.proposal.can_assess(request.user):
-                raise exceptions.ProposalNotAuthorized()
-            self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
+        if not self.proposal.can_assess(request.user):
+            raise exceptions.ProposalNotAuthorized()
+        self.processing_status = Referral.PROCESSING_STATUS_WITH_REFERRAL
+        self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
+        self.proposal.save()
+        self.sent_from = 1
+        self.save()
+
+        # Create a log entry for the proposal
+        self.proposal.log_user_action(
+            ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
+                self.id,
+                self.proposal.id,
+                f"{self.referral_as_email_user.get_full_name()}",
+            ),
+            request,
+        )
+
+        # Create a log entry for the applicant
+        self.proposal.applicant.log_user_action(
+            ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
+                self.id,
+                self.proposal.id,
+                f"{self.referral_as_email_user.get_full_name()}",
+            ),
+            request,
+        )
+
+        # send email
+        # recipients = self.referral_group.members_list
+        # ~leaving the comment above here in case we need to send to the whole group
+        send_referral_email_notification(
+            self,
+            [
+                self.referral_as_email_user.email,
+            ],
+            request,
+        )
+
+    @transaction.atomic
+    def complete(self, request):
+        self.processing_status = Referral.PROCESSING_STATUS_COMPLETED
+        self.add_referral_document(request)
+        self.save()
+
+        # Log proposal action
+        self.proposal.log_user_action(
+            ProposalUserAction.CONCLUDE_REFERRAL.format(
+                request.user.get_full_name(),
+                self.id,
+                self.proposal.lodgement_number,
+            ),
+            request,
+        )
+
+        # Create a log entry for the applicant
+        self.proposal.applicant.log_user_action(
+            ProposalUserAction.CONCLUDE_REFERRAL.format(
+                request.user.get_full_name(),
+                self.id,
+                self.proposal.lodgement_number,
+            ),
+            request,
+        )
+
+        send_referral_complete_email_notification(self, request)
+
+        # Check if this was the last pending referral for the proposal
+        if not Referral.objects.filter(
+            proposal=self.proposal,
+            processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
+        ).exists():
+            # Change the status back to what it was before this referral was requested
+            if self.sent_from == 1:
+                self.proposal.processing_status = (
+                    Proposal.PROCESSING_STATUS_WITH_ASSESSOR
+                )
+            else:
+                self.proposal.processing_status = (
+                    Proposal.PROCESSING_STATUS_WITH_APPROVER
+                )
+            self.proposal.save()
+
+            send_pending_referrals_complete_email_notification(self, request)
+
+    @transaction.atomic
+    def add_referral_document(self, request):
+        # if request.data.has_key('referral_document'):
+        if "referral_document" in request.data:
+            referral_document = request.data["referral_document"]
+            if referral_document != "null":
+                try:
+                    document = self.referral_documents.get(
+                        input_name=str(referral_document)
+                    )
+                except ReferralDocument.DoesNotExist:
+                    document = self.referral_documents.get_or_create(
+                        input_name=str(referral_document),
+                        name=str(referral_document),
+                    )[0]
+                document.name = str(referral_document)
+                # commenting out below tow lines - we want to retain all past attachments
+                # - reversion can use them
+                # if document._file and os.path.isfile(document._file.path):
+                #    os.remove(document._file.path)
+                document._file = referral_document
+                document.save()
+                d = ReferralDocument.objects.get(id=document.id)
+                # self.referral_document = d
+                self.document = d
+                comment = f"Referral Document Added: {document.name}"
+            else:
+                # self.referral_document = None
+                self.document = None
+                # comment = 'Referral Document Deleted: {}'.format(request.data['referral_document_name'])
+                comment = "Referral Document Deleted"
+            # self.save()
+            self.save(
+                version_comment=comment
+            )  # to allow revision to be added to reversion history
+            self.proposal.log_user_action(
+                ProposalUserAction.ACTION_REFERRAL_DOCUMENT.format(self.id),
+                request,
+            )
+
+            # Log entry for applicant
+            self.proposal.applicant.log_user_action(
+                ProposalUserAction.ACTION_DECLINE.format(self.id), request
+            )
+
+        return self
+
+    @transaction.atomic
+    def send_referral(self, request, referral_email, referral_text):
+        if self.proposal.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL:
+            if request.user != self.referral:
+                raise exceptions.ReferralNotAuthorized()
+            if self.sent_from != 1:
+                raise exceptions.ReferralCanNotSend()
             self.proposal.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
             self.proposal.save()
-            self.sent_from = 1
-            self.save()
+            referral = None
+            # Check if the user is in ledger
+            try:
+                user = EmailUser.objects.get(email__icontains=referral_email.lower())
+            except EmailUser.DoesNotExist:
+                # Validate if it is a deparment user
+                department_user = is_department_user(referral_email)
+                if not department_user:
+                    raise ValidationError(
+                        "The user you want to send the referral to is not a member of the department"
+                    )
+                # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
 
+                user, created = EmailUser.objects.get_or_create(
+                    email=department_user["email"].lower()
+                )
+                if created:
+                    user.first_name = department_user["given_name"]
+                    user.last_name = department_user["surname"]
+                    user.save()
+            qs = Referral.objects.filter(sent_by=user, proposal=self.proposal)
+            if qs:
+                raise ValidationError("You cannot send referral to this user")
+            try:
+                Referral.objects.get(referral=user, proposal=self.proposal)
+                raise ValidationError("A referral has already been sent to this user")
+            except Referral.DoesNotExist:
+                # Create Referral
+                referral = Referral.objects.create(
+                    proposal=self.proposal,
+                    referral=user,
+                    sent_by=request.user,
+                    sent_from=2,
+                    text=referral_text,
+                )
+                # try:
+                #     referral_assessment=ProposalAssessment.objects
+                # .get(proposal=self,referral_group=referral_group,
+                # referral_assessment=True, referral=referral)
+                # except ProposalAssessment.DoesNotExist:
+                #     referral_assessment=ProposalAssessment.objects
+                # .create(proposal=self,referral_group=referral_group,
+                # referral_assessment=True, referral=referral)
+                #     checklist=ChecklistQuestion.objects.filter(list_type='referral_list', obsolete=False)
+                #     for chk in checklist:
+                #         try:
+                #             chk_instance=ProposalAssessmentAnswer.objects
+                # .get(question=chk, assessment=referral_assessment)
+                #         except ProposalAssessmentAnswer.DoesNotExist:
+                #             chk_instance=ProposalAssessmentAnswer.objects
+                # .create(question=chk, assessment=referral_assessment)
             # Create a log entry for the proposal
             self.proposal.log_user_action(
-                ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
-                    self.id,
+                ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
+                    referral.id,
                     self.proposal.id,
-                    f"{self.referral_as_email_user.get_full_name()}",
+                    f"{user.get_full_name()}({user.email})",
                 ),
                 request,
             )
 
-            # Create a log entry for the applicant
+            # Log entry for applicant
             self.proposal.applicant.log_user_action(
-                ProposalUserAction.ACTION_RESEND_REFERRAL_TO.format(
-                    self.id,
-                    self.proposal.id,
-                    f"{self.referral_as_email_user.get_full_name()}",
-                ),
-                request,
+                ProposalUserAction.ACTION_DECLINE.format(self.id), request
             )
 
             # send email
-            # recipients = self.referral_group.members_list
-            # ~leaving the comment above here in case we need to send to the whole group
-            send_referral_email_notification(
-                self,
-                [
-                    self.referral_as_email_user.email,
-                ],
-                request,
-            )
-
-    def complete(self, request):
-        with transaction.atomic():
-            self.processing_status = Referral.PROCESSING_STATUS_COMPLETED
-            self.add_referral_document(request)
-            self.save()
-
-            # Log proposal action
-            self.proposal.log_user_action(
-                ProposalUserAction.CONCLUDE_REFERRAL.format(
-                    request.user.get_full_name(),
-                    self.id,
-                    self.proposal.lodgement_number,
-                ),
-                request,
-            )
-
-            # log applicant_field
-            self.applicant.log_user_action(
-                ProposalUserAction.CONCLUDE_REFERRAL.format(
-                    request.user.get_full_name(),
-                    self.id,
-                    self.proposal.lodgement_number,
-                ),
-                request,
-            )
-
-            send_referral_complete_email_notification(self, request)
-
-            # Check if this was the last pending referral for the proposal
-            if not Referral.objects.filter(
-                proposal=self.proposal,
-                processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
-            ).exists():
-                # Change the status back to what it was before this referral was requested
-                if self.sent_from == 1:
-                    self.proposal.processing_status = (
-                        Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-                    )
-                else:
-                    self.proposal.processing_status = (
-                        Proposal.PROCESSING_STATUS_WITH_APPROVER
-                    )
-                self.proposal.save()
-
-                send_pending_referrals_complete_email_notification(self, request)
-
-    def add_referral_document(self, request):
-        with transaction.atomic():
-            try:
-                # if request.data.has_key('referral_document'):
-                if "referral_document" in request.data:
-                    referral_document = request.data["referral_document"]
-                    if referral_document != "null":
-                        try:
-                            document = self.referral_documents.get(
-                                input_name=str(referral_document)
-                            )
-                        except ReferralDocument.DoesNotExist:
-                            document = self.referral_documents.get_or_create(
-                                input_name=str(referral_document),
-                                name=str(referral_document),
-                            )[0]
-                        document.name = str(referral_document)
-                        # commenting out below tow lines - we want to retain all past attachments
-                        # - reversion can use them
-                        # if document._file and os.path.isfile(document._file.path):
-                        #    os.remove(document._file.path)
-                        document._file = referral_document
-                        document.save()
-                        d = ReferralDocument.objects.get(id=document.id)
-                        # self.referral_document = d
-                        self.document = d
-                        comment = f"Referral Document Added: {document.name}"
-                    else:
-                        # self.referral_document = None
-                        self.document = None
-                        # comment = 'Referral Document Deleted: {}'.format(request.data['referral_document_name'])
-                        comment = "Referral Document Deleted"
-                    # self.save()
-                    self.save(
-                        version_comment=comment
-                    )  # to allow revision to be added to reversion history
-                    self.proposal.log_user_action(
-                        ProposalUserAction.ACTION_REFERRAL_DOCUMENT.format(self.id),
-                        request,
-                    )
-                    # Create a log entry for the organisation
-                    applicant_field = getattr(
-                        self.proposal, self.proposal.applicant_field
-                    )
-                    applicant_field.log_user_action(
-                        ProposalUserAction.ACTION_REFERRAL_DOCUMENT.format(self.id),
-                        request,
-                    )
-                return self
-            except Exception as e:
-                logger.exception(e)
-                raise e
-
-    def send_referral(self, request, referral_email, referral_text):
-        with transaction.atomic():
-            try:
-                if (
-                    self.proposal.processing_status
-                    == Proposal.PROCESSING_STATUS_WITH_REFERRAL
-                ):
-                    if request.user != self.referral:
-                        raise exceptions.ReferralNotAuthorized()
-                    if self.sent_from != 1:
-                        raise exceptions.ReferralCanNotSend()
-                    self.proposal.processing_status = (
-                        Proposal.PROCESSING_STATUS_WITH_REFERRAL
-                    )
-                    self.proposal.save()
-                    referral = None
-                    # Check if the user is in ledger
-                    try:
-                        user = EmailUser.objects.get(
-                            email__icontains=referral_email.lower()
-                        )
-                    except EmailUser.DoesNotExist:
-                        # Validate if it is a deparment user
-                        department_user = is_department_user(referral_email)
-                        if not department_user:
-                            raise ValidationError(
-                                "The user you want to send the referral to is not a member of the department"
-                            )
-                        # Todo: This will not work in a segreggated system -> Check if the user is in ledger or create
-
-                        user, created = EmailUser.objects.get_or_create(
-                            email=department_user["email"].lower()
-                        )
-                        if created:
-                            user.first_name = department_user["given_name"]
-                            user.last_name = department_user["surname"]
-                            user.save()
-                    qs = Referral.objects.filter(sent_by=user, proposal=self.proposal)
-                    if qs:
-                        raise ValidationError("You cannot send referral to this user")
-                    try:
-                        Referral.objects.get(referral=user, proposal=self.proposal)
-                        raise ValidationError(
-                            "A referral has already been sent to this user"
-                        )
-                    except Referral.DoesNotExist:
-                        # Create Referral
-                        referral = Referral.objects.create(
-                            proposal=self.proposal,
-                            referral=user,
-                            sent_by=request.user,
-                            sent_from=2,
-                            text=referral_text,
-                        )
-                        # try:
-                        #     referral_assessment=ProposalAssessment.objects
-                        # .get(proposal=self,referral_group=referral_group,
-                        # referral_assessment=True, referral=referral)
-                        # except ProposalAssessment.DoesNotExist:
-                        #     referral_assessment=ProposalAssessment.objects
-                        # .create(proposal=self,referral_group=referral_group,
-                        # referral_assessment=True, referral=referral)
-                        #     checklist=ChecklistQuestion.objects.filter(list_type='referral_list', obsolete=False)
-                        #     for chk in checklist:
-                        #         try:
-                        #             chk_instance=ProposalAssessmentAnswer.objects
-                        # .get(question=chk, assessment=referral_assessment)
-                        #         except ProposalAssessmentAnswer.DoesNotExist:
-                        #             chk_instance=ProposalAssessmentAnswer.objects
-                        # .create(question=chk, assessment=referral_assessment)
-                    # Create a log entry for the proposal
-                    self.proposal.log_user_action(
-                        ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                            referral.id,
-                            self.proposal.id,
-                            f"{user.get_full_name()}({user.email})",
-                        ),
-                        request,
-                    )
-                    # Create a log entry for the organisation
-                    applicant_field = getattr(
-                        self.proposal, self.proposal.applicant_field
-                    )
-                    applicant_field.log_user_action(
-                        ProposalUserAction.ACTION_SEND_REFERRAL_TO.format(
-                            referral.id,
-                            self.proposal.id,
-                            f"{user.get_full_name()}({user.email})",
-                        ),
-                        request,
-                    )
-                    # send email
-                    recipients = self.email_group.members_list
-                    send_referral_email_notification(referral, recipients, request)
-                else:
-                    raise exceptions.ProposalReferralCannotBeSent()
-            except Exception as e:
-                logger.exception(e)
-                raise e
+            recipients = self.email_group.members_list
+            send_referral_email_notification(referral, recipients, request)
+        else:
+            raise exceptions.ProposalReferralCannotBeSent()
 
     @property
     def title(self):
@@ -4931,10 +4734,10 @@ class Referral(RevisionedMixin):
 
     @property
     def can_be_processed(self):
-        return self.processing_status == "with_referral"
+        return self.processing_status == Referral.PROCESSING_STATUS_WITH_REFERRAL
 
     def can_assess_referral(self, user):
-        return self.processing_status == "with_referral"
+        return self.processing_status == Referral.PROCESSING_STATUS_WITH_REFERRAL
 
 
 class ExternalRefereeInvite(RevisionedMixin):
@@ -5127,8 +4930,7 @@ class ProposalRequirement(RevisionedMixin):
 
     def can_referral_edit(self, user):
         if self.proposal.processing_status in [
-            "with_referral",
-            "with_referral_conditions",
+            Proposal.PROCESSING_STATUS_WITH_REFERRAL,
         ]:
             if self.referral_group:
                 group = ReferralRecipientGroup.objects.filter(id=self.referral_group.id)
@@ -5149,29 +4951,23 @@ class ProposalRequirement(RevisionedMixin):
                     return False
         return False
 
+    @transaction.atomic
     def add_documents(self, request):
-        with transaction.atomic():
-            try:
-                # save the files
-                data = json.loads(request.data.get("data"))
-                if not data.get("update"):
-                    documents_qs = self.requirement_documents.filter(
-                        input_name="requirement_doc", visible=True
-                    )
-                    documents_qs.delete()
-                for idx in range(data["num_files"]):
-                    _file = request.data.get("file-" + str(idx))
-                    document = self.requirement_documents.create(
-                        _file=_file, name=_file.name
-                    )
-                    document.input_name = data["input_name"]
-                    document.can_delete = True
-                    document.save()
-                # end save documents
-                self.save()
-            except Exception as e:
-                logger.exception(e)
-                raise e
+        # save the files
+        data = json.loads(request.data.get("data"))
+        if not data.get("update"):
+            documents_qs = self.requirement_documents.filter(
+                input_name="requirement_doc", visible=True
+            )
+            documents_qs.delete()
+        for idx in range(data["num_files"]):
+            _file = request.data.get("file-" + str(idx))
+            document = self.requirement_documents.create(_file=_file, name=_file.name)
+            document.input_name = data["input_name"]
+            document.can_delete = True
+            document.save()
+        # end save documents
+        self.save()
 
         return
 
