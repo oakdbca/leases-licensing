@@ -338,14 +338,7 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
         if is_internal(self.request):
             return Approval.objects.all()
         elif is_customer(self.request):
-            user_orgs = (
-                [
-                    org.id
-                    for org in self.request.user.leaseslicensing_organisations.all()
-                ]
-                if hasattr(self.request.user, "leaseslicensing_organisations")
-                else []
-            )
+            user_orgs = get_organisation_ids_for_user(self.request.user.id)
             queryset = Approval.objects.filter(
                 Q(current_proposal__org_applicant_id__in=user_orgs)
                 | Q(current_proposal__submitter=self.request.user.id)
