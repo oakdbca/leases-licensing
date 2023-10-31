@@ -555,4 +555,7 @@ ACTION_DESTROY = "Destroy {} {}"
 
 # When debug is False, the following message will be sent to the user
 # The real exception will be logged
-API_EXCEPTION_MESSAGE = "An error occurred while processing your request."
+API_EXCEPTION_MESSAGE = (
+    "An error occurred while processing your request, "
+    f"please try again and if the problem persists contact {SUPPORT_EMAIL}"
+)
