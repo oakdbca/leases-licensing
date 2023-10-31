@@ -2524,6 +2524,13 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             proposal_type_comment_name = proposal_type_comment_names[
                 PROPOSAL_TYPE_TRANSFER
             ]
+
+            self.generate_compliances(approval, request)
+
+            self.processing_status = (
+                Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
+            )
+
             approval.save(
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
             )
