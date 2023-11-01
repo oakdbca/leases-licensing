@@ -4,7 +4,9 @@
             <h3>Organisation Access Request: {{ access.lodgement_number }}</h3>
             <div class="col-md-3">
                 <CommsLogs
-:comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
+                    :comms_url="comms_url"
+                    :logs_url="logs_url"
+                    :comms_add_url="comms_add_url"
                     :disable_add_entry="false"
                 />
                 <div class="row">
@@ -30,10 +32,14 @@
                                                 </option>
                                             </select>
                                             <select
-v-if="!isLoading" v-model="
+                                                v-if="!isLoading"
+                                                v-model="
                                                     access.assigned_officer
                                                 "
-                                                :disabled="isFinalised || !check_assessor()"
+                                                :disabled="
+                                                    isFinalised ||
+                                                    !check_assessor()
+                                                "
                                                 class="form-control"
                                                 @change="assignTo"
                                             >
@@ -42,32 +48,42 @@ v-if="!isLoading" v-model="
                                                 </option>
                                                 <option
                                                     v-for="member in members"
+                                                    :key="member.id"
                                                     :value="member.id"
                                                 >
                                                     {{ member.name }}
                                                 </option>
                                             </select>
                                             <a
-v-if="!isFinalised && check_assessor() && access.assigned_officer != profile.id"
-                                                class="actionBtn pull-right" @click.prevent="assignMyself()">Assign to
+                                                v-if="
+                                                    !isFinalised &&
+                                                    check_assessor() &&
+                                                    access.assigned_officer !=
+                                                        profile.id
+                                                "
+                                                class="actionBtn pull-right"
+                                                @click.prevent="assignMyself()"
+                                                >Assign to me</a
                                             >
                                         </div>
                                     </div>
                                     <div
-
-v-if="!isFinalised && check_assessor() && current_user_is_assigned()"
-                                        class="col-sm-12 top-buffer-s">
+                                        v-if="
+                                            !isFinalised &&
+                                            check_assessor() &&
+                                            current_user_is_assigned()
+                                        "
+                                        class="col-sm-12 top-buffer-s"
+                                    >
                                         <strong>Action</strong><br />
                                         <button
-
-class="btn btn-primary"
+                                            class="btn btn-primary"
                                             @click.prevent="acceptRequest()"
                                         >
                                             Accept</button
                                         ><br />
                                         <button
-
-class="btn btn-primary top-buffer-s"
+                                            class="btn btn-primary top-buffer-s"
                                             @click.prevent="declineRequest()"
                                         >
                                             Decline
@@ -110,7 +126,11 @@ class="btn btn-primary top-buffer-s"
                                     >
                                     <div class="col-sm-9">
                                         <input
-v-model="access.name" type="text" disabled class="form-control" name="name"
+                                            v-model="access.name"
+                                            type="text"
+                                            disabled
+                                            class="form-control"
+                                            name="name"
                                             placeholder=""
                                         />
                                     </div>
@@ -121,7 +141,11 @@ v-model="access.name" type="text" disabled class="form-control" name="name"
                                     >
                                     <div class="col-sm-9">
                                         <input
-v-model="access.abn" type="text" disabled class="form-control" name="abn"
+                                            v-model="access.abn"
+                                            type="text"
+                                            disabled
+                                            class="form-control"
+                                            name="abn"
                                             placeholder=""
                                         />
                                     </div>
@@ -148,8 +172,15 @@ v-model="access.abn" type="text" disabled class="form-control" name="abn"
                                     >
                                     <div class="col-sm-9">
                                         <input
-v-model="access.requester.phone_number" type="text" disabled class="form-control" name="phone"
-                                            placeholder="">
+                                            v-model="
+                                                access.requester.phone_number
+                                            "
+                                            type="text"
+                                            disabled
+                                            class="form-control"
+                                            name="phone"
+                                            placeholder=""
+                                        />
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -158,8 +189,15 @@ v-model="access.requester.phone_number" type="text" disabled class="form-control
                                     >
                                     <div class="col-sm-9">
                                         <input
-v-model="access.requester.mobile_number" type="text" disabled class="form-control" name="mobile"
-                                            placeholder="">
+                                            v-model="
+                                                access.requester.mobile_number
+                                            "
+                                            type="text"
+                                            disabled
+                                            class="form-control"
+                                            name="mobile"
+                                            placeholder=""
+                                        />
                                     </div>
                                 </div>
                                 <div class="row mb-3">
@@ -168,7 +206,11 @@ v-model="access.requester.mobile_number" type="text" disabled class="form-contro
                                     >
                                     <div class="col-sm-9">
                                         <input
-v-model="access.requester.email" type="text" disabled class="form-control" name="email"
+                                            v-model="access.requester.email"
+                                            type="text"
+                                            disabled
+                                            class="form-control"
+                                            name="email"
                                             placeholder=""
                                         />
                                     </div>
@@ -186,15 +228,13 @@ v-model="access.requester.email" type="text" disabled class="form-control" name=
 </template>
 <script>
 import $ from 'jquery';
-import datatable from '@vue-utils/datatable.vue';
 import CommsLogs from '@common-utils/comms_logs.vue';
 import Swal from 'sweetalert2';
 import { api_endpoints, constants, helpers } from '@/utils/hooks';
 export default {
     name: 'OrganisationAccess',
     components: {
-        datatable,
-        CommsLogs
+        CommsLogs,
     },
     data() {
         let vm = this;
@@ -203,14 +243,23 @@ export default {
             profile: {},
             loadingOrganisationRequest: false,
             access: {
-                requester: {}
+                requester: {},
             },
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
             members: [],
             // Filters
-            logs_url: helpers.add_endpoint_json(api_endpoints.organisation_requests, vm.$route.params.access_id + '/action_log'),
-            comms_url: helpers.add_endpoint_json(api_endpoints.organisation_requests, vm.$route.params.access_id + '/comms_log'),
-            comms_add_url: helpers.add_endpoint_json(api_endpoints.organisation_requests, vm.$route.params.access_id + '/add_comms_log'),
+            logs_url: helpers.add_endpoint_json(
+                api_endpoints.organisation_requests,
+                vm.$route.params.access_id + '/action_log'
+            ),
+            comms_url: helpers.add_endpoint_json(
+                api_endpoints.organisation_requests,
+                vm.$route.params.access_id + '/comms_log'
+            ),
+            comms_add_url: helpers.add_endpoint_json(
+                api_endpoints.organisation_requests,
+                vm.$route.params.access_id + '/add_comms_log'
+            ),
             actionDtOptions: {
                 language: {
                     processing: constants.DATATABLE_PROCESSING_HTML,
@@ -225,25 +274,28 @@ export default {
                     "<'row'<'col-sm-5'i><'col-sm-7'p>>",
                 processing: true,
                 ajax: {
-                    "url": helpers.add_endpoint_json(api_endpoints.organisation_requests, vm.$route.params.access_id + '/action_log'),
-                    "dataSrc": '',
+                    url: helpers.add_endpoint_json(
+                        api_endpoints.organisation_requests,
+                        vm.$route.params.access_id + '/action_log'
+                    ),
+                    dataSrc: '',
                 },
                 columns: [
                     {
-                        data: "who",
+                        data: 'who',
                     },
                     {
-                        data: "what",
+                        data: 'what',
                     },
                     {
-                        data: "when",
-                        mRender: function (data, type, full) {
-                            return moment(data).format(vm.DATE_TIME_FORMAT)
-                        }
+                        data: 'when',
+                        mRender: function (data) {
+                            return moment(data).format(vm.DATE_TIME_FORMAT);
+                        },
                     },
-                ]
+                ],
             },
-            dtHeaders: ["Who", "What", "When"],
+            dtHeaders: ['Who', 'What', 'When'],
             actionsTable: null,
             commsDtOptions: {
                 language: {
@@ -255,8 +307,11 @@ export default {
                 order: [[0, 'desc']],
                 processing: true,
                 ajax: {
-                    "url": helpers.add_endpoint_json(api_endpoints.organisation_requests, vm.$route.params.access_id + '/comms_log'),
-                    "dataSrc": '',
+                    url: helpers.add_endpoint_json(
+                        api_endpoints.organisation_requests,
+                        vm.$route.params.access_id + '/comms_log'
+                    ),
+                    dataSrc: '',
                 },
                 columns: [
                     {
@@ -264,72 +319,74 @@ export default {
                         data: 'created',
                         render: function (date) {
                             return moment(date).format(vm.DATE_TIME_FORMAT);
-                        }
+                        },
                     },
                     {
                         title: 'Type',
-                        data: 'type'
+                        data: 'type',
                     },
                     {
                         title: 'Reference',
-                        data: 'reference'
+                        data: 'reference',
                     },
                     {
                         title: 'To',
                         data: 'to',
-                        render: vm.commaToNewline
+                        render: vm.commaToNewline,
                     },
                     {
                         title: 'CC',
                         data: 'cc',
-                        render: vm.commaToNewline
+                        render: vm.commaToNewline,
                     },
                     {
                         title: 'From',
                         data: 'fromm',
-                        render: vm.commaToNewline
+                        render: vm.commaToNewline,
                     },
                     {
                         title: 'Subject/Desc.',
-                        data: 'subject'
+                        data: 'subject',
                     },
                     {
                         title: 'Text',
                         data: 'text',
-                        'render': function (value) {
+                        render: function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
                                     length: 100,
                                     omission: ellipsis,
-                                    separator: ' '
+                                    separator: ' ',
                                 }),
                                 result = '<span>' + truncated + '</span>',
-                                popTemplate = _.template('<a href="#" ' +
-                                    'role="button" ' +
-                                    'data-toggle="popover" ' +
-                                    'data-trigger="click" ' +
-                                    'data-placement="top auto"' +
-                                    'data-html="true" ' +
-                                    'data-content="<%= text %>" ' +
-                                    '>more</a>');
+                                popTemplate = _.template(
+                                    '<a href="#" ' +
+                                        'role="button" ' +
+                                        'data-toggle="popover" ' +
+                                        'data-trigger="click" ' +
+                                        'data-placement="top auto"' +
+                                        'data-html="true" ' +
+                                        'data-content="<%= text %>" ' +
+                                        '>more</a>'
+                                );
                             if (_.endsWith(truncated, ellipsis)) {
                                 result += popTemplate({
-                                    text: value
+                                    text: value,
                                 });
                             }
 
                             return result;
                         },
-                        'createdCell': function (cell) {
+                        createdCell: function (cell) {
                             //TODO why this is not working?
                             // the call to popover is done in the 'draw' event
                             $(cell).popover();
-                        }
+                        },
                     },
                     {
                         title: 'Documents',
                         data: 'documents',
-                        'render': function (values) {
+                        render: function (values) {
                             var result = '';
                             _.forEach(values, function (value) {
                                 // We expect an array [docName, url]
@@ -347,18 +404,23 @@ export default {
                                     docName = _.truncate(docName, {
                                         length: 18,
                                         omission: '...',
-                                        separator: ' '
+                                        separator: ' ',
                                     });
                                 }
-                                result += '<a href="' + url + '" target="_blank"><p>' + docName + '</p></a><br>';
+                                result +=
+                                    '<a href="' +
+                                    url +
+                                    '" target="_blank"><p>' +
+                                    docName +
+                                    '</p></a><br>';
                             });
                             return result;
-                        }
-                    }
-                ]
+                        },
+                    },
+                ],
             },
             commsTable: null,
-        }
+        };
     },
     computed: {
         isLoading: function () {
@@ -372,7 +434,6 @@ export default {
         },
     },
     mounted: function () {
-        let vm = this;
         const id = this.$route.params.access_id;
         this.fetchOrganisationRequest(id);
         this.fetchAccessGroupMembers();
@@ -383,235 +444,264 @@ export default {
             return s.replace(/[,;]/g, '\n');
         },
         fetchAccessGroupMembers: function () {
-            let vm = this
+            let vm = this;
             fetch(api_endpoints.organisation_access_group_members)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.error(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.error(error);
+                        return Promise.reject(error);
                     }
-                    vm.members = data
+                    vm.members = data;
                 })
                 .catch((error) => {
-                    this.errorMessage = constants.ERRORS.API_ERROR
-                    console.error('There was an error!', error)
-                })
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.error('There was an error!', error);
+                });
         },
         assignMyself: function () {
             let vm = this;
-            fetch(helpers.add_endpoint_json(api_endpoints.organisation_requests, (vm.access.id + '/assign_request_user')))
+            fetch(
+                helpers.add_endpoint_json(
+                    api_endpoints.organisation_requests,
+                    vm.access.id + '/assign_request_user'
+                )
+            )
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.error(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.error(error);
+                        return Promise.reject(error);
                     }
-                    vm.access = data
+                    vm.access = data;
                 })
                 .catch((error) => {
-                    this.errorMessage = constants.ERRORS.API_ERROR
-                    console.error('There was an error!', error)
-                })
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.error('There was an error!', error);
+                });
         },
         assignTo: function () {
             let vm = this;
             if (vm.access.assigned_officer != 'null') {
                 const requestOptions = {
-                    method: "PATCH",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 'user_id': vm.access.assigned_officer })
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: vm.access.assigned_officer,
+                    }),
                 };
-                fetch(helpers.add_endpoint_json(api_endpoints.organisation_requests, (vm.access.id + '/assign_user')), requestOptions)
+                fetch(
+                    helpers.add_endpoint_json(
+                        api_endpoints.organisation_requests,
+                        vm.access.id + '/assign_user'
+                    ),
+                    requestOptions
+                )
                     .then(async (response) => {
-                        const data = await response.json()
+                        const data = await response.json();
                         if (!response.ok) {
                             const error =
-                                (data && data.message) || response.statusText
-                            console.error(error)
-                            return Promise.reject(error)
+                                (data && data.message) || response.statusText;
+                            console.error(error);
+                            return Promise.reject(error);
                         }
-                        vm.access = data
+                        vm.access = data;
                     })
                     .catch((error) => {
-                        this.errorMessage = constants.ERRORS.API_ERROR
-                        console.error('There was an error!', error)
-                    })
-            }
-            else {
+                        this.errorMessage = constants.ERRORS.API_ERROR;
+                        console.error('There was an error!', error);
+                    });
+            } else {
                 const requestOptions = {
-                    method: "PATCH",
+                    method: 'PATCH',
                 };
-                fetch(helpers.add_endpoint_json(api_endpoints.organisation_requests, (vm.access.id + '/unassign')), requestOptions)
+                fetch(
+                    helpers.add_endpoint_json(
+                        api_endpoints.organisation_requests,
+                        vm.access.id + '/unassign'
+                    ),
+                    requestOptions
+                )
                     .then(async (response) => {
-                        const data = await response.json()
+                        const data = await response.json();
                         if (!response.ok) {
                             const error =
-                                (data && data.message) || response.statusText
-                            console.error(error)
-                            return Promise.reject(error)
+                                (data && data.message) || response.statusText;
+                            console.error(error);
+                            return Promise.reject(error);
                         }
-                        vm.access = data
+                        vm.access = data;
                     })
                     .catch((error) => {
-                        this.errorMessage = constants.ERRORS.API_ERROR
-                        console.error('There was an error!', error)
-                    })
+                        this.errorMessage = constants.ERRORS.API_ERROR;
+                        console.error('There was an error!', error);
+                    });
             }
         },
         acceptRequest: function () {
             let vm = this;
             Swal.fire({
-                title: "Accept Organisation Request",
-                text: "Are you sure you want to accept this organisation request?",
-                type: "question",
+                title: 'Accept Organisation Request',
+                text: 'Are you sure you want to accept this organisation request?',
+                type: 'question',
                 showCancelButton: true,
                 reverseButtons: true,
                 buttonsStyling: false,
                 customClass: {
                     confirmButton: 'btn btn-primary',
-                    cancelButton: 'btn btn-secondary me-2'
+                    cancelButton: 'btn btn-secondary me-2',
                 },
-                confirmButtonText: 'Accept'
+                confirmButtonText: 'Accept',
             }).then((result) => {
                 if (result.isConfirmed) {
                     const requestOptions = {
-                        method: "PATCH",
+                        method: 'PATCH',
                     };
-                    fetch(helpers.add_endpoint_json(api_endpoints.organisation_requests, (vm.access.id + '/accept')), requestOptions)
+                    fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.organisation_requests,
+                            vm.access.id + '/accept'
+                        ),
+                        requestOptions
+                    )
                         .then(async (response) => {
-                            const data = await response.json()
+                            const data = await response.json();
                             if (!response.ok) {
                                 const error =
-                                    (data && data.message) || response.statusText
-                                console.error(error)
-                                return Promise.reject(error)
+                                    (data && data.message) ||
+                                    response.statusText;
+                                console.error(error);
+                                return Promise.reject(error);
                             }
-                            vm.access = data
+                            vm.access = data;
                             Swal.fire(
                                 'Success',
                                 'Organisation request accepted. The user will be notified by email.',
                                 'success'
-                            )
+                            );
                         })
                         .catch((error) => {
-                            console.error('There was an error!', error)
-                            var text = helpers.apiVueResourceError(error);
+                            console.error('There was an error!', error);
+                            let text = helpers.apiVueResourceError(error);
                             if (typeof text == 'object') {
-                                if (text.hasOwnProperty('email')) {
+                                if (Object.hasOwn(text, 'email')) {
                                     text = text.email[0];
                                 }
                             }
                             Swal.fire(
                                 'Error',
-                                'Organisation request cannot be accepted because of the following error: ' + text,
+                                'Organisation request cannot be accepted because of the following error: ' +
+                                    text,
                                 'error'
-                            )
-                        })
+                            );
+                        });
                 }
-            })
+            });
         },
         declineRequest: function () {
             let vm = this;
             Swal.fire({
-                title: "Decline Organisation Request",
-                text: "Are you sure you want to decline this organisation request?",
-                type: "question",
+                title: 'Decline Organisation Request',
+                text: 'Are you sure you want to decline this organisation request?',
+                type: 'question',
                 showCancelButton: true,
                 reverseButtons: true,
                 buttonsStyling: false,
                 customClass: {
                     confirmButton: 'btn btn-primary',
-                    cancelButton: 'btn btn-secondary me-2'
+                    cancelButton: 'btn btn-secondary me-2',
                 },
                 confirmButtonText: 'Decline',
             }).then((result) => {
                 if (result.isConfirmed) {
                     const requestOptions = {
-                        method: "PATCH",
+                        method: 'PATCH',
                     };
-                    fetch(helpers.add_endpoint_json(api_endpoints.organisation_requests, (vm.access.id + '/decline')), requestOptions)
+                    fetch(
+                        helpers.add_endpoint_json(
+                            api_endpoints.organisation_requests,
+                            vm.access.id + '/decline'
+                        ),
+                        requestOptions
+                    )
                         .then(async (response) => {
-                            const data = await response.json()
+                            const data = await response.json();
                             if (!response.ok) {
                                 const error =
-                                    (data && data.message) || response.statusText
-                                console.error(error)
-                                return Promise.reject(error)
+                                    (data && data.message) ||
+                                    response.statusText;
+                                console.error(error);
+                                return Promise.reject(error);
                             }
-                            vm.access = data
+                            vm.access = data;
                             Swal.fire(
                                 'Success',
                                 'Organisation request declined. The user will be notified by email.',
                                 'success'
-                            )
+                            );
                         })
                         .catch((error) => {
-                            this.errorMessage = constants.ERRORS.API_ERROR
-                            console.error('There was an error!', error)
-                        })
+                            this.errorMessage = constants.ERRORS.API_ERROR;
+                            console.error('There was an error!', error);
+                        });
                 }
             });
         },
         fetchOrganisationRequest: function (id) {
-            let vm = this
+            let vm = this;
             vm.loadingOrganisationRequest = true;
             fetch(api_endpoints.organisation_requests + `${id}/`)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.error(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.error(error);
+                        return Promise.reject(error);
                     }
-                    vm.access = data
+                    vm.access = data;
                     vm.loadingOrganisationRequest = false;
                 })
                 .catch((error) => {
-                    this.errorMessage = constants.ERRORS.API_ERROR
-                    console.error('There was an error!', error)
-                })
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.error('There was an error!', error);
+                });
         },
         fetchProfile: function () {
-            let vm = this
+            let vm = this;
             fetch(api_endpoints.profile)
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.error(error)
-                        return Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.error(error);
+                        return Promise.reject(error);
                     }
-                    vm.profile = data
+                    vm.profile = data;
                 })
                 .catch((error) => {
-                    this.errorMessage = constants.ERRORS.API_ERROR
-                    console.error('There was an error!', error)
-                })
+                    this.errorMessage = constants.ERRORS.API_ERROR;
+                    console.error('There was an error!', error);
+                });
         },
         check_assessor: function () {
             let vm = this;
 
             var assessor = vm.members.filter(function (elem) {
-                return (elem.name == vm.profile.full_name);
+                return elem.name == vm.profile.full_name;
             });
-            if (assessor.length > 0)
-                return true;
-            else
-                return false;
+            if (assessor.length > 0) return true;
+            else return false;
         },
         current_user_is_assigned: function () {
             let vm = this;
-            if (vm.access.assigned_officer == vm.profile.id)
-                return true;
-            else
-                return false;
+            if (vm.access.assigned_officer == vm.profile.id) return true;
+            else return false;
         },
     },
 };
