@@ -114,7 +114,6 @@ export default {
     },
     mounted: function () {
         this.$nextTick(() => {
-            console.log(this.$refs);
             this.title = this.$refs.proposed_approval_form.title;
         });
     },

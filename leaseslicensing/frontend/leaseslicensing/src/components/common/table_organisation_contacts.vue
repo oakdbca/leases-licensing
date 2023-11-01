@@ -280,9 +280,6 @@ export default {
                 buttons: buttons,
                 columns: vm.applicableColumns,
                 processing: true,
-                initComplete: function () {
-                    console.log('in initComplete');
-                },
             };
         },
     },
@@ -358,7 +355,6 @@ export default {
                                 icon: 'error',
                             });
                         }
-                        console.log(data);
                         return Promise.reject(error);
                     }
                     swal.fire({
@@ -377,7 +373,6 @@ export default {
         },
         addOrgContactEventListeners: function () {
             let vm = this;
-            console.log('in addOrgContactEventListeners');
 
             vm.$refs.organisation_contacts_datatable.vmDataTable.on(
                 'click',
@@ -401,7 +396,7 @@ export default {
                             }
                         },
                         (error) => {
-                            console.log(error);
+                            console.error(error);
                         }
                     );
                 }

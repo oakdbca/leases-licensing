@@ -19,8 +19,8 @@
 </template>
 
 <script>
-import { v4 as uuid } from 'uuid'
-import FormSection from '@/components/forms/section_toggle.vue'
+import { v4 as uuid } from 'uuid';
+import FormSection from '@/components/forms/section_toggle.vue';
 
 export default {
     name: 'Select2SearchReferenceNumber',
@@ -46,14 +46,14 @@ export default {
             email_user: null,
             uuid: uuid(),
             index: 'search-' + this.label.toLowerCase().replace(' ', '-'),
-        }
+        };
     },
     mounted: function () {
-        this.initialiseLookup()
+        this.initialiseLookup();
     },
     methods: {
         initialiseLookup: function () {
-            let vm = this
+            let vm = this;
             $(`#${vm.index}`)
                 .select2({
                     minimumInputLength: 2,
@@ -64,27 +64,25 @@ export default {
                         url: vm.lookupApiEndpoint,
                         dataType: 'json',
                         data: function (params) {
-                            console.log(params)
                             let query = {
                                 term: params.term,
                                 type: 'public',
-                            }
-                            return query
+                            };
+                            return query;
                         },
                     },
                 })
                 .on('select2:open', function () {
                     const searchField = $(
                         `[aria-controls='select2-${vm.index}-results']`
-                    )
-                    searchField[0].focus()
+                    );
+                    searchField[0].focus();
                 })
                 .on('select2:select', function (e) {
-                    var data = e.params.data
-                    console.log(data)
-                    window.location = data['redirect_url']
-                })
+                    var data = e.params.data;
+                    window.location = data['redirect_url'];
+                });
         },
     },
-}
+};
 </script>

@@ -231,7 +231,7 @@ export default {
                     }
                 },
                 (error) => {
-                    console.log(error);
+                    console.error(error);
                 }
             );
         },
@@ -262,7 +262,7 @@ export default {
                         params: { proposal_id: proposal.id },
                     });
                 } catch (error) {
-                    console.log(error);
+                    console.error(error);
                     await swal.fire({
                         title: 'Create Proposal',
                         icon: 'error',
@@ -281,11 +281,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.linkedOrganisations = data.results;
-                    console.log(vm.linkedOrganisations);
                     vm.loadingOrganisations = false;
                 })
                 .catch((error) => {

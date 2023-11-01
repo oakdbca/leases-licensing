@@ -1952,7 +1952,6 @@ export default {
                         vm.proposal.additional_document_types = $(
                             e.currentTarget
                         ).val();
-                        console.log(JSON.stringify(e.params.data));
                         vm.proposal.additional_documents_missing.push({
                             name: e.params.data.name,
                         });
@@ -2013,9 +2012,6 @@ export default {
                     false
                 );
             },
-        locationUpdated: function () {
-            console.log('in locationUpdated()');
-        },
         save_and_continue: async function () {
             this.savingProposal = true;
             await this.save().then(() => {
@@ -2303,7 +2299,7 @@ export default {
                             //vm.refreshFromResponse(res);
                         },
                         (err) => {
-                            console.log(err);
+                            console.error(err);
                         }
                     );
                 }
@@ -2322,7 +2318,7 @@ export default {
 
                 if (this.proposal.proposal_type.code == 'transfer') {
                     if (!this.canProposeToApproveTransfer()) {
-                        console.log('cannot approve transfer');
+                        console.warn('cannot approve transfer');
                         return;
                     }
                 }
@@ -2339,7 +2335,6 @@ export default {
                 .then((data) => {
                     if (data != null) {
                         // Only update the proposal if the discard was successful
-                        console.log(data);
                         vm.proposal = Object.assign({}, data);
                         vm.uuid++;
                         swal.fire({
@@ -2400,17 +2395,14 @@ export default {
             this.showingRequirements = value;
         },
         updateAssignedApprover: function (value) {
-            console.log('updateAssignedApprover');
             let vm = this;
             vm.proposal.assigned_approver = value;
         },
         updateAssignedOfficer: function (value) {
-            console.log('updateAssignedOfficer');
             let vm = this;
             vm.proposal.assigned_officer = value;
         },
         updateAssignedOfficerSelect: function () {
-            console.log('updateAssignedOfficerSelect');
             let vm = this;
             if (vm.proposal.processing_status == 'With Approver') {
                 vm.$refs.workflow.updateAssignedOfficerSelect(
@@ -2424,7 +2416,6 @@ export default {
         },
         assignRequestUser: async function () {
             let vm = this;
-            console.log('in assignRequestUser');
 
             fetch(
                 helpers.add_endpoint_json(
@@ -2447,7 +2438,7 @@ export default {
                 })
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
-                    console.log(error);
+                    console.error(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
@@ -2457,7 +2448,6 @@ export default {
         },
         assignTo: async function () {
             let vm = this;
-            console.log('in assignTo');
             let unassign = true;
             let data = {};
             if (this.processing_status == 'With Approver') {
@@ -2508,7 +2498,7 @@ export default {
                 })
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
-                    console.log(error);
+                    console.error(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
@@ -2600,7 +2590,6 @@ export default {
                 });
         },
         initialiseAssignedOfficerSelect: function (reinit = false) {
-            console.log('initialiseAssignedOfficerSelect');
             let vm = this;
             if (reinit) {
                 $(vm.$refs.assigned_officer).data('select2')
@@ -2651,7 +2640,6 @@ export default {
             this.applySelect2ToAdditionalDocumentTypes(resData);
         },
         revisionToDisplay: async function (revision) {
-            console.log('Displaying', revision);
             let payload = {
                 revision_id: revision.revision_id,
                 debug: this.debug,
@@ -2672,7 +2660,6 @@ export default {
                     }
                 })
                 .then((response) => {
-                    console.log(response.reference);
                     this.proposal = Object.assign({}, response);
                     this.current_revision_id = revision.revision_id;
                     this.uuid++;
@@ -2740,7 +2727,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
                 })
                 .finally(() => {
                     vm.loading = false;
@@ -2751,21 +2738,15 @@ export default {
                 (requirement) => requirement.id == newRequirement.id
             );
             Object.assign(oldRequirement, newRequirement);
-            console.log(
-                'this.proposal.requirements',
-                this.proposal.requirements
-            );
         },
         updateInvoicingDetails: function (value) {
-            console.log('updateInvoicingDetails', value);
             Object.assign(this.proposal.invoicing_details, value);
         },
         updateGisData: function (property, value) {
             if (!Object.hasOwn(this.proposal, property)) {
-                console.log(`Property ${property} does not exist on proposal`);
+                console.warn(`Property ${property} does not exist on proposal`);
                 return;
             }
-            console.log('updateGisData', property, value);
 
             this.proposal[property];
 

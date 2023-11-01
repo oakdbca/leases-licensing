@@ -398,8 +398,6 @@ export default {
             );
         },
         togglePostalAddressFieldsDisabled: function () {
-            console.log('togglePostalAddressFieldsDisabled');
-
             $('.postal-address').each(function () {
                 if ($(this).attr('disabled')) {
                     $(this).removeAttr('disabled');
@@ -438,7 +436,6 @@ export default {
                         vm.togglePostalAddressFieldsDisabled();
                     }
                     if (window.location.hash == '#organisations') {
-                        console.log('opening organisations tab');
                         let tab_element = document.querySelector(
                             '#organisations-tab-link'
                         );
@@ -449,7 +446,6 @@ export default {
                         });
                     }
                 });
-                //console.log(vm.email_user.dob)
             });
         },
         fetchOrganisationRequests: function () {
@@ -465,7 +461,6 @@ export default {
             var form = document.getElementById(formId);
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.updateDetails();
             } else {
                 form.classList.add('was-validated');
@@ -491,7 +486,6 @@ export default {
             email_user.postal_address.postal_same_as_residential =
                 vm.email_user.postal_same_as_residential;
             let payload = JSON.stringify({ payload: email_user });
-            console.log(payload);
             fetch(vm.api_endpoints.updateAccountDetails(vm.email_user.id), {
                 method: 'POST',
                 body: payload,
@@ -501,10 +495,8 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
                         return Promise.reject(error);
                     }
-                    console.log(data);
                     Swal.fire(
                         'Success',
                         'Details updated successfully',
@@ -563,7 +555,6 @@ export default {
             var form = document.getElementById('existing-organisation-form');
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.validatePins();
             } else {
                 form.classList.add('was-validated');
@@ -595,7 +586,6 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
                         return Promise.reject(error);
                     }
                     if (data.valid) {
@@ -613,8 +603,6 @@ export default {
                             'error'
                         );
                     }
-
-                    console.log(data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -628,7 +616,6 @@ export default {
             var form = document.getElementById('new-organisation-form');
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.submitOrganisationRequest();
             } else {
                 form.classList.add('was-validated');
@@ -659,7 +646,6 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
                         return Promise.reject(error);
                     }
                     Swal.fire(
@@ -669,7 +655,6 @@ export default {
                     );
                     vm.newOrganisation = null;
                     vm.fetchOrganisationRequests();
-                    console.log(data);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;

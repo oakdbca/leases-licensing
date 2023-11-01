@@ -144,9 +144,6 @@ export default {
         isModalOpen: function (val) {
             if (val) {
                 if (this.proposal.additional_documents_missing.length > 0) {
-                    console.log(
-                        this.proposal.additional_documents_missing.length
-                    );
                     this.amendment.text =
                         'The following additional documents are required:';
                     for (
@@ -158,7 +155,6 @@ export default {
                             '\n\t- ' +
                             this.proposal.additional_documents_missing[i].name;
                     }
-                    console.log(JSON.stringify(this.amendment));
                 }
                 this.$nextTick(() => {
                     this.$refs.amendment_text.focus();
@@ -208,7 +204,7 @@ export default {
                 this.reason_choices = Object.assign({}, resData);
                 this.amendment.reason_id = this.reason_choices[0].key;
             } catch (error) {
-                console.log(error);
+                console.error(error);
             }
         },
         sendData: async function () {
@@ -227,7 +223,7 @@ export default {
                 this.close();
                 this.$router.push({ path: '/internal' }); //Navigate to dashboard after creating Amendment request
             } catch (error) {
-                console.log(error);
+                console.error(error);
                 this.errors = true;
                 this.errorString = helpers.apiVueResourceError(error);
                 this.amendingProposal = true;

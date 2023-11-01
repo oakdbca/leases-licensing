@@ -557,11 +557,10 @@ export default {
                 .fetchUrl(url)
                 .then((data) => {
                     vm.countries = Object.assign({}, data);
-                    console.log('Fetched countries', vm.countries);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;
-                    console.log(`Error fetching countries data: ${error}`);
+                    console.error(`Error fetching countries data: ${error}`);
                 });
         },
 

@@ -296,7 +296,6 @@ export default {
         },
         displayAwaitingPaymentMsg: function () {
             let display = false;
-            console.log(this.proposal.processing_status);
             if (
                 this.proposal.processing_status_id ===
                 constants.PROPOSAL_STATUS.AWAITING_PAYMENT.ID
@@ -448,7 +447,7 @@ export default {
                                 }
                             },
                             (error) => {
-                                console.log(error);
+                                console.error(error);
                             }
                         );
                 },

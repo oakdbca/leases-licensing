@@ -9,7 +9,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
@@ -28,11 +28,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('account: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -48,11 +47,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('account: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -68,11 +66,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('account: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -88,10 +85,9 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
-                    console.log('organisations: ', data);
                     resolve(data);
                 })
                 .catch((error) => {
@@ -108,10 +104,9 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
-                    console.log('organisation: ', data);
                     resolve(data);
                 })
                 .catch((error) => {
@@ -128,7 +123,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     let formatted_data = {};
@@ -164,11 +159,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('organisation requests: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -184,11 +178,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('organisation permissions: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -204,11 +197,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('LGA key value list: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -224,11 +216,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('Districts list: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -244,11 +235,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('Groups key value list: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -264,11 +254,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('Approval type: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -284,11 +273,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('Select2 list: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -304,11 +292,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('Acts key value list: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -324,11 +311,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
                     resolve(data);
-                    console.log('Vestings key value list: ', data);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -344,10 +330,9 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         reject(error);
                     }
-                    console.log('transactions: ', data);
                     resolve(data);
                 })
                 .catch((error) => {

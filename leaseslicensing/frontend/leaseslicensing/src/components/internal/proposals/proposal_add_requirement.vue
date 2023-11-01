@@ -354,7 +354,7 @@ export default {
                 this.contact = await response.json();
                 this.isModalOpen = true;
             } else {
-                console.log(response.statusText);
+                console.error(response.statusText);
             }
         },
         toggleStandardRequirement: function () {
@@ -384,7 +384,6 @@ export default {
             var form = document.getElementById('requirementForm');
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');

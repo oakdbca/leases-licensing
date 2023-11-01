@@ -1051,7 +1051,6 @@ export default {
                         id: $(this).attr('id'),
                         label: $(this).find('.label').text(),
                     };
-                    console.log(obj);
                     return obj;
                 })
                 .toArray();
@@ -1151,8 +1150,6 @@ export default {
         initialiseRefereeSelect: function (reinit = false) {
             let vm = this;
             if (reinit) {
-                console.log('destroying existing select2s');
-                console.log($(vm.$refs.department_users).data('select2'));
                 $(vm.$refs.department_users).data('select2')
                     ? $(vm.$refs.department_users).select2('destroy')
                     : '';
@@ -1316,7 +1313,6 @@ export default {
                     vm.switchStatus(response.processing_status_id); // 'with_referral'
                 })
                 .catch((error) => {
-                    console.log(`Error sending referral. ${error}`);
                     swal.fire({
                         title: `${error}`,
                         text: 'Failed to send referral. Please contact your administrator.',
@@ -1380,7 +1376,6 @@ export default {
                     vm.switchStatus(response.processing_status_id); // 'with_referral'
                 })
                 .catch((error) => {
-                    console.log(`Error sending referral. ${error}`);
                     swal.fire({
                         title: `${error}`,
                         text: 'Failed to send referral. Please contact your administrator.',
@@ -1452,7 +1447,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         Promise.reject(error);
                     }
                     swal.fire({
@@ -1462,7 +1457,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(`Error sending reminder. ${error}`);
+                    console.error(`Error sending reminder. ${error}`);
                     swal.fire({
                         title: 'Reminder Email Failed',
                         text: `${constants.API_ERROR}`,
@@ -1504,7 +1499,7 @@ export default {
                                 const error =
                                     (data && data.message) ||
                                     response.statusText;
-                                console.log(error);
+                                console.error(error);
                                 Promise.reject(error);
                             }
                             this.$emit('updateProposalData', data);
@@ -1515,7 +1510,7 @@ export default {
                             });
                         })
                         .catch((error) => {
-                            console.log(
+                            console.error(
                                 `Error retracting external referee invite. ${error}`
                             );
                             swal.fire({

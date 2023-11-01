@@ -120,7 +120,6 @@ export default {
                 return this.yearsArray;
             },
             set(value) {
-                console.log('emitting updateYearsArray');
                 this.$emit('updateYearsArray', this.incrementType, value);
             },
         },

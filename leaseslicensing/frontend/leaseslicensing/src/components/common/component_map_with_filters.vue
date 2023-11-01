@@ -350,7 +350,7 @@ export default {
                             },
                             error: function (jqXhr, textStatus, errorMessage) {
                                 // error callback
-                                //console.log(errorMessage)
+                                console.error(errorMessage);
                             },
                         }
                     );
@@ -434,7 +434,7 @@ export default {
                             // Remove the feature from the map
                             vm.proposalQuerySource.removeFeature(feature);
                         } catch (err) {
-                            console.log(err);
+                            console.error(err);
                         }
                     }
                 }
@@ -539,11 +539,9 @@ export default {
         },
     },
     created: function () {
-        console.log('created()');
         this.fetchFilterLists();
     },
     mounted: function () {
-        console.log('mounted()');
         let vm = this;
 
         this.$nextTick(() => {
@@ -557,9 +555,6 @@ export default {
     },
     methods: {
         valueChanged: function (value, tileLayer) {
-            // console.log(value)
-            // console.log(tileLayer)
-            //tileLayer.setOpacity((100 - value)/100)
             tileLayer.setOpacity(value / 100);
         },
         updateVariablesFromSession: function () {
@@ -613,7 +608,6 @@ export default {
             );
         },
         applySelect2ToApplicationTypes: function (application_types) {
-            console.log(application_types);
             let vm = this;
             if (!vm.select2AppliedToApplicationType) {
                 $(vm.$refs.filter_application_type)
@@ -683,7 +677,6 @@ export default {
             );
         },
         displayAllFeatures: function () {
-            console.log('in displayAllFeatures()');
             let vm = this;
             if (vm.map) {
                 if (vm.proposalQuerySource.getFeatures().length > 0) {

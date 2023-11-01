@@ -467,7 +467,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(
+                    console.error(
                         `Error fetching external approval data ${error}`
                     );
                 })
@@ -492,7 +492,7 @@ export default {
                         'page'
                     );
                 } catch (error) {
-                    console.log(
+                    console.error(
                         'Error refreshing organisation contacts datatable'
                     );
                 }
@@ -562,7 +562,6 @@ export default {
                         url: vm.searchApiEndpoint,
                         dataType: 'json',
                         data: function (params) {
-                            console.log(params);
                             let query = {
                                 term: params.term,
                                 type: 'public',
@@ -641,7 +640,7 @@ export default {
                                 }
                             })
                             .catch((error) => {
-                                console.log(
+                                console.error(
                                     `Error cancelling approval transfer ${error}`
                                 );
                             });
@@ -685,7 +684,7 @@ export default {
                     }
                 })
                 .catch((error) => {
-                    console.log(`Error saving approval transfer ${error}`);
+                    console.error(`Error saving approval transfer ${error}`);
                 })
                 .finally(() => {
                     this.loading = false;
@@ -749,7 +748,7 @@ export default {
                             }
                         })
                         .catch((error) => {
-                            console.log(
+                            console.error(
                                 `Error saving approval transfer ${error}`
                             );
                         })

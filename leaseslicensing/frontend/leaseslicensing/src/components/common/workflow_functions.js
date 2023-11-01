@@ -173,13 +173,11 @@ export function updateIdListFromAvailable(id, list, available_items, remove) {
             );
             return false;
         }
-        console.log(`Adding item with id ${id} to list of selected items.`);
         list.push(item);
         return list;
     }
 
     if (found && remove) {
-        console.log(`Removing item with id ${id} from list of selected items.`);
         list = list.filter((element) => element.id !== parseInt(id));
         return list;
     }

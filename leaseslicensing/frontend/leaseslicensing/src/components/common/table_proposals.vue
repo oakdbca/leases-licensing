@@ -76,7 +76,7 @@
             </div>
         </CollapsibleFilters>
 
-        <div v-if="is_external && !email_user_id_assigned" class="row">
+        <div v-if="!email_user_id_assigned" class="row">
             <div class="col-md-12">
                 <div class="text-end">
                     <button
@@ -288,7 +288,6 @@ export default {
             return [];
         },
         column_id: function () {
-            let vm = this;
             return {
                 // 1. ID
                 data: 'id',
@@ -296,9 +295,6 @@ export default {
                 searchable: false,
                 visible: false,
                 render: function (row, type, full) {
-                    if (vm.debug) {
-                        console.log(full);
-                    }
                     return full.id;
                 },
             };
@@ -662,11 +658,9 @@ export default {
             );
         },
         new_application_button_clicked: async function () {
-            console.log(this.$router);
             await this.$router.push({
                 name: 'apply_proposal',
             });
-            console.log(' new application');
         },
         discardProposal: function (proposal_id, lodgement_number) {
             discardProposal(proposal_id, lodgement_number)
@@ -674,7 +668,7 @@ export default {
                     this.$refs.application_datatable.vmDataTable.draw();
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
                 });
         },
         fetchFilterLists: async function () {

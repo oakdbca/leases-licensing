@@ -1223,7 +1223,6 @@ export default {
                         vm.contact_user.email = email;
                         vm.contact_user.mobile_number = mobile;
                         vm.contact_user.phone_number = phone;
-                        // console.log(vm.contact_user)
                         swal({
                             title: 'Contact Decline',
                             text:
@@ -1465,7 +1464,6 @@ export default {
                             confirmButtonText: 'Accept',
                         }).then(
                             (result) => {
-                                console.log(result);
                                 if (result) {
                                     vm.$http
                                         .post(
@@ -1496,7 +1494,7 @@ export default {
                                                 );
                                             },
                                             (error) => {
-                                                console.log(error);
+                                                console.error(error);
                                                 var text =
                                                     helpers.apiVueResourceError(
                                                         error
@@ -1759,7 +1757,6 @@ export default {
             var form = document.getElementById(formId);
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 if (formId == 'address-details') {
                     const code1 = vm.org.postal_address.postal_postcode;
                     const code2 = vm.org.billing_address.billing_postcode;
@@ -1797,7 +1794,6 @@ export default {
                 organisation_trading_name:
                     vm.org.ledger_organisation_trading_name,
             });
-            console.log(payload);
             fetch(
                 helpers.add_endpoint_json(
                     api_endpoints.organisations,
@@ -1813,7 +1809,6 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
                         return Promise.reject(error);
                     }
                     swal.fire(
@@ -1828,7 +1823,7 @@ export default {
                         'Something went wrong! Please try again.',
                         'error'
                     );
-                    console.log(error);
+                    console.error(error);
                 })
                 .finally(() => {
                     vm.updatingDetails = false;
@@ -1866,7 +1861,7 @@ export default {
                         vm.$refs.contacts_datatable.vmDataTable.ajax.reload();
                     },
                     (error) => {
-                        console.log(error);
+                        console.error(error);
                         swal(
                             'Contact Deleted',
                             'The contact could not be deleted because of the following error ' +
@@ -1912,7 +1907,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.org.billing_same_as_postal =
@@ -1931,7 +1926,7 @@ export default {
                         'Something went wrong! Please try again.',
                         'error'
                     );
-                    console.log(error);
+                    console.error(error);
                 })
                 .finally(() => {
                     vm.updatingAddress = false;

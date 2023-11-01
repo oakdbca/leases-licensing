@@ -169,7 +169,6 @@ export default {
         },
     },
     created: async function () {
-        console.log(this.$route.params.id);
         this.fetchUser(this.$route.params.id);
     },
     mounted: function () {
@@ -193,11 +192,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.user = data;
-                    console.log(vm.user);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;

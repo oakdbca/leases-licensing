@@ -325,7 +325,7 @@ export default {
                     vm.countries = Object.assign({}, data);
                 })
                 .catch((error) => {
-                    console.log(`Error fetching countries data ${error}`);
+                    console.error(`Error fetching countries data ${error}`);
                 });
         },
     },

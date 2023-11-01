@@ -142,10 +142,9 @@ export default {
                 .then((data) => {
                     vm.approval = Object.assign({}, data);
                     vm.approval_details_id = uuid();
-                    console.log('External approval data: ', vm.approval);
                 })
                 .catch((error) => {
-                    console.log(
+                    console.error(
                         `Error fetching external approval data ${error}`
                     );
                 });
@@ -164,7 +163,7 @@ export default {
                         'page'
                     );
                 } catch (error) {
-                    console.log(
+                    console.error(
                         'Error refreshing organisation contacts datatable'
                     );
                 }

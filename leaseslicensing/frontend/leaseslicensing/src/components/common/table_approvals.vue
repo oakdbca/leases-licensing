@@ -414,8 +414,6 @@ export default {
                 searchable: false,
                 visible: false,
                 render: function (row, type, full) {
-                    console.log('---full---');
-                    console.log(full);
                     return full.id;
                 },
             };
@@ -849,16 +847,12 @@ export default {
                 buttons: buttons,
                 columns: selectedColumns,
                 processing: true,
-                initComplete: function () {
-                    console.log('in initComplete');
-                },
                 order: [[1, 'desc']],
             };
         },
     },
     watch: {
         show_expired_surrendered: function (value) {
-            console.log(value);
             this.$refs.approvals_datatable.vmDataTable.ajax.reload();
         },
         filterApprovalType: function () {
@@ -958,7 +952,7 @@ export default {
                     vm.profile = response.body;
                 },
                 (error) => {
-                    console.log(error);
+                    console.error(error);
                 }
             );
         },
@@ -1014,7 +1008,6 @@ export default {
                                     popover.tip.id == popoverId
                                 ) {
                                     // Ideally the listener would only be shown on popover show, but that does work okay for now
-                                    console.log(`Toggle ${popoverId}`);
                                     $(`#${popoverId}`)
                                         .find('.popover-close')
                                         .off('click')
@@ -1203,11 +1196,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.approvalTypes = data;
-                    console.log(vm.approvalTypes);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -1219,11 +1211,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.approval_statuses = data;
-                    console.log(vm.approval_statuses);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -1235,11 +1226,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.organisations = data;
-                    console.log(vm.organisations);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -1251,11 +1241,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.regions = data;
-                    console.log(vm.regions);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -1267,11 +1256,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.districts = data;
-                    console.log(vm.districts);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -1283,11 +1271,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.groups = data;
-                    console.log(vm.groups);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
@@ -1328,7 +1315,6 @@ export default {
                         utils
                             .fetchUrl(url, requestOptions)
                             .then((data) => {
-                                console.log('Reissue Approval');
                                 vm.$router.push({
                                     name: 'internal-proposal',
                                     params: { proposal_id: data.id },
@@ -1367,7 +1353,6 @@ export default {
                     utils
                         .fetchUrl(url, requestOptions)
                         .then(() => {
-                            console.log('Reinstate Approval');
                             Swal.fire(
                                 'Reinstate',
                                 'Your approval has been reinstated',
@@ -1454,7 +1439,7 @@ export default {
                                 const error =
                                     (data && data.message) ||
                                     response.statusText;
-                                console.log(error);
+                                console.error(error);
                                 Promise.reject(error);
                             }
                             vm.$router.push({
@@ -1464,7 +1449,7 @@ export default {
                             });
                         },
                         (error) => {
-                            console.log(error);
+                            console.error(error);
                         }
                     );
                 }
@@ -1508,7 +1493,7 @@ export default {
                                 const error =
                                     (data && data.message) ||
                                     response.statusText;
-                                console.log(error);
+                                console.error(error);
                                 return Promise.reject(error);
                             }
                             vm.$router.push({
@@ -1517,7 +1502,7 @@ export default {
                             });
                         },
                         (error) => {
-                            console.log(error);
+                            console.error(error);
                             Swal.fire({
                                 title: 'Renew Approval',
                                 text: error.body,
@@ -1554,9 +1539,6 @@ export default {
                     utils
                         .fetchUrl(url, requestOptions)
                         .then((response) => {
-                            console.log(
-                                `Created proposal ${response.id} to amend an approval.`
-                            );
                             vm.$router.push({
                                 name: 'draft_proposal',
                                 params: { proposal_id: response.id },

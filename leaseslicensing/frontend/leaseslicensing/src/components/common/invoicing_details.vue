@@ -701,7 +701,6 @@ export default {
             return this.show_invoicing_frequency;
         },
         show_invoicing_quarters: function () {
-            console.log(this.invoicingDetails);
             return (
                 (this.invoicingDetails.charge_method ==
                     this.getChargeMethodIdByKey(
@@ -905,7 +904,7 @@ export default {
                 // This has to happen here as the show_invoice_previewer computed method depends on the charge_method key
                 this.fetchPreviewInvoices();
             } catch (err) {
-                console.log({ err });
+                console.error({ err });
             }
         },
         fetchRepetitionTypes: async function () {
@@ -937,7 +936,7 @@ export default {
                     }
                 });
             } catch (err) {
-                console.log({ err });
+                console.error({ err });
             }
         },
         fetchCPICalculationMethods: async function () {
@@ -956,7 +955,7 @@ export default {
                         cpi_calculation_methods[0].id;
                 }
             } catch (err) {
-                console.log({ err });
+                console.error({ err });
             }
         },
         fetchPreviewInvoices: async function () {

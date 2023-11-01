@@ -1,16 +1,16 @@
 <template>
-    <div class="container" id="internalOrgAccess">
+    <div id="internalOrgAccess" class="container">
         <div v-if="!loadingOrganisationRequest" class="row">
             <h3>Organisation Access Request: {{ access.lodgement_number }}</h3>
             <div class="col-md-3">
-                <CommsLogs :comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
-                    :disable_add_entry="false" />
+                <CommsLogs
+:comms_url="comms_url" :logs_url="logs_url" :comms_add_url="comms_add_url"
+                    :disable_add_entry="false"
+                />
                 <div class="row">
                     <div class="col">
                         <div class="card card-default mt-2">
-                            <div class="card-header">
-                                Workflow
-                            </div>
+                            <div class="card-header">Workflow</div>
                             <div class="card-body card-collapse">
                                 <div class="row">
                                     <div class="col-sm-12">
@@ -18,29 +18,60 @@
                                         {{ access.status }}
                                     </div>
                                     <div class="col-sm-12 top-buffer-s">
-                                        <strong>Currently assigned to</strong><br />
+                                        <strong>Currently assigned to</strong
+                                        ><br />
                                         <div class="form-group">
-                                            <select v-show="isLoading" class="form-control">
-                                                <option value="">Loading...</option>
-                                            </select>
-                                            <select @change="assignTo" :disabled="isFinalised || !check_assessor()"
-                                                v-if="!isLoading" class="form-control" v-model="access.assigned_officer">
-                                                <option value="null">Unassigned</option>
-                                                <option v-for="member in members" :value="member.id">{{ member.name }}
+                                            <select
+                                                v-show="isLoading"
+                                                class="form-control"
+                                            >
+                                                <option value="">
+                                                    Loading...
                                                 </option>
                                             </select>
-                                            <a v-if="!isFinalised && check_assessor() && access.assigned_officer != profile.id"
-                                                @click.prevent="assignMyself()" class="actionBtn pull-right">Assign to
-                                                me</a>
+                                            <select
+v-if="!isLoading" v-model="
+                                                    access.assigned_officer
+                                                "
+                                                :disabled="isFinalised || !check_assessor()"
+                                                class="form-control"
+                                                @change="assignTo"
+                                            >
+                                                <option value="null">
+                                                    Unassigned
+                                                </option>
+                                                <option
+                                                    v-for="member in members"
+                                                    :value="member.id"
+                                                >
+                                                    {{ member.name }}
+                                                </option>
+                                            </select>
+                                            <a
+v-if="!isFinalised && check_assessor() && access.assigned_officer != profile.id"
+                                                class="actionBtn pull-right" @click.prevent="assignMyself()">Assign to
+                                            >
                                         </div>
                                     </div>
-                                    <div class="col-sm-12 top-buffer-s"
-                                        v-if="!isFinalised && check_assessor() && current_user_is_assigned()">
+                                    <div
+
+v-if="!isFinalised && check_assessor() && current_user_is_assigned()"
+                                        class="col-sm-12 top-buffer-s">
                                         <strong>Action</strong><br />
-                                        <button class="btn btn-primary"
-                                            @click.prevent="acceptRequest()">Accept</button><br />
-                                        <button class="btn btn-primary top-buffer-s"
-                                            @click.prevent="declineRequest()">Decline</button>
+                                        <button
+
+class="btn btn-primary"
+                                            @click.prevent="acceptRequest()"
+                                        >
+                                            Accept</button
+                                        ><br />
+                                        <button
+
+class="btn btn-primary top-buffer-s"
+                                            @click.prevent="declineRequest()"
+                                        >
+                                            Decline
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -49,72 +80,103 @@
                 </div>
             </div>
             <div class="col-md-9">
-
-                <FormSection :formCollapse="false" label="Organisation Access Request" index="organisation-access-request">
-
+                <FormSection
+                    :form-collapse="false"
+                    label="Organisation Access Request"
+                    index="organisation-access-request"
+                >
                     <div class="row">
                         <div class="col-sm-12">
                             <form class="form-horizontal" name="access_form">
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">Requested by:</label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >Requested by:</label
+                                    >
                                     <div class="col-sm-9">
                                         {{ access.requester_name }}
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">Role: </label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >Role:
+                                    </label>
                                     <div class="col-sm-9">
                                         {{ access.role }}
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">Organisation</label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >Organisation</label
+                                    >
                                     <div class="col-sm-9">
-                                        <input type="text" disabled class="form-control" name="name" placeholder=""
-                                            v-model="access.name">
+                                        <input
+v-model="access.name" type="text" disabled class="form-control" name="name"
+                                            placeholder=""
+                                        />
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">ABN</label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >ABN</label
+                                    >
                                     <div class="col-sm-9">
-                                        <input type="text" disabled class="form-control" name="abn" placeholder=""
-                                            v-model="access.abn">
+                                        <input
+v-model="access.abn" type="text" disabled class="form-control" name="abn"
+                                            placeholder=""
+                                        />
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">Letter</label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >Letter</label
+                                    >
                                     <div class="col-sm-9">
-                                        <i class="fa-solid fa-file-pdf fa-lg ps-1"></i>&nbsp;
-                                        <a target="_blank" :href="access.identification_url">Letter</a>
+                                        <i
+                                            class="fa-solid fa-file-pdf fa-lg ps-1"
+                                        ></i
+                                        >&nbsp;
+                                        <a
+                                            target="_blank"
+                                            :href="access.identification_url"
+                                            >Letter</a
+                                        >
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">Phone</label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >Phone</label
+                                    >
                                     <div class="col-sm-9">
-                                        <input type="text" disabled class="form-control" name="phone" placeholder=""
-                                            v-model="access.requester.phone_number">
+                                        <input
+v-model="access.requester.phone_number" type="text" disabled class="form-control" name="phone"
+                                            placeholder="">
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">Mobile</label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >Mobile</label
+                                    >
                                     <div class="col-sm-9">
-                                        <input type="text" disabled class="form-control" name="mobile" placeholder=""
-                                            v-model="access.requester.mobile_number">
+                                        <input
+v-model="access.requester.mobile_number" type="text" disabled class="form-control" name="mobile"
+                                            placeholder="">
                                     </div>
                                 </div>
                                 <div class="row mb-3">
-                                    <label for="" class="col-sm-3 control-label">Email</label>
+                                    <label for="" class="col-sm-3 control-label"
+                                        >Email</label
+                                    >
                                     <div class="col-sm-9">
-                                        <input type="text" disabled class="form-control" name="email" placeholder=""
-                                            v-model="access.requester.email">
+                                        <input
+v-model="access.requester.email" type="text" disabled class="form-control" name="email"
+                                            placeholder=""
+                                        />
                                     </div>
                                 </div>
                             </form>
                         </div>
                     </div>
-
                 </FormSection>
-
             </div>
         </div>
         <div v-else class="row">
@@ -123,18 +185,17 @@
     </div>
 </template>
 <script>
-import $ from 'jquery'
-import datatable from '@vue-utils/datatable.vue'
-import CommsLogs from '@common-utils/comms_logs.vue'
-import Swal from 'sweetalert2'
-import {
-    api_endpoints,
-    constants,
-    helpers
-}
-    from '@/utils/hooks'
+import $ from 'jquery';
+import datatable from '@vue-utils/datatable.vue';
+import CommsLogs from '@common-utils/comms_logs.vue';
+import Swal from 'sweetalert2';
+import { api_endpoints, constants, helpers } from '@/utils/hooks';
 export default {
     name: 'OrganisationAccess',
+    components: {
+        datatable,
+        CommsLogs
+    },
     data() {
         let vm = this;
         return {
@@ -299,17 +360,23 @@ export default {
             commsTable: null,
         }
     },
-    components: {
-        datatable,
-        CommsLogs
-    },
     computed: {
         isLoading: function () {
             return this.loading.length > 0;
         },
         isFinalised: function () {
-            return this.access.status == 'Approved' || this.access.status == 'Declined';
+            return (
+                this.access.status == 'Approved' ||
+                this.access.status == 'Declined'
+            );
         },
+    },
+    mounted: function () {
+        let vm = this;
+        const id = this.$route.params.access_id;
+        this.fetchOrganisationRequest(id);
+        this.fetchAccessGroupMembers();
+        this.fetchProfile();
     },
     methods: {
         commaToNewline(s) {
@@ -323,11 +390,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText
-                        console.log(error)
+                        console.error(error)
                         return Promise.reject(error)
                     }
                     vm.members = data
-                    console.log(vm.members)
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR
@@ -342,11 +408,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText
-                        console.log(error)
+                        console.error(error)
                         return Promise.reject(error)
                     }
                     vm.access = data
-                    console.log(vm.access)
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR
@@ -367,11 +432,10 @@ export default {
                         if (!response.ok) {
                             const error =
                                 (data && data.message) || response.statusText
-                            console.log(error)
+                            console.error(error)
                             return Promise.reject(error)
                         }
                         vm.access = data
-                        console.log(vm.access)
                     })
                     .catch((error) => {
                         this.errorMessage = constants.ERRORS.API_ERROR
@@ -388,11 +452,10 @@ export default {
                         if (!response.ok) {
                             const error =
                                 (data && data.message) || response.statusText
-                            console.log(error)
+                            console.error(error)
                             return Promise.reject(error)
                         }
                         vm.access = data
-                        console.log(vm.access)
                     })
                     .catch((error) => {
                         this.errorMessage = constants.ERRORS.API_ERROR
@@ -425,7 +488,7 @@ export default {
                             if (!response.ok) {
                                 const error =
                                     (data && data.message) || response.statusText
-                                console.log(error)
+                                console.error(error)
                                 return Promise.reject(error)
                             }
                             vm.access = data
@@ -477,7 +540,7 @@ export default {
                             if (!response.ok) {
                                 const error =
                                     (data && data.message) || response.statusText
-                                console.log(error)
+                                console.error(error)
                                 return Promise.reject(error)
                             }
                             vm.access = data
@@ -503,11 +566,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText
-                        console.log(error)
+                        console.error(error)
                         return Promise.reject(error)
                     }
                     vm.access = data
-                    console.log(vm.access)
                     vm.loadingOrganisationRequest = false;
                 })
                 .catch((error) => {
@@ -523,11 +585,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText
-                        console.log(error)
+                        console.error(error)
                         return Promise.reject(error)
                     }
                     vm.profile = data
-                    console.log(vm.profile)
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR
@@ -553,14 +614,7 @@ export default {
                 return false;
         },
     },
-    mounted: function () {
-        let vm = this;
-        const id = this.$route.params.access_id;
-        this.fetchOrganisationRequest(id);
-        this.fetchAccessGroupMembers();
-        this.fetchProfile();
-    }
-}
+};
 </script>
 <style scoped>
 .top-buffer-s {

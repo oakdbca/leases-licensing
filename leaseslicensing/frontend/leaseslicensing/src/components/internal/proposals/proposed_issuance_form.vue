@@ -782,7 +782,6 @@ export default {
             });
         },
         updateProposedDecisionDetails(detailsText) {
-            console.log('detailsText', detailsText);
             if (detailsText) {
                 $('.details-invalid-feedback').hide();
             }
@@ -868,7 +867,6 @@ export default {
                 }
             }
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');
@@ -923,7 +921,6 @@ export default {
                             await helpers.parseFetchError(response);
                     }
                 } else if (this.proposedApprovalState == 'final_approval') {
-                    console.log('fetch post to final approval');
                     fetch(
                         helpers.add_endpoint_json(
                             api_endpoints.proposals,

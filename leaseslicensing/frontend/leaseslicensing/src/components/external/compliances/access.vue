@@ -460,9 +460,6 @@ export default {
             );
         },
         isFinalised: function () {
-            console.log(
-                constants.COMPLIANCE_PROCESSING_STATUS.WITH_ASSESSOR.ID
-            );
             return (
                 this.compliance &&
                 (this.compliance.customer_status ==
@@ -591,12 +588,10 @@ export default {
                     if (this.files[i].file && this.files[i].name) {
                         formData.append('file' + i, this.files[i].file);
                         formData.append('name' + i, this.files[i].name);
-                        console.log(this.files[i].file);
                         numFiles++;
                     }
                 }
                 formData.append('num_files', numFiles);
-                console.log('num_files: ' + numFiles);
 
                 fetch(
                     helpers.add_endpoint_json(
@@ -691,12 +686,12 @@ export default {
                             vm.setAmendmentData(await res.json());
                         },
                         (err) => {
-                            console.log(err);
+                            console.error(err);
                         }
                     );
                 },
                 (error) => {
-                    console.log(error);
+                    console.error(error);
                 }
             );
         },

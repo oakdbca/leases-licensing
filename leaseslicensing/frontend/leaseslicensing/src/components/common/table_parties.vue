@@ -267,9 +267,6 @@ export default {
                     "<'d-flex align-items-center'<'me-auto'i>>",
                 columns: columns,
                 processing: true,
-                initComplete: function () {
-                    console.log('in initComplete');
-                },
             };
         },
         elementDisabled: function () {
@@ -319,7 +316,6 @@ export default {
                 url = `${api_endpoints.organisations}${params.party_to_add.id}`;
             }
 
-            console.log(api_endpoints);
             await fetch(url, {
                 method: 'GET',
                 headers: {
@@ -373,7 +369,7 @@ export default {
         },
         refreshFromResponse: async function () {
             // await this.$refs.vessels_datatable.vmDataTable.ajax.reload();
-            console.log('TODO: update table');
+            // TODO: update table
         },
         number_of_columns: function () {
             // Return the number of visible columns
@@ -406,7 +402,6 @@ export default {
             );
         },
         addResponsiveResizeHandler: function () {
-            console.log('in addResponsiveResizeHandler');
             // When columns are shown/hidden, expand/collapse the child row according to the current expand-collapse status of each row
             let vm = this;
             vm.$refs.parties_datatable.vmDataTable.on(
@@ -445,14 +440,12 @@ export default {
                         let _id = row._aData['id'];
                         if (_id == 0) {
                             row._aData['id'] = vm.new_party_id;
-                            console.log('ID', row._aData['id']);
                             vm.new_party_id--;
                         }
                     });
                 });
         },
         addEventListeners: function () {
-            console.log('in addEventListener');
             this.addTableDrawListener();
             this.addClickEventHandler();
             this.addResponsiveResizeHandler();
@@ -483,7 +476,9 @@ export default {
     box-sizing: content-box;
     text-align: center;
     text-indent: 0 !important;
-    font-family: 'Courier New', Courier monospace;
+    font-family:
+        'Courier New',
+        Courier monospace;
     margin: 5px;
 }
 
@@ -508,7 +503,9 @@ export default {
     box-sizing: content-box;
     text-align: center;
     text-indent: 0 !important;
-    font-family: 'Courier New', Courier monospace;
+    font-family:
+        'Courier New',
+        Courier monospace;
     margin: 5px;
 }
 

@@ -358,7 +358,6 @@ export default {
             this.$emit('add-detail', new_party_data);
         },
         addToTemporaryDocumentCollectionList(temp_doc_id) {
-            console.log({ temp_doc_id });
             this.temporary_document_collection_id = temp_doc_id;
         },
         partyDateChanged: function (e, date_field) {

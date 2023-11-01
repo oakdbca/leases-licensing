@@ -850,9 +850,6 @@ export default {
             return s.replace(/[,;]/g, '\n');
         },
         save: async function () {
-            console.log('save');
-            console.log(this.profile.is_compliance_referee);
-
             if (
                 this.profile.is_assessor &&
                 this.compliance.assigned_to == this.profile.id
@@ -860,7 +857,6 @@ export default {
                 this.assessorSave();
             }
             if (this.profile.is_compliance_referee) {
-                console.log('referee save');
                 this.refereeSave();
             }
         },
@@ -887,7 +883,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                     }
                     swal.fire({
                         title: 'Success',
@@ -907,12 +903,10 @@ export default {
         refereeSave: function () {
             let vm = this;
             vm.savingCompliance = true;
-            console.log(vm.profile.id);
             const referral = vm.compliance.referrals.filter((obj) => {
                 return obj['referral'] == vm.profile.id;
             })[0];
 
-            console.log(referral);
             fetch(`${api_endpoints.compliance_referrals}${referral.id}/`, {
                 method: 'PATCH',
                 headers: {
@@ -927,7 +921,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                     }
                     swal.fire({
                         title: 'Success',
@@ -972,7 +966,7 @@ export default {
                     const data = await response.json();
                     if (!response.ok) {
                         const error = data || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         swal.fire({
                             title: 'Error',
                             html: helpers.formatErrorV2(error),
@@ -1022,7 +1016,6 @@ export default {
         },
         assignTo: async function () {
             let vm = this;
-            console.log(vm.compliance.assigned_to);
             if (vm.compliance.assigned_to != 'null') {
                 const url = helpers.add_endpoint_json(
                     api_endpoints.compliances,
@@ -1035,11 +1028,9 @@ export default {
                 );
                 let assessor_assigned = this.compliance.allowed_assessors.find(
                     function (assessor) {
-                        console.log(assessor.id, vm.compliance.assigned_to);
                         return assessor.id === vm.compliance.assigned_to;
                     }
                 );
-                console.log(assessor_assigned);
                 Swal.fire({
                     title: 'Success',
                     text: `Compliance ${this.compliance.reference} has been assigned to ${assessor_assigned.fullname}`,
@@ -1049,7 +1040,6 @@ export default {
                     showConfirmButton: false,
                 });
             } else {
-                console.log('unassign');
                 const url = await helpers.add_endpoint_json(
                     api_endpoints.compliances,
                     vm.compliance.id + '/unassign'
@@ -1121,7 +1111,6 @@ export default {
                 .then(async (response) => {
                     if (!response.ok) {
                         return await response.json().then((json) => {
-                            console.log('json', json);
                             throw new Error(JSON.stringify(json));
                         });
                     } else {
@@ -1129,16 +1118,13 @@ export default {
                     }
                 })
                 .then(async (response) => {
-                    console.log('settings updated compliance from response');
                     vm.compliance = Object.assign({}, response); // 'with_referral'
                 })
                 .catch((error) => {
                     let errorText = '';
                     try {
                         error = JSON.parse(error.message);
-                        console.log(`error type. ${typeof error}`);
                         errorText = helpers.formatErrorV2(error);
-                        console.log(`errorText type. ${typeof errorText}`);
                     } catch (e) {
                         errorText = error.message;
                     }
@@ -1184,7 +1170,6 @@ export default {
                 .on('select2:select', function (e) {
                     let data = e.params.data.id;
                     vm.selected_referral = data;
-                    console.log(vm.$refs);
                     vm.$nextTick(() => {
                         vm.$refs.assessor_referral_text.focus();
                     });
@@ -1244,7 +1229,7 @@ export default {
                                             const error =
                                                 (data && data.message) ||
                                                 response.statusText;
-                                            console.log(error);
+                                            console.error(error);
                                             Promise.reject(error);
                                         }
                                         vm.$router.push({
@@ -1257,7 +1242,7 @@ export default {
                                         });
                                     },
                                     (error) => {
-                                        console.log(error);
+                                        console.error(error);
                                     }
                                 );
                             } else {

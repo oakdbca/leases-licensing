@@ -280,7 +280,6 @@ export default {
                 searchable: false,
                 visible: true,
                 render: function (row, type, full) {
-                    console.log({ full });
                     let links = '';
                     if (full.can_accessing_user_process) {
                         links +=
@@ -383,7 +382,6 @@ export default {
             );
         },
         filterCompetitiveProcessCreatedFrom: function () {
-            console.log('filterCompetitiveProcessCreatedFrom changed');
             this.$refs.competitive_process_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterCompetitiveProcessCreatedFrom',
@@ -391,7 +389,6 @@ export default {
             );
         },
         filterCompetitiveProcessCreatedTo: function () {
-            console.log('filterCompetitiveProcessCreatedTo changed');
             this.$refs.competitive_process_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
                 'filterCompetitiveProcessCreatedTo',
@@ -438,7 +435,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(
+                    console.error(
                         `Error fetching external approval data ${error.message}`
                     );
                     throw error;
@@ -483,11 +480,6 @@ export default {
                         icon: 'error',
                     });
                 });
-
-            //this.$router.push({
-            //    name: 'apply_proposal'
-            //})
-            console.log('New Competitive Process Clicked');
         },
         fetchFilterLists: async function () {
             let vm = this;

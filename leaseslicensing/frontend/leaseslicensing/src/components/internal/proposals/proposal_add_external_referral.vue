@@ -220,7 +220,6 @@ export default {
                         vm.errors = data || response.statusText;
                         return;
                     }
-                    console.log(data);
                     swal.fire({
                         title: 'Success',
                         text: 'External referee invite sent',

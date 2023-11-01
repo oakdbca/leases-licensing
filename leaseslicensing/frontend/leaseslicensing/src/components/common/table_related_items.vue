@@ -91,7 +91,7 @@ export default {
                         let error = response.responseJSON
                             ? response.responseJSON.data
                             : response.responseText;
-                        console.log(
+                        console.error(
                             `${textStatus}: ${errorThrown}: ${JSON.stringify(
                                 error
                             )}`

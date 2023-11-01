@@ -685,7 +685,7 @@ export default {
                     vm.invoice_statuses = await response.json();
                 },
                 (error) => {
-                    console.log(error);
+                    console.error(error);
                 }
             );
 
@@ -695,7 +695,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         Promise.reject(error);
                     }
                     vm.organisations = data;
@@ -718,7 +718,6 @@ export default {
             let vm = this;
             vm.selectedInvoiceId = parseInt(id);
             vm.selectedInvoiceLodgementNumber = lodgement_number;
-            console.log('amount: ', amount);
             vm.selectedInvoiceAmount = Number(amount);
             vm.$refs.invoice_view_transactions.isModalOpen = true;
         },
@@ -730,7 +729,6 @@ export default {
             let vm = this;
             vm.selectedInvoiceId = parseInt(id);
             vm.selectedInvoiceLodgementNumber = lodgement_number;
-            console.log(typeof oracle_invoice_number);
             vm.selectedInvoiceOracleInvoiceNumber = oracle_invoice_number;
             vm.$refs.invoice_upload_oracle_invoice.isModalOpen = true;
         },

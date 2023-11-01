@@ -271,7 +271,6 @@ export default {
             });
         },
         removeRequirement: async function (_id) {
-            console.log(_id);
             swal.fire({
                 title: 'Remove Requirement',
                 text: 'Are you sure you want to remove this requirement?',
@@ -292,12 +291,11 @@ export default {
                             _id + '/discard'
                         )
                     );
-                    console.log(response);
                     if (response.ok) {
                         this.selectedRequirement = {}; // Unselect, so it can be re-added without error
                         this.$refs.requirements_datatable.vmDataTable.ajax.reload();
                     } else {
-                        console.log('error');
+                        console.error('error');
                     }
                 }
             });
@@ -313,7 +311,7 @@ export default {
             if (response.ok) {
                 this.requirements = await response.json();
             } else {
-                console.log('error');
+                console.error('error');
             }
         },
         editRequirement: async function (_id) {
@@ -331,7 +329,7 @@ export default {
                     this.$refs.requirement_detail.isModalOpen = true;
                 });
             } else {
-                console.log('error');
+                console.error('error');
             }
         },
         updateRequirement(requirement) {
@@ -411,7 +409,7 @@ export default {
                 );
                 this.$parent.uuid++;
             } catch (error) {
-                console.log(error);
+                console.error(error);
             }
         },
         moveUp(id) {

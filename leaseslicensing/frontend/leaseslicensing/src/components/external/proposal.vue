@@ -645,7 +645,6 @@ export default {
             }
         },
         submit: async function () {
-            console.log('in submit()');
             let vm = this;
 
             // remove the confirm prompt when navigating away from window (on button 'Submit' click)
@@ -686,7 +685,7 @@ export default {
                                 });
                             });
                         } catch (err) {
-                            console.log(err);
+                            console.error(err);
                             vm.submitting = false;
                             vm.savingProposal = false;
                             vm.paySubmitting = false;
@@ -702,7 +701,7 @@ export default {
                     }
                 },
                 (error) => {
-                    console.log(error);
+                    console.error(error);
                 }
             );
         },
@@ -715,11 +714,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.proposal = data;
-                    console.log('Proposal: ', vm.proposal);
 
                     fetch(
                         helpers.add_endpoint_json(
@@ -731,7 +729,7 @@ export default {
                             this.amendment_request = await res.json();
                         },
                         (err) => {
-                            console.log(err);
+                            console.error(err);
                         }
                     );
 

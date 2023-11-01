@@ -188,7 +188,6 @@ export default {
             var form = document.getElementById('approvalSuspensionForm');
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');
@@ -219,7 +218,6 @@ export default {
             utils
                 .fetchUrl(url, requestOptions)
                 .then((data) => {
-                    console.log('Suspend Approval');
                     vm.close();
                     Swal.fire(
                         'Suspend',

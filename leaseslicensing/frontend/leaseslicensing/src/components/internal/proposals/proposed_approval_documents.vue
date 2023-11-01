@@ -321,7 +321,6 @@ export default {
                         if (added) {
                             // If a new item has been added, clear the select2 field. If an existing
                             // item has been selected, show it as selected so it can be deleted.
-                            console.log('added');
                             vm.documentTypeSelectorBlur();
                             vm.$nextTick(() => {
                                 initTooltipStyling();

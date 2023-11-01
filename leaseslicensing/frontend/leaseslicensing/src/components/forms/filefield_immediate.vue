@@ -221,7 +221,6 @@ export default {
             }
         },
         handleChange: async function (e) {
-            console.log('Change', e.target.files);
             if (e.target.files.length > 0) {
                 await this.save_document(e);
             }
@@ -248,7 +247,6 @@ export default {
             this.show_spinner = false;
         },
         delete_all_documents: function () {
-            console.log('aho');
             for (let item of this.documents) {
                 this.delete_document(item);
             }

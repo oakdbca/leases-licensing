@@ -166,13 +166,11 @@ export default {
         },
         selectHandler: function (property, value) {
             let vm = this;
-            console.log('Selected', property, value);
             vm.$emit('update:selectedData', property, value);
             vm.keys[property] = uuid();
         },
         removeHandler: function (property, value) {
             let vm = this;
-            console.log('Removed', property, value);
             vm.$emit('update:selectedData', property, value);
             vm.keys[property] = uuid();
         },

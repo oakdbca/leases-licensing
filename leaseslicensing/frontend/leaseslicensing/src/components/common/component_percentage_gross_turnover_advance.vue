@@ -296,7 +296,6 @@ export default {
                 ...financialYears
             );
             financialYears.sort((a, b) => a.year - b.year);
-            console.log('\n\nFinancial Years: ', financialYears);
             this.grossTurnoverPercentagesComputed = financialYears;
         },
     },

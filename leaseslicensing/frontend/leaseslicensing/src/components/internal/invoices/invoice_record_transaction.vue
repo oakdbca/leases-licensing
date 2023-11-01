@@ -130,10 +130,10 @@
 </template>
 
 <script>
-import modal from '@vue-utils/bootstrap-modal.vue'
-import { api_endpoints } from '@/utils/hooks.js'
-import currency from 'currency.js'
-import Swal from 'sweetalert2'
+import modal from '@vue-utils/bootstrap-modal.vue';
+import { api_endpoints } from '@/utils/hooks.js';
+import currency from 'currency.js';
+import Swal from 'sweetalert2';
 
 export default {
     name: 'InvoiceTransactions',
@@ -156,7 +156,7 @@ export default {
     },
     emits: ['transactionRecorded'],
     data: function () {
-        let vm = this
+        let vm = this;
         return {
             isModalOpen: false,
             transactions: null,
@@ -165,114 +165,112 @@ export default {
                 debit: '0.00',
                 credit: '0.00',
             },
-        }
+        };
     },
     computed: {
         title: function () {
             return (
                 'Record Transaction for Invoice: ' +
                 this.invoice_lodgement_number
-            )
+            );
         },
 
         balanceRemainingCurrency: function () {
-            return currency(this.balance_remaining).format()
+            return currency(this.balance_remaining).format();
         },
         balanceRemainingAfterTransaction: function () {
             return (
                 this.balance_remaining -
                 Number(this.transaction.debit) +
                 Number(this.transaction.credit)
-            )
+            );
         },
         balanceRemainingAfterTransactionCurrency: function () {
-            return currency(this.balanceRemainingAfterTransaction).format()
+            return currency(this.balanceRemainingAfterTransaction).format();
         },
         projectedBalanceClass: function () {
             if (this.balanceRemainingAfterTransaction == 0) {
-                return 'text-success'
+                return 'text-success';
             }
             if (this.balanceRemainingAfterTransaction < 0) {
-                return 'text-warning'
+                return 'text-warning';
             }
-            return ''
+            return '';
         },
     },
     watch: {
         isModalOpen: function (newVal) {
-            let vm = this
+            let vm = this;
             if (newVal) {
-                vm.transaction.invoice_id = vm.invoice_id
+                vm.transaction.invoice_id = vm.invoice_id;
                 vm.$nextTick(function () {
-                    $('#debit').focus()
-                })
+                    $('#debit').focus();
+                });
             }
         },
     },
     methods: {
         close: function () {
-            this.isModalOpen = false
+            this.isModalOpen = false;
         },
         validateForm: function () {
-            let vm = this
+            let vm = this;
             var form = document.getElementById(
                 'invoice-record-transaction-form'
-            )
+            );
 
             if (vm.transaction.debit == 0 && vm.transaction.credit == 0) {
                 form.debit.setCustomValidity(
                     'Please enter a debit or credit amount.'
-                )
+                );
                 form.credit.setCustomValidity(
                     'Please enter a debit or credit amount.'
-                )
+                );
             }
 
             if (form.checkValidity()) {
-                console.log('Form valid')
-                vm.recordTransaction()
+                vm.recordTransaction();
             } else {
-                form.classList.add('was-validated')
+                form.classList.add('was-validated');
                 $('#invoice-record-transaction-form')
                     .find(':invalid')
                     .first()
-                    .focus()
+                    .focus();
             }
 
-            return false
+            return false;
         },
         recordTransaction: function () {
-            let vm = this
+            let vm = this;
             const requestOptions = {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(vm.transaction),
-            }
+            };
             fetch(
                 api_endpoints.invoices + `${vm.invoice_id}/record_transaction/`,
                 requestOptions
             )
                 .then(async (response) => {
-                    const data = await response.json()
+                    const data = await response.json();
                     if (!response.ok) {
                         const error =
-                            (data && data.message) || response.statusText
-                        console.log(error)
-                        Promise.reject(error)
+                            (data && data.message) || response.statusText;
+                        console.error(error);
+                        Promise.reject(error);
                     }
-                    console.log('oracle invoice number updated.')
                     Swal.fire({
                         icon: 'success',
                         title: 'Transaction Recorded',
                         text: 'The transaction has been recorded.',
-                    })
-                    vm.$emit('transactionRecorded')
+                    });
+                    vm.$emit('transactionRecorded');
                 })
                 .catch((error) => {
-                    console.error('There was an error!', error)
-                    Promise.reject(error)
-                })
+                    console.error('There was an error!', error);
+                    Promise.reject(error);
+                });
         },
     },
-}
+};
 </script>

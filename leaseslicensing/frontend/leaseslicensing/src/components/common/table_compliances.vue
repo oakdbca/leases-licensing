@@ -508,9 +508,6 @@ export default {
                 buttons: buttons,
                 columns: vm.applicableColumns,
                 processing: true,
-                initComplete: function () {
-                    console.log('in initComplete');
-                },
                 order: [[0, 'desc']],
             };
         },
@@ -635,7 +632,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.approval_types = data;
@@ -651,12 +648,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.compliance_statuses = data;
-                    console.log('Compliance Statuses: ');
-                    console.log(vm.compliance_statuses);
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);

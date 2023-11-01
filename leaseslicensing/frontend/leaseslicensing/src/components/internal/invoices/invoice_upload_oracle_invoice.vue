@@ -110,10 +110,6 @@ export default {
                 vm.$nextTick(function () {
                     $('#oracle-invoice-number').focus();
                     if (this.oracleInvoiceNumber) {
-                        console.log(
-                            'oracle invoice number: ' +
-                                typeof this.oracleInvoiceNumber
-                        );
                         $('#oracle-invoice-number').val(
                             this.oracleInvoiceNumber
                         );
@@ -200,7 +196,6 @@ export default {
                                 (data && data.message) || response.statusText;
                             console.error(error);
                         }
-                        console.log('oracle invoice number uploaded.');
                         Swal.fire({
                             icon: 'success',
                             title: `Upload Successful`,

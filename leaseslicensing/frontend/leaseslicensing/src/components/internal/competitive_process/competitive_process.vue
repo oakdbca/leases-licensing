@@ -538,9 +538,6 @@ export default {
             let generated_proposals =
                 this.competitive_process.generated_proposal;
             if (!generated_proposals) {
-                console.log(
-                    `No Applications have been generated for this competitive process.`
-                );
                 return false;
             }
 
@@ -549,9 +546,6 @@ export default {
                 (proposal) => proposal.applicant_obj.id == winner_applicant_id
             );
             if (!winner_applications || winner_applications.length == 0) {
-                console.log(
-                    `No related Proposal found for winner ID ${winner_party_id}.`
-                );
                 return false;
             }
 
@@ -570,14 +564,8 @@ export default {
             );
 
             if (open_applications.length == 0) {
-                console.log(
-                    `No open Applications found for winner ID ${winner_party_id}.`
-                );
                 return true;
             } else if (open_applications.length == 1) {
-                console.log(
-                    `An open Proposal found for winner ID ${winner_party_id}.`
-                );
                 return false;
             } else {
                 let winner_name = winner_party.is_person
@@ -1035,7 +1023,6 @@ export default {
                                 }
                             })
                             .then(async (data) => {
-                                console.log(data);
                                 await swal.fire({
                                     title: 'Discarded',
                                     text: 'Competitive process has been discarded',
@@ -1063,7 +1050,6 @@ export default {
         },
         issueUnlock: async function () {
             let vm = this;
-            console.log('issue unlock');
             swal.fire({
                 title: 'Unlock this competitive process',
                 text: "Unlocking this competitive process will change the status to 'In Progress'\
@@ -1092,7 +1078,6 @@ export default {
                             }
                         })
                         .then(async (data) => {
-                            console.log('success', data);
                             vm.competitive_process = Object.assign({}, data);
                             await swal.fire({
                                 title: 'Unlocked',
@@ -1147,7 +1132,6 @@ export default {
         },
         assignTo: async function () {
             let vm = this;
-            console.log('in assignTo');
             let unassign = true;
 
             unassign =
@@ -1180,7 +1164,6 @@ export default {
             if (typeof payload === 'undefined') {
                 payload = {};
             }
-            console.log('in assignRequestUser');
 
             fetch(
                 helpers.add_endpoint_json(
@@ -1204,7 +1187,7 @@ export default {
                 })
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
-                    console.log(error);
+                    console.error(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
@@ -1221,23 +1204,18 @@ export default {
                 if (!res.ok) throw new Error(res.statusText); // 400s or 500s error
                 let competitive_process = await res.json();
                 vm.competitive_process = competitive_process;
-                console.log(
-                    'Fetched competitive process',
-                    vm.competitive_process
-                );
             } catch (err) {
-                console.log({ err });
+                console.error({ err });
             }
         },
         updateAssignedOfficerSelect: function () {
             let vm = this;
             if (vm.competitive_process.status === 'In Progress') {
-                console.log('updateAssignedOfficerSelect');
                 let assigned_officer = vm.competitive_process.assigned_officer;
                 let _id = assigned_officer ? assigned_officer.id : null;
                 vm.$refs.workflow.updateAssignedOfficerSelect(_id);
             } else {
-                console.log('Skipping assignment of selected officer');
+                console.warn('Skipping assignment of selected officer');
             }
         },
         partyById: function (party_id, party_dict) {
@@ -1248,7 +1226,6 @@ export default {
              */
 
             if (party_id == null) {
-                console.log('No party ID. Returning null.');
                 return null; // e.g. no winner outcome
             }
 
@@ -1268,7 +1245,6 @@ export default {
         addDetail: function (new_party_data) {
             /** Callback for `add-detail` event emitted by custom-row */
 
-            console.log('add detail: new_party_data', new_party_data);
             // This party's ID
             let id = Object.keys(new_party_data)[0];
             // Get the related competitive process party
@@ -1283,7 +1259,6 @@ export default {
         addParty: function (new_party_data) {
             /** Callback for `add-party` event emitted by custom-row */
 
-            console.log('add party: new_party_data', new_party_data);
             // Add new party
             this.competitive_process.competitive_process_parties.push(
                 new_party_data
