@@ -658,8 +658,12 @@ export default {
             );
         },
         new_application_button_clicked: async function () {
+            var route = 'apply_proposal';
+            if (this.level == 'internal') {
+                route = 'migrate_proposal';
+            }
             await this.$router.push({
-                name: 'apply_proposal',
+                name: route,
             });
         },
         discardProposal: function (proposal_id, lodgement_number) {
