@@ -96,6 +96,7 @@ from leaseslicensing.settings import (
     GROUP_NAME_APPROVER,
     GROUP_NAME_ASSESSOR,
     PROPOSAL_TYPE_AMENDMENT,
+    PROPOSAL_TYPE_MIGRATION,
     PROPOSAL_TYPE_NEW,
     PROPOSAL_TYPE_RENEWAL,
     PROPOSAL_TYPE_TRANSFER,
@@ -2535,7 +2536,10 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 version_comment=f"Confirmed Lease License - {proposal_type_comment_name}"
             )
 
-        elif self.proposal_type.code == PROPOSAL_TYPE_NEW:
+        elif (
+            self.proposal_type.code == PROPOSAL_TYPE_NEW
+            or self.proposal_type.code == PROPOSAL_TYPE_MIGRATION
+        ):
             # TODO: could be PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST or
             # PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS or PROCESSING_STATUS_APPROVED_EDITING_INVOICING
             # When Registration_of_Interest
