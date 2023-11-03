@@ -247,7 +247,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "has_draft_amendment",
             "active_amendment",
             "application_type",
-            "original_leaselicense_number",
+            "original_leaselicence_number",
             "migrated",
             "is_assessor",
             "is_approver",
