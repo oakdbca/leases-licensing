@@ -84,7 +84,8 @@
                         class="btn btn-primary mb-2"
                         @click="new_application_button_clicked"
                     >
-                        <i class="fa-solid fa-circle-plus"></i> New Proposal
+                        <i class="fa-solid fa-circle-plus"></i>
+                        {{ new_migrate_button_text }}
                     </button>
                 </div>
             </div>
@@ -215,6 +216,12 @@ export default {
         };
     },
     computed: {
+        new_migrate_button_text: function () {
+            if (this.level == 'internal') {
+                return 'Create New or Migrate Existing Lease/Licence';
+            }
+            return 'New Proposal';
+        },
         number_of_columns: function () {
             let num = this.$refs.application_datatable.vmDataTable
                 .columns(':visible')
