@@ -1924,8 +1924,18 @@ class ProposalViewSet(UserActionLoggingViewset):
     )
     @transaction.atomic
     def migrate(self, request, *args, **kwargs):
+        migrated = request.data.get("migrated", False)
+        original_leaselicence_number = request.data.get(
+            "original_leaselicence_number", None
+        )
         org_applicant = request.data.get("org_applicant", None)
         ind_applicant = request.data.get("ind_applicant", None)
+
+        if migrated and not original_leaselicence_number:
+            raise serializers.ValidationError(
+                _(r"Original lease\licence number is required for migration proposal"),
+                code="required",
+            )
 
         if org_applicant:
             try:
@@ -1951,9 +1961,16 @@ class ProposalViewSet(UserActionLoggingViewset):
         lease_license_applicant_type = ApplicationType.objects.get(
             name=settings.APPLICATION_TYPE_LEASE_LICENCE
         )
-        proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_MIGRATION)
+
+        if migrated:
+            proposal_type = ProposalType.objects.get(
+                code=settings.PROPOSAL_TYPE_MIGRATION
+            )
+        else:
+            proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW)
 
         data = {
+            "added_internally": True,
             "org_applicant": org_applicant,
             "ind_applicant": ind_applicant,
             "application_type_id": lease_license_applicant_type.id,
@@ -1961,6 +1978,10 @@ class ProposalViewSet(UserActionLoggingViewset):
             "processing_status": Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
             "submitter": ind_applicant,
         }
+
+        if migrated:
+            data["migrated"] = migrated
+            data["original_leaselicence_number"] = original_leaselicence_number
 
         serializer = MigrateProposalSerializer(data=data)
         serializer.is_valid(raise_exception=True)
