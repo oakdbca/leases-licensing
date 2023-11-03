@@ -313,7 +313,7 @@ class Approval(LicensingModelVersioned):
         "Number of times an Approval has been renewed", default=0
     )
     # For leases that are migrated
-    original_leaselicense_number = models.CharField(
+    original_leaselicence_number = models.CharField(
         max_length=255, blank=True, null=True
     )
     migrated = models.BooleanField(default=False)

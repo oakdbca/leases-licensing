@@ -1129,7 +1129,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     added_internally = models.BooleanField(default=False)
     # If the proposal is created as part of migration of approvals
     migrated = models.BooleanField(default=False)
-    original_leaselicense_number = models.CharField(
+    original_leaselicence_number = models.CharField(
         max_length=255, blank=True, null=True
     )
     # Registration of Interest generates a Lease Licence
