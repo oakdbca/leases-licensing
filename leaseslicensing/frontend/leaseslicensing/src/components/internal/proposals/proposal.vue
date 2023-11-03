@@ -1642,9 +1642,7 @@ export default {
         },
         readonly: function () {
             return !(
-                this.proposal.proposal_type.code ==
-                    constants.PROPOSAL_TYPE.MIGRATION.code &&
-                this.proposal.assigned_officer
+                this.proposal.added_internally && this.proposal.assigned_officer
             );
         },
         contactsURL: function () {
