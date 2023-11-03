@@ -610,13 +610,13 @@ export default {
         },
         columnOriginalLeaseLicenseNumber: function () {
             return {
-                data: 'original_leaselicense_number',
+                data: 'original_leaselicence_number',
                 orderable: true,
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
-                    if (full.original_leaselicense_number) {
-                        return full.original_leaselicense_number;
+                    if (full.original_leaselicence_number) {
+                        return full.original_leaselicence_number;
                     }
                     return 'N/A';
                 },
