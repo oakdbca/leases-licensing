@@ -109,6 +109,7 @@ module.exports = {
         NEW: { code: 'new', description: 'New Proposal' },
         RENEWAL: { code: 'renewal', description: 'Renewal' },
         TRANSFER: { code: 'transfer', description: 'Transfer' },
+        MIGRATION: { code: 'migration', description: 'Migration' },
     },
     APPROVAL_TYPE: {
         LICENCE: { ID: 'licence', TEXT: 'Licence' },
