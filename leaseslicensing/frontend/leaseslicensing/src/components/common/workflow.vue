@@ -627,7 +627,8 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.isCurrentAssessor;
+                            vm.isCurrentAssessor &&
+                            !vm.proposal.added_internally;
                         return show;
                     },
                     function_to_disable: () => {
