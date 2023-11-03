@@ -2,288 +2,285 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-12">
-                <form
-                    class="form-horizontal"
-                    name="personal_form"
-                    method="post"
-                >
-                    <FormSection label="Apply for a" index="propsal_apply_for">
-                        <div class="col">
-                            <div class="form-group">
-                                <ul class="list-group">
-                                    <li class="list-group-item">
-                                        Lease or Licence
-                                    </li>
-                                </ul>
-                            </div>
+                <FormSection label="Create a new" index="propsal_apply_for">
+                    <div class="col">
+                        <div class="form-group">
+                            <ul class="list-group">
+                                <li class="list-group-item">
+                                    Lease or Licence
+                                </li>
+                            </ul>
                         </div>
-                    </FormSection>
-                    <FormSection
-                        label="on behalf of"
-                        index="proposal_apply_on_behalf_of"
-                    >
-                        <div v-if="!addNewUser" class="container">
-                            <form>
-                                {{ applicant }}
-                                <div class="mb-3 row">
-                                    <label
-                                        for="inputName"
-                                        class="col-3 col-form-label"
-                                        >Select Proponent Type:</label
-                                    >
-                                    <div class="col-5">
-                                        <ul class="list-group">
-                                            <li class="list-group-item">
-                                                <div class="form-check">
-                                                    <input
-                                                        id=""
-                                                        v-model="applicantType"
-                                                        class="form-check-input"
-                                                        type="radio"
-                                                        name="transferee_type"
-                                                        value="organisation"
-                                                        @change="
-                                                            transfereeTypeChanged
-                                                        "
-                                                    />
-                                                    <label
-                                                        class="form-check-label"
-                                                        for=""
-                                                    >
-                                                        Organisation
-                                                    </label>
-                                                </div>
-                                            </li>
-                                            <li class="list-group-item">
-                                                <div class="form-check">
-                                                    <input
-                                                        id=""
-                                                        v-model="applicantType"
-                                                        class="form-check-input"
-                                                        type="radio"
-                                                        name="transferee_type"
-                                                        value="individual"
-                                                        @change="
-                                                            transfereeTypeChanged
-                                                        "
-                                                    />
-                                                    <label
-                                                        class="form-check-label"
-                                                        for=""
-                                                    >
-                                                        Individual
-                                                    </label>
-                                                </div>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </div>
-                                <div
-                                    v-if="applicantType == 'organisation'"
-                                    class="row mb-3"
-                                >
-                                    <div class="col-3">Select Organisation</div>
-                                    <div class="col-5">
-                                        <select
-                                            id="search"
-                                            ref="search"
-                                            class="form-select"
-                                            placeholder="Start typing the Organisation's Name or ABN"
-                                        />
-                                    </div>
-                                </div>
-                                <div
-                                    v-if="applicantType == 'individual'"
-                                    class="row mb-3"
-                                >
-                                    <div class="col-3">Select Individual</div>
-                                    <div class="col-5">
-                                        <select
-                                            id="search"
-                                            ref="search"
-                                            class="form-select"
-                                            placeholder="Start typing the individual's name or email"
-                                        />
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                        <div v-else class="container">
-                            <div class="row">
-                                <div class="col-8">
-                                    <form
-                                        id="new"
-                                        class="needs-validation"
-                                        novalidate
-                                        @submit.prevent="validateForm"
-                                    >
-                                        <fieldset
-                                            v-if="applicantType == 'individual'"
-                                            class="rounded-3 border p-3"
-                                        >
-                                            <legend
-                                                class="float-none w-auto px-3"
-                                            >
-                                                Add New Individual
-                                            </legend>
-                                            <div class="row mb-3">
-                                                <label
-                                                    for="email"
-                                                    class="col-sm-3 col-form-label"
-                                                    >Email</label
-                                                >
-                                                <div class="col-sm-9">
-                                                    <input
-                                                        id="email"
-                                                        ref="email"
-                                                        v-model="newUser.email"
-                                                        type="email"
-                                                        class="form-control"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <BootstrapAlert type="primary">
-                                                    The first and last name for
-                                                    the user will be populated
-                                                    by auth2 if/when the user
-                                                    logs in.
-                                                </BootstrapAlert>
-                                            </div>
-                                            <button
-                                                type="submit"
-                                                class="btn btn-primary float-end"
-                                            >
-                                                Add New Individual
-                                            </button>
-                                            <button
-                                                class="btn btn-secondary float-end me-2"
-                                                @click.prevent="cancelAddNew"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </fieldset>
-                                        <fieldset
-                                            v-else
-                                            class="rounded-3 border p-3"
-                                        >
-                                            <legend
-                                                class="float-none w-auto px-3"
-                                            >
-                                                Add New Organisation
-                                            </legend>
-                                            <div class="row mb-3">
-                                                <label
-                                                    for="organisation-name"
-                                                    class="col-sm-3 col-form-label"
-                                                    >Organisation Name</label
-                                                >
-                                                <div class="col-sm-9">
-                                                    <input
-                                                        id="organisation-name"
-                                                        ref="organisation-name"
-                                                        v-model="
-                                                            newOrganisation.organisation_name
-                                                        "
-                                                        type="text"
-                                                        class="form-control"
-                                                        maxlength="255"
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <label
-                                                    for="trading-name"
-                                                    class="col-sm-3 col-form-label"
-                                                    >Trading Name</label
-                                                >
-                                                <div class="col-sm-9">
-                                                    <input
-                                                        id="trading-name"
-                                                        v-model="
-                                                            newOrganisation.trading_name
-                                                        "
-                                                        type="text"
-                                                        maxlength="255"
-                                                        class="form-control"
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <label
-                                                    for="abn"
-                                                    class="col-sm-3 col-form-label"
-                                                    >ABN</label
-                                                >
-                                                <div class="col-sm-9">
-                                                    <input
-                                                        id="abn"
-                                                        v-model="
-                                                            newOrganisation.abn
-                                                        "
-                                                        type="number"
-                                                        class="form-control"
-                                                        maxlength="11"
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <label
-                                                    for="email"
-                                                    class="col-sm-3 col-form-label"
-                                                    >Email</label
-                                                >
-                                                <div class="col-sm-9">
-                                                    <input
-                                                        id="email"
-                                                        ref="email"
-                                                        v-model="
-                                                            newOrganisation.email
-                                                        "
-                                                        type="email"
-                                                        class="form-control"
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                            <button
-                                                type="submit"
-                                                class="btn btn-primary float-end"
-                                            >
-                                                Add New Organisation
-                                            </button>
-                                            <button
-                                                class="btn btn-secondary float-end me-2"
-                                                @click.prevent="cancelAddNew"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </fieldset>
-                                    </form>
-                                </div>
-                            </div>
-                        </div>
-                    </FormSection>
-                    <div class="col-sm-12">
-                        <button
-                            v-if="!creatingProposal"
-                            :disabled="isDisabled"
-                            class="btn btn-primary float-end continue"
-                            @click.prevent="submit()"
-                        >
-                            Continue
-                        </button>
-                        <BootstrapButtonSpinner
-                            v-else
-                            class="btn btn-primary float-end continue"
-                            :is-loading="true"
-                            :center-of-screen="false"
-                            :small="true"
-                        />
                     </div>
-                </form>
+                </FormSection>
+                <FormSection
+                    label="on behalf of"
+                    index="proposal_apply_on_behalf_of"
+                >
+                    <div v-if="!addNewUser" class="container">
+                        <form>
+                            <div class="mb-3 row">
+                                <label
+                                    for="inputName"
+                                    class="col-3 col-form-label"
+                                    >Select Proponent Type:</label
+                                >
+                                <div class="col-5">
+                                    <ul class="list-group">
+                                        <li class="list-group-item">
+                                            <div class="form-check">
+                                                <input
+                                                    id=""
+                                                    v-model="applicantType"
+                                                    class="form-check-input"
+                                                    type="radio"
+                                                    name="transferee_type"
+                                                    value="organisation"
+                                                    @change="
+                                                        transfereeTypeChanged
+                                                    "
+                                                />
+                                                <label
+                                                    class="form-check-label"
+                                                    for=""
+                                                >
+                                                    Organisation
+                                                </label>
+                                            </div>
+                                        </li>
+                                        <li class="list-group-item">
+                                            <div class="form-check">
+                                                <input
+                                                    id=""
+                                                    v-model="applicantType"
+                                                    class="form-check-input"
+                                                    type="radio"
+                                                    name="transferee_type"
+                                                    value="individual"
+                                                    @change="
+                                                        transfereeTypeChanged
+                                                    "
+                                                />
+                                                <label
+                                                    class="form-check-label"
+                                                    for=""
+                                                >
+                                                    Individual
+                                                </label>
+                                            </div>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div
+                                v-if="applicantType == 'organisation'"
+                                class="row mb-3"
+                            >
+                                <div class="col-3">Select Organisation</div>
+                                <div class="col-5">
+                                    <select
+                                        id="search"
+                                        ref="search"
+                                        class="form-select"
+                                        placeholder="Start typing the Organisation's Name or ABN"
+                                    />
+                                </div>
+                            </div>
+                            <div
+                                v-if="applicantType == 'individual'"
+                                class="row mb-3"
+                            >
+                                <div class="col-3">Select Individual</div>
+                                <div class="col-5">
+                                    <select
+                                        id="search"
+                                        ref="search"
+                                        class="form-select"
+                                        placeholder="Start typing the individual's name or email"
+                                    />
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div v-else class="container">
+                        <div class="row">
+                            <div class="col-8">
+                                <form
+                                    id="newForm"
+                                    name="newForm"
+                                    class="needs-validation"
+                                    novalidate
+                                    @submit.prevent="validateForm"
+                                >
+                                    <fieldset
+                                        v-if="applicantType == 'individual'"
+                                        class="rounded-3 border p-3"
+                                    >
+                                        <legend class="float-none w-auto px-3">
+                                            Add New Email User
+                                        </legend>
+                                        <div class="row mb-3">
+                                            <label
+                                                for="email"
+                                                class="col-sm-3 col-form-label"
+                                                >Email</label
+                                            >
+                                            <div class="col-sm-9">
+                                                <input
+                                                    id="email"
+                                                    ref="email"
+                                                    v-model="newUser.email"
+                                                    type="email"
+                                                    class="form-control"
+                                                />
+                                                <div class="invalid-feedback">
+                                                    Please enter a valid email
+                                                    address
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary float-end"
+                                        >
+                                            Add New Email User
+                                        </button>
+                                        <button
+                                            class="btn btn-secondary float-end me-2"
+                                            @click.prevent="cancelAddNew"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </fieldset>
+                                    <fieldset
+                                        v-else
+                                        class="rounded-3 border p-3"
+                                    >
+                                        <legend class="float-none w-auto px-3">
+                                            Add New Organisation
+                                        </legend>
+                                        <div class="row mb-3">
+                                            <label
+                                                for="organisation-name"
+                                                class="col-sm-3 col-form-label"
+                                                >Organisation Name</label
+                                            >
+                                            <div class="col-sm-9">
+                                                <input
+                                                    id="organisation-name"
+                                                    ref="organisation-name"
+                                                    v-model="
+                                                        newOrganisation.organisation_name
+                                                    "
+                                                    type="text"
+                                                    class="form-control"
+                                                    maxlength="255"
+                                                    required
+                                                />
+                                                <div class="invalid-feedback">
+                                                    Please enter the
+                                                    organisation name
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <label
+                                                for="trading-name"
+                                                class="col-sm-3 col-form-label"
+                                                >Trading Name</label
+                                            >
+                                            <div class="col-sm-9">
+                                                <input
+                                                    id="trading-name"
+                                                    v-model="
+                                                        newOrganisation.trading_name
+                                                    "
+                                                    type="text"
+                                                    maxlength="255"
+                                                    class="form-control"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <label
+                                                for="abn"
+                                                class="col-sm-3 col-form-label"
+                                                >ABN</label
+                                            >
+                                            <div class="col-sm-9">
+                                                <input
+                                                    id="abn"
+                                                    v-model="
+                                                        newOrganisation.abn
+                                                    "
+                                                    type="number"
+                                                    class="form-control"
+                                                    maxlength="11"
+                                                    required
+                                                />
+                                                <div class="invalid-feedback">
+                                                    Please enter a valid abn
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <label
+                                                for="email"
+                                                class="col-sm-3 col-form-label"
+                                                >Email</label
+                                            >
+                                            <div class="col-sm-9">
+                                                <input
+                                                    id="email"
+                                                    ref="email"
+                                                    v-model="
+                                                        newOrganisation.email
+                                                    "
+                                                    type="email"
+                                                    class="form-control"
+                                                    required
+                                                />
+                                                <div class="invalid-feedback">
+                                                    Please enter a valid email
+                                                    address
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="submit"
+                                            class="btn btn-primary float-end"
+                                        >
+                                            Add New Organisation
+                                        </button>
+                                        <button
+                                            class="btn btn-secondary float-end me-2"
+                                            @click.prevent="cancelAddNew"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </fieldset>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </FormSection>
+                <div class="col-sm-12">
+                    <button
+                        v-if="!creatingProposal"
+                        :disabled="!applicant"
+                        class="btn btn-primary float-end continue"
+                        @click.prevent="submit()"
+                    >
+                        Continue
+                    </button>
+                    <BootstrapButtonSpinner
+                        v-else
+                        class="btn btn-primary float-end continue"
+                        :is-loading="true"
+                        :center-of-screen="false"
+                        :small="true"
+                    />
+                </div>
             </div>
         </div>
     </div>
@@ -303,6 +300,7 @@ export default {
             searchPlaceholder: 'Start typing the Organisation Name or ABN',
             applicantType: 'organisation',
             applicant: null,
+            applicantName: null,
             creatingProposal: false,
             addNewUser: false,
             newUser: null,
@@ -312,13 +310,6 @@ export default {
     computed: {
         isLoading: function () {
             return this.loading.length > 0;
-        },
-        isDisabled: function () {
-            let disabled = true;
-            if (this.applicant) {
-                disabled = false;
-            }
-            return disabled;
         },
         alertText: function () {
             let text = '';
@@ -363,9 +354,10 @@ export default {
             });
         },
         submit: function () {
+            let vm = this;
             swal.fire({
-                title: 'Create ' + this.selectedApplication.description,
-                text: 'Are you sure you want to create ' + this.alertText + '?',
+                title: 'Create Lease License',
+                text: `Are you sure you want to create a new lease/license for ${vm.applicantName}?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Proceed',
@@ -378,7 +370,7 @@ export default {
             }).then(
                 (result) => {
                     if (result.isConfirmed) {
-                        this.createProposal();
+                        this.migrateProposal();
                     }
                 },
                 (error) => {
@@ -487,7 +479,8 @@ export default {
                     searchField[0].focus();
                 })
                 .on('select2:select', function (e) {
-                    this.applicant = e.params.data.id;
+                    vm.applicant = e.params.data.id;
+                    vm.applicantName = e.params.data.text;
                     document.activeElement.blur();
                 })
                 .on('select2:clear', function () {
@@ -499,42 +492,43 @@ export default {
         },
         validateForm: function () {
             let vm = this;
-            var form = document.getElementById('new');
+            var form = document.getElementById('newForm');
 
             if (form.checkValidity()) {
-                vm.sendData();
+                vm.migrateProposal();
             } else {
                 form.classList.add('was-validated');
-                $('form#new').find(':invalid').first().focus();
+                $('#newForm').find('input:invalid').first().focus();
             }
 
             return false;
         },
-        createProposal: async function () {
+        migrateProposal: async function () {
             this.$nextTick(async () => {
                 let res = null;
                 try {
                     this.creatingProposal = true;
                     let payload = null;
-                    if ('individual' == this.applicantType) {
+
+                    if (this.applicantType == 'individual') {
                         payload = {
                             ind_applicant: this.applicant,
-                            application_type: this.selectedApplication,
+                            org_applicant: null,
                         };
                     } else {
                         payload = {
+                            ind_applicant: null,
                             org_applicant: this.applicant,
-                            application_type: this.selectedApplication,
                         };
                     }
-                    res = await fetch(api_endpoints.proposal, {
+                    res = await fetch(api_endpoints.proposal + 'migrate/', {
                         body: JSON.stringify(payload),
                         method: 'POST',
                     });
                     const resData = await res.json();
                     const proposal = Object.assign({}, resData);
                     this.$router.push({
-                        name: 'draft_proposal',
+                        name: 'internal-proposal',
                         params: { proposal_id: proposal.id },
                     });
                 } catch (error) {
@@ -542,7 +536,7 @@ export default {
                     await swal.fire({
                         title: 'Create Proposal',
                         icon: 'error',
-                        text: 'There was an error attempting to create your application. Please try again later.',
+                        text: 'There was an error attempting to create the proposal application. Please try again later.',
                     });
                     this.$router.go();
                 }
