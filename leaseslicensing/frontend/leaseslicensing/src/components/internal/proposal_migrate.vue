@@ -14,7 +14,7 @@
                                 migrating an existing one?
                             </div>
                             <div class="col">
-                                <div class="form-check">
+                                <div class="form-check mb-2">
                                     <input
                                         id="flexRadioDefault1"
                                         v-model="migrated"
