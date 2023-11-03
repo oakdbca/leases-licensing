@@ -36,6 +36,7 @@ from leaseslicensing.components.main.process_document import process_generic_doc
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
 from leaseslicensing.components.main.serializers import RelatedItemSerializer
 from leaseslicensing.components.main.utils import save_site_name
+from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.proposals.email import (
     send_external_referee_invite_email,
 )
@@ -69,6 +70,7 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
     ListProposalSerializer,
+    MigrateProposalSerializer,
     ProposalAssessmentAnswerSerializer,
     ProposalAssessmentSerializer,
     ProposalDeclineSerializer,
@@ -102,6 +104,7 @@ from leaseslicensing.helpers import (
     is_internal,
     is_referee,
 )
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.permissions import IsAssessorOrReferrer
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -1672,32 +1675,32 @@ class ProposalViewSet(UserActionLoggingViewset):
         return Response(serializer.data)
 
     @basic_exception_handler
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
-        with transaction.atomic():
-            application_type_str = request.data.get("application_type", {}).get("code")
-            application_type = ApplicationType.objects.get(name=application_type_str)
-            proposal_type = ProposalType.objects.get(code="new")
+        application_type_str = request.data.get("application_type", {}).get("code")
+        application_type = ApplicationType.objects.get(name=application_type_str)
+        proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW)
 
-            org_applicant = request.data.get("org_applicant", None)
+        org_applicant = request.data.get("org_applicant", None)
 
-            data = {
-                "org_applicant": org_applicant,
-                "ind_applicant": request.user.id
-                if not request.data.get("org_applicant")
-                else None,  # if no org_applicant, assume this proposal is for individual.
-                "application_type_id": application_type.id,
-                "proposal_type_id": proposal_type.id,
-            }
+        data = {
+            "org_applicant": org_applicant,
+            "ind_applicant": request.user.id
+            if not request.data.get("org_applicant")
+            else None,  # if no org_applicant, assume this proposal is for individual.
+            "application_type_id": application_type.id,
+            "proposal_type_id": proposal_type.id,
+        }
 
-            serializer = CreateProposalSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
+        serializer = CreateProposalSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
 
-            if not org_applicant:
-                make_proposal_applicant_ready(instance, request.user)
+        if not org_applicant:
+            make_proposal_applicant_ready(instance, request.user)
 
-            serializer = SaveProposalSerializer(instance)
-            return Response(serializer.data)
+        serializer = SaveProposalSerializer(instance)
+        return Response(serializer.data)
 
     @basic_exception_handler
     def update(self, request, *args, **kwargs):
@@ -1912,6 +1915,61 @@ class ProposalViewSet(UserActionLoggingViewset):
             raise serializers.ValidationError(e.args[0])
 
         return Response({document})
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=False,
+    )
+    @transaction.atomic
+    def migrate(self, request, *args, **kwargs):
+        org_applicant = request.data.get("org_applicant", None)
+        ind_applicant = request.data.get("ind_applicant", None)
+
+        if org_applicant:
+            try:
+                Organisation.objects.get(id=org_applicant)
+            except Organisation.DoesNotExist:
+                raise serializers.ValidationError(
+                    _(
+                        f"No organisation with id {org_applicant} exists in the leases licensing database"
+                    ),
+                    code="invalid",
+                )
+        else:
+            try:
+                emailuser = retrieve_email_user(ind_applicant)
+            except EmailUser.DoesNotExist:
+                raise serializers.ValidationError(
+                    _(
+                        f"No email user with id {ind_applicant} exists in the ledger database"
+                    ),
+                    code="invalid",
+                )
+
+        lease_license_applicant_type = ApplicationType.objects.get(
+            name=settings.APPLICATION_TYPE_LEASE_LICENCE
+        )
+        proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_MIGRATION)
+
+        data = {
+            "org_applicant": org_applicant,
+            "ind_applicant": ind_applicant,
+            "application_type_id": lease_license_applicant_type.id,
+            "proposal_type_id": proposal_type.id,
+            "processing_status": Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+        }
+
+        serializer = MigrateProposalSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+
+        if not org_applicant:
+            make_proposal_applicant_ready(instance, emailuser)
+
+        serializer = SaveProposalSerializer(instance)
+        return Response(serializer.data)
 
 
 class ReferralViewSet(viewsets.ModelViewSet):
