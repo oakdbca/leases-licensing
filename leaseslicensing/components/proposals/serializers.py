@@ -484,6 +484,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "can_officer_process",
             "accessing_user_roles",
+            "added_internally",
             # 'allowed_assessors',
             # 'is_qa_officer',
             # 'pending_amendment_request',
@@ -1054,12 +1055,15 @@ class MigrateProposalSerializer(CreateProposalSerializer):
         model = Proposal
         fields = (
             "id",
+            "added_internally",
             "application_type_id",
             "ind_applicant",
             "org_applicant",
             "proposal_type_id",
             "processing_status",
             "submitter",
+            "migrated",
+            "original_leaselicence_number",
         )
         read_only_fields = ("id",)
 
@@ -1441,6 +1445,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "proposalgeometry",
             "processing_status_id",
             "details_text",
+            "added_internally",
             # additional form fields for registration of interest
             "exclusive_use",
             "long_term_use",
