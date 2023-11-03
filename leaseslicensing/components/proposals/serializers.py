@@ -1049,6 +1049,20 @@ class CreateProposalSerializer(BaseProposalSerializer):
         read_only_fields = ("id",)
 
 
+class MigrateProposalSerializer(CreateProposalSerializer):
+    class Meta:
+        model = Proposal
+        fields = (
+            "id",
+            "application_type_id",
+            "ind_applicant",
+            "org_applicant",
+            "proposal_type_id",
+            "processing_status",
+        )
+        read_only_fields = ("id",)
+
+
 class SaveLeaseLicenceSerializer(BaseProposalSerializer):
     class Meta:
         model = Proposal
