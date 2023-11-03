@@ -2090,6 +2090,45 @@ export default {
                         vm.$refs.application_form.$refs.component_map.getJSONFeatures();
                 }
 
+                if (
+                    this.proposal.proposal_type.code ==
+                    constants.PROPOSAL_TYPE.MIGRATION.code
+                ) {
+                    if (
+                        this.proposal.groups.find(
+                            (group) =>
+                                group.name.trim().toLowerCase() == 'tourism'
+                        )
+                    ) {
+                        payload.proposal.profit_and_loss_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.profit_and_loss_text.detailsText;
+                        payload.proposal.cash_flow_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.cash_flow_text.detailsText;
+                        payload.proposal.capital_investment_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.capital_investment_text.detailsText;
+                        payload.proposal.financial_capacity_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.financial_capacity_text.detailsText;
+                        payload.proposal.available_activities_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.available_activities_text.detailsText;
+                        payload.proposal.market_analysis_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.market_analysis_text.detailsText;
+                        payload.proposal.staffing_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.staffing_text.detailsText;
+                    }
+
+                    payload.proposal.key_personnel_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.key_personnel_text.detailsText;
+                    payload.proposal.key_milestones_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.key_milestones_text.detailsText;
+                    payload.proposal.risk_factors_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.risk_factors_text.detailsText;
+                    payload.proposal.legislative_requirements_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.legislative_requirements_text.detailsText;
+                    payload.proposal.proponent_reference_number =
+                        this.proposal.proponent_reference_number;
+                    payload.proposal.groups = this.proposal.groups;
+                }
+
                 const res = await fetch(vm.proposal_form_url, {
                     body: JSON.stringify(payload),
                     method: 'POST',
