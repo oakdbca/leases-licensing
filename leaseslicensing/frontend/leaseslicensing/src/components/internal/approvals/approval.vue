@@ -6,11 +6,11 @@
                     {{ approval.approval_type }}:
                     {{ approval.lodgement_number }}
                     <small
-                        v-if="approval.original_leaselicense_number"
+                        v-if="approval.original_leaselicence_number"
                         class="text-muted"
                     >
                         (Migrated from:
-                        {{ approval.original_leaselicense_number }})</small
+                        {{ approval.original_leaselicence_number }})</small
                     >
                 </h3>
             </div>
