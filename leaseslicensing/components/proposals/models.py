@@ -1126,6 +1126,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
     )
     approval_comment = models.TextField(blank=True)
     details_text = models.TextField(blank=True)
+    added_internally = models.BooleanField(default=False)
     # If the proposal is created as part of migration of approvals
     migrated = models.BooleanField(default=False)
     original_leaselicense_number = models.CharField(
