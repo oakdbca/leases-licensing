@@ -798,7 +798,7 @@ export default {
                     },
                 },
                 {
-                    key: 'discard',
+                    key: 'decline',
                     button_title: 'Decline',
                     function_when_clicked: vm.declineProposal,
                     function_to_show_hide: () => {
