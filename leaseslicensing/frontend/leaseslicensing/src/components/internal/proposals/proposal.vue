@@ -1641,7 +1641,11 @@ export default {
             return ret_val;
         },
         readonly: function () {
-            return true;
+            return !(
+                this.proposal.proposal_type.code ==
+                    constants.PROPOSAL_TYPE.MIGRATION.code &&
+                this.proposal.assigned_officer
+            );
         },
         contactsURL: function () {
             return this.proposal != null
