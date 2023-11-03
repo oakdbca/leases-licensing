@@ -2,19 +2,90 @@
     <div class="container">
         <div class="row">
             <div class="col-sm-12">
-                <FormSection label="Create a new" index="propsal_apply_for">
+                <FormSection label="New or Existing?" index="propsal_migrate">
                     <div class="col">
-                        <div class="form-group">
-                            <ul class="list-group">
-                                <li class="list-group-item">
-                                    Lease or Licence
-                                </li>
-                            </ul>
+                        <div class="row mb-3 align-items-center">
+                            <label
+                                for="profit_and_loss_documents"
+                                class="col-form-label"
+                            ></label>
+                            <div class="col-6 col-form-label">
+                                Are you creating a new lease/license or
+                                migrating an existing one?
+                            </div>
+                            <div class="col">
+                                <div class="form-check">
+                                    <input
+                                        id="flexRadioDefault1"
+                                        v-model="migrated"
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="flexRadioDefault"
+                                        :value="false"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="flexRadioDefault1"
+                                    >
+                                        Create New
+                                    </label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input
+                                        id="flexRadioDefault2"
+                                        v-model="migrated"
+                                        class="form-check-input"
+                                        type="radio"
+                                        name="flexRadioDefault"
+                                        :value="true"
+                                    />
+                                    <label
+                                        class="form-check-label"
+                                        for="flexRadioDefault2"
+                                    >
+                                        Migrate Existing
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div
+                            v-if="migrated"
+                            class="row mb-3 align-items-center"
+                        >
+                            <div class="col-3 col-form-label">
+                                Original Lease/License Number
+                            </div>
+                            <div class="col-5">
+                                <input
+                                    ref="original-lease-license-number"
+                                    v-model="original_leaselicence_number"
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Enter the original lease/license number"
+                                    autofocus
+                                />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-9">
+                                <BootstrapAlert v-if="migrated">
+                                    Backdated invoices
+                                    <strong><u>will not</u></strong> be
+                                    generated for a lease or license that is
+                                    being migrated
+                                </BootstrapAlert>
+                                <BootstrapAlert v-else>
+                                    Backdated invoices
+                                    <strong><u>will be</u></strong> generated
+                                    for a new lease or license when the
+                                    commencement date is in the past
+                                </BootstrapAlert>
+                            </div>
                         </div>
                     </div>
                 </FormSection>
                 <FormSection
-                    label="on behalf of"
+                    label="Select Proponent"
                     index="proposal_apply_on_behalf_of"
                 >
                     <div v-if="!addNewUser" class="container">
@@ -267,7 +338,7 @@
                 <div class="col-sm-12">
                     <button
                         v-if="!creatingProposal"
-                        :disabled="!applicant"
+                        :disabled="continueDisabed"
                         class="btn btn-primary float-end continue"
                         @click.prevent="submit()"
                     >
@@ -305,9 +376,18 @@ export default {
             addNewUser: false,
             newUser: null,
             newOrganisation: null,
+            migrated: false,
+            original_leaselicence_number: null,
         };
     },
     computed: {
+        createMigrateLabel: function () {
+            let label = 'Create a new';
+            if (this.migrated) {
+                label = 'Migrate an existing';
+            }
+            return label;
+        },
         isLoading: function () {
             return this.loading.length > 0;
         },
@@ -321,6 +401,23 @@ export default {
             }
             text = 'a ' + text;
             return text;
+        },
+        continueDisabed: function () {
+            if (this.migrated && !this.original_leaselicence_number) {
+                return true;
+            }
+            return !this.applicant;
+        },
+    },
+    watch: {
+        migrated: function () {
+            if (this.migrated) {
+                this.$nextTick(() => {
+                    this.$refs['original-lease-license-number'].focus();
+                });
+            } else {
+                this.original_leaselicence_number = null;
+            }
         },
     },
     created: function () {
@@ -356,8 +453,10 @@ export default {
         submit: function () {
             let vm = this;
             swal.fire({
-                title: 'Create Lease License',
-                text: `Are you sure you want to create a new lease/license for ${vm.applicantName}?`,
+                title: `${vm.createMigrateLabel} Lease License`,
+                text: `Are you sure you want to ${vm.createMigrateLabel.toLowerCase()} lease/license for ${
+                    vm.applicantName
+                }?`,
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonText: 'Proceed',
@@ -508,18 +607,18 @@ export default {
                 let res = null;
                 try {
                     this.creatingProposal = true;
-                    let payload = null;
+                    let payload = {
+                        ind_applicant: null,
+                        org_applicant: null,
+                        migrated: this.migrated,
+                        original_leaselicence_number:
+                            this.original_leaselicence_number,
+                    };
 
                     if (this.applicantType == 'individual') {
-                        payload = {
-                            ind_applicant: this.applicant,
-                            org_applicant: null,
-                        };
+                        payload.ind_applicant = this.applicant;
                     } else {
-                        payload = {
-                            ind_applicant: null,
-                            org_applicant: this.applicant,
-                        };
+                        payload.org_applicant = this.applicant;
                     }
                     res = await fetch(api_endpoints.proposal + 'migrate/', {
                         body: JSON.stringify(payload),
