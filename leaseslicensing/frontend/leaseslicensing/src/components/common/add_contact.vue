@@ -202,7 +202,6 @@ export default {
             var form = document.getElementById('addContactForm');
 
             if (form.checkValidity()) {
-                console.error('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');
