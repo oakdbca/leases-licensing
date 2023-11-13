@@ -214,7 +214,7 @@
                                             type="submit"
                                             class="btn btn-primary float-end"
                                         >
-                                            Add New Email User
+                                            Add and Select New Email User
                                         </button>
                                         <button
                                             class="btn btn-secondary float-end me-2"
@@ -241,7 +241,7 @@
                                                     id="organisation-name"
                                                     ref="organisation-name"
                                                     v-model="
-                                                        newOrganisation.organisation_name
+                                                        newOrganisation.ledger_organisation_name
                                                     "
                                                     type="text"
                                                     class="form-control"
@@ -264,7 +264,7 @@
                                                 <input
                                                     id="trading-name"
                                                     v-model="
-                                                        newOrganisation.trading_name
+                                                        newOrganisation.ledger_organisation_trading_name
                                                     "
                                                     type="text"
                                                     maxlength="255"
@@ -282,7 +282,7 @@
                                                 <input
                                                     id="abn"
                                                     v-model="
-                                                        newOrganisation.abn
+                                                        newOrganisation.ledger_organisation_abn
                                                     "
                                                     type="number"
                                                     class="form-control"
@@ -305,7 +305,7 @@
                                                     id="email"
                                                     ref="email"
                                                     v-model="
-                                                        newOrganisation.email
+                                                        newOrganisation.ledger_organisation_email
                                                     "
                                                     type="email"
                                                     class="form-control"
@@ -433,11 +433,46 @@ export default {
         },
         initNewOrganisation: function () {
             this.newOrganisation = {
-                organisation_name: '',
-                trading_name: '',
-                abn: '',
-                email: '',
+                ledger_organisation_name: '',
+                ledger_organisation_trading_name: '',
+                ledger_organisation_abn: '',
+                ledger_organisation_email: '',
             };
+        },
+        addNewLedgerEmailuser: async function () {
+            let res = await fetch(
+                api_endpoints.proposal + 'add_new_ledger_emailuser/',
+                {
+                    body: JSON.stringify(this.newUser),
+                    method: 'POST',
+                }
+            );
+            const resData = await res.json();
+            if (!resData.status == 200) {
+                console.error(resData.message);
+                swal.fire({
+                    title: 'Add New Email User Failed',
+                    text: 'There was an error attempting to add the new email user. Please try again later.',
+                    icon: 'error',
+                });
+                return;
+            }
+            this.addNewUser = false;
+            this.$nextTick(() => {
+                this.initialiseSearch();
+            });
+            this.$nextTick(() => {
+                let newOption = new Option(
+                    resData.data.email,
+                    resData.data.emailuser_id,
+                    true,
+                    true
+                );
+                $('#search').append(newOption);
+                $('#search').trigger('change');
+                this.applicant = resData.data.emailuser_id;
+                this.applicantName = resData.data.email;
+            });
         },
         cancelAddNew: function () {
             this.addNewUser = false;
@@ -533,6 +568,7 @@ export default {
                                     },
                                 }).then(async (result) => {
                                     if (result.isConfirmed) {
+                                        $('#search').select2('destroy');
                                         vm.addNewUser = true;
                                         vm.$nextTick(() => {
                                             if (
@@ -549,10 +585,10 @@ export default {
                                                         )
                                                     )
                                                 ) {
-                                                    vm.newOrganisation.abn =
+                                                    vm.newOrganisation.ledger_organisation_abn =
                                                         params.term;
                                                 } else {
-                                                    vm.newOrganisation.organisation_name =
+                                                    vm.newOrganisation.ledger_organisation_name =
                                                         params.term;
                                                 }
                                                 vm.$refs[
@@ -594,7 +630,11 @@ export default {
             var form = document.getElementById('newForm');
 
             if (form.checkValidity()) {
-                vm.migrateProposal();
+                if (vm.applicantType == 'individual') {
+                    vm.addNewLedgerEmailuser();
+                } else {
+                    alert('add new organisation');
+                }
             } else {
                 form.classList.add('was-validated');
                 $('#newForm').find('input:invalid').first().focus();
