@@ -276,21 +276,40 @@
                                             <label
                                                 for="abn"
                                                 class="col-sm-3 col-form-label"
-                                                >ABN</label
-                                            >
+                                                ><span
+                                                    v-if="
+                                                        newOrganisation
+                                                            .ledger_organisation_abn
+                                                            .length == 9
+                                                    "
+                                                    >ABN</span
+                                                >
+                                                <span
+                                                    v-else-if="
+                                                        newOrganisation
+                                                            .ledger_organisation_abn
+                                                            .length == 11
+                                                    "
+                                                    >ACN</span
+                                                >
+                                                <span v-else> ABN / ACN </span>
+                                            </label>
                                             <div class="col-sm-9">
                                                 <input
                                                     id="abn"
                                                     v-model="
                                                         newOrganisation.ledger_organisation_abn
                                                     "
-                                                    type="number"
+                                                    type="text"
                                                     class="form-control"
-                                                    maxlength="11"
+                                                    pattern="\d*"
                                                     required
+                                                    maxlength="11"
+                                                    @change="validateABNACN"
                                                 />
                                                 <div class="invalid-feedback">
-                                                    Please enter a valid abn
+                                                    Please enter a valid abn or
+                                                    ACN
                                                 </div>
                                             </div>
                                         </div>
@@ -353,6 +372,11 @@
                     />
                 </div>
             </div>
+            <BootstrapSpinner
+                v-if="loading"
+                class="text-primary"
+                :is-loading="true"
+            />
         </div>
     </div>
 </template>
@@ -366,6 +390,7 @@ export default {
     },
     data: function () {
         return {
+            loading: false,
             selectedApplication: null,
             searchApiEndpoint: api_endpoints.organisation_lookup,
             searchPlaceholder: 'Start typing the Organisation Name or ABN',
@@ -388,8 +413,21 @@ export default {
             }
             return label;
         },
-        isLoading: function () {
-            return this.loading.length > 0;
+        abnAcnLabel: function () {
+            let label = 'ABN / ACN';
+            if (
+                this.newOrganisation &&
+                this.newOrganisation.ledger_organisation_abn.length == 11
+            ) {
+                label = 'ACN';
+            }
+            if (
+                this.newOrganisation &&
+                this.newOrganisation.ledger_organisation_abn.length == 9
+            ) {
+                label = 'ABN';
+            }
+            return label;
         },
         alertText: function () {
             let text = '';
@@ -439,7 +477,18 @@ export default {
                 ledger_organisation_email: '',
             };
         },
+        validateABNACN: function (event) {
+            var abnAcn = event.target;
+            if (abnAcn.value.length != 9 && abnAcn.value.length != 11) {
+                abnAcn.setCustomValidity(
+                    'Please enter a valid ABN or ACN (9 or 11 digits)'
+                );
+            } else {
+                abnAcn.setCustomValidity('');
+            }
+        },
         addNewLedgerEmailuser: async function () {
+            this.loading = true;
             let res = await fetch(
                 api_endpoints.proposal + 'add_new_ledger_emailuser/',
                 {
@@ -448,6 +497,7 @@ export default {
                 }
             );
             const resData = await res.json();
+            this.loading = false;
             if (!resData.status == 200) {
                 console.error(resData.message);
                 swal.fire({
@@ -472,6 +522,54 @@ export default {
                 $('#search').trigger('change');
                 this.applicant = resData.data.emailuser_id;
                 this.applicantName = resData.data.email;
+                swal.fire({
+                    title: 'New User Created Successfully',
+                    text: 'The new email user has been created and selected.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+            });
+        },
+        addNewOrganisation: async function () {
+            this.loading = true;
+            let res = await fetch(api_endpoints.create_organisation, {
+                body: JSON.stringify(this.newOrganisation),
+                method: 'POST',
+            });
+            const data = await res.json();
+            this.loading = false;
+            if (!res.status == 200) {
+                console.error(data.message);
+                swal.fire({
+                    title: 'Add New Organisation Failed',
+                    text: 'There was an error attempting to add the new organisation. Please try again later.',
+                    icon: 'error',
+                });
+                return;
+            }
+            this.addNewUser = false;
+            this.$nextTick(() => {
+                this.initialiseSearch();
+            });
+            this.$nextTick(() => {
+                let newOption = new Option(
+                    data.ledger_organisation_name,
+                    data.id,
+                    true,
+                    true
+                );
+                $('#search').append(newOption);
+                $('#search').trigger('change');
+                this.applicant = data.id;
+                this.applicantName = data.ledger_organisation_name;
+                swal.fire({
+                    title: 'New Organisation Created Successfully',
+                    text: 'The new organisation has been created and selected.',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
             });
         },
         cancelAddNew: function () {
@@ -633,7 +731,7 @@ export default {
                 if (vm.applicantType == 'individual') {
                     vm.addNewLedgerEmailuser();
                 } else {
-                    alert('add new organisation');
+                    vm.addNewOrganisation();
                 }
             } else {
                 form.classList.add('was-validated');
