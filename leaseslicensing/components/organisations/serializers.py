@@ -103,17 +103,28 @@ class BasicOrganisationContactSerializer(serializers.ModelSerializer):
         )
 
 
-class OrganisationCreateSerializer(serializers.ModelSerializer):
+class OrganisationCreateSerializer(serializers.Serializer):
+    ledger_organisation_name = serializers.CharField(max_length=255)
+    ledger_organisation_trading_name = serializers.CharField(max_length=255)
+    ledger_organisation_abn = serializers.CharField(min_length=9, max_length=11)
+    ledger_organisation_email = serializers.EmailField()
+
     class Meta:
-        model = Organisation
         fields = (
-            "id",
             "ledger_organisation_name",
             "ledger_organisation_trading_name",
             "ledger_organisation_abn",
             "ledger_organisation_email",
         )
-        readonly_fields = ("id",)
+
+    def validate_ledger_organisation_abn(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError("ABN/ACN must be numeric.")
+
+        if not len(value) == 9 and not len(value) == 11:
+            raise serializers.ValidationError("ABN/ACN must be 9 or 11 digits long.")
+
+        return value
 
 
 class OrganisationSerializer(serializers.ModelSerializer):
