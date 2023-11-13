@@ -150,6 +150,11 @@ api_patterns = [
         r"^api/empty_list$", proposal_api.GetEmptyList.as_view(), name="get-empty-list"
     ),
     url(
+        r"^api/create_organisation/$",
+        org_api.CreateOrganisationView.as_view(),
+        name="create-organisation",
+    ),
+    url(
         r"^api/organisation_access_group_members",
         org_api.OrganisationAccessGroupMembers.as_view(),
         name="organisation-access-group-members",
