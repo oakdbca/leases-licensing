@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_page
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from ledger_api_client.utils import get_or_create as get_or_create_emailuser
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -34,7 +35,10 @@ from leaseslicensing.components.main.filters import LedgerDatatablesFilterBacken
 from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
-from leaseslicensing.components.main.serializers import RelatedItemSerializer
+from leaseslicensing.components.main.serializers import (
+    NewEmailuserSerializer,
+    RelatedItemSerializer,
+)
 from leaseslicensing.components.main.utils import save_site_name
 from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.proposals.email import (
@@ -1992,6 +1996,18 @@ class ProposalViewSet(UserActionLoggingViewset):
 
         serializer = SaveProposalSerializer(instance)
         return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=False,
+    )
+    def add_new_ledger_emailuser(self, request, *args, **kwargs):
+        serializer = NewEmailuserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = get_or_create_emailuser(serializer.validated_data["email"])
+        return Response(response)
 
 
 class ReferralViewSet(viewsets.ModelViewSet):
