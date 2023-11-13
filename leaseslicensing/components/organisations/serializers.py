@@ -47,19 +47,6 @@ class OrganisationPinCheckSerializer(serializers.Serializer):
     pin2 = serializers.CharField()
 
 
-# class OrganisationAddressSerializer(serializers.ModelSerializer):
-#    class Meta:
-#        model = OrganisationAddress
-#        fields = (
-#            'id',
-#            'line1',
-#            'locality',
-#            'state',
-#            'country',
-#            'postcode'
-#        )
-
-
 class DelegateSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="get_full_name")
 
@@ -114,6 +101,19 @@ class BasicOrganisationContactSerializer(serializers.ModelSerializer):
             "full_name",
             "user_role",
         )
+
+
+class OrganisationCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Organisation
+        fields = (
+            "id",
+            "ledger_organisation_name",
+            "ledger_organisation_trading_name",
+            "ledger_organisation_abn",
+            "ledger_organisation_email",
+        )
+        readonly_fields = ("id",)
 
 
 class OrganisationSerializer(serializers.ModelSerializer):
