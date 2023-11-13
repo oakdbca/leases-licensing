@@ -8,7 +8,12 @@ from django.db.models import Case, CharField, IntegerField, Q, Value, When
 from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroupPermission
-from ledger_api_client.utils import get_organisation, update_organisation_obj
+from ledger_api_client.utils import (
+    create_organisation,
+    get_organisation,
+    get_search_organisation,
+    update_organisation_obj,
+)
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
@@ -41,6 +46,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationCommsSerializer,
     OrganisationContactAdminCountSerializer,
     OrganisationContactSerializer,
+    OrganisationCreateSerializer,
     OrganisationDetailsSerializer,
     OrganisationKeyValueSerializer,
     OrganisationLogEntrySerializer,
@@ -499,6 +505,60 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
     @basic_exception_handler
     def upload_id(self, request, *args, **kwargs):
         pass
+
+
+class CreateOrganisationView(views.APIView):
+    renderer_classes = [
+        JSONRenderer,
+    ]
+
+    def post(self, request, format=None):
+        """Create an organisation in ledger and in leases licensing"""
+        serializer = OrganisationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        name = serializer.validated_data["ledger_organisation_name"]
+        abn = serializer.validated_data["ledger_organisation_abn"]
+        email = serializer.validated_data["ledger_organisation_email"]
+        trading_name = serializer.validated_data["ledger_organisation_trading_name"]
+
+        # Check if this organisation already exists in ledger
+        ledger_org = None
+        search_organisation_response = get_search_organisation(name, abn)
+        if 200 == search_organisation_response["status"]:
+            data = search_organisation_response["data"]
+            ledger_org = data[0]
+        if not ledger_org:
+            # Create this organisation in ledger
+            create_organisation(name, abn)
+            search_organisation_response = get_search_organisation(name, abn)
+            if 200 == search_organisation_response["status"]:
+                data = search_organisation_response["data"]
+                ledger_org = data[0]
+
+        organisation_dict = dict()
+        organisation_dict["organisation_id"] = ledger_org["organisation_id"]
+        organisation_dict["organisation_email"] = email
+
+        if trading_name:
+            organisation_dict["organisation_trading_name"] = trading_name
+
+        # Update the organisation email address (and trading name if provided)
+        ledger_org_response = update_organisation_obj(organisation_dict)
+
+        if 200 != ledger_org_response["status"]:
+            msg = f"Error updating ledger organisation: {ledger_org['organisation_id']}"
+            logger.error(msg)
+            raise ValidationError(msg)
+
+        # Create the organisation in leases licensing
+        org, created = Organisation.objects.get_or_create(
+            ledger_organisation_id=ledger_org["organisation_id"]
+        )
+        if created:
+            logger.info("Created organisation: %s", org)
+
+        serializer = OrganisationSerializer(org)
+        return Response(serializer.data)
 
 
 class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
