@@ -455,6 +455,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     districts = serializers.SerializerMethodField()
     lgas = serializers.SerializerMethodField()
     proposal_applicant = ProposalApplicantSerializer()
+    original_leaselicence_number = serializers.CharField(read_only=True)
 
     class Meta:
         model = Proposal
@@ -1433,6 +1434,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "permit",
             "reference",
             "lodgement_number",
+            "original_leaselicence_number",
             "lodgement_sequence",
             "can_officer_process",
             "proposal_type",
