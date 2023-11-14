@@ -15,6 +15,13 @@
                         ? proposal.proposal_type.description
                         : null
                 }}
+                <small
+                    v-if="proposal.original_leaselicence_number"
+                    class="text-muted"
+                >
+                    (Migrating:
+                    {{ proposal.original_leaselicence_number }})</small
+                >
             </h3>
 
             <div class="col-md-3">
