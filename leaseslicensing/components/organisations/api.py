@@ -37,6 +37,7 @@ from leaseslicensing.components.organisations.models import (  # ledger_organisa
     OrganisationContact,
     OrganisationRequest,
     OrganisationRequestUserAction,
+    UserDelegation,
 )
 from leaseslicensing.components.organisations.serializers import (
     MyOrganisationsSerializer,
@@ -512,6 +513,7 @@ class CreateOrganisationView(views.APIView):
         JSONRenderer,
     ]
 
+    @transaction.atomic
     def post(self, request, format=None):
         """Create an organisation in ledger and in leases licensing"""
         serializer = OrganisationCreateSerializer(data=request.data)
@@ -520,6 +522,13 @@ class CreateOrganisationView(views.APIView):
         abn = serializer.validated_data["ledger_organisation_abn"]
         email = serializer.validated_data["ledger_organisation_email"]
         trading_name = serializer.validated_data["ledger_organisation_trading_name"]
+        admin_user_id = serializer.validated_data["admin_user_id"]
+
+        # Get the admin user
+        admin_user = EmailUser.objects.get(id=admin_user_id)
+        logger.debug(type(admin_user))
+        logger.debug(admin_user)
+        logger.debug(admin_user.__dict__)
 
         # Check if this organisation already exists in ledger
         ledger_org = None
@@ -556,6 +565,42 @@ class CreateOrganisationView(views.APIView):
         )
         if created:
             logger.info("Created organisation: %s", org)
+
+        # Add the admin user to the organisation
+        UserDelegation.objects.get_or_create(organisation=org, user=admin_user.id)
+
+        # Make sure they are an organisation contact
+        organisation_contact, created = OrganisationContact.objects.get_or_create(
+            organisation=org,
+            user=admin_user.id,
+        )
+        if created:
+            # Make them an active admin user
+            organisation_contact.user_status = (
+                OrganisationContact.USER_STATUS_CHOICE_ACTIVE
+            )
+            organisation_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+
+            # Update their contact details from the ledger email user
+            if admin_user.email:
+                organisation_contact.email = admin_user.email
+
+            if admin_user.first_name:
+                organisation_contact.first_name = admin_user.first_name
+
+            if admin_user.last_name:
+                organisation_contact.last_name = admin_user.last_name
+
+            if admin_user.mobile_number:
+                organisation_contact.mobile_number = admin_user.mobile_number
+
+            if admin_user.phone_number:
+                organisation_contact.phone_number = admin_user.phone_number
+
+            if admin_user.fax_number:
+                organisation_contact.fax_number = admin_user.fax_number
+
+            organisation_contact.save()
 
         serializer = OrganisationSerializer(org)
         return Response(serializer.data)
@@ -910,6 +955,13 @@ class OrganisationContactPaginatedViewSet(viewsets.ModelViewSet):
     page_size = 10
     queryset = OrganisationContact.objects.all()
     serializer_class = OrganisationContactAdminCountSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        organisation_id = self.request.query_params.get("organisation_id", None)
+        if organisation_id:
+            queryset = queryset.filter(organisation__id=organisation_id)
+        return queryset
 
 
 class OrganisationContactViewSet(viewsets.ModelViewSet):
