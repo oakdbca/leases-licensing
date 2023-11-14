@@ -88,7 +88,10 @@
                     label="Select Proponent"
                     index="proposal_apply_on_behalf_of"
                 >
-                    <div v-if="!addNewUser" class="container">
+                    <div
+                        v-if="!addingNewUser && !addingNewOrganisation"
+                        class="container"
+                    >
                         <form>
                             <div class="mb-3 row">
                                 <label
@@ -184,7 +187,7 @@
                                     @submit.prevent="validateForm"
                                 >
                                     <fieldset
-                                        v-if="applicantType == 'individual'"
+                                        v-if="addingNewUser"
                                         class="rounded-3 border p-3"
                                     >
                                         <legend class="float-none w-auto px-3">
@@ -224,7 +227,10 @@
                                         </button>
                                     </fieldset>
                                     <fieldset
-                                        v-else
+                                        v-if="
+                                            addingNewOrganisation &&
+                                            !addingNewUser
+                                        "
                                         class="rounded-3 border p-3"
                                     >
                                         <legend class="float-none w-auto px-3">
@@ -336,11 +342,44 @@
                                                 </div>
                                             </div>
                                         </div>
+                                        <div class="row mb-3">
+                                            <BootstrapAlert>
+                                                The organisation must have an
+                                                admin user who will have access
+                                                to the organisation's pin codes
+                                                and be able to approve linking
+                                                requests from new users.
+                                            </BootstrapAlert>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <label
+                                                for="email"
+                                                class="col-sm-3 col-form-label"
+                                                >Admin User</label
+                                            >
+                                            <div class="col-sm-9">
+                                                <select
+                                                    id="search"
+                                                    ref="search"
+                                                    v-model="
+                                                        newOrganisation.admin_user_id
+                                                    "
+                                                    class="form-select"
+                                                    placeholder="Start typing the individual's name or email"
+                                                    required
+                                                />
+                                                <div class="invalid-feedback">
+                                                    Please select an admin user
+                                                    for the new organisation
+                                                </div>
+                                                {{ newOrganisation }}
+                                            </div>
+                                        </div>
                                         <button
                                             type="submit"
                                             class="btn btn-primary float-end"
                                         >
-                                            Add New Organisation
+                                            Add and Select New Organisation
                                         </button>
                                         <button
                                             class="btn btn-secondary float-end me-2"
@@ -398,7 +437,8 @@ export default {
             applicant: null,
             applicantName: null,
             creatingProposal: false,
-            addNewUser: false,
+            addingNewUser: false,
+            addingNewOrganisation: false,
             newUser: null,
             newOrganisation: null,
             migrated: false,
@@ -444,6 +484,9 @@ export default {
             if (this.migrated && !this.original_leaselicence_number) {
                 return true;
             }
+            if (this.addingNewOrganisation) {
+                return true;
+            }
             return !this.applicant;
         },
     },
@@ -475,6 +518,7 @@ export default {
                 ledger_organisation_trading_name: '',
                 ledger_organisation_abn: '',
                 ledger_organisation_email: '',
+                admin_user_id: null,
             };
         },
         validateABNACN: function (event) {
@@ -507,7 +551,7 @@ export default {
                 });
                 return;
             }
-            this.addNewUser = false;
+            this.addingNewUser = false;
             this.$nextTick(() => {
                 this.initialiseSearch();
             });
@@ -520,8 +564,15 @@ export default {
                 );
                 $('#search').append(newOption);
                 $('#search').trigger('change');
-                this.applicant = resData.data.emailuser_id;
-                this.applicantName = resData.data.email;
+                if (this.addingNewOrganisation) {
+                    this.newOrganisation.admin_user_id =
+                        resData.data.emailuser_id;
+                    this.applicantType = 'organisation';
+                } else {
+                    this.applicant = resData.data.emailuser_id;
+                    this.applicantName = resData.data.email;
+                }
+
                 swal.fire({
                     title: 'New User Created Successfully',
                     text: 'The new email user has been created and selected.',
@@ -548,7 +599,7 @@ export default {
                 });
                 return;
             }
-            this.addNewUser = false;
+            this.addingNewOrganisation = false;
             this.$nextTick(() => {
                 this.initialiseSearch();
             });
@@ -573,7 +624,9 @@ export default {
             });
         },
         cancelAddNew: function () {
-            this.addNewUser = false;
+            this.addingNewUser = false;
+            this.addingNewOrganisation = false;
+            this.applicantType = 'organisation';
             this.initNewUser();
             this.initNewOrganisation();
             this.$nextTick(() => {
@@ -667,7 +720,11 @@ export default {
                                 }).then(async (result) => {
                                     if (result.isConfirmed) {
                                         $('#search').select2('destroy');
-                                        vm.addNewUser = true;
+                                        if (vm.applicantType == 'individual') {
+                                            vm.addingNewUser = true;
+                                        } else {
+                                            vm.addingNewOrganisation = true;
+                                        }
                                         vm.$nextTick(() => {
                                             if (
                                                 vm.applicantType == 'individual'
@@ -692,6 +749,10 @@ export default {
                                                 vm.$refs[
                                                     'organisation-name'
                                                 ].focus();
+                                                // Get the select2 ready to select the admin user for the new organisation
+                                                vm.applicantType = 'individual';
+                                                vm.setPlaceholderAndApiEndpoint();
+                                                vm.initialiseSearch();
                                             }
                                         });
                                     } else {
@@ -714,6 +775,9 @@ export default {
                 .on('select2:select', function (e) {
                     vm.applicant = e.params.data.id;
                     vm.applicantName = e.params.data.text;
+                    if (vm.addingNewOrganisation) {
+                        vm.newOrganisation.admin_user_id = vm.applicant;
+                    }
                     document.activeElement.blur();
                 })
                 .on('select2:clear', function () {
@@ -722,6 +786,9 @@ export default {
         },
         resetApplicant: function () {
             this.applicant = null;
+            if (this.addingNewOrganisation) {
+                this.newOrganisation.admin_user_id = null;
+            }
         },
         validateForm: function () {
             let vm = this;
