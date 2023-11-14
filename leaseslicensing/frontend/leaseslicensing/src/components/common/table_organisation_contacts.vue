@@ -93,6 +93,16 @@ export default {
         };
     },
     computed: {
+        ajaxUrl: function () {
+            var url =
+                api_endpoints.organisation_contacts_paginated +
+                '?format=datatables';
+            if (this.organisationId) {
+                url += '&organisation_id=' + this.organisationId;
+            }
+            return url;
+            s;
+        },
         filterApplied: function () {
             if (this.filterRole.toLowerCase() === '') {
                 return false;
@@ -259,9 +269,7 @@ export default {
                 responsive: true,
                 serverSide: true,
                 ajax: {
-                    url:
-                        api_endpoints.organisation_contacts_paginated +
-                        '?format=datatables',
+                    url: vm.ajaxUrl,
                     dataSrc: 'data',
 
                     // adding extra GET params for Custom filtering
