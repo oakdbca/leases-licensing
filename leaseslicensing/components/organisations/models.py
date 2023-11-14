@@ -827,10 +827,9 @@ class UserDelegation(models.Model):
         return f"Org: {self.organisation}, User: {self.user}"
 
     def save(self, *args, **kwargs):
-        if not self.user_full_name:
-            email_user = retrieve_email_user(self.user)
-            if email_user:
-                self.user_full_name = email_user.get_full_name()
+        email_user = retrieve_email_user(self.user)
+        if email_user:
+            self.user_full_name = email_user.get_full_name()
 
         super().save(*args, **kwargs)
 
