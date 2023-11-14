@@ -105,9 +105,12 @@ class BasicOrganisationContactSerializer(serializers.ModelSerializer):
 
 class OrganisationCreateSerializer(serializers.Serializer):
     ledger_organisation_name = serializers.CharField(max_length=255)
-    ledger_organisation_trading_name = serializers.CharField(max_length=255)
+    ledger_organisation_trading_name = serializers.CharField(
+        max_length=255, required=False, allow_blank=True
+    )
     ledger_organisation_abn = serializers.CharField(min_length=9, max_length=11)
     ledger_organisation_email = serializers.EmailField()
+    admin_user_id = serializers.IntegerField()
 
     class Meta:
         fields = (
@@ -124,6 +127,15 @@ class OrganisationCreateSerializer(serializers.Serializer):
         if not len(value) == 9 and not len(value) == 11:
             raise serializers.ValidationError("ABN/ACN must be 9 or 11 digits long.")
 
+        return value
+
+    def validate_admin_user_id(self, value):
+        try:
+            EmailUser.objects.get(id=value)
+        except EmailUser.DoesNotExist:
+            raise serializers.ValidationError(
+                f"The admin user that was selected is invalid. No email user found with id: {value}"
+            )
         return value
 
 
