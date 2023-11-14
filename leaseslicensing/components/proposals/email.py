@@ -291,7 +291,10 @@ def send_approver_approve_email_notification(request, proposal):
         "url": url,
     }
 
-    msg = email.send(proposal.approver_recipients, context=context)
+    cc_email_str = proposal.proposed_issuance_approval.get("cc_email")
+    cc_emails = re.split(r"[\s,;]+", cc_email_str) if cc_email_str else []
+
+    msg = email.send(proposal.approver_recipients, cc=cc_emails, context=context)
     sender = request.user if request else settings.DEFAULT_FROM_EMAIL
     _log_proposal_email(msg, proposal, sender=sender)
     if proposal.org_applicant:
