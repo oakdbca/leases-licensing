@@ -1980,7 +1980,8 @@ class ProposalViewSet(UserActionLoggingViewset):
             "application_type_id": lease_license_applicant_type.id,
             "proposal_type_id": proposal_type.id,
             "processing_status": Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
-            "submitter": ind_applicant,
+            # Lease/Licence proposals created internally have the assessor as the submitters
+            "submitter": request.user.id,
         }
 
         if migrated:
