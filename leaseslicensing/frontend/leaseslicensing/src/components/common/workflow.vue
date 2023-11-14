@@ -534,6 +534,7 @@ export default {
         'updateAssignedApprover',
         'updateAssignedOfficer',
         'backToAssessor',
+        'enterConditions',
     ],
     data: function () {
         let vm = this;
@@ -562,11 +563,7 @@ export default {
                 {
                     key: 'enter_conditions',
                     button_title: 'Enter Conditions',
-                    function_when_clicked: () => {
-                        vm.switchStatus(
-                            `${vm.proposal.processing_status_id}_conditions`
-                        );
-                    },
+                    function_when_clicked: vm.enterConditions,
                     function_to_show_hide: () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
@@ -1525,6 +1522,9 @@ export default {
         },
         backToAssessor: function () {
             this.$emit('backToAssessor');
+        },
+        enterConditions: function () {
+            this.$emit('enterConditions');
         },
         switchStatus: function (value) {
             this.$emit('switchStatus', value);
