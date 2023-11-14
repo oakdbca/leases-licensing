@@ -30,6 +30,7 @@ class OrganisationAdmin(admin.ModelAdmin):
     fields = [
         "ledger_organisation_id",
         "ledger_organisation_name",
+        "ledger_organisation_trading_name",
         "ledger_organisation_abn",
         "ledger_organisation_email",
         "admin_pin_one",
@@ -39,6 +40,7 @@ class OrganisationAdmin(admin.ModelAdmin):
     ]
     readonly_fields = [
         "ledger_organisation_name",
+        "ledger_organisation_trading_name",
         "ledger_organisation_abn",
         "ledger_organisation_email",
     ]
@@ -49,6 +51,11 @@ class OrganisationAdmin(admin.ModelAdmin):
         return "No Organisation Assigned"
 
     ledger_organisation_name.short_description = "Ledger Organisation Name"
+
+    def ledger_organisation_trading_name(self, obj):
+        if obj.organisation:
+            return obj.organisation["ledger_organisation_trading_name"]
+        return "No Organisation Assigned"
 
     def ledger_organisation_abn(self, obj):
         if obj.organisation:
