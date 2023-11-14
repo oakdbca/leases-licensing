@@ -2409,7 +2409,10 @@ class SearchReferenceView(views.APIView):
 
     def get(self, request, format=None):
         search_term = request.GET.get("term", "")
-        proposals = Proposal.objects.filter(lodgement_number__icontains=search_term)[:4]
+        proposals = Proposal.objects.filter(
+            Q(lodgement_number__icontains=search_term)
+            | Q(original_leaselicence_number__icontains=search_term)
+        )[:4]
         proposal_results = [
             {
                 "id": proposal.id,
@@ -2422,7 +2425,10 @@ class SearchReferenceView(views.APIView):
             }
             for proposal in proposals
         ]
-        approvals = Approval.objects.filter(lodgement_number__icontains=search_term)[:4]
+        approvals = Approval.objects.filter(
+            Q(lodgement_number__icontains=search_term)
+            | Q(original_leaselicence_number__icontains=search_term)
+        )[:4]
         approval_results = [
             {
                 "id": approval.id,
