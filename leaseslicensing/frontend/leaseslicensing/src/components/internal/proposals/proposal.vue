@@ -60,6 +60,7 @@
                     @toggleRequirements="toggleRequirements"
                     @back-to-assessor="backToAssessor"
                     @switchStatus="switchStatus"
+                    @enter-conditions="enterConditions"
                     @completeReferral="completeReferral"
                     @amendmentRequest="amendmentRequest"
                     @proposedDecline="proposedDecline"
@@ -2211,11 +2212,9 @@ export default {
                 this.$refs.proposed_decline.isModalOpen = true;
             });
         },
-        proposedApproval: async function () {
+        enterConditions: async function () {
             let vm = this;
             let tab = null;
-            vm.proposedApprovalState = 'proposed_approval';
-
             if (vm.proposal.groups.length == 0 || !vm.proposal.site_name) {
                 // When status is with assessor conditions, the proposal may be hidden
                 // Therefore we need to show it before we can validate the groups and site name
@@ -2273,6 +2272,23 @@ export default {
                 });
                 return;
             }
+
+            // Save the proposal before opening the modal
+            this.savingProposal = true;
+            await this.save(false).then(() => {
+                this.savingProposal = false;
+            });
+
+            vm.switchStatus(
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID
+            );
+            vm.showingProposal = false;
+        },
+        proposedApproval: async function () {
+            let vm = this;
+
+            vm.proposedApprovalState = 'proposed_approval';
+
             if (this.proposal.proposal_type.code == 'transfer') {
                 if (!vm.canProposeToApproveTransfer()) {
                     return;
@@ -2290,12 +2306,6 @@ export default {
                 });
                 return;
             }
-
-            // Save the proposal before opening the modal
-            this.savingProposal = true;
-            await this.save(false).then(() => {
-                this.savingProposal = false;
-            });
 
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
             this.$nextTick(() => {
@@ -2768,6 +2778,7 @@ export default {
                                 .ID == vm.proposal.processing_status_id &&
                             vm.profile.is_finance_officer
                         ) {
+                            console.log('scrolling to invoicing form');
                             $(document).scrollTop(
                                 $('#invoicing-form').offset().top - 300
                             );
