@@ -1312,8 +1312,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             email_user = retrieve_email_user(self.ind_applicant)
         elif self.proxy_applicant:
             email_user = retrieve_email_user(self.proxy_applicant)
-        else:
+        elif self.submitter:
             email_user = retrieve_email_user(self.submitter)
+        else:
+            raise Exception(
+                _(
+                    f"No applicant or submitter found for Proposal: {self.lodgement_number}"
+                )
+            )
 
         return [email_user.email]
 
