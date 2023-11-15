@@ -100,6 +100,22 @@ def financial_year_has_passed(financial_year):
     return timezone.now() > end_of_financial_year
 
 
+def financial_quarter_has_passed(financial_quarter):
+    """Takes a financial quarter in the format (3, 'Q3', 2021, '2020-2021')
+    and returns True if the current date is after the end of that financial quarter"""
+    start_month = month_from_quarter(financial_quarter[0] - 1)
+    end_month = start_month + 2
+    calendar_year = financial_quarter[2]
+    start_of_financial_quarter = timezone.datetime.strptime(
+        f"{calendar_year}-{start_month}-1", "%Y-%m-%d"
+    ).replace(tzinfo=timezone.utc)
+    end_of_financial_quarter = start_of_financial_quarter + relativedelta(months=2)
+    end_of_financial_quarter = end_of_financial_quarter.replace(
+        day=calendar.monthrange(calendar_year, end_month)[1]
+    ).date()
+    return timezone.now().date() > end_of_financial_quarter
+
+
 def financial_years_included_in_range(start_date, end_date):
     """Returns a list of financial years included in the date range provided.
     The date range is inclusive of the start date and end date.
@@ -136,21 +152,20 @@ def financial_quarters_included_in_range(start_date, end_date):
     return financial_quarters
 
 
-def financial_months_included_in_range(start_date, end_date):
+def months_included_in_range(start_date, end_date):
     """Returns a list of months included in the date range provided.
     The date range is inclusive of the start date and end date.
     """
     months = []
     for year in range(start_date.year, end_date.year + 1):
         for month_index in range(1, 13):
-            month_name = month_string_from_month(month_index)
             if (
                 not datetime.date(year, month_index, start_date.day) >= start_date
                 or not datetime.date(year, month_index, end_date.day) <= end_date
             ):
                 continue
 
-            months.append((month_index, f"{month_name}", f"{year}-{year + 1}"))
+            months.append(datetime.date(year, month_index, 1))
     return months
 
 
