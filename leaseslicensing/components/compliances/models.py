@@ -206,19 +206,29 @@ class Compliance(LicensingModelVersioned):
         )[: settings.LATEST_REFERRAL_COUNT]
 
     @property
+    def applicant_emails(self):
+        return self.proposal.applicant_emails
+
+    @property
     def submitter_emailuser(self):
         if self.submitter:
             return retrieve_email_user(self.submitter)
         if self.proposal.submitter:
             return retrieve_email_user(self.proposal.submitter)
-        logger.warn(f"Submitter not found for compliance {self.id}")
+        logger.warn(
+            f"Submitter not found for Compliance: {self.lodgement_number} "
+            f"and Proposal: {self.proposal.lodgement_number}"
+        )
         return None
 
     @property
     def submitter_email(self):
         if self.submitter_emailuser:
             return self.submitter_emailuser.email
-        logger.warn(f"Submitter email not found for compliance {self.id}")
+        logger.warn(
+            f"Submitter not found for Compliance: {self.lodgement_number} "
+            f"sand Proposal: {self.proposal.lodgement_number}"
+        )
         return None
 
     @property
@@ -240,21 +250,13 @@ class Compliance(LicensingModelVersioned):
                 raise ValidationError(
                     "You cannot submit this compliance with requirements as it has been discarded."
                 )
-            if (
-                self.processing_status == Compliance.PROCESSING_STATUS_FUTURE
-                or Compliance.PROCESSING_STATUS_DUE
-            ):
+            if self.processing_status in [
+                Compliance.PROCESSING_STATUS_FUTURE,
+                Compliance.PROCESSING_STATUS_DUE,
+            ]:
                 self.processing_status = Compliance.PROCESSING_STATUS_WITH_ASSESSOR
                 self.customer_status = Compliance.PROCESSING_STATUS_WITH_ASSESSOR
                 self.submitter = request.user.id
-
-                # Removing the below as the uploaded files are processed in the submit action in the api
-                # which is leading to duplicate files. Todo: Remove if all goes well.
-                # if request.FILES:
-                #     for f in request.FILES:
-                #         document = self.documents.create(name=str(request.FILES[f]))
-                #         document._file = request.FILES[f]
-                #         document.save()
 
                 if self.amendment_requests:
                     qs = self.amendment_requests.filter(status="requested")
