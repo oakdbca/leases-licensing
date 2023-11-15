@@ -455,7 +455,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     districts = serializers.SerializerMethodField()
     lgas = serializers.SerializerMethodField()
     proposal_applicant = ProposalApplicantSerializer()
-    original_leaselicence_number = serializers.CharField(read_only=True)
 
     class Meta:
         model = Proposal
@@ -1066,7 +1065,7 @@ class MigrateProposalSerializer(CreateProposalSerializer):
             "migrated",
             "original_leaselicence_number",
         )
-        read_only_fields = ("id",)
+        read_only_fields = ["id"]
 
 
 class SaveLeaseLicenceSerializer(BaseProposalSerializer):
@@ -1392,6 +1391,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
     additional_document_types = serializers.SerializerMethodField()
     additional_documents = AdditionalDocumentSerializer(many=True, read_only=True)
     additional_documents_missing = serializers.ListField(read_only=True)
+    original_leaselicence_number = serializers.CharField(read_only=True)
 
     class Meta:
         model = Proposal
