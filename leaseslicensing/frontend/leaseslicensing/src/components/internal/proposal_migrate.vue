@@ -372,7 +372,6 @@
                                                     Please select an admin user
                                                     for the new organisation
                                                 </div>
-                                                {{ newOrganisation }}
                                             </div>
                                         </div>
                                         <button
@@ -434,6 +433,9 @@ export default {
             searchApiEndpoint: api_endpoints.organisation_lookup,
             searchPlaceholder: 'Start typing the Organisation Name or ABN',
             applicantType: 'organisation',
+            // The user can add a new user in the process of adding a new organisation
+            // so we need seperate variables to keep track of the applicant type in gnenral vs the appcliant type for the select2
+            select2applicantType: 'organisation',
             applicant: null,
             applicantName: null,
             creatingProposal: false,
@@ -540,10 +542,10 @@ export default {
                     method: 'POST',
                 }
             );
-            const resData = await res.json();
+            const data = await res.json();
             this.loading = false;
-            if (!resData.status == 200) {
-                console.error(resData.message);
+            if (!res.status == 200) {
+                console.error(data.message);
                 swal.fire({
                     title: 'Add New Email User Failed',
                     text: 'There was an error attempting to add the new email user. Please try again later.',
@@ -557,20 +559,19 @@ export default {
             });
             this.$nextTick(() => {
                 let newOption = new Option(
-                    resData.data.email,
-                    resData.data.emailuser_id,
+                    data.data.email,
+                    data.data.emailuser_id,
                     true,
                     true
                 );
                 $('#search').append(newOption);
                 $('#search').trigger('change');
                 if (this.addingNewOrganisation) {
-                    this.newOrganisation.admin_user_id =
-                        resData.data.emailuser_id;
+                    this.newOrganisation.admin_user_id = data.data.emailuser_id;
                     this.applicantType = 'organisation';
                 } else {
-                    this.applicant = resData.data.emailuser_id;
-                    this.applicantName = resData.data.email;
+                    this.applicant = data.data.emailuser_id;
+                    this.applicantName = data.data.email;
                 }
 
                 swal.fire({
@@ -589,17 +590,21 @@ export default {
                 method: 'POST',
             });
             const data = await res.json();
+            const status = await res.status;
             this.loading = false;
-            if (!res.status == 200) {
-                console.error(data.message);
+            console.log(status);
+            console.log(typeof status);
+            if (status != 200) {
+                console.error(data.errors[0].detail);
                 swal.fire({
                     title: 'Add New Organisation Failed',
-                    text: 'There was an error attempting to add the new organisation. Please try again later.',
+                    text: data.errors[0].detail,
                     icon: 'error',
                 });
                 return;
             }
             this.addingNewOrganisation = false;
+            this.applicantType = 'organisation';
             this.$nextTick(() => {
                 this.initialiseSearch();
             });
@@ -627,6 +632,7 @@ export default {
             this.addingNewUser = false;
             this.addingNewOrganisation = false;
             this.applicantType = 'organisation';
+            this.select2ApplicantType = 'organisation';
             this.initNewUser();
             this.initNewOrganisation();
             this.$nextTick(() => {
@@ -664,7 +670,7 @@ export default {
             );
         },
         setPlaceholderAndApiEndpoint: function () {
-            if (this.applicantType == 'individual') {
+            if (this.select2applicantType == 'individual') {
                 this.searchPlaceholder =
                     "Start typing the Individual's Name or Email";
                 this.searchApiEndpoint = api_endpoints.person_lookup;
@@ -677,6 +683,11 @@ export default {
             }
         },
         transfereeTypeChanged: function () {
+            if (this.applicantType == 'individual') {
+                this.select2applicantType = 'individual';
+            } else {
+                this.select2applicantType = 'organisation';
+            }
             this.setPlaceholderAndApiEndpoint();
             setTimeout(() => {
                 this.initialiseSearch();
@@ -706,7 +717,7 @@ export default {
                             if (data.results.length == 0) {
                                 swal.fire({
                                     title: 'No Results Found',
-                                    html: `<p>No results found for the search term '${params.term}'.</p><p> Would you like to add a new ${vm.applicantType} to the ledger database?</p>`,
+                                    html: `<p>No results found for the search term '${params.term}'.</p><p> Would you like to add a new ${vm.select2applicantType} to the ledger database?</p>`,
                                     icon: 'warning',
                                     confirmButtonText: 'Yes please',
                                     cancelButtonText: 'Search Again',
@@ -720,14 +731,18 @@ export default {
                                 }).then(async (result) => {
                                     if (result.isConfirmed) {
                                         $('#search').select2('destroy');
-                                        if (vm.applicantType == 'individual') {
+                                        if (
+                                            vm.select2applicantType ==
+                                            'individual'
+                                        ) {
                                             vm.addingNewUser = true;
                                         } else {
                                             vm.addingNewOrganisation = true;
                                         }
                                         vm.$nextTick(() => {
                                             if (
-                                                vm.applicantType == 'individual'
+                                                vm.select2applicantType ==
+                                                'individual'
                                             ) {
                                                 vm.newUser.email = params.term;
                                                 vm.$refs.email.focus();
@@ -750,7 +765,8 @@ export default {
                                                     'organisation-name'
                                                 ].focus();
                                                 // Get the select2 ready to select the admin user for the new organisation
-                                                vm.applicantType = 'individual';
+                                                vm.select2applicantType =
+                                                    'individual';
                                                 vm.setPlaceholderAndApiEndpoint();
                                                 vm.initialiseSearch();
                                             }
@@ -795,10 +811,10 @@ export default {
             var form = document.getElementById('newForm');
 
             if (form.checkValidity()) {
-                if (vm.applicantType == 'individual') {
-                    vm.addNewLedgerEmailuser();
-                } else {
+                if (vm.applicantType == 'organisation' && !vm.addingNewUser) {
                     vm.addNewOrganisation();
+                } else {
+                    vm.addNewLedgerEmailuser();
                 }
             } else {
                 form.classList.add('was-validated');
