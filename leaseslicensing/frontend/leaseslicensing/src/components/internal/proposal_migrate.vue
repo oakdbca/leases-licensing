@@ -592,8 +592,6 @@ export default {
             const data = await res.json();
             const status = await res.status;
             this.loading = false;
-            console.log(status);
-            console.log(typeof status);
             if (status != 200) {
                 console.error(data.errors[0].detail);
                 swal.fire({
