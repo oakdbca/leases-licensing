@@ -526,9 +526,6 @@ class CreateOrganisationView(views.APIView):
 
         # Get the admin user
         admin_user = EmailUser.objects.get(id=admin_user_id)
-        logger.debug(type(admin_user))
-        logger.debug(admin_user)
-        logger.debug(admin_user.__dict__)
 
         # Check if this organisation already exists in ledger
         ledger_org = None
@@ -536,6 +533,19 @@ class CreateOrganisationView(views.APIView):
         if 200 == search_organisation_response["status"]:
             data = search_organisation_response["data"]
             ledger_org = data[0]
+
+            # Check if this organisation already exists in leases licensing
+            org = Organisation.objects.filter(
+                ledger_organisation_id=ledger_org["organisation_id"]
+            ).first()
+            if org:
+                msg = (
+                    f"An organisation with that name or abn already exists: {org.ledger_organisation_name} "
+                    f"(ABN/ACN: {org.ledger_organisation_abn})"
+                )
+                logger.error(msg)
+                raise serializers.ValidationError(msg)
+
         if not ledger_org:
             # Create this organisation in ledger
             create_organisation(name, abn)
