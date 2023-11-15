@@ -447,6 +447,10 @@ class InvoicingDetails(BaseModel):
                         Decimal("0.01")
                     ),
                     "start_date_has_passed": issue_date <= timezone.now().date(),
+                    "end_date_has_passed": datetime.strptime(
+                        invoicing_period["end_date"], "%Y-%m-%d"
+                    ).date()
+                    <= timezone.now().date(),
                 }
             )
             if i < len(self.invoicing_periods) - 1:
@@ -505,6 +509,34 @@ class InvoicingDetails(BaseModel):
             settings.CHARGE_METHOD_PERCENTAGE_OF_GROSS_TURNOVER_IN_ARREARS,
         ]:
             self.generate_invoice_schedule(invoiced_up_to=self.invoiced_up_to)
+
+    def generate_current_invoice(self):
+        """Generates only one invoice for the current invoicing period
+        (i.e. the invoicing period that has started but hasn't finished)
+        This is useful in cases when you don't want to generate any back dated invoices
+        (i.e. for migrating existing leases/licences that
+        have already been invoiced for past invoicing periods in a legacy system)"""
+        current_invoice_condition = (
+            i
+            for i in self.preview_invoices
+            if i["start_date_has_passed"] and not i["end_date_has_passed"]
+        )
+        current_invoice = next(current_invoice_condition, None)
+        if not current_invoice:
+            return
+
+        gst_free = self.approval.approval_type.gst_free
+
+        invoice, created = Invoice.objects.get_or_create(
+            approval=self.approval,
+            amount=current_invoice["amount_object"]["amount"],
+            gst_free=gst_free,
+        )
+        if created:
+            logger.info(f"Immediate invoice created: {invoice}")
+
+        # send to the finance group so they can take action
+        send_new_invoice_raised_internal_notification(invoice)
 
     def generate_immediate_invoices(self):
         """Generate invoices for the next invoicing period and any invoicing periods that have already passed
