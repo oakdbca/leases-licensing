@@ -2231,7 +2231,7 @@ export default {
             if (vm.proposal.groups.length == 0) {
                 swal.fire({
                     title: 'No Group Selected',
-                    text: 'You must select one or more groups before proposing to approve.',
+                    text: 'You must select one or more groups before entering conditions.',
                     icon: 'warning',
                     didClose: () => {
                         $([document.documentElement, document.body]).animate(
@@ -2253,7 +2253,7 @@ export default {
             if (!vm.proposal.site_name) {
                 swal.fire({
                     title: 'No Site Name Entered',
-                    text: 'You must enter a site name before proposing to approve.',
+                    text: 'You must enter a site name before entering conditions.',
                     icon: 'warning',
                     didClose: () => {
                         $([document.documentElement, document.body]).animate(
