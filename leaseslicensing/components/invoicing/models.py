@@ -531,6 +531,10 @@ class InvoicingDetails(BaseModel):
             approval=self.approval,
             amount=current_invoice["amount_object"]["amount"],
             gst_free=gst_free,
+            # Add status and datetime_created to avoid creating duplicate records
+            # the datetime value will be ignored when creating as it's an auto_now_add field
+            status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+            datetime_created__date=timezone.now().date(),
         )
         if created:
             logger.info(f"Immediate invoice created: {invoice}")
@@ -557,6 +561,10 @@ class InvoicingDetails(BaseModel):
                 approval=self.approval,
                 amount=invoice_record["amount_object"]["amount"],
                 gst_free=gst_free,
+                # Add status and datetime_created to avoid creating duplicate records
+                # the datetime value will be ignored when creating as it's an auto_now_add field
+                status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                datetime_created__date=timezone.now().date(),
             )
             if created:
                 logger.info(f"Immediate invoice created: {invoice}")
