@@ -1,3 +1,4 @@
+import calendar
 import copy
 import datetime
 import json
@@ -2710,7 +2711,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
             return lease_licence_proposal
 
-    def generate_compliances(self, approval, request):
+    def generate_compliances(self, approval, request, only_future=False):
         today = timezone.now().date()
         from leaseslicensing.components.compliances.models import (
             Compliance,
@@ -2799,9 +2800,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                                     request,
                                 )
 
-        self.generate_gross_turnover_compliances()
+        self.generate_gross_turnover_compliances(only_future=only_future)
 
-    def generate_gross_turnover_compliances(self):
+    def generate_gross_turnover_compliances(self, only_future=False):
         from leaseslicensing.components.compliances.models import Compliance
 
         # Check if this proposal has any gross turnover based requirements
@@ -2828,6 +2829,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             self.approval.start_date, self.approval.expiry_date
         )
         for financial_year in financial_years_included:
+            if only_future and invoicing_utils.financial_year_has_passed(
+                financial_year
+            ):
+                continue
+
             due_date = datetime.date(int(financial_year.split("-")[1]), 10, 31)
             compliance, created = Compliance.objects.get_or_create(
                 proposal=self,
@@ -2866,6 +2872,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     f"Financial Quarters Included: {financial_quarters_included}"
                 )
                 for financial_quarter in financial_quarters_included:
+                    if only_future and invoicing_utils.financial_quarter_has_passed(
+                        financial_quarter
+                    ):
+                        continue
+
                     year = int(financial_quarter[3].split("-")[1])
                     quarter = int(financial_quarter[0])
                     month = invoicing_utils.month_from_quarter(quarter)
@@ -2918,17 +2929,20 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 logger.debug(
                     f"Monthly Gross Turnover Requirement: {monthly_gross_turnover_requirement}"
                 )
-                financial_months_included = (
-                    invoicing_utils.financial_months_included_in_range(
-                        self.approval.start_date, self.approval.expiry_date
-                    )
+                months_included = invoicing_utils.months_included_in_range(
+                    self.approval.start_date, self.approval.expiry_date
                 )
-                for financial_month in financial_months_included:
-                    logger.debug(f"Financial Month: {financial_month}")
-                    month = financial_month[0]
-                    year = int(financial_month[2].split("-")[1])
-                    due_date = datetime.date(year, month, 1) + relativedelta(months=2)
-                    logger.debug(f"Date date: {due_date}")
+                for month in months_included:
+                    due_date = month + relativedelta(months=2)
+                    end_of_month = (
+                        month.replace(
+                            day=calendar.monthrange(month.year, month.month)[1]
+                        )
+                        < timezone.now().date()
+                    )
+                    if only_future and timezone.now().date() > end_of_month:
+                        continue
+
                     compliance, created = Compliance.objects.get_or_create(
                         proposal=self,
                         approval=self.approval,
@@ -2943,7 +2957,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         )
                         compliance.text = (
                             "Please enter the gross turnover and upload an audited "
-                            f"financial statement for {financial_month[1]} {financial_month[2]}"
+                            f"financial statement for {month.strftime('%b').upper()} {month.year}"
                         )
                         compliance.save()
             except ProposalRequirement.DoesNotExist:
@@ -3406,6 +3420,12 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
         invoicing_details = self.save_invoicing_details(request, action)
         approval = invoicing_details.approval
+        proposal = invoicing_details.proposal
+
+        # For leases/licences being migrated prevent the generation of any past compliances
+        # We assume any past compliances have been dealt with in a legacy system
+        is_migration_proposal = proposal.proposal_type.code == PROPOSAL_TYPE_MIGRATION
+
         if (
             settings.CHARGE_METHOD_NO_RENT_OR_LICENCE_CHARGE
             == invoicing_details.charge_method.key
@@ -3417,7 +3437,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             settings.CHARGE_METHOD_ONCE_OFF_CHARGE
             == invoicing_details.charge_method.key
         ):
-            # Generate a single once off change invoice
+            # Generate a single once off charge invoice
             invoice_amount = invoicing_details.once_off_charge_amount
             if not invoice_amount or invoice_amount <= Decimal("0.00"):
                 raise serializers.ValidationError(
@@ -3448,12 +3468,20 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             self.generate_gross_turnover_requirements(approval, request)
 
             # Generate compliances from the requirements
-            self.generate_compliances(approval, request)
+            self.generate_compliances(
+                approval, request, future_only=is_migration_proposal
+            )
             return
 
         # For all other charge methods, there may be one or more invoice records that need to be
         # generated immediately (any past periods and any current period i.e. that has started but not yet finished)
-        invoicing_details.generate_immediate_invoices()
+
+        if is_migration_proposal:
+            # For migration proposals, we only need to generate a single invoice for the current billing period
+            invoicing_details.generate_current_invoice()
+        else:
+            # Generate any immediate invoices including backdated invoices
+            invoicing_details.generate_immediate_invoices()
 
         # Generate the invoice schdule for any future invoices
         invoicing_details.generate_invoice_schedule()
