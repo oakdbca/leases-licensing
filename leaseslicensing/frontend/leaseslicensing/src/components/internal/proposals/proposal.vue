@@ -1850,7 +1850,9 @@ export default {
                 ].includes(chargeType) &&
                 previewInvoices.find(
                     (invoice) => invoice.start_date_has_passed == true
-                )
+                ) &&
+                !this.proposal.proposal_type.code ==
+                    constants.PROPOSAL_TYPE.MIGRATION.code
             ) {
                 let immediateInvoicesHtml =
                     '<p>Based on the information you have entered, the following invoice records will be generated:</p>';
