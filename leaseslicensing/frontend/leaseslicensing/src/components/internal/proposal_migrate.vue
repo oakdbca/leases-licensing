@@ -67,18 +67,21 @@
                             </div>
                         </div>
                         <div class="row mb-3">
-                            <div class="col-9">
+                            <div class="col">
                                 <BootstrapAlert v-if="migrated">
-                                    Backdated invoices
-                                    <strong><u>will not</u></strong> be
+                                    Backdated invoices and an invoice for the
+                                    current billing period
+                                    <strong><u>will not be</u></strong>
                                     generated for a lease or license that is
-                                    being migrated
+                                    being migrated. <br />Only invoices for
+                                    future billing periods will be generated.
                                 </BootstrapAlert>
                                 <BootstrapAlert v-else>
-                                    Backdated invoices
+                                    Backdated invoices and an invoice for the
+                                    current billing period
                                     <strong><u>will be</u></strong> generated
                                     for a new lease or license when the
-                                    commencement date is in the past
+                                    commencement date is in the past.
                                 </BootstrapAlert>
                             </div>
                         </div>
