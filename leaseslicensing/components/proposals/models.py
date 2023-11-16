@@ -3476,10 +3476,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         # For all other charge methods, there may be one or more invoice records that need to be
         # generated immediately (any past periods and any current period i.e. that has started but not yet finished)
 
-        if is_migration_proposal:
-            # For migration proposals, we only need to generate a single invoice for the current billing period
-            invoicing_details.generate_current_invoice()
-        else:
+        if not is_migration_proposal:
             # Generate any immediate invoices including backdated invoices
             invoicing_details.generate_immediate_invoices()
 
