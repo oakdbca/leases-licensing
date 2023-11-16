@@ -1,8 +1,9 @@
 import logging
 import math
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Union
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
@@ -65,7 +66,9 @@ class RepetitionType(models.Model):
 
 class ConsumerPriceIndex(BaseModel):
     year = models.PositiveSmallIntegerField(null=True)
-    quarter = models.PositiveSmallIntegerField(null=True)
+    quarter = models.PositiveSmallIntegerField(
+        null=True, help_text="1 = MAR, 2 = JUN, 3 = SEP, 4 = DEC"
+    )
     value = models.DecimalField(
         max_digits=20,
         decimal_places=1,
@@ -84,22 +87,33 @@ class ConsumerPriceIndex(BaseModel):
 
     @classmethod
     def get_most_recent_quarter(cls, quarter):
-        return (
-            cls.objects.filter(time_period__contains=f"Q{quarter}")
-            .order_by("-time_period")
-            .first()
-        )
+        return cls.objects.filter(quarter=quarter).order_by("-year", "-quarter").first()
 
     @classmethod
-    def get_most_recent_quarter_by_date(cls, date, quarter):
-        financial_year = utils.financial_year_from_date(date).split("-")[1]
-        return cls.objects.filter(year__lt=financial_year, quarter=quarter).first()
+    def get_most_recent_quarter_by_date(
+        cls, date: datetime | date, quarter: int
+    ) -> Union["ConsumerPriceIndex", None]:
+        if isinstance(date, datetime):
+            date = date.date()
+        year = date.year
+        end_of_quarter_month = utils.month_from_cpi_quarter(quarter)
+        if end_of_quarter_month > date.month:
+            year -= 1
+        recent_quarter = cls.objects.filter(year=year, quarter=quarter).first()
+        if not recent_quarter:
+            logger.info(
+                f"CPI data for {year}-Q{quarter} not yet available but will be available before supplied date: {date}"
+            )
+
+        return recent_quarter
 
 
 class CPICalculationMethod(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False, editable=False)
     display_name = models.CharField(max_length=255, null=False, blank=False)
-    quarter = models.PositiveSmallIntegerField(null=True)
+    quarter = models.PositiveSmallIntegerField(
+        null=True, help_text="1 = MAR, 2 = JUN, 3 = SEP, 4 = DEC"
+    )
     archived = models.BooleanField(default=False)
 
     class Meta:
@@ -406,6 +420,7 @@ class InvoicingDetails(BaseModel):
         days_running_total = 0
         amount_running_total = Decimal("0.00")
         issue_date = self.get_first_issue_date()
+        number = 0
         for i, invoicing_period in enumerate(self.invoicing_periods):
             # Net 30 payment terms
             due_date = issue_date + relativedelta(days=30)
@@ -420,39 +435,54 @@ class InvoicingDetails(BaseModel):
                 invoicing_period["start_date"],
                 invoicing_period["end_date"],
                 invoicing_period["days"],
-                i,
+                i,  # index needed to calculate the amount
             )
-            if amount_object["amount"]:
-                amount_running_total = amount_running_total + amount_object["amount"]
-            else:
-                amount_running_total = amount_running_total + Decimal("0.00")
 
-            invoices.append(
-                {
-                    "number": i + 1,
-                    "original_issue_date": issue_date.strftime(
-                        "%d/%m/%Y"
-                    ),  # This is the issue date before it is changed to today if it is in the past
-                    "issue_date": self.get_issue_date(
-                        issue_date_now_or_future, invoicing_period["end_date"]
-                    ),
-                    "due_date": self.get_due_date(due_date),
-                    "time_period": invoicing_period["label"],
-                    "start_date": invoicing_period["start_date"],
-                    "end_date": invoicing_period["end_date"],
-                    "amount_object": amount_object,
-                    "days": invoicing_period["days"],
-                    "days_running_total": days_running_total,
-                    "amount_running_total": amount_running_total.quantize(
-                        Decimal("0.01")
-                    ),
-                    "start_date_has_passed": issue_date <= timezone.now().date(),
-                    "end_date_has_passed": datetime.strptime(
-                        invoicing_period["end_date"], "%Y-%m-%d"
-                    ).date()
-                    <= timezone.now().date(),
-                }
+            # Find out if this is a backdated invoicing period
+            start_date_has_passed = issue_date <= timezone.now().date()
+            end_date_has_passed = (
+                datetime.strptime(invoicing_period["end_date"], "%Y-%m-%d").date()
+                <= timezone.now().date()
             )
+
+            skip_adding = (
+                self.proposal.proposal_type.code == settings.PROPOSAL_TYPE_MIGRATION
+                and start_date_has_passed
+            )
+
+            if not skip_adding:
+                if amount_object["amount"]:
+                    amount_running_total = (
+                        amount_running_total + amount_object["amount"]
+                    )
+                else:
+                    amount_running_total = amount_running_total + Decimal("0.00")
+
+                number += 1  # Number only incremented for invoices that will be added to the preview
+                invoices.append(
+                    {
+                        "number": number,
+                        "original_issue_date": issue_date.strftime(
+                            "%d/%m/%Y"
+                        ),  # This is the issue date before it is changed to today if it is in the past
+                        "issue_date": self.get_issue_date(
+                            issue_date_now_or_future, invoicing_period["end_date"]
+                        ),
+                        "due_date": self.get_due_date(due_date),
+                        "time_period": invoicing_period["label"],
+                        "start_date": invoicing_period["start_date"],
+                        "end_date": invoicing_period["end_date"],
+                        "amount_object": amount_object,
+                        "days": invoicing_period["days"],
+                        "days_running_total": days_running_total,
+                        "amount_running_total": amount_running_total.quantize(
+                            Decimal("0.01")
+                        ),
+                        "start_date_has_passed": start_date_has_passed,
+                        "end_date_has_passed": end_date_has_passed,
+                    }
+                )
+
             if i < len(self.invoicing_periods) - 1:
                 issue_date = self.add_repetition_interval(issue_date)
             else:
@@ -663,20 +693,24 @@ class InvoicingDetails(BaseModel):
         base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
-            if issue_date > helpers.today():
-                amount_object["amount"] = base_fee_amount
-                amount_object["suffix"] = " + CPI (NYA)"
-                return amount_object
-
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+
+            # If the start date is before the issue date, use the issue date to calculate the cpi for that period
+            # This is to cover the case of backdated invoices where using the issue date could yield a cpi figure
+            # for a totally unrelated period.
+            cpi_date = start_date if start_date < issue_date else issue_date
             cpi = ConsumerPriceIndex.get_most_recent_quarter_by_date(
-                start_date, self.cpi_calculation_method.quarter
+                cpi_date, self.cpi_calculation_method.quarter
             )
             if cpi:
                 amount_object["amount"] = Decimal(
                     base_fee_amount * (1 + cpi.value / 100)
                 ).quantize(Decimal("0.01"))
                 amount_object["suffix"] = f" (CPI: {cpi.value}%)"
+            else:
+                amount_object["amount"] = base_fee_amount
+                amount_object["suffix"] = " + CPI (NYA)"
+                return amount_object
 
         year_sequence_index = self.get_year_sequence_index(index)
         if (
