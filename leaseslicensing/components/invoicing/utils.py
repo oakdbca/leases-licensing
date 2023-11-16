@@ -39,8 +39,15 @@ def financial_quarter_from_date(date):
 
 
 def month_from_quarter(quarter):
-    """Returns the month number for the start of the quarter provided (0 indexed)"""
+    """Returns the month number for the start of the financial quarter provided (0 indexed)"""
     return [10, 1, 4, 7][quarter - 1]
+
+
+def month_from_cpi_quarter(quarter: int) -> int:
+    """CPI quarters work differently to financial quarters.
+    1 = 3 (MAR Quarter), 2 = 6 (JUN Quarter), 3 = 9 (SEP Quarter), 4 = 12 (DEC Quarter)
+    """
+    return quarter * 3
 
 
 def month_string_from_date(date):
