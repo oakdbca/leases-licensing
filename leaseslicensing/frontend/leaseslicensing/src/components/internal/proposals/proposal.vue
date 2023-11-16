@@ -2275,6 +2275,23 @@ export default {
                 return;
             }
 
+            if (!vm.proposal.proposalgeometry.features.length > 0) {
+                swal.fire({
+                    title: 'No Land Area Selected',
+                    text: 'You must indicate the land area before entering conditions. Please either draw one or more polygons on the map or upload a shapefile and then click the save button.',
+                    icon: 'warning',
+                    didClose: () => {
+                        setTimeout(() => {
+                            let someTabTriggerEl =
+                                document.querySelector('#pills-map-tab');
+                            tab = new bootstrap.Tab(someTabTriggerEl);
+                            tab.show();
+                        }, 200);
+                    },
+                });
+                return;
+            }
+
             // Save the proposal before opening the modal
             this.savingProposal = true;
             await this.save(false).then(() => {
