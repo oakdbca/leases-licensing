@@ -341,7 +341,7 @@ class ApprovalViewSet(UserActionLoggingViewset, KeyValueListMixin):
             user_orgs = get_organisation_ids_for_user(self.request.user.id)
             queryset = Approval.objects.filter(
                 Q(current_proposal__org_applicant_id__in=user_orgs)
-                | Q(current_proposal__submitter=self.request.user.id)
+                | Q(current_proposal__ind_applicant=self.request.user.id)
             )
             return queryset
         return Approval.objects.none()
