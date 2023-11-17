@@ -1326,7 +1326,7 @@ export default {
                 this.filteredProposals = [
                     ...this.filteredProposals.filter(
                         (proposal) =>
-                            new Date(proposal.lodgement_date) >=
+                            new Date(proposal.lodgement_date) <=
                             new Date(this.filterApplicationsMapLodgedTo)
                     ),
                 ];
