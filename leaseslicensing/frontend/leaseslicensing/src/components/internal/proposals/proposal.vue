@@ -2509,6 +2509,9 @@ export default {
                 .then((data) => {
                     vm.proposal = Object.assign({}, data);
                     vm.updateAssignedOfficerSelect();
+                    vm.$nextTick(() => {
+                        vm.$refs.workflow.initialiseRefereeSelect();
+                    });
                 })
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();

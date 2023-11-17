@@ -1146,6 +1146,7 @@ export default {
             });
         },
         initialiseRefereeSelect: function (reinit = false) {
+            console.log('initialiseRefereeSelect');
             let vm = this;
             if (reinit) {
                 $(vm.$refs.department_users).data('select2')
@@ -1411,9 +1412,6 @@ export default {
         },
         assignRequestUser: async function () {
             this.$emit('assignRequestUser');
-            setTimeout(() => {
-                this.initialiseRefereeSelect();
-            }, 500);
         },
         assignTo: function () {
             this.$emit('assignTo');
