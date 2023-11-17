@@ -30,9 +30,7 @@
         >
             <div class="row">
                 <div class="col-md-3">
-                    <label for=""
-                        >Type {{ filterApplicationsMapApplicationType }}</label
-                    >
+                    <label for="">Type</label>
                     <select
                         v-model="filterApplicationsMapApplicationType"
                         class="form-control"
