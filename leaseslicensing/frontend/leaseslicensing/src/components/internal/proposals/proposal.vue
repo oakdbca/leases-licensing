@@ -920,7 +920,7 @@
                                                                 referral.id
                                                             "
                                                             v-model="
-                                                                referral.comment_gis_data
+                                                                referral.comment_categorisation
                                                             "
                                                             class="form-control referral-comment"
                                                             :disabled="
