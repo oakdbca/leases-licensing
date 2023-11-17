@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import subprocess
+from copy import deepcopy
 from decimal import Decimal
 
 import geopandas as gpd
@@ -2585,6 +2586,9 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     # Copy over previous gis data
                     copy_gis_data(self, lease_licence)
 
+                    # Copy the ROI deed poll over if there is one
+                    copy_deed_poll_documents(self, lease_licence)
+
                     self.processing_status = (
                         Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST
                     )
@@ -2694,8 +2698,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 original_applicant = ProposalApplicant.objects.get(proposal=self)
                 # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
                 original_applicant.copy_self_to_proposal(lease_licence_proposal)
-
-            from copy import deepcopy
 
             for geo in self.proposalgeometry.all():
                 # add geometry
@@ -5497,8 +5499,6 @@ def copy_proposal_details(proposalFrom: Proposal, proposalTo: Proposal) -> None:
         "legislative_requirements",
     ]
 
-    from copy import deepcopy
-
     for field in details_fields:
         f_text = f"{field}_text"
         setattr(proposalTo, f_text, getattr(proposalFrom, f_text))
@@ -5515,14 +5515,25 @@ def copy_proposal_details(proposalFrom: Proposal, proposalTo: Proposal) -> None:
         setattr(proposalTo, field, getattr(proposalFrom, field))
 
 
+def copy_deed_poll_documents(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    if not proposalFrom.deed_poll_documents.exists():
+        return
+
+    for deed_poll_document in proposalFrom.deed_poll_documents.all():
+        new_doc = deepcopy(deed_poll_document)
+        new_doc.proposal = proposalTo
+        new_doc.can_delete = True
+        new_doc.hidden = False
+        new_doc.id = None
+        new_doc.save()
+
+
 def copy_proposal_requirements(
     proposalFrom: Proposal, proposalTo: Proposal, **kwargs
 ) -> None:
     """
     Copies all requirements and requirement documents from previous proposal
     """
-
-    from copy import deepcopy
 
     req = proposalFrom.requirements.all().exclude(is_deleted=True)
 
