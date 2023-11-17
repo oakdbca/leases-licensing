@@ -13,6 +13,7 @@ import Compliance from '../compliances/access.vue';
 import Reports from '@/components/reports/reports.vue';
 import Approval from '@/components/internal/approvals/approval.vue';
 import CompetitiveProcess from '@/components/internal/competitive_process/competitive_process.vue';
+import ProposalMigrate from '@/components/internal/proposal_migrate.vue';
 
 export default {
     path: '/internal',
@@ -83,6 +84,12 @@ export default {
                 },
             ],
         },
+        {
+            path: 'proposal/',
+            component: ProposalMigrate,
+            name: 'migrate_proposal',
+        },
+
         {
             path: 'proposal/:proposal_id',
             component: Proposal,

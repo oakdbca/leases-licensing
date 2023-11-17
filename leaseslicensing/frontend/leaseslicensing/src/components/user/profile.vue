@@ -696,10 +696,10 @@
 </template>
 
 <script>
-import $ from 'jquery'
-import { api_endpoints, helpers } from '@/utils/hooks'
-import FormSection from '@/components/forms/section_toggle.vue'
-import FileField from '@/components/forms/filefield_immediate.vue'
+import $ from 'jquery';
+import { api_endpoints, helpers } from '@/utils/hooks';
+import FormSection from '@/components/forms/section_toggle.vue';
+import FileField from '@/components/forms/filefield_immediate.vue';
 //import 'eonasdan-bootstrap-datetimepicker';
 //require("moment");
 //require('eonasdan-bootstrap-datetimepicker/build/css/bootstrap-datetimepicker.min.css');
@@ -720,25 +720,25 @@ export default {
                     response.body.contact_details &&
                     to.name == 'first-time'
                 ) {
-                    window.location.href = '/'
+                    window.location.href = '/';
                 } else {
                     next((vm) => {
-                        vm.profile = Object.assign(response.body)
+                        vm.profile = Object.assign(response.body);
                         if (vm.profile.residential_address == null) {
                             vm.profile.residential_address = Object.assign({
                                 country: 'AU',
-                            })
+                            });
                         }
                         if (vm.profile.postal_address == null) {
-                            vm.profile.postal_address = Object.assign({})
+                            vm.profile.postal_address = Object.assign({});
                         }
-                    })
+                    });
                 }
             },
             (error) => {
-                console.log(error)
+                console.error(error);
             }
-        )
+        );
     },
     props: {
         proposalId: {
@@ -764,7 +764,7 @@ export default {
         },
     },
     data() {
-        let vm = this
+        let vm = this;
         return {
             electoralRollSectionIndex: 'electoral_roll_' + vm._uid,
             silentElector: null,
@@ -811,139 +811,139 @@ export default {
             role: null,
             phoneNumberReadonly: false,
             mobileNumberReadonly: false,
-        }
+        };
     },
     computed: {
         dobReadOnly: function () {
-            let readonly = false
+            let readonly = false;
             if (this.readonly || this.profile.readonly_dob) {
-                readonly = true
+                readonly = true;
             }
-            return readonly
+            return readonly;
         },
         firstNameReadOnly: function () {
-            let readonly = false
+            let readonly = false;
             if (this.readonly || this.profile.readonly_first_name) {
-                readonly = true
+                readonly = true;
             }
-            return readonly
+            return readonly;
         },
         lastNameReadOnly: function () {
-            let readonly = false
+            let readonly = false;
             if (this.readonly || this.profile.readonly_last_name) {
-                readonly = true
+                readonly = true;
             }
-            return readonly
+            return readonly;
         },
         emailReadOnly: function () {
-            let readonly = false
+            let readonly = false;
             if (this.readonly || this.profile.readonly_email) {
-                readonly = true
+                readonly = true;
             }
-            return readonly
+            return readonly;
         },
         postalAddressReadonly: function () {
             if (this.readonly || this.profile.postal_same_as_residential) {
-                return true
+                return true;
             }
         },
         electoralRollDocumentUrl: function () {
-            let url = ''
+            let url = '';
             if (this.profile && this.profile.id) {
                 url = helpers.add_endpoint_join(
                     '/api/proposal/',
                     this.proposalId + '/process_electoral_roll_document/'
-                )
+                );
             }
-            return url
+            return url;
         },
         classCompute: function () {
-            return this.isApplication ? 'row' : 'container'
+            return this.isApplication ? 'row' : 'container';
         },
         hasOrgs: function () {
             return this.profile.leaseslicensing_organisations &&
                 this.profile.leaseslicensing_organisations.length > 0
                 ? true
-                : false
+                : false;
         },
         uploadedFileName: function () {
-            return this.uploadedFile != null ? this.uploadedFile.name : ''
+            return this.uploadedFile != null ? this.uploadedFile.name : '';
         },
         uploadedIDFileName: function () {
-            return this.uploadedID != null ? this.uploadedID.name : ''
+            return this.uploadedID != null ? this.uploadedID.name : '';
         },
         isFileUploaded: function () {
-            return this.uploadedFile != null ? true : false
+            return this.uploadedFile != null ? true : false;
         },
         isNewOrgDetails: function () {
             return this.newOrg &&
                 this.newOrg.name != '' &&
                 this.newOrg.abn != ''
                 ? true
-                : false
+                : false;
         },
         showCompletion: function () {
-            return this.$route.name == 'first-time'
+            return this.$route.name == 'first-time';
         },
         completedProfile: function () {
             return (
                 this.profile.contact_details &&
                 this.profile.personal_details &&
                 this.profile.address_details
-            )
+            );
         },
     },
     watch: {
         managesOrg: function () {
             if (this.managesOrg == 'Yes') {
-                this.newOrg.detailsChecked = false
-                this.role = 'employee'
+                this.newOrg.detailsChecked = false;
+                this.role = 'employee';
             } else if (this.managesOrg == 'Consultant') {
-                this.newOrg.detailsChecked = false
-                this.role = 'consultant'
+                this.newOrg.detailsChecked = false;
+                this.role = 'consultant';
             } else {
-                this.role = null
-                this.newOrg.detailsChecked = false
+                this.role = null;
+                this.newOrg.detailsChecked = false;
             }
 
             if (this.managesOrg == 'Yes' && !this.hasOrgs && this.newOrg) {
-                this.addCompany()
+                this.addCompany();
             } else if (this.managesOrg == 'No' && this.newOrg) {
-                this.resetNewOrg()
-                this.uploadedFile = null
-                this.addingCompany = false
+                this.resetNewOrg();
+                this.uploadedFile = null;
+                this.addingCompany = false;
             } else {
-                this.addCompany()
-                this.addingCompany = false
+                this.addCompany();
+                this.addingCompany = false;
             }
         },
     },
 
     mounted: async function () {
-        this.fetchCountries()
-        this.fetchOrgRequestList()
-        await this.fetchProfile() //beforeRouteEnter doesn't work when loading this component in Application.vue so adding an extra method to get profile details.
+        this.fetchCountries();
+        this.fetchOrgRequestList();
+        await this.fetchProfile(); //beforeRouteEnter doesn't work when loading this component in Application.vue so adding an extra method to get profile details.
         await this.$nextTick(() => {
-            this.$emit('profile-fetched', this.profile)
-            this.addEventListeners()
-        })
-        this.personal_form = document.forms.personal_form
+            this.$emit('profile-fetched', this.profile);
+            this.addEventListeners();
+        });
+        this.personal_form = document.forms.personal_form;
         $('.panelClicker[data-toggle="collapse"]').on('click', function () {
-            var chev = $(this).children()[0]
+            var chev = $(this).children()[0];
             window.setTimeout(function () {
                 $(chev).toggleClass(
                     'glyphicon-chevron-down glyphicon-chevron-up'
-                )
-            }, 100)
-        })
+                );
+            }, 100);
+        });
         // read in storedSilentElector
         //if (this.storedSilentElector !== null) {
-        this.silentElector = this.storedSilentElector
+        this.silentElector = this.storedSilentElector;
     },
     methods: {
         addEventListeners: function () {
-            let vm = this
-            let elDob = $(vm.$refs.dobDatePicker)
+            let vm = this;
+            let elDob = $(vm.$refs.dobDatePicker);
             //const now = Date.now()
 
             let options = {
@@ -951,94 +951,90 @@ export default {
                 showClear: true,
                 useCurrent: false,
                 maxDate: moment(),
-            }
+            };
 
-            elDob.datetimepicker(options)
+            elDob.datetimepicker(options);
 
             elDob.on('dp.change', function (e) {
-                let selected_date = null
+                let selected_date = null;
                 if (e.date) {
                     // Date selected
-                    selected_date = e.date.format('DD/MM/YYYY') // e.date is moment object
-                    vm.profile.dob = selected_date
+                    selected_date = e.date.format('DD/MM/YYYY'); // e.date is moment object
+                    vm.profile.dob = selected_date;
                     //elDob.data('DateTimePicker').maxDate(true);
                 } else {
                     // Date not selected
-                    vm.profile.dob = selected_date
+                    vm.profile.dob = selected_date;
                     //elDob.data('DateTimePicker').maxDate(false);
                 }
-            })
+            });
         },
 
         uploadProofElectoralRoll: function () {
-            console.log('proof')
+            console.log('proof');
         },
         readFile: function () {
-            let vm = this
-            let _file = null
-            var input = $(vm.$refs.uploadedFile)[0]
+            let vm = this;
+            let _file = null;
+            var input = $(vm.$refs.uploadedFile)[0];
             if (input.files && input.files[0]) {
-                var reader = new FileReader()
-                reader.readAsDataURL(input.files[0])
+                var reader = new FileReader();
+                reader.readAsDataURL(input.files[0]);
                 reader.onload = function (e) {
-                    _file = e.target.result
-                }
-                _file = input.files[0]
+                    _file = e.target.result;
+                };
+                _file = input.files[0];
             }
-            vm.uploadedFile = _file
+            vm.uploadedFile = _file;
         },
         readFileID: function () {
-            let vm = this
-            let _file = null
-            var input = $(vm.$refs.uploadedID)[0]
+            let vm = this;
+            let _file = null;
+            var input = $(vm.$refs.uploadedID)[0];
             if (input.files && input.files[0]) {
-                var reader = new FileReader()
-                reader.readAsDataURL(input.files[0])
+                var reader = new FileReader();
+                reader.readAsDataURL(input.files[0]);
                 reader.onload = function (e) {
-                    _file = e.target.result
-                }
-                _file = input.files[0]
+                    _file = e.target.result;
+                };
+                _file = input.files[0];
             }
-            vm.uploadedID = _file
+            vm.uploadedID = _file;
         },
         addCompany: function () {
             this.newOrg.push = {
                 name: '',
                 abn: '',
-            }
-            this.addingCompany = true
+            };
+            this.addingCompany = true;
         },
         resetNewOrg: function () {
             this.newOrg = {
                 detailsChecked: false,
                 exists: false,
-            }
+            };
         },
         updatePersonal: function () {
-            let vm = this
-            //console.log(vm.profile);
-            vm.missing_fields = []
-            var required_fields = []
-            vm.errorListPersonal = []
-            required_fields = $('#first_name, #surname')
-            vm.missing_fields = []
+            let vm = this;
+            vm.missing_fields = [];
+            let required_fields = [];
+            vm.errorListPersonal = [];
+            required_fields = $('#first_name, #surname');
+            vm.missing_fields = [];
             required_fields.each(function () {
                 if (this.value == '') {
-                    //var text = $('#'+id).text()
-                    //console.log(this);
                     vm.errorListPersonal.push(
                         'Value not provided: ' + this.name
-                    )
-                    vm.missing_fields.push({ id: this.id })
+                    );
+                    vm.missing_fields.push({ id: this.id });
                 }
-            })
+            });
 
             if (vm.missing_fields.length > 0) {
-                vm.showPersonalError = true
-                //console.log(vm.showPersonalError)
+                vm.showPersonalError = true;
             } else {
-                vm.showPersonalError = false
-                vm.updatingPersonal = true
+                vm.showPersonalError = false;
+                vm.updatingPersonal = true;
                 vm.$http
                     .post(
                         helpers.add_endpoint_json(
@@ -1052,43 +1048,40 @@ export default {
                     )
                     .then(
                         (response) => {
-                            //console.log(response);
-                            vm.updatingPersonal = false
-                            vm.profile = response.body
+                            vm.updatingPersonal = false;
+                            vm.profile = response.body;
                             if (vm.profile.residential_address == null) {
-                                vm.profile.residential_address = {}
+                                vm.profile.residential_address = {};
                             }
                             if (vm.profile.postal_address == null) {
-                                vm.profile.postal_address = {}
+                                vm.profile.postal_address = {};
                             }
                             if (vm.profile.dob) {
                                 vm.profile.dob = moment(vm.profile.dob).format(
                                     'DD/MM/YYYY'
-                                )
+                                );
                             }
                         },
                         (error) => {
-                            console.log(error)
-                            vm.updatingPersonal = false
+                            console.error(error);
+                            vm.updatingPersonal = false;
                         }
-                    )
+                    );
             }
         },
 
         uploadID: function () {
-            let vm = this
-            console.log('uploading id')
-            vm.uploadingID = true
-            let data = new FormData()
-            data.append('identification', vm.uploadedID)
-            console.log(data)
+            let vm = this;
+            vm.uploadingID = true;
+            let data = new FormData();
+            data.append('identification', vm.uploadedID);
             if (vm.uploadedID == null) {
-                vm.uploadingID = false
+                vm.uploadingID = false;
                 swal({
                     title: 'Upload ID',
                     html: 'Please select a file to upload.',
                     type: 'error',
-                })
+                });
             } else {
                 vm.$http
                     .post(
@@ -1103,23 +1096,23 @@ export default {
                     )
                     .then(
                         (response) => {
-                            vm.uploadingID = false
-                            vm.uploadedID = null
+                            vm.uploadingID = false;
+                            vm.uploadedID = null;
                             swal({
                                 title: 'Upload ID',
                                 html: 'Your ID has been successfully uploaded.',
                                 type: 'success',
                             }).then(() => {
-                                window.location.reload(true)
-                            })
+                                window.location.reload(true);
+                            });
                         },
                         (error) => {
-                            console.log(error)
-                            vm.uploadingID = false
-                            let error_msg = '<br/>'
+                            console.error(error);
+                            vm.uploadingID = false;
+                            let error_msg = '<br/>';
                             for (var key in error.body) {
                                 error_msg +=
-                                    key + ': ' + error.body[key] + '<br/>'
+                                    key + ': ' + error.body[key] + '<br/>';
                             }
                             swal({
                                 title: 'Upload ID',
@@ -1127,41 +1120,41 @@ export default {
                                     'There was an error uploading your ID.<br/>' +
                                     error_msg,
                                 type: 'error',
-                            })
+                            });
                         }
-                    )
+                    );
             }
         },
 
         updateContact: function () {
-            let vm = this
-            vm.missing_fields = []
-            var required_fields = []
-            vm.errorListContact = []
-            required_fields = $('#email')
-            vm.missing_fields = []
+            let vm = this;
+            vm.missing_fields = [];
+            var required_fields = [];
+            vm.errorListContact = [];
+            required_fields = $('#email');
+            vm.missing_fields = [];
             required_fields.each(function () {
                 if (this.value == '') {
-                    //var text = $('#'+id).text()
-                    console.log(this)
-                    vm.errorListContact.push('Value not provided: ' + this.name)
-                    vm.missing_fields.push({ id: this.id })
+                    vm.errorListContact.push(
+                        'Value not provided: ' + this.name
+                    );
+                    vm.missing_fields.push({ id: this.id });
                 }
-            })
+            });
             if (
                 vm.profile.mobile_number == '' ||
                 vm.profile.phone_number == ''
             ) {
                 vm.errorListContact.push(
                     'Value not provided: mobile/ Phone number'
-                )
-                vm.missing_fields.push({ id: $('#mobile').id })
+                );
+                vm.missing_fields.push({ id: $('#mobile').id });
             }
             if (vm.missing_fields.length > 0) {
-                vm.showContactError = true
+                vm.showContactError = true;
             } else {
-                vm.showContactError = false
-                vm.updatingContact = true
+                vm.showContactError = false;
+                vm.updatingContact = true;
                 vm.$http
                     .post(
                         helpers.add_endpoint_json(
@@ -1175,63 +1168,64 @@ export default {
                     )
                     .then(
                         (response) => {
-                            //console.log(response);
-                            vm.updatingContact = false
-                            vm.profile = response.body
+                            vm.updatingContact = false;
+                            vm.profile = response.body;
                             if (vm.profile.residential_address == null) {
-                                vm.profile.residential_address = {}
+                                vm.profile.residential_address = {};
                             }
                             if (vm.profile.postal_address == null) {
-                                vm.profile.postal_address = {}
+                                vm.profile.postal_address = {};
                             }
                             if (vm.profile.dob) {
                                 vm.profile.dob = moment(vm.profile.dob).format(
                                     'DD/MM/YYYY'
-                                )
+                                );
                             }
                         },
                         (error) => {
-                            console.log(error)
-                            vm.updatingContact = false
+                            console.error(error);
+                            vm.updatingContact = false;
                         }
-                    )
+                    );
             }
         },
         updateAddress: async function () {
-            let vm = this
+            let vm = this;
 
-            vm.missing_fields = []
-            var required_fields = []
-            vm.errorListAddress = []
+            vm.missing_fields = [];
+            var required_fields = [];
+            vm.errorListAddress = [];
             required_fields = $(
                 '#postcode, #line1, #locality, #country, #state'
-            )
-            vm.missing_fields = []
+            );
+            vm.missing_fields = [];
             required_fields.each(function () {
                 if (this.value == '') {
                     //var text = $('#'+id).text()
-                    vm.errorListAddress.push('Value not provided: ' + this.name)
-                    vm.missing_fields.push({ id: this.id })
+                    vm.errorListAddress.push(
+                        'Value not provided: ' + this.name
+                    );
+                    vm.missing_fields.push({ id: this.id });
                 }
-            })
+            });
 
             if (vm.missing_fields.length > 0) {
-                vm.showAddressError = true
+                vm.showAddressError = true;
             } else {
-                vm.showAddressError = false
+                vm.showAddressError = false;
 
-                vm.updatingAddress = true
-                let payload = {}
+                vm.updatingAddress = true;
+                let payload = {};
                 payload.residential_address = Object.assign(
                     {},
                     vm.profile.residential_address
-                )
+                );
                 payload.postal_address = Object.assign(
                     {},
                     vm.profile.postal_address
-                )
+                );
                 if (vm.profile.postal_same_as_residential) {
-                    payload.postal_same_as_residential = true
+                    payload.postal_same_as_residential = true;
                 }
                 try {
                     const response = await vm.$http.post(
@@ -1240,19 +1234,19 @@ export default {
                             vm.profile.id + '/update_address'
                         ),
                         payload
-                    )
-                    vm.updatingAddress = false
-                    vm.profile = response.body
+                    );
+                    vm.updatingAddress = false;
+                    vm.profile = response.body;
                     if (vm.profile.residential_address == null) {
-                        vm.profile.residential_address = {}
+                        vm.profile.residential_address = {};
                     }
                     if (vm.profile.postal_address == null) {
-                        vm.profile.postal_address = {}
+                        vm.profile.postal_address = {};
                     }
                     if (vm.profile.dob) {
                         vm.profile.dob = moment(vm.profile.dob).format(
                             'DD/MM/YYYY'
-                        )
+                        );
                     }
                 } catch (error) {
                     swal({
@@ -1260,15 +1254,15 @@ export default {
                         //text: error.bodyText,
                         html: helpers.formatError(error),
                         type: 'error',
-                    })
+                    });
 
-                    vm.updatingAddress = false
+                    vm.updatingAddress = false;
                 }
             }
         },
         updateSystemSettings: function () {
-            let vm = this
-            vm.updatingSystemSettings = true
+            let vm = this;
+            vm.updatingSystemSettings = true;
             vm.$http
                 .post(
                     helpers.add_endpoint_json(
@@ -1282,26 +1276,25 @@ export default {
                 )
                 .then(
                     (response) => {
-                        //console.log(response);
-                        vm.updatingSystemSettings = false
-                        vm.profile = response.body
+                        vm.updatingSystemSettings = false;
+                        vm.profile = response.body;
                         if (vm.profile.residential_address == null) {
-                            vm.profile.residential_address = {}
+                            vm.profile.residential_address = {};
                         }
                         if (vm.profile.postal_address == null) {
-                            vm.profile.postal_address = {}
+                            vm.profile.postal_address = {};
                         }
                     },
                     (error) => {
-                        console.log(error)
-                        vm.updatingSystemSettings = false
+                        console.error(error);
+                        vm.updatingSystemSettings = false;
                     }
-                )
+                );
         },
         checkOrganisation: function () {
-            let vm = this
+            let vm = this;
             //this.newOrg.abn = this.newOrg.abn.replace(/\s+/g,'');
-            this.newOrg.abn = this.newOrg.abn.replace(/[^0-9]/g, '')
+            this.newOrg.abn = this.newOrg.abn.replace(/[^0-9]/g, '');
 
             vm.$http
                 .post(
@@ -1316,23 +1309,22 @@ export default {
                 )
                 .then(
                     (response) => {
-                        //console.log(response);
-                        this.newOrg.exists = response.body.exists
-                        this.newOrg.detailsChecked = true
-                        this.newOrg.id = response.body.id
+                        this.newOrg.exists = response.body.exists;
+                        this.newOrg.detailsChecked = true;
+                        this.newOrg.id = response.body.id;
                         if (response.body.first_five) {
-                            this.newOrg.first_five = response.body.first_five
+                            this.newOrg.first_five = response.body.first_five;
                         }
                     },
                     (error) => {
-                        console.log(error)
+                        console.error(error);
                     }
-                )
+                );
         },
 
         fetchOrgRequestList: function () {
             //Fetch all the Organisation requests submitted by user which are pending for approval.
-            let vm = this
+            let vm = this;
             vm.$http
                 .get(
                     helpers.add_endpoint_json(
@@ -1342,17 +1334,17 @@ export default {
                 )
                 .then(
                     (response) => {
-                        vm.orgRequest_list = response.body
+                        vm.orgRequest_list = response.body;
                     },
                     (error) => {
-                        console.log(error)
+                        console.error(error);
                     }
-                )
+                );
         },
 
         validatePins: function () {
-            let vm = this
-            vm.validatingPins = true
+            let vm = this;
+            vm.validatingPins = true;
             vm.$http
                 .post(
                     helpers.add_endpoint_json(
@@ -1371,21 +1363,21 @@ export default {
                                 'Validate Pins',
                                 'The pins you entered have been validated and your request will be processed by Organisation Administrator.',
                                 'success'
-                            )
-                            vm.registeringOrg = false
-                            vm.uploadedFile = null
-                            vm.addingCompany = false
-                            vm.resetNewOrg()
+                            );
+                            vm.registeringOrg = false;
+                            vm.uploadedFile = null;
+                            vm.addingCompany = false;
+                            vm.resetNewOrg();
                             this.$http.get(api_endpoints.profile).then(
                                 (response) => {
-                                    vm.profile = response.body
+                                    vm.profile = response.body;
                                     if (
                                         vm.profile.residential_address == null
                                     ) {
-                                        vm.profile.residential_address = {}
+                                        vm.profile.residential_address = {};
                                     }
                                     if (vm.profile.postal_address == null) {
-                                        vm.profile.postal_address = {}
+                                        vm.profile.postal_address = {};
                                     }
                                     if (
                                         vm.profile
@@ -1393,48 +1385,48 @@ export default {
                                         vm.profile.leaseslicensing_organisations
                                             .length > 0
                                     ) {
-                                        vm.managesOrg = 'Yes'
+                                        vm.managesOrg = 'Yes';
                                     }
                                 },
                                 (error) => {
-                                    console.log(error)
+                                    console.error(error);
                                 }
-                            )
+                            );
                         } else {
                             swal(
                                 'Validate Pins',
                                 'The pins you entered were incorrect',
                                 'error'
-                            )
+                            );
                         }
-                        vm.validatingPins = false
+                        vm.validatingPins = false;
                     },
                     (error) => {
-                        vm.validatingPins = false
-                        console.log(error)
+                        vm.validatingPins = false;
+                        console.error(error);
                     }
-                )
+                );
         },
         orgRequest: function () {
-            let vm = this
-            vm.registeringOrg = true
-            let data = new FormData()
-            vm.newOrg.abn = vm.newOrg.abn.replace(/[^0-9]/g, '')
-            data.append('name', vm.newOrg.name)
-            data.append('abn', vm.newOrg.abn)
-            data.append('identification', vm.uploadedFile)
-            data.append('role', vm.role)
+            let vm = this;
+            vm.registeringOrg = true;
+            let data = new FormData();
+            vm.newOrg.abn = vm.newOrg.abn.replace(/[^0-9]/g, '');
+            data.append('name', vm.newOrg.name);
+            data.append('abn', vm.newOrg.abn);
+            data.append('identification', vm.uploadedFile);
+            data.append('role', vm.role);
             if (
                 vm.newOrg.name == '' ||
                 vm.newOrg.abn == '' ||
                 vm.uploadedFile == null
             ) {
-                vm.registeringOrg = false
+                vm.registeringOrg = false;
                 swal(
                     'Error submitting organisation request',
                     'Please enter the organisation details and attach a file before submitting your request.',
                     'error'
-                )
+                );
             } else {
                 vm.$http
                     .post(api_endpoints.organisation_requests, data, {
@@ -1442,40 +1434,40 @@ export default {
                     })
                     .then(
                         (response) => {
-                            vm.registeringOrg = false
-                            vm.uploadedFile = null
-                            vm.addingCompany = false
-                            vm.resetNewOrg()
+                            vm.registeringOrg = false;
+                            vm.uploadedFile = null;
+                            vm.addingCompany = false;
+                            vm.resetNewOrg();
                             swal({
                                 title: 'Sent',
                                 html: 'Your organisation request has been successfully submitted.',
                                 type: 'success',
                             }).then(() => {
-                                window.location.reload(true)
-                            })
+                                window.location.reload(true);
+                            });
                         },
                         (error) => {
-                            console.log(error)
-                            vm.registeringOrg = false
-                            let error_msg = '<br/>'
+                            console.error(error);
+                            vm.registeringOrg = false;
+                            let error_msg = '<br/>';
                             for (var key in error.body) {
                                 error_msg +=
-                                    key + ': ' + error.body[key] + '<br/>'
+                                    key + ': ' + error.body[key] + '<br/>';
                             }
                             swal(
                                 'Error submitting organisation request',
                                 error_msg,
                                 'error'
-                            )
+                            );
                         }
-                    )
+                    );
             }
         },
         orgConsultRequest: function () {
-            let vm = this
-            vm.registeringOrg = true
-            let data = new FormData()
-            let new_organisation = vm.newOrg
+            let vm = this;
+            vm.registeringOrg = true;
+            let data = new FormData();
+            let new_organisation = vm.newOrg;
             for (var organisation in vm.profile.leaseslicensing_organisations) {
                 if (
                     new_organisation.abn &&
@@ -1486,30 +1478,30 @@ export default {
                         title: 'Checking Organisation',
                         html: 'You are already associated with this organisation.',
                         type: 'info',
-                    })
-                    vm.registeringOrg = false
-                    vm.uploadedFile = null
-                    vm.addingCompany = false
-                    vm.resetNewOrg()
-                    return
+                    });
+                    vm.registeringOrg = false;
+                    vm.uploadedFile = null;
+                    vm.addingCompany = false;
+                    vm.resetNewOrg();
+                    return;
                 }
             }
-            vm.newOrg.abn = vm.newOrg.abn.replace(/[^0-9]/g, '')
-            data.append('name', vm.newOrg.name)
-            data.append('abn', vm.newOrg.abn)
-            data.append('identification', vm.uploadedFile)
-            data.append('role', vm.role)
+            vm.newOrg.abn = vm.newOrg.abn.replace(/[^0-9]/g, '');
+            data.append('name', vm.newOrg.name);
+            data.append('abn', vm.newOrg.abn);
+            data.append('identification', vm.uploadedFile);
+            data.append('role', vm.role);
             if (
                 vm.newOrg.name == '' ||
                 vm.newOrg.abn == '' ||
                 vm.uploadedFile == null
             ) {
-                vm.registeringOrg = false
+                vm.registeringOrg = false;
                 swal(
                     'Error submitting organisation request',
                     'Please enter the organisation details and attach a file before submitting your request.',
                     'error'
-                )
+                );
             } else {
                 vm.$http
                     .post(api_endpoints.organisation_requests, data, {
@@ -1517,66 +1509,63 @@ export default {
                     })
                     .then(
                         (response) => {
-                            vm.registeringOrg = false
-                            vm.uploadedFile = null
-                            vm.addingCompany = false
-                            vm.resetNewOrg()
+                            vm.registeringOrg = false;
+                            vm.uploadedFile = null;
+                            vm.addingCompany = false;
+                            vm.resetNewOrg();
                             swal({
                                 title: 'Sent',
                                 html: 'Your organisation request has been successfully submitted.',
                                 type: 'success',
                             }).then(() => {
                                 if (this.$route.name == 'account') {
-                                    window.location.reload(true)
+                                    window.location.reload(true);
                                 }
-                            })
+                            });
                         },
                         (error) => {
-                            console.log(error)
-                            vm.registeringOrg = false
-                            let error_msg = '<br/>'
+                            console.error(error);
+                            vm.registeringOrg = false;
+                            let error_msg = '<br/>';
                             for (var key in error.body) {
                                 error_msg +=
-                                    key + ': ' + error.body[key] + '<br/>'
+                                    key + ': ' + error.body[key] + '<br/>';
                             }
                             swal(
                                 'Error submitting organisation request',
                                 error_msg,
                                 'error'
-                            )
+                            );
                         }
-                    )
+                    );
             }
         },
         toggleSection: function (e) {
-            let el = e.target
-            let chev = null
-            //console.log(el);
+            let el = e.target;
+            let chev = null;
             $(el).on('click', function (event) {
-                chev = $(this)
-                //console.log(chev);
+                chev = $(this);
                 $(chev).toggleClass(
                     'glyphicon-chevron-down glyphicon-chevron-up'
-                )
-            })
+                );
+            });
         },
         fetchCountries: function () {
-            let vm = this
-            vm.loading.push('fetching countries')
+            let vm = this;
+            vm.loading.push('fetching countries');
             vm.$http.get(api_endpoints.countries).then(
                 (response) => {
-                    vm.countries = response.body
-                    vm.loading.splice('fetching countries', 1)
+                    vm.countries = response.body;
+                    vm.loading.splice('fetching countries', 1);
                 },
                 (response) => {
-                    //console.log(response);
-                    vm.loading.splice('fetching countries', 1)
+                    vm.loading.splice('fetching countries', 1);
                 }
-            )
+            );
         },
         unlinkUser: function (org) {
-            let vm = this
-            let org_name = org.name
+            let vm = this;
+            let org_name = org.name;
             swal({
                 title: 'Unlink From Organisation',
                 text:
@@ -1603,12 +1592,12 @@ export default {
                             (response) => {
                                 this.$http.get(api_endpoints.profile).then(
                                     (response) => {
-                                        vm.profile = response.body
+                                        vm.profile = response.body;
                                         if (
                                             vm.profile.residential_address ==
                                             null
                                         ) {
-                                            vm.profile.residential_address = {}
+                                            vm.profile.residential_address = {};
                                         }
                                         if (
                                             vm.profile
@@ -1617,20 +1606,20 @@ export default {
                                                 .leaseslicensing_organisations
                                                 .length > 0
                                         ) {
-                                            vm.managesOrg = 'Yes'
+                                            vm.managesOrg = 'Yes';
                                         }
                                     },
                                     (error) => {
-                                        console.log(error)
+                                        console.error(error);
                                     }
-                                )
+                                );
                                 swal(
                                     'Unlink',
                                     'You have been successfully unlinked from ' +
                                         org_name +
                                         '.',
                                     'success'
-                                )
+                                );
                             },
                             (error) => {
                                 swal(
@@ -1640,50 +1629,52 @@ export default {
                                         '. ' +
                                         error.body,
                                     'error'
-                                )
+                                );
                             }
-                        )
+                        );
                 },
                 (error) => {}
-            )
+            );
         },
         fetchProfile: async function () {
-            let response = null
+            let response = null;
             //let submitter_id = 666;
             if (this.submitterId) {
                 response = await this.$http.get(
                     `${api_endpoints.submitter_profile}?submitter_id=${this.submitterId}`
-                )
+                );
             } else {
-                response = await this.$http.get(api_endpoints.profile)
+                response = await this.$http.get(api_endpoints.profile);
             }
-            this.profile = Object.assign(response.body)
+            this.profile = Object.assign(response.body);
             if (this.profile.residential_address == null) {
                 this.profile.residential_address = Object.assign({
                     country: 'AU',
-                })
+                });
             }
             if (this.profile.postal_address == null) {
-                this.profile.postal_address = Object.assign({})
+                this.profile.postal_address = Object.assign({});
             }
             if (this.profile.dob) {
-                this.profile.dob = moment(this.profile.dob).format('DD/MM/YYYY')
+                this.profile.dob = moment(this.profile.dob).format(
+                    'DD/MM/YYYY'
+                );
             }
             this.phoneNumberReadonly =
                 this.profile.phone_number === '' ||
                 this.profile.phone_number === null ||
                 this.profile.phone_number === 0
                     ? false
-                    : true
+                    : true;
             this.mobileNumberReadonly =
                 this.profile.mobile_number === '' ||
                 this.profile.mobile_number === null ||
                 this.profile.mobile_number === 0
                     ? false
-                    : true
+                    : true;
         },
     },
-}
+};
 </script>
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->

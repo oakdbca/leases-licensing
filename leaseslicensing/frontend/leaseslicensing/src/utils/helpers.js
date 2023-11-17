@@ -231,22 +231,19 @@ module.exports = {
             });
     },
     processError: async function (err) {
-        console.log(err);
+        console.error(err);
         let errorText = '';
         if (err.body.non_field_errors) {
-            console.log('non_field_errors');
             // When non field errors raised
             for (let i = 0; i < err.body.non_field_errors.length; i++) {
                 errorText += err.body.non_field_errors[i] + '<br />';
             }
         } else if (Array.isArray(err.body)) {
-            console.log('isArray');
             // When serializers.ValidationError raised
             for (let i = 0; i < err.body.length; i++) {
                 errorText += err.body[i] + '<br />';
             }
         } else {
-            console.log('else');
             // When field errors raised
             for (let field_name in err.body) {
                 if (
@@ -301,7 +298,6 @@ module.exports = {
             console.error(error);
             resData = response;
         }
-        console.log(resData);
         if (Array.isArray(resData)) {
             for (let i = 0; i < resData.length; i++) {
                 errorString += resData[i] + '<br>';
@@ -310,7 +306,7 @@ module.exports = {
             // Stringify obj
             errorString = JSON.stringify(resData);
         }
-        console.log(errorString);
+        console.error(errorString);
         return errorString;
     },
     getErrorStringFromResponseData(data) {

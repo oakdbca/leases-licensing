@@ -207,9 +207,7 @@ class CompliancePaginatedViewSet(viewsets.ModelViewSet):
         qs = self.get_queryset().exclude(
             processing_status=Compliance.PROCESSING_STATUS_FUTURE
         )
-        # qs = ProposalFilterBackend().filter_queryset(self.request, qs, self)
         qs = self.filter_queryset(qs)
-        # qs = qs.order_by('lodgement_number', '-issue_date').distinct('lodgement_number')
 
         # on the internal organisations dashboard, filter the Proposal/Approval/Compliance datatables
         # by applicant/organisation

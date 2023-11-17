@@ -4,8 +4,8 @@ import re
 
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
-from django.core.exceptions import ValidationError
 from django.core.cache import cache
+from django.core.exceptions import FieldError, ValidationError
 from django.db import models, transaction
 from django.db.models import JSONField, Q
 from django.db.models.deletion import ProtectedError
@@ -45,7 +45,9 @@ from leaseslicensing.components.proposals.models import (
     RequirementDocument,
     copy_gis_data,
     copy_groups,
+    copy_proposal_details,
     copy_proposal_geometry,
+    copy_proposal_requirements,
 )
 from leaseslicensing.helpers import is_customer, user_ids_in_group
 from leaseslicensing.ledger_api_utils import retrieve_email_user
@@ -311,7 +313,7 @@ class Approval(LicensingModelVersioned):
         "Number of times an Approval has been renewed", default=0
     )
     # For leases that are migrated
-    original_leaselicense_number = models.CharField(
+    original_leaselicence_number = models.CharField(
         max_length=255, blank=True, null=True
     )
     migrated = models.BooleanField(default=False)
@@ -626,7 +628,7 @@ class Approval(LicensingModelVersioned):
             can_provide_renewal_document = ApprovalTypeDocumentType.objects.filter(
                 approval_type=self.approval_type, is_renewal_document=True
             ).exists()
-        except:
+        except FieldError:
             logger.warning(
                 f"{self.approval_type} {self.lodgement_number} does not allow for renewal documents"
             )
@@ -1129,8 +1131,25 @@ class ApprovalTransfer(LicensingModelVersioned):
             )
         super().save(**kwargs)
 
-    def user_has_object_permission(self, user):
-        return self.approval.user_has_object_permission(user)
+    def is_transferee(self, user_id):
+        return (
+            self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL
+            and self.transferee == user_id
+        )
+
+    def is_transferee_user_org(self, user_id):
+        user_orgs = get_organisation_ids_for_user(user_id)
+        return (
+            self.transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_ORGANISATION
+            and self.transferee in user_orgs
+        )
+
+    def user_has_object_permission(self, user_id):
+        return (
+            self.approval.user_has_object_permission(user_id)
+            or self.is_transferee(user_id)
+            or self.is_transferee_user_org(user_id)
+        )
 
     def cancel(self, user):
         if self.processing_status != self.APPROVAL_TRANSFER_STATUS_DRAFT:
@@ -1141,6 +1160,10 @@ class ApprovalTransfer(LicensingModelVersioned):
         self.processing_status = self.APPROVAL_TRANSFER_STATUS_CANCELLED
         self.save()
         logger.info(f"Cancelled ApprovalTransfer {self}")
+
+    @property
+    def has_supporting_documents(self):
+        return self.approval_transfer_supporting_documents.exists()
 
     @transaction.atomic
     def initiate(self, user_id):
@@ -1196,16 +1219,13 @@ class ApprovalTransfer(LicensingModelVersioned):
         # Query the original proposal again so we have the correct reference
         original_proposal = Proposal.objects.get(id=self.approval.current_proposal.id)
 
-        # Copy over previous groups
+        # Copy over data from original proposal
         copy_groups(original_proposal, transfer_proposal)
-
-        # Copy over the proposal geometry
         copy_proposal_geometry(original_proposal, transfer_proposal)
-
-        # Copy over previous gis data
+        copy_proposal_details(original_proposal, transfer_proposal)
         copy_gis_data(original_proposal, transfer_proposal)
+        copy_proposal_requirements(original_proposal, transfer_proposal)
 
-        # Email the proponent to confirm the approval transfer has been initiated
         send_approval_transfer_holder_email_notification(self.approval)
 
         # Email the transferee to inform them that the approval transfer has been initiated

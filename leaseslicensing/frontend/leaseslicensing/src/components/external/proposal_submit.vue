@@ -50,21 +50,18 @@
     </div>
 </template>
 <script>
-import { api_endpoints, helpers } from '@/utils/hooks';
 export default {
     beforeRouteEnter: function (to, from, next) {
         if (to.params.proposal_id) {
             fetch(`/api/proposal/${to.params.proposal_id}.json`).then(
                 (res) => {
                     next(async (vm) => {
-                        console.log(vm);
                         const proposalData = await res.json();
-                        console.log(proposalData);
                         vm.proposal = proposalData;
                     });
                 },
                 (err) => {
-                    console.log(err);
+                    console.error(err);
                 }
             );
         }

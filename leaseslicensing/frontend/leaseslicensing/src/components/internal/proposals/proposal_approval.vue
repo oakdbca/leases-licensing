@@ -14,48 +14,10 @@
             type="warning"
             icon="exclamation-triangle-fill"
         >
-            <p>
-                This Proposal was declined. The decision was emailed to
-                {{ proposal.submitter.email }}
-            </p>
+            This Proposal was declined. The decision was emailed to
+            {{ proposal.submitter.email }}
         </BootstrapAlert>
 
-        <!--div class="card card-default">
-            <div class="card-header">
-                <h3 v-if="!isFinalised" class="card-title">Proposed Decision
-                    <a class="panelClicker" :href="'#'+proposedDecision" data-toggle="collapse"  data-parent="#userInfo" expanded="false" :aria-controls="proposedDecision">
-                        <span class="glyphicon glyphicon-chevron-down pull-right "></span>
-                    </a>
-                </h3>
-                <h3 v-else class="card-title">Decision
-                    <a class="panelClicker" :href="'#'+proposedDecision" data-toggle="collapse"  data-parent="#userInfo" expanded="false" :aria-controls="proposedDecision">
-                        <span class="glyphicon glyphicon-chevron-down pull-right "></span>
-                    </a>
-                </h3>
-            </div>
-            <div class="card-body" :id="proposedDecision">
-                <div class="row">
-                    <div class="col-sm-12">
-                        <template v-if="!proposal.proposed_decline_status">
-                            <template v-if="isFinalised">
-                                <p><strong>Decision: Issue</strong></p>
-                                <p><strong>Start date: {{proposal.proposed_issuance_approval.start_date}}</strong></p>
-                                <p><strong>Expiry date: {{proposal.proposed_issuance_approval.expiry_date}}</strong></p>
-                                <p><strong>CC emails: {{proposal.proposed_issuance_approval.cc_email}}</strong></p>
-                            </template>
-                            <template v-else>
-                                <p><strong>Proposed decision: Issue</strong></p>
-                                <p><strong>Proposed cc emails: {{proposal.proposed_issuance_approval.cc_email}}</strong></p>
-                            </template>
-                        </template>
-                        <template v-else>
-                            <strong v-if="!isFinalised">Proposed decision: Decline</strong>
-                            <strong v-else>Decision: Decline</strong>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </div-->
         <FormSection
             :form-collapse="false"
             :label="decisionLabel"
@@ -334,7 +296,6 @@ export default {
         },
         displayAwaitingPaymentMsg: function () {
             let display = false;
-            console.log(this.proposal.processing_status);
             if (
                 this.proposal.processing_status_id ===
                 constants.PROPOSAL_STATUS.AWAITING_PAYMENT.ID
@@ -486,7 +447,7 @@ export default {
                                 }
                             },
                             (error) => {
-                                console.log(error);
+                                console.error(error);
                             }
                         );
                 },

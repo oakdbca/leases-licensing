@@ -93,6 +93,16 @@ export default {
         };
     },
     computed: {
+        ajaxUrl: function () {
+            var url =
+                api_endpoints.organisation_contacts_paginated +
+                '?format=datatables';
+            if (this.organisationId) {
+                url += '&organisation_id=' + this.organisationId;
+            }
+            return url;
+            s;
+        },
         filterApplied: function () {
             if (this.filterRole.toLowerCase() === '') {
                 return false;
@@ -259,9 +269,7 @@ export default {
                 responsive: true,
                 serverSide: true,
                 ajax: {
-                    url:
-                        api_endpoints.organisation_contacts_paginated +
-                        '?format=datatables',
+                    url: vm.ajaxUrl,
                     dataSrc: 'data',
 
                     // adding extra GET params for Custom filtering
@@ -280,9 +288,6 @@ export default {
                 buttons: buttons,
                 columns: vm.applicableColumns,
                 processing: true,
-                initComplete: function () {
-                    console.log('in initComplete');
-                },
             };
         },
     },
@@ -358,7 +363,6 @@ export default {
                                 icon: 'error',
                             });
                         }
-                        console.log(data);
                         return Promise.reject(error);
                     }
                     swal.fire({
@@ -377,7 +381,6 @@ export default {
         },
         addOrgContactEventListeners: function () {
             let vm = this;
-            console.log('in addOrgContactEventListeners');
 
             vm.$refs.organisation_contacts_datatable.vmDataTable.on(
                 'click',
@@ -401,7 +404,7 @@ export default {
                             }
                         },
                         (error) => {
-                            console.log(error);
+                            console.error(error);
                         }
                     );
                 }

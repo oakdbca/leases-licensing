@@ -8,13 +8,19 @@
                 novalidate
             >
                 <div class="row pt-2">
-                    <VueAlert v-model:show="showError" type="danger"
-                        ><!-- eslint-disable-next-line vue/no-v-html -->
-                        <strong v-html="errorString"></strong>
+                    <VueAlert
+                        v-if="errorString && errorString.length > 0"
+                        type="danger"
+                    >
+                        <!-- eslint-disable-next-line vue/no-v-html -->
+                        <strong>{{ errorString }}</strong>
                         <!--eslint-enable-->
                     </VueAlert>
                     <div v-if="registrationOfInterest" class="col-sm-12">
-                        <div class="row mb-3">
+                        <div
+                            v-if="!proposal.proposed_decline_status"
+                            class="row mb-3"
+                        >
                             <label class="col-sm-3 col-form-label">{{
                                 decisionLabel
                             }}</label>
@@ -44,6 +50,19 @@
                                         >
                                     </li>
                                 </ul>
+                            </div>
+                        </div>
+                        <div
+                            v-if="proposal.proposed_decline_status"
+                            class="row mb-3 align-items-center"
+                        >
+                            <label class="col-sm-3 col-form-label">
+                                {{ decisionLabel }}
+                            </label>
+                            <div class="col-sm-9">
+                                <span class="badge bg-danger p-2 fs-6">
+                                    Decline</span
+                                >
                             </div>
                         </div>
                         <div class="row mb-3">
@@ -124,7 +143,10 @@
                             </div>
                         </div>
                         <div
-                            v-if="proposal.proposed_decline_status"
+                            v-if="
+                                !proposalDeclined &&
+                                proposal.proposed_decline_status
+                            "
                             class="row pt-2"
                         >
                             <div class="col-sm-12">
@@ -243,7 +265,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div v-show="showstartDateError" class="row">
+                            <div v-show="startDateErrorString" class="row">
                                 <VueAlert class="col-sm-12" type="danger"
                                     ><strong>{{ startDateErrorString }}</strong>
                                 </VueAlert>
@@ -289,7 +311,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div v-show="showtoDateError" class="row">
+                            <div v-show="toDateErrorString" class="row">
                                 <VueAlert class="col-sm-12" type="danger"
                                     ><strong>{{ toDateErrorString }}</strong>
                                 </VueAlert>
@@ -454,6 +476,11 @@
             </ul>
             <p v-if="can_preview"></p>
         </div>
+        <div v-if="issuingApproval" class="container">
+            <div class="row">
+                <BootstrapSpinner class="text-primary" />
+            </div>
+        </div>
         <!-- eslint-disable-next-line vue/no-deprecated-slot-attribute -->
         <div slot="footer"></div>
         <!--eslint-enable-->
@@ -539,36 +566,25 @@ export default {
             approvalTypes: [],
             selectedApprovalType: {},
             selectedApprovalTypeId: null,
-            // Document Types arrays rely on selectedApprovalTypeId
-            //state: 'proposed_approval',
             issuingApproval: false,
             approvalDecisionText: {
                 approve_lease_licence:
                     'Invite Proponent to Apply for a Lease or Licence',
                 approve_competitive_process: 'Start Competitive process',
             },
-            validation_form: null,
-            errors: false,
-            toDateError: false,
-            startDateError: false,
             errorString: '',
             toDateErrorString: '',
             startDateErrorString: '',
-            successString: '',
-            success: false,
-            datepickerOptions: {
-                format: 'DD/MM/YYYY',
-                showClear: true,
-                useCurrent: false,
-                keepInvalid: true,
-                allowInputToggle: true,
-            },
-            warningString:
-                'Please attach Level of Approval document before issuing Approval',
             detailsTexts: {},
         };
     },
     computed: {
+        proposalDeclined: function () {
+            return (
+                this.proposal.processing_status_id ===
+                constants.PROPOSAL_STATUS.DECLINED.ID
+            );
+        },
         selectedApprovalTypeExists: function () {
             if (this.selectedApprovalType && this.selectedApprovalType.id) {
                 return true;
@@ -640,18 +656,6 @@ export default {
                     : '';
                 return this.detailsTexts[id] || '';
             }
-        },
-        showError: function () {
-            var vm = this;
-            return vm.errors;
-        },
-        showtoDateError: function () {
-            var vm = this;
-            return vm.toDateError;
-        },
-        showstartDateError: function () {
-            var vm = this;
-            return vm.startDateError;
         },
         title: function () {
             return this.processing_status == 'With Approver'
@@ -778,7 +782,6 @@ export default {
             });
         },
         updateProposedDecisionDetails(detailsText) {
-            console.log('detailsText', detailsText);
             if (detailsText) {
                 $('.details-invalid-feedback').hide();
             }
@@ -864,7 +867,6 @@ export default {
                 }
             }
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');
@@ -877,7 +879,7 @@ export default {
             return false;
         },
         sendData: async function () {
-            this.errors = false;
+            this.errorString = '';
             this.issuingApproval = true;
             this.approval.assessment = this.assessment;
 
@@ -914,13 +916,12 @@ export default {
                         });
                         this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
                     } else {
-                        this.errors = true;
                         this.issuingApproval = false;
                         this.errorString =
                             await helpers.parseFetchError(response);
                     }
                 } else if (this.proposedApprovalState == 'final_approval') {
-                    const response = await fetch(
+                    fetch(
                         helpers.add_endpoint_json(
                             api_endpoints.proposals,
                             this.proposal_id + '/final_approval'
@@ -929,22 +930,35 @@ export default {
                             body: JSON.stringify(this.approval),
                             method: 'POST',
                         }
-                    );
-                    if (response.ok) {
-                        this.issuingApproval = false;
-                        Swal.fire({
-                            title: `Approval Issued: ${this.proposal.lodgement_number}`,
-                            text: 'Issued successfully.',
-                            icon: 'success',
-                            confirmButtonText: 'OK',
+                    )
+                        .then(async (response) => {
+                            const data = await response.json();
+                            if (!response.ok) {
+                                let error =
+                                    (data.constructor.name === 'Array' &&
+                                        data) ||
+                                    (data && data.message) ||
+                                    response.statusText;
+                                this.issuingApproval = false;
+                                console.error(error);
+                                this.errorString = error;
+                            }
+                            this.issuingApproval = false;
+                            Swal.fire({
+                                title: `Approval Issued: ${this.proposal.lodgement_number}`,
+                                text: 'Issued successfully.',
+                                icon: 'success',
+                                confirmButtonText: 'OK',
+                            });
+                            this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
+                        })
+                        .catch((error) => {
+                            console.error(
+                                `There was an error issuing approval`,
+                                error
+                            );
+                            this.errorString = constants.ERRORS.NETWORK_ERROR;
                         });
-                        this.$router.push({ path: '/internal' }); //Navigate to dashboard page after Propose issue.
-                    } else {
-                        this.errors = true;
-                        this.issuingApproval = false;
-                        this.errorString =
-                            await helpers.parseFetchError(response);
-                    }
                 }
             });
         },
@@ -983,11 +997,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-/* input#details {
-    pointer-events: none;
-    opacity: 0;
-    height: 1px;
-    display: block;
-} */
-</style>

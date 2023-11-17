@@ -1048,7 +1048,6 @@ export default {
                 endpoint,
                 '/' + obj_id + '/process_shapefile_document/'
             );
-            console.log({ url });
             return url;
         },
         filterApplied: function () {
@@ -1182,10 +1181,6 @@ export default {
     },
     watch: {
         filterApplicationsMapApplicationType: function () {
-            console.log(
-                'filterApplicationsMapApplicationType',
-                this.filterApplicationsMapApplicationType
-            );
             this.applyFiltersFrontEnd();
             sessionStorage.setItem(
                 this.filterApplicationsMapApplicationTypeCacheName,
@@ -1232,12 +1227,10 @@ export default {
         // },
     },
     created: function () {
-        console.log('created()');
         this.fetchFilterLists();
         this.fetchProposals();
     },
     mounted: function () {
-        console.log('mounted()');
         let vm = this;
         vm.loadingMap = true;
 
@@ -1252,7 +1245,6 @@ export default {
             if (vm.refreshMapOnMounted) {
                 vm.forceToRefreshMap();
             } else {
-                console.log('Done initializing map (no refresh)');
                 vm.loadingMap = false;
             }
         });
@@ -1260,7 +1252,6 @@ export default {
     methods: {
         updateFilters: function () {
             this.$nextTick(function () {
-                console.log('updateFilters');
                 this.filterApplicationsMapApplicationType =
                     sessionStorage.getItem(
                         this.filterApplicationsMapApplicationTypeCacheName
@@ -1269,16 +1260,6 @@ export default {
                               this.filterApplicationsMapApplicationTypeCacheName
                           )
                         : 'all';
-                console.log(
-                    'this.filterApplicationsMapApplicationType',
-                    this.filterApplicationsMapApplicationType
-                );
-                console.log(
-                    'sessionStorage.getItem(this.filterApplicationsMapProcessingStatusCacheName)',
-                    sessionStorage.getItem(
-                        this.filterApplicationsMapProcessingStatusCacheName
-                    )
-                );
                 this.filterApplicationsMapProcessingStatus =
                     sessionStorage.getItem(
                         this.filterApplicationsMapProcessingStatusCacheName
@@ -1316,16 +1297,6 @@ export default {
         },
         applyFiltersFrontEnd: function () {
             this.filteredProposals = [...this.proposals];
-            console.log('applyFiltersFrontEnd', this.filteredProposals);
-            console.log('this.filteredProposals', this.filteredProposals);
-            console.log(
-                'this.filterApplicationsMapApplicationType',
-                this.filterApplicationsMapApplicationType
-            );
-            console.log(
-                'this.filterApplicationsMapApplicationType typeof',
-                typeof this.filterApplicationsMapApplicationType
-            );
             if ('all' != this.filterApplicationsMapApplicationType) {
                 this.filteredProposals = [
                     ...this.filteredProposals.filter(
@@ -1334,7 +1305,6 @@ export default {
                             this.filterApplicationsMapApplicationType
                     ),
                 ];
-                console.log('this.filteredProposals', this.filteredProposals);
             }
             if ('all' != this.filterApplicationsMapProcessingStatus) {
                 this.filteredProposals = [
@@ -1388,7 +1358,6 @@ export default {
             );
         },
         displayAllFeatures: function () {
-            console.log('in displayAllFeatures()');
             let vm = this;
             if (vm.map) {
                 if (vm.modelQuerySource.getFeatures().length > 0) {
@@ -1431,7 +1400,6 @@ export default {
         forceToRefreshMap(timeout = 700) {
             let vm = this;
             setTimeout(function () {
-                console.log('Refreshing map');
                 vm.map.updateSize();
                 // Unset loading map spinner here
                 vm.loadingMap = false;
@@ -1644,13 +1612,11 @@ export default {
                         'select feature',
                         function (s) {
                             // Undo fn: set to the previous id list and styles
-                            console.log('undo selected', s.before, s.after);
                             vm.selectedFeatureIds = s.before;
                             vm.setStyleForUnAndSelectedFeatures();
                         },
                         function (s) {
                             // Redo fn: reset the ids list and styles
-                            console.log('redo selected', s.before, s.after);
                             vm.selectedFeatureIds = s.after;
                             vm.setStyleForUnAndSelectedFeatures();
                         }
@@ -1828,8 +1794,6 @@ export default {
                 console.log('Draw: click event', evt);
             });
             vm.drawForModel.on('drawend', function (evt) {
-                console.log(evt);
-                console.log(evt.feature.values_.geometry.flatCoordinates);
                 let model = vm.context || {};
 
                 let color =
@@ -1977,7 +1941,6 @@ export default {
             let vm = this;
             vm.map.on('singleclick', function (evt) {
                 if (vm.drawing || vm.measuring) {
-                    console.log(evt);
                     // TODO: must be a feature
                     vm.lastPoint = new Point(evt.coordinate);
                     return;
@@ -2355,7 +2318,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.proposals = data;
@@ -2663,7 +2626,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
                     vm.errorString = helpers.apiVueResourceError(error);
                     swal.fire({
                         title: 'Validation',

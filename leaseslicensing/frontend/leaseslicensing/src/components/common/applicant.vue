@@ -613,11 +613,10 @@ export default {
                 .fetchUrl(url)
                 .then((data) => {
                     vm.countries = Object.assign({}, data);
-                    console.log('Fetched countries', vm.countries);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;
-                    console.log(`Error fetching countries data: ${error}`);
+                    console.error(`Error fetching countries data: ${error}`);
                 });
         },
         fetchProfile: function () {
@@ -627,11 +626,10 @@ export default {
                 .fetchUrl(url)
                 .then((data) => {
                     vm.profile = Object.assign({}, data);
-                    console.log('Fetched profiles', vm.profile);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;
-                    console.log(`Error fetching profile data: ${error}`);
+                    console.error(`Error fetching profile data: ${error}`);
                 });
         },
         updatePersonal: function () {
@@ -674,7 +672,7 @@ export default {
                         });
                     })
                     .catch((error) => {
-                        console.log(error);
+                        console.error(error);
                     })
                     .finally(() => {
                         vm.updatingPersonal = false;
@@ -729,7 +727,7 @@ export default {
                         });
                     })
                     .catch((error) => {
-                        console.log(error);
+                        console.error(error);
                     })
                     .finally(() => {
                         vm.updatingContact = false;
@@ -804,7 +802,7 @@ export default {
                         });
                     })
                     .catch((error) => {
-                        console.log(error);
+                        console.error(error);
                     })
                     .finally(() => {
                         vm.updatingAddress = false;

@@ -162,7 +162,6 @@ export default {
             var form = document.getElementById('approvalCancellationForm');
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');
@@ -173,7 +172,6 @@ export default {
         },
         sendData: function () {
             let vm = this;
-            console.log(vm.approval_cancellation.cancellation_date);
             let approval_cancellation = Object.assign(
                 {},
                 vm.approval_cancellation

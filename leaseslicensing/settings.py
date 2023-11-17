@@ -166,6 +166,9 @@ SYSTEM_NAME = env("SYSTEM_NAME", "Leases and Licensing")
 SYSTEM_NAME_SHORT = env("SYSTEM_NAME_SHORT", "LALS")
 SITE_PREFIX = env("SITE_PREFIX")
 SITE_DOMAIN = env("SITE_DOMAIN")
+SITE_SUBDOMAIN_INTERNAL_SUFFIX = env(
+    "SITE_SUBDOMAIN_INTERNAL_SUFFIX", "-internal-pvs02"
+)
 
 LEASES_LICENSING_EXTERNAL_URL = env("LEASES_LICENSING_EXTERNAL_URL")
 
@@ -349,20 +352,20 @@ PROPOSAL_TYPE_NEW = "new"
 PROPOSAL_TYPE_RENEWAL = "renewal"
 PROPOSAL_TYPE_AMENDMENT = "amendment"
 PROPOSAL_TYPE_TRANSFER = "transfer"
+PROPOSAL_TYPE_MIGRATION = "migration"
 PROPOSAL_TYPES = [
     (PROPOSAL_TYPE_NEW, "New Proposal"),
     (PROPOSAL_TYPE_AMENDMENT, "Amendment"),
     (PROPOSAL_TYPE_RENEWAL, "Renewal"),
     (PROPOSAL_TYPE_TRANSFER, "Transfer"),
+    (PROPOSAL_TYPE_MIGRATION, "Migration"),
 ]
 
 APPLICATION_TYPE_REGISTRATION_OF_INTEREST = "registration_of_interest"
 APPLICATION_TYPE_LEASE_LICENCE = "lease_licence"
-APPLICATION_TYPE_LEASE_LICENCE_TRANSFER = "lease_licence_transfer"
 APPLICATION_TYPES = [
     (APPLICATION_TYPE_REGISTRATION_OF_INTEREST, "Registration of Interest"),
     (APPLICATION_TYPE_LEASE_LICENCE, "Lease Licence"),
-    (APPLICATION_TYPE_LEASE_LICENCE_TRANSFER, "Lease Licence Transfer"),
 ]
 KMI_SERVER_URL = env("KMI_SERVER_URL", "https://kmi.dbca.wa.gov.au")
 
@@ -554,4 +557,7 @@ ACTION_DESTROY = "Destroy {} {}"
 
 # When debug is False, the following message will be sent to the user
 # The real exception will be logged
-API_EXCEPTION_MESSAGE = "An error occurred while processing your request."
+API_EXCEPTION_MESSAGE = (
+    "An error occurred while processing your request, "
+    f"please try again and if the problem persists contact {SUPPORT_EMAIL}"
+)

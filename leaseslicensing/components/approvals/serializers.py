@@ -119,6 +119,7 @@ class ApprovalTransferSerializer(serializers.ModelSerializer):
     applicant_for_writing = ApprovalTransferApplicantUpdateSerializer(
         write_only=True, allow_null=True
     )
+    has_supporting_documents = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = ApprovalTransfer
@@ -137,16 +138,17 @@ class ApprovalTransferSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         logger.debug(validated_data)
-        transferee_type = validated_data.get("transferee_type")
-        if (
-            transferee_type == ApprovalTransfer.TRANSFEREE_TYPE_INDIVIDUAL
-            and "applicant_for_writing" in validated_data
-        ):
+        applicant_for_writing = validated_data.get("applicant_for_writing", None)
+        if applicant_for_writing:
             applicant_data = validated_data.pop("applicant_for_writing")
-            applicant = instance.applicant
-            serializer = ApprovalTransferApplicantUpdateSerializer(
-                applicant, data=applicant_data
-            )
+            if hasattr(instance, "applicant"):
+                serializer = ApprovalTransferApplicantUpdateSerializer(
+                    instance.applicant, data=applicant_data
+                )
+            else:
+                serializer = ApprovalTransferApplicantUpdateSerializer(
+                    data=applicant_data
+                )
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
@@ -245,7 +247,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "has_draft_amendment",
             "active_amendment",
             "application_type",
-            "original_leaselicense_number",
+            "original_leaselicence_number",
             "migrated",
             "is_assessor",
             "is_approver",
@@ -287,7 +289,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
             "has_draft_transfer",
             "has_pending_renewal",
             "has_draft_renewal",
-            "active_renewal",            
+            "active_renewal",
             "has_draft_amendment",
             "active_amendment",
             "set_to_cancel",
@@ -408,7 +410,7 @@ class ApprovalSerializer(serializers.ModelSerializer):
 
     def get_approval_type__type(self, obj):
         if obj.approval_type.type is None:
-            return None # Check for no type because type property is nullable
+            return None  # Check for no type because type property is nullable
         return obj.approval_type.type.title()
 
 
@@ -618,6 +620,7 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
     approval_type_name = serializers.CharField(
         source="approval_type.name", read_only=True
     )
+    active_transfer = ApprovalTransferSerializer(read_only=True, allow_null=True)
 
     class Meta:
         model = Approval
@@ -632,4 +635,5 @@ class ApprovalBasicSerializer(serializers.ModelSerializer):
             "has_outstanding_compliances",
             "has_outstanding_invoices",
             "holder",
+            "active_transfer",
         )

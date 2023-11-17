@@ -597,6 +597,11 @@ def save_assessor_data(proposal, request, viewset):
 
     populate_gis_data(proposal, "proposalgeometry")
 
+    # For migration proposals, the assessor can save the actual proposal data
+    # That is normally only allowed by the proponent
+    if proposal.proposal_type.code == settings.PROPOSAL_TYPE_MIGRATION:
+        save_proponent_data_lease_licence(proposal, request, viewset)
+
 
 def check_geometry(instance):
     for geom in instance.proposalgeometry.all():

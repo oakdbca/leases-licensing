@@ -2,7 +2,7 @@
     <!-- External Proposal view -->
     <div class="container">
         <div
-            v-if="approval"
+            v-if="approval && approval.active_transfer"
             class="row justify-content-center align-items-center g-2"
         >
             <div class="col-md-12">
@@ -218,6 +218,17 @@
                                             />
                                         </div>
                                     </div>
+                                    <div class="row mb-3">
+                                        <BootstrapAlert
+                                            icon="exclamation-triangle-fill"
+                                            type="warning"
+                                        >
+                                            The transferee will gain access to
+                                            any information and documents that
+                                            were submitted as part of the
+                                            original lease/licence proposal.
+                                        </BootstrapAlert>
+                                    </div>
                                 </form>
                             </div>
                         </FormSection>
@@ -242,7 +253,7 @@
                                         {{ approval.lodgement_number }}
                                     </div>
                                 </div>
-                                <div class="row mb-3">
+                                <div class="row mb-4">
                                     <div class="col-3 fw-bold">
                                         Approval Document
                                     </div>
@@ -308,6 +319,29 @@
                                         />
                                     </div>
                                 </div>
+                            </div>
+                        </FormSection>
+                        <FormSection
+                            :form-collapse="false"
+                            label="Conditions"
+                            index="lease-license-transfer-conditions"
+                        >
+                            <div class="row ms-1 me-1">
+                                <BootstrapAlert
+                                    icon="exclamation-triangle-fill"
+                                    type="warning"
+                                >
+                                    <div class="mb-3 ps-3">
+                                        If any compliances become due during the
+                                        transfer process, they must be submitted
+                                        before the transfer can be completed.
+                                    </div>
+                                    <div class="ps-3">
+                                        If any invoices become due during the
+                                        transfer process, they must be paid
+                                        before the transfer can be completed.
+                                    </div>
+                                </BootstrapAlert>
                             </div>
                         </FormSection>
                     </div>
@@ -415,11 +449,13 @@ export default {
                 .then((data) => {
                     vm.approval = Object.assign({}, data);
                     if (
+                        vm.approval.active_transfer == null ||
                         vm.approval.active_transfer.processing_status != 'draft'
                     ) {
                         vm.$router.push({
                             name: 'external-dashboard',
                         });
+                        return;
                     }
                     vm.approval_details_id = uuid();
                     vm.$nextTick(() => {
@@ -431,7 +467,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(
+                    console.error(
                         `Error fetching external approval data ${error}`
                     );
                 })
@@ -456,7 +492,7 @@ export default {
                         'page'
                     );
                 } catch (error) {
-                    console.log(
+                    console.error(
                         'Error refreshing organisation contacts datatable'
                     );
                 }
@@ -526,7 +562,6 @@ export default {
                         url: vm.searchApiEndpoint,
                         dataType: 'json',
                         data: function (params) {
-                            console.log(params);
                             let query = {
                                 term: params.term,
                                 type: 'public',
@@ -605,7 +640,7 @@ export default {
                                 }
                             })
                             .catch((error) => {
-                                console.log(
+                                console.error(
                                     `Error cancelling approval transfer ${error}`
                                 );
                             });
@@ -649,7 +684,7 @@ export default {
                     }
                 })
                 .catch((error) => {
-                    console.log(`Error saving approval transfer ${error}`);
+                    console.error(`Error saving approval transfer ${error}`);
                 })
                 .finally(() => {
                     this.loading = false;
@@ -662,47 +697,66 @@ export default {
             });
         },
         initiateTransfer: function () {
-            this.loading = true;
             this.errors = null;
-            this.approval.active_transfer.applicant_for_writing =
-                this.approval.active_transfer.applicant;
-            fetch(
-                helpers.add_endpoint_join(
-                    api_endpoints.approval_transfers,
-                    this.approval.active_transfer.id
-                ) + 'initiate/',
-                {
-                    method: 'PATCH',
-                    body: JSON.stringify(this.approval.active_transfer),
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+            let confirmation_html = `<p class="text-starts">Are you sure you want to transfer ${this.approval.lodgement_number} - ${this.approval.approval_type} to ${this.selectedTransferee}?</p>`;
+            confirmation_html += `<p>The transferee will gain access to any information and documents that were submitted as part of the original lease/licence proposal.</p>`;
+            confirmation_html += `<p>If any compliances become due during the transfer process, they must be submitted before the transfer can be completed.</p>`;
+            confirmation_html += `<p>If any invoices become due during the transfer process, they must be paid before the transfer can be completed.</p>`;
+            swal.fire({
+                title: 'Confirm Transfer Initiation',
+                html: confirmation_html,
+                icon: 'question',
+                confirmButtonText: 'Initiate Transfer',
+                showCancelButton: true,
+                reverseButtons: true,
+                cancelButtonText: 'Return to Transfer Application',
+                customClass: 'swal-extra-wide',
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.loading = true;
+                    this.approval.active_transfer.applicant_for_writing =
+                        this.approval.active_transfer.applicant;
+                    fetch(
+                        helpers.add_endpoint_join(
+                            api_endpoints.approval_transfers,
+                            this.approval.active_transfer.id
+                        ) + 'initiate/',
+                        {
+                            method: 'PATCH',
+                            body: JSON.stringify(this.approval.active_transfer),
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    )
+                        .then(async (response) => {
+                            if (response.ok) {
+                                swal.fire({
+                                    title: 'Success',
+                                    text: `${this.approval.lodgement_number} - ${this.approval.approval_type} Transfer to ${this.selectedTransferee} Initiated`,
+                                    icon: 'success',
+                                    confirmButtonText: 'OK',
+                                });
+                                this.$router.push({
+                                    name: 'external-approval-transfer-initiated',
+                                });
+                            } else {
+                                const responseJSON = await response.json();
+                                this.errors = responseJSON.errors;
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                console.error(this.errors);
+                            }
+                        })
+                        .catch((error) => {
+                            console.error(
+                                `Error saving approval transfer ${error}`
+                            );
+                        })
+                        .finally(() => {
+                            this.loading = false;
+                        });
                 }
-            )
-                .then(async (response) => {
-                    if (response.ok) {
-                        swal.fire({
-                            title: 'Success',
-                            text: `${this.approval.lodgement_number} - ${this.approval.approval_type} Transfer to ${this.selectedTransferee} Initiated`,
-                            icon: 'success',
-                            confirmButtonText: 'OK',
-                        });
-                        this.$router.push({
-                            name: 'external-approval-transfer-initiated',
-                        });
-                    } else {
-                        const responseJSON = await response.json();
-                        this.errors = responseJSON.errors;
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                        console.error(this.errors);
-                    }
-                })
-                .catch((error) => {
-                    console.log(`Error saving approval transfer ${error}`);
-                })
-                .finally(() => {
-                    this.loading = false;
-                });
+            });
         },
     },
 };

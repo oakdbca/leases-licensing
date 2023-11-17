@@ -6,11 +6,11 @@
                     {{ approval.approval_type }}:
                     {{ approval.lodgement_number }}
                     <small
-                        v-if="approval.original_leaselicense_number"
+                        v-if="approval.original_leaselicence_number"
                         class="text-muted"
                     >
                         (Migrated from:
-                        {{ approval.original_leaselicense_number }})</small
+                        {{ approval.original_leaselicence_number }})</small
                     >
                 </h3>
             </div>
@@ -390,7 +390,6 @@ export default {
         this.original_invoicing_details = _.cloneDeep(
             this.approval.invoicing_details
         );
-        console.log(this.original_invoicing_details);
         if (this.approval.submitter.postal_address == null) {
             this.approval.submitter.postal_address = {};
         }
@@ -398,8 +397,6 @@ export default {
             var tab_element = document.querySelector('#pills-invoicing-tab');
             var tab = new bootstrap.Tab(tab_element);
             if (window.location.hash == '#edit-invoicing') {
-                console.log(this.approval);
-                console.log('opening invoicing tab');
                 this.loadInvoices = true;
                 tab.show();
                 window.scrollTo(0, document.body.scrollHeight);
@@ -409,7 +406,6 @@ export default {
     mounted: function () {},
     methods: {
         tabClicked: function (param) {
-            console.log(`${param} tab clicked`);
             if (param == 'invoicing') {
                 this.loadInvoices = true;
             } else if (param === 'map') {
@@ -459,7 +455,7 @@ export default {
                                 const error =
                                     (data && data.message) ||
                                     response.statusText;
-                                console.log(error);
+                                console.error(error);
                                 return Promise.reject(error);
                             }
                             let successMessage =
@@ -476,7 +472,7 @@ export default {
                             vm.approval = Object.assign({}, data);
                         },
                         (error) => {
-                            console.log(error);
+                            console.error(error);
                         }
                     );
                 }
@@ -766,7 +762,7 @@ export default {
                                 const error =
                                     (data && data.message) ||
                                     response.statusText;
-                                console.log(error);
+                                console.error(error);
                                 Promise.reject(error);
                             }
                             vm.$router.push({
@@ -774,7 +770,7 @@ export default {
                             });
                         },
                         (error) => {
-                            console.log(error);
+                            console.error(error);
                         }
                     );
                 }

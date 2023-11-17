@@ -32,13 +32,9 @@ module.exports = {
         },
         WITH_APPROVER: { ID: 'with_approver', TEXT: 'With Approver' },
         WITH_REFERRAL: { ID: 'with_referral', TEXT: 'With Referral' },
-        WITH_REFERRAL_CONDITIONS: {
-            ID: 'with_referral_conditions',
-            TEXT: 'With Referral (Conditions)',
-        },
         APPROVED_APPLICATION: {
-            ID: 'approved_application',
-            TEXT: 'Approved (Application)',
+            ID: 'approved_registration_of_interest',
+            TEXT: 'Approved (Registration of Interest)',
         },
         APPROVED_COMPETITIVE_PROCESS: {
             ID: 'approved_competitive_process',
@@ -107,6 +103,13 @@ module.exports = {
             TEXT: 'Extended (base fee review)',
         },
         EXPIRED_LICENCE: { ID: 'expired_licence', TEXT: 'Expired (licence)' },
+    },
+    PROPOSAL_TYPE: {
+        AMENDMENT: { code: 'amendment', description: 'Amendment' },
+        NEW: { code: 'new', description: 'New Proposal' },
+        RENEWAL: { code: 'renewal', description: 'Renewal' },
+        TRANSFER: { code: 'transfer', description: 'Transfer' },
+        MIGRATION: { code: 'migration', description: 'Migration' },
     },
     APPROVAL_TYPE: {
         LICENCE: { ID: 'licence', TEXT: 'Licence' },

@@ -392,7 +392,6 @@ export default {
                 endpoint,
                 '/' + obj_id + '/process_shapefile_document/'
             );
-            console.log({ url });
             return url;
         },
         valid_button_disabled: function () {
@@ -474,8 +473,6 @@ export default {
                 vm.shapefile_json &&
                 Object.keys(vm.shapefile_json).length > 0
             ) {
-                // console.log(vm.shapefile_json);
-
                 let invalid_files = [];
                 // Add polygons uploaded by the user that already have been added as layer to a list
                 let added_layer = [];
@@ -496,7 +493,7 @@ export default {
 
                     added_layer.forEach((layer) => {
                         if (!shapefile_sources.includes(layer.get('source_'))) {
-                            console.log(
+                            console.warn(
                                 `Layer ${layer.get(
                                     'source_'
                                 )} seems to have been removed`
@@ -536,7 +533,7 @@ export default {
                         shapeVectorLayer.set('source_', source_);
                         vm.map.addLayer(shapeVectorLayer);
                     } else {
-                        console.log(`Layer ${source_} already exists`);
+                        console.warn(`Layer ${source_} already exists`);
                     }
 
                     // Check whether there is an invalid feature polygon (e.g. does not intersect with DBCA geometries)
@@ -598,7 +595,7 @@ export default {
                     vm.is_validating = false;
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
                     vm.errorString = helpers.apiVueResourceError(error);
                     vm.is_validating = false;
                     swal.fire({
@@ -658,19 +655,8 @@ export default {
             if (geometries) {
                 for (let poly of geometries.features) {
                     const feature = new GeoJSON().readFeature(poly);
-                    //console.log(feature)
                     if (!feature.getProperties().intersects) {
                         feature.setStyle(nonIntersectingStyle);
-                    } else {
-                        // feature.setStyle(new Style({
-                        //     fill: new Fill({
-                        //         color: '#fff',
-                        //     }),
-                        //     stroke: new Stroke({
-                        //         color: 'rgba(255, 255, 255, 0.7)',
-                        //         width: 2,
-                        //     }),
-                        // }))
                     }
                     feature.setProperties({ id: this.newFeatureId });
                     this.leaselicenceQuerySource.addFeature(feature);
@@ -684,10 +670,6 @@ export default {
             //const format = new GeoJSON({featureProjection: 4326});
             const format = new GeoJSON();
             const features = this.leaselicenceQuerySource.getFeatures();
-            /*
-            console.log(format.writeFeatures(features));
-            console.log(this.leaselicenceQuerySource.getFeatures())
-            */
             return format.writeFeatures(features);
         },
         toggleSatIcon: function (layer) {
@@ -831,12 +813,9 @@ export default {
                     console.log(evt);
                 };
             vm.drawForLeaselicence.on('drawend', function (evt) {
-                console.log(evt);
-                console.log(evt.feature.values_.geometry.flatCoordinates);
                 //evt.feature.setId(vm.newFeatureId)
                 evt.feature.setProperties({ id: vm.newFeatureId });
                 vm.newFeatureId++;
-                console.log('newFeatureId = ' + vm.newFeatureId);
                 vm.lastPoint = evt.feature;
                 vm.sketchCoordinates = [[]];
                 vm.sketchCoordinatesHistory = [[]];
@@ -846,7 +825,6 @@ export default {
                 source: vm.leaselicenceQuerySource,
                 style: polygon_style,
             });
-            //console.log(vm.drawForLeaselicence);
             vm.map.addInteraction(vm.drawForLeaselicence);
             vm.map.addLayer(vm.leaselicenceQueryLayer);
             // update map extent when new features added
@@ -1017,7 +995,6 @@ export default {
                                 })
                                 .then((data) => {
                                     if (data.features.length > 0) {
-                                        console.log(data);
                                         vm.showPopupForLayersJson(
                                             data,
                                             evt.coordinate,
@@ -1028,7 +1005,7 @@ export default {
                                     }
                                 })
                                 .catch((error) => {
-                                    console.log(error);
+                                    console.error(error);
                                 });
 
                             /*
@@ -1050,7 +1027,6 @@ export default {
         },
         undoLeaseLicensePoint: function () {
             let vm = this;
-            console.log(vm.drawForLeaselicence.sketchCoords_);
             if (vm.lastPoint) {
                 vm.leaselicenceQuerySource.removeFeature(vm.lastPoint);
                 vm.lastPoint = null;
@@ -1080,10 +1056,8 @@ export default {
                     if (feat.getProperties().id === this.selectedFeatureId) {
                         return feat;
                     }
-                    console.log(feat.getProperties());
                 }
             );
-            console.log(feature);
             this.leaselicenceQuerySource.removeFeature(feature);
             this.selectedFeatureId = null;
         },
@@ -1094,7 +1068,6 @@ export default {
         },
         */
         showPopup: function (feature) {
-            console.log('showPopup');
             if (feature) {
                 let geometry = feature.getGeometry();
                 let coord = geometry.getCoordinates();
@@ -1139,7 +1112,6 @@ export default {
             display_all_columns,
             target_layer
         ) {
-            console.log('popup opt layers');
             let wrapper = $('<div>'); // Add wrapper element because html() used at the end exports only the contents of the jquery object
             let caption = $(
                 '<div style="text-align:center; font-weight: bold;">'
@@ -1304,10 +1276,8 @@ export default {
             setTimeout(function () {
                 vm.map.updateSize();
             }, 700);
-            // console.log(document.getElementById(this.elem_id))
         },
         setBaseLayer: function (selected_layer_name) {
-            console.log('in setBaseLayer');
             if (selected_layer_name == 'sat') {
                 this.toggleSatIcon('sat');
                 this.tileLayerMapbox.setVisible(false);

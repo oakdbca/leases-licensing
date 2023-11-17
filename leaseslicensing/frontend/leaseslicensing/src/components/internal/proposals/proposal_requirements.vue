@@ -5,6 +5,15 @@
             label="Conditions"
             index="conditions"
         >
+            <BootstrapAlert
+                v-if="
+                    conditionsMissingDates && conditionsMissingDates.length > 0
+                "
+                icon="exclamation-triangle-fill"
+                type="warning"
+            >
+                A due date and reminder date are required for every condition
+            </BootstrapAlert>
             <form class="form-horizontal" action="index.html" method="post">
                 <div class="row">
                     <div class="col-sm-12">
@@ -37,7 +46,7 @@
                 :proposal_id="proposal.id"
                 :requirements="requirements"
                 :selected-requirement="selectedRequirement"
-                @updateRequirements="updatedRequirements"
+                @updateRequirement="updateRequirement"
             />
         </FormSection>
     </div>
@@ -58,6 +67,7 @@ export default {
     props: {
         proposal: { type: Object, default: null },
     },
+    emits: ['updateRequirement'],
     data: function () {
         let vm = this;
         return {
@@ -66,7 +76,7 @@ export default {
             selectedRequirement: {},
             requirements: null,
             requirement_headers: [
-                'Requirement',
+                'Condition',
                 'Due Date',
                 'Repeats',
                 'Source',
@@ -114,28 +124,7 @@ export default {
                         data: 'requirement',
                         // eslint-disable-next-line no-unused-vars
                         mRender: function (data, type, full) {
-                            var ellipsis = '...',
-                                truncated = _.truncate(data, {
-                                    length: 25,
-                                    omission: ellipsis,
-                                    separator: ' ',
-                                }),
-                                result = '<span>' + truncated + '</span>',
-                                popTemplate = _.template(
-                                    '<a tabindex="0" ' +
-                                        'role="button" ' +
-                                        'data-bs-toggle="popover" ' +
-                                        'data-bs-trigger="focus" ' +
-                                        'data-bs-placement="top"' +
-                                        'data-bs-content="<%= text %>" ' +
-                                        '>more</button>'
-                                );
-                            if (_.endsWith(truncated, ellipsis)) {
-                                result += popTemplate({
-                                    text: data,
-                                });
-                            }
-
+                            let result = `<span data-bs-toggle="tooltip" data-bs-placement="top" style="max-width:220px" class="d-inline-block text-truncate" title="${data}">${data}</span>`;
                             return result;
                         },
                     },
@@ -169,7 +158,7 @@ export default {
                                 if (full.recurrence_schedule > 1) {
                                     plural = 's';
                                 }
-                                return `${full.recurrence_schedule} time${plural} each ${recurrence_interval}`;
+                                return `Once every ${full.recurrence_schedule} ${recurrence_interval}${plural}`;
                             }
                             return 'N/A';
                         },
@@ -204,9 +193,7 @@ export default {
                                 // Assessors can edit and/or delete all proposed requirements
                                 // Referral parties can only edit or delete their own requirements
                                 if (show_action_btns) {
-                                    if (full.copied_from == null) {
-                                        links += `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
-                                    }
+                                    links += `<a href='#' class="editRequirement" data-id="${full.id}">Edit</a><br/>`;
                                     links += `<a href='#' class="deleteRequirement" data-id="${full.id}">Delete</a><br/>`;
                                 } else if (referral_completed) {
                                     links += 'Referral completed<br/>';
@@ -251,17 +238,28 @@ export default {
         isReferrerCanEdit() {
             return this.proposal.assessor_mode.referee_can_edit;
         },
+        conditionsMissingDates() {
+            return this.proposal.requirements.filter(
+                (condition) => !condition.due_date || !condition.reminder_date
+            );
+        },
     },
     watch: {
         hasAssessorMode() {
             // reload the table
-            this.updatedRequirements();
+            this.$refs.requirements_datatable.vmDataTable.ajax.reload();
         },
     },
     mounted: async function () {
         await this.fetchRequirements();
         this.$nextTick(() => {
             this.eventListeners();
+            let tooltipTriggerList = [].slice.call(
+                document.querySelectorAll('[data-bs-toggle="tooltip"]')
+            );
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
         });
     },
     methods: {
@@ -273,7 +271,6 @@ export default {
             });
         },
         removeRequirement: async function (_id) {
-            console.log(_id);
             swal.fire({
                 title: 'Remove Requirement',
                 text: 'Are you sure you want to remove this requirement?',
@@ -294,12 +291,11 @@ export default {
                             _id + '/discard'
                         )
                     );
-                    console.log(response);
                     if (response.ok) {
                         this.selectedRequirement = {}; // Unselect, so it can be re-added without error
                         this.$refs.requirements_datatable.vmDataTable.ajax.reload();
                     } else {
-                        console.log('error');
+                        console.error('error');
                     }
                 }
             });
@@ -315,7 +311,7 @@ export default {
             if (response.ok) {
                 this.requirements = await response.json();
             } else {
-                console.log('error');
+                console.error('error');
             }
         },
         editRequirement: async function (_id) {
@@ -333,10 +329,11 @@ export default {
                     this.$refs.requirement_detail.isModalOpen = true;
                 });
             } else {
-                console.log('error');
+                console.error('error');
             }
         },
-        updatedRequirements() {
+        updateRequirement(requirement) {
+            this.$emit('updateRequirement', requirement);
             this.$refs.requirements_datatable.vmDataTable.ajax.reload();
         },
         eventListeners() {
@@ -412,7 +409,7 @@ export default {
                 );
                 this.$parent.uuid++;
             } catch (error) {
-                console.log(error);
+                console.error(error);
             }
         },
         moveUp(id) {

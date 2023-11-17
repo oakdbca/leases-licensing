@@ -167,7 +167,6 @@ export default {
                 trigger: 'click focus',
             });
             popover_elem.addEventListener('inserted.bs.popover', function () {
-                console.log('in inserted.bs.popover');
                 vm.table = $('#' + table_id).DataTable(vm.datatable_options);
 
                 // activate popover when table is drawn.
@@ -205,7 +204,6 @@ export default {
                     });
             });
             popover_elem.addEventListener('shown.bs.popover', function () {
-                console.log('in shown.bs.popover');
                 let el = vm.$refs.showRef;
                 let popover_bounding_top = parseInt(
                     $('.' + popover_name)[0].getBoundingClientRect().top

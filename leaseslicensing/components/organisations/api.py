@@ -8,7 +8,12 @@ from django.db.models import Case, CharField, IntegerField, Q, Value, When
 from django.db.models.functions import Concat
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
 from ledger_api_client.managed_models import SystemGroupPermission
-from ledger_api_client.utils import get_organisation, update_organisation_obj
+from ledger_api_client.utils import (
+    create_organisation,
+    get_organisation,
+    get_search_organisation,
+    update_organisation_obj,
+)
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as list_route
 from rest_framework.decorators import renderer_classes
@@ -32,6 +37,7 @@ from leaseslicensing.components.organisations.models import (  # ledger_organisa
     OrganisationContact,
     OrganisationRequest,
     OrganisationRequestUserAction,
+    UserDelegation,
 )
 from leaseslicensing.components.organisations.serializers import (
     MyOrganisationsSerializer,
@@ -41,6 +47,7 @@ from leaseslicensing.components.organisations.serializers import (
     OrganisationCommsSerializer,
     OrganisationContactAdminCountSerializer,
     OrganisationContactSerializer,
+    OrganisationCreateSerializer,
     OrganisationDetailsSerializer,
     OrganisationKeyValueSerializer,
     OrganisationLogEntrySerializer,
@@ -501,6 +508,114 @@ class OrganisationViewSet(UserActionLoggingViewset, KeyValueListMixin):
         pass
 
 
+class CreateOrganisationView(views.APIView):
+    renderer_classes = [
+        JSONRenderer,
+    ]
+
+    @transaction.atomic
+    def post(self, request, format=None):
+        """Create an organisation in ledger and in leases licensing"""
+        serializer = OrganisationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        name = serializer.validated_data["ledger_organisation_name"]
+        abn = serializer.validated_data["ledger_organisation_abn"]
+        email = serializer.validated_data["ledger_organisation_email"]
+        trading_name = serializer.validated_data["ledger_organisation_trading_name"]
+        admin_user_id = serializer.validated_data["admin_user_id"]
+
+        # Get the admin user
+        admin_user = EmailUser.objects.get(id=admin_user_id)
+
+        # Check if this organisation already exists in ledger
+        ledger_org = None
+        search_organisation_response = get_search_organisation(name, abn)
+        if 200 == search_organisation_response["status"]:
+            data = search_organisation_response["data"]
+            ledger_org = data[0]
+
+            # Check if this organisation already exists in leases licensing
+            org = Organisation.objects.filter(
+                ledger_organisation_id=ledger_org["organisation_id"]
+            ).first()
+            if org:
+                msg = (
+                    f"An organisation with that name or abn already exists: {org.ledger_organisation_name} "
+                    f"(ABN/ACN: {org.ledger_organisation_abn})"
+                )
+                logger.error(msg)
+                raise serializers.ValidationError(msg)
+
+        if not ledger_org:
+            # Create this organisation in ledger
+            create_organisation(name, abn)
+            search_organisation_response = get_search_organisation(name, abn)
+            if 200 == search_organisation_response["status"]:
+                data = search_organisation_response["data"]
+                ledger_org = data[0]
+
+        organisation_dict = dict()
+        organisation_dict["organisation_id"] = ledger_org["organisation_id"]
+        organisation_dict["organisation_email"] = email
+
+        if trading_name:
+            organisation_dict["organisation_trading_name"] = trading_name
+
+        # Update the organisation email address (and trading name if provided)
+        ledger_org_response = update_organisation_obj(organisation_dict)
+
+        if 200 != ledger_org_response["status"]:
+            msg = f"Error updating ledger organisation: {ledger_org['organisation_id']}"
+            logger.error(msg)
+            raise ValidationError(msg)
+
+        # Create the organisation in leases licensing
+        org, created = Organisation.objects.get_or_create(
+            ledger_organisation_id=ledger_org["organisation_id"]
+        )
+        if created:
+            logger.info("Created organisation: %s", org)
+
+        # Add the admin user to the organisation
+        UserDelegation.objects.get_or_create(organisation=org, user=admin_user.id)
+
+        # Make sure they are an organisation contact
+        organisation_contact, created = OrganisationContact.objects.get_or_create(
+            organisation=org,
+            user=admin_user.id,
+        )
+        if created:
+            # Make them an active admin user
+            organisation_contact.user_status = (
+                OrganisationContact.USER_STATUS_CHOICE_ACTIVE
+            )
+            organisation_contact.user_role = OrganisationContact.USER_ROLE_CHOICE_ADMIN
+
+            # Update their contact details from the ledger email user
+            if admin_user.email:
+                organisation_contact.email = admin_user.email
+
+            if admin_user.first_name:
+                organisation_contact.first_name = admin_user.first_name
+
+            if admin_user.last_name:
+                organisation_contact.last_name = admin_user.last_name
+
+            if admin_user.mobile_number:
+                organisation_contact.mobile_number = admin_user.mobile_number
+
+            if admin_user.phone_number:
+                organisation_contact.phone_number = admin_user.phone_number
+
+            if admin_user.fax_number:
+                organisation_contact.fax_number = admin_user.fax_number
+
+            organisation_contact.save()
+
+        serializer = OrganisationSerializer(org)
+        return Response(serializer.data)
+
+
 class OrganisationRequestFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
@@ -850,6 +965,13 @@ class OrganisationContactPaginatedViewSet(viewsets.ModelViewSet):
     page_size = 10
     queryset = OrganisationContact.objects.all()
     serializer_class = OrganisationContactAdminCountSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        organisation_id = self.request.query_params.get("organisation_id", None)
+        if organisation_id:
+            queryset = queryset.filter(organisation__id=organisation_id)
+        return queryset
 
 
 class OrganisationContactViewSet(viewsets.ModelViewSet):

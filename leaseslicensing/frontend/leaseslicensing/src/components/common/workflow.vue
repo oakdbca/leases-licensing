@@ -529,11 +529,12 @@ export default {
         'proposedDecline',
         'proposedApproval',
         'issueApproval',
-        'discardProposal',
+        'declineProposal',
         'updateProposalData',
         'updateAssignedApprover',
         'updateAssignedOfficer',
         'backToAssessor',
+        'enterConditions',
     ],
     data: function () {
         let vm = this;
@@ -562,11 +563,7 @@ export default {
                 {
                     key: 'enter_conditions',
                     button_title: 'Enter Conditions',
-                    function_when_clicked: () => {
-                        vm.switchStatus(
-                            `${vm.proposal.processing_status_id}_conditions`
-                        );
-                    },
+                    function_when_clicked: vm.enterConditions,
                     function_to_show_hide: () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.LEASE_LICENCE]: {
@@ -585,6 +582,7 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
+                            vm.isCurrentAssessor &&
                             !vm.proposal.additional_documents_missing.length >
                                 0;
 
@@ -626,7 +624,8 @@ export default {
                         };
                         let show =
                             vm.check_role_conditions(condition_to_display) &&
-                            vm.isCurrentAssessor;
+                            vm.isCurrentAssessor &&
+                            !vm.proposal.added_internally;
                         return show;
                     },
                     function_to_disable: () => {
@@ -646,14 +645,6 @@ export default {
                             vm.switchStatus(
                                 constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID
                             );
-                        } else if (
-                            vm.proposal.processing_status_id ===
-                            constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS
-                                .ID
-                        ) {
-                            vm.switchStatus(
-                                constants.PROPOSAL_STATUS.WITH_REFERRAL.ID
-                            );
                         } else {
                             console.error(
                                 `Can not switch back from status ${vm.proposal.processing_status}`
@@ -666,10 +657,6 @@ export default {
                                 // If either the assessor or referrer changes the status to `With Assessor/Referral (Conditions)`
                                 // both assessor and referrer should be able to return back to the Proposal
                                 [PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID]: [
-                                    ROLES.GROUP_NAME_ASSESSOR.ID,
-                                    ROLES.REFERRAL.ID,
-                                ],
-                                [PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID]: [
                                     ROLES.GROUP_NAME_ASSESSOR.ID,
                                     ROLES.REFERRAL.ID,
                                 ],
@@ -809,9 +796,9 @@ export default {
                     },
                 },
                 {
-                    key: 'discard',
+                    key: 'decline',
                     button_title: 'Decline',
-                    function_when_clicked: vm.discardProposal,
+                    function_when_clicked: vm.declineProposal,
                     function_to_show_hide: () => {
                         let condition_to_display = {
                             [APPLICATION_TYPE.REGISTRATION_OF_INTEREST]: {
@@ -945,8 +932,6 @@ export default {
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
                 this.proposal.processing_status_id ==
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID ||
-                this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.APPROVED_APPLICATION.ID ||
@@ -976,7 +961,6 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
                     constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
                 ].includes(this.proposal.processing_status_id)
             );
         },
@@ -1015,7 +999,7 @@ export default {
     mounted: function () {
         let vm = this;
         this.$nextTick(() => {
-            vm.initialiseSelects();
+            vm.initialiseRefereeSelect();
             vm.initialiseAssignedOfficerSelect();
             vm.initialisePopovers();
             this.formSectionLabels = this.getFormSectionLabels();
@@ -1065,7 +1049,6 @@ export default {
                         id: $(this).attr('id'),
                         label: $(this).find('.label').text(),
                     };
-                    console.log(obj);
                     return obj;
                 })
                 .toArray();
@@ -1162,8 +1145,13 @@ export default {
                 }
             });
         },
-        initialiseSelects: function () {
+        initialiseRefereeSelect: function (reinit = false) {
             let vm = this;
+            if (reinit) {
+                $(vm.$refs.department_users).data('select2')
+                    ? $(vm.$refs.department_users).select2('destroy')
+                    : '';
+            }
             $(vm.$refs.department_users)
                 .select2({
                     minimumInputLength: 2,
@@ -1323,7 +1311,6 @@ export default {
                     vm.switchStatus(response.processing_status_id); // 'with_referral'
                 })
                 .catch((error) => {
-                    console.log(`Error sending referral. ${error}`);
                     swal.fire({
                         title: `${error}`,
                         text: 'Failed to send referral. Please contact your administrator.',
@@ -1387,7 +1374,6 @@ export default {
                     vm.switchStatus(response.processing_status_id); // 'with_referral'
                 })
                 .catch((error) => {
-                    console.log(`Error sending referral. ${error}`);
                     swal.fire({
                         title: `${error}`,
                         text: 'Failed to send referral. Please contact your administrator.',
@@ -1423,11 +1409,11 @@ export default {
                 }
             });
         },
-        assignRequestUser: function () {
+        assignRequestUser: async function () {
             this.$emit('assignRequestUser');
-            this.$nextTick(() => {
-                this.initialiseSelects();
-            });
+            setTimeout(() => {
+                this.initialiseRefereeSelect();
+            }, 500);
         },
         assignTo: function () {
             this.$emit('assignTo');
@@ -1459,7 +1445,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         Promise.reject(error);
                     }
                     swal.fire({
@@ -1469,7 +1455,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(`Error sending reminder. ${error}`);
+                    console.error(`Error sending reminder. ${error}`);
                     swal.fire({
                         title: 'Reminder Email Failed',
                         text: `${constants.API_ERROR}`,
@@ -1511,7 +1497,7 @@ export default {
                                 const error =
                                     (data && data.message) ||
                                     response.statusText;
-                                console.log(error);
+                                console.error(error);
                                 Promise.reject(error);
                             }
                             this.$emit('updateProposalData', data);
@@ -1522,7 +1508,7 @@ export default {
                             });
                         })
                         .catch((error) => {
-                            console.log(
+                            console.error(
                                 `Error retracting external referee invite. ${error}`
                             );
                             swal.fire({
@@ -1536,6 +1522,9 @@ export default {
         },
         backToAssessor: function () {
             this.$emit('backToAssessor');
+        },
+        enterConditions: function () {
+            this.$emit('enterConditions');
         },
         switchStatus: function (value) {
             this.$emit('switchStatus', value);
@@ -1555,8 +1544,8 @@ export default {
         issueApproval: function () {
             this.$emit('issueApproval');
         },
-        discardProposal: function () {
-            this.$emit('discardProposal');
+        declineProposal: function () {
+            this.$emit('declineProposal');
         },
         externalRefereeInviteSent: function (proposal) {
             this.$emit('updateProposalData', proposal);

@@ -17,6 +17,7 @@
                             <option value="">All</option>
                             <option
                                 v-for="organisation in organisations"
+                                :key="organisation.id"
                                 :value="organisation.id"
                             >
                                 {{ organisation.ledger_organisation_name }}
@@ -63,7 +64,7 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue';
-import { api_endpoints, constants, helpers } from '@/utils/hooks';
+import { api_endpoints, constants } from '@/utils/hooks';
 
 export default {
     name: 'TableOrganisationRequests',
@@ -229,7 +230,6 @@ export default {
             };
         },
         actionColumn: function () {
-            let vm = this;
             return {
                 data: 'id',
                 orderable: true,
@@ -315,9 +315,6 @@ export default {
                 buttons: buttons,
                 columns: vm.applicableColumns,
                 processing: true,
-                initComplete: function () {
-                    console.log('in initComplete');
-                },
             };
         },
     },
@@ -358,11 +355,10 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         return Promise.reject(error);
                     }
                     vm.organisations = data;
-                    console.log(vm.members);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;

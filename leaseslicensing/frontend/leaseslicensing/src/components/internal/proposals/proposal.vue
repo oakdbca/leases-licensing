@@ -15,6 +15,13 @@
                         ? proposal.proposal_type.description
                         : null
                 }}
+                <small
+                    v-if="proposal.original_leaselicence_number"
+                    class="text-muted"
+                >
+                    (Migrating:
+                    {{ proposal.original_leaselicence_number }})</small
+                >
             </h3>
 
             <div class="col-md-3">
@@ -53,12 +60,13 @@
                     @toggleRequirements="toggleRequirements"
                     @back-to-assessor="backToAssessor"
                     @switchStatus="switchStatus"
+                    @enter-conditions="enterConditions"
                     @completeReferral="completeReferral"
                     @amendmentRequest="amendmentRequest"
                     @proposedDecline="proposedDecline"
                     @proposedApproval="proposedApproval"
                     @issueApproval="issueApproval"
-                    @discardProposal="discardProposal"
+                    @declineProposal="declineProposal"
                     @assignRequestUser="assignRequestUser"
                     @assignTo="assignTo"
                     @completeEditing="validateInvoicingForm"
@@ -97,7 +105,11 @@
                 </template>
 
                 <template v-if="display_requirements">
-                    <Requirements :key="requirementsKey" :proposal="proposal" />
+                    <Requirements
+                        :key="requirementsKey"
+                        :proposal="proposal"
+                        @updateRequirement="updateRequirement"
+                    />
                 </template>
 
                 <template
@@ -1174,6 +1186,7 @@
                                             proposal.additional_document_types
                                         "
                                         class="form-select"
+                                        :disabled="!canAssess || savingProposal"
                                     ></select>
                                 </div>
                                 <div class="row">
@@ -1301,7 +1314,7 @@
             </div>
         </div>
     </div>
-    <div v-else class="container">
+    <div v-if="loading" class="container">
         <div class="row">
             <BootstrapSpinner class="text-primary" />
         </div>
@@ -1322,7 +1335,7 @@ import ApplicationForm from '@/components/form.vue';
 import FormSection from '@/components/forms/section_toggle.vue';
 import AssessmentComments from '@/components/forms/collapsible_component.vue';
 import TableRelatedItems from '@/components/common/table_related_items.vue';
-import { discardProposal } from '@/components/common/workflow_functions.js';
+import { declineProposal } from '@/components/common/workflow_functions.js';
 require('select2/dist/css/select2.min.css');
 // CSS definitions to make sure workflow swal2 popovers are placed above any open bootstrap popover
 // See: `swal.fire` `customClass` property
@@ -1360,19 +1373,15 @@ export default {
             latest_revision: {},
             current_revision_id: null,
             assessment: {},
-            loading: [],
-            //selected_referral: '',
-            //referral_text: '',
+            loading: false,
             approver_comment: '',
             form: null,
             members: [],
-            //department_users : [],
             contacts_table_initialised: false,
             initialisedSelects: false,
             showingProposal: false,
             showingRequirements: false,
             hasAmendmentRequest: false,
-            //requirementsComplete:true,
             state_options: ['requirements', 'processing'],
             contacts_table_id: vm._.uid + 'contacts-table',
             contacts_options: {
@@ -1412,9 +1421,6 @@ export default {
             },
             contacts_table: null,
             DATE_TIME_FORMAT: 'DD/MM/YYYY HH:mm:ss',
-            //comms_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/comms_log'),
-            //comms_add_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/add_comms_log'),
-            //logs_url: helpers.add_endpoint_json(api_endpoints.proposals, vm.$route.params.proposal_id + '/action_log'),
             comms_url: helpers.add_endpoint_json(
                 api_endpoints.proposal,
                 vm.$route.params.proposal_id + '/comms_log'
@@ -1428,9 +1434,7 @@ export default {
                 vm.$route.params.proposal_id + '/action_log'
             ),
             panelClickersInitialised: false,
-            //sendingReferral: false,
             uuid: 0,
-            //additional_document_types: [],
             additionalDocumentTypesSelected: [],
             select2AppliedToAdditionalDocumentTypes: false,
             proposedApprovalState: '',
@@ -1440,10 +1444,9 @@ export default {
         withReferral: function () {
             return (
                 this.proposal &&
-                [
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
-                ].includes(this.proposal.processing_status_id)
+                [constants.PROPOSAL_STATUS.WITH_REFERRAL.ID].includes(
+                    this.proposal.processing_status_id
+                )
             );
         },
         collapseAssessmentComments: function () {
@@ -1469,17 +1472,6 @@ export default {
                 if (
                     this.proposal.application_type.name ===
                     constants.APPLICATION_TYPES.LEASE_LICENCE
-                ) {
-                    if (
-                        this.proposal.accessing_user_roles.includes(
-                            constants.ROLES.GROUP_NAME_ASSESSOR.ID
-                        )
-                    ) {
-                        canEdit = true;
-                    }
-                } else if (
-                    this.proposal.application_type.name ===
-                    constants.APPLICATION_TYPES.REGISTRATION_OF_INTEREST
                 ) {
                     if (
                         this.proposal.accessing_user_roles.includes(
@@ -1587,10 +1579,9 @@ export default {
             ) {
                 return `/api/proposal/${this.proposal.id}/assessor_save.json`;
             } else if (
-                [
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID,
-                ].includes(this.proposal.processing_status_id)
+                [constants.PROPOSAL_STATUS.WITH_REFERRAL.ID].includes(
+                    this.proposal.processing_status_id
+                )
             ) {
                 return `/api/proposal/${this.proposal.id}/referral_save.json`;
             } else if (
@@ -1651,26 +1642,16 @@ export default {
             let ret_val =
                 this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID ||
-                this.proposal.processing_status_id ==
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.ID ||
                 ((this.proposal.processing_status_id ==
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID ||
                     this.isFinalised) &&
                     this.showingRequirements);
             return ret_val;
         },
-        showElectoralRoll: function () {
-            let show = false;
-            if (
-                this.proposal &&
-                ['wla', 'mla'].includes(this.proposal.application_type_code)
-            ) {
-                show = true;
-            }
-            return show;
-        },
         readonly: function () {
-            return true;
+            return !(
+                this.proposal.added_internally && this.proposal.assigned_officer
+            );
         },
         contactsURL: function () {
             return this.proposal != null
@@ -1750,7 +1731,6 @@ export default {
                 ![
                     'With Assessor (Requirements)', // FIXME What is this processing status for?
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.TEXT,
-                    constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS.TEXT,
                 ].includes(this.proposal.processing_status)
             );
         },
@@ -1772,6 +1752,15 @@ export default {
             return this.proposal && this.proposal.applicant.email
                 ? this.proposal.applicant.email
                 : '';
+        },
+        conditionsMissingDates() {
+            return (
+                this.proposal &&
+                this.proposal.requirements.filter(
+                    (condition) =>
+                        !condition.due_date || !condition.reminder_date
+                )
+            );
         },
     },
     watch: {},
@@ -1819,6 +1808,7 @@ export default {
             return false;
         },
         completeEditing: async function () {
+            let vm = this;
             var chargeType = $(
                 'input[type=radio][name=charge_method]:checked'
             ).attr('id');
@@ -1860,7 +1850,9 @@ export default {
                 ].includes(chargeType) &&
                 previewInvoices.find(
                     (invoice) => invoice.start_date_has_passed == true
-                )
+                ) &&
+                !this.proposal.proposal_type.code ==
+                    constants.PROPOSAL_TYPE.MIGRATION.code
             ) {
                 let immediateInvoicesHtml =
                     '<p>Based on the information you have entered, the following invoice records will be generated:</p>';
@@ -1907,6 +1899,7 @@ export default {
             }
 
             if (!cancelled) {
+                vm.loading = true;
                 const payload = { proposal: this.proposal };
                 const res = await fetch(
                     '/api/proposal/' +
@@ -1945,6 +1938,7 @@ export default {
                         });
                     });
                 }
+                vm.loading = false;
             }
         },
         cancelEditing: function () {
@@ -1970,7 +1964,6 @@ export default {
                         vm.proposal.additional_document_types = $(
                             e.currentTarget
                         ).val();
-                        console.log(JSON.stringify(e.params.data));
                         vm.proposal.additional_documents_missing.push({
                             name: e.params.data.name,
                         });
@@ -2031,9 +2024,6 @@ export default {
                     false
                 );
             },
-        locationUpdated: function () {
-            console.log('in locationUpdated()');
-        },
         save_and_continue: async function () {
             this.savingProposal = true;
             await this.save().then(() => {
@@ -2094,7 +2084,7 @@ export default {
                     });
                 });
         },
-        save: async function () {
+        save: async function (show_confirmation = true) {
             let vm = this;
             vm.checkAssessorData();
             try {
@@ -2108,24 +2098,64 @@ export default {
                         vm.$refs.application_form.$refs.component_map.getJSONFeatures();
                 }
 
+                if (
+                    this.proposal.proposal_type.code ==
+                    constants.PROPOSAL_TYPE.MIGRATION.code
+                ) {
+                    if (
+                        this.proposal.groups.find(
+                            (group) =>
+                                group.name.trim().toLowerCase() == 'tourism'
+                        )
+                    ) {
+                        payload.proposal.profit_and_loss_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.profit_and_loss_text.detailsText;
+                        payload.proposal.cash_flow_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.cash_flow_text.detailsText;
+                        payload.proposal.capital_investment_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.capital_investment_text.detailsText;
+                        payload.proposal.financial_capacity_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.financial_capacity_text.detailsText;
+                        payload.proposal.available_activities_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.available_activities_text.detailsText;
+                        payload.proposal.market_analysis_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.market_analysis_text.detailsText;
+                        payload.proposal.staffing_text =
+                            this.$refs.application_form.$refs.lease_licence.$refs.staffing_text.detailsText;
+                    }
+
+                    payload.proposal.key_personnel_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.key_personnel_text.detailsText;
+                    payload.proposal.key_milestones_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.key_milestones_text.detailsText;
+                    payload.proposal.risk_factors_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.risk_factors_text.detailsText;
+                    payload.proposal.legislative_requirements_text =
+                        this.$refs.application_form.$refs.lease_licence.$refs.legislative_requirements_text.detailsText;
+                    payload.proposal.proponent_reference_number =
+                        this.proposal.proponent_reference_number;
+                    payload.proposal.groups = this.proposal.groups;
+                }
+
                 const res = await fetch(vm.proposal_form_url, {
                     body: JSON.stringify(payload),
                     method: 'POST',
                 });
 
                 if (res.ok) {
-                    swal.fire({
-                        title: 'Saved',
-                        text: 'Your proposal has been saved',
-                        icon: 'success',
-                    }).then(async () => {
-                        let resData = await res.json();
-                        vm.proposal = Object.assign({}, resData);
-                        vm.$nextTick(async () => {
-                            if (vm.$refs.application_form != undefined) {
-                                vm.$refs.application_form.incrementComponentMapKey();
-                            }
+                    if (show_confirmation) {
+                        swal.fire({
+                            title: 'Saved',
+                            text: 'Your proposal has been saved',
+                            icon: 'success',
                         });
+                    }
+                    let resData = await res.json();
+                    vm.proposal = Object.assign({}, resData);
+                    vm.$nextTick(async () => {
+                        if (vm.$refs.application_form != undefined) {
+                            vm.$refs.application_form.incrementComponentMapKey();
+                        }
                     });
                 } else {
                     let err = await res.json();
@@ -2184,11 +2214,9 @@ export default {
                 this.$refs.proposed_decline.isModalOpen = true;
             });
         },
-        proposedApproval: async function () {
+        enterConditions: async function () {
             let vm = this;
             let tab = null;
-            vm.proposedApprovalState = 'proposed_approval';
-
             if (vm.proposal.groups.length == 0 || !vm.proposal.site_name) {
                 // When status is with assessor conditions, the proposal may be hidden
                 // Therefore we need to show it before we can validate the groups and site name
@@ -2205,7 +2233,7 @@ export default {
             if (vm.proposal.groups.length == 0) {
                 swal.fire({
                     title: 'No Group Selected',
-                    text: 'You must select one or more groups before proposing to approve.',
+                    text: 'You must select one or more groups before entering conditions.',
                     icon: 'warning',
                     didClose: () => {
                         $([document.documentElement, document.body]).animate(
@@ -2227,7 +2255,7 @@ export default {
             if (!vm.proposal.site_name) {
                 swal.fire({
                     title: 'No Site Name Entered',
-                    text: 'You must enter a site name before proposing to approve.',
+                    text: 'You must enter a site name before entering conditions.',
                     icon: 'warning',
                     didClose: () => {
                         $([document.documentElement, document.body]).animate(
@@ -2244,11 +2272,58 @@ export default {
                         );
                     },
                 });
+                return;
             }
+
+            if (!vm.proposal.proposalgeometry.features.length > 0) {
+                swal.fire({
+                    title: 'No Land Area Selected',
+                    text: 'You must indicate the land area before entering conditions. Please either draw one or more polygons on the map or upload a shapefile and then click the save button.',
+                    icon: 'warning',
+                    didClose: () => {
+                        setTimeout(() => {
+                            let someTabTriggerEl =
+                                document.querySelector('#pills-map-tab');
+                            tab = new bootstrap.Tab(someTabTriggerEl);
+                            tab.show();
+                        }, 200);
+                    },
+                });
+                return;
+            }
+
+            // Save the proposal before opening the modal
+            this.savingProposal = true;
+            await this.save(false).then(() => {
+                this.savingProposal = false;
+            });
+
+            vm.switchStatus(
+                constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID
+            );
+            vm.showingProposal = false;
+        },
+        proposedApproval: async function () {
+            let vm = this;
+
+            vm.proposedApprovalState = 'proposed_approval';
+
             if (this.proposal.proposal_type.code == 'transfer') {
                 if (!vm.canProposeToApproveTransfer()) {
                     return;
                 }
+            }
+
+            if (
+                this.conditionsMissingDates &&
+                this.conditionsMissingDates.length > 0
+            ) {
+                swal.fire({
+                    title: 'Conditions Missing Dates',
+                    text: 'You must enter a due date and reminder date for each condition before proposing to approve.',
+                    icon: 'warning',
+                });
+                return;
             }
 
             // this.uuid++; Why do we need to reload the whole form when we open a modal!?
@@ -2301,7 +2376,7 @@ export default {
                             //vm.refreshFromResponse(res);
                         },
                         (err) => {
-                            console.log(err);
+                            console.error(err);
                         }
                     );
                 }
@@ -2320,7 +2395,7 @@ export default {
 
                 if (this.proposal.proposal_type.code == 'transfer') {
                     if (!this.canProposeToApproveTransfer()) {
-                        console.log('cannot approve transfer');
+                        console.warn('cannot approve transfer');
                         return;
                     }
                 }
@@ -2331,13 +2406,12 @@ export default {
                 });
             }
         },
-        discardProposal: async function () {
+        declineProposal: async function () {
             let vm = this;
-            await discardProposal(this.proposal)
+            await declineProposal(this.proposal)
                 .then((data) => {
                     if (data != null) {
                         // Only update the proposal if the discard was successful
-                        console.log(data);
                         vm.proposal = Object.assign({}, data);
                         vm.uuid++;
                         swal.fire({
@@ -2355,17 +2429,11 @@ export default {
                     });
                 });
         },
-        declineProposal: function () {
-            this.$refs.proposed_decline.decline =
-                this.proposal.proposaldeclineddetails != null
-                    ? helpers.copyObject(this.proposal.proposaldeclineddetails)
-                    : {};
-            this.$refs.proposed_decline.isModalOpen = true;
-        },
         updateProposalData: function (proposal) {
             this.proposal = proposal;
         },
-        amendmentRequest: function () {
+        amendmentRequest: async function () {
+            this.loading = true;
             let values = '';
             $('.deficiency').each((i, d) => {
                 values +=
@@ -2375,8 +2443,10 @@ export default {
                           )}\nDeficiency - ${$(d).val()}\n\n`
                         : '';
             });
+            await this.save(false);
             this.$refs.amendment_request.amendment.text = values;
             this.$refs.amendment_request.isModalOpen = true;
+            this.loading = false;
         },
         highlight_deficient_fields: function (deficient_fields) {
             for (let deficient_field of deficient_fields) {
@@ -2402,17 +2472,14 @@ export default {
             this.showingRequirements = value;
         },
         updateAssignedApprover: function (value) {
-            console.log('updateAssignedApprover');
             let vm = this;
             vm.proposal.assigned_approver = value;
         },
         updateAssignedOfficer: function (value) {
-            console.log('updateAssignedOfficer');
             let vm = this;
             vm.proposal.assigned_officer = value;
         },
         updateAssignedOfficerSelect: function () {
-            console.log('updateAssignedOfficerSelect');
             let vm = this;
             if (vm.proposal.processing_status == 'With Approver') {
                 vm.$refs.workflow.updateAssignedOfficerSelect(
@@ -2426,7 +2493,6 @@ export default {
         },
         assignRequestUser: async function () {
             let vm = this;
-            console.log('in assignRequestUser');
 
             fetch(
                 helpers.add_endpoint_json(
@@ -2449,7 +2515,7 @@ export default {
                 })
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
-                    console.log(error);
+                    console.error(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
@@ -2457,18 +2523,8 @@ export default {
                     });
                 });
         },
-        /*
-        refreshFromResponse:function(response){
-            this.proposal = helpers.copyObject(response.body);
-            this.$nextTick(() => {
-                this.initialiseAssignedOfficerSelect(true);
-                this.updateAssignedOfficerSelect();
-            });
-        },
-        */
         assignTo: async function () {
             let vm = this;
-            console.log('in assignTo');
             let unassign = true;
             let data = {};
             if (this.processing_status == 'With Approver') {
@@ -2519,7 +2575,7 @@ export default {
                 })
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
-                    console.log(error);
+                    console.error(error);
                     swal.fire({
                         title: 'Proposal Error',
                         text: error,
@@ -2549,6 +2605,7 @@ export default {
                 .then((data) => {
                     this.proposedApprovalState = '';
                     this.proposal = Object.assign({}, data);
+                    this.uuid++;
                 })
                 .catch((error) => {
                     swal.fire({
@@ -2610,7 +2667,6 @@ export default {
                 });
         },
         initialiseAssignedOfficerSelect: function (reinit = false) {
-            console.log('initialiseAssignedOfficerSelect');
             let vm = this;
             if (reinit) {
                 $(vm.$refs.assigned_officer).data('select2')
@@ -2661,8 +2717,6 @@ export default {
             this.applySelect2ToAdditionalDocumentTypes(resData);
         },
         revisionToDisplay: async function (revision) {
-            console.log('Displaying', revision);
-            let vm = this;
             let payload = {
                 revision_id: revision.revision_id,
                 debug: this.debug,
@@ -2683,7 +2737,6 @@ export default {
                     }
                 })
                 .then((response) => {
-                    console.log(response.reference);
                     this.proposal = Object.assign({}, response);
                     this.current_revision_id = revision.revision_id;
                     this.uuid++;
@@ -2694,6 +2747,7 @@ export default {
         },
         fetchProposal: async function () {
             let vm = this;
+            vm.loading = true;
             let payload = {
                 debug: this.debug,
             };
@@ -2724,11 +2778,9 @@ export default {
                         this.showingProposal = true;
                     }
                     if (
-                        [
-                            constants.PROPOSAL_STATUS.WITH_REFERRAL.TEXT,
-                            constants.PROPOSAL_STATUS.WITH_REFERRAL_CONDITIONS
-                                .TEXT,
-                        ].includes(vm.proposal.processing_status)
+                        [constants.PROPOSAL_STATUS.WITH_REFERRAL.TEXT].includes(
+                            vm.proposal.processing_status
+                        )
                     ) {
                         $(
                             'textarea.referral-comment:enabled:visible:not([readonly="readonly"]):first'
@@ -2745,6 +2797,7 @@ export default {
                                 .ID == vm.proposal.processing_status_id &&
                             vm.profile.is_finance_officer
                         ) {
+                            console.log('scrolling to invoicing form');
                             $(document).scrollTop(
                                 $('#invoicing-form').offset().top - 300
                             );
@@ -2752,19 +2805,26 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
+                })
+                .finally(() => {
+                    vm.loading = false;
                 });
         },
+        updateRequirement: function (newRequirement) {
+            var oldRequirement = this.proposal.requirements.find(
+                (requirement) => requirement.id == newRequirement.id
+            );
+            Object.assign(oldRequirement, newRequirement);
+        },
         updateInvoicingDetails: function (value) {
-            console.log('updateInvoicingDetails', value);
             Object.assign(this.proposal.invoicing_details, value);
         },
         updateGisData: function (property, value) {
             if (!Object.hasOwn(this.proposal, property)) {
-                console.log(`Property ${property} does not exist on proposal`);
+                console.warn(`Property ${property} does not exist on proposal`);
                 return;
             }
-            console.log('updateGisData', property, value);
 
             this.proposal[property];
 

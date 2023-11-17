@@ -189,6 +189,13 @@ class EmailUserSerializer(serializers.ModelSerializer):
         return f"{obj.first_name} {obj.last_name}"
 
 
+class NewEmailuserSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+    class Meta:
+        fields = ("email",)
+
+
 class TemporaryDocumentCollectionSerializer(serializers.ModelSerializer):
     class Meta:
         model = TemporaryDocumentCollection

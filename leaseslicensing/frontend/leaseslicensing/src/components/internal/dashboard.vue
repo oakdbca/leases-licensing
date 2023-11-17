@@ -12,7 +12,7 @@
                     aria-controls="pills-applications"
                     aria-selected="true"
                     @click="tabClicked('applications')"
-                    >Applications</a
+                    >Proposals</a
                 >
             </li>
             <li class="nav-item">
@@ -51,7 +51,7 @@
             >
                 <FormSection
                     :form-collapse="false"
-                    label="Applications"
+                    label="Proposals"
                     index="applications"
                 >
                     <ApplicationsTable
@@ -66,7 +66,7 @@
                 </FormSection>
                 <FormSection
                     :form-collapse="false"
-                    label="Applications Referred to Me"
+                    label="Proposals Referred to Me"
                     index="leases_and_licences"
                 >
                     <ApplicationsReferredToMeTable
@@ -117,13 +117,12 @@
 </template>
 
 <script>
-/*globals bootstrap */
-import FormSection from '@/components/forms/section_toggle.vue'
-import ApplicationsTable from '@/components/common/table_proposals'
-import ApplicationsReferredToMeTable from '@/components/common/table_proposals'
-import CompetitiveProcessesTable from '@/components/common/table_competitive_processes'
-import MapComponent from '@/components/common/component_map_with_filters_v2'
-import { api_endpoints } from '@/utils/hooks'
+import FormSection from '@/components/forms/section_toggle.vue';
+import ApplicationsTable from '@/components/common/table_proposals';
+import ApplicationsReferredToMeTable from '@/components/common/table_proposals';
+import CompetitiveProcessesTable from '@/components/common/table_competitive_processes';
+import MapComponent from '@/components/common/component_map_with_filters_v2';
+import { api_endpoints } from '@/utils/hooks';
 
 export default {
     name: 'InternalDashboard',
@@ -143,7 +142,7 @@ export default {
             approvals_url: api_endpoints.approvals_paginated_external,
             compliances_url: api_endpoints.compliances_paginated_external,
             system_name: api_endpoints.system_name,
-        }
+        };
     },
     computed: {
         is_debug: function () {
@@ -152,54 +151,54 @@ export default {
                 'debug'
             ) && this.$route.query.debug == 'true'
                 ? true
-                : false
+                : false;
         },
         is_external: function () {
-            return this.level == 'external'
+            return this.level == 'external';
         },
         is_internal: function () {
-            return this.level == 'internal'
+            return this.level == 'internal';
         },
     },
     mounted: async function () {
-        const res = await fetch('/api/profile')
-        const resData = await res.json()
-        this.accessing_user = resData
+        const res = await fetch('/api/profile');
+        const resData = await res.json();
+        this.accessing_user = resData;
         this.$nextTick(function () {
             // eslint-disable-next-line no-undef
-            chevron_toggle.init()
-            this.set_active_tab('pills-applications')
-        })
+            chevron_toggle.init();
+            this.set_active_tab('pills-applications');
+        });
     },
     methods: {
         tabClicked: function (param) {
             if (param == 'applications') {
-                this.$refs.applications_table.adjust_table_width()
-                this.$refs.applications_referred_to_me_table.adjust_table_width()
+                this.$refs.applications_table.adjust_table_width();
+                this.$refs.applications_referred_to_me_table.adjust_table_width();
             } else if (param === 'competitive-processes') {
-                this.$refs.competitive_processes_table.adjust_table_width()
+                this.$refs.competitive_processes_table.adjust_table_width();
             }
         },
         mapTabClicked: function () {
-            this.loadMap = true
+            this.loadMap = true;
         },
         set_active_tab: function (tab_href_name) {
-            let elem = $('#pills-tab a[href="#' + tab_href_name + '"]')
-            let tab = bootstrap.Tab.getInstance(elem)
-            if (!tab) tab = new bootstrap.Tab(elem)
-            tab.show()
+            let elem = $('#pills-tab a[href="#' + tab_href_name + '"]');
+            let tab = bootstrap.Tab.getInstance(elem);
+            if (!tab) tab = new bootstrap.Tab(elem);
+            tab.show();
         },
         filterAppliedApplications: function () {
             if (this.$refs.component_map_with_filters) {
-                this.$refs.component_map_with_filters.updateFilters()
-                this.$refs.component_map_with_filters.applyFiltersFrontEnd()
+                this.$refs.component_map_with_filters.updateFilters();
+                this.$refs.component_map_with_filters.applyFiltersFrontEnd();
             }
         },
         filterAppliedMap: function () {
-            this.$refs.applications_table.updateFilters()
+            this.$refs.applications_table.updateFilters();
         },
     },
-}
+};
 </script>
 
 <style lang="css" scoped>

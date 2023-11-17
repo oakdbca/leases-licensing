@@ -412,6 +412,19 @@ class ProposalAssessmentSerializer(serializers.ModelSerializer):
         return ret_dict
 
 
+class ProposalAdditionalDocumentTypeSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="additional_document_type.name")
+    help_text = serializers.CharField(source="additional_document_type.help_text")
+
+    class Meta:
+        model = ProposalAdditionalDocumentType
+        fields = [
+            "id",
+            "name",
+            "help_text",
+        ]
+
+
 class BaseProposalSerializer(serializers.ModelSerializer):
     model_name = serializers.CharField(read_only=True)
     readonly = serializers.SerializerMethodField(read_only=True)
@@ -431,7 +444,6 @@ class BaseProposalSerializer(serializers.ModelSerializer):
     competitive_process = serializers.SerializerMethodField(read_only=True)
     can_edit_invoicing_details = serializers.SerializerMethodField(read_only=True)
     approval = serializers.SerializerMethodField(read_only=True, allow_null=True)
-
     # Gis data fields
     identifiers = serializers.SerializerMethodField()
     vestings = serializers.SerializerMethodField()
@@ -472,6 +484,7 @@ class BaseProposalSerializer(serializers.ModelSerializer):
             "lodgement_number",
             "can_officer_process",
             "accessing_user_roles",
+            "added_internally",
             # 'allowed_assessors',
             # 'is_qa_officer',
             # 'pending_amendment_request',
@@ -892,7 +905,6 @@ class ListProposalSerializer(BaseProposalSerializer):
                 accessing_user_can_process = True
         elif proposal.processing_status in [
             Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-            Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
         ]:
             if proposal.referrals.filter(
                 Q(referral=user.id),
@@ -955,19 +967,6 @@ class AdditionalDocumentTypeSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class ProposalAdditionalDocumentTypeSerializer(serializers.ModelSerializer):
-    name = serializers.CharField(source="additional_document_type.name")
-    help_text = serializers.CharField(source="additional_document_type.help_text")
-
-    class Meta:
-        model = ProposalAdditionalDocumentType
-        fields = [
-            "id",
-            "name",
-            "help_text",
-        ]
-
-
 class ProposalSerializer(BaseProposalSerializer):
     submitter = serializers.SerializerMethodField(read_only=True)
     processing_status = serializers.SerializerMethodField(read_only=True)
@@ -991,6 +990,7 @@ class ProposalSerializer(BaseProposalSerializer):
             "lodgement_versions",
             "referrals",
             "processing_status_id",
+            "additional_document_types",
         ]
 
     def get_field_names(self, declared_fields, info):
@@ -1048,6 +1048,24 @@ class CreateProposalSerializer(BaseProposalSerializer):
             "proposal_type_id",
         )
         read_only_fields = ("id",)
+
+
+class MigrateProposalSerializer(CreateProposalSerializer):
+    class Meta:
+        model = Proposal
+        fields = (
+            "id",
+            "added_internally",
+            "application_type_id",
+            "ind_applicant",
+            "org_applicant",
+            "proposal_type_id",
+            "processing_status",
+            "submitter",
+            "migrated",
+            "original_leaselicence_number",
+        )
+        read_only_fields = ["id"]
 
 
 class SaveLeaseLicenceSerializer(BaseProposalSerializer):
@@ -1370,8 +1388,10 @@ class InternalProposalSerializer(BaseProposalSerializer):
     site_name = serializers.CharField(source="site_name.name", read_only=True)
     requirements = serializers.SerializerMethodField()
     can_edit_invoicing_details = serializers.SerializerMethodField()
+    additional_document_types = serializers.SerializerMethodField()
     additional_documents = AdditionalDocumentSerializer(many=True, read_only=True)
     additional_documents_missing = serializers.ListField(read_only=True)
+    original_leaselicence_number = serializers.CharField(read_only=True)
 
     class Meta:
         model = Proposal
@@ -1414,6 +1434,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "permit",
             "reference",
             "lodgement_number",
+            "original_leaselicence_number",
             "lodgement_sequence",
             "can_officer_process",
             "proposal_type",
@@ -1426,6 +1447,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "proposalgeometry",
             "processing_status_id",
             "details_text",
+            "added_internally",
             # additional form fields for registration of interest
             "exclusive_use",
             "long_term_use",
@@ -1610,6 +1632,11 @@ class InternalProposalSerializer(BaseProposalSerializer):
             email_user = retrieve_email_user(user)
             return f"{email_user.first_name} {email_user.last_name}"
 
+    def get_additional_document_types(self, obj):
+        return obj.additional_document_types.all().values_list(
+            "additional_document_type__id", flat=True
+        )
+
 
 class ProposalUserActionSerializer(serializers.ModelSerializer):
     who = serializers.SerializerMethodField()
@@ -1707,12 +1734,6 @@ class DTReferralSerializer(serializers.ModelSerializer):
         else:
             return ""
 
-    # def get_submitter(self,obj):
-    #   return EmailUserSerializer(obj.proposal.submitter).data
-
-    # def get_document(self,obj):
-    #     docs =  [[d.name,d._file.url] for d in obj.referral_documents.all()]
-    #     return docs[0] if docs else None
     def get_document(self, obj):
         # doc = obj.referral_documents.last()
         return [obj.document.name, obj.document._file.url] if obj.document else None
@@ -1814,7 +1835,7 @@ class ProposedApprovalSerializer(serializers.Serializer):
     record_management_number = serializers.CharField(allow_null=False)
 
 
-class PropedDeclineSerializer(serializers.Serializer):
+class ProposalDeclineSerializer(serializers.Serializer):
     reason = serializers.CharField()
     cc_email = serializers.CharField(required=False, allow_null=True)
 

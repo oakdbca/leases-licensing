@@ -257,9 +257,6 @@ export default {
                 buttons: [],
                 columns: columns,
                 processing: true,
-                initComplete: function () {
-                    console.log('in initComplete');
-                },
             };
         },
     },
@@ -279,11 +276,10 @@ export default {
                 .fetchUrl(url)
                 .then((data) => {
                     vm.approvalDetails = Object.assign({}, data);
-                    console.log('Fetched approval details', vm.approvalDetails);
                 })
                 .catch((error) => {
                     this.errorMessage = constants.ERRORS.API_ERROR;
-                    console.log(`Error fetching approval details: ${error}`);
+                    console.error(`Error fetching approval details: ${error}`);
                 });
         },
     },

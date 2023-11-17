@@ -545,15 +545,12 @@ export default {
         },
     },
     created: function () {
-        console.log('created');
         let vm = this;
-        console.log('vm.$route.params = ', vm.$route.params);
         let initialisers = [
             utils.fetchCountries(),
             utils.fetchOrganisation(vm.$route.params.org_id),
         ];
         Promise.all(initialisers).then((data) => {
-            console.log('vm.org: ', vm.org);
             vm.countries = data[0];
             vm.org = data[1];
             vm.org.address = vm.org.address != null ? vm.org.address : {};
@@ -644,7 +641,6 @@ export default {
                     },
                     (error) => {
                         var text = helpers.apiVueResourceError(error);
-                        console.log('INTERNAL: ' + error);
                         if (typeof text == 'object') {
                             if (
                                 Object.prototype.hasOwnProperty.call(
@@ -693,7 +689,7 @@ export default {
                         }
                     },
                     (error) => {
-                        console.log(error);
+                        console.error(error);
                         vm.updatingAddress = false;
                     }
                 );

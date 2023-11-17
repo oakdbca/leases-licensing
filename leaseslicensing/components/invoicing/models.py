@@ -1,19 +1,17 @@
 import logging
 import math
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
+from typing import Union
 
-import pytz
 from dateutil.relativedelta import relativedelta
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import F, Sum, Window
 from django.db.models.functions import Coalesce
-from django.forms import ValidationError
 from django.utils import timezone
-from ledger_api_client import settings_base
 
 from leaseslicensing import helpers
 from leaseslicensing.components.invoicing import utils
@@ -66,238 +64,11 @@ class RepetitionType(models.Model):
         return self.display_name
 
 
-class ReviewDateAnnually(BaseModel):
-    review_date = models.DateField(null=True, blank=True)
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Review Date Annually"
-
-    @staticmethod
-    def get_review_date_annually_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        review_date_annually = (
-            ReviewDateAnnually.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return review_date_annually
-
-
-class ReviewDateQuarterly(BaseModel):
-    review_date_q1 = models.DateField()
-    review_date_q2 = models.DateField()
-    review_date_q3 = models.DateField()
-    review_date_q4 = models.DateField()
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Review Date Quarterly"
-
-    @staticmethod
-    def get_review_date_quarterly_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        review_date_quarterly = (
-            ReviewDateQuarterly.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return review_date_quarterly
-
-
-class ReviewDateMonthly(BaseModel):
-    review_date = models.PositiveSmallIntegerField(null=True, blank=True)
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Review Date Monthly"
-
-    @staticmethod
-    def get_review_date_monthly_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        review_date_monthly = (
-            ReviewDateMonthly.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return review_date_monthly
-
-
-class InvoicingAndReviewDatesManager(models.Manager):
-    def get_queryset(self):
-        # Only show the current and future year
-        return (
-            super()
-            .get_queryset()
-            .filter(year__gte=timezone.now().year, year__lte=timezone.now().year + 10)
-        )
-
-
-class InvoicingAndReviewDates(BaseModel):
-    objects = InvoicingAndReviewDatesManager()
-
-    year = models.PositiveSmallIntegerField(editable=False)
-
-    invoicing_date_annually = models.DateField(help_text="Invoice every year on")
-    invoicing_day_for_quarter = models.PositiveSmallIntegerField(
-        default=1,
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(30),  # MAR, JUN, SEP, DEC all have at least 30 days
-        ],
-        help_text="Day of the month to generate and send invoices every quarter (MAR, JUN, SEP, DEC)",
-    )
-    invoicing_day_for_month = models.PositiveSmallIntegerField(
-        default=1,
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(28),  # Every month of the years has at least 28 days
-        ],
-    )
-
-    review_date_annually = models.DateField(help_text="Review every year on")
-    review_day_for_quarter = models.PositiveSmallIntegerField(
-        default=1,
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(30),  # MAR, JUN, SEP, DEC all have at least 30 days
-        ],
-        help_text="Day of the month to send review reminder every quarter (MAR, JUN, SEP, DEC)",
-    )
-    review_day_for_month = models.PositiveSmallIntegerField(
-        default=1,
-        validators=[
-            MinValueValidator(1),
-            MaxValueValidator(28),  # Every month of the years has at least 28 days
-        ],
-    )
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Invoicing and Review Dates"
-        ordering = ["year"]
-
-    def __str__(self):
-        return f"Invoicing and Review Dates for {self.year}"
-
-    def clean(self):
-        if self.invoicing_date_annually.year != self.year:
-            raise ValidationError(
-                {
-                    "invoicing_date_annually": f"The annual invoicing date must be in {self.year}"
-                }
-            )
-
-        if self.review_date_annually.year != self.year:
-            raise ValidationError(
-                {
-                    "review_date_annually": f"The annual review date must be in {self.year}"
-                }
-            )
-
-
-class InvoicingDateAnnually(BaseModel):
-    invoicing_date = models.DateField(null=True, blank=True)
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Invoicing Date Annually"
-
-    @staticmethod
-    def get_invoicing_date_annually_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        invoicing_date_annually = (
-            InvoicingDateAnnually.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return invoicing_date_annually
-
-
-class InvoicingDateQuarterly(BaseModel):
-    invoicing_date_q1 = models.DateField()
-    invoicing_date_q2 = models.DateField()
-    invoicing_date_q3 = models.DateField()
-    invoicing_date_q4 = models.DateField()
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Invoicing Date Quarterly"
-
-    @staticmethod
-    def get_invoicing_date_quarterly_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        invoicing_date_quarterly = (
-            InvoicingDateQuarterly.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return invoicing_date_quarterly
-
-
-class InvoicingDateMonthly(BaseModel):
-    invoicing_date = models.PositiveSmallIntegerField(null=True, blank=True)
-    date_of_enforcement = models.DateField()
-
-    class Meta:
-        app_label = "leaseslicensing"
-        verbose_name_plural = "Invoicing Date Monthly"
-
-    @staticmethod
-    def get_invoicing_date_monthly_by_date(
-        target_date=datetime.now(pytz.timezone(settings_base.TIME_ZONE)).date(),
-    ):
-        """
-        Return an setting object which is enabled at the target_date
-        """
-        invoicing_date_monthly = (
-            InvoicingDateMonthly.objects.filter(
-                date_of_enforcement__lte=target_date,
-            )
-            .order_by("date_of_enforcement")
-            .last()
-        )
-        return invoicing_date_monthly
-
-
 class ConsumerPriceIndex(BaseModel):
     year = models.PositiveSmallIntegerField(null=True)
-    quarter = models.PositiveSmallIntegerField(null=True)
+    quarter = models.PositiveSmallIntegerField(
+        null=True, help_text="1 = MAR, 2 = JUN, 3 = SEP, 4 = DEC"
+    )
     value = models.DecimalField(
         max_digits=20,
         decimal_places=1,
@@ -316,22 +87,33 @@ class ConsumerPriceIndex(BaseModel):
 
     @classmethod
     def get_most_recent_quarter(cls, quarter):
-        return (
-            cls.objects.filter(time_period__contains=f"Q{quarter}")
-            .order_by("-time_period")
-            .first()
-        )
+        return cls.objects.filter(quarter=quarter).order_by("-year", "-quarter").first()
 
     @classmethod
-    def get_most_recent_quarter_by_date(cls, date, quarter):
-        financial_year = utils.financial_year_from_date(date).split("-")[1]
-        return cls.objects.filter(year__lt=financial_year, quarter=quarter).first()
+    def get_most_recent_quarter_by_date(
+        cls, date: datetime | date, quarter: int
+    ) -> Union["ConsumerPriceIndex", None]:
+        if isinstance(date, datetime):
+            date = date.date()
+        year = date.year
+        end_of_quarter_month = utils.month_from_cpi_quarter(quarter)
+        if end_of_quarter_month > date.month:
+            year -= 1
+        recent_quarter = cls.objects.filter(year=year, quarter=quarter).first()
+        if not recent_quarter:
+            logger.info(
+                f"CPI data for {year}-Q{quarter} not yet available but will be available before supplied date: {date}"
+            )
+
+        return recent_quarter
 
 
 class CPICalculationMethod(models.Model):
     name = models.CharField(max_length=255, null=False, blank=False, editable=False)
     display_name = models.CharField(max_length=255, null=False, blank=False)
-    quarter = models.PositiveSmallIntegerField(null=True)
+    quarter = models.PositiveSmallIntegerField(
+        null=True, help_text="1 = MAR, 2 = JUN, 3 = SEP, 4 = DEC"
+    )
     archived = models.BooleanField(default=False)
 
     class Meta:
@@ -638,6 +420,7 @@ class InvoicingDetails(BaseModel):
         days_running_total = 0
         amount_running_total = Decimal("0.00")
         issue_date = self.get_first_issue_date()
+        number = 0
         for i, invoicing_period in enumerate(self.invoicing_periods):
             # Net 30 payment terms
             due_date = issue_date + relativedelta(days=30)
@@ -652,35 +435,54 @@ class InvoicingDetails(BaseModel):
                 invoicing_period["start_date"],
                 invoicing_period["end_date"],
                 invoicing_period["days"],
-                i,
+                i,  # index needed to calculate the amount
             )
-            if amount_object["amount"]:
-                amount_running_total = amount_running_total + amount_object["amount"]
-            else:
-                amount_running_total = amount_running_total + Decimal("0.00")
 
-            invoices.append(
-                {
-                    "number": i + 1,
-                    "original_issue_date": issue_date.strftime(
-                        "%d/%m/%Y"
-                    ),  # This is the issue date before it is changed to today if it is in the past
-                    "issue_date": self.get_issue_date(
-                        issue_date_now_or_future, invoicing_period["end_date"]
-                    ),
-                    "due_date": self.get_due_date(due_date),
-                    "time_period": invoicing_period["label"],
-                    "start_date": invoicing_period["start_date"],
-                    "end_date": invoicing_period["end_date"],
-                    "amount_object": amount_object,
-                    "days": invoicing_period["days"],
-                    "days_running_total": days_running_total,
-                    "amount_running_total": amount_running_total.quantize(
-                        Decimal("0.01")
-                    ),
-                    "start_date_has_passed": issue_date <= timezone.now().date(),
-                }
+            # Find out if this is a backdated invoicing period
+            start_date_has_passed = issue_date <= timezone.now().date()
+            end_date_has_passed = (
+                datetime.strptime(invoicing_period["end_date"], "%Y-%m-%d").date()
+                <= timezone.now().date()
             )
+
+            skip_adding = (
+                self.proposal.proposal_type.code == settings.PROPOSAL_TYPE_MIGRATION
+                and start_date_has_passed
+            )
+
+            if not skip_adding:
+                if amount_object["amount"]:
+                    amount_running_total = (
+                        amount_running_total + amount_object["amount"]
+                    )
+                else:
+                    amount_running_total = amount_running_total + Decimal("0.00")
+
+                number += 1  # Number only incremented for invoices that will be added to the preview
+                invoices.append(
+                    {
+                        "number": number,
+                        "original_issue_date": issue_date.strftime(
+                            "%d/%m/%Y"
+                        ),  # This is the issue date before it is changed to today if it is in the past
+                        "issue_date": self.get_issue_date(
+                            issue_date_now_or_future, invoicing_period["end_date"]
+                        ),
+                        "due_date": self.get_due_date(due_date),
+                        "time_period": invoicing_period["label"],
+                        "start_date": invoicing_period["start_date"],
+                        "end_date": invoicing_period["end_date"],
+                        "amount_object": amount_object,
+                        "days": invoicing_period["days"],
+                        "days_running_total": days_running_total,
+                        "amount_running_total": amount_running_total.quantize(
+                            Decimal("0.01")
+                        ),
+                        "start_date_has_passed": start_date_has_passed,
+                        "end_date_has_passed": end_date_has_passed,
+                    }
+                )
+
             if i < len(self.invoicing_periods) - 1:
                 issue_date = self.add_repetition_interval(issue_date)
             else:
@@ -738,6 +540,38 @@ class InvoicingDetails(BaseModel):
         ]:
             self.generate_invoice_schedule(invoiced_up_to=self.invoiced_up_to)
 
+    def generate_current_invoice(self):
+        """Generates only one invoice for the current invoicing period
+        (i.e. the invoicing period that has started but hasn't finished)
+        This is useful in cases when you don't want to generate any back dated invoices
+        (i.e. for migrating existing leases/licences that
+        have already been invoiced for past invoicing periods in a legacy system)"""
+        current_invoice_condition = (
+            i
+            for i in self.preview_invoices
+            if i["start_date_has_passed"] and not i["end_date_has_passed"]
+        )
+        current_invoice = next(current_invoice_condition, None)
+        if not current_invoice:
+            return
+
+        gst_free = self.approval.approval_type.gst_free
+
+        invoice, created = Invoice.objects.get_or_create(
+            approval=self.approval,
+            amount=current_invoice["amount_object"]["amount"],
+            gst_free=gst_free,
+            # Add status and datetime_created to avoid creating duplicate records
+            # the datetime value will be ignored when creating as it's an auto_now_add field
+            status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+            datetime_created__date=timezone.now().date(),
+        )
+        if created:
+            logger.info(f"Immediate invoice created: {invoice}")
+
+        # send to the finance group so they can take action
+        send_new_invoice_raised_internal_notification(invoice)
+
     def generate_immediate_invoices(self):
         """Generate invoices for the next invoicing period and any invoicing periods that have already passed
         This should only be run once when the finance officer has just finished "editing invoicing" on the
@@ -757,6 +591,10 @@ class InvoicingDetails(BaseModel):
                 approval=self.approval,
                 amount=invoice_record["amount_object"]["amount"],
                 gst_free=gst_free,
+                # Add status and datetime_created to avoid creating duplicate records
+                # the datetime value will be ignored when creating as it's an auto_now_add field
+                status=Invoice.INVOICE_STATUS_PENDING_UPLOAD_ORACLE_INVOICE,
+                datetime_created__date=timezone.now().date(),
             )
             if created:
                 logger.info(f"Immediate invoice created: {invoice}")
@@ -855,20 +693,24 @@ class InvoicingDetails(BaseModel):
         base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
-            if issue_date > helpers.today():
-                amount_object["amount"] = base_fee_amount
-                amount_object["suffix"] = " + CPI (NYA)"
-                return amount_object
-
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+
+            # If the start date is before the issue date, use the issue date to calculate the cpi for that period
+            # This is to cover the case of backdated invoices where using the issue date could yield a cpi figure
+            # for a totally unrelated period.
+            cpi_date = start_date if start_date < issue_date else issue_date
             cpi = ConsumerPriceIndex.get_most_recent_quarter_by_date(
-                start_date, self.cpi_calculation_method.quarter
+                cpi_date, self.cpi_calculation_method.quarter
             )
             if cpi:
                 amount_object["amount"] = Decimal(
                     base_fee_amount * (1 + cpi.value / 100)
                 ).quantize(Decimal("0.01"))
                 amount_object["suffix"] = f" (CPI: {cpi.value}%)"
+            else:
+                amount_object["amount"] = base_fee_amount
+                amount_object["suffix"] = " + CPI (NYA)"
+                return amount_object
 
         year_sequence_index = self.get_year_sequence_index(index)
         if (

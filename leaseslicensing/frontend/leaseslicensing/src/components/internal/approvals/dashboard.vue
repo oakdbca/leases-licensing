@@ -94,8 +94,7 @@ export default {
             }
         },
         mapTabClicked: function () {
-            console.log(this.$refs.component_map_with_filters)
-            this.loadMap = true
+            this.loadMap = true;
             // this.$nextTick(() => {
             //     this.$refs.component_map_with_filters.forceToRefreshMap()
             // })

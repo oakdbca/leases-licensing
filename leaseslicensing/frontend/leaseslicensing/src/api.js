@@ -20,6 +20,7 @@ module.exports = {
     compliances: '/api/compliances/',
     countries: '/api/countries',
     cpi_calculation_methods: '/api/cpi_calculation_methods/',
+    create_organisation: '/api/create_organisation/',
     external_referee_invites: '/api/external_referee_invites/',
     fee_configurations: '/api/fee_configurations',
     fee_seasons_dict: '/api/fee_seasons_dict',
@@ -70,6 +71,9 @@ module.exports = {
     },
     lookupApprovalHistory: function (id) {
         return `/api/approvals/${id}/approval_history?format=datatables`;
+    },
+    decline_proposal: function (id) {
+        return `/api/proposal/${id}/final_decline/`;
     },
     discard_proposal: function (id) {
         return `/api/proposal/${id}/discard/`;

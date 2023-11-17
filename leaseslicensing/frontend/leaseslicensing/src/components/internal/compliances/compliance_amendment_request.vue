@@ -123,9 +123,7 @@ export default {
     },
     watch: {
         isModalOpen: function (val) {
-            console.log(`isModalOpen: ${val}`);
             if (val) {
-                console.log('focusing text field');
                 this.$nextTick(() => {
                     this.$refs.text.focus();
                 });
@@ -162,7 +160,6 @@ export default {
                 method: 'POST',
                 body: amendment,
             });
-            console.log(response);
             if (!response.ok) {
                 vm.errors = true;
                 this.errorString = await helpers.parseFetchError(response);

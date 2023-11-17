@@ -7,8 +7,7 @@
             >
                 <div class="form-para">
                     <h3>
-                        Confirmation of
-                        {{ approval.approval_type__type }} Transfer
+                        {{ approval.approval_type__type }} Transfer Initiated
                     </h3>
                 </div>
                 <div class="mb-3">Your application to transfer:</div>
@@ -99,7 +98,7 @@ export default {
                     });
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
                 })
                 .finally(() => {
                     this.loading = false;

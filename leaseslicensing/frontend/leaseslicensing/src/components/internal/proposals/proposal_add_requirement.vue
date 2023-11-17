@@ -38,7 +38,7 @@
                                                     toggleStandardRequirement
                                                 "
                                             /><label class="control-label"
-                                                >Standard Requirement
+                                                >Standard Condition
                                             </label>
                                         </li>
                                         <li class="list-group-item">
@@ -53,7 +53,7 @@
                                                 "
                                             />
                                             <label class="control-label"
-                                                >Free Text Requirement
+                                                >Free Text Condition
                                             </label>
                                         </li>
                                     </ul>
@@ -82,7 +82,7 @@
                                                 v-model="
                                                     requirement.standard_requirement
                                                 "
-                                                class="form-control"
+                                                class="form-select"
                                                 name="standard_requirement"
                                                 required
                                             >
@@ -109,10 +109,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div
-                                v-show="showDatesAndRecurring"
-                                class="form-group"
-                            >
+                            <div class="form-group">
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -135,10 +132,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div
-                                v-show="showDatesAndRecurring"
-                                class="form-group"
-                            >
+                            <div class="form-group">
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -156,9 +150,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <template
-                                v-if="showDatesAndRecurring && validDueDate"
-                            >
+                            <template v-if="validDueDate">
                                 <div class="row mb-3">
                                     <label
                                         class="col-form-label col-sm-3"
@@ -189,6 +181,9 @@
                                         <div class="col-sm-9">
                                             <div class="row align-items-center">
                                                 <div class="col-3">
+                                                    Once every
+                                                </div>
+                                                <div class="col-3">
                                                     <input
                                                         v-model="
                                                             requirement.recurrence_schedule
@@ -198,16 +193,6 @@
                                                         name="schedule"
                                                         min="1"
                                                     />
-                                                </div>
-                                                <div class="col-auto px-0">
-                                                    time<span
-                                                        v-if="
-                                                            requirement.recurrence_schedule >
-                                                            1
-                                                        "
-                                                        >s</span
-                                                    >
-                                                    each
                                                 </div>
                                                 <div class="col-auto">
                                                     <select
@@ -222,13 +207,31 @@
                                                             value="1"
                                                             selected
                                                         >
-                                                            Week
+                                                            Week<span
+                                                                v-if="
+                                                                    requirement.recurrence_schedule >
+                                                                    1
+                                                                "
+                                                                >s</span
+                                                            >
                                                         </option>
                                                         <option value="2">
-                                                            Month
+                                                            Month<span
+                                                                v-if="
+                                                                    requirement.recurrence_schedule >
+                                                                    1
+                                                                "
+                                                                >s</span
+                                                            >
                                                         </option>
                                                         <option value="3">
-                                                            Year
+                                                            Year<span
+                                                                v-if="
+                                                                    requirement.recurrence_schedule >
+                                                                    1
+                                                                "
+                                                                >s</span
+                                                            >
                                                         </option>
                                                     </select>
                                                 </div>
@@ -271,7 +274,7 @@ export default {
             default: null,
         },
     },
-    emits: ['updateRequirements'],
+    emits: ['updateRequirement'],
     data: function () {
         let vm = this;
         return {
@@ -312,12 +315,6 @@ export default {
             }
             return false;
         },
-        showDatesAndRecurring: function () {
-            return (
-                this.requirement.standard_requirement &&
-                !this.requirement.standard_requirement.gross_turnover_required
-            );
-        },
     },
     mounted: function () {
         this.form = document.forms.requirementForm;
@@ -326,10 +323,7 @@ export default {
             if (this.selectedRequirement && this.selectedRequirement.id) {
                 this.requirement = Object.assign({}, this.selectedRequirement);
             } else {
-                console.log(this.requirements);
                 this.requirement.standard_requirement = this.requirements[0];
-                this.requirement.due_date = moment().format('YYYY-MM-DD');
-                this.requirement.reminder_date = moment().format('YYYY-MM-DD');
             }
         });
     },
@@ -360,7 +354,7 @@ export default {
                 this.contact = await response.json();
                 this.isModalOpen = true;
             } else {
-                console.log(response.statusText);
+                console.error(response.statusText);
             }
         },
         toggleStandardRequirement: function () {
@@ -380,8 +374,8 @@ export default {
                 this.requirement.recurrence_pattern = '1';
                 this.requirement.recurrence_schedule = 1;
             } else {
-                this.requirement.recurrence_pattern = null;
-                this.requirement.recurrence_schedule = null;
+                delete this.requirement.recurrence_pattern;
+                delete this.requirement.recurrence_schedule;
             }
             form.classList.remove('was-validated');
         },
@@ -390,7 +384,6 @@ export default {
             var form = document.getElementById('requirementForm');
 
             if (form.checkValidity()) {
-                console.log('Form valid');
                 vm.sendData();
             } else {
                 form.classList.add('was-validated');
@@ -427,11 +420,13 @@ export default {
                     {
                         body: JSON.stringify(this.requirement),
                         method: 'PUT',
+                        'Content-Type': 'application/json',
                     }
                 );
                 if (response.ok) {
                     this.updatingRequirement = false;
-                    this.$emit('updateRequirements');
+                    let data = await response.json();
+                    this.$emit('updateRequirement', data);
                     this.close();
                 } else {
                     this.errors = true;
@@ -449,8 +444,9 @@ export default {
                 );
                 if (response.ok) {
                     this.addingRequirement = false;
+                    let data = await response.json();
+                    this.$emit('updateRequirement', data);
                     this.close();
-                    this.$emit('updateRequirements');
                 } else {
                     this.errors = true;
                     this.addingRequirement = false;

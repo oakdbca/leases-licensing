@@ -6,6 +6,7 @@ from django.core.mail import EmailMessage, EmailMultiAlternatives
 from django.utils.encoding import smart_text
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
+from leaseslicensing.helpers import convert_external_url_to_internal_url
 from leaseslicensing.ledger_api_utils import retrieve_email_user
 
 logger = logging.getLogger(__name__)
@@ -332,14 +333,8 @@ def send_organisation_request_email_notification(org_request, request, contact):
     email = OrganisationRequestNotificationEmail()
 
     url = request.build_absolute_uri(f"/internal/organisations/access/{org_request.id}")
-    if "-internal" not in url:
-        url = "{}://{}{}.{}{}".format(
-            request.scheme,
-            settings.SITE_PREFIX,
-            "-internal",
-            settings.SITE_DOMAIN,
-            url.split(request.get_host())[1],
-        )
+
+    url = convert_external_url_to_internal_url(url)
 
     context = {
         "request": request.data,
@@ -390,10 +385,8 @@ def send_org_access_group_request_accept_email_notification(
     email = OrganisationAccessGroupRequestAcceptNotificationEmail()
 
     url = request.build_absolute_uri(f"/internal/organisations/access/{org_request.id}")
-    if "-internal" not in url:
-        url = f"-internal.{settings.SITE_DOMAIN}".join(
-            url.split("." + settings.SITE_DOMAIN)
-        )
+
+    url = convert_external_url_to_internal_url(url)
 
     context = {
         "name": request.data.get("name"),

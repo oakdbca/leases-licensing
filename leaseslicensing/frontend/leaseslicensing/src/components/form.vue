@@ -563,7 +563,6 @@ export default {
 
             for (let feature of proposalgeometries['features']) {
                 feature['properties']['source'] = 'registration_of_interest';
-                console.log('feature', feature);
                 let model = {
                     id: vm.proposal.id,
                     details_url: vm.proposal.details_url,
@@ -597,7 +596,6 @@ export default {
             this.localities.push(Object.assign({}, this.defaultLocality));
         },
         removeLocality: function (locality, index) {
-            console.log('removeLocality', locality, index);
             if (locality.id) {
                 alert('Remove locality from database');
             }

@@ -11,6 +11,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import cache_page
 from ledger_api_client.ledger_models import EmailUserRO as EmailUser
+from ledger_api_client.utils import get_or_create as get_or_create_emailuser
 from rest_framework import serializers, status, views, viewsets
 from rest_framework.decorators import action as detail_route
 from rest_framework.decorators import action as list_route
@@ -34,8 +35,12 @@ from leaseslicensing.components.main.filters import LedgerDatatablesFilterBacken
 from leaseslicensing.components.main.models import ApplicationType
 from leaseslicensing.components.main.process_document import process_generic_document
 from leaseslicensing.components.main.related_item import RelatedItemsSerializer
-from leaseslicensing.components.main.serializers import RelatedItemSerializer
+from leaseslicensing.components.main.serializers import (
+    NewEmailuserSerializer,
+    RelatedItemSerializer,
+)
 from leaseslicensing.components.main.utils import save_site_name
+from leaseslicensing.components.organisations.models import Organisation
 from leaseslicensing.components.proposals.email import (
     send_external_referee_invite_email,
 )
@@ -69,9 +74,10 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
     ListProposalSerializer,
-    PropedDeclineSerializer,
+    MigrateProposalSerializer,
     ProposalAssessmentAnswerSerializer,
     ProposalAssessmentSerializer,
+    ProposalDeclineSerializer,
     ProposalGeometrySerializer,
     ProposalLogEntrySerializer,
     ProposalRequirementSerializer,
@@ -102,6 +108,7 @@ from leaseslicensing.helpers import (
     is_internal,
     is_referee,
 )
+from leaseslicensing.ledger_api_utils import retrieve_email_user
 from leaseslicensing.permissions import IsAssessorOrReferrer
 from leaseslicensing.settings import APPLICATION_TYPES
 
@@ -219,32 +226,6 @@ class GetEmptyList(views.APIView):
         return Response([])
 
 
-# class DatatablesFilterBackend(BaseFilterBackend):
-#
-#   def filter_queryset(self, request, queryset, view):
-#       queryset = super(DatatablesFilterBackend, self).filter_queryset(request, queryset, view)
-#       return queryset
-
-"""
-1. internal_proposal.json
-2. regions.json
-3. trails.json
-4. vehicles.json
-5. access_types.json
-6. required_documents.json
-7. land_activities.json
-8. vessels.json
-9. marine_activities.json
-10. marine_parks.json
-11. accreditation_choices.json
-12. licence_period_choices.json
-13. global_settings.json
-14. questions.json
-15. amendment_request_reason_choices.json
-16. contacts.json
-"""
-
-
 class ProposalFilterBackend(LedgerDatatablesFilterBackend):
     """
     Custom filters
@@ -277,24 +258,9 @@ class ProposalFilterBackend(LedgerDatatablesFilterBackend):
                 queryset = queryset.filter(application_type_id=filter_application_type)
             if filter_application_status:
                 queryset = queryset.filter(processing_status=filter_application_status)
-        elif queryset.model is Compliance:
-            if filter_lodged_from:
-                queryset = queryset.filter(due_date__gte=filter_lodged_from)
-            if filter_lodged_to:
-                queryset = queryset.filter(due_date__lte=filter_lodged_to)
-        elif queryset.model is Referral:
-            if filter_lodged_from:
-                queryset = queryset.filter(
-                    proposal__lodgement_date__gte=filter_lodged_from
-                )
-            if filter_lodged_to:
-                queryset = queryset.filter(
-                    proposal__lodgement_date__lte=filter_lodged_to
-                )
 
         ledger_lookup_fields = [
             "submitter",
-            # "ind_applicant", # Replaced by ProposalApplicant object
         ]
         # Prevent the external user from searching for officers
         if is_internal(request):
@@ -317,8 +283,6 @@ class ProposalRenderer(DatatablesRenderer):
             renderer_context["view"], "_datatables_total_count"
         ):
             data["recordsTotal"] = renderer_context["view"]._datatables_total_count
-            # data.pop('recordsTotal')
-            # data.pop('recordsFiltered')
         return super().render(data, accepted_media_type, renderer_context)
 
 
@@ -408,7 +372,6 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
 
         qs = qs.distinct()
         self.paginator.page_size = qs.count()
-        # result_page = self.paginator.paginate_queryset(qs.order_by('-id'), request)
         result_page = self.paginator.paginate_queryset(qs, request)
         serializer = ListProposalSerializer(
             result_page, context={"request": request}, many=True
@@ -546,7 +509,6 @@ class ProposalViewSet(UserActionLoggingViewset):
                 qs = qs | Proposal.objects.filter(
                     processing_status__in=[
                         Proposal.PROCESSING_STATUS_WITH_REFERRAL,
-                        Proposal.PROCESSING_STATUS_WITH_REFERRAL_CONDITIONS,
                     ],
                     referrals__in=Referral.objects.filter(referral=user.id),
                 )
@@ -1174,7 +1136,7 @@ class ProposalViewSet(UserActionLoggingViewset):
             )
             serializer = serializer_class(instance, context={"request": request})
             return Response(serializer.data)
-        
+
         try:
             # This model's version for `revision_id`
             version = self.get_object().revision_version(revision_id)
@@ -1419,11 +1381,10 @@ class ProposalViewSet(UserActionLoggingViewset):
             raise serializers.ValidationError("Status is required")
         else:
             if status not in [
-                "with_assessor",
-                "with_assessor_conditions",
-                "with_approver",
-                "with_referral",
-                "with_referral_conditions",
+                Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+                Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+                Proposal.PROCESSING_STATUS_WITH_APPROVER,
+                Proposal.PROCESSING_STATUS_WITH_REFERRAL,
             ]:
                 raise serializers.ValidationError("The status provided is not allowed")
         instance.move_to_status(request, status, approver_comment)
@@ -1579,67 +1540,18 @@ class ProposalViewSet(UserActionLoggingViewset):
 
     @detail_route(
         methods=[
-            "POST",
+            "PATCH",
         ],
         detail=True,
     )
     @basic_exception_handler
     def final_decline(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = PropedDeclineSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        instance.final_decline(request, serializer.validated_data)
+        serializer = ProposalDeclineSerializer(instance.proposaldeclineddetails)
+        instance.final_decline(request, serializer.data)
         serializer_class = self.get_serializer_class()
         serializer = serializer_class(instance, context={"request": request})
         return Response(serializer.data)
-
-    @detail_route(
-        methods=[
-            "POST",
-        ],
-        detail=True,
-    )
-    @renderer_classes((JSONRenderer,))
-    @basic_exception_handler
-    def on_hold(self, request, *args, **kwargs):
-        with transaction.atomic():
-            instance = self.get_object()
-            is_onhold = eval(request.data.get("onhold"))
-            data = {}
-            if is_onhold:
-                data["type"] = "onhold"
-                instance.on_hold(request)
-            else:
-                data["type"] = "onhold_remove"
-                instance.on_hold_remove(request)
-
-            data["proposal"] = f"{instance.id}"
-            data["staff"] = f"{request.user.id}"
-            data["text"] = request.user.get_full_name() + ": {}".format(
-                request.data["text"]
-            )
-            data["subject"] = request.user.get_full_name() + ": {}".format(
-                request.data["text"]
-            )
-            serializer = ProposalLogEntrySerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            comms = serializer.save()
-
-            # save the files
-            documents_qs = instance.onhold_documents.filter(
-                input_name="on_hold_file", visible=True
-            )
-            for f in documents_qs:
-                document = comms.documents.create(_file=f._file, name=f.name)
-                # document = comms.documents.create()
-                # document.name = f.name
-                # document._file = f._file #.strip('/media')
-                document.input_name = f.input_name
-                document.can_delete = True
-                document.save()
-            # end save documents
-
-            return Response(serializer.data)
 
     @detail_route(
         methods=[
@@ -1767,32 +1679,32 @@ class ProposalViewSet(UserActionLoggingViewset):
         return Response(serializer.data)
 
     @basic_exception_handler
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
-        with transaction.atomic():
-            application_type_str = request.data.get("application_type", {}).get("code")
-            application_type = ApplicationType.objects.get(name=application_type_str)
-            proposal_type = ProposalType.objects.get(code="new")
+        application_type_str = request.data.get("application_type", {}).get("code")
+        application_type = ApplicationType.objects.get(name=application_type_str)
+        proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW)
 
-            org_applicant = request.data.get("org_applicant", None)
+        org_applicant = request.data.get("org_applicant", None)
 
-            data = {
-                "org_applicant": org_applicant,
-                "ind_applicant": request.user.id
-                if not request.data.get("org_applicant")
-                else None,  # if no org_applicant, assume this proposal is for individual.
-                "application_type_id": application_type.id,
-                "proposal_type_id": proposal_type.id,
-            }
+        data = {
+            "org_applicant": org_applicant,
+            "ind_applicant": request.user.id
+            if not request.data.get("org_applicant")
+            else None,  # if no org_applicant, assume this proposal is for individual.
+            "application_type_id": application_type.id,
+            "proposal_type_id": proposal_type.id,
+        }
 
-            serializer = CreateProposalSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            instance = serializer.save()
+        serializer = CreateProposalSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
 
-            if not org_applicant:
-                make_proposal_applicant_ready(instance, request.user)
+        if not org_applicant:
+            make_proposal_applicant_ready(instance, request.user)
 
-            serializer = SaveProposalSerializer(instance)
-            return Response(serializer.data)
+        serializer = SaveProposalSerializer(instance)
+        return Response(serializer.data)
 
     @basic_exception_handler
     def update(self, request, *args, **kwargs):
@@ -2007,6 +1919,96 @@ class ProposalViewSet(UserActionLoggingViewset):
             raise serializers.ValidationError(e.args[0])
 
         return Response({document})
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=False,
+    )
+    @transaction.atomic
+    def migrate(self, request, *args, **kwargs):
+        migrated = request.data.get("migrated", False)
+        original_leaselicence_number = request.data.get(
+            "original_leaselicence_number", None
+        )
+        org_applicant = request.data.get("org_applicant", None)
+        ind_applicant = request.data.get("ind_applicant", None)
+
+        if migrated and not original_leaselicence_number:
+            raise serializers.ValidationError(
+                _(r"Original lease\licence number is required for migration proposal"),
+                code="required",
+            )
+
+        if org_applicant:
+            try:
+                Organisation.objects.get(id=org_applicant)
+            except Organisation.DoesNotExist:
+                raise serializers.ValidationError(
+                    _(
+                        f"No organisation with id {org_applicant} exists in the leases licensing database"
+                    ),
+                    code="invalid",
+                )
+        else:
+            try:
+                emailuser = retrieve_email_user(ind_applicant)
+            except EmailUser.DoesNotExist:
+                raise serializers.ValidationError(
+                    _(
+                        f"No email user with id {ind_applicant} exists in the ledger database"
+                    ),
+                    code="invalid",
+                )
+
+        lease_license_applicant_type = ApplicationType.objects.get(
+            name=settings.APPLICATION_TYPE_LEASE_LICENCE
+        )
+
+        if migrated:
+            proposal_type = ProposalType.objects.get(
+                code=settings.PROPOSAL_TYPE_MIGRATION
+            )
+        else:
+            proposal_type = ProposalType.objects.get(code=settings.PROPOSAL_TYPE_NEW)
+
+        data = {
+            "added_internally": True,
+            "org_applicant": org_applicant,
+            "ind_applicant": ind_applicant,
+            "application_type_id": lease_license_applicant_type.id,
+            "proposal_type_id": proposal_type.id,
+            "processing_status": Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            # Lease/Licence proposals created internally have the assessor as the submitters
+            "submitter": request.user.id,
+        }
+
+        if migrated:
+            data["migrated"] = migrated
+            data["original_leaselicence_number"] = original_leaselicence_number
+
+        serializer = MigrateProposalSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+
+        if not org_applicant:
+            make_proposal_applicant_ready(instance, emailuser)
+
+        serializer = SaveProposalSerializer(instance)
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=[
+            "POST",
+        ],
+        detail=False,
+    )
+    def add_new_ledger_emailuser(self, request, *args, **kwargs):
+        serializer = NewEmailuserSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        response = get_or_create_emailuser(serializer.validated_data["email"])
+        return Response(response)
 
 
 class ReferralViewSet(viewsets.ModelViewSet):
@@ -2315,12 +2317,9 @@ class ProposalRequirementViewSet(LicensingViewset):
     @basic_exception_handler
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        # serializer = self.get_serializer(instance, data=json.loads(request.data.get('data')))
         serializer = self.get_serializer(instance, data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        # TODO: requirements documents in LL?
-        # instance.add_documents(request)
         return Response(serializer.data)
 
     @basic_exception_handler
@@ -2362,7 +2361,7 @@ class ProposalStandardRequirementViewSet(viewsets.ReadOnlyModelViewSet):
         # Don't show gross turnover related requirements on the front end
         # as they are managed by the system automatically based on the invoicing
         # method that is selected
-        queryset.exclude(gross_turnover_required=True)
+        queryset = queryset.exclude(gross_turnover_required=True)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -2411,7 +2410,10 @@ class SearchReferenceView(views.APIView):
 
     def get(self, request, format=None):
         search_term = request.GET.get("term", "")
-        proposals = Proposal.objects.filter(lodgement_number__icontains=search_term)[:4]
+        proposals = Proposal.objects.filter(
+            Q(lodgement_number__icontains=search_term)
+            | Q(original_leaselicence_number__icontains=search_term)
+        )[:4]
         proposal_results = [
             {
                 "id": proposal.id,
@@ -2424,7 +2426,10 @@ class SearchReferenceView(views.APIView):
             }
             for proposal in proposals
         ]
-        approvals = Approval.objects.filter(lodgement_number__icontains=search_term)[:4]
+        approvals = Approval.objects.filter(
+            Q(lodgement_number__icontains=search_term)
+            | Q(original_leaselicence_number__icontains=search_term)
+        )[:4]
         approval_results = [
             {
                 "id": approval.id,

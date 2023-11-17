@@ -174,6 +174,8 @@ class ApplicationType(models.Model):
     class Meta:
         ordering = ["order", "name"]
         app_label = "leaseslicensing"
+        verbose_name = "Proposal Category"
+        verbose_name_plural = "Proposal Categories"
 
     @staticmethod
     def get_application_type_by_name(name):

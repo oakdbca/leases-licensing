@@ -367,7 +367,6 @@ export default {
                     total + parseFloat(quarter.gross_turnover || 0),
                 0
             );
-            console.log('total_of_quarters', total_of_quarters);
             if (event.target.value != total_of_quarters) {
                 year.discrepency = currency(
                     (event.target.value * year.percentage) / 100 -
@@ -415,8 +414,6 @@ export default {
                         : financialYear;
                     grossTurnoverPercentage.months = [];
                     for (let j = 0; j < 4; j++) {
-                        console.log(j);
-
                         if (
                             !helpers.financialQuarterIncluded(
                                 this.startDate,
@@ -438,22 +435,18 @@ export default {
                     let financialMonths = helpers.getFinancialMonths(
                         financialYearsIncluded[i]
                     );
-                    console.log('financialMonths', financialMonths);
                     let grossTurnoverPercentage = this
                         .grossTurnoverPercentagesComputed[i]
                         ? this.grossTurnoverPercentagesComputed[i]
                         : financialYear;
                     grossTurnoverPercentage.quarters = [];
                     for (let j = 0; j < financialMonths.length; j++) {
-                        console.log(j);
-                        console.log(financialMonths[j]);
                         let year = financialMonths[j].year;
                         let month = financialMonths[j].month;
                         let monthStart = moment(
                             `${year}-${month}-01`,
                             'YYYY-MM-DD'
                         );
-                        console.log('monthStart', monthStart);
                         let monthEnd = moment(monthStart).endOf('month');
                         if (
                             !helpers.datesOverlap(
@@ -463,7 +456,6 @@ export default {
                                 monthEnd
                             )
                         ) {
-                            console.log('datesOverlap', false);
                             continue;
                         }
                         if (
@@ -485,7 +477,6 @@ export default {
                 ...financialYears
             );
             financialYears.sort((a, b) => a.year - b.year);
-            console.log('\n\nFinancial Years: ', financialYears);
             this.grossTurnoverPercentagesComputed = financialYears;
         },
     },

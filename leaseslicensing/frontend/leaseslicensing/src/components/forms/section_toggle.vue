@@ -129,7 +129,6 @@ export default {
                     // See: https://datatables.net/reference/api/draw()
                     Object.keys(ref).forEach((key) => {
                         if (ref[key].vmDataTable) {
-                            console.log(`Calling draw on ${ref[key].id}`);
                             ref[key].vmDataTable.draw('page');
                         }
                     });

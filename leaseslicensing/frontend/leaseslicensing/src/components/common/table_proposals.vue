@@ -45,9 +45,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for=""
-                            >Lodged From {{ filterProposalLodgedFrom }}</label
-                        >
+                        <label for="">Lodged From</label>
                         <div
                             ref="proposalDateFromPicker"
                             class="input-group date"
@@ -62,9 +60,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label for=""
-                            >Lodged To {{ filterProposalLodgedTo }}</label
-                        >
+                        <label for="">Lodged To</label>
                         <div
                             ref="proposalDateToPicker"
                             class="input-group date"
@@ -80,7 +76,7 @@
             </div>
         </CollapsibleFilters>
 
-        <div v-if="is_external && !email_user_id_assigned" class="row">
+        <div v-if="!email_user_id_assigned" class="row">
             <div class="col-md-12">
                 <div class="text-end">
                     <button
@@ -88,7 +84,8 @@
                         class="btn btn-primary mb-2"
                         @click="new_application_button_clicked"
                     >
-                        <i class="fa-solid fa-circle-plus"></i> New Proposal
+                        <i class="fa-solid fa-circle-plus"></i>
+                        {{ new_migrate_button_text }}
                     </button>
                 </div>
             </div>
@@ -150,22 +147,22 @@ export default {
             required: false,
             default: 0,
         },
-        filterApplicationType_cache_name: {
+        filterApplicationTypeCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationType',
         },
-        filterApplicationStatus_cache_name: {
+        filterApplicationStatusCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationStatus',
         },
-        filterProposalLodgedFrom_cache_name: {
+        filterProposalLodgedFromCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationLodgedFrom',
         },
-        filterProposalLodgedTo_cache_name: {
+        filterProposalLodgedToCacheName: {
             type: String,
             required: false,
             default: 'filterApplicationLodgedTo',
@@ -179,24 +176,24 @@ export default {
 
             // selected values for filtering
             filterApplicationType: sessionStorage.getItem(
-                vm.filterApplicationType_cache_name
+                vm.filterApplicationTypeCacheName
             )
-                ? sessionStorage.getItem(vm.filterApplicationType_cache_name)
+                ? sessionStorage.getItem(vm.filterApplicationTypeCacheName)
                 : 'all',
             filterApplicationStatus: sessionStorage.getItem(
-                vm.filterApplicationStatus_cache_name
+                vm.filterApplicationStatusCacheName
             )
-                ? sessionStorage.getItem(vm.filterApplicationStatus_cache_name)
+                ? sessionStorage.getItem(vm.filterApplicationStatusCacheName)
                 : 'all',
             filterProposalLodgedFrom: sessionStorage.getItem(
-                vm.filterProposalLodgedFrom_cache_name
+                vm.filterProposalLodgedFromCacheName
             )
-                ? sessionStorage.getItem(vm.filterProposalLodgedFrom_cache_name)
+                ? sessionStorage.getItem(vm.filterProposalLodgedFromCacheName)
                 : '',
             filterProposalLodgedTo: sessionStorage.getItem(
-                vm.filterProposalLodgedTo_cache_name
+                vm.filterProposalLodgedToCacheName
             )
-                ? sessionStorage.getItem(vm.filterProposalLodgedTo_cache_name)
+                ? sessionStorage.getItem(vm.filterProposalLodgedToCacheName)
                 : '',
 
             // filtering options
@@ -219,6 +216,12 @@ export default {
         };
     },
     computed: {
+        new_migrate_button_text: function () {
+            if (this.level == 'internal') {
+                return 'Create New or Migrate Existing Lease/Licence';
+            }
+            return 'New Proposal';
+        },
         number_of_columns: function () {
             let num = this.$refs.application_datatable.vmDataTable
                 .columns(':visible')
@@ -269,7 +272,7 @@ export default {
                     'Number',
                     'Type',
                     'Submitter',
-                    'Applicant',
+                    'Proponent',
                     'Status',
                     'Lodged On',
                     'Action',
@@ -281,7 +284,7 @@ export default {
                     'Number',
                     'Type',
                     'Submitter',
-                    'Applicant',
+                    'Proponent',
                     'Status',
                     'Lodged On',
                     'Assigned Officer',
@@ -292,7 +295,6 @@ export default {
             return [];
         },
         column_id: function () {
-            let vm = this;
             return {
                 // 1. ID
                 data: 'id',
@@ -300,9 +302,6 @@ export default {
                 searchable: false,
                 visible: false,
                 render: function (row, type, full) {
-                    if (vm.debug) {
-                        console.log(full);
-                    }
                     return full.id;
                 },
             };
@@ -449,10 +448,7 @@ export default {
                             } else {
                                 links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
                             }
-                            // Only show the 'Discard' link after submit
-                            if (full.submitter) {
-                                links += `<a href='#${full.id}' data-discard-proposal='${full.id}'>Discard</a><br/>`;
-                            }
+                            links += `<a href='#${full.id}' data-discard-proposal='${full.id}' data-proposal-lodgement-number='${full.lodgement_number}'>Discard</a><br/>`;
                         }
                     }
                     return links;
@@ -578,7 +574,7 @@ export default {
         filterApplicationType: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterApplicationType_cache_name,
+                this.filterApplicationTypeCacheName,
                 this.filterApplicationType
             );
             this.$emit('filter-appied');
@@ -586,7 +582,7 @@ export default {
         filterApplicationStatus: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterApplicationStatus_cache_name,
+                this.filterApplicationStatusCacheName,
                 this.filterApplicationStatus
             );
             this.$emit('filter-appied');
@@ -594,7 +590,7 @@ export default {
         filterProposalLodgedFrom: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterProposalLodgedFrom_cache_name,
+                this.filterProposalLodgedFromCacheName,
                 this.filterProposalLodgedFrom
             );
             this.$emit('filter-appied');
@@ -602,7 +598,7 @@ export default {
         filterProposalLodgedTo: function () {
             this.$refs.application_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                this.filterProposalLodgedTo_cache_name,
+                this.filterProposalLodgedToCacheName,
                 this.filterProposalLodgedTo
             );
             this.$emit('filter-appied');
@@ -629,31 +625,31 @@ export default {
         updateFilters: function () {
             this.$nextTick(() => {
                 this.filterApplicationType = sessionStorage.getItem(
-                    this.filterApplicationType_cache_name
+                    this.filterApplicationTypeCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterApplicationType_cache_name
+                          this.filterApplicationTypeCacheName
                       )
                     : 'all';
                 this.filterApplicationStatus = sessionStorage.getItem(
-                    this.filterApplicationStatus_cache_name
+                    this.filterApplicationStatusCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterApplicationStatus_cache_name
+                          this.filterApplicationStatusCacheName
                       )
                     : 'all';
                 this.filterProposalLodgedFrom = sessionStorage.getItem(
-                    this.filterProposalLodgedFrom_cache_name
+                    this.filterProposalLodgedFromCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterProposalLodgedFrom_cache_name
+                          this.filterProposalLodgedFromCacheName
                       )
                     : '';
                 this.filterProposalLodgedTo = sessionStorage.getItem(
-                    this.filterProposalLodgedTo_cache_name
+                    this.filterProposalLodgedToCacheName
                 )
                     ? sessionStorage.getItem(
-                          this.filterProposalLodgedTo_cache_name
+                          this.filterProposalLodgedToCacheName
                       )
                     : '';
                 this.$refs.application_datatable.vmDataTable.draw();
@@ -668,48 +664,22 @@ export default {
                 this.filterApplied
             );
         },
-        //getActionDetailTable: function(sticker){
-        //    let thead = `<thead>
-        //                    <tr>
-        //                        <th scope="col">Date</th>
-        //                        <th scope="col">User</th>
-        //                        <th scope="col">Action</th>
-        //                        <th scope="col">Date of Lost</th>
-        //                        <th scope="col">Date of Returned</th>
-        //                        <th scope="col">Reason</th>
-        //                    </tr>
-        //                <thead>`
-        //    let tbody = ''
-        //    for (let detail of sticker.sticker_action_details){
-        //        tbody += `<tr>
-        //            <td>${moment(detail.date_updated).format('DD/MM/YYYY')}</td>
-        //            <td>${detail.user_detail ? detail.user_detail.first_name : ''} ${detail.user_detail ? detail.user_detail.last_name : ''} </td>
-        //            <td>${detail.action ? detail.action : ''}</td>
-        //            <td>${detail.date_of_lost_sticker ? moment(detail.date_of_lost_sticker, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}</td>
-        //            <td>${detail.date_of_returned_sticker ? moment(detail.date_of_returned_sticker, 'YYYY-MM-DD').format('DD/MM/YYYY') : ''}</td>
-        //            <td>${detail.reason}</td>
-        //        </tr>`
-        //    }
-        //    tbody = '<tbody>' + tbody + '</tbody>'
-
-        //    let details = '<table class="table table-striped table-bordered table-sm table-sticker-details" id="table-sticker-details-' + sticker.id + '">' + thead + tbody + '</table>'
-        //    return details
-        //},
         new_application_button_clicked: async function () {
-            //await this.$router.isReady()
-            console.log(this.$router);
+            var route = 'apply_proposal';
+            if (this.level == 'internal') {
+                route = 'migrate_proposal';
+            }
             await this.$router.push({
-                name: 'apply_proposal',
+                name: route,
             });
-            console.log(' new application');
         },
-        discardProposal: function (proposal_id) {
-            discardProposal(proposal_id)
+        discardProposal: function (proposal_id, lodgement_number) {
+            discardProposal(proposal_id, lodgement_number)
                 .then(() => {
                     this.$refs.application_datatable.vmDataTable.draw();
                 })
                 .catch((error) => {
-                    console.log(error);
+                    console.error(error);
                 });
         },
         fetchFilterLists: async function () {
@@ -741,7 +711,10 @@ export default {
                 function (e) {
                     e.preventDefault();
                     let id = $(this).attr('data-discard-proposal');
-                    vm.discardProposal(id);
+                    let lodgementNumber = $(this).attr(
+                        'data-proposal-lodgement-number'
+                    );
+                    vm.discardProposal(id, lodgementNumber);
                 }
             );
 

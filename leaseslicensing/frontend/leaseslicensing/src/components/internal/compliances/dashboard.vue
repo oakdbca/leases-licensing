@@ -15,18 +15,22 @@
             <CompliancesTable
                 level="internal"
                 :compliances-referred-to-me="true"
+                filter-approval-type-cache-name="filterApprovalTypeForCompliancesReferredToMeTable"
+                filter-compliance-status-cache-name="filterComplianceStatusForCompliancesReferredToMeTable"
+                filter-compliance-due-date-from-cache-name="filterComplianceDueDateFromForCompliancesReferredToMeTable"
+                filter-compliance-due-date-to-cache-name="filterComplianceDueDateToForCompliancesReferredToMeTable"
             />
         </FormSection>
     </div>
 </template>
 
 <script>
-import CompliancesTable from '@/components/common/table_compliances.vue'
+import CompliancesTable from '@/components/common/table_compliances.vue';
 
 export default {
     name: 'InternalCompliancesDashboard',
     components: {
         CompliancesTable,
     },
-}
+};
 </script>

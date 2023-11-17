@@ -353,7 +353,7 @@ export default {
                     if (!response.ok) {
                         const error =
                             (data && data.message) || response.statusText;
-                        console.log(error);
+                        console.error(error);
                         vm.errors = data;
                         return;
                     }

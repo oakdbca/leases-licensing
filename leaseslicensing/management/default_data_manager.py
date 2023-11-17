@@ -1,16 +1,13 @@
 import logging
 import os
-from datetime import date
 
 from django.core.files import File
-from django.utils import timezone
 from ledger_api_client.managed_models import SystemGroup
 
 from leaseslicensing import settings
 from leaseslicensing.components.invoicing.models import (
     ChargeMethod,
     CPICalculationMethod,
-    InvoicingAndReviewDates,
     RepetitionType,
 )
 from leaseslicensing.components.main.models import ApplicationType, GlobalSettings
@@ -112,19 +109,6 @@ class DefaultDataManager:
                     logger.info(f"Created SystemGroup: {item[0]}")
             except Exception as e:
                 logger.error(f"{e}, SystemGroup: {item[1]}")
-
-        year = timezone.now().year
-        for year in range(year, year + 100):
-            try:
-                InvoicingAndReviewDates.objects.get(
-                    year=year,
-                )
-            except InvoicingAndReviewDates.DoesNotExist:
-                InvoicingAndReviewDates.objects.create(
-                    year=year,
-                    invoicing_date_annually=date(year, 1, 1),
-                    review_date_annually=date(year, 1, 1),
-                )
 
         # Make sure every proposal has an associated ProposalAssessment object
         for proposal in Proposal.objects.all():

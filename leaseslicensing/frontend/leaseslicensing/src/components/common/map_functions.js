@@ -123,8 +123,6 @@ export async function addOptionalLayers(map_component) {
                     let coordinate = evt.coordinate;
                     layerAtEventPixel(map_component, evt).forEach((lyr) => {
                         if (lyr.values_.name === tileLayer.values_.name) {
-                            console.log('Clicked on tile layer', lyr);
-
                             let point = `POINT (${coordinate.join(' ')})`;
                             let query_str = _helper.geoserverQuery.bind(this)(
                                 point,
@@ -140,7 +138,6 @@ export async function addOptionalLayers(map_component) {
                                         );
                                         map_component.overlay(undefined);
                                     } else {
-                                        console.log('Feature', features);
                                         map_component.overlay(
                                             coordinate,
                                             features[0]
@@ -254,7 +251,6 @@ export function polygon_style(feature) {
 export function validateFeature(feature, component_map) {
     let vm = this;
     let feature_wkt = undefined;
-    console.log('Validate feature', feature);
     if (feature === undefined) {
         // Get the WKT representation of the currently drawn polygon sketch
         feature_wkt = _helper.featureToWKT.bind(vm)();
@@ -276,7 +272,6 @@ export function validateFeature(feature, component_map) {
                 'The polygon you have drawn does not intersect with any DBCA lands or water.'
             );
         } else {
-            console.log('New feature is valid', features);
             component_map.finishDrawing();
         }
     });
@@ -398,7 +393,7 @@ const _helper = {
                 features = new GeoJSON().readFeatures(data[0]);
             })
             .catch((error) => {
-                console.log(error.message);
+                console.error(error.message);
                 vm.errorMessage = error.message;
             });
 

@@ -22,39 +22,6 @@ class ChargeMethodAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(models.ReviewDateAnnually)
-class ReviewDateAnnuallAdmin(admin.ModelAdmin):
-    list_display = [
-        "review_date",
-        "date_of_enforcement",
-    ]
-
-
-@admin.register(models.ReviewDateQuarterly)
-class ReviewDateQuarterlyAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.ReviewDateMonthly)
-class ReviewDateMonthlyAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.InvoicingDateAnnually)
-class InvoicingDateAnnuallAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.InvoicingDateQuarterly)
-class InvoicingDateQuarterlyAdmin(admin.ModelAdmin):
-    pass
-
-
-@admin.register(models.InvoicingDateMonthly)
-class InvoicingDateMonthlyAdmin(admin.ModelAdmin):
-    pass
-
-
 @admin.register(models.ConsumerPriceIndex)
 class ConsumerPriceIndexAdmin(admin.ModelAdmin):
     list_display = [
@@ -112,38 +79,6 @@ class CPICalculationMethodAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return True
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
-@admin.register(models.InvoicingAndReviewDates)
-class InvoicingAndReviewDatesAdmin(admin.ModelAdmin):
-    list_display = [
-        "year",
-        "invoicing_date_annually",
-        "invoicing_day_for_quarter",
-        "invoicing_day_for_month",
-        "review_date_annually",
-        "review_day_for_quarter",
-        "review_day_for_month",
-    ]
-    list_display_links = [
-        "year",
-    ]
-    readonly_fields = ("year",)
-    fields = (
-        "year",
-        "invoicing_date_annually",
-        "invoicing_day_for_quarter",
-        "invoicing_day_for_month",
-        "review_date_annually",
-        "review_day_for_quarter",
-        "review_day_for_month",
-    )
-
-    def has_add_permission(self, request, obj=None):
-        return False
 
     def has_delete_permission(self, request, obj=None):
         return False

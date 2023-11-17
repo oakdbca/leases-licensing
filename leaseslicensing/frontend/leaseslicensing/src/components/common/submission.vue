@@ -140,10 +140,6 @@
 <script>
 export default {
     name: 'Submission',
-    emits: ['revision-to-display'],
-    data: function () {
-        return {};
-    },
     props: {
         submitter_first_name: {
             type: String,
@@ -165,6 +161,10 @@ export default {
         },
         proposal: {},
     },
+    emits: ['revision-to-display'],
+    data: function () {
+        return {};
+    },
     computed: {
         /** Writable computed lodgement version revision object */
         lodgementVersion: {
@@ -172,7 +172,6 @@ export default {
                 return this.current_lodgement_version;
             },
             set(version) {
-                // console.log("Setting new version", version);
                 this.current_lodgement_version = version;
                 this.$emit('revision-to-display', version);
             },
@@ -200,7 +199,6 @@ export default {
                     ? 0
                     : 1
             }`;
-            // console.log(key);
             return key;
         },
         debug: function () {
@@ -215,7 +213,6 @@ export default {
                 : this.proposal.lodgement_versions;
             // The version at position 0 is the current one.
             // Increment its sequence number in the frontend if identical to the prior version
-            console.log('versions:', versions);
             if (
                 versions.length > 1 &&
                 versions[0].lodgement_sequence == versions[1].lodgement_sequence
