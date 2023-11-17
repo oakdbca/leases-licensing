@@ -1941,9 +1941,6 @@ export default {
                 vm.loading = false;
             }
         },
-        cancelEditing: function () {
-            alert('cancelEditing');
-        },
         applicationFormMounted: function () {
             this.fetchAdditionalDocumentTypesDict(); // <select> element for the additional document type exists in the ApplicationForm component, which is a child component of this component.
             // Therefore to apply select2 to the element inside child component, we have to make sure the childcomponent has been mounted.  Then select2 can be applied.
@@ -2815,7 +2812,13 @@ export default {
             var oldRequirement = this.proposal.requirements.find(
                 (requirement) => requirement.id == newRequirement.id
             );
-            Object.assign(oldRequirement, newRequirement);
+            if (
+                typeof oldRequirement === 'object' &&
+                !Array.isArray(oldRequirement) &&
+                oldRequirement !== null
+            ) {
+                Object.assign(oldRequirement, newRequirement);
+            }
         },
         updateInvoicingDetails: function (value) {
             Object.assign(this.proposal.invoicing_details, value);
