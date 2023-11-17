@@ -203,11 +203,7 @@
                     </FormSection>
 
                     <FormSection
-                        v-if="
-                            is_internal ||
-                            proposal.site_name ||
-                            proposal.groups.length > 0
-                        "
+                        v-if="is_internal || proposal.site_name"
                         label="Categorisation"
                         index="categorisation"
                     >
