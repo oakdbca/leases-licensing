@@ -592,10 +592,10 @@ class ProposalViewSet(UserActionLoggingViewset):
         if processing_status:
             qs = qs.filter(processing_status=processing_status)
 
-        # qs = self.filter_queryset(qs)
         serializer = ListProposalMinimalSerializer(
             qs, context={"request": request}, many=True
         )
+        logger.debug(f"query: {qs.query}")
         return Response(serializer.data)
 
     @detail_route(
