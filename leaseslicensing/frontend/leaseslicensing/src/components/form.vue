@@ -592,16 +592,6 @@ export default {
         this.$emit('formMounted');
     },
     methods: {
-        addAnotherLocality: function () {
-            this.localities.push(Object.assign({}, this.defaultLocality));
-        },
-        removeLocality: function (locality, index) {
-            if (locality.id) {
-                alert('Remove locality from database');
-            }
-            this.localities.splice(index, 1);
-        },
-
         incrementComponentMapKey: function () {
             this.uuid = uuid();
         },
@@ -611,12 +601,6 @@ export default {
             this.$nextTick(() => {
                 this.$refs.component_map.forceToRefreshMap();
             });
-        },
-        updateTableByFeatures: function () {},
-        featureGeometryUpdated: function () {},
-        popupClosed: function () {},
-        populateProfile: function (profile) {
-            this.profile = Object.assign({}, profile);
         },
         refreshFromResponse: function (data) {
             this.$emit('refreshFromResponse', data);
