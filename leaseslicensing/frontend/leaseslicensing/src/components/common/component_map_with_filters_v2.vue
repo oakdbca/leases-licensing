@@ -444,7 +444,7 @@
                                             v-if="selectedModel.copied_from"
                                             scope="row"
                                         >
-                                            Lodgement (original application)
+                                            Lodgement (original proposal)
                                         </th>
                                         <th v-else scope="row">
                                             Lodgement Date
@@ -1072,9 +1072,9 @@ export default {
         },
         filterInformation: function () {
             if (this.proposals.length === this.filteredProposals.length) {
-                return ' (Showing all Applications)';
+                return ` (Showing all ${this.proposals.length} Proposals)`;
             } else {
-                return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Applications)`;
+                return ` (Showing ${this.filteredProposals.length} of ${this.proposals.length} Proposals)`;
             }
         },
         canUndoAction: function () {
@@ -2330,11 +2330,12 @@ export default {
                         console.log(
                             'Done loading features and applying filters'
                         );
-                        vm.fetchingProposals = false;
                     });
                 })
                 .catch((error) => {
                     console.error('There was an error!', error);
+                })
+                .finally(() => {
                     vm.fetchingProposals = false;
                 });
         },
