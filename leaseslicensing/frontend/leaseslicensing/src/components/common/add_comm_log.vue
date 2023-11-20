@@ -15,9 +15,18 @@
                         class="needs-validation"
                         novalidate
                     >
-                        <alert v-model:show="errorString" type="danger"
-                            ><strong>{{ errorString }}</strong></alert
-                        >
+                        <div v-if="errors">
+                            <BootstrapAlert
+                                id="errors"
+                                ref="errors"
+                                class="d-flex align-items-center"
+                                type="danger"
+                                icon="exclamation-triangle-fill"
+                            >
+                                <ErrorRenderer :errors="errors" />
+                            </BootstrapAlert>
+                        </div>
+
                         <div class="col-sm-12">
                             <div class="form-group">
                                 <div class="row mb-2">
@@ -52,6 +61,7 @@
                                             type="text"
                                             class="form-control"
                                             name="fromm"
+                                            maxlength="200"
                                             required
                                         />
                                     </div>
@@ -94,6 +104,7 @@
                                             type="text"
                                             class="form-control"
                                             name="subject"
+                                            maxlength="200"
                                             required
                                         />
                                     </div>
@@ -241,15 +252,15 @@
 
 <script>
 import modal from '@vue-utils/bootstrap-modal.vue';
-import alert from '@vue-utils/alert.vue';
 import Swal from 'sweetalert2';
+import ErrorRenderer from '@common-utils/ErrorRenderer.vue';
 
 import { constants } from '@/utils/hooks.js';
 export default {
     name: 'AddComms',
     components: {
         modal,
-        alert,
+        ErrorRenderer,
     },
     props: {
         url: {
@@ -266,8 +277,7 @@ export default {
             },
             state: 'proposed_approval',
             addingComms: false,
-            errors: false,
-            errorString: null,
+            errors: null,
             successString: '',
             success: false,
             datepickerOptions: {
@@ -286,10 +296,6 @@ export default {
         };
     },
     computed: {
-        showError: function () {
-            var vm = this;
-            return vm.errors;
-        },
         title: function () {
             return this.processing_status == 'With Approver'
                 ? 'Issue Comms'
@@ -338,6 +344,7 @@ export default {
             this.comms = {
                 type: '',
             };
+            this.errors = null;
             $('#commsForm').removeClass('was-validated');
             let file_length = vm.files.length;
             this.files = [];
@@ -362,10 +369,8 @@ export default {
                 .then(async (response) => {
                     const data = await response.json();
                     if (!response.ok) {
-                        const error =
-                            (data && data.message) || response.statusText;
-                        console.error(error);
-                        vm.errorString = error;
+                        vm.errors = data || response.statusText;
+                        return;
                     }
                     Swal.fire(
                         'Success',
@@ -374,9 +379,8 @@ export default {
                     );
                     vm.close();
                 })
-                .catch((error) => {
-                    vm.errorString = constants.ERRORS.NETWORK_ERROR;
-                    console.error('There was an error!', error);
+                .catch(() => {
+                    vm.errors = constants.ERRORS.NETWORK_ERROR;
                 })
                 .finally(() => {
                     vm.addingComms = false;
