@@ -469,6 +469,7 @@
                                                     >Admin Pin 1</span
                                                 >
                                                 <input
+                                                    ref="admin-pin-1"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.one"
@@ -476,9 +477,16 @@
                                                     aria-describedby="basic-addon1"
                                                     readonly
                                                 />
-                                                <span class="input-group-text"
-                                                    >copy</span
+                                                <button
+                                                    class="btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'admin-pin-1'
+                                                        )
+                                                    "
                                                 >
+                                                    copy
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -489,6 +497,7 @@
                                                     >Admin Pin 2</span
                                                 >
                                                 <input
+                                                    ref="admin-pin-2"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.two"
@@ -498,6 +507,11 @@
                                                 />
                                                 <button
                                                     class="btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'admin-pin-2'
+                                                        )
+                                                    "
                                                 >
                                                     copy
                                                 </button>
@@ -526,6 +540,7 @@
                                                     >User Pin 1</span
                                                 >
                                                 <input
+                                                    ref="user-pin-1"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.three"
@@ -533,9 +548,16 @@
                                                     aria-describedby="user-pin-1"
                                                     readonly
                                                 />
-                                                <span class="input-group-text"
-                                                    >copy</span
+                                                <button
+                                                    class="btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'user-pin-1'
+                                                        )
+                                                    "
                                                 >
+                                                    copy
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -546,6 +568,7 @@
                                                     >User Pin 2</span
                                                 >
                                                 <input
+                                                    ref="user-pin-2"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.four"
@@ -553,9 +576,16 @@
                                                     aria-describedby="basic-addon1"
                                                     readonly
                                                 />
-                                                <span class="input-group-text"
-                                                    >copy</span
+                                                <button
+                                                    class="btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'user-pin-2'
+                                                        )
+                                                    "
                                                 >
+                                                    copy
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -2031,6 +2061,41 @@ export default {
                     console.error(error);
                 }
             );
+        },
+        copyToClipboard: function (refName) {
+            var element = this.$refs[refName];
+            var title = refName
+                .replaceAll('-', ' ')
+                .replace(/(?:^|\s|["'([{])+\S/g, (match) =>
+                    match.toUpperCase()
+                );
+            try {
+                // Access to navigator.clipboard requires https
+                if (window.location.protocol == 'https:') {
+                    navigator.clipboard.writeText(element.value);
+                } else {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = element.value;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+                swal.fire({
+                    title: `${title} copied to clipboard`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+            } catch (err) {
+                swal.fire({
+                    title: 'Copy Failed',
+                    text: `Unable to access the clipboard`,
+                    icon: 'error',
+                });
+                console.error('Unable to copy to clipboard', err);
+            }
         },
     },
 };
