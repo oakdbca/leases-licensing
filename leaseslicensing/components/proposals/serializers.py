@@ -1716,6 +1716,7 @@ class DTReferralSerializer(serializers.ModelSerializer):
             "referral",
             "proposal_lodgement_date",
             "proposal_lodgement_number",
+            "text",
             "referral_text",
             "document",
             "assigned_officer",
