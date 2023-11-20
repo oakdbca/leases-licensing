@@ -222,6 +222,7 @@
                                             >
                                                 <option
                                                     v-for="c in countries"
+                                                    :key="c.code"
                                                     :value="c.code"
                                                 >
                                                     {{ c.name }}
@@ -375,6 +376,7 @@
                                             >
                                                 <option
                                                     v-for="c in countries"
+                                                    :key="c.code"
                                                     :value="c.code"
                                                 >
                                                     {{ c.name }}
@@ -597,7 +599,6 @@
 </template>
 
 <script>
-import Vue from 'vue';
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import datatable from '@vue-utils/datatable.vue';
 import AddContact from '@common-utils/add_contact.vue';
@@ -605,7 +606,7 @@ import BootstrapLoadingButton from '../../../utils/vue/BootstrapLoadingButton.vu
 import swal from 'sweetalert2';
 
 export default {
-    name: 'Organisation',
+    name: 'ManageOrganisation',
     components: {
         datatable,
         AddContact,
@@ -663,10 +664,6 @@ export default {
         });
     },
     props: {
-        org_id: {
-            type: Number,
-            default: null,
-        },
         isApplication: {
             type: Boolean,
             default: false,
@@ -724,7 +721,7 @@ export default {
                     },
                     {
                         data: 'when',
-                        mRender: function (data, type, full) {
+                        mRender: function (data) {
                             return moment(data).format(vm.DATE_TIME_FORMAT);
                         },
                     },
@@ -872,7 +869,6 @@ export default {
                         api_endpoints.organisations,
                         vm.$route.params.org_id + '/contacts'
                     ),
-                    //"url": helpers.add_endpoint_json(api_endpoints.organisations,vm.org_id+'/contacts'),
                     dataSrc: '',
                 },
                 columns: [
@@ -992,7 +988,6 @@ export default {
         this.personal_form = document.forms.personal_form;
     },
     updated: function () {
-        let vm = this;
         $('.panelClicker[data-toggle="collapse"]').on('click', function () {
             var chev = $(this).children()[0];
             window.setTimeout(function () {
@@ -1052,7 +1047,9 @@ export default {
                             () => {
                                 vm.deleteContact(id);
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1066,7 +1063,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1099,7 +1095,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Contact Accept',
                                                     text:
@@ -1112,7 +1108,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1123,11 +1121,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1140,7 +1141,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1174,7 +1174,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Contact Accept (Previously Declined)',
                                                     text:
@@ -1187,7 +1187,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1198,11 +1200,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1215,7 +1220,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1248,7 +1252,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Contact Decline',
                                                     text:
@@ -1261,7 +1265,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1272,11 +1278,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1289,7 +1298,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1322,7 +1330,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Unlink',
                                                     text:
@@ -1335,7 +1343,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1357,7 +1367,9 @@ export default {
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1370,7 +1382,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1403,7 +1414,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Organisation Admin',
                                                     text:
@@ -1416,7 +1427,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1427,11 +1440,14 @@ export default {
                                                         ' an Organisation Admin.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1444,7 +1460,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1477,7 +1492,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Organisation User',
                                                     text:
@@ -1490,12 +1505,14 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
                                                 console.error(error);
-                                                var text =
+                                                let text =
                                                     helpers.apiVueResourceError(
                                                         error
                                                     );
@@ -1511,7 +1528,9 @@ export default {
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1524,7 +1543,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1557,7 +1575,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Suspend User',
                                                     text:
@@ -1570,7 +1588,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1581,11 +1601,14 @@ export default {
                                                         ' as a User.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1598,7 +1621,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1631,7 +1653,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Reinstate User',
                                                     text:
@@ -1644,7 +1666,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1655,11 +1679,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1672,7 +1699,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1705,7 +1731,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Relink User',
                                                     text:
@@ -1718,7 +1744,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1729,11 +1757,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1852,7 +1883,7 @@ export default {
                     }
                 )
                 .then(
-                    (response) => {
+                    () => {
                         swal(
                             'Contact Deleted',
                             'The contact was successfully deleted',
@@ -1996,7 +2027,9 @@ export default {
                             }
                         );
                 },
-                (error) => {}
+                (error) => {
+                    console.error(error);
+                }
             );
         },
     },
@@ -2050,5 +2083,6 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type='number'] {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 </style>
