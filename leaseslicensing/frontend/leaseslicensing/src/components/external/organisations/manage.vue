@@ -478,7 +478,7 @@
                                                     readonly
                                                 />
                                                 <button
-                                                    class="btn-copy input-group-text"
+                                                    class="btn btn-secondary btn-copy input-group-text"
                                                     @click="
                                                         copyToClipboard(
                                                             'admin-pin-1'
@@ -506,7 +506,7 @@
                                                     readonly
                                                 />
                                                 <button
-                                                    class="btn-copy input-group-text"
+                                                    class="btn btn-secondary btn-copy input-group-text"
                                                     @click="
                                                         copyToClipboard(
                                                             'admin-pin-2'
@@ -549,7 +549,7 @@
                                                     readonly
                                                 />
                                                 <button
-                                                    class="btn-copy input-group-text"
+                                                    class="btn btn-secondary btn-copy input-group-text"
                                                     @click="
                                                         copyToClipboard(
                                                             'user-pin-1'
@@ -577,7 +577,7 @@
                                                     readonly
                                                 />
                                                 <button
-                                                    class="btn-copy input-group-text"
+                                                    class="btn btn-secondary btn-copy input-group-text"
                                                     @click="
                                                         copyToClipboard(
                                                             'user-pin-2'
