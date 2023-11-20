@@ -1006,12 +1006,12 @@ export default {
             vm.countries = data[0];
             vm.org = Object.assign({}, data[1], data[2]);
             vm.myorgperms = data[3];
-            vm.org.postal_address =
-                vm.org.postal_address != null ? vm.org.postal_address : {};
-            vm.org.billing_address =
-                vm.org.billing_address != null ? vm.org.billing_address : {};
-            vm.org.billing_same_as_postal =
-                vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
+            vm.org.postal_address = vm.org.postal_address || {};
+            vm.org.billing_address = vm.org.billing_address || {};
+            vm.org.billing_same_as_postal = vm.isBillingAddressSame || {};
+            if (vm.org.billing_same_as_postal) {
+                this.copyPostalAddressToBillingAddress();
+            }
         });
     },
     mounted: function () {
@@ -1034,20 +1034,23 @@ export default {
         addContact: function () {
             this.$refs.add_contact.isModalOpen = true;
         },
+        copyPostalAddressToBillingAddress: function () {
+            this.org.billing_address.billing_line1 =
+                this.org.postal_address.postal_line1;
+            this.org.billing_address.billing_locality =
+                this.org.postal_address.postal_locality;
+            this.org.billing_address.billing_state =
+                this.org.postal_address.postal_state;
+            this.org.billing_address.billing_postcode =
+                this.org.postal_address.postal_postcode;
+            this.org.billing_address.billing_country =
+                this.org.postal_address.postal_country;
+        },
         toggleBillingAddressFieldsDisabled: function () {
             if (!this.org.billing_same_as_postal) {
                 $('.billing-address').first().focus();
             } else {
-                this.org.billing_address.billing_line1 =
-                    this.org.postal_address.postal_line1;
-                this.org.billing_address.billing_locality =
-                    this.org.postal_address.postal_locality;
-                this.org.billing_address.billing_state =
-                    this.org.postal_address.postal_state;
-                this.org.billing_address.billing_postcode =
-                    this.org.postal_address.postal_postcode;
-                this.org.billing_address.billing_country =
-                    this.org.postal_address.postal_country;
+                this.copyPostalAddressToBillingAddress();
             }
         },
         eventListeners: function () {
