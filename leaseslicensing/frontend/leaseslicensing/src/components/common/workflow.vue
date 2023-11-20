@@ -43,9 +43,13 @@
                     </template>
                     <template
                         v-if="
-                            proposal.processing_status_id == 'with_assessor' ||
                             proposal.processing_status_id ==
-                                'with_assessor_conditions'
+                                constants.PROPOSAL_STATUS.WITH_ASSESSOR ||
+                            proposal.processing_status_id ==
+                                constants.PROPOSAL_STATUS
+                                    .WITH_ASSESSOR_CONDITIONS ||
+                            proposal.processing_status_id ==
+                                constants.PROPOSAL_STATUS.WITH_REFERRAL.ID
                         "
                     >
                         <select
@@ -972,6 +976,7 @@ export default {
                     constants.PROPOSAL_STATUS.WITH_APPROVER.ID,
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID,
                     constants.PROPOSAL_STATUS.WITH_ASSESSOR_CONDITIONS.ID,
+                    constants.PROPOSAL_STATUS.WITH_REFERRAL.ID,
                 ].includes(this.proposal.processing_status_id)
             );
         },
@@ -1261,69 +1266,6 @@ export default {
                 'Content-Type': 'application/json',
             };
 
-            vm.sendingReferral = true;
-            await fetch(
-                `/api/proposal/${this.proposal.id}/assessor_save.json`,
-                {
-                    method: 'POST',
-                    headers: my_headers,
-                    body: JSON.stringify({ proposal: vm.proposal }),
-                }
-            )
-                .then(async (response) => {
-                    if (!response.ok) {
-                        return await response.json().then((json) => {
-                            throw new Error(json);
-                        });
-                    } else {
-                        return await response.json();
-                    }
-                })
-                .then(async () => {
-                    return fetch(
-                        helpers.add_endpoint_json(
-                            api_endpoints.proposals,
-                            vm.proposal.id + '/assessor_send_referral'
-                        ),
-                        {
-                            method: 'POST',
-                            headers: my_headers,
-                            body: JSON.stringify({
-                                email: vm.selected_referral,
-                                text: vm.assessor_referral_text,
-                            }),
-                        }
-                    );
-                })
-                .then(async (response) => {
-                    if (!response.ok) {
-                        return await response.json().then((json) => {
-                            if (Array.isArray(json)) {
-                                throw new Error(json);
-                            } else {
-                                throw new Error(json['non_field_errors']);
-                            }
-                        });
-                    } else {
-                        return await response.json();
-                    }
-                })
-                .then(async (response) => {
-                    vm.switchStatus(response.processing_status_id); // 'with_referral'
-                })
-                .catch((error) => {
-                    swal.fire({
-                        title: `${error}`,
-                        text: 'Failed to send referral. Please contact your administrator.',
-                        icon: 'warning',
-                    });
-                })
-                .finally(() => {
-                    vm.sendingReferral = false;
-                    vm.selected_referral = '';
-                    vm.assessor_referral_text = '';
-                    $(vm.$refs.department_users).val(null).trigger('change');
-                });
             vm.sendingReferral = true;
             await fetch(
                 `/api/proposal/${this.proposal.id}/assessor_save.json`,
