@@ -165,7 +165,6 @@ export default {
                     {
                         title: 'To',
                         data: 'to',
-                        //render: vm.commaToNewline
                         render: function (value) {
                             var ellipsis = '...',
                                 truncated = _.truncate(value, {
@@ -226,7 +225,32 @@ export default {
                     {
                         title: 'From',
                         data: 'fromm',
-                        render: vm.commaToNewline,
+                        render: function (value) {
+                            var ellipsis = '...',
+                                truncated = _.truncate(value, {
+                                    length: 25,
+                                    omission: ellipsis,
+                                    separator: ' ',
+                                }),
+                                result = '<span>' + truncated + '</span>',
+                                popTemplate = _.template(
+                                    '<a href="#" ' +
+                                        'role="button" ' +
+                                        'data-bs-toggle="popover" ' +
+                                        'data-trigger="click" ' +
+                                        'data-placement="top auto"' +
+                                        'data-html="true" ' +
+                                        'data-bs-content="<%= text %>" ' +
+                                        '>more</a>'
+                                );
+                            if (_.endsWith(truncated, ellipsis)) {
+                                result += popTemplate({
+                                    text: value,
+                                });
+                            }
+
+                            return result;
+                        },
                     },
                     {
                         title: 'Subject/Desc.',
@@ -368,8 +392,11 @@ export default {
                             '#' + commsLogId + ' [data-bs-toggle="popover"]'
                         )
                     );
+                    console.log(popoverTriggerList);
                     popoverTriggerList.map(function (popoverTriggerEl) {
-                        return new bootstrap.Popover(popoverTriggerEl);
+                        return new bootstrap.Popover(popoverTriggerEl, {
+                            container: '#' + commsLogId,
+                        });
                     });
                 });
             });
