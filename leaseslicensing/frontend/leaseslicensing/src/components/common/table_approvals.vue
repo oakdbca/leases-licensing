@@ -250,7 +250,6 @@ export default {
     data() {
         return {
             datatable_id: 'approvals-datatable-' + uuid(),
-            show_expired_surrendered: false,
             selectedWaitingListAllocationId: null,
             approvalHistoryId: null,
             uuid: 0,
@@ -852,9 +851,6 @@ export default {
         },
     },
     watch: {
-        show_expired_surrendered: function (value) {
-            this.$refs.approvals_datatable.vmDataTable.ajax.reload();
-        },
         filterApprovalType: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
             sessionStorage.setItem(
