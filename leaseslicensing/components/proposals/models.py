@@ -1852,14 +1852,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         else:
             raise ValidationError("You can't edit this proposal at this moment")
 
-    transaction.atomic
-
+    @transaction.atomic
     def send_referral(self, request, referral_email, referral_text):
         referral_email = referral_email.lower()
-        if (
-            self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-            or self.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL
-        ):
+        if self.processing_status in [
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+            Proposal.PROCESSING_STATUS_WITH_REFERRAL,
+        ]:
             self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
             self.save()
 
