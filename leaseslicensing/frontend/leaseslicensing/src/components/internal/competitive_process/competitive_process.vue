@@ -718,42 +718,6 @@ export default {
                 featureCollection['features'][key]['model'] = model;
             });
 
-            // Append proposal geometries to competitive process geometries
-            if (vm.competitive_process.registration_of_interest) {
-                let proposalgeometries = {
-                    ...vm.competitive_process.registration_of_interest
-                        .proposalgeometry,
-                };
-
-                for (let feature of proposalgeometries['features']) {
-                    feature['properties']['source'] =
-                        'registration_of_interest';
-                    // Build proposal model object for geometry feature (i.e. the proposal that this geometry belongs to)
-                    // Have to omit proposalgeometry from model object to avoid circular reference in the form `a.features[i].b = a`
-                    let model = {
-                        id: vm.competitive_process.registration_of_interest.id,
-                        details_url:
-                            vm.competitive_process.registration_of_interest
-                                .details_url,
-                        application_type_name_display:
-                            vm.competitive_process.registration_of_interest
-                                .application_type_name_display,
-                        lodgement_number:
-                            vm.competitive_process.registration_of_interest
-                                .lodgement_number,
-                        lodgement_date_display:
-                            vm.competitive_process.registration_of_interest
-                                .lodgement_date_display,
-                        processing_status_display:
-                            vm.competitive_process.registration_of_interest
-                                .processing_status_display,
-                    };
-
-                    feature['model'] = model;
-                    featureCollection['features'].push(feature);
-                }
-            }
-
             return featureCollection;
         },
         outcomeDetails: function () {
