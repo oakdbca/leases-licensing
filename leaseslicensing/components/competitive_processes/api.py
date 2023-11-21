@@ -21,7 +21,10 @@ from leaseslicensing.components.competitive_processes.serializers import (
     CompetitiveProcessUserActionSerializer,
     ListCompetitiveProcessSerializer,
 )
-from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.api import (
+    Select2ListMixin,
+    UserActionLoggingViewset,
+)
 from leaseslicensing.components.main.decorators import (
     basic_exception_handler,
     logging_action,
@@ -80,10 +83,11 @@ class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class CompetitiveProcessViewSet(UserActionLoggingViewset):
+class CompetitiveProcessViewSet(UserActionLoggingViewset, Select2ListMixin):
     queryset = CompetitiveProcess.objects.none()
     filter_backends = (CompetitiveProcessFilterBackend,)
     lookup_field = "id"
+    key_value_display_field = "lodgement_number"
 
     def perform_create(self, serializer):
         """
