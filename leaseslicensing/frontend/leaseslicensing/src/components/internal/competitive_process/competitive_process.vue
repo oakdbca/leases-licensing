@@ -23,11 +23,11 @@
                     :can-assess="canAssess"
                     :can_user_edit="competitive_process.can_user_edit"
                     class="mt-2"
-                    @assignRequestUser="assignRequestUser"
-                    @assignTo="assignTo"
-                    @issueComplete="issueComplete"
-                    @issueDiscard="issueDiscard"
-                    @issueUnlock="issueUnlock"
+                    @assign-request-user="assignRequestUser"
+                    @assign-to="assignTo"
+                    @issue-complete="issueComplete"
+                    @issue-discard="issueDiscard"
+                    @issue-unlock="issueUnlock"
                 />
             </div>
             <div class="col-md-9">
@@ -252,7 +252,7 @@
                                     "
                                     :searchable="true"
                                     :readonly="false"
-                                    @update:selectedData="updateGISData"
+                                    @update:selected-data="updateGISData"
                                 />
                             </FormSection>
                         </FormSection>
@@ -337,7 +337,7 @@
                                         placeholder_text="Add some details here"
                                         :readonly="elementDisabled"
                                         :can_view_richtext_src="true"
-                                        @textChanged="detailsTextChanged"
+                                        @text-changed="detailsTextChanged"
                                     />
                                 </div>
                             </div>
@@ -526,8 +526,8 @@ export default {
                 winner_applicant_id = winner_party.is_person
                     ? winner_party.person_id
                     : winner_party.is_organisation
-                    ? winner_party.organisation_id
-                    : -1;
+                      ? winner_party.organisation_id
+                      : -1;
             } else {
                 console.warn(
                     `No related party found for winner ID ${winner_party_id}.`
@@ -571,8 +571,8 @@ export default {
                 let winner_name = winner_party.is_person
                     ? winner_party.person.fullname
                     : winner_party.is_organisation
-                    ? winner_party.organisation.trading_name
-                    : 'Unknown';
+                      ? winner_party.organisation.trading_name
+                      : 'Unknown';
                 console.warn(
                     `Multiple open Applications found for winner ID ${winner_party_id}. (${winner_name})`
                 );
@@ -869,6 +869,9 @@ export default {
         },
         set_custom_rows_property(property, value) {
             let vm = this;
+            if (!vm.$refs.competitive_process_parties) {
+                return;
+            }
             Object.keys(
                 vm.$refs.competitive_process_parties.custom_row_apps
             ).forEach(function (key) {
@@ -906,7 +909,6 @@ export default {
                         icon: 'success',
                         confirmButtonColor: '#0d6efd',
                     });
-                    vm.processing = false;
                     // Done save, set custom row back to not processing
                     vm.set_custom_rows_property('processing', false);
                     vm.$nextTick(async () => {
@@ -917,12 +919,14 @@ export default {
                 .catch((error) => {
                     swal.fire({
                         title: 'Please fix following errors before saving',
-                        text: JSON.parse(error.message),
+                        text: error,
                         icon: 'error',
                         confirmButtonColor: '#0d6efd',
                     });
-                    vm.processing = false;
                     vm.set_custom_rows_property('processing', false);
+                })
+                .finally(() => {
+                    vm.processing = false;
                 });
         },
         issueComplete: async function () {
@@ -1022,7 +1026,7 @@ export default {
                                     return await response.json();
                                 }
                             })
-                            .then(async (data) => {
+                            .then(async () => {
                                 await swal.fire({
                                     title: 'Discarded',
                                     text: 'Competitive process has been discarded',
