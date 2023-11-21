@@ -130,6 +130,10 @@ class CompetitiveProcess(LicensingModelVersioned):
         return lease_licence
 
     def discard(self, request):
+        if not self.can_user_process(request.user):
+            raise ValidationError(
+                "You do not have permission to discard this competitive process."
+            )
         self.status = CompetitiveProcess.STATUS_DISCARDED
         self.save(version_comment=f"Discarded competitive process {self.pk}")
 
