@@ -40,6 +40,7 @@ from leaseslicensing.components.competitive_processes.models import (
     CompetitiveProcess,
     CompetitiveProcessGeometry,
     CompetitiveProcessGroup,
+    CompetitiveProcessParty,
 )
 from leaseslicensing.components.invoicing import utils as invoicing_utils
 from leaseslicensing.components.invoicing.email import (
@@ -2620,6 +2621,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         self, self.generated_competitive_process
                     )
                     copy_gis_data_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+
+                    # Add the applicant from the ROI as a party to the CP
+                    create_competitive_process_party_from_proposal(
                         self, self.generated_competitive_process
                     )
 
@@ -5631,3 +5637,24 @@ def copy_gis_data_to_competitive_process(
                 competitive_process=competitive_process,
                 **{f"{gis_model}": getattr(model, f"{gis_model}")},
             )
+
+
+def create_competitive_process_party_from_proposal(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    if proposal.ind_applicant:
+        CompetitiveProcessParty.objects.get_or_create(
+            competitive_process=competitive_process,
+            person_id=proposal.ind_applicant,
+            invited_at=competitive_process.created_at,
+        )
+    elif proposal.org_applicant:
+        CompetitiveProcessParty.objects.get_or_create(
+            competitive_process=competitive_process,
+            organisation=proposal.org_applicant,
+            invited_at=competitive_process.created_at,
+        )
+    else:
+        logger.warning(
+            f"Proposal {proposal.id} has no applicant, cannot create competitive process party"
+        )
