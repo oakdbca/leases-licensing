@@ -1860,7 +1860,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         and uses a generic related item serializer to return the data"""
         instance = self.get_object()
         proposals_queryset = (
-            Proposal.objects.filter(generated_proposal_id=instance.id)
+            Proposal.objects.filter(
+                Q(generated_proposal=instance) | Q(originating_proposal=instance)
+            )
             .annotate(
                 description=F("processing_status"),
                 type=Value("proposal", output_field=CharField()),
