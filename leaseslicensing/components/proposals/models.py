@@ -36,7 +36,11 @@ from leaseslicensing import exceptions
 from leaseslicensing.components.competitive_processes.email import (
     send_competitive_process_create_notification,
 )
-from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
+from leaseslicensing.components.competitive_processes.models import (
+    CompetitiveProcess,
+    CompetitiveProcessGeometry,
+    CompetitiveProcessGroup,
+)
 from leaseslicensing.components.invoicing import utils as invoicing_utils
 from leaseslicensing.components.invoicing.email import (
     send_new_invoice_raised_internal_notification,
@@ -2604,6 +2608,21 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         self.generated_competitive_process,
                         details=details,
                     )
+
+                    # Copy any relevant details from the ROI to the Competitive Process
+                    copy_site_name_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+                    copy_groups_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+                    copy_proposal_geometry_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+                    copy_gis_data_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+
                     self.processing_status = (
                         Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
                     )
@@ -5566,3 +5585,49 @@ def copy_proposal_requirements(
             )
             requirement_document.can_delete = True
             requirement_document.save()
+
+
+# Functions for copying data from a proposal to a competitive process
+def copy_site_name_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    competitive_process.site_name = proposal.site_name
+    competitive_process.save()
+
+
+def copy_groups_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    for group in proposal.groups.all():
+        CompetitiveProcessGroup.objects.get_or_create(
+            competitive_process=competitive_process, group=group.group
+        )
+
+
+def copy_proposal_geometry_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    for proposal_geometry in ProposalGeometry.objects.filter(proposal=proposal):
+        CompetitiveProcessGeometry.objects.get_or_create(
+            competitive_process=competitive_process,
+            polygon=proposal_geometry.polygon,
+            intersects=True,
+            drawn_by=proposal_geometry.drawn_by,
+            locked=True,
+        )
+
+
+def copy_gis_data_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    for gis_model in GIS_DATA_MODEL_NAMES:
+        model_class_from = apps.get_model("leaseslicensing", f"proposal{gis_model}")
+        model_class_to = apps.get_model(
+            "leaseslicensing", f"competitiveprocess{gis_model}"
+        )
+        models_from = model_class_from.objects.filter(proposal=proposal)
+        for model in models_from:
+            model_class_to.objects.get_or_create(
+                competitive_process=competitive_process,
+                **{f"{gis_model}": getattr(model, f"{gis_model}")},
+            )
