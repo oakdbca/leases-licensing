@@ -1,3 +1,4 @@
+import logging
 import re
 
 from django.conf import settings
@@ -8,6 +9,8 @@ from ledger_api_client.managed_models import SystemGroup
 
 from leaseslicensing.components.emails.emails import TemplateEmailBase
 from leaseslicensing.ledger_api_utils import retrieve_email_user
+
+logger = logging.getLogger(__name__)
 
 
 def send_winner_notification(request, competitive_process):
@@ -69,6 +72,7 @@ def send_competitive_process_create_notification(
     # notification email from the system, including the link to access the competitive process.
     group = SystemGroup.objects.get(name=settings.GROUP_COMPETITIVE_PROCESS_EDITOR)
     ids = group.get_system_group_member_ids()
+    logger.debug(f"Sending email to {ids}")
     email_user_emails = [retrieve_email_user(id).email for id in ids]
     msg = email.send(email_user_emails, cc=cc_emails, bcc=bcc_emails, context=context)
 
@@ -106,13 +110,12 @@ def _log_competitive_process_email(email_message, competitive_process, sender=No
     else:
         text = smart_text(email_message)
         subject = ""
-        retrieve_email_user()
         if hasattr(competitive_process, "originating_proposal"):
             to = retrieve_email_user(
                 competitive_process.originating_proposal.submitter
             ).email
         else:
-            to = None
+            to = ""
         fromm = (
             smart_text(sender)
             if sender
