@@ -324,14 +324,13 @@ class CompetitiveProcess(LicensingModelVersioned):
         return self.status
 
     def can_user_view(self, request):
-        if is_internal(request):
-            return True
-        return False
+        return is_internal(request)
 
     def can_user_process(self, user):
-        if self.assigned_officer == user:  # TODO: confirm this condition
-            return True
-        return False
+        return (
+            self.status == CompetitiveProcess.STATUS_IN_PROGRESS
+            and self.is_user_competitive_process_editor(user.id)
+        )
 
     def is_user_competitive_process_editor(self, user_id):
         return belongs_to_by_user_id(user_id, settings.GROUP_COMPETITIVE_PROCESS_EDITOR)
