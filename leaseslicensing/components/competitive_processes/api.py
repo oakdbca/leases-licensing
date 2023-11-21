@@ -132,9 +132,17 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def discard(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        if len(request.data):
+            # If there is data in the request, update the instance before discarding
+            # this is done when the user is discarding a competitive process from the details
+            # page, if the user is discarding from the datatables page, there is no need to update
+            # the instance before discarding
+            serializer = self.get_serializer(instance, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+        else:
+            serializer = self.get_serializer(instance)
+
         instance.discard(request)
         return Response(serializer.data)
 
