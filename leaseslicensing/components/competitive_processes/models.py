@@ -97,35 +97,34 @@ class CompetitiveProcess(LicensingModelVersioned):
         verbose_name_plural = "Competitive Processes"
         ordering = ("modified_at",)
 
+    @transaction.atomic
     def create_lease_licence_from_competitive_process(self):
         from leaseslicensing.components.proposals.models import Proposal, ProposalType
 
-        lease_licence = None
-        with transaction.atomic():
-            lease_licence = Proposal.objects.create(
-                application_type=ApplicationType.objects.get(
-                    name=settings.APPLICATION_TYPE_LEASE_LICENCE
-                ),
-                submitter=None,
-                ind_applicant=self.winner.person_id,
-                org_applicant=self.winner.organisation,
-                proposal_type_id=ProposalType.objects.get(
-                    code=settings.PROPOSAL_TYPE_NEW
-                ).id,
-            )
+        lease_licence = Proposal.objects.create(
+            application_type=ApplicationType.objects.get(
+                name=settings.APPLICATION_TYPE_LEASE_LICENCE
+            ),
+            submitter=None,
+            ind_applicant=self.winner.person_id,
+            org_applicant=self.winner.organisation,
+            proposal_type_id=ProposalType.objects.get(
+                code=settings.PROPOSAL_TYPE_NEW
+            ).id,
+        )
 
-            lease_licence.originating_competitive_process = self
+        lease_licence.originating_competitive_process = self
 
-            # add geometry
-            from copy import deepcopy
+        # add geometry
+        from copy import deepcopy
 
-            if hasattr(self, "originating_proposal"):
-                for geo in self.originating_proposal.proposalgeometry.all():
-                    new_geo = deepcopy(geo)
-                    new_geo.proposal = lease_licence
-                    new_geo.copied_from = geo
-                    new_geo.id = None
-                    new_geo.save()
+        if hasattr(self, "originating_proposal"):
+            for geo in self.originating_proposal.proposalgeometry.all():
+                new_geo = deepcopy(geo)
+                new_geo.proposal = lease_licence
+                new_geo.copied_from = geo
+                new_geo.id = None
+                new_geo.save()
 
         return lease_licence
 
