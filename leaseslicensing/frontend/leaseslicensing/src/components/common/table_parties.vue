@@ -26,9 +26,9 @@
         </div>
         <AddPartyModal
             ref="add_party"
-            @closeModal="closeModal"
-            @refreshDatatable="refreshFromResponse"
-            @partyToAdd="addParty"
+            @close-modal="closeModal"
+            @refresh-datatable="refreshFromResponse"
+            @party-to-add="addParty"
         />
     </div>
 </template>
@@ -124,8 +124,8 @@ export default {
                         return 'fullname' in full.person
                             ? full.person.fullname
                             : 'full_name' in full.person
-                            ? full.person.full_name
-                            : '(name)';
+                              ? full.person.full_name
+                              : '(name)';
                     } else {
                         return '';
                     }
