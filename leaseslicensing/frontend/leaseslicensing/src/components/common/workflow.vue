@@ -44,10 +44,10 @@
                     <template
                         v-if="
                             proposal.processing_status_id ==
-                                constants.PROPOSAL_STATUS.WITH_ASSESSOR ||
+                                constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID ||
                             proposal.processing_status_id ==
                                 constants.PROPOSAL_STATUS
-                                    .WITH_ASSESSOR_CONDITIONS ||
+                                    .WITH_ASSESSOR_CONDITIONS.ID ||
                             proposal.processing_status_id ==
                                 constants.PROPOSAL_STATUS.WITH_REFERRAL.ID
                         "
