@@ -107,6 +107,13 @@ export default {
                     ) {
                         this.$refs.proposed_approval_form.selectedDecision =
                             this.proposal.proposed_issuance_approval.decision;
+                        if (
+                            this.proposal.proposed_issuance_approval.decision ==
+                            constants.APPROVAL_DECISIONS
+                                .APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
+                        ) {
+                            this.$refs.proposed_approval_form.initialiseExistingCompetitiveProcessSelect2();
+                        }
                     }
                 });
             }
