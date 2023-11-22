@@ -150,6 +150,12 @@ module.exports = {
             TEXT: 'Percentage of Gross Turnover',
         },
     },
+    APPROVAL_DECISIONS: {
+        APPROVE_LEASE_LICENCE: 'approve_lease_licence',
+        APPROVE_COMPETITIVE_PROCESS: 'approve_competitive_process',
+        APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS:
+            'approve_add_to_existing_competitive_process',
+    },
     DATATABLE_PROCESSING_HTML:
         '<div class="d-flex justify-content-center"><div class="d-flex spinner-border text-primary my-4" role="status"><span class="visually-hidden">Loading...</span></div></div>',
 
