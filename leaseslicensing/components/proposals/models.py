@@ -1163,6 +1163,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         on_delete=models.SET_NULL,
         related_name="generated_proposal",
     )
+    # When adding proposal as a party to an existing competitive process
+    competitive_process_to_copy_to = models.ForeignKey(
+        CompetitiveProcess,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="proposals_added",
+    )
     invoicing_details = models.OneToOneField(
         InvoicingDetails,
         null=True,
@@ -2279,7 +2287,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
             and not details.get("decision")
         ):
-            non_field_errors.append("You must choose a decision radio button")
+            non_field_errors.append("You must select a decision")
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             if not details.get("approval_type"):
                 non_field_errors.append("You must select an Approval Type")
@@ -2298,6 +2306,22 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 "decision": details.get("decision"),
                 "record_management_number": details.get("record_management_number"),
             }
+            if (
+                not self.competitive_process_to_copy_to
+                and details.get("decision")
+                == settings.APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
+            ):
+                try:
+                    competitive_process_id = details.get("competitive_process")
+                    competitive_process = CompetitiveProcess.objects.get(
+                        id=competitive_process_id
+                    )
+                except CompetitiveProcess.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"No competitve process found with ID {competitive_process_id}"
+                    )
+                self.competitive_process_to_copy_to = competitive_process
+
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             # start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None
             # expiry_date = details.get('expiry_date').strftime('%d/%m/%Y') if details.get('expiry_date') else None
@@ -2570,7 +2594,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # Registration of Interest (New)
                 if (
                     self.proposed_issuance_approval.get("decision")
-                    == "approve_lease_licence"
+                    == settings.APPROVE_LEASE_LICENCE
                     and not self.generated_proposal
                 ):
                     lease_licence = (
@@ -2599,7 +2623,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     )
                 elif (
                     self.proposed_issuance_approval.get("decision")
-                    == "approve_competitive_process"
+                    == settings.APPROVE_COMPETITIVE_PROCESS
                     and not self.generated_proposal
                 ):
                     self.generate_competitive_process()
@@ -2627,6 +2651,23 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     # Add the applicant from the ROI as a party to the CP
                     create_competitive_process_party_from_proposal(
                         self, self.generated_competitive_process
+                    )
+
+                    self.processing_status = (
+                        Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
+                    )
+                elif (
+                    self.proposed_issuance_approval.get("decision")
+                    == settings.APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
+                    and not self.generated_proposal
+                ):
+                    if not self.competitive_process_to_copy_to:
+                        raise ValidationError(
+                            f"No competitive process selected to copy to for ROI {self}"
+                        )
+                    # Add the applicant from the ROI as a party to the CP
+                    create_competitive_process_party_from_proposal(
+                        self, self.competitive_process_to_copy_to
                     )
 
                     self.processing_status = (
