@@ -1448,6 +1448,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "processing_status_id",
             "details_text",
             "added_internally",
+            "competitive_process_to_copy_to",
             # additional form fields for registration of interest
             "exclusive_use",
             "long_term_use",
