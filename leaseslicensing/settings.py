@@ -470,6 +470,12 @@ REPETITION_TYPES = (
 
 LATEST_REFERRAL_COUNT = 5
 
+APPROVE_LEASE_LICENCE = "approve_lease_licence"
+APPROVE_COMPETITIVE_PROCESS = "approve_competitive_process"
+APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS = (
+    "approve_add_to_existing_competitive_process"
+)
+
 # ---------- Standard Requirements ----------
 
 INVOICING_PERCENTAGE_GROSS_TURNOVER_ANNUALLY = (
