@@ -173,8 +173,9 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
     )
     if "public" != namespace:
         logger.debug("Using Basic HTTP Auth to access namespace: %s", namespace)
+        url = f"{settings.KMI_SERVER_URL}{server_path}"
         response = requests.post(
-            f"{settings.KMI_SERVER_URL}{server_path}",
+            url,
             data=params,
             auth=(settings.KMI_AUTH_USERNAME, settings.KMI_AUTH_PASSWORD),
         )
@@ -182,6 +183,9 @@ def get_features_by_multipolygon(multipolygon, layer_name, properties):
         response = requests.post(f"{settings.KMI_SERVER_URL}{server_path}", data=params)
     if not response.ok:
         logger.error(f"Error getting features from KMI: {response.text}")
+        raise serializers.ValidationError(
+            f"Error getting features from KMI (Server URL: {url}, Layer: {layer_name}"
+        )
 
     logger.info(f"Request took: {response.elapsed.total_seconds()}")
     return response.json()
