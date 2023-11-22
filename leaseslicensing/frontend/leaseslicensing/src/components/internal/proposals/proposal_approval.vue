@@ -86,7 +86,7 @@
                 :expiry-date="proposal.approval.expiry_date"
                 :proposal-processing-status-id="proposal.processing_status_id"
                 :approval-type="proposal.approval.approval_type"
-                @updateInvoicingDetails="
+                @update-invoicing-details="
                     $emit('updateInvoicingDetails', $event)
                 "
             />
@@ -244,14 +244,20 @@ export default {
 
             if (
                 this.proposal.proposed_issuance_approval.decision ===
-                'approve_lease_licence'
+                constants.APPROVAL_DECISIONS.APPROVE_LEASE_LICENCE
             ) {
                 return 'was approved to proceed to a full application';
             } else if (
                 this.proposal.proposed_issuance_approval.decision ===
-                'approve_competitive_process'
+                constants.APPROVAL_DECISIONS.APPROVE_COMPETITIVE_PROCESS
             ) {
                 return 'was approved to proceed to a Competitive Process';
+            } else if (
+                this.proposal.proposed_issuance_approval.decision ===
+                constants.APPROVAL_DECISIONS
+                    .APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
+            ) {
+                return 'was approved and added to an existing Competitive Process';
             } else {
                 return 'was approved';
             }
@@ -279,15 +285,17 @@ export default {
 
             if (this.proposal) {
                 if (
-                    this.proposal.proposed_issuance_approval.decision ===
-                    'approve_lease_licence'
+                    [
+                        constants.APPROVAL_DECISIONS.APPROVE_LEASE_LICENCE,
+                        constants.APPROVAL_DECISIONS
+                            .APPROVE_COMPETITIVE_PROCESS,
+                        constants.APPROVAL_DECISIONS
+                            .APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS,
+                    ].includes(
+                        this.proposal.proposed_issuance_approval.decision
+                    )
                 ) {
-                    return `The ${this.proposal.application_type.name_display}`;
-                } else if (
-                    this.proposal.proposed_issuance_approval.decision ===
-                    'approve_competitive_process'
-                ) {
-                    return `The ${this.proposal.application_type.name_display}`;
+                    return `This ${this.proposal.application_type.name_display}`;
                 } else {
                     return `This proposal for a ${this.proposal.application_type.name_display}`;
                 }
