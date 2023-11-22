@@ -53,17 +53,40 @@
                                 </ul>
                             </div>
                         </div>
+
                         <div
                             v-if="
                                 selectedDecision ==
-                                'add_to_existing_competitive_process'
+                                constants.APPROVAL_DECISIONS
+                                    .APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
                             "
                             class="row mb-3 align-items-center"
                         >
                             <label class="col-sm-3 col-form-label"
                                 >Competitive Process</label
                             >
-                            <div class="col-sm-9">
+                            <div
+                                v-if="proposal.competitive_process_to_copy_to"
+                                class="col-sm-9"
+                            >
+                                <span class="badge bg-primary p-2 fs-6">
+                                    <router-link
+                                        class="text-white"
+                                        :to="{
+                                            name: 'internal-competitive-process',
+                                            params: {
+                                                competitive_process_id:
+                                                    proposal.competitive_process_to_copy_to,
+                                            },
+                                        }"
+                                        target="_blank"
+                                        >{{
+                                            competitive_process_lodgement_number
+                                        }}</router-link
+                                    >
+                                </span>
+                            </div>
+                            <div v-else class="col-sm-9">
                                 <select
                                     id="cp"
                                     ref="cp"
@@ -512,12 +535,11 @@
 </template>
 
 <script>
-import { constants } from '@/utils/hooks';
 import VueAlert from '@vue-utils/alert.vue';
 import RichText from '@/components/forms/richtext.vue';
 import { v4 as uuid } from 'uuid';
 
-import { api_endpoints, helpers, utils } from '@/utils/hooks';
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import FileField from '@/components/forms/filefield_immediate.vue';
 import ProposedApprovalDocuments from '@/components/internal/proposals/proposed_approval_documents.vue';
 import Swal from 'sweetalert2';
@@ -583,8 +605,10 @@ export default {
     },
     data: function () {
         return {
+            constants: constants,
             uuid: uuid(),
-            selectedDecision: 'approve_lease_licence',
+            selectedDecision:
+                constants.APPROVAL_DECISIONS.APPROVE_LEASE_LICENCE,
             form: null,
             approval: {},
             approvalTypes: [],
@@ -592,10 +616,12 @@ export default {
             selectedApprovalTypeId: null,
             issuingApproval: false,
             approvalDecisionText: {
-                approve_lease_licence:
+                [constants.APPROVAL_DECISIONS.APPROVE_LEASE_LICENCE]:
                     'Invite Proponent to Apply for a Lease or Licence',
-                approve_competitive_process: 'Start Competitive Process',
-                add_to_existing_competitive_process:
+                [constants.APPROVAL_DECISIONS.APPROVE_COMPETITIVE_PROCESS]:
+                    'Start Competitive Process based on this Registration of Interest',
+                [constants.APPROVAL_DECISIONS
+                    .APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS]:
                     'Add to Existing Competitive Process',
             },
             errorString: '',
@@ -757,6 +783,14 @@ export default {
                 this.approval.cc_email = value;
             },
         },
+        competitive_process_lodgement_number: function () {
+            if (!this.proposal.competitive_process_to_copy_to) {
+                return '';
+            }
+            return `CP${this.proposal.competitive_process_to_copy_to
+                .toString()
+                .padStart(6, '0')}`;
+        },
     },
     created: async function () {
         let vm = this;
@@ -799,7 +833,11 @@ export default {
     },
     methods: {
         selectedDecisionChanged: function (event) {
-            if (event.target.value == 'add_to_existing_competitive_process') {
+            if (
+                event.target.value ==
+                constants.APPROVAL_DECISIONS
+                    .APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
+            ) {
                 this.initialiseExistingCompetitiveProcessSelect2();
                 this.$nextTick(() => {
                     $('#cp').select2('open');
@@ -830,23 +868,17 @@ export default {
                     },
                 })
                 .on('select2:open', function () {
-                    $('.select2-search__field').focus();
+                    $(
+                        `#proposedIssuanceApproval${vm.uuid} .select2-search__field`
+                    ).focus();
                 })
                 .on('select2:select', function (e) {
-                    vm.applicant = e.params.data.id;
-                    vm.applicantName = e.params.data.text;
-                    if (vm.addingNewOrganisation) {
-                        vm.newOrganisation.admin_user_id = vm.applicant;
-                    }
+                    vm.approval.competitive_process = e.params.data.id;
                     document.activeElement.blur();
                 })
                 .on('select2:clear', function () {
-                    vm.resetSelectedCompetitiveProcess();
+                    vm.approval.competitive_process = null;
                 });
-        },
-        resetSelectedCompetitiveProcess: function () {
-            this.applicant = null;
-            this.applicantName = null;
         },
         focus() {
             this.$nextTick(() => {
