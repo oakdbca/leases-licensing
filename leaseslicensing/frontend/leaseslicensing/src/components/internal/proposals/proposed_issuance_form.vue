@@ -41,6 +41,7 @@
                                             :name="key"
                                             :value="key"
                                             :disabled="readonly"
+                                            @change="selectedDecisionChanged"
                                         />
                                         <label
                                             class="form-check-label"
@@ -50,6 +51,29 @@
                                         >
                                     </li>
                                 </ul>
+                            </div>
+                        </div>
+                        <div
+                            v-if="
+                                selectedDecision ==
+                                'add_to_existing_competitive_process'
+                            "
+                            class="row mb-3 align-items-center"
+                        >
+                            <label class="col-sm-3 col-form-label"
+                                >Competitive Process</label
+                            >
+                            <div class="col-sm-9">
+                                <select
+                                    id="cp"
+                                    ref="cp"
+                                    class="form-select"
+                                    required
+                                ></select>
+                                <div class="invalid-feedback">
+                                    Please search and select a competitive
+                                    process.
+                                </div>
                             </div>
                         </div>
                         <div
@@ -570,7 +594,9 @@ export default {
             approvalDecisionText: {
                 approve_lease_licence:
                     'Invite Proponent to Apply for a Lease or Licence',
-                approve_competitive_process: 'Start Competitive process',
+                approve_competitive_process: 'Start Competitive Process',
+                add_to_existing_competitive_process:
+                    'Add to Existing Competitive Process',
             },
             errorString: '',
             toDateErrorString: '',
@@ -652,8 +678,8 @@ export default {
                 )
                     ? this.$refs.registration_of_interest_details.id
                     : Object.hasOwn(this.$refs, 'lease_licence_details')
-                    ? this.$refs.lease_licence_details.id
-                    : '';
+                      ? this.$refs.lease_licence_details.id
+                      : '';
                 return this.detailsTexts[id] || '';
             }
         },
@@ -661,8 +687,8 @@ export default {
             return this.processing_status == 'With Approver'
                 ? `Issue Approval for ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`
                 : this.isRenewal
-                ? `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number} - Renewal`
-                : `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`;
+                  ? `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number} - Renewal`
+                  : `Propose to Approve ${this.proposal.application_type.name_display}: ${this.proposal.lodgement_number}`;
         },
         is_amendment: function () {
             return this.proposal_type == 'Amendment' ? true : false;
@@ -772,6 +798,56 @@ export default {
         });
     },
     methods: {
+        selectedDecisionChanged: function (event) {
+            if (event.target.value == 'add_to_existing_competitive_process') {
+                this.initialiseExistingCompetitiveProcessSelect2();
+                this.$nextTick(() => {
+                    $('#cp').select2('open');
+                });
+            }
+        },
+        initialiseExistingCompetitiveProcessSelect2: function () {
+            let vm = this;
+            $('#cp')
+                .select2({
+                    dropdownParent: $(`#proposedIssuanceApproval${vm.uuid}`),
+                    minimumInputLength: 2,
+                    theme: 'bootstrap-5',
+                    allowClear: true,
+                    placeholder:
+                        'Start typing the competitive process lodgement number',
+                    ajax: {
+                        url:
+                            api_endpoints.competitive_process + 'select2-list/',
+                        dataType: 'json',
+                        data: function (params) {
+                            let query = {
+                                term: params.term,
+                                type: 'public',
+                            };
+                            return query;
+                        },
+                    },
+                })
+                .on('select2:open', function () {
+                    $('.select2-search__field').focus();
+                })
+                .on('select2:select', function (e) {
+                    vm.applicant = e.params.data.id;
+                    vm.applicantName = e.params.data.text;
+                    if (vm.addingNewOrganisation) {
+                        vm.newOrganisation.admin_user_id = vm.applicant;
+                    }
+                    document.activeElement.blur();
+                })
+                .on('select2:clear', function () {
+                    vm.resetSelectedCompetitiveProcess();
+                });
+        },
+        resetSelectedCompetitiveProcess: function () {
+            this.applicant = null;
+            this.applicantName = null;
+        },
         focus() {
             this.$nextTick(() => {
                 if (this.$refs.registration_of_interest_details) {
