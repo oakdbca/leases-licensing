@@ -325,20 +325,14 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                 self.request.query_params.get("email_user_id_assigned", "0")
             )
             if email_user_id_assigned:
-                qs = (
-                    Proposal.objects.filter(
-                        Q(
-                            referrals__in=Referral.objects.filter(
-                                referral=email_user_id_assigned,
-                                processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
-                            )
+                qs = Proposal.objects.filter(
+                    Q(
+                        referrals__in=Referral.objects.filter(
+                            referral=email_user_id_assigned,
+                            processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
                         )
                     )
-                    .annotate(
-                        referral_processing_status=F("referrals__processing_status")
-                    )
-                    .order_by("-referral_processing_status", "-lodgement_number")
-                )
+                ).annotate(referral_processing_status=F("referrals__processing_status"))
             else:
                 qs = Proposal.get_proposals_for_emailuser(user.id)
 
@@ -366,26 +360,22 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
 
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
-        qs = self.filter_queryset(qs)
 
         email_user_id_assigned = int(
             request.query_params.get("email_user_id_assigned", "0")
         )
 
         if email_user_id_assigned:
-            qs = (
-                Proposal.objects.filter(
-                    Q(
-                        referrals__in=Referral.objects.exclude(
-                            processing_status=Referral.PROCESSING_STATUS_RECALLED
-                        ).filter(referral=email_user_id_assigned)
-                    )
+            qs = Proposal.objects.filter(
+                Q(
+                    referrals__in=Referral.objects.exclude(
+                        processing_status=Referral.PROCESSING_STATUS_RECALLED
+                    ).filter(referral=email_user_id_assigned)
                 )
-                .annotate(referral_processing_status=F("referrals__processing_status"))
-                .order_by("-referral_processing_status", "-lodgement_number")
-            )
+            ).annotate(referral_processing_status=F("referrals__processing_status"))
 
-        qs = qs.distinct()
+        qs = self.filter_queryset(qs)
+
         self.paginator.page_size = qs.count()
         result_page = self.paginator.paginate_queryset(qs, request)
         serializer_class = self.get_serializer_class()
