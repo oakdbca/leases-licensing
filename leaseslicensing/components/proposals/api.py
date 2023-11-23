@@ -300,6 +300,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             return Proposal.objects.none()
 
         if is_internal(self.request):
+            qs = Proposal.objects.all()
             if is_assessor(self.request) or is_approver(self.request):
                 target_email_user_id = self.request.query_params.get(
                     "target_email_user_id", None
@@ -309,23 +310,14 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     and target_email_user_id.isnumeric()
                     and int(target_email_user_id) > 0
                 ):
-                    qs = Proposal.objects.filter(submitter=target_email_user_id)
-                else:
-                    qs = Proposal.objects.all()
-                qs = Proposal.objects.all()
+                    qs = qs.filter(submitter=target_email_user_id)
             elif is_finance_officer(self.request):
-                qs = Proposal.objects.filter(
+                qs = qs.filter(
                     processing_status=Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                 )
             else:
-                # accessing user might be referral
-                qs = Proposal.objects.filter(
-                    referrals__in=Referral.objects.exclude(
-                        processing_status=Referral.PROCESSING_STATUS_RECALLED
-                    ).filter(
-                        referral=user.id,
-                    )
-                )
+                qs = Proposal.objects.none()
+
         if is_customer(self.request):
             # Queryset for proposals referred to external user
             email_user_id_assigned = int(
@@ -366,13 +358,14 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         )
 
         if email_user_id_assigned:
-            qs = qs.filter(
+            qs = Proposal.objects.filter(
                 Q(
                     referrals__in=Referral.objects.exclude(
                         processing_status=Referral.PROCESSING_STATUS_RECALLED
                     ).filter(referral=email_user_id_assigned)
                 )
             )
+            qs = self.filter_queryset(qs)
 
         qs = qs.distinct()
         self.paginator.page_size = qs.count()
