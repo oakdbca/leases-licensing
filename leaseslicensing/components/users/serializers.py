@@ -217,9 +217,15 @@ class UserSerializer(serializers.ModelSerializer):
         return False
 
     def get_is_referee(self, obj):
-        return Referral.objects.filter(
-            referral=obj.id, processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL
-        ).exists()
+        return (
+            Referral.objects.exclude(
+                processing_status=Referral.PROCESSING_STATUS_RECALLED
+            )
+            .filter(
+                referral=obj.id,
+            )
+            .exists()
+        )
 
     def get_is_compliance_referee(self, obj):
         return ComplianceReferral.objects.filter(
