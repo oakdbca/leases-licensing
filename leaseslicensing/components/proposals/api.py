@@ -320,7 +320,11 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             else:
                 # accessing user might be referral
                 qs = Proposal.objects.filter(
-                    referrals__in=Referral.objects.filter(referral=user.id)
+                    referrals__in=Referral.objects.exclude(
+                        processing_status=Referral.PROCESSING_STATUS_RECALLED
+                    ).filter(
+                        referral=user.id,
+                    )
                 )
         if is_customer(self.request):
             # Queryset for proposals referred to external user
@@ -364,9 +368,9 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
         if email_user_id_assigned:
             qs = qs.filter(
                 Q(
-                    referrals__in=Referral.objects.filter(
-                        referral=email_user_id_assigned
-                    )
+                    referrals__in=Referral.objects.exclude(
+                        processing_status=Referral.PROCESSING_STATUS_RECALLED
+                    ).filter(referral=email_user_id_assigned)
                 )
             )
 
