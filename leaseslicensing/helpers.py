@@ -75,6 +75,10 @@ def is_finance_officer(request):
     return belongs_to(request, settings.GROUP_FINANCE)
 
 
+def is_organisation_access_officer(request):
+    return belongs_to(request, settings.GROUP_NAME_ORGANISATION_ACCESS)
+
+
 def is_referee(request, proposal=None):
     from leaseslicensing.components.proposals.models import Referral
 
