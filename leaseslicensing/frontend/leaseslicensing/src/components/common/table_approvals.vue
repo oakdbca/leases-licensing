@@ -250,7 +250,6 @@ export default {
     data() {
         return {
             datatable_id: 'approvals-datatable-' + uuid(),
-            show_expired_surrendered: false,
             selectedWaitingListAllocationId: null,
             approvalHistoryId: null,
             uuid: 0,
@@ -852,9 +851,6 @@ export default {
         },
     },
     watch: {
-        show_expired_surrendered: function (value) {
-            this.$refs.approvals_datatable.vmDataTable.ajax.reload();
-        },
         filterApprovalType: function () {
             this.$refs.approvals_datatable.vmDataTable.draw();
             sessionStorage.setItem(
@@ -1461,6 +1457,7 @@ export default {
             // eslint-disable-next-line no-unused-vars
             approval_lodgement_number
         ) {
+            // Todo ??
             alert(
                 'Will implement when we have an idea what is supposed to happen here.'
             );

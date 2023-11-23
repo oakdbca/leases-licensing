@@ -934,6 +934,23 @@ class ListProposalSerializer(BaseProposalSerializer):
         return None
 
 
+class ListProposalReferralSerializer(ListProposalSerializer):
+    referral_processing_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Proposal
+        fields = ListProposalSerializer.Meta.fields + ("referral_processing_status",)
+        datatables_always_serialize = (
+            ListProposalSerializer.Meta.datatables_always_serialize
+            + ("referral_processing_status",)
+        )
+
+    def get_referral_processing_status(self, obj):
+        if hasattr(obj, "referral_processing_status"):
+            return obj.referral_processing_status
+        return None
+
+
 class ProposalReferralSerializer(serializers.ModelSerializer):
     processing_status = serializers.CharField(source="get_processing_status_display")
     referral_obj = serializers.SerializerMethodField()
@@ -1448,6 +1465,7 @@ class InternalProposalSerializer(BaseProposalSerializer):
             "processing_status_id",
             "details_text",
             "added_internally",
+            "competitive_process_to_copy_to",
             # additional form fields for registration of interest
             "exclusive_use",
             "long_term_use",
@@ -1716,6 +1734,7 @@ class DTReferralSerializer(serializers.ModelSerializer):
             "referral",
             "proposal_lodgement_date",
             "proposal_lodgement_number",
+            "text",
             "referral_text",
             "document",
             "assigned_officer",

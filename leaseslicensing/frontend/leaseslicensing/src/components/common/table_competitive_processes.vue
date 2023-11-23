@@ -11,8 +11,8 @@
                     <div class="form-group">
                         <label for="">Status</label>
                         <select
-                            v-model="filterApplicationStatus"
-                            class="form-control"
+                            v-model="filterCompetitiveProcessStatus"
+                            class="form-select"
                         >
                             <option value="all">All</option>
                             <option
@@ -101,7 +101,7 @@
 
 <script>
 import datatable from '@/utils/vue/datatable.vue';
-import { api_endpoints, constants } from '@/utils/hooks';
+import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import CollapsibleFilters from '@/components/forms/collapsible_component.vue';
 import { v4 as uuid } from 'uuid';
 import { expandToggleCP } from '@/components/common/table_functions.js';
@@ -118,10 +118,10 @@ export default {
             datatable_key: uuid(),
 
             // selected values for filtering
-            filterApplicationStatus: sessionStorage.getItem(
-                'filterApplicationStatus'
+            filterCompetitiveProcessStatus: sessionStorage.getItem(
+                'filterCompetitiveProcessStatus'
             )
-                ? sessionStorage.getItem('filterApplicationStatus')
+                ? sessionStorage.getItem('filterCompetitiveProcessStatus')
                 : 'all',
             filterCompetitiveProcessCreatedFrom: sessionStorage.getItem(
                 'filterCompetitiveProcessCreatedFrom'
@@ -165,7 +165,7 @@ export default {
         filterApplied: function () {
             let filter_applied = true;
             if (
-                this.filterApplicationStatus.toLowerCase() === 'all' &&
+                this.filterCompetitiveProcessStatus.toLowerCase() === 'all' &&
                 this.filterCompetitiveProcessCreatedFrom.toLowerCase() === '' &&
                 this.filterCompetitiveProcessCreatedTo.toLowerCase() === ''
             ) {
@@ -286,6 +286,12 @@ export default {
                             '<a href="/internal/competitive_process/' +
                             full.id +
                             '">Process</a>';
+                        links +=
+                            '<br /><a href="#" data-discard="' +
+                            full.id +
+                            '" data-lodgement-number="' +
+                            full.lodgement_number +
+                            '">Discard</a>';
                     } else if (full.can_accessing_user_view) {
                         links +=
                             '<a href="/internal/competitive_process/' +
@@ -352,7 +358,7 @@ export default {
 
                     // adding extra GET params for Custom filtering
                     data: function (d) {
-                        d.filter_status = vm.filterApplicationStatus;
+                        d.filter_status = vm.filterCompetitiveProcessStatus;
                         d.filter_competitive_process_created_from =
                             vm.filterCompetitiveProcessCreatedFrom;
                         d.filter_competitive_process_created_to =
@@ -374,11 +380,11 @@ export default {
         },
     },
     watch: {
-        filterApplicationStatus: function () {
+        filterCompetitiveProcessStatus: function () {
             this.$refs.competitive_process_datatable.vmDataTable.draw(); // This calls ajax() backend call.  This line is enough to search?  Do we need following lines...?
             sessionStorage.setItem(
-                'filterApplicationStatus',
-                this.filterApplicationStatus
+                'filterCompetitiveProcessStatus',
+                this.filterCompetitiveProcessStatus
             );
         },
         filterCompetitiveProcessCreatedFrom: function () {
@@ -441,6 +447,45 @@ export default {
                     throw error;
                 });
         },
+        discard: async function (
+            competitive_process_id,
+            competitive_process_lodgement_number
+        ) {
+            let vm = this;
+            await swal
+                .fire({
+                    title: `Discard Competitive Process ${competitive_process_lodgement_number}`,
+                    text: 'Are you sure you want to discard this competitive process?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    reverseButtons: true,
+                    confirmButtonText: 'Discard',
+                    confirmButtonColor: '#226fbb',
+                })
+                .then(async (result) => {
+                    if (result.isConfirmed) {
+                        const requestOptions = {
+                            method: 'POST',
+                        };
+                        let url = helpers.add_endpoint_json(
+                            api_endpoints.competitive_process,
+                            competitive_process_id + '/discard'
+                        );
+                        utils
+                            .fetchUrl(url, requestOptions)
+                            .then(() => {
+                                vm.$refs.competitive_process_datatable.vmDataTable.draw();
+                            })
+                            .catch((error) => {
+                                swal.fire({
+                                    title: 'Reissue Approval',
+                                    text: error,
+                                    icon: 'error',
+                                });
+                            });
+                    }
+                });
+        },
         adjust_table_width: function () {
             this.$refs.competitive_process_datatable.vmDataTable.columns.adjust();
             this.$refs.competitive_process_datatable.vmDataTable.responsive.recalc();
@@ -499,6 +544,18 @@ export default {
                 'td',
                 function () {
                     expandToggleCP(vm, this);
+                }
+            );
+            vm.$refs.competitive_process_datatable.vmDataTable.on(
+                'click',
+                'a[data-discard]',
+                function (e) {
+                    var id = $(this).attr('data-discard');
+                    var lodgement_number = $(this).attr(
+                        'data-lodgement-number'
+                    );
+                    e.preventDefault();
+                    vm.discard(id, lodgement_number);
                 }
             );
         },

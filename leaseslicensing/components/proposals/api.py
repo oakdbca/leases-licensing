@@ -73,6 +73,7 @@ from leaseslicensing.components.proposals.serializers import (  # InternalSavePr
     ExternalRefereeInviteSerializer,
     InternalProposalSerializer,
     ListProposalMinimalSerializer,
+    ListProposalReferralSerializer,
     ListProposalSerializer,
     MigrateProposalSerializer,
     ProposalAssessmentAnswerSerializer,
@@ -300,6 +301,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             return Proposal.objects.none()
 
         if is_internal(self.request):
+            qs = Proposal.objects.all()
             if is_assessor(self.request) or is_approver(self.request):
                 target_email_user_id = self.request.query_params.get(
                     "target_email_user_id", None
@@ -309,19 +311,14 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                     and target_email_user_id.isnumeric()
                     and int(target_email_user_id) > 0
                 ):
-                    qs = Proposal.objects.filter(submitter=target_email_user_id)
-                else:
-                    qs = Proposal.objects.all()
-                qs = Proposal.objects.all()
+                    qs = qs.filter(submitter=target_email_user_id)
             elif is_finance_officer(self.request):
-                qs = Proposal.objects.filter(
+                qs = qs.filter(
                     processing_status=Proposal.PROCESSING_STATUS_APPROVED_EDITING_INVOICING
                 )
             else:
-                # accessing user might be referral
-                qs = Proposal.objects.filter(
-                    referrals__in=Referral.objects.filter(referral=user.id)
-                )
+                qs = Proposal.objects.none()
+
         if is_customer(self.request):
             # Queryset for proposals referred to external user
             email_user_id_assigned = int(
@@ -335,7 +332,7 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
                             processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL,
                         )
                     )
-                )
+                ).annotate(referral_processing_status=F("referrals__processing_status"))
             else:
                 qs = Proposal.get_proposals_for_emailuser(user.id)
 
@@ -353,29 +350,39 @@ class ProposalPaginatedViewSet(viewsets.ModelViewSet):
             )
         return qs
 
+    def get_serializer_class(self):
+        email_user_id_assigned = self.request.query_params.get(
+            "email_user_id_assigned", None
+        )
+        if self.action == "list" and email_user_id_assigned:
+            return ListProposalReferralSerializer
+        return super().get_serializer_class()
+
     def list(self, request, *args, **kwargs):
         qs = self.get_queryset()
-        qs = self.filter_queryset(qs)
 
         email_user_id_assigned = int(
             request.query_params.get("email_user_id_assigned", "0")
         )
 
         if email_user_id_assigned:
-            qs = qs.filter(
+            qs = Proposal.objects.filter(
                 Q(
-                    referrals__in=Referral.objects.filter(
-                        referral=email_user_id_assigned
-                    )
+                    referrals__in=Referral.objects.exclude(
+                        processing_status=Referral.PROCESSING_STATUS_RECALLED
+                    ).filter(referral=email_user_id_assigned)
                 )
-            )
+            ).annotate(referral_processing_status=F("referrals__processing_status"))
 
-        qs = qs.distinct()
+        qs = self.filter_queryset(qs)
+
         self.paginator.page_size = qs.count()
         result_page = self.paginator.paginate_queryset(qs, request)
-        serializer = ListProposalSerializer(
+        serializer_class = self.get_serializer_class()
+        serializer = serializer_class(
             result_page, context={"request": request}, many=True
         )
+
         return self.paginator.get_paginated_response(serializer.data)
 
     # TODO: check if still required
@@ -592,10 +599,10 @@ class ProposalViewSet(UserActionLoggingViewset):
         if processing_status:
             qs = qs.filter(processing_status=processing_status)
 
-        # qs = self.filter_queryset(qs)
         serializer = ListProposalMinimalSerializer(
             qs, context={"request": request}, many=True
         )
+        logger.debug(f"query: {qs.query}")
         return Response(serializer.data)
 
     @detail_route(
@@ -1860,7 +1867,9 @@ class ProposalViewSet(UserActionLoggingViewset):
         and uses a generic related item serializer to return the data"""
         instance = self.get_object()
         proposals_queryset = (
-            Proposal.objects.filter(generated_proposal_id=instance.id)
+            Proposal.objects.filter(
+                Q(generated_proposal=instance) | Q(originating_proposal=instance)
+            )
             .annotate(
                 description=F("processing_status"),
                 type=Value("proposal", output_field=CharField()),

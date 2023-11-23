@@ -1,7 +1,12 @@
 <template>
     <div id="externalDash" class="container">
         <div v-if="is_debug">src/components/internal/dashboard.vue</div>
-        <ul id="pills-tab" class="nav nav-pills" role="tablist">
+        <ul
+            v-if="show_tabs"
+            id="pills-tab"
+            class="nav nav-pills"
+            role="tablist"
+        >
             <li class="nav-item">
                 <a
                     id="pills-applications-tab"
@@ -15,7 +20,7 @@
                     >Proposals</a
                 >
             </li>
-            <li class="nav-item">
+            <li v-if="show_competitive_processes_tab" class="nav-item">
                 <a
                     id="pills-competitive-processes-tab"
                     class="nav-link"
@@ -28,7 +33,7 @@
                     >Competitive Processes</a
                 >
             </li>
-            <li class="nav-item">
+            <li v-if="show_applications_datatable" class="nav-item">
                 <a
                     id="pills-map-tab"
                     class="nav-link"
@@ -50,6 +55,7 @@
                 aria-labelledby="pills-applications-tab"
             >
                 <FormSection
+                    v-if="show_applications_datatable"
                     :form-collapse="false"
                     label="Proposals"
                     index="applications"
@@ -82,6 +88,7 @@
                 </FormSection>
             </div>
             <div
+                v-if="show_competitive_processes_tab"
                 id="pills-competitive-processes"
                 class="tab-pane"
                 role="tabpanel"
@@ -159,6 +166,30 @@ export default {
         is_internal: function () {
             return this.level == 'internal';
         },
+        show_applications_datatable: function () {
+            if (this.accessing_user) {
+                return (
+                    this.accessing_user.is_assessor ||
+                    this.accessing_user.is_approver ||
+                    this.accessing_user.is_finance_officer
+                );
+            } else {
+                return false;
+            }
+        },
+        show_competitive_processes_tab: function () {
+            if (this.accessing_user) {
+                return this.accessing_user.is_competitive_process_editor;
+            } else {
+                return false;
+            }
+        },
+        show_tabs: function () {
+            return (
+                this.show_applications_datatable ||
+                this.show_competitive_processes_tab
+            );
+        },
     },
     mounted: async function () {
         const res = await fetch('/api/profile');
@@ -183,6 +214,7 @@ export default {
             this.loadMap = true;
         },
         set_active_tab: function (tab_href_name) {
+            if (!this.show_tabs) return;
             let elem = $('#pills-tab a[href="#' + tab_href_name + '"]');
             let tab = bootstrap.Tab.getInstance(elem);
             if (!tab) tab = new bootstrap.Tab(elem);

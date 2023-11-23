@@ -17,9 +17,11 @@ from leaseslicensing.components.users.models import EmailUserAction, EmailUserLo
 from leaseslicensing.helpers import (
     is_approver,
     is_assessor,
+    is_competitive_process_editor,
     is_finance_officer,
     is_internal,
     is_leaseslicensing_admin,
+    is_organisation_access_officer,
 )
 
 
@@ -141,6 +143,8 @@ class UserSerializer(serializers.ModelSerializer):
     is_referee = serializers.SerializerMethodField()
     is_compliance_referee = serializers.SerializerMethodField()
     is_finance_officer = serializers.SerializerMethodField()
+    is_competitive_process_editor = serializers.SerializerMethodField()
+    is_organisation_access_officer = serializers.SerializerMethodField()
 
     class Meta:
         model = EmailUser
@@ -165,6 +169,8 @@ class UserSerializer(serializers.ModelSerializer):
             "is_referee",
             "is_compliance_referee",
             "is_finance_officer",
+            "is_competitive_process_editor",
+            "is_organisation_access_officer",
         )
 
     def get_personal_details(self, obj):
@@ -211,9 +217,15 @@ class UserSerializer(serializers.ModelSerializer):
         return False
 
     def get_is_referee(self, obj):
-        return Referral.objects.filter(
-            referral=obj.id, processing_status=Referral.PROCESSING_STATUS_WITH_REFERRAL
-        ).exists()
+        return (
+            Referral.objects.exclude(
+                processing_status=Referral.PROCESSING_STATUS_RECALLED
+            )
+            .filter(
+                referral=obj.id,
+            )
+            .exists()
+        )
 
     def get_is_compliance_referee(self, obj):
         return ComplianceReferral.objects.filter(
@@ -225,6 +237,18 @@ class UserSerializer(serializers.ModelSerializer):
         request = self.context["request"] if self.context else None
         if request:
             return is_finance_officer(request)
+        return False
+
+    def get_is_competitive_process_editor(self, obj):
+        request = self.context["request"] if self.context else None
+        if request:
+            return is_competitive_process_editor(request)
+        return False
+
+    def get_is_organisation_access_officer(self, obj):
+        request = self.context["request"] if self.context else None
+        if request:
+            return is_organisation_access_officer(request)
         return False
 
 

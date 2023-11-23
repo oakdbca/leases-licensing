@@ -481,7 +481,7 @@ def send_external_submit_email_notification(request, compliance, is_test=False):
     submitter = compliance.submitter_emailuser
     context = {
         "compliance": compliance,
-        "submitter": submitter.get_full_name(),
+        "submitter_full_name": submitter.get_full_name(),
         "url": url,
     }
 
@@ -722,7 +722,7 @@ def _log_org_email(email_message, organisation, customer, sender=None):
             raise ValueError("staff must be an int (i.e. EmailUser.id)")
         staff = staff.id
 
-    if type(customer) is not int:
+    if customer is not None and type(customer) is not int:
         if not hasattr(customer, "id"):
             raise ValueError("customer must be an int (i.e. EmailUser.id)")
         customer = customer.id

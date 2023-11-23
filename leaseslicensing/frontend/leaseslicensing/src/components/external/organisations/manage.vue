@@ -222,6 +222,7 @@
                                             >
                                                 <option
                                                     v-for="c in countries"
+                                                    :key="c.code"
                                                     :value="c.code"
                                                 >
                                                     {{ c.name }}
@@ -375,6 +376,7 @@
                                             >
                                                 <option
                                                     v-for="c in countries"
+                                                    :key="c.code"
                                                     :value="c.code"
                                                 >
                                                     {{ c.name }}
@@ -467,6 +469,7 @@
                                                     >Admin Pin 1</span
                                                 >
                                                 <input
+                                                    ref="admin-pin-1"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.one"
@@ -474,9 +477,16 @@
                                                     aria-describedby="basic-addon1"
                                                     readonly
                                                 />
-                                                <span class="input-group-text"
-                                                    >copy</span
+                                                <button
+                                                    class="btn btn-secondary btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'admin-pin-1'
+                                                        )
+                                                    "
                                                 >
+                                                    copy
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -487,6 +497,7 @@
                                                     >Admin Pin 2</span
                                                 >
                                                 <input
+                                                    ref="admin-pin-2"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.two"
@@ -495,7 +506,12 @@
                                                     readonly
                                                 />
                                                 <button
-                                                    class="btn-copy input-group-text"
+                                                    class="btn btn-secondary btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'admin-pin-2'
+                                                        )
+                                                    "
                                                 >
                                                     copy
                                                 </button>
@@ -524,6 +540,7 @@
                                                     >User Pin 1</span
                                                 >
                                                 <input
+                                                    ref="user-pin-1"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.three"
@@ -531,9 +548,16 @@
                                                     aria-describedby="user-pin-1"
                                                     readonly
                                                 />
-                                                <span class="input-group-text"
-                                                    >copy</span
+                                                <button
+                                                    class="btn btn-secondary btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'user-pin-1'
+                                                        )
+                                                    "
                                                 >
+                                                    copy
+                                                </button>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
@@ -544,6 +568,7 @@
                                                     >User Pin 2</span
                                                 >
                                                 <input
+                                                    ref="user-pin-2"
                                                     type="text"
                                                     class="form-control"
                                                     :value="org.pins.four"
@@ -551,9 +576,16 @@
                                                     aria-describedby="basic-addon1"
                                                     readonly
                                                 />
-                                                <span class="input-group-text"
-                                                    >copy</span
+                                                <button
+                                                    class="btn btn-secondary btn-copy input-group-text"
+                                                    @click="
+                                                        copyToClipboard(
+                                                            'user-pin-2'
+                                                        )
+                                                    "
                                                 >
+                                                    copy
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -597,7 +629,6 @@
 </template>
 
 <script>
-import Vue from 'vue';
 import { api_endpoints, constants, helpers, utils } from '@/utils/hooks';
 import datatable from '@vue-utils/datatable.vue';
 import AddContact from '@common-utils/add_contact.vue';
@@ -605,7 +636,7 @@ import BootstrapLoadingButton from '../../../utils/vue/BootstrapLoadingButton.vu
 import swal from 'sweetalert2';
 
 export default {
-    name: 'Organisation',
+    name: 'ManageOrganisation',
     components: {
         datatable,
         AddContact,
@@ -663,10 +694,6 @@ export default {
         });
     },
     props: {
-        org_id: {
-            type: Number,
-            default: null,
-        },
         isApplication: {
             type: Boolean,
             default: false,
@@ -724,7 +751,7 @@ export default {
                     },
                     {
                         data: 'when',
-                        mRender: function (data, type, full) {
+                        mRender: function (data) {
                             return moment(data).format(vm.DATE_TIME_FORMAT);
                         },
                     },
@@ -872,7 +899,6 @@ export default {
                         api_endpoints.organisations,
                         vm.$route.params.org_id + '/contacts'
                     ),
-                    //"url": helpers.add_endpoint_json(api_endpoints.organisations,vm.org_id+'/contacts'),
                     dataSrc: '',
                 },
                 columns: [
@@ -980,19 +1006,18 @@ export default {
             vm.countries = data[0];
             vm.org = Object.assign({}, data[1], data[2]);
             vm.myorgperms = data[3];
-            vm.org.postal_address =
-                vm.org.postal_address != null ? vm.org.postal_address : {};
-            vm.org.billing_address =
-                vm.org.billing_address != null ? vm.org.billing_address : {};
-            vm.org.billing_same_as_postal =
-                vm.isBillingAddressSame != null ? vm.isBillingAddressSame : {};
+            vm.org.postal_address = vm.org.postal_address || {};
+            vm.org.billing_address = vm.org.billing_address || {};
+            vm.org.billing_same_as_postal = vm.isBillingAddressSame || {};
+            if (vm.org.billing_same_as_postal) {
+                this.copyPostalAddressToBillingAddress();
+            }
         });
     },
     mounted: function () {
         this.personal_form = document.forms.personal_form;
     },
     updated: function () {
-        let vm = this;
         $('.panelClicker[data-toggle="collapse"]').on('click', function () {
             var chev = $(this).children()[0];
             window.setTimeout(function () {
@@ -1009,20 +1034,23 @@ export default {
         addContact: function () {
             this.$refs.add_contact.isModalOpen = true;
         },
+        copyPostalAddressToBillingAddress: function () {
+            this.org.billing_address.billing_line1 =
+                this.org.postal_address.postal_line1;
+            this.org.billing_address.billing_locality =
+                this.org.postal_address.postal_locality;
+            this.org.billing_address.billing_state =
+                this.org.postal_address.postal_state;
+            this.org.billing_address.billing_postcode =
+                this.org.postal_address.postal_postcode;
+            this.org.billing_address.billing_country =
+                this.org.postal_address.postal_country;
+        },
         toggleBillingAddressFieldsDisabled: function () {
             if (!this.org.billing_same_as_postal) {
                 $('.billing-address').first().focus();
             } else {
-                this.org.billing_address.billing_line1 =
-                    this.org.postal_address.postal_line1;
-                this.org.billing_address.billing_locality =
-                    this.org.postal_address.postal_locality;
-                this.org.billing_address.billing_state =
-                    this.org.postal_address.postal_state;
-                this.org.billing_address.billing_postcode =
-                    this.org.postal_address.postal_postcode;
-                this.org.billing_address.billing_country =
-                    this.org.postal_address.postal_country;
+                this.copyPostalAddressToBillingAddress();
             }
         },
         eventListeners: function () {
@@ -1052,7 +1080,9 @@ export default {
                             () => {
                                 vm.deleteContact(id);
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1066,7 +1096,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1099,7 +1128,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Contact Accept',
                                                     text:
@@ -1112,7 +1141,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1123,11 +1154,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1140,7 +1174,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1174,7 +1207,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Contact Accept (Previously Declined)',
                                                     text:
@@ -1187,7 +1220,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1198,11 +1233,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1215,7 +1253,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1248,7 +1285,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Contact Decline',
                                                     text:
@@ -1261,7 +1298,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1272,11 +1311,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1289,7 +1331,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1322,7 +1363,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Unlink',
                                                     text:
@@ -1335,7 +1376,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1357,7 +1400,9 @@ export default {
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1370,7 +1415,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1403,7 +1447,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Organisation Admin',
                                                     text:
@@ -1416,7 +1460,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1427,11 +1473,14 @@ export default {
                                                         ' an Organisation Admin.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1444,7 +1493,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1477,7 +1525,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Organisation User',
                                                     text:
@@ -1490,12 +1538,14 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
                                                 console.error(error);
-                                                var text =
+                                                let text =
                                                     helpers.apiVueResourceError(
                                                         error
                                                     );
@@ -1511,7 +1561,9 @@ export default {
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1524,7 +1576,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1557,7 +1608,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Suspend User',
                                                     text:
@@ -1570,7 +1621,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1581,11 +1634,14 @@ export default {
                                                         ' as a User.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1598,7 +1654,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1631,7 +1686,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Reinstate User',
                                                     text:
@@ -1644,7 +1699,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1655,11 +1712,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1672,7 +1732,6 @@ export default {
                         let lastname = $(e.target).data('lastname');
                         let name = firstname + ' ' + lastname;
                         let email = $(e.target).data('email');
-                        let id = $(e.target).data('id');
                         let mobile = $(e.target).data('mobile');
                         let phone = $(e.target).data('phone');
                         vm.contact_user.first_name = firstname;
@@ -1705,7 +1764,7 @@ export default {
                                             }
                                         )
                                         .then(
-                                            (response) => {
+                                            () => {
                                                 swal({
                                                     title: 'Relink User',
                                                     text:
@@ -1718,7 +1777,9 @@ export default {
                                                     () => {
                                                         vm.$refs.contacts_datatable_user.vmDataTable.ajax.reload();
                                                     },
-                                                    (error) => {}
+                                                    (error) => {
+                                                        console.error(error);
+                                                    }
                                                 );
                                             },
                                             (error) => {
@@ -1729,11 +1790,14 @@ export default {
                                                         '.',
                                                     'error'
                                                 );
+                                                console.error(error);
                                             }
                                         );
                                 }
                             },
-                            (error) => {}
+                            (error) => {
+                                console.error(error);
+                            }
                         );
                     }
                 );
@@ -1852,7 +1916,7 @@ export default {
                     }
                 )
                 .then(
-                    (response) => {
+                    () => {
                         swal(
                             'Contact Deleted',
                             'The contact was successfully deleted',
@@ -1996,8 +2060,45 @@ export default {
                             }
                         );
                 },
-                (error) => {}
+                (error) => {
+                    console.error(error);
+                }
             );
+        },
+        copyToClipboard: function (refName) {
+            var element = this.$refs[refName];
+            var title = refName
+                .replaceAll('-', ' ')
+                .replace(/(?:^|\s|["'([{])+\S/g, (match) =>
+                    match.toUpperCase()
+                );
+            try {
+                // Access to navigator.clipboard requires https
+                if (window.location.protocol == 'https:') {
+                    navigator.clipboard.writeText(element.value);
+                } else {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = element.value;
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }
+                swal.fire({
+                    title: `${title} copied to clipboard`,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+            } catch (err) {
+                swal.fire({
+                    title: 'Copy Failed',
+                    text: `Unable to access the clipboard`,
+                    icon: 'error',
+                });
+                console.error('Unable to copy to clipboard', err);
+            }
         },
     },
 };
@@ -2050,5 +2151,6 @@ input::-webkit-inner-spin-button {
 /* Firefox */
 input[type='number'] {
     -moz-appearance: textfield;
+    appearance: textfield;
 }
 </style>

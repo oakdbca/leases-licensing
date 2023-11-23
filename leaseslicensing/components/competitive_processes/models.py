@@ -97,39 +97,42 @@ class CompetitiveProcess(LicensingModelVersioned):
         verbose_name_plural = "Competitive Processes"
         ordering = ("modified_at",)
 
+    @transaction.atomic
     def create_lease_licence_from_competitive_process(self):
         from leaseslicensing.components.proposals.models import Proposal, ProposalType
 
-        lease_licence = None
-        with transaction.atomic():
-            lease_licence = Proposal.objects.create(
-                application_type=ApplicationType.objects.get(
-                    name=settings.APPLICATION_TYPE_LEASE_LICENCE
-                ),
-                submitter=None,
-                ind_applicant=self.winner.person_id,
-                org_applicant=self.winner.organisation,
-                proposal_type_id=ProposalType.objects.get(
-                    code=settings.PROPOSAL_TYPE_NEW
-                ).id,
-            )
+        lease_licence = Proposal.objects.create(
+            application_type=ApplicationType.objects.get(
+                name=settings.APPLICATION_TYPE_LEASE_LICENCE
+            ),
+            submitter=None,
+            ind_applicant=self.winner.person_id,
+            org_applicant=self.winner.organisation,
+            proposal_type_id=ProposalType.objects.get(
+                code=settings.PROPOSAL_TYPE_NEW
+            ).id,
+        )
 
-            lease_licence.originating_competitive_process = self
+        lease_licence.originating_competitive_process = self
 
-            # add geometry
-            from copy import deepcopy
+        # add geometry
+        from copy import deepcopy
 
-            if hasattr(self, "originating_proposal"):
-                for geo in self.originating_proposal.proposalgeometry.all():
-                    new_geo = deepcopy(geo)
-                    new_geo.proposal = lease_licence
-                    new_geo.copied_from = geo
-                    new_geo.id = None
-                    new_geo.save()
+        if hasattr(self, "originating_proposal"):
+            for geo in self.originating_proposal.proposalgeometry.all():
+                new_geo = deepcopy(geo)
+                new_geo.proposal = lease_licence
+                new_geo.copied_from = geo
+                new_geo.id = None
+                new_geo.save()
 
         return lease_licence
 
     def discard(self, request):
+        if not self.can_user_process(request.user):
+            raise ValidationError(
+                "You do not have permission to discard this competitive process."
+            )
         self.status = CompetitiveProcess.STATUS_DISCARDED
         self.save(version_comment=f"Discarded competitive process {self.pk}")
 
@@ -324,14 +327,13 @@ class CompetitiveProcess(LicensingModelVersioned):
         return self.status
 
     def can_user_view(self, request):
-        if is_internal(request):
-            return True
-        return False
+        return is_internal(request)
 
     def can_user_process(self, user):
-        if self.assigned_officer == user:  # TODO: confirm this condition
-            return True
-        return False
+        return (
+            self.status == CompetitiveProcess.STATUS_IN_PROGRESS
+            and self.is_user_competitive_process_editor(user.id)
+        )
 
     def is_user_competitive_process_editor(self, user_id):
         return belongs_to_by_user_id(user_id, settings.GROUP_COMPETITIVE_PROCESS_EDITOR)

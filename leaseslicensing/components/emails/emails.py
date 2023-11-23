@@ -34,7 +34,6 @@ class TemplateEmailBase(WAGovUtilsTemplateEmailBase):
         filtered_emails = {u.email for u in users if hasattr(u, "email")}
         # Loop through users
         for email in filtered_emails:
-            print(email)
             # Send the email!
             self.send(email, context=context)
 

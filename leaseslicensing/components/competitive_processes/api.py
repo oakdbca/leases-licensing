@@ -21,7 +21,10 @@ from leaseslicensing.components.competitive_processes.serializers import (
     CompetitiveProcessUserActionSerializer,
     ListCompetitiveProcessSerializer,
 )
-from leaseslicensing.components.main.api import UserActionLoggingViewset
+from leaseslicensing.components.main.api import (
+    Select2ListMixin,
+    UserActionLoggingViewset,
+)
 from leaseslicensing.components.main.decorators import (
     basic_exception_handler,
     logging_action,
@@ -80,10 +83,11 @@ class CompetitiveProcessFilterBackend(LedgerDatatablesFilterBackend):
         return queryset
 
 
-class CompetitiveProcessViewSet(UserActionLoggingViewset):
+class CompetitiveProcessViewSet(UserActionLoggingViewset, Select2ListMixin):
     queryset = CompetitiveProcess.objects.none()
     filter_backends = (CompetitiveProcessFilterBackend,)
     lookup_field = "id"
+    key_value_display_field = "lodgement_number"
 
     def perform_create(self, serializer):
         """
@@ -102,9 +106,14 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def get_queryset(self):
         if is_internal(self.request):
-            return CompetitiveProcess.objects.all()
+            queryset = CompetitiveProcess.objects.all()
+            if self.action == "select2_list":
+                # Make sure only competitive processes that are in progress are returned
+                # for the select 2 list
+                queryset = queryset.filter(status=CompetitiveProcess.STATUS_IN_PROGRESS)
         else:
-            return CompetitiveProcess.objects.none()
+            queryset = CompetitiveProcess.objects.none()
+        return queryset
 
     @logging_action(
         methods=[
@@ -132,9 +141,17 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
     @basic_exception_handler
     def discard(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        if len(request.data):
+            # If there is data in the request, update the instance before discarding
+            # this is done when the user is discarding a competitive process from the details
+            # page, if the user is discarding from the datatables page, there is no need to update
+            # the instance before discarding
+            serializer = self.get_serializer(instance, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+        else:
+            serializer = self.get_serializer(instance)
+
         instance.discard(request)
         return Response(serializer.data)
 
@@ -291,6 +308,10 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
                 .filter(
                     Q(id=instance.originating_proposal.id)
                     | Q(id__in=instance.generated_proposal.values_list("id", flat=True))
+                    | Q(
+                        processing_status=Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
+                        competitive_process_to_copy_to_id=instance.id,
+                    )
                 )
                 .values("id", "lodgement_number", "description", "type")
             )
@@ -300,7 +321,13 @@ class CompetitiveProcessViewSet(UserActionLoggingViewset):
                     description=F("processing_status"),
                     type=Value("competitiveprocess", output_field=CharField()),
                 )
-                .filter(id__in=instance.generated_proposal.values_list("id", flat=True))
+                .filter(
+                    Q(id__in=instance.generated_proposal.values_list("id", flat=True))
+                    | Q(
+                        processing_status=Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS,
+                        competitive_process_to_copy_to_id=instance.id,
+                    )
+                )
                 .values("id", "lodgement_number", "description", "type")
             )
         serializer = RelatedItemSerializer(queryset, many=True)

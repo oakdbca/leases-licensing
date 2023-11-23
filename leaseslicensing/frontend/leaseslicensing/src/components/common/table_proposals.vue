@@ -314,11 +314,27 @@ export default {
                 searchable: true,
                 visible: true,
                 render: function (row, type, full) {
+                    let lodgement_number = full.lodgement_number;
                     if (full.migrated) {
-                        return full.lodgement_number + ' (M)';
-                    } else {
-                        return full.lodgement_number;
+                        lodgement_number += ' (M)';
                     }
+                    if (full.referral_processing_status) {
+                        if (
+                            full.referral_processing_status ==
+                            constants.REFERRAL_STATUS
+                                .PROCESSING_STATUS_WITH_REFERRAL.ID
+                        ) {
+                            lodgement_number += `<i class="fa-solid fa-circle-exclamation text-warning ms-1" title="With Referral"></i>`;
+                        } else if (
+                            full.referral_processing_status ==
+                            constants.REFERRAL_STATUS
+                                .PROCESSING_STATUS_COMPLETED.ID
+                        ) {
+                            lodgement_number += `<i class="fa-solid fa-circle-check text-success ms-1" title="Completed"></i>`;
+                        }
+                        lodgement_number += ``;
+                    }
+                    return lodgement_number;
                 },
                 name: 'lodgement_number',
             };
@@ -447,8 +463,8 @@ export default {
                                 links += `<a href="/external/proposal/${full.id}/referral/">Complete Referral</a><br/>`;
                             } else {
                                 links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
+                                links += `<a href='#${full.id}' data-discard-proposal='${full.id}' data-proposal-lodgement-number='${full.lodgement_number}'>Discard</a><br/>`;
                             }
-                            links += `<a href='#${full.id}' data-discard-proposal='${full.id}' data-proposal-lodgement-number='${full.lodgement_number}'>Discard</a><br/>`;
                         }
                     }
                     return links;

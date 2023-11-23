@@ -26,6 +26,20 @@ def is_internal(context):
 
 
 @register.simple_tag(takes_context=True)
+def is_assessor(context):
+    # checks if user is a departmentuser and logged in via single sign-on
+    request = context["request"]
+    return leaseslicensing_helpers.is_assessor(request)
+
+
+@register.simple_tag(takes_context=True)
+def is_approver(context):
+    # checks if user is a departmentuser and logged in via single sign-on
+    request = context["request"]
+    return leaseslicensing_helpers.is_approver(request)
+
+
+@register.simple_tag(takes_context=True)
 def is_model_backend(context):
     # Return True if user logged in via single sign-on (or False via social_auth
     # i.e. an external user signing in with a login-token)
@@ -34,10 +48,15 @@ def is_model_backend(context):
 
 
 @register.simple_tag(takes_context=True)
-def is_payment_officer(context):
-    # request = context["request"]
-    # TODO: fix this
-    return False  # is_payment_admin(request.user)
+def is_finance_officer(context):
+    request = context["request"]
+    return leaseslicensing_helpers.is_finance_officer(request)
+
+
+@register.simple_tag(takes_context=True)
+def is_organisation_access_officer(context):
+    request = context["request"]
+    return leaseslicensing_helpers.is_organisation_access_officer(request)
 
 
 @register.simple_tag()

@@ -63,15 +63,14 @@
 </template>
 
 <script>
-/*globals moment */
-import { helpers, constants } from '@/utils/hooks'
+import { helpers, constants } from '@/utils/hooks';
 
 export default {
-    name: 'Workflow',
+    name: 'WorkflowCompetitiveProcess',
     components: {},
     filters: {
         formatDate: function (data) {
-            return data ? moment(data).format('DD/MM/YYYY HH:mm:ss') : ''
+            return data ? moment(data).format('DD/MM/YYYY HH:mm:ss') : '';
         },
     },
     props: {
@@ -112,7 +111,7 @@ export default {
         'issueUnlock',
     ],
     data: function () {
-        let vm = this
+        let vm = this;
 
         return {
             constants: constants,
@@ -130,10 +129,10 @@ export default {
                     function_to_show_hide: () => {
                         return vm.user_is_eligible(
                             this.action_roles('complete')
-                        )
+                        );
                     },
                     function_to_disable: () => {
-                        return this.elementDisabled
+                        return this.elementDisabled;
                     },
                 },
                 {
@@ -141,10 +140,12 @@ export default {
                     button_title: 'Discard',
                     function_when_clicked: vm.issueDiscard,
                     function_to_show_hide: () => {
-                        return vm.user_is_eligible(this.action_roles('discard'))
+                        return vm.user_is_eligible(
+                            this.action_roles('discard')
+                        );
                     },
                     function_to_disable: () => {
-                        return this.elementDisabled
+                        return this.elementDisabled;
                     },
                 },
                 {
@@ -153,21 +154,21 @@ export default {
                     function_when_clicked: vm.issueUnlock,
                     function_to_show_hide: () => {
                         if (this.debug) {
-                            return true
+                            return true;
                         }
-                        return vm.user_is_eligible(this.action_roles('unlock'))
+                        return vm.user_is_eligible(this.action_roles('unlock'));
                     },
                     function_to_disable: () => {
                         if (this.debug) {
-                            return false
+                            return false;
                         }
                         // Disable Unlock button only on processing or discarded,
                         // but not on completed|declined
-                        return this.processing || this.discarded
+                        return this.processing || this.discarded;
                     },
                 },
             ],
-        }
+        };
     },
     computed: {
         showCurrentlyAssignedTo: function () {
@@ -175,32 +176,32 @@ export default {
                 !this.finalised &&
                 constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID ==
                     this.competitiveProcess.processing_status_id
-            )
+            );
         },
         proposal_form_url: function () {
             return this.competitiveProcess
                 ? `/api/competitiveProcess/${this.competitiveProcess.id}/assessor_save.json`
-                : ''
+                : '';
         },
         canLimitedAction: function () {
             // TOOD: refer to proposal_apiary.vue
-            return true
+            return true;
         },
         debug: function () {
             return this.$route.query.debug && this.$route.query.debug == 'true'
                 ? true
-                : false
+                : false;
         },
         display_actions: function () {
-            if (this.debug) return true
+            if (this.debug) return true;
 
-            return this.canAction
+            return this.canAction;
         },
         assigned_officer_id: function () {
             if (this.competitiveProcess.assigned_officer) {
-                return this.competitiveProcess.assigned_officer.id
+                return this.competitiveProcess.assigned_officer.id;
             } else {
-                return null
+                return null;
             }
         },
         currentUserIsAssignedUser: function () {
@@ -208,14 +209,14 @@ export default {
                 this.competitiveProcess.assigned_officer &&
                 this.competitiveProcess.assigned_officer.id ==
                     this.competitiveProcess.accessing_user.id
-            )
+            );
         },
         showAssignToMe: function () {
             return (
                 this.canAssess &&
                 !this.elementDisabled &&
                 !this.currentUserIsAssignedUser
-            )
+            );
         },
         elementDisabled: function () {
             /** Returns whether an element is disabled
@@ -227,17 +228,17 @@ export default {
                 this.discarded ||
                 this.finalised ||
                 this.declined
-            )
+            );
         },
     },
     created: function () {
         //this.fetchDeparmentUsers()
     },
     mounted: function () {
-        let vm = this
+        let vm = this;
         this.$nextTick(() => {
-            vm.initialiseAssignedOfficerSelect()
-        })
+            vm.initialiseAssignedOfficerSelect();
+        });
     },
     methods: {
         user_is_eligible: function (status_roles) {
@@ -246,9 +247,9 @@ export default {
              *  given the competitive process' current workflow status.
              */
 
-            let status_id = this.competitiveProcess.status_id
+            let status_id = this.competitiveProcess.status_id;
             if (status_id in status_roles) {
-                let eligible_roles = status_roles[status_id]
+                let eligible_roles = status_roles[status_id];
 
                 // Return true if the accessing user's roles are in the eligible roles
                 if (
@@ -258,10 +259,10 @@ export default {
                         )
                     ).length > 0
                 ) {
-                    return true
+                    return true;
                 }
             }
-            return false
+            return false;
         },
         action_roles: function (action) {
             /** Returns a dictionary of workflow status and user roles to define
@@ -274,7 +275,7 @@ export default {
                     [constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID]: [
                         constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID,
                     ],
-                }
+                };
             } else if (action == 'unlock') {
                 // A competitive process editor can unlock a completed or declined competitive process
                 return {
@@ -282,51 +283,51 @@ export default {
                         .ID]: [constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID],
                     [constants.COMPETITIVE_PROCESS_STATUS.COMPLETED_DECLINED
                         .ID]: [constants.ROLES.COMPETITIVE_PROCESS_EDITOR.ID],
-                }
+                };
             } else {
-                console.warn(`action_roles: action ${action} not recognised`)
-                return {}
+                console.warn(`action_roles: action ${action} not recognised`);
+                return {};
             }
         },
         get_allowed_ids: function (ids) {
             let displayable_status_ids = ids.map((a_status) => {
                 if (Object.prototype.hasOwnProperty.call(a_status, 'ID'))
-                    return a_status.ID
+                    return a_status.ID;
                 else if (Object.prototype.hasOwnProperty.call(a_status, 'id'))
-                    return a_status.id
+                    return a_status.id;
                 else if (Object.prototype.hasOwnProperty.call(a_status, 'Id'))
-                    return a_status.Id
-                else return a_status
-            })
+                    return a_status.Id;
+                else return a_status;
+            });
 
-            return displayable_status_ids
+            return displayable_status_ids;
         },
         absorb_type_difference: function (processing_status_id) {
-            let ret_value = ''
+            let ret_value = '';
 
             if (
                 Object.prototype.hasOwnProperty.call(processing_status_id, 'ID')
             )
-                ret_value = processing_status_id.ID
+                ret_value = processing_status_id.ID;
             else if (
                 Object.prototype.hasOwnProperty.call(processing_status_id, 'id')
             )
-                ret_value = processing_status_id.id
+                ret_value = processing_status_id.id;
             else if (
                 Object.prototype.hasOwnProperty.call(processing_status_id, 'Id')
             )
-                ret_value = processing_status_id.Id
-            else ret_value = processing_status_id.toLowerCase()
+                ret_value = processing_status_id.Id;
+            else ret_value = processing_status_id.toLowerCase();
 
-            return ret_value
+            return ret_value;
         },
         completeEditing: function () {},
         initialiseAssignedOfficerSelect: function (reinit = false) {
-            let vm = this
+            let vm = this;
             if (reinit) {
                 $(vm.$refs.assigned_officer).data('select2')
                     ? $(vm.$refs.assigned_officer).select2('destroy')
-                    : ''
+                    : '';
             }
             // Assigned officer select
             $(vm.$refs.assigned_officer)
@@ -336,25 +337,25 @@ export default {
                     placeholder: 'Select Officer',
                 })
                 .on('select2:select', function (e) {
-                    var selected = $(e.currentTarget)
+                    var selected = $(e.currentTarget);
                     // Competitve process only has one relevant status, so we can just set the assigned officer
                     if (
                         vm.competitiveProcess.status_id ==
                         constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID
                     ) {
-                        vm.competitiveProcess.assigned_officer = selected.val()
+                        vm.competitiveProcess.assigned_officer = selected.val();
                     } else {
                         console.warn(
                             `Can not change assignment while in status {vm.competitiveProcess.status}`
-                        )
+                        );
                     }
-                    vm.assignTo()
+                    vm.assignTo();
                 })
                 .on('select2:unselecting', function () {
-                    var self = $(this)
+                    var self = $(this);
                     setTimeout(() => {
-                        self.select2('close')
-                    }, 0)
+                        self.select2('close');
+                    }, 0);
                 })
                 .on('select2:unselect', function () {
                     // Competitve process only has one relevant status, so we can just unset the assigned officer
@@ -362,48 +363,48 @@ export default {
                         vm.competitiveProcess.status_id ==
                         constants.COMPETITIVE_PROCESS_STATUS.IN_PROGRESS.ID
                     ) {
-                        vm.competitiveProcess.assigned_officer = null
+                        vm.competitiveProcess.assigned_officer = null;
                     } else {
                         console.warn(
                             `Can not change assignment while in status {vm.competitiveProcess.status}`
-                        )
+                        );
                     }
-                    vm.assignTo()
-                })
+                    vm.assignTo();
+                });
         },
         updateAssignedOfficerSelect: function (selected_user) {
-            let vm = this
+            let vm = this;
 
-            $(vm.$refs.assigned_officer).val(selected_user)
-            $(vm.$refs.assigned_officer).trigger('change')
+            $(vm.$refs.assigned_officer).val(selected_user);
+            $(vm.$refs.assigned_officer).trigger('change');
         },
         refreshFromResponse: function (response) {
-            let vm = this
-            vm.competitiveProcess = helpers.copyObject(response.body)
+            let vm = this;
+            vm.competitiveProcess = helpers.copyObject(response.body);
             vm.competitiveProcess.applicant.address =
                 vm.competitiveProcess.applicant.address != null
                     ? vm.competitiveProcess.applicant.address
-                    : {}
+                    : {};
             vm.$nextTick(() => {
-                vm.initialiseAssignedOfficerSelect(true)
-                vm.updateAssignedOfficerSelect()
-            })
+                vm.initialiseAssignedOfficerSelect(true);
+                vm.updateAssignedOfficerSelect();
+            });
         },
         assignRequestUser: function () {
-            this.$emit('assignRequestUser')
+            this.$emit('assignRequestUser');
         },
         assignTo: function () {
-            this.$emit('assignTo')
+            this.$emit('assignTo');
         },
         issueComplete: function () {
-            this.$emit('issueComplete')
+            this.$emit('issueComplete');
         },
         issueDiscard: function () {
-            this.$emit('issueDiscard')
+            this.$emit('issueDiscard');
         },
         issueUnlock: function () {
-            this.$emit('issueUnlock')
+            this.$emit('issueUnlock');
         },
     },
-}
+};
 </script>

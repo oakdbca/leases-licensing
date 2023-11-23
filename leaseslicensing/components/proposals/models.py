@@ -4,6 +4,7 @@ import datetime
 import json
 import logging
 import subprocess
+from copy import deepcopy
 from decimal import Decimal
 
 import geopandas as gpd
@@ -35,7 +36,12 @@ from leaseslicensing import exceptions
 from leaseslicensing.components.competitive_processes.email import (
     send_competitive_process_create_notification,
 )
-from leaseslicensing.components.competitive_processes.models import CompetitiveProcess
+from leaseslicensing.components.competitive_processes.models import (
+    CompetitiveProcess,
+    CompetitiveProcessGeometry,
+    CompetitiveProcessGroup,
+    CompetitiveProcessParty,
+)
 from leaseslicensing.components.invoicing import utils as invoicing_utils
 from leaseslicensing.components.invoicing.email import (
     send_new_invoice_raised_internal_notification,
@@ -1157,6 +1163,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         on_delete=models.SET_NULL,
         related_name="generated_proposal",
     )
+    # When adding proposal as a party to an existing competitive process
+    competitive_process_to_copy_to = models.ForeignKey(
+        CompetitiveProcess,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="proposals_added",
+    )
     invoicing_details = models.OneToOneField(
         InvoicingDetails,
         null=True,
@@ -1851,14 +1865,14 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         else:
             raise ValidationError("You can't edit this proposal at this moment")
 
-    transaction.atomic
-
+    @transaction.atomic
     def send_referral(self, request, referral_email, referral_text):
         referral_email = referral_email.lower()
-        if (
-            self.processing_status == Proposal.PROCESSING_STATUS_WITH_ASSESSOR
-            or self.processing_status == Proposal.PROCESSING_STATUS_WITH_REFERRAL
-        ):
+        if self.processing_status in [
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR,
+            Proposal.PROCESSING_STATUS_WITH_ASSESSOR_CONDITIONS,
+            Proposal.PROCESSING_STATUS_WITH_REFERRAL,
+        ]:
             self.processing_status = Proposal.PROCESSING_STATUS_WITH_REFERRAL
             self.save()
 
@@ -2273,7 +2287,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             self.application_type.name == APPLICATION_TYPE_REGISTRATION_OF_INTEREST
             and not details.get("decision")
         ):
-            non_field_errors.append("You must choose a decision radio button")
+            non_field_errors.append("You must select a decision")
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             if not details.get("approval_type"):
                 non_field_errors.append("You must select an Approval Type")
@@ -2292,6 +2306,22 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 "decision": details.get("decision"),
                 "record_management_number": details.get("record_management_number"),
             }
+            if (
+                not self.competitive_process_to_copy_to
+                and details.get("decision")
+                == settings.APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
+            ):
+                try:
+                    competitive_process_id = details.get("competitive_process")
+                    competitive_process = CompetitiveProcess.objects.get(
+                        id=competitive_process_id
+                    )
+                except CompetitiveProcess.DoesNotExist:
+                    raise serializers.ValidationError(
+                        f"No competitve process found with ID {competitive_process_id}"
+                    )
+                self.competitive_process_to_copy_to = competitive_process
+
         elif self.application_type.name == APPLICATION_TYPE_LEASE_LICENCE:
             # start_date = details.get('start_date').strftime('%d/%m/%Y') if details.get('start_date') else None
             # expiry_date = details.get('expiry_date').strftime('%d/%m/%Y') if details.get('expiry_date') else None
@@ -2564,7 +2594,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 # Registration of Interest (New)
                 if (
                     self.proposed_issuance_approval.get("decision")
-                    == "approve_lease_licence"
+                    == settings.APPROVE_LEASE_LICENCE
                     and not self.generated_proposal
                 ):
                     lease_licence = (
@@ -2585,12 +2615,15 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                     # Copy over previous gis data
                     copy_gis_data(self, lease_licence)
 
+                    # Copy the ROI deed poll over if there is one
+                    copy_deed_poll_documents(self, lease_licence)
+
                     self.processing_status = (
                         Proposal.PROCESSING_STATUS_APPROVED_REGISTRATION_OF_INTEREST
                     )
                 elif (
                     self.proposed_issuance_approval.get("decision")
-                    == "approve_competitive_process"
+                    == settings.APPROVE_COMPETITIVE_PROCESS
                     and not self.generated_proposal
                 ):
                     self.generate_competitive_process()
@@ -2600,6 +2633,43 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                         self.generated_competitive_process,
                         details=details,
                     )
+
+                    # Copy any relevant details from the ROI to the Competitive Process
+                    copy_site_name_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+                    copy_groups_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+                    copy_proposal_geometry_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+                    copy_gis_data_to_competitive_process(
+                        self, self.generated_competitive_process
+                    )
+
+                    # Add the applicant from the ROI as a party to the CP
+                    create_competitive_process_party_from_proposal(
+                        self, self.generated_competitive_process
+                    )
+
+                    self.processing_status = (
+                        Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
+                    )
+                elif (
+                    self.proposed_issuance_approval.get("decision")
+                    == settings.APPROVE_ADD_TO_EXISTING_COMPETITIVE_PROCESS
+                    and not self.generated_proposal
+                ):
+                    if not self.competitive_process_to_copy_to:
+                        raise ValidationError(
+                            f"No competitive process selected to copy to for ROI {self}"
+                        )
+                    # Add the applicant from the ROI as a party to the CP
+                    create_competitive_process_party_from_proposal(
+                        self, self.competitive_process_to_copy_to
+                    )
+
                     self.processing_status = (
                         Proposal.PROCESSING_STATUS_APPROVED_COMPETITIVE_PROCESS
                     )
@@ -2694,8 +2764,6 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
                 original_applicant = ProposalApplicant.objects.get(proposal=self)
                 # Creating a copy for the new proposal here. This will be invoked from renew and amend approval
                 original_applicant.copy_self_to_proposal(lease_licence_proposal)
-
-            from copy import deepcopy
 
             for geo in self.proposalgeometry.all():
                 # add geometry
@@ -5497,8 +5565,6 @@ def copy_proposal_details(proposalFrom: Proposal, proposalTo: Proposal) -> None:
         "legislative_requirements",
     ]
 
-    from copy import deepcopy
-
     for field in details_fields:
         f_text = f"{field}_text"
         setattr(proposalTo, f_text, getattr(proposalFrom, f_text))
@@ -5515,14 +5581,25 @@ def copy_proposal_details(proposalFrom: Proposal, proposalTo: Proposal) -> None:
         setattr(proposalTo, field, getattr(proposalFrom, field))
 
 
+def copy_deed_poll_documents(proposalFrom: Proposal, proposalTo: Proposal) -> None:
+    if not proposalFrom.deed_poll_documents.exists():
+        return
+
+    for deed_poll_document in proposalFrom.deed_poll_documents.all():
+        new_doc = deepcopy(deed_poll_document)
+        new_doc.proposal = proposalTo
+        new_doc.can_delete = True
+        new_doc.hidden = False
+        new_doc.id = None
+        new_doc.save()
+
+
 def copy_proposal_requirements(
     proposalFrom: Proposal, proposalTo: Proposal, **kwargs
 ) -> None:
     """
     Copies all requirements and requirement documents from previous proposal
     """
-
-    from copy import deepcopy
 
     req = proposalFrom.requirements.all().exclude(is_deleted=True)
 
@@ -5555,3 +5632,70 @@ def copy_proposal_requirements(
             )
             requirement_document.can_delete = True
             requirement_document.save()
+
+
+# Functions for copying data from a proposal to a competitive process
+def copy_site_name_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    competitive_process.site_name = proposal.site_name
+    competitive_process.save()
+
+
+def copy_groups_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    for group in proposal.groups.all():
+        CompetitiveProcessGroup.objects.get_or_create(
+            competitive_process=competitive_process, group=group.group
+        )
+
+
+def copy_proposal_geometry_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    for proposal_geometry in ProposalGeometry.objects.filter(proposal=proposal):
+        CompetitiveProcessGeometry.objects.get_or_create(
+            competitive_process=competitive_process,
+            polygon=proposal_geometry.polygon,
+            intersects=True,
+            drawn_by=proposal_geometry.drawn_by,
+            locked=True,
+        )
+
+
+def copy_gis_data_to_competitive_process(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    for gis_model in GIS_DATA_MODEL_NAMES:
+        model_class_from = apps.get_model("leaseslicensing", f"proposal{gis_model}")
+        model_class_to = apps.get_model(
+            "leaseslicensing", f"competitiveprocess{gis_model}"
+        )
+        models_from = model_class_from.objects.filter(proposal=proposal)
+        for model in models_from:
+            model_class_to.objects.get_or_create(
+                competitive_process=competitive_process,
+                **{f"{gis_model}": getattr(model, f"{gis_model}")},
+            )
+
+
+def create_competitive_process_party_from_proposal(
+    proposal: Proposal, competitive_process: CompetitiveProcess
+) -> None:
+    if proposal.ind_applicant:
+        CompetitiveProcessParty.objects.get_or_create(
+            competitive_process=competitive_process,
+            person_id=proposal.ind_applicant,
+            invited_at=competitive_process.created_at,
+        )
+    elif proposal.org_applicant:
+        CompetitiveProcessParty.objects.get_or_create(
+            competitive_process=competitive_process,
+            organisation=proposal.org_applicant,
+            invited_at=competitive_process.created_at,
+        )
+    else:
+        logger.warning(
+            f"Proposal {proposal.id} has no applicant, cannot create competitive process party"
+        )

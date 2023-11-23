@@ -31,6 +31,7 @@ export default {
             required: true,
         },
     },
+    emits: ['switchStatus'],
     data() {
         let vm = this;
         return {
@@ -90,18 +91,52 @@ export default {
                                     .PROCESSING_STATUS_WITH_REFERRAL.TEXT ==
                                 full.referral_status
                             ) {
-                                result = `<a href="" data-id="${data}" data-user="${user}" class="remindRef">Remind</a>/<a href="" data-id="${data}" data-user="${user}" class="recallRef">Recall</a>`;
+                                result = `<a data-id="${data}" data-user="${user}" class="remindRef">Remind</a>/<a data-id="${data}" data-user="${user}" class="recallRef">Recall</a>`;
                             } else {
-                                result = `<a href="" data-id="${data}" data-user="${user}" class="resendRef">Resend</a>`;
+                                result = `<a data-id="${data}" data-user="${user}" class="resendRef">Resend</a>`;
                             }
                             return result;
                         },
                     },
                     {
-                        title: 'Referral Comments',
+                        title: 'Assessor Comment',
+                        data: 'text',
+                        render: function (value) {
+                            if (!value) {
+                                return '';
+                            }
+
+                            let ellipsis = '...',
+                                truncated = _.truncate(value, {
+                                    length: 20,
+                                    omission: ellipsis,
+                                    separator: ' ',
+                                }),
+                                result = '<span>' + truncated + '</span>',
+                                popTemplate = _.template(
+                                    '<a href="#" ' +
+                                        'role="button" ' +
+                                        'data-bs-toggle="popover" ' +
+                                        'data-bs-trigger="click" ' +
+                                        'data-bs-placement="auto"' +
+                                        'data-bs-html="true" ' +
+                                        'data-bs-content="<%= text %>" ' +
+                                        '>more</a>'
+                                );
+                            if (_.endsWith(truncated, ellipsis)) {
+                                result += popTemplate({
+                                    text: value,
+                                });
+                            }
+
+                            return result;
+                        },
+                    },
+                    {
+                        title: 'Referree Comment',
                         data: 'referral_text',
                         render: function (value) {
-                            var ellipsis = '...',
+                            let ellipsis = '...',
                                 truncated = _.truncate(value, {
                                     length: 20,
                                     omission: ellipsis,
@@ -172,17 +207,7 @@ export default {
                 // activate popover when table is drawn.
                 vm.table
                     .on('draw.dt', function () {
-                        var $tablePopover = $(this).find(
-                            '[data-bs-toggle="popover"]'
-                        );
-                        if ($tablePopover.length > 0) {
-                            $tablePopover.popover();
-                            // the next line prevents from scrolling up to the top after clicking on the popover.
-                            $($tablePopover).on('click', function (e) {
-                                e.preventDefault();
-                                return true;
-                            });
-                        }
+                        vm.initialisePopovers();
                     })
                     .on('click', '.resendRef', function (e) {
                         e.preventDefault();
@@ -220,6 +245,21 @@ export default {
         },
         switchStatus: function (value) {
             this.$emit('switchStatus', value);
+        },
+        initialisePopovers: function () {
+            var popoverTriggerList = [].slice.call(
+                document.querySelectorAll('[data-bs-toggle="popover"]')
+            );
+            popoverTriggerList.map(function (popoverTriggerEl) {
+                console.log(`Creating popover for element ${popoverTriggerEl}`);
+                return new bootstrap.Popover(popoverTriggerEl, {
+                    container: 'body',
+                });
+            });
+            $('[data-bs-toggle="popover"]').on('click', function (e) {
+                e.preventDefault();
+                return true;
+            });
         },
     },
 };

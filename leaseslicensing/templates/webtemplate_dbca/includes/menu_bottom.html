@@ -1,10 +1,10 @@
 {% load users %}
 {% load utils %}
 {% is_leaseslicensing_admin as is_leaseslicensing_admin_user %}
-{% is_payment_officer as is_payment_officer %}
+{% is_finance_officer as is_finance_officer %}
 
 
-{% if is_leaseslicensing_admin_user or request.user.is_superuser or is_payment_officer %}
+{% if is_leaseslicensing_admin_user or request.user.is_superuser or is_finance_officer %}
     <li><a class="dropdown-item" href="/internal/reports">Reports</a></li>
 {% endif %}
 {% if is_leaseslicensing_admin_user or request.user.is_superuser %}

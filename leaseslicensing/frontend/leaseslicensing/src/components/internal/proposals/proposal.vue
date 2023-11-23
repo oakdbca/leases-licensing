@@ -920,7 +920,7 @@
                                                                 referral.id
                                                             "
                                                             v-model="
-                                                                referral.comment_gis_data
+                                                                referral.comment_categorisation
                                                             "
                                                             class="form-control referral-comment"
                                                             :disabled="
@@ -1941,9 +1941,6 @@ export default {
                 vm.loading = false;
             }
         },
-        cancelEditing: function () {
-            alert('cancelEditing');
-        },
         applicationFormMounted: function () {
             this.fetchAdditionalDocumentTypesDict(); // <select> element for the additional document type exists in the ApplicationForm component, which is a child component of this component.
             // Therefore to apply select2 to the element inside child component, we have to make sure the childcomponent has been mounted.  Then select2 can be applied.
@@ -2314,6 +2311,88 @@ export default {
                 }
             }
 
+            let tab = null;
+            if (vm.proposal.groups.length == 0 || !vm.proposal.site_name) {
+                // When status is with assessor conditions, the proposal may be hidden
+                // Therefore we need to show it before we can validate the groups and site name
+                vm.$refs.workflow.showingProposal = true;
+                vm.showingProposal = true;
+                setTimeout(() => {
+                    let someTabTriggerEl =
+                        document.querySelector('#pills-details-tab');
+                    tab = new bootstrap.Tab(someTabTriggerEl);
+                    tab.show();
+                }, 200);
+            }
+
+            if (vm.proposal.groups.length == 0) {
+                swal.fire({
+                    title: 'No Group Selected',
+                    text: 'You must select one or more groups before entering conditions.',
+                    icon: 'warning',
+                    didClose: () => {
+                        $([document.documentElement, document.body]).animate(
+                            {
+                                scrollTop: $(
+                                    '#section_body_categorisation'
+                                ).offset().top,
+                            },
+                            0,
+                            () => {
+                                vm.$refs.application_form.$refs.groups.$el.focus();
+                            }
+                        );
+                    },
+                });
+
+                return;
+            }
+            if (!vm.proposal.site_name) {
+                swal.fire({
+                    title: 'No Site Name Entered',
+                    text: 'You must enter a site name before entering conditions.',
+                    icon: 'warning',
+                    didClose: () => {
+                        $([document.documentElement, document.body]).animate(
+                            {
+                                scrollTop: $(
+                                    '#section_body_categorisation'
+                                ).offset().top,
+                            },
+                            0,
+                            () => {
+                                tab.show();
+                                vm.$refs.application_form.$refs.site_name.focus();
+                            }
+                        );
+                    },
+                });
+                return;
+            }
+
+            if (!vm.proposal.proposalgeometry.features.length > 0) {
+                swal.fire({
+                    title: 'No Land Area Selected',
+                    text: 'You must indicate the land area before entering conditions. Please either draw one or more polygons on the map or upload a shapefile and then click the save button.',
+                    icon: 'warning',
+                    didClose: () => {
+                        setTimeout(() => {
+                            let someTabTriggerEl =
+                                document.querySelector('#pills-map-tab');
+                            tab = new bootstrap.Tab(someTabTriggerEl);
+                            tab.show();
+                        }, 200);
+                    },
+                });
+                return;
+            }
+
+            // Save the proposal before opening the modal
+            this.savingProposal = true;
+            await this.save(false).then(() => {
+                this.savingProposal = false;
+            });
+
             if (
                 this.conditionsMissingDates &&
                 this.conditionsMissingDates.length > 0
@@ -2512,6 +2591,9 @@ export default {
                 .then((data) => {
                     vm.proposal = Object.assign({}, data);
                     vm.updateAssignedOfficerSelect();
+                    vm.$nextTick(() => {
+                        vm.$refs.workflow.initialiseRefereeSelect();
+                    });
                 })
                 .catch((error) => {
                     this.updateAssignedOfficerSelect();
@@ -2815,7 +2897,13 @@ export default {
             var oldRequirement = this.proposal.requirements.find(
                 (requirement) => requirement.id == newRequirement.id
             );
-            Object.assign(oldRequirement, newRequirement);
+            if (
+                typeof oldRequirement === 'object' &&
+                !Array.isArray(oldRequirement) &&
+                oldRequirement !== null
+            ) {
+                Object.assign(oldRequirement, newRequirement);
+            }
         },
         updateInvoicingDetails: function (value) {
             Object.assign(this.proposal.invoicing_details, value);
