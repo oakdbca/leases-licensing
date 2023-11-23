@@ -669,7 +669,7 @@ def proposal_submit(proposal, request):
     return proposal
 
 
-def is_payment_officer(user):
+def is_finance_officer(user):
     from leaseslicensing.components.proposals.models import PaymentOfficerGroup
 
     try:
