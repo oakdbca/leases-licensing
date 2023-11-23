@@ -934,6 +934,23 @@ class ListProposalSerializer(BaseProposalSerializer):
         return None
 
 
+class ListProposalReferralSerializer(ListProposalSerializer):
+    referral_processing_status = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Proposal
+        fields = ListProposalSerializer.Meta.fields + ("referral_processing_status",)
+        datatables_always_serialize = (
+            ListProposalSerializer.Meta.datatables_always_serialize
+            + ("referral_processing_status",)
+        )
+
+    def get_referral_processing_status(self, obj):
+        if hasattr(obj, "referral_processing_status"):
+            return obj.referral_processing_status
+        return None
+
+
 class ProposalReferralSerializer(serializers.ModelSerializer):
     processing_status = serializers.CharField(source="get_processing_status_display")
     referral_obj = serializers.SerializerMethodField()
