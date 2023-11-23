@@ -463,8 +463,8 @@ export default {
                                 links += `<a href="/external/proposal/${full.id}/referral/">Complete Referral</a><br/>`;
                             } else {
                                 links += `<a href='/external/proposal/${full.id}'>View</a><br/>`;
+                                links += `<a href='#${full.id}' data-discard-proposal='${full.id}' data-proposal-lodgement-number='${full.lodgement_number}'>Discard</a><br/>`;
                             }
-                            links += `<a href='#${full.id}' data-discard-proposal='${full.id}' data-proposal-lodgement-number='${full.lodgement_number}'>Discard</a><br/>`;
                         }
                     }
                     return links;
