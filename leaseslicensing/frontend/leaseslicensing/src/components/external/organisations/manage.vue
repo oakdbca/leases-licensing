@@ -131,6 +131,9 @@
                                                 class="form-control"
                                                 name="postalAddressLine1"
                                                 required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
                                             />
                                         </div>
                                     </div>
@@ -153,6 +156,9 @@
                                                 class="form-control"
                                                 name="postalLocality"
                                                 required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
                                             />
                                         </div>
                                     </div>
@@ -175,6 +181,9 @@
                                                 class="form-control"
                                                 name="postalState"
                                                 required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
                                             />
                                         </div>
                                     </div>
@@ -198,6 +207,9 @@
                                                 name="postalPostcode"
                                                 maxlength="10"
                                                 required
+                                                @keyup="
+                                                    updatePostalAddressFromBillingAddress
+                                                "
                                             />
                                         </div>
                                     </div>
@@ -1044,6 +1056,11 @@ export default {
                 this.org.postal_address.postal_postcode;
             this.org.billing_address.billing_country =
                 this.org.postal_address.postal_country;
+        },
+        updatePostalAddressFromBillingAddress: function () {
+            if (this.org.billing_same_as_postal) {
+                this.copyPostalAddressToBillingAddress();
+            }
         },
         toggleBillingAddressFieldsDisabled: function () {
             if (!this.org.billing_same_as_postal) {
