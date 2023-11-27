@@ -672,7 +672,7 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
 
     def get_queryset(self):
         if is_internal(self.request):
-            return self.queryset
+            return super().get_queryset()
         elif is_customer(self.request):
             return self.queryset.filter(requester=self.request.user.id).exclude(
                 status="declined"
