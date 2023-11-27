@@ -1470,16 +1470,11 @@ export default {
                 ].includes(this.proposal.processing_status_id)
             ) {
                 if (
-                    this.proposal.application_type.name ===
-                    constants.APPLICATION_TYPES.LEASE_LICENCE
+                    this.proposal.accessing_user_roles.includes(
+                        constants.ROLES.GROUP_NAME_ASSESSOR.ID
+                    )
                 ) {
-                    if (
-                        this.proposal.accessing_user_roles.includes(
-                            constants.ROLES.GROUP_NAME_ASSESSOR.ID
-                        )
-                    ) {
-                        canEdit = true;
-                    }
+                    canEdit = true;
                 }
             }
             return canEdit;
@@ -2097,7 +2092,9 @@ export default {
 
                 if (
                     this.proposal.proposal_type.code ==
-                    constants.PROPOSAL_TYPE.MIGRATION.code
+                        constants.PROPOSAL_TYPE.MIGRATION.code &&
+                    this.proposal.processing_status_id ==
+                        constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID
                 ) {
                     if (
                         this.proposal.groups.find(

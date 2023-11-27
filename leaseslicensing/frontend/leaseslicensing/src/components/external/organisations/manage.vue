@@ -257,7 +257,6 @@
                                     </div>
                                 </div>
                             </fieldset>
-
                             <fieldset
                                 class="mb-3"
                                 :disabled="org.billing_same_as_postal"
@@ -663,7 +662,7 @@ export default {
                 vm.org.billing_same_as_postal =
                     vm.isBillingAddressSame != null
                         ? vm.isBillingAddressSame
-                        : {};
+                        : false;
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
         });
@@ -687,7 +686,7 @@ export default {
                 vm.org.billing_same_as_postal =
                     vm.isBillingAddressSame != null
                         ? vm.isBillingAddressSame
-                        : {};
+                        : false;
                 // vm.org.address = vm.org.address != null ? vm.org.address : {};
                 // vm.org.pins = vm.org.pins != null ? vm.org.pins : {};
             });
@@ -1008,7 +1007,7 @@ export default {
             vm.myorgperms = data[3];
             vm.org.postal_address = vm.org.postal_address || {};
             vm.org.billing_address = vm.org.billing_address || {};
-            vm.org.billing_same_as_postal = vm.isBillingAddressSame || {};
+            vm.org.billing_same_as_postal = vm.isBillingAddressSame || false;
             if (vm.org.billing_same_as_postal) {
                 this.copyPostalAddressToBillingAddress();
             }
@@ -1977,7 +1976,7 @@ export default {
                     vm.org.billing_same_as_postal =
                         vm.isBillingAddressSame != null
                             ? vm.isBillingAddressSame
-                            : {};
+                            : false;
                     swal.fire(
                         'Success',
                         'Organisation address updated successfully',
