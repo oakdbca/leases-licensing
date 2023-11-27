@@ -254,7 +254,7 @@
                                         ref="select_approvaltype"
                                         v-model="selectedApprovalTypeId"
                                         :disabled="readonly"
-                                        class="form-control"
+                                        class="form-select"
                                         required
                                     >
                                         <option></option>
