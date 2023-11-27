@@ -2092,7 +2092,9 @@ export default {
 
                 if (
                     this.proposal.proposal_type.code ==
-                    constants.PROPOSAL_TYPE.MIGRATION.code
+                        constants.PROPOSAL_TYPE.MIGRATION.code &&
+                    this.proposal.processing_status_id ==
+                        constants.PROPOSAL_STATUS.WITH_ASSESSOR.ID
                 ) {
                     if (
                         this.proposal.groups.find(
