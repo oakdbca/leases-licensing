@@ -1470,16 +1470,11 @@ export default {
                 ].includes(this.proposal.processing_status_id)
             ) {
                 if (
-                    this.proposal.application_type.name ===
-                    constants.APPLICATION_TYPES.LEASE_LICENCE
+                    this.proposal.accessing_user_roles.includes(
+                        constants.ROLES.GROUP_NAME_ASSESSOR.ID
+                    )
                 ) {
-                    if (
-                        this.proposal.accessing_user_roles.includes(
-                            constants.ROLES.GROUP_NAME_ASSESSOR.ID
-                        )
-                    ) {
-                        canEdit = true;
-                    }
+                    canEdit = true;
                 }
             }
             return canEdit;
