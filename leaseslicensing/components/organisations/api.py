@@ -658,9 +658,9 @@ class OrganisationRequestPaginatedViewSet(viewsets.ModelViewSet):
 class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixin):
     queryset = OrganisationRequest.objects.all().order_by(
         Case(
-            When(status="approved", then=Value(0)),
-            When(status="with_assessor", then=Value(1)),
-            When(status="declined", then=Value(2)),
+            When(status=OrganisationRequest.STATUS_CHOICE_APPROVED, then=Value(0)),
+            When(status=OrganisationRequest.STATUS_CHOICE_WITH_ASSESSOR, then=Value(1)),
+            When(status=OrganisationRequest.STATUS_CHOICE_DECLINED, then=Value(2)),
         )
     )
     serializer_class = OrganisationRequestSerializer
@@ -672,10 +672,10 @@ class OrganisationRequestsViewSet(UserActionLoggingViewset, NoPaginationListMixi
 
     def get_queryset(self):
         if is_internal(self.request):
-            return self.queryset
+            return super().get_queryset()
         elif is_customer(self.request):
             return self.queryset.filter(requester=self.request.user.id).exclude(
-                status="declined"
+                status=OrganisationRequest.STATUS_CHOICE_DECLINED
             )
         return OrganisationRequest.objects.none()
 

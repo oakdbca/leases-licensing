@@ -226,11 +226,11 @@
                                     class="form-control"
                                     type="text"
                                     name="site_name"
-                                    :disabled="is_external"
+                                    :disabled="!is_assessor"
                                 />
                             </div>
                         </div>
-                        <div v-if="is_internal" class="row mb-3">
+                        <div v-if="is_internal || is_referee" class="row mb-3">
                             <div class="col-sm-3">
                                 <label class="col-form-label">Groups</label>
                             </div>
@@ -247,7 +247,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
-                                    :disabled="is_external"
+                                    :disabled="!is_assessor"
                                 />
                             </div>
                         </div>
@@ -406,7 +406,7 @@ export default {
             type: Boolean,
             default: false,
         },
-        is_referral: {
+        is_referee: {
             type: Boolean,
             default: false,
         },

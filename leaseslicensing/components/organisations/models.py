@@ -938,10 +938,14 @@ def organisation_request_identification_upload_path(instance, filename):
 class OrganisationRequest(models.Model):
     MODEL_PREFIX = "OAR"
 
+    STATUS_CHOICE_WITH_ASSESSOR = "with_assessor"
+    STATUS_CHOICE_APPROVED = "approved"
+    STATUS_CHOICE_DECLINED = "declined"
+
     STATUS_CHOICES = (
-        ("with_assessor", "With Assessor"),
-        ("approved", "Approved"),
-        ("declined", "Declined"),
+        (STATUS_CHOICE_WITH_ASSESSOR, "With Assessor"),
+        (STATUS_CHOICE_APPROVED, "Approved"),
+        (STATUS_CHOICE_DECLINED, "Declined"),
     )
     ROLE_CHOICES = (("employee", "Employee"), ("consultant", "Consultant"))
     lodgement_number = models.CharField(max_length=9, blank=True, default="")

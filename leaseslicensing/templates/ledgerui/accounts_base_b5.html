@@ -1,9 +1,15 @@
 {% extends "ledgerui/accounts_base_b5.html" %}
 {% load static %}
 {% load users %}
+{% load utils %}
+
 
 {% block myaccount_nav %}
+{% is_internal as is_internal_login %}
+
+{% if is_internal_login is False %}
 <button class="nav-link  managed-account-nav" id="nav-organisations-tab" data-bs-toggle="tab" data-bs-target="#nav-organisations" type="button" role="tab" aria-controls="nav-organisations" aria-selected="false">Organisations</button>
+{% endif %}
 {% endblock %}
 
 {% block additional_content %}

@@ -144,6 +144,7 @@
                             :show_application_title="false"
                             :is_external="false"
                             :is_internal="true"
+                            :is_referee="isReferee"
                             :readonly="readonly"
                             :submitter-id="submitter_id"
                             :show_related_items_tab="true"
