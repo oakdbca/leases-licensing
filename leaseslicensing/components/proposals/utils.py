@@ -578,7 +578,7 @@ def save_assessor_data(proposal, request, viewset):
             and proposal_data["assessor_assessment"]
         ):
             proposal_assessment, created = ProposalAssessment.objects.get_or_create(
-                proposal=proposal
+                proposal=proposal, referral=None
             )
             if created:
                 logger.info(
@@ -663,7 +663,7 @@ def proposal_submit(proposal, request):
         )
 
     proposal_assessment, created = ProposalAssessment.objects.get_or_create(
-        proposal=proposal
+        proposal=proposal, referral=None
     )
 
     return proposal
