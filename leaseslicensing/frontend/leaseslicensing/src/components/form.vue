@@ -226,7 +226,7 @@
                                     class="form-control"
                                     type="text"
                                     name="site_name"
-                                    :disabled="!is_assessor"
+                                    :disabled="!can_assess"
                                 />
                             </div>
                         </div>
@@ -247,7 +247,7 @@
                                     :multiple="true"
                                     :searchable="true"
                                     :loading="loadingGroups"
-                                    :disabled="!is_assessor"
+                                    :disabled="!can_assess"
                                 />
                             </div>
                         </div>
@@ -403,6 +403,10 @@ export default {
             default: false,
         },
         is_internal: {
+            type: Boolean,
+            default: false,
+        },
+        can_assess: {
             type: Boolean,
             default: false,
         },
