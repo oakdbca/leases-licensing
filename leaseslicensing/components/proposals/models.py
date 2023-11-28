@@ -3337,6 +3337,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
             )
             emailuser = EmailUser.objects.get(id=self.ind_applicant)
             make_proposal_applicant_ready(self, emailuser)
+            proposal_applicant = ProposalApplicant.objects.get(proposal=self)
         except ProposalApplicant.MultipleObjectsReturned:
             logger.warning(
                 f"Multiple ProposalApplicants found for Proposal: {self}. Using the first one."
