@@ -3319,7 +3319,30 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     @property
     def proposal_applicant(self):
-        proposal_applicant = ProposalApplicant.objects.get(proposal=self)
+        if not self.ind_applicant:
+            logger.warning(
+                f"Attempting to access ProposalApplicant for Proposal: {self} that has no ind_applicant"
+            )
+            return None
+
+        try:
+            proposal_applicant = ProposalApplicant.objects.get(proposal=self)
+        except ProposalApplicant.DoesNotExist:
+            from leaseslicensing.components.proposals.utils import (
+                make_proposal_applicant_ready,
+            )
+
+            logger.warning(
+                f"ProposalApplicant not found for Proposal: {self}. Creating a new one."
+            )
+            emailuser = EmailUser.objects.get(id=self.ind_applicant)
+            make_proposal_applicant_ready(self, emailuser)
+        except ProposalApplicant.MultipleObjectsReturned:
+            logger.warning(
+                f"Multiple ProposalApplicants found for Proposal: {self}. Using the first one."
+            )
+            proposal_applicant = ProposalApplicant.objects.filter(proposal=self).first()
+
         return proposal_applicant
 
     @transaction.atomic
