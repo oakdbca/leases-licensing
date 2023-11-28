@@ -3433,7 +3433,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.generated_competitive_process:
             logger.warning(
                 "Couldn't generate a competitive process. "
-                f"Proposal {self} has already generated a Competitive Process: {self.generated_competitive_process}"
+                f"Proposal {self} already has an associated Competitive Process: {self.generated_competitive_process}"
             )
             return
 
@@ -3445,7 +3445,7 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
         if self.invoicing_details:
             logger.warning(
                 "Couldn't generate an invoicing details. "
-                f"Proposal {self} has already has an associated Invoicing Details: {self.invoicing_details}"
+                f"Proposal {self} already has an associated Invoicing Details: {self.invoicing_details}"
             )
             return
 
