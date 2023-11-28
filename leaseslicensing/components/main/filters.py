@@ -223,6 +223,13 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
             A searched in and ordered queryset
         """
 
+        # Keep a record of this queryset's relevant query parameters for annotations
+        queryset_query_dict = {
+            k: v
+            for k, v in queryset._query.__dict__.items()
+            if k
+            in ["alias_refcount", "alias_map", "alias_cols", "annotations", "table_map"]
+        }
         model = queryset.model
         if model is None:
             return serializers.ValidationError(
@@ -432,6 +439,8 @@ class LedgerDatatablesFilterBackend(DatatablesFilterBackend):
                         code=500, detail=f"Could not order queryset by {orderings}"
                     )
 
+        # Restore the queryset's original query parameters
+        queryset._query.__dict__.update(queryset_query_dict)
         return queryset
 
     @basic_exception_handler
