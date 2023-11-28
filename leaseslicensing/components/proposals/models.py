@@ -3431,10 +3431,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def generate_competitive_process(self):
         if self.generated_competitive_process:
-            raise ValidationError(
+            logger.warning(
                 "Couldn't generate a competitive process. "
                 f"Proposal {self} has already generated a Competitive Process: {self.generated_competitive_process}"
             )
+            return
 
         new_competitive_process = CompetitiveProcess.objects.create()
         self.generated_competitive_process = new_competitive_process
@@ -3442,10 +3443,11 @@ class Proposal(LicensingModelVersioned, DirtyFieldsMixin):
 
     def generate_invoicing_details(self):
         if self.invoicing_details:
-            raise ValidationError(
+            logger.warning(
                 "Couldn't generate an invoicing details. "
-                f"Proposal {self} has already generated a Invoicing Details: {self.invoicing_details}"
+                f"Proposal {self} has already has an associated Invoicing Details: {self.invoicing_details}"
             )
+            return
 
         new_invoicing_details = InvoicingDetails.objects.create()
         self.invoicing_details = new_invoicing_details
