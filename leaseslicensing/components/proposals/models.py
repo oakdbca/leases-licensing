@@ -3814,6 +3814,7 @@ class ProposalApplicant(BaseApplicant):
     def copy_self_to_proposal(self, target_proposal):
         ProposalApplicant.objects.create(
             proposal=target_proposal,
+            emailuser_id=self.emailuser_id,
             first_name=self.first_name,
             last_name=self.last_name,
             dob=self.dob,
