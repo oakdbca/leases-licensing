@@ -822,7 +822,7 @@ class InvoicingDetails(BaseModel):
         if not self.gross_turnover_percentages.filter(
             estimated_gross_turnover__isnull=False
         ).exists():
-            amount_object["suffix"] = "No initial turnover estimate found"
+            amount_object["suffix"] = "No initial turnover estimate entered"
             return amount_object
 
         start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
