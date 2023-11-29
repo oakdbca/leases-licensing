@@ -1,5 +1,5 @@
 <template>
-    <pre>{{ $filters.pretty(grossTurnoverPercentagesComputed) }}</pre>
+    <!-- <pre>{{ $filters.pretty(grossTurnoverPercentagesComputed) }}</pre> -->
     <div class="row mb-3">
         <div class="col">
             <template
