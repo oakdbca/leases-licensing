@@ -159,10 +159,14 @@ def financial_quarters_included_in_range(start_date, end_date):
     return financial_quarters
 
 
-def months_included_in_range(start_date, end_date):
+def months_included_in_range(
+    start_date: datetime.date,
+    end_date: datetime.date,
+) -> list:
     """Returns a list of months included in the date range provided.
     The date range is inclusive of the start date and end date.
     """
+
     if start_date >= end_date:
         logger.warning(
             f"Start date {start_date} is after end date {end_date} (or the same date)"
