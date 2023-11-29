@@ -313,10 +313,7 @@ export default {
             return (
                 !this.financialYearHasPassed(
                     grossTurnoverPercentage.financial_year
-                ) ||
-                !this.allQuartersEntered(grossTurnoverPercentage) ||
-                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                    this.proposalProcessingStatusId
+                ) || !this.allQuartersEntered(grossTurnoverPercentage)
             );
         },
         grossQuarterlyTurnoverReadonly: function (
@@ -325,13 +322,9 @@ export default {
         ) {
             // Gross turnover is readonly if the financial quarter hasn't passed
             // or if the proposal is being edited from the proposal details page
-            return (
-                !this.helpers.financialQuarterHasPassed(
-                    financialYear,
-                    financialQuarter
-                ) ||
-                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
-                    this.proposalProcessingStatusId
+            return !this.helpers.financialQuarterHasPassed(
+                financialYear,
+                financialQuarter
             );
         },
         grossMonthlyTurnoverReadonly: function (year, month) {
