@@ -227,6 +227,7 @@
                     updateGrossTurnoverPercentages
                 "
                 @on-change-percentage="updatePreviewInvoices"
+                @on-change-gross-turnover-estimate="updatePreviewInvoices"
             />
         </div>
         <div v-if="show_percentage_of_gross_turnover_advance">
@@ -244,6 +245,7 @@
                 "
                 @on-change-percentage="updatePreviewInvoices"
                 @on-change-gross-turnover-estimate="updatePreviewInvoices"
+                @on-change-gross-turnover-actual="updatePreviewInvoices"
             />
         </div>
         <div
