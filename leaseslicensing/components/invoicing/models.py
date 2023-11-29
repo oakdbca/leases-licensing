@@ -697,7 +697,7 @@ class InvoicingDetails(BaseModel):
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
             start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
 
-            # If the start date is before the issue date, use the issue date to calculate the cpi for that period
+            # If the start date is before the issue date, use the start date to calculate the cpi for that period
             # This is to cover the case of backdated invoices where using the issue date could yield a cpi figure
             # for a totally unrelated period.
             cpi_date = start_date if start_date < issue_date else issue_date
