@@ -1,5 +1,5 @@
 <template>
-    <!-- <pre>{{ $filters.pretty(grossTurnoverPercentagesComputed) }}</pre> -->
+    <pre>{{ $filters.pretty(grossTurnoverPercentagesComputed) }}</pre>
     <div class="row mb-3">
         <div class="col">
             <template
@@ -425,10 +425,18 @@ export default {
                             continue;
                         }
                         if (!grossTurnoverPercentage.quarters[j]) {
-                            grossTurnoverPercentage.quarters.push({
-                                quarter: j + 1,
-                                gross_turnover: null,
-                            });
+                            if (
+                                this.grossTurnoverPercentagesComputed
+                                    .quarters &&
+                                this.grossTurnoverPercentagesComputed.quarters.filter(
+                                    (x) => x.quarter == j + 1
+                                ).length == 0
+                            ) {
+                                grossTurnoverPercentage.quarters.push({
+                                    quarter: j + 1,
+                                    gross_turnover: null,
+                                });
+                            }
                         }
                     }
                 } else {
