@@ -426,8 +426,8 @@ export default {
                         }
                         if (!grossTurnoverPercentage.quarters[j]) {
                             if (
-                                this.grossTurnoverPercentagesComputed
-                                    .quarters &&
+                                !this.grossTurnoverPercentagesComputed
+                                    .quarters ||
                                 this.grossTurnoverPercentagesComputed.quarters.filter(
                                     (x) => x.quarter == j + 1
                                 ).length == 0
@@ -467,6 +467,7 @@ export default {
                             continue;
                         }
                         if (
+                            !grossTurnoverPercentage.months ||
                             !grossTurnoverPercentage.months.find(
                                 (x) => x.month == month && x.year == year
                             )
