@@ -146,12 +146,27 @@ def financial_quarters_included_in_range(start_date, end_date):
                 calendar_year = year
             else:
                 calendar_year = year + 1
-            if (
-                not datetime.date(calendar_year, month_for_quarter, start_date.day)
-                >= start_date
-                or not datetime.date(calendar_year, month_for_quarter, end_date.day)
-                <= end_date
-            ):
+            try:
+                compare_date_1 = datetime.date(
+                    calendar_year, month_for_quarter, start_date.day
+                )
+            except ValueError:
+                compare_date_1 = datetime.date(
+                    calendar_year,
+                    month_for_quarter,
+                    calendar.monthrange(calendar_year, month_for_quarter)[1],
+                )
+            try:
+                compare_date_2 = datetime.date(
+                    calendar_year, month_for_quarter, end_date.day
+                )
+            except ValueError:
+                compare_date_2 = datetime.date(
+                    calendar_year,
+                    month_for_quarter,
+                    calendar.monthrange(calendar_year, month_for_quarter)[1],
+                )
+            if not compare_date_1 >= start_date or not compare_date_2 <= end_date:
                 continue
             financial_quarters.append(
                 (quarter, f"Q{quarter}", calendar_year, financial_year)
@@ -190,10 +205,7 @@ def months_included_in_range(
                     year, month_index, calendar.monthrange(year, month_index)[1]
                 )
 
-            if not compare_date_1 or not compare_date_1 >= start_date:
-                continue
-
-            if not compare_date_2 <= end_date:
+            if not compare_date_1 >= start_date or not compare_date_2 <= end_date:
                 continue
 
             logger.debug(f"Month included: {month_index}")
