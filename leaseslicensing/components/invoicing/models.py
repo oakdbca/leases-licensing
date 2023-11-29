@@ -712,7 +712,7 @@ class InvoicingDetails(BaseModel):
             else:
                 amount_object["amount"] = base_fee_amount
                 amount_object["suffix"] = " + CPI (NYA)"
-                return amount_object
+            return amount_object
 
         year_sequence_index = self.get_year_sequence_index(index)
         if (
