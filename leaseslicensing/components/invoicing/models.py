@@ -689,9 +689,12 @@ class InvoicingDetails(BaseModel):
         if days == 366:
             days = 365
 
-        # Caculate the base fee for this period i.e. days of period * cost per day
-        # Todo: I think they want to calculate each period as a division of the year rather than the days in the period
-        base_fee_amount = days * (base_fee_amount / 365)
+        # Modify the base fee based on the invoicing repetition type
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_QUARTERLY:
+            base_fee_amount = base_fee_amount / 4
+        if self.invoicing_repetition_type.key == settings.REPETITION_TYPE_MONTHLY:
+            base_fee_amount = base_fee_amount / 12
+
         base_fee_amount = base_fee_amount.quantize(Decimal("0.01"))
 
         if self.charge_method.key == settings.CHARGE_METHOD_BASE_FEE_PLUS_ANNUAL_CPI:
