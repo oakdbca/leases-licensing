@@ -50,8 +50,11 @@
                                         type="number"
                                         class="form-control"
                                         :readonly="
-                                            grossAnnualTurnoverReadonly(year) ||
-                                            year.locked
+                                            !editingFromProposalPage &&
+                                            (grossAnnualTurnoverReadonly(
+                                                year
+                                            ) ||
+                                                year.locked)
                                         "
                                         @change="
                                             grossAnnualTurnoverChanged(
@@ -128,7 +131,9 @@
                                             grossQuarterlyTurnoverReadonly(
                                                 year.financial_year,
                                                 quarter.quarter
-                                            ) || year.locked
+                                            ) ||
+                                            (!editingFromProposalPage &&
+                                                year.locked)
                                         "
                                     />
                                     <span class="input-group-text">AUD</span>
@@ -306,6 +311,12 @@ export default {
         this.populateFinancialYearsArray(financialYearsIncluded);
     },
     methods: {
+        editingFromProposalPage: function () {
+            return (
+                constants.PROPOSAL_STATUS.APPROVED_EDITING_INVOICING.ID ==
+                this.proposalProcessingStatusId
+            );
+        },
         grossAnnualTurnoverReadonly: function (grossTurnoverPercentage) {
             // Gross turnover is readonly if the financial year hasn't passed
             // or if the proposal is being edited from the proposal details page
